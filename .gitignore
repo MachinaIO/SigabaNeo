@@ -1,0 +1,9 @@
+# cache and other artifacts produced by Lean's Lake build tool
+.lake/
+# Python
+__pycache__/
+# the compatible platform's state (dataDir) and check workspaces
+python/server-data/
+python/sigaba-neo-work/
+# claim directories as Lake projects (python3 sigaba_neo.py dev)
+tests/cases/*/.lake/

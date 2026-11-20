@@ -1,0 +1,117 @@
+# The lattice library (`SigabaNeo/Lib/Lattices`)
+
+Definitions and proofs shared by claims and solutions, in the namespace `SigabaNeo.Lattices`.
+`import SigabaNeo.Lib.Lattices` imports all of it; a definitions file should import only the
+modules it needs.
+The library is part of the core and is pinned with it. Its definitions are part of the meaning of
+any claim that imports them, as cslib-frontier's are, so a submitter reads them as they read their
+own. Its proofs are checked by Lean when the core is built.
+
+| Module | Contents |
+| --- | --- |
+| `Basic` | `embed` (`Z^m ⊂ R^m`), `kernel B`, `perp B = Λ^⊥(B)`, `toInt`; `sampleList`, `sampleMat`, `sampleOptList` |
+| `Gaussian` | `gaussZ s` (`D_{Z,s}`) and `cosetGauss B u τ` (`D_{Λ^⊥(B)+x₀,τ}`), cslib-frontier's `ZLattice.discreteGaussian` |
+| `Gaussian/Sum`, `Smooth`, `Tail`, `Bounds`, `Z`, `Facts` | Gaussian sums; smoothing of `Λ^⊥(B)`; tails (`gauss_tail_gen`, `cosetGauss_tail`, `gaussZ_tail`); point masses of `D_{Z,σ}` |
+| `Encoding` | `matVals`, `encEntries`, `bitsOf`, `intMod` |
+| `Gadget` | `gadget n b q = I_n ⊗ (1, 2, …, 2^{b−1})`, `gadgetInv` (binary decomposition), `gadget_mulVec_gadgetInv` for `q ≤ 2^b` |
+| `ModuleLWE` | `ModuleLWE.Decision m d n q secret error` (cslib-frontier's `DecisionModuleLWEWith`), `DecisionGauss`, `DecisionGaussSecret`, `gaussVec` |
+| `RingLWE` | `RingLWE.Decision`: Module-LWE of rank 1 |
+| `LWE` | `LWE.Decision`: Module-LWE at ring degree 1; `LWE.DecisionPub`: with the modulus public in the sample (`encodePub`) |
+| `Trapdoor` | `Trapdoor.preimage`, `Trapdoor.ideal`, `Trapdoor.Sampler`, `Trapdoor.Exists` |
+| `Trapdoor/Family` | `Trapdoor.Family.exists_sampler`, for one parameter family |
+| `Prob`, `Stat` | expectations (`ev`, `ind`) and statistical distance (`CloseTo`) lemmas |
+
+## Trapdoors and preimage sampling
+
+**The ideal distribution.** `Trapdoor.preimage B P τ` draws each column `K_j` of `K` from the
+discrete Gaussian of width `τ` on the coset `{x ∈ Z^m : B·x = P_j (mod q)}`, or is `none` if a coset
+is empty. `Trapdoor.ideal P τ` draws a uniform `B ∈ Z_q^{n×m}` first.
+
+**A trapdoor sampler** (`Trapdoor.Sampler n m k q τ`) is:
+
+* `gen` (`GenTrap`): on `(κ, q)`, with `κ` unary and `q` binary, it outputs `B` (as `matVals B`) and
+  a trapdoor of any type with any encoding;
+* `pre` (`SamplePre`): on `(κ, q)`, the trapdoor and `P` (as `matVals P`), it outputs the columns
+  of `K`.
+
+Both are strict PPT (`IsPPTOn`). There is a negligible `err` such that, for all large `κ` and every
+`P ∈ Z_q^{n×k}`, the pair `(B, K)` they produce is within statistical distance `err κ` of
+`Trapdoor.ideal P (τ κ)`. `Trapdoor.Exists n m k q τ` says that a sampler exists.
+
+**What is proved.** Only one family so far: `n = κ + 1`, `w = 8(κ + 1)`, a prime
+`q ∈ (2^w, 2^{w+1}]`, `m = 2n(w + 1)`, `k = m + 1` and `τ = 2^{κ+3}` (`Trapdoor/Family/Params.lean`).
+For it, `Trapdoor.Family.exists_sampler : Trapdoor.Exists n m k q τ τ_pos`. Other parameters are
+later work.
+
+## The proof for the family
+
+
+`Trapdoor/Family.lean` and `Trapdoor/Family/*.lean` (file names below are in that directory):
+
+```lean
+theorem Trapdoor.Family.trapdoor_sampling :
+    IsPPTOn encPub (encPair (encList encNat) (encPair (encList encNat) (encList encNat))) genAlg ∧
+    IsPPTOn encInp (encList (encList encIntBin)) preAlg ∧
+    Negligible errAll ∧
+    ∀ᶠ κ in Filter.atTop, ∀ P, CloseTo (ProbComp.eval (trapPipe κ P))
+      ((idealJ κ P).map (encBK κ)) (errAll κ)
+```
+
+`idealJ κ P` is `Trapdoor.ideal P τ` (`idealJ_eq`).
+`trapPipe κ P` runs `GenTrap` on `(κ, q)` and `SamplePre` on the trapdoor and `P`. `errAll κ` is
+`200 (m + 1)^4 / 2^κ + m² / 2^κ`.
+
+**GenTrap** (`genAlg`, [MP12] Section 5). Draw `Ā ∈ Z_q^{n×mb}` entry by entry with
+`sampleModNat`, with `mb = n(w + 1)` and `m = 2mb`. Draw `R ∈ {−1, 0, 1}^{mb×mb}` from two fair bits
+per entry, with `P(0) = 1/2` and `P(±1) = 1/4`. Output `B = [Ā | G − ĀR]` with the gadget
+`G = I_n ⊗ (1, 2, …, 2^w)` (`Gadget.lean`).
+
+* `G` is inverted by binary decomposition because `q ≤ 2^{w+1}`.
+* `xPre R v = [R z; z]` with `z = G⁻¹(v)` satisfies `B · xPre R v = v`, and its entries are at
+  most `mb` in absolute value.
+* `B` is within `ε_LHL = mb·√(q^n (3/8)^{mb})/2` of uniform (`LHL.lean`, `Gen.lean`). This is
+  a leftover hash lemma per column of `R`, through the collision probability of `Ā r`.
+
+**SamplePre** (`preAlg`). For each column `u` of `P`, draw `y ← D_{Z^m,τ}` and output
+`x = y + xPre R (u − B y)`. Then `B x = u`, and the mass at `x` is `Σ_v D_{Z^m,τ}(x − xPre R v)`
+(`Law.lean`). This is a randomized sampler of GPV type, with the trapdoor used only to shift
+into the coset. Because `τ = 2^{κ+3}` is far above the trapdoor's short vectors, it is close to
+the coset Gaussian:
+
+* Smoothing (`Smooth.lean`): `Λ^⊥(B)` has `m` independent vectors of norm at most
+  `√(m)·(2mb + 2)`, built from `R` and the gadget kernel. So the dual mass is at most `1/2` for
+  all large `κ` (`smoothCond_eventually`), and every coset has nearly the same `ρ_τ` mass.
+* On the box `|x_j| < τm`, shifting by `xPre` changes `ρ_τ` by a factor `e^{±θ}` with
+  `θ ≤ 1.5 m³/2^κ` (`Close.lean`, `Close2.lean`: `colLawOf_close`, for any base law within
+  factors `a` and `b` of `D_{Z^m,τ}`).
+
+**The 1D sampler** (`samp1`, `Samp1.lean`). One attempt draws a proposal
+`z ∈ [−2^A, 2^A)` and `u < 2^T`, and accepts when `u · s^E < 2^T` in exact integer arithmetic. Here
+`s = Σ_{i<N} (y/E)^i/i!` is a Taylor sum for `e^{y/E}`, `y = π̂ z²/τ²`, and `π̂` comes from Machin's
+formula with certified error (`Pi.lean`). The bracket `s^E ≤ e^y ≤ (s + 2/N!)^E` is in
+`Exp.lean`. The sampler retries at most `Rt` times and outputs `0` if every attempt fails.
+
+* The acceptance probability is `e^{−πz²/τ²}` up to factors `e^{±δ_P}·η_N` and `2^{−T}`
+  (`Pacc.lean`).
+* The output law is within factors `a₁` and `b₁` of `D_{Z,τ}` (`Law1D.lean`). Across `m`
+  coordinates, `μV` is within factors `a₁^m` and `b₁^m` (`Vec.lean`).
+* Every constant is `1 ± O(2^{−κ})` (`Const.lean`), so `a₁^m/b₁^m ≥ 1 − 24 m 2^{−κ}`
+  (`Negl.lean`).
+
+**The error.** `joint_close` (`Joint.lean`) gives a bound of `k·colErr + ε_LHL`, with the
+columns sampled independently. This is at most `200 (m + 1)^4 / 2^κ` (`err_le`). The draw of `Ā`
+by `sampleModNat` adds `n·mb·q/2^{w+1+κ} ≤ m²/2^κ` (`closeTo_DA`).
+
+**Strict PPT** (`PPT1.lean`, `AlgPPT.lean`). Every step is certified in cslib-frontier's
+polynomial-time calculus:
+
+* the parameters, which are unary in `κ` (`Nat.log` and powers bounded by `m`);
+* `π̂`, through binary integer sums;
+* the acceptance test, through binary powers, factorials and comparison;
+* the retry loop (`IsPPTOn.retry`);
+* the `m` draws (`IsPPTOn.replicate`);
+* the list form of `B` and of `y ↦ y + [Rz; z]` (`Alg.lean`, proved equal to `Bmat` and
+  `gsyn`);
+* the loop over the columns (`IsPPTOn.mapM`).
+
+The law of each program is computed in `AlgLaw.lean`.

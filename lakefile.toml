@@ -1,0 +1,17 @@
+name = "SigabaNeo"
+version = "0.1.0"
+defaultTargets = ["SigabaNeo"]
+
+# Every dependency is pinned to an exact commit (spec §2). See docs/M0.md for why these.
+# The machine model is cslib-frontier's probabilistic multi-tape Turing machine. Mathlib and cslib
+# come transitively through cslib-frontier's own pins; never pin them separately. Bump this SHA
+# together with lean-toolchain (which must equal cslib-frontier's at the SHA).
+[[require]]
+name = "cslib-frontier"
+git = "https://github.com/cslib-community/cslib-frontier"
+rev = "d25e68fd262c7aef49179602e784804fb790ced6"
+
+[[lean_lib]]
+name = "SigabaNeo"
+# `SigabaNeo.Assemble` and `SigabaNeo.Platform` are untrusted helpers of the tooling (python/).
+roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Lib.Lattices"]

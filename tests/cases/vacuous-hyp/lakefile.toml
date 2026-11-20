@@ -1,0 +1,12 @@
+name = "claim"
+packagesDir = "../../../.lake/packages"
+
+[[require]]
+name = "SigabaNeo"
+path = "../../.."
+
+[[lean_lib]]
+name = "Definitions"
+
+[[lean_lib]]
+name = "Solution"

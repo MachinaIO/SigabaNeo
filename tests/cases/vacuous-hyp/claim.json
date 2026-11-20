@@ -1,0 +1,7 @@
+{
+ "target": "TestCase.Vacuous.strong",
+ "hypotheses": [
+  "TestCase.Vacuous.target",
+  "TestCase.Echo.target"
+ ]
+}

@@ -1,0 +1,6 @@
+{
+ "target": "TestCase.EvLWE.target",
+ "hypotheses": [
+  "TestCase.EvLWE.lwe"
+ ]
+}
