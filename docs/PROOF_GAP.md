@@ -634,7 +634,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
   left. The unconditional 1% quantile requires averaging over histories (BH).
-* **Frontier after Parts 1–109 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 110 (audited).** [additive_tour](research/wall1_additive_tour.md): an additive recursion over the first tour fails.
+  The propagated threshold contracts by √3/2 per projection even with zero fresh-layer charges. The exact averaged layer count
+  #(L_k ∩ B)/|kH| is valid but cannot rescue it. Tracking the final subunit run gives zero-failure floors of
+  8.7·10⁻⁶ / 5.3·10⁻⁶ × own GH. Diagnosis: short terminal vectors trace back to earlier window vectors longer than GH, where
+  counting is powerless. A tool that captures the conditioning effect of the SVP selections is missing.
+* **Frontier after Parts 1–110 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
