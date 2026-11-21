@@ -572,7 +572,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   (< 1.014·10⁻¹³) and the tail (< 10⁻⁵⁰⁷) are harmless. Each nonintegral residue has weight < 0.587 (Part 92 event). The
   ceilings A_k ≤ 10⁴⁸ / 10⁴⁹ (rank 505 / 506) would give higher-height failure < 0.004 / 0.0021. Still open: multiplicity
   control of A_k, height one, and λ1(H) > 24.66.
-* **Frontier after Parts 1–99 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 100 (audited).** [residue_count](research/wall1_residue_count.md): the Part 99 budget cannot be met by summing over the
+  whole ambient dual. For every A the height-2 ambient weighted count exceeds 10^257. Prefixes engineered for the cosine weight
+  alone reach > 10^101 inside H*, but they do not pass the reduction tests. Open: the heat-weighted count inside H* for prefixes
+  that do pass the width-506 tests. Part 92's minimum event is sharpened to > 99.5888%.
+* **Frontier after Parts 1–100 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
