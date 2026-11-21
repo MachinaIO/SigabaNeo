@@ -40,6 +40,8 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
   (the noise reduces to `PE.Impl.RingBTVW`'s with `aᵢ = B₀ Rᵢ`, `eΨᵢ = e₀ Rᵢ`).
 * `DualUse.hybrid1` (hybrid 1, over any finite ring and coin laws: within
   `|J|·|W|·√(|R|·2^{−|Wd|})/2`).
+* `DualUse.hybrid4`, `DualUse.viewW_real_eq` (hybrid 4: encodings `c₀ W_j + e_j`, under a
+  flooding hypothesis; `SigabaNeo.Lattices.closeTo_floodLaw_add` gives it over `R_q`).
 * `DualUse.hybrid6`, `DualUse.finalView_indep` (hybrid 6 from the view `h5View`, and the final
   view does not depend on `(x, M)`).
 * `DualUse.keyLaw_real_eq_sim` (hybrid 2: real and simulated keys have the same law),
@@ -48,5 +50,5 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
 
 ## To do
 
-The laws of the coins (binary `Rᵢ`, boxes) and the probability of a correct decryption; hybrids 3–5 (from `hyb1View` to `h5View`), and the game (key oracle from `idealKeyLaw`); then the
+The laws of the coins (binary `Rᵢ`, boxes) and the probability of a correct decryption; hybrids 3 and 5 (Ring-LWE, from `viewW floodCj` to `h5View`), and the game (key oracle from `idealKeyLaw`); then the
 machines (`SigabaNeo.Lib.Machines.Randomized`, `Guarded`) and the machine-level propositions.

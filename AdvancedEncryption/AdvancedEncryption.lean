@@ -10,3 +10,4 @@ import PE.Impl.DualUse.Noise
 import PE.Impl.DualUse.Trapdoor
 import PE.Impl.DualUse.Hybrid1
 import PE.Impl.DualUse.Hybrid6
+import PE.Impl.DualUse.Hybrid4
