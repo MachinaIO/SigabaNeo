@@ -486,7 +486,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   all-bases radii (21–47× below 0.85·GSA). [canonical_bad_basis](research/wall1_canonical_bad_basis.md) (Part 85, Z2): local
   canonicalization cannot separate bad flags (window endpoints fix internal HKZ flags on generic lattices); rank-(k+1) prefix
   counting gives 0.00766 / 0.01704 at β = 406/506 (superseded by Part 84).
-* **Frontier after Parts 1–85 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 86 (audited; significant).** [dual_pinning](research/wall1_dual_pinning.md): bounding the rank-(k+1) prefix
+  covolume from the DUAL side. For bases reduced by Micciancio–Walter self-dual BKZ (Definition 1, produced by their Algorithm 1),
+  on Haar lattices of rank 1023 with probability ≥ 99%: **g_{1023−β} ≥ 0.1266 at β = 406 and ≥ 0.3655 at β = 506** — ≈ 19–21×
+  better than the best all-BKZ-bases bound (Part 84) and ≈ 34% / 45% of 0.85·GSA. Under Definition 1 no uniform bound exists at
+  β = 647 / 800 (k < β − 1 allows in-block changes with g_k → 0). Under the stronger 'primal and reversed dual both fully
+  BKZ-reduced' predicate the bounds are 0.1266 / 0.3655 / 0.5897 / 1.0181, but that predicate may be empty on typical lattices.
+  Deterministically (Part 48 event), width 985 under the stronger predicate.
+* **Frontier after Parts 1–86 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
