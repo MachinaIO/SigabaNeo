@@ -201,6 +201,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   [random_scale](research/wall1_random_scale.md) (signed-permutation averaging keeps the plant correlated with the prefix:
   TV distance 3/4 in a 4-dimensional example). **Consequence:** any β < d bound must use how the concrete slide/BKZ algorithm
   selects its output; reducedness, flags, monotonicity and symmetrization arguments are each refuted.
+* **Part 38 (audited, minor caveats).** [analyzable_reducer](research/wall1_analyzable_reducer.md): selection-bias bound
+  D_Ber(p‖h) ≤ I(A; P | U) between the bad-event probability p under the adaptive prefix P and h under an A-independent prefix
+  with the same conditional law; tight on the three-plane example (likelihood ratio constant on the event). Hence
+  p ≤ (I + 1)/log₂(1/h): a 2^-128 reference bound plus one bit of conditional design information would give p ≤ 1/64.
+  Caveats (audit): the 'I(U;P) = 0' illustration is the degenerate fixed-plant case; if the bad event depends on output rows or
+  coins R, I(A; P, R | U) is needed. Open: the reference bound in π_{P⊥}L_A and an information bound for a concrete reducer.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
