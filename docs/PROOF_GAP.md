@@ -122,8 +122,25 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   paper for separations in `[R/2, 3R/2]`, shell width `≍ 1/n`, `m ≥ n` and `R/m^{3/2} → ∞`
   ([research/qary.md](research/qary.md)). The general range and the higher-moment integrands are
   open, and the paper part is not in Lean. Modular coincidences at `m = 2n` are quantified there.
-* In progress: a Lean formalization of the algorithmic layer (S1–S5 as hypotheses), and a reverse
-  Minkowski dichotomy for (C).
+* **Reverse Minkowski dichotomy for (C) (new; negative;
+  [research/reverse_minkowski_blocks.md](research/reverse_minkowski_blocks.md)).** The idea was
+  that every block either has a dense sublattice (recurse into it) or is semistable, in which case
+  reverse Minkowski bounds the counts. **It fails on both branches.**
+  * A minimum-slope piece of the canonical filtration can miss every shortest vector.
+  * Semistable lattices can exceed the S1 and S2 predictions by exponential factors.
+  * Decisively, on `Z^n` squared norms are integers, so the sieve's thin terminal shell is
+    **empty** in infinitely many dimensions, also after any fixed-prime-index re-randomization.
+    The last transition then accepts nothing, which defeats T1 and the averaged route of
+    Remark A′. Non-vacuous S2 counterexamples are given in dimensions 168 and 1542 (exact
+    rational interval checks).
+  * Lean: `RevMink.card_le_of_gaussian_mass`, a count bound from a Gaussian-mass bound. Axioms
+    `propext`, `Classical.choice`, `Quot.sound`. The counterexamples are paper proofs.
+
+  Conclusion: the shell-based provable sieve is inherently average-case. It cannot certify the
+  sieve calls on arbitrary (worst-case) BKZ blocks. A growing, input-dependent re-randomization
+  index remains unexplored.
+* In progress: a Lean formalization of the algorithmic layer (S1–S5 as hypotheses), and the `q`-ary
+  sieving statistics (T4).
 * **Re-randomization for (C) (new; [research/rerandomization.md](research/rerandomization.md)).**
   Replace a block `B` by a uniformly random index-`p` sublattice. A tuple whose residues span
   dimension `r` survives with probability `(p^{d−r} − 1)/(p^d − 1)`, which gives exact moments of
