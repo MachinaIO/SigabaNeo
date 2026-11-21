@@ -1,4 +1,4 @@
-# Ring BTVW17 §4.2 with dual use and an efficient reduction (in progress)
+# Ring BTVW17 §4.2 with dual use and an efficient reduction
 
 The scheme in `PE/Impl/RingBTVW` encrypts the attribute with fresh Ring-LWE samples (as mxx's
 PE). Its security proof reduces the game laws exactly to Ring-LWE, but the reduction samples keys
@@ -50,7 +50,16 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
   `DualUse.valid_of_mem_support` (keys are valid unless the try aborts).
 * `SigabaNeo.Lattices.boxSample_eq` (hybrid 2's exactness).
 
+* `DualUse.attributeHiding` (`Security.lean`): **the whole chain**: for any continuation `D` (the
+  adversary with a key oracle depending on `mpk` only), the games for `(x₀, M₀)` and `(x₁, M₁)`
+  are within `2 (δ₁ + ε + δ₆)` plus the Ring-LWE advantages of the reductions of hybrids 3
+  (`reduction3`, secret `t`) and 5 (`reduction5`, normal form) for both challenges.
+
 ## To do
 
+* Instantiate the statistical terms over `R_q` (`δ₁`, `δ₆` from `|Wd|`, `ε` from the flooding
+  width), and link the instance laws (`inst3Real`, `nfReal`) to the registry's Ring-LWE.
+* The key oracle: keys from `idealKeyLaw`, sampled in the reductions with `simTrap W_f` (bounded
+  predicates, `GoodTrap` coverage).
 The laws of the coins (binary `Rᵢ`, boxes) and the probability of a correct decryption; hybrid 3 (the trapdoor part of `B` pseudorandom; from `trapRow` to `lawB₁u`), and the game (key oracle from `idealKeyLaw`); then the
 machines (`SigabaNeo.Lib.Machines.Randomized`, `Guarded`) and the machine-level propositions.
