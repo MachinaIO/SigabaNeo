@@ -86,6 +86,25 @@ theorem pi {ι α : Type} [Fintype ι] [Finite α] {μ : PMF α} {m : ℕ} (h : 
   rw [← pi_comp_equiv μ (Fintype.equivFin ι)]
   exact (pi_fin h _).map _
 
+/-- A ring element with independent coefficients from a bit law. -/
+theorem polyOf {N q : ℕ} [NeZero q] {χ : PMF (ZMod q)} {m : ℕ} (h : BitLaw χ m) :
+    BitLaw (Lattices.polyOf (N := N) χ) (N * m) := by
+  have := (pi (ι := Fin N) h).map Negacyclic.ofCoeffs
+  simpa [Lattices.polyOf] using this
+
+/-- **A uniform ring element** of `ℤ_{2^K}[X]/(X^N + 1)`: `N · K` bits. -/
+theorem uniform_ring (N K : ℕ) :
+    BitLaw (PMF.uniformOfFintype (Negacyclic (ZMod (2 ^ K)) N)) (N * K) := by
+  have : NeZero (2 ^ K) := ⟨by positivity⟩
+  have h := (pi (ι := Fin N) (uniform_zmod K)).map Negacyclic.ofCoeffs
+  rw [Cslib.Probability.PMF.pi_uniformOfFintype] at h
+  have he := Cslib.Probability.PMF.uniformOfFintype_map_equiv
+    (Negacyclic.coeffsEquiv (R := ZMod (2 ^ K)) (n := N)).symm
+  simp only [Fintype.card_fin] at h
+  rw [show (Negacyclic.ofCoeffs : (Fin N → ZMod (2 ^ K)) → _) =
+    (Negacyclic.coeffsEquiv (R := ZMod (2 ^ K)) (n := N)).symm from rfl, he] at h
+  exact h
+
 end BitLaw
 
 end SigabaNeo.Lattices
