@@ -241,6 +241,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   because consistency mod q forces a rank loss ≥ 106. Only β = d = 1024 is certified (< 2^-1900). Caveat: these witnesses
   have last Gram–Schmidt length ≈ |a|·‖b_k*‖ and are not BKZ-like; a family constrained by the per-index Part 6 profile (or
   a λ_1/last-GS condition) is not ruled out.
+* **Part 42 (audited, minor caveats).** [profile_union](research/wall1_profile_union.md): intrinsic BKZ/HKZ reducedness of a
+  prefix does not discard the Part 41 pencil (once the last spacing is large the displayed basis is HKZ); a basis-invariant
+  bound (any basis of B_a has a GS length ≥ ‖π(u + a b_k)‖) means per-index ceilings limit a — at the real parameters to
+  t_a ≲ 2^5.8 (dozens of a), versus 2^635 for the determinant-only family. Off-line competitor tuples lose ≥ 107 ranks mod q at
+  β = 406 and ≥ 1 at 512; at punctured width 647 the prefix is empty and Part 39 applies. No new width certified: the filtered
+  first moment at positive prefix rank is not evaluated, and whether divisible witnesses survive for every planted matrix at
+  406/647 is open.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
