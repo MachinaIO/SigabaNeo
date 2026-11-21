@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Security
+import PE.Impl.DualUse.IdealViews
 import PE.Impl.DualUse.Impl
 import PE.Impl.Game.Generic
 
@@ -216,5 +217,79 @@ theorem chain_real (A : Machine 3) {β : Type} (Dc : _ → PMF β) {ε δ₃ δ�
   exact (((g01.trans g12).trans h₃').trans h₅').trans g56
 
 end Views
+
+/-! ### The ideal side -/
+
+section Ideal
+
+variable [NeZero c.d]
+
+/-- The coins of `Enc`. -/
+noncomputable def lawCoinsC : PMF (EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)) :=
+  lawCoins (lawRestC hk c) (lawEc hk c)
+
+/-- `I0`: the ideal view, with the real public key and the simulator's uniform ciphertext. -/
+noncomputable def VI0 (_ : Date) : PMF (PK hk c × CT hk c) :=
+  idealView (S := Sdw (N := N) hk) (Wd := Fin c.d) (lawB₁r hk c)
+
+/-- `I1`: `B_j = B₀ W_j + ψ_j G̲` for an internal encryption of `x`. -/
+noncomputable def VI1 (x : Date) : PMF (PK hk c × CT hk c) :=
+  hybI1 (lawB₁r hk c) (PMF.uniformOfFintype _) (lawCoinsC hk c) (bitsOf x)
+
+/-- The view of the ideal side's Ring-LWE step for the pair `(a, b)`. -/
+noncomputable def FI (x : Date)
+    (ab : Matrix (Fin 1) (Col k) (Rg N K) × Matrix (Fin 1) (Col k) (Rg N K)) :
+    PMF (PK hk c × CT hk c) :=
+  hybI1 (PMF.pure (toB₁ (Sdw (N := N) hk) ab)) (PMF.uniformOfFintype _) (lawCoinsC hk c) (bitsOf x)
+
+/-- `I2`: `B₁` uniform. -/
+noncomputable def VI2 (x : Date) : PMF (PK hk c × CT hk c) :=
+  hybI1 lawB₁u (PMF.uniformOfFintype _) (lawCoinsC hk c) (bitsOf x)
+
+theorem VI1_close (x : Date) :
+    CloseTo (VI0 hk c x) (VI1 hk c x) (delta1 (Sdw (N := N) hk) (Fin c.d)) :=
+  (hybridI1 (S := Sdw (N := N) hk) (Wd := Fin c.d) (lawB₁r hk c) (lawCoinsC hk c) (bitsOf x)).symm
+
+theorem VI1_eq (x : Date) : VI1 hk c x = (inst3Real (k := k) (χR c)).bind (FI hk c x) := by
+  unfold VI1 lawB₁r
+  refine (hybI1_bind_B₁ (S := Sdw (N := N) hk) (Wd := Fin c.d) _ _ _ (bitsOf x)).trans ?_
+  rw [PMF.bind_map]
+  rfl
+
+theorem VI2_eq (x : Date) : VI2 hk c x = inst3Unif.bind (FI hk c x) := by
+  unfold VI2
+  refine (hybI1_bind_B₁ (S := Sdw (N := N) hk) (Wd := Fin c.d) lawB₁u _ _ (bitsOf x)).trans ?_
+  rw [← inst3Unif_map (S := Sdw (N := N) hk), PMF.bind_map]
+  rfl
+
+theorem VI2_close (x : Date) :
+    CloseTo (VI2 hk c x) (V6 hk c x) (delta1 (Sdw (N := N) hk) (Fin c.d)) := by
+  have h := hybridI1 (S := Sdw (N := N) hk) (Wd := Fin c.d) lawB₁u (lawCoinsC hk c) (bitsOf x)
+  rw [idealView_eq_final lawB₁u (lawEc hk c) (bitsOf x) false] at h
+  exact h
+
+/-- **The ideal experiment is close to the final one.** -/
+theorem chain_ideal (A : Machine 3) {β : Type} (Dc : _ → PMF β) {δ : ℝ≥0∞}
+    (h₃ : CloseTo ((inst3Real (k := k) (χR c)).bind fun ab =>
+        (gameV hk c encMPK encCT KGi authB A fun x => FI hk c x ab).bind Dc)
+      (inst3Unif.bind fun ab => (gameV hk c encMPK encCT KGi authB A fun x => FI hk c x ab).bind Dc) δ) :
+    CloseTo ((gameV hk c encMPK encCT KGi authB A (VI0 hk c)).bind Dc)
+      ((gameV hk c encMPK encCT KGi authB A (V6 hk c)).bind Dc)
+      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δ +
+        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d)) := by
+  have g01 := (gameV_close hk c encMPK encCT KGi authB A (VI1_close hk c)).bind_left Dc
+  have g23 := (gameV_close hk c encMPK encCT KGi authB A (VI2_close hk c)).bind_left Dc
+  have e1 : gameV hk c encMPK encCT KGi authB A (VI1 hk c) =
+      (inst3Real (k := k) (χR c)).bind fun ab => gameV hk c encMPK encCT KGi authB A fun x => FI hk c x ab := by
+    rw [← gameV_bind]; congr 1; funext x; exact VI1_eq hk c x
+  have e2 : gameV hk c encMPK encCT KGi authB A (VI2 hk c) =
+      inst3Unif.bind fun ab => gameV hk c encMPK encCT KGi authB A fun x => FI hk c x ab := by
+    rw [← gameV_bind]; congr 1; funext x; exact VI2_eq hk c x
+  have h₃' : CloseTo ((gameV hk c encMPK encCT KGi authB A (VI1 hk c)).bind Dc)
+      ((gameV hk c encMPK encCT KGi authB A (VI2 hk c)).bind Dc) δ := by
+    rw [e1, e2, PMF.bind_bind, PMF.bind_bind]; exact h₃
+  exact (g01.trans h₃').trans g23
+
+end Ideal
 
 end AdvancedEncryption.DualUse
