@@ -192,3 +192,48 @@ theorem sampleList_pi {α β : Type} [Inhabited α] [Finite β] (d : PMF α) (f 
     rw [hcomp, PMF.map_comp]
 
 end SigabaNeo.Lattices
+
+namespace SigabaNeo.Lattices
+
+open Cslib Cslib.Probability
+open scoped ENNReal
+
+/-- Replacing one coordinate of an independent product by an `ε`-close law. -/
+theorem closeTo_pi_update {ι α : Type} [Fintype ι] [DecidableEq ι] [Finite α]
+    (r : ι → PMF α) (i : ι) {a b : PMF α} {ε : ℝ≥0∞} (h : CloseTo a b ε) :
+    CloseTo (PMF.pi (Function.update r i a)) (PMF.pi (Function.update r i b)) ε := by
+  have law (c : PMF α) : PMF.pi (Function.update r i c) =
+      c.bind (fun v => PMF.pi (Function.update r i (PMF.pure v))) := by
+    simpa only [Function.update_self, Function.update_idem] using
+      (PMF.pi_bind_update (Function.update r i c) i).symm
+  rw [law a, law b]
+  exact h.bind_left _
+
+open Classical in
+/-- **Independent products**: coordinatewise closeness adds up. -/
+theorem closeTo_pi {ι α : Type} [Fintype ι] [DecidableEq ι] [Finite α] (p q : ι → PMF α)
+    (ε : ι → ℝ≥0∞) (h : ∀ i, CloseTo (p i) (q i) (ε i)) :
+    CloseTo (PMF.pi p) (PMF.pi q) (∑ i, ε i) := by
+  have bound (s : Finset ι) :
+      CloseTo (PMF.pi fun j => if j ∈ s then p j else q j) (PMF.pi q) (∑ i ∈ s, ε i) := by
+    induction s using Finset.induction_on with
+    | empty => simp
+    | @insert i s hi ih =>
+      let mixed := fun j => if j ∈ s then p j else q j
+      have e1 : (fun j => if j ∈ insert i s then p j else q j) = Function.update mixed i (p i) := by
+        funext j
+        by_cases hji : j = i
+        · subst hji; simp
+        · simp [mixed, Function.update_of_ne hji, hji]
+      have e2 : mixed = Function.update mixed i (q i) := by
+        funext j
+        by_cases hji : j = i
+        · subst hji; simp [mixed, hi]
+        · simp [Function.update_of_ne hji]
+      rw [e1, Finset.sum_insert hi]
+      have step := closeTo_pi_update mixed i (h i)
+      rw [← e2] at step
+      exact step.trans ih
+  simpa using bound Finset.univ
+
+end SigabaNeo.Lattices
