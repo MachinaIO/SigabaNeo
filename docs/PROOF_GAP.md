@@ -55,6 +55,24 @@ The attacks that `H` takes into account are therefore not replaced by proven one
 heuristic attacks would raise `H` for Kyber512 from 139 to several hundred bits, an
 overestimate. `H` keeps the estimator's model, and this file records the distance.
 
+## Wall 1: the average-case BKZ profile on random `q`-ary lattices (in progress)
+
+* **First step (new; [research/avg_bkz.md](research/avg_bkz.md); audit pending).** For an i.i.d.
+  uniform prime-field parity-check matrix, one fixed coordinate projection preserves an exact
+  random modular-kernel law. Given that the prefix columns span `S`, the projected lattice is the
+  modular kernel of independent uniform columns in the quotient by `S`. Before BKZ, the next
+  Gram–Schmidt length of the coordinate-adapted basis is `q` with probability `1 − q^{r−n}` and
+  `1` otherwise.
+* **Obstruction.** Once the prefix spans the syndrome space, the projected lattice is exactly
+  `Z^{d−t}`, the thin-shell-empty type. So random coordinate orderings and internal basis changes
+  alone cannot enforce the sieve's statistics.
+* Lean: `AvgBKZ.coordinateProjection` and `AvgBKZ.quotientColumnCount`. Axioms `propext`,
+  `Classical.choice`, `Quot.sound`.
+* Open, and the core of wall 1:
+  * the law of the adaptively reduced prefix (after BKZ);
+  * the projection bound for the planted vector;
+  * the resulting provable block size and cost for Kyber.
+
 ## Stage 2 (planned): the uSVP success condition on random q-ary lattices
 
 Average-case bounds on `λ_2` and on the projected target from Siegel-type mean value theorems or
