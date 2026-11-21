@@ -29,6 +29,14 @@ oracle depends on `mpk` only and the game is a fixed continuation `run` of the l
 **Security** (`attributeHiding`): the games for `(x₀, M₀)` and `(x₁, M₁)` are within `δ₀ + δ₁`, the
 Ring-LWE advantages of the explicit distinguishers `reduction A x₀ x₁ x₀ M₀` and
 `reduction A x₀ x₁ x₁ M₁`. No statistical step remains.
+
+**Limitation: the reduction is not efficient.** The distinguishers answer key queries by drawing
+from the key sampler's law at `(B, B_f̂, p)` (the ideal law, `keyOracle`), with no trapdoor of
+`B` or of `[B | B_f̂]`. The statement is an exact equality of laws, but it does not bound the
+cost of the distinguishers, so it does not yet give attribute hiding against Ring-LWE as a
+computational assumption. BTVW17 simulates keys with the trapdoor `W_f` of
+`[B | B W_f + f(x) G]` after setting `B_j = B W_j + ψ_j G̲`; over this ring that needs
+`(B, B W_j, e₀ W_j)` to be indistinguishable from `(B, U, e₀ W_j)`, which is not formalized.
 -/
 
 namespace AdvancedEncryption.RingBTVW

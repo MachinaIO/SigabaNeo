@@ -29,14 +29,17 @@ With columns `W = Fin 2 × Fin k`, the Ring-GSW gadget `G ∈ R^{2×W}` and its 
 The paper encrypts the attribute under `Ψᵢ = A Rᵢ + xᵢ G` with `A = [B; sB + e]` and binary `Rᵢ`,
 which needs the leftover hash lemma; here, as in mxx's predicate encryption (`crates/pe`, attribute
 ciphertexts `[a_t; s a_t + e_t] + … G` with fresh `a_t`), every `Ψᵢ` uses fresh Ring-LWE samples
-under the same `s`, and Ring-LWE alone hides `x` (`PE.Impl.RingBTVW.Security`).
+under the same `s`, and the laws of the games reduce exactly to Ring-LWE instances
+(`PE.Impl.RingBTVW.Security`; the reduction samples keys from their ideal law, so it is not yet an
+efficient reduction).
 
 **Correctness** (BTVW17 Theorem 4.1). If `f(x) = 0`, then `κ − κ' = M ⌊q/2⌋ + noise` with the noise
 given explicitly (`decryptRaw_eq`): it is `e'` minus `[e₀ | E_BGG − E_GSW] sk`, with `E_BGG` the
 BGG+ evaluation error and `E_GSW` the Ring-GSW evaluation error. Over `R_q`, decryption returns `M`
 when the constant coefficient of the noise is below `q/4` (`decrypt_correct`, `scheme_correct`).
 
-**Security** (BTVW17 Theorem 4.2): under Ring-LWE alone, with no statistical step
+**Security** (BTVW17 Theorem 4.2): an exact reduction of the laws to Ring-LWE, with no statistical step,
+whose distinguishers sample keys from the ideal key law (not yet efficient)
 (`PE.Impl.RingBTVW.Security.attributeHiding`).
 
 **Predicates.** A setting has its own predicates (`Setting.Pred`), each with a circuit
