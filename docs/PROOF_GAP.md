@@ -543,7 +543,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Part 92 bound, and it never drops below 0.85·GSA at any width up to 1023. A tail-GS profile cutoff (√((1+2d)(1+a²))) drops
   below it only from width 892. So terminal-length bounds alone cannot certify uniqueness below 647. The missing input is
   distributional control of the coset distances dist(ky, H), using independence of u (Part 47).
-* **Frontier after Parts 1–94 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 95 (audited, minor caveats).** [hkz_terminal](research/wall1_hkz_terminal.md): HKZ-reducing only the last t columns
+  cannot improve Part 88, because a free intermediate prefix can make the last height arbitrarily small. Completing the
+  intermediate prefix by recursive dual SVP (≤ 60 exact calls, all in dimension < β) bounds all 60 tail heights at once. Jointly
+  at both widths, with probability > 99%, the fractions of row-specific 0.85·GSA are: block head 33.94% / 44.33%, literal last
+  height 52.00% / 61.76% (deterministic for this completion). On the q-ary ensemble the heads are 15.85% / 15.81%. No GSA slope
+  follows.
+* **Part 96 (audited, minor caveats).** [rankin_twin](research/wall1_rankin_twin.md): the Part 88 twin determinant cap is sharp
+  (an orthogonal basis attains it), so Rankin or Minkowski inequalities cannot improve it. Stronger predicates do improve it, but
+  each needs rank-617 / 517 conditions above β:
+  * a minimum-area plane test gives 0.2626 at 406, up from 0.1257;
+  * exact SVP on both twin blocks gives 0.2819 / 0.3781.
+
+  Ceilings for the uniform-cap Markov method with exact twins are 0.3850 / 0.5184. That excludes the 0.85·GSA target at 506 and
+  leaves 406 open.
+* **Frontier after Parts 1–96 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
