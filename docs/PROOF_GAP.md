@@ -151,6 +151,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   reduction trajectories almost surely tie-free and locally stable, but an arbitrarily small anisotropic perturbation still gives
   conditional tail probabilities 1/3 vs 1/2 for two histories at almost every common covolume. Isotropic smoothing and
   profile-only conditioning remain open.
+* **Part 19 (audited; [research/wall1_profile.md](research/wall1_profile.md)).** Given the history of selected lines, even the
+  full Gram–Schmidt profile does not determine the next block's law, with uniform random tie-breaking: dimension 3 (revisits,
+  same profile and current block, 4/5 vs 0; dimension-minimal) and dimension 5 (one forward sweep, 1/3 vs 2/5). Open: the
+  process observed through successive scalar profiles only.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
