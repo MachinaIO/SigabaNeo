@@ -202,7 +202,8 @@ theorem closeTo_of_agree_good {α : Type} {μ ν : PMF (α × Option U.Attr × O
     _ = ν.toOuterMeasure (E ∩ good) + ν.toOuterMeasure bad := by rw [hEg, hbad]
     _ ≤ ν.toOuterMeasure E + pBad ν := by
       gcongr
-      exact Set.inter_subset_left
+      · exact Set.inter_subset_left
+      · exact le_rfl
 
 include hsetup hpub hchal hauth hkey in
 /-- **Identical until bad, observably**: the two experiments are within the probability of the
