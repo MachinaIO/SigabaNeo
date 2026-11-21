@@ -15,17 +15,18 @@ axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 | --- | --- |
 | `BKZ.first_log_bound` | a Gram–Schmidt log-profile in which each block of size `k_i = min(β, n−i)` satisfies Hermite's inequality with constant `c` has Hermite factor `r_0 − S_n/n ≤ c (n−1)/(β−1) + c`, that is `Γ_β^{(n−1)/(2(β−1)) + 1/2}` with `c = ½ log Γ_β`, `Γ_β = max_{k≤β} γ_k` |
 | `BKZ.hermite_cube` | Minkowski: every full-rank lattice in `ℝ^k` has a nonzero vector with `‖v‖² ≤ k · covol^{2/k}`, so `γ_k ≤ k` |
-| `BKZ.projected_profile`, `BKZ.first_norm_bound` | for a fully BKZ-β-reduced basis, `‖b_1‖ ≤ β^{(n−1)/(2(β−1)) + 1/2} det(L)^{1/n}` |
+| `BKZ.projected_profile`, `BKZ.first_norm_bound` | the same bound from caller-supplied projected block data |
+| `BKZ.reduced_first_norm_bound_covolume` | for a BKZ-β-reduced basis `b` of `L` (built with Mathlib's `gramSchmidt`; every projected block's first vector is shortest), `‖b_0‖ ≤ β^{(n−1)/(2(β−1)) + 1/2} covol(L)^{1/n}` |
+| `BKZ.blockLattice_covolume`, `BKZ.basis_covolume` | the covolume of a projected block, and of the lattice, is the product of the Gram–Schmidt lengths |
+| `BKZ.hermite_ball` | Minkowski with the ball volume: some nonzero lattice vector has `‖v‖ ≤ 2 (covol / V_k)^{1/k}`, `V_k = π^{k/2}/Γ(k/2+1)` |
 
 **Open in stage 1:**
 
-* The projected block lattices, their covolumes and the "first vector is shortest" condition are
-  hypotheses supplied by the caller. Building them from a basis with Mathlib's `gramSchmidt` is
-  not proved.
 * The HPS theorem for polynomially many tours (`2 Γ_β^{(n−1)/(2(β−1)) + 3/2}`) and its tour count
   are not proved. Only the fully reduced case is.
-* Sharper Hermite constant bounds (`γ_β ≤ 1 + β/4`, Blichfeldt) are not proved in Lean. Only
-  `γ_k ≤ k` is.
+* Sharper Hermite constant bounds (`γ_β ≤ 1 + β/4`, Blichfeldt) are not proved in Lean. `γ_k ≤ k`
+  and the ball-volume form of Minkowski (`hermite_ball`) are; deriving `1 + k/4` from the latter
+  is open.
 * The approximation-factor bound `‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1` used below (Schnorr) is not
   formalized.
 
