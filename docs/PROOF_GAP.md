@@ -435,8 +435,13 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   D = 647..662 (e.g. [1956.928, 1956.947] at 647; nearest integer ≥ 0.0528 away), so the last merge aborts for every
   design and plant: no proven sieve cost for the Part 39 SVP call. Also: exact planted tuple identity (order ≤ 3), a
   modular-deficit example, and the observation that DL26's S4 chain (1 + 1/ℓ)R* < R_cat fails at ℓ = 7. Wider shells
-  remove the integrality obstruction but their acceptance and plant coverage are unproved (irrational embedding height:
-  in progress).
+  remove the integrality obstruction but their acceptance and plant coverage are unproved.
+* **Planted sieve with irrational height (audited; negative; [research/planted_sieve_scaled.md](research/planted_sieve_scaled.md)).**
+  At D = 647, squared height h ∈ [1.02076213, 1.02076215] populates the terminal shell (≈ 12× the Siegel prediction, i.e. S1
+  fails by overpopulation) and keeps Part 39's uniqueness ≥ 0.99516648; yet the prescribed sieve accepts nothing: source
+  heights are {9, 30}, only height-0 differences reach the terminal shell, where parity excludes every pair, and all terminal
+  heights are multiples of 17 so the height-1 plant is never found. For any plant-independent height law the plant lies in
+  the terminal shell with probability < 0.008109. No planted-sieve exponent is certified.
 * **Reverse Minkowski dichotomy for (C) (new; negative;
   [research/reverse_minkowski_blocks.md](research/reverse_minkowski_blocks.md)).** The idea was
   that every block either has a dense sublattice (recurse into it) or is semistable, in which case
