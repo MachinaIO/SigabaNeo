@@ -317,7 +317,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   at β = 406/506/647/800; crossing-block tests and exponential suppression are open); [literature2](research/wall1_literature2.md)
   (Part 56: no theorem gives the needed quantile; closest: Laarhoven Prop. 3, Joux–Węgrzycki's all-coordinate slide upper
   bound, El-Baz–Lee–Strömbergsson's Hecke rate; conditioning a uniform kernel to the graph law costs < 1/3328 in TV).
-* **Frontier after Parts 1–56 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 57 (audited, minor caveats).** [volume_suppression](research/wall1_volume_suppression.md): for a fixed profile, short
+  counts grouped by last nonzero column are orthogonal martingale differences (deterministic conditional means), giving
+  Pr(pass) ≤ T/(E² + T) — at best order-1/E, not exponential suppression; a conditional product over all crossing starts; one
+  crossing test retained in the integral removes positive mass but changes no displayed digit. Certified Haar terminal radii stay
+  0.0058/0.0154/0.0392/0.1399 (β = 406/506/647/800) vs targets 0.86–1.21; the bound's modal prefix covolume (log ≈ 420) is far
+  from GSA (≈ 984). A uniform exp(−cE) suppression over overlapping tests remains the missing ingredient.
+* **Frontier after Parts 1–57 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
