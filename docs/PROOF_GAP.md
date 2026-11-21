@@ -268,13 +268,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   excluding congruence shifts the selection law by TV 1 − 1/r. At β = 406, 99% terminal uniqueness needs I((A,U);P) > 670.82
   bits; at 512 an A- and plant-independent plane succeeds w.p. < 9.03·10⁻⁸; at 647 (Part 39 deletion) the terminal shell is a
   single line w.p. ≥ 0.99516648 for ε < 8.598·10⁻⁵. The randomized reducer's failure probability on the full input is not bounded.
-* **Frontier after Parts 1–43 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 46 (audited, minor caveats).** [haar_prefix_law](research/wall1_haar_prefix_law.md): on Haar lattices, the
+  quotient by a shortest vector of length r has an exact law (Haar tilted by a torus-avoidance probability; transverse
+  minima below (√3/2)·r excluded), TV distance from Haar ≤ min(1, V_n r^n/2) for n ≥ 3 — small only when b_1 is atypically
+  short; the full HKZ profile has an exact recursive joint density (estimator acceptance 2^{-n(n−1)/2}, infeasible at scale);
+  primitive Palm-plant capture probability is explicit. Laarhoven 2610.15265 Prop. 3 (checked) controls prefix covolumes only
+  to o(n log n). Checked numerically in d = 2, 3. Does not give a finite-width slide/BKZ law or transfer to planted q-ary lattices.
+* **Frontier after Parts 1–46 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
   (Part 40, ≥ 2^679 planes needed at 406), union bounds over all bounded-covolume sublattices (Part 41, fails for β ≤ 1007)
-  and over profile-admissible prefixes (Parts 42–43, mean > 2^163 at 647). Any proof at the estimator's β ≈ 406 must use the
-  concrete reducer's selection rule.
+  and over profile-admissible prefixes (Parts 42–43, mean > 2^163 at 647); the q-ary Z-shape only re-derives Part 39 (Part 44);
+  randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
+  are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
+  reducer's output distribution — an open research problem.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ) — the only remaining route;
   * the projection bound for the planted vector under that law;
