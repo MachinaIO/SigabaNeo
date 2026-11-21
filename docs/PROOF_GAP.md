@@ -608,7 +608,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   step. For a Haar block of rank b, the projected shape conditional on λ1 = GH_b has density ≤ 2 with respect to Haar.
   Unconditionally, Pr[normalized quotient minimum < 0.925·GH_{b−1}] < 0.0233% at b = 406 and < 0.0063% at b = 506. Tour-level
   chaining is open: the law of the appended column given the history is missing.
-* **Frontier after Parts 1–105 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 106 (audited).** [chain_law](research/wall1_chain_law.md): Part 105 cannot be chained uniformly over selectors. A
+  rotation-equivariant fresh-basis selector forces the terminal minimum below any fraction of its own GH, at ranks b and b − 1,
+  on every parent. So there is no selector-uniform density bound and no selector-independent terminal certificate. A proof must
+  use the concrete reducer's inherited sliding window.
+* **Frontier after Parts 1–106 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
