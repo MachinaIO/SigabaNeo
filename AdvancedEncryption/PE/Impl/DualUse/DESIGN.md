@@ -57,8 +57,9 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
 
 ## To do
 
-* Instantiate the statistical terms over `R_q` (`δ₁`, `δ₆` from `|Wd|`, `ε` from the flooding
-  width), and link the instance laws (`inst3Real`, `nfReal`) to the registry's Ring-LWE.
+* Instantiate the statistical terms over `R_q` (`δ₁`, `δ₆` from `|Wd|`); `ε` is
+  `DualUse.flood_hyp`. The instance laws are linked to the registry's Ring-LWE
+  (`DualUse.attributeHiding_rlwe`).
 * The key oracle: keys from `idealKeyLaw`, sampled in the reductions with `simTrap W_f` (bounded
   predicates, `GoodTrap` coverage).
 The laws of the coins (binary `Rᵢ`, boxes) and the probability of a correct decryption; hybrid 3 (the trapdoor part of `B` pseudorandom; from `trapRow` to `lawB₁u`), and the game (key oracle from `idealKeyLaw`); then the

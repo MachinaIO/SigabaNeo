@@ -9,7 +9,11 @@ Over `R_q = ℤ_q[X]/(X^N + 1)`, with the error law `χ = polyOf χc` (independe
 (`SigabaNeo.Lattices.ringRealOn`), which are the registry's (`ringLWE_realLaw_eq`):
 
 * `nfReal_eq`, `nfUnif_eq`: hybrid 5, normal form (secret law = error law), with the samples
-  indexed by `Wd ⊕ W ⊕ W ⊕ Unit` and the public parts negated.
+  indexed by `Wd ⊕ W ⊕ W ⊕ Unit` and the public parts negated;
+* `inst3Real_eq`, `inst3Unif_eq`: hybrid 3 (secret `t`);
+* `attributeHiding_rlwe`: attribute hiding with the Ring-LWE advantages those of explicit
+  distinguishers (`word3`, `word5`) between the registry's real and uniform laws
+  (`ModuleLWE.realLaw`, `idealLaw` of `params3`, `params5`).
 -/
 
 namespace AdvancedEncryption.DualUse
@@ -191,5 +195,91 @@ theorem inst3Unif_eq :
   rw [show (split3 : _ → Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N) × _) = e from rfl,
     Cslib.Probability.PMF.uniformOfFintype_map_equiv]
   rfl
+
+section Registry
+
+variable {S : Setting (Negacyclic (ZMod q) N) k} [Fintype S.Attr] [DecidableEq S.Attr]
+  [DecidableEq S.ctBits.Index] [Nonempty Wd]
+
+variable (N q k) in
+/-- The registry's Ring-LWE parameters of hybrid 3: `|W|` samples, secret law = error law. -/
+def params3 (err : SecretDist) : RingLWE.Params :=
+  ⟨N, Fintype.card (Col k), q, err, err, NeZero.pos q⟩
+
+variable (N q k Wd) in
+/-- The registry's Ring-LWE parameters of hybrid 5: `|Wd| + 2|W| + 1` samples, normal form. -/
+def params5 (err : SecretDist) : RingLWE.Params :=
+  ⟨N, Fintype.card (Idx5 Wd k), q, err, err, NeZero.pos q⟩
+
+/-- The word distinguisher of hybrid 3. -/
+noncomputable def word3 (err : SecretDist)
+    (lawE : PMF (S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)))
+    (x : S.Attr → Bool) (M : Bool)
+    (D : MPK S Wd (TrapCol k) × Ciphertext S Wd (TrapCol k) → PMF Bool) : List Bool → PMF Bool :=
+  wordDist (Fintype.equivFin (Col k) : Col k ≃ Fin (params3 N q k err).m)
+    fun v => reduction3 lawE (polyOf (ModuleLWE.coeffLaw q err)) x M D (split3 v)
+
+/-- The word distinguisher of hybrid 5. -/
+noncomputable def word5 (err : SecretDist)
+    (lawE : PMF (S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)))
+    (x : S.Attr → Bool) (M : Bool)
+    (D : MPK S Wd (TrapCol k) × Ciphertext S Wd (TrapCol k) → PMF Bool) : List Bool → PMF Bool :=
+  wordDist (Fintype.equivFin (Idx5 Wd k) : Idx5 Wd k ≃ Fin (params5 N q k Wd err).m)
+    fun v => (reduction5 (S := S) lawRmBin lawE x M (split5 v)).bind D
+
+/-- **Attribute hiding under the registry's Ring-LWE**: as `DualUse.attributeHiding`, with the
+Ring-LWE advantages those of explicit distinguishers (`word3`, `word5`) between the registry's real
+and uniform laws, for the error law `err` (also the secret law: normal form). -/
+theorem attributeHiding_rlwe (err : SecretDist)
+    (lawE : PMF (S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)))
+    (D : MPK S Wd (TrapCol k) × Ciphertext S Wd (TrapCol k) → PMF Bool)
+    (x₀ x₁ : S.Attr → Bool) (M₀ M₁ : Bool) {ε δ₃₀ δ₃₁ δ₅₀ δ₅₁ : ℝ≥0∞}
+    (hflood : ∀ rest ∈ (lawRestNF (S := S) (Wd := Wd) lawRmBin
+        (polyOf (ModuleLWE.coeffLaw q err))).support,
+      ∀ w : JC S → (Wd → Bool), CloseTo (lawE.map fun e j => e j + rest.2.1 * wMat w j) lawE ε)
+    (h₃₀ : CloseTo ((ModuleLWE.realLaw (params3 N q k err).toModule).bind (word3 err lawE x₀ M₀ D))
+      ((ModuleLWE.idealLaw (params3 N q k err).toModule).bind (word3 err lawE x₀ M₀ D)) δ₃₀)
+    (h₃₁ : CloseTo ((ModuleLWE.realLaw (params3 N q k err).toModule).bind (word3 err lawE x₁ M₁ D))
+      ((ModuleLWE.idealLaw (params3 N q k err).toModule).bind (word3 err lawE x₁ M₁ D)) δ₃₁)
+    (h₅₀ : CloseTo ((ModuleLWE.realLaw (params5 N q k Wd err).toModule).bind
+        (word5 err lawE x₀ M₀ D))
+      ((ModuleLWE.idealLaw (params5 N q k Wd err).toModule).bind (word5 err lawE x₀ M₀ D)) δ₅₀)
+    (h₅₁ : CloseTo ((ModuleLWE.realLaw (params5 N q k Wd err).toModule).bind
+        (word5 err lawE x₁ M₁ D))
+      ((ModuleLWE.idealLaw (params5 N q k Wd err).toModule).bind (word5 err lawE x₁ M₁ D)) δ₅₁) :
+    CloseTo ((realGame lawE (polyOf (ModuleLWE.coeffLaw q err)) x₀ M₀).bind D)
+      ((realGame lawE (polyOf (ModuleLWE.coeffLaw q err)) x₁ M₁).bind D)
+      ((delta1 S Wd + ε + δ₃₀ + δ₅₀ + delta6 S Wd) + (delta1 S Wd + ε + δ₃₁ + δ₅₁ + delta6 S Wd)) := by
+  have r3 : ∀ x M, (inst3Real (polyOf (N := N) (ModuleLWE.coeffLaw q err))).bind
+        (reduction3 (Wd := Wd) lawE (polyOf (ModuleLWE.coeffLaw q err)) x M D) =
+      (ModuleLWE.realLaw (params3 N q k err).toModule).bind (word3 err lawE x M D) := by
+    intro x M
+    rw [inst3Real_eq, PMF.bind_map, word3]
+    exact (realLaw_bind_wordDist (params3 N q k err) (Fintype.equivFin (Col k)) _).symm
+  have u3 : ∀ x M, inst3Unif.bind
+        (reduction3 (Wd := Wd) lawE (polyOf (ModuleLWE.coeffLaw q err)) x M D) =
+      (ModuleLWE.idealLaw (params3 N q k err).toModule).bind (word3 err lawE x M D) := by
+    intro x M
+    rw [inst3Unif_eq, PMF.bind_map, word3]
+    exact (idealLaw_bind_wordDist (params3 N q k err) (Fintype.equivFin (Col k)) _).symm
+  have r5 : ∀ x M, ((nfReal (polyOf (N := N) (ModuleLWE.coeffLaw q err))).bind fun i =>
+        (reduction5 (S := S) (Wd := Wd) lawRmBin lawE x M i).bind D) =
+      (ModuleLWE.realLaw (params5 N q k Wd err).toModule).bind (word5 err lawE x M D) := by
+    intro x M
+    rw [nfReal_eq, PMF.bind_map, word5]
+    exact (realLaw_bind_wordDist (params5 N q k Wd err) (Fintype.equivFin (Idx5 Wd k)) _).symm
+  have u5 : ∀ x M, (nfUnif.bind fun i =>
+        (reduction5 (S := S) (Wd := Wd) lawRmBin lawE x M i).bind D) =
+      (ModuleLWE.idealLaw (params5 N q k Wd err).toModule).bind (word5 err lawE x M D) := by
+    intro x M
+    rw [nfUnif_eq, PMF.bind_map, word5]
+    exact (idealLaw_bind_wordDist (params5 N q k Wd err) (Fintype.equivFin (Idx5 Wd k)) _).symm
+  refine attributeHiding lawE _ D x₀ x₁ M₀ M₁ hflood ?_ ?_ ?_ ?_
+  · rw [r3, u3]; exact h₃₀
+  · rw [r3, u3]; exact h₃₁
+  · rw [r5, u5]; exact h₅₀
+  · rw [r5, u5]; exact h₅₁
+
+end Registry
 
 end AdvancedEncryption.DualUse
