@@ -2,6 +2,7 @@ module
 
 public import Mathlib
 public import SigabaNeo.Lib.Lattices.AvgBKZ.Plane
+public import SigabaNeo.Lib.Lattices.AvgBKZ.Selection
 
 /-! Coordinate projections of modular kernel lattices and the law of fresh quotient columns. -/
 

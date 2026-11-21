@@ -78,6 +78,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   alone cannot enforce the sieve's statistics.
 * Lean: `AvgBKZ.coordinateProjection` and `AvgBKZ.quotientColumnCount`. Axioms `propext`,
   `Classical.choice`, `Quot.sound`.
+* **Part 2 (obstruction; [research/avg_bkz2.md](research/avg_bkz2.md)).** The exact law fails after one
+  exact SVP selection. In dimension two the projected spacing lies strictly between 1 and `q` with
+  probability `≥ (1 − 1/q)²`. Lean: `AvgBKZ.planeShortestSq`, `AvgBKZ.planeNormalSq`.
+* **Part 3 (obstruction; [research/avg_bkz3.md](research/avg_bkz3.md)).** Few prefixes per BKZ run do
+  not justify a union bound over fixed prefixes, because of selection bias: fixed-index failure `1/N`,
+  yet a selecting run fails with probability 1. Lean: `AvgBKZ.diagonalSelectionCounts`,
+  `AvgBKZ.diagonalWeightHalf`.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
@@ -111,6 +118,20 @@ this route still needs:
 4. S5 initialization (`IdealUniformLeaves`). It is easier for `q`-ary lattices, since
    `qZ^d ⊂ Λ`.
 5. The bit model.
+
+**Obstruction found, and the repair to try ([research/planted_polyq.md](research/planted_polyq.md)).**
+At the Kyber512 shape `(q, n, m, d) = (3329, 512, 175, 688)`, S1 fails for **every** `A`. The
+terminal shell's squared-radius interval lies strictly inside `(4475, 4476)`, while every vector of
+the embedding lattice has integer squared norm. So the shell is empty, and S3′ fails too. Lean:
+`PolyQ.shell_empty_of_sq_gap` (the integer-spectrum obstruction; the endpoint inequalities were
+checked by exact rational arithmetic outside Lean).
+
+This is the `Z^n` obstruction again. The cause is the sieve's shell width `w = n^{−2}`, which is too
+thin for integer lattices: the squared-radius width is about `0.02`. The note's §4 already says
+integer lattices need width `Θ(1/n)`, giving a squared-radius width of about `13` at `d = 688`. That
+in turn needs the algorithmic layer to tolerate constant-factor variation of lens volumes across a
+shell (windows `[μ/C, Cμ]`). The Lean T1 (`prescribedScan_T1`) is stated for the thin shells, so it
+must be redone for wide shells. In progress.
 
 This does not replace walls 1 and 2: the estimator's cheaper BKZ-based attacks still have no
 proof. It is the cheapest attack whose cost proof is within reach.
