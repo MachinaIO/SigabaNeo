@@ -108,7 +108,8 @@ proof. It is the cheapest attack whose cost proof is within reach.
 ## Stage 2: the uSVP success condition with a planted vector (in progress)
 
 * **`λ₂` lower bound, polynomial `q` (new; [research/usvp_planted.md](research/usvp_planted.md);
-  paper proof, audit and Lean formalization pending).** For the plain-LWE embedding lattice
+  paper proof, audited: holds, [research/usvp_planted_audit.md](research/usvp_planted_audit.md);
+  Lean formalization of the probability bound in progress).** For the plain-LWE embedding lattice
   (`d = m + n + 1`, planted `(e, s, 1)` with coordinates bounded by `B`), and with
   `G = (q^m / V_d)^{1/d}` the Gaussian-heuristic radius:
   `Pr_A[λ₂(L) ≤ R] ≤ ((R + √d/2)/G)^d` whenever `R √(1 + B²) < q`.
