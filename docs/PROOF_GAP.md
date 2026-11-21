@@ -134,6 +134,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   holds in one and fails in the other — unmarked block statistics cannot certify recovery. [wall1_dynamics.md](research/wall1_dynamics.md):
   along an exact trajectory with a deterministic tie rule, the next block's law is not determined by its covolume (1/3 vs 1/2);
   random tie-breaking removes this discrepancy in the example.
+* **Part 15 (audited; [research/wall1_fresh_samples.md](research/wall1_fresh_samples.md)).** A norm cutoff on the planted vector
+  couples disjoint sample batches even with a fixed secret (two-sample example: 1/3 versus 1/2 or 0 after one observed bit);
+  with errors fixed in advance the design coefficients stay independent. Open: whether a fresh batch represents the original
+  projected block and keeps the planted line.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
