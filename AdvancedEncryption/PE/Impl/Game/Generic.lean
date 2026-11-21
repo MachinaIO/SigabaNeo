@@ -277,8 +277,11 @@ theorem runWith_congr_support {α : Type} (sp sp' : Spec U Sig) (hsetup : sp'.se
         · obtain ⟨y, hy, hσ⟩ := hs σ rfl
           simp only [Option.some.injEq] at hy
           subst hy
-          simp only [oracle, oracleWith, hq, if_false, hkey _ σ hσ, hchal _ σ hσ, hauth]
-          split_ifs <;> rfl
+          simp only [oracle, oracleWith, hq, if_false, hkey _ σ hσ, hauth, id]
+          split_ifs
+          · rfl
+          · rcases msg with _ | μ₀ <;> rcases decode U.encMsg q.2 with _ | μ <;>
+              simp [hchal _ σ hσ]
 
 /-! ### What the adversary and the distinguisher see -/
 
