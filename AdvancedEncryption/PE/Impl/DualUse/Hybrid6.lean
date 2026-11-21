@@ -138,29 +138,32 @@ theorem viewOf_eq (x : S.Attr → Bool) (M : Bool) (A : Matrix (Fin 2) Wd R)
   funext j; ext a c; fin_cases a; simp [shiftEquiv, shiftCols, colMat, botRow]
 
 omit [DecidableEq R] [Nonempty Wd] in
-/-- **The final view does not depend on the challenge.** -/
-theorem finalView_indep (x x' : S.Attr → Bool) (M M' : Bool) :
-    finalView (Wd := Wd) lawB₁ lawE x M = finalView (Wd := Wd) lawB₁ lawE x' M' := by
-  classical
-  have key : ∀ (x : S.Attr → Bool) (M : Bool), finalView (Wd := Wd) lawB₁ lawE x M =
+/-- The final view from uniform `A`, columns and `κ`. -/
+theorem finalView_eq_raw (x : S.Attr → Bool) (M : Bool) :
+    finalView (Wd := Wd) lawB₁ lawE x M =
       (PMF.uniformOfFintype (Matrix (Fin 2) Wd R)).bind fun A =>
         (PMF.uniformOfFintype (HC S → (Fin 2 → R))).bind fun h =>
           (PMF.uniformOfFintype R).bind fun κ => rawOf (Wd := Wd) lawB₁ lawE A h κ := by
-    intro x M
-    unfold finalView
-    congr 1
-    funext A
-    rw [Cslib.Probability.PMF.pi_uniformOfFintype]
-    have hv : viewOf (Wd := Wd) lawB₁ lawE x M A = fun h =>
-        (PMF.uniformOfFintype R).bind fun κ₀ =>
-          rawOf (Wd := Wd) lawB₁ lawE A (shiftEquiv x h) (κ₀ + if M then S.half else 0) :=
-      funext (viewOf_eq lawB₁ lawE x M A)
-    rw [hv, bind_uniform_equiv (shiftEquiv x) (fun h => (PMF.uniformOfFintype R).bind fun κ₀ =>
-      rawOf (Wd := Wd) lawB₁ lawE A h (κ₀ + if M then S.half else 0))]
-    congr 1
-    funext h
-    exact bind_uniform_equiv (Equiv.addRight (if M then S.half else 0))
-      (fun κ => rawOf (Wd := Wd) lawB₁ lawE A h κ)
-  rw [key x M, key x' M']
+  classical
+  unfold finalView
+  congr 1
+  funext A
+  rw [Cslib.Probability.PMF.pi_uniformOfFintype]
+  have hv : viewOf (Wd := Wd) lawB₁ lawE x M A = fun h =>
+      (PMF.uniformOfFintype R).bind fun κ₀ =>
+        rawOf (Wd := Wd) lawB₁ lawE A (shiftEquiv x h) (κ₀ + if M then S.half else 0) :=
+    funext (viewOf_eq lawB₁ lawE x M A)
+  rw [hv, bind_uniform_equiv (shiftEquiv x) (fun h => (PMF.uniformOfFintype R).bind fun κ₀ =>
+    rawOf (Wd := Wd) lawB₁ lawE A h (κ₀ + if M then S.half else 0))]
+  congr 1
+  funext h
+  exact bind_uniform_equiv (Equiv.addRight (if M then S.half else 0))
+    (fun κ => rawOf (Wd := Wd) lawB₁ lawE A h κ)
+
+omit [DecidableEq R] [Nonempty Wd] in
+/-- **The final view does not depend on the challenge.** -/
+theorem finalView_indep (x x' : S.Attr → Bool) (M M' : Bool) :
+    finalView (Wd := Wd) lawB₁ lawE x M = finalView (Wd := Wd) lawB₁ lawE x' M' := by
+  rw [finalView_eq_raw lawB₁ lawE x M, finalView_eq_raw lawB₁ lawE x' M']
 
 end AdvancedEncryption.DualUse
