@@ -92,6 +92,7 @@ theorem cnorm_noise_le (mpk : MPK (ringSetting N q k hk Attr)) (x : Attr → Boo
         exact Nat.add_le_add (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ he₀))
           (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.add_le_add hB hG)))
 
+omit [Fintype Attr] in
 /-- **Correctness from bounds.** If the errors of `Enc` have coefficients at most `Bχ`, the key
 coefficients at most `K`, `f(x) = 0`, and `4 · noiseBound + 2 < q`, decryption returns `M`. -/
 theorem decrypt_correct_of_bounds (hN : 0 < N) (mpk : MPK (ringSetting N q k hk Attr))
