@@ -3,6 +3,7 @@ import SigabaNeo.Lib.Lattices.Homomorphic.Circuit
 import SigabaNeo.Lib.Lattices.Homomorphic.Eval
 import SigabaNeo.Lib.Lattices.Homomorphic.BinaryDigits
 import SigabaNeo.Lib.Lattices.Homomorphic.GTrapdoor
+import SigabaNeo.Lib.Lattices.Homomorphic.RingGauss
 
 /-!
 # Homomorphic evaluation over rings
@@ -15,6 +16,8 @@ import SigabaNeo.Lib.Lattices.Homomorphic.GTrapdoor
   (`Circuit.ofFun`).
 * `Homomorphic/GTrapdoor`: the gadget trapdoor `B = [A₀ | g − A₀ T]` over a ring and its exact
   preimages.
+* `Homomorphic/RingGauss`: Gaussian preimages of a row over `ℤ_q[X]/(X^N + 1)`: the discrete
+  Gaussian on the solutions of `∑_c L_c z_c = y`.
 * `Homomorphic/Eval`: one evaluation for BGG+ public keys and Ring-GSW ciphertexts; the BGG+ key
   relation, the Ring-GSW invariant, and the evaluation of matrix-valued functions (`MatrixBits`).
 

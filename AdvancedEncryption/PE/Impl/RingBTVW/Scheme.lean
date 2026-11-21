@@ -39,14 +39,15 @@ when the constant coefficient of the noise is below `q/4` (`decrypt_correct`, `s
 
 **Constructed.** Over `R_q` (`ringSetting`): the gadget digits and the bit decompositions; the
 circuits `f̂` by truth tables (`truthTableFhat`, proved correct by `ringSetting_fhatCorrect`); a key
-sampler (`canonicalKeySampler`); the gadget trapdoor `B = [A₀ | g − A₀ T]`, whose exact preimages
+samplers (`gaussKeySampler`: the discrete Gaussian on the coset of the keys; `canonicalKeySampler`);
+the gadget trapdoor `B = [A₀ | g − A₀ T]`, whose exact preimages
 show that valid keys exist for such `B` (`trapdoorKey_valid`, `keyGenLaw_valid`); the laws of the
 coins (`PE.Impl.RingBTVW.Laws`).
 
 **Not formalized here.**
 
-* A short key sampler (the discrete Gaussian on the coset) and the efficient trapdoor sampler that
-  approximates it (with `B` from a trapdoor generation, close to uniform).
+* The efficient trapdoor sampler that approximates `gaussKeySampler` (with `B` from a trapdoor
+  generation, close to uniform).
 * A bound on the noise (a hypothesis of `decrypt_correct`), and polynomial-size circuits `f̂`
   (`truthTableFhat` has exponential size).
 * Machines: the algorithms are Lean functions, not the Turing machines of an `Impl`.
@@ -366,6 +367,61 @@ section Ring
 open Cslib
 
 variable {N q : ℕ} [NeZero q]
+
+/-- The row `[B | B_f̂]`, indexed by the block and the column. -/
+def keyRow (B Bf : Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)) :
+    Fin 2 × Col k → Negacyclic (ZMod q) N :=
+  fun bc => if bc.1 = 0 then B 0 bc.2 else Bf 0 bc.2
+
+/-- A key as a vector indexed by the block and the column. -/
+def keyVec (sk : SecretKey (R := Negacyclic (ZMod q) N) (k := k)) :
+    Fin 2 × Col k → Negacyclic (ZMod q) N :=
+  fun bc => if bc.1 = 0 then sk.k₁ bc.2 0 else sk.k₂ bc.2 0
+
+/-- The key of a vector. -/
+def keyOf (z : Fin 2 × Col k → Negacyclic (ZMod q) N) :
+    SecretKey (R := Negacyclic (ZMod q) N) (k := k) :=
+  ⟨Matrix.of fun c _ => z (0, c), Matrix.of fun c _ => z (1, c)⟩
+
+omit [NeZero q] in
+theorem keyVec_keyOf (z : Fin 2 × Col k → Negacyclic (ZMod q) N) : keyVec (keyOf z) = z := by
+  funext bc
+  obtain ⟨b, c⟩ := bc
+  fin_cases b <;> rfl
+
+omit [NeZero q] in
+/-- `[B | B_f̂] sk = p` is the row equation `∑ [B | B_f̂]_bc sk_bc = p`. -/
+theorem validKey_iff (B Bf : Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N))
+    (p : Negacyclic (ZMod q) N) (sk : SecretKey (R := Negacyclic (ZMod q) N) (k := k)) :
+    B * sk.k₁ + Bf * sk.k₂ = scalar p ↔ ∑ bc, keyRow B Bf bc * keyVec sk bc = p := by
+  have h10 : ((1 : Fin 2) = 0) ↔ False := by decide
+  rw [Fintype.sum_prod_type, Fin.sum_univ_two]
+  simp only [keyRow, keyVec, Fin.isValue, ite_true, h10, ite_false]
+  constructor
+  · intro h
+    have := congrFun (congrFun h 0) 0
+    simpa [scalar, Matrix.mul_apply] using this
+  · intro h
+    funext a b
+    fin_cases a; fin_cases b
+    simpa [scalar, Matrix.mul_apply] using h
+
+open Classical in
+/-- **The Gaussian key sampler**: the discrete Gaussian of width `τ` on the keys `sk` with
+`[B | B_f̂] sk = p` (`gaussPreimage`), or the zero key when there is none. -/
+noncomputable def gaussKeySampler (τ : ℝ) (hτ : 0 < τ) : KeySampler (Negacyclic (ZMod q) N) k where
+  law B Bf p := match gaussPreimage (keyRow B Bf) p τ hτ with
+    | some d => d.map keyOf
+    | none => PMF.pure ⟨0, 0⟩
+  valid B Bf p hex sk hsk := by
+    obtain ⟨sk₀, hsk₀⟩ := hex
+    have hsome := gaussPreimage_isSome (keyRow B Bf) p hτ
+      ⟨keyVec sk₀, (validKey_iff B Bf p sk₀).mp hsk₀⟩
+    obtain ⟨d, hd⟩ := Option.isSome_iff_exists.mp hsome
+    simp only [hd, PMF.support_map] at hsk
+    obtain ⟨z, hz, rfl⟩ := hsk
+    rw [validKey_iff, keyVec_keyOf]
+    exact gaussPreimage_mem _ _ hτ hd hz
 
 /-- The bits of the coefficients, as Booleans. -/
 def coeffBool {r : Type} (Y : Matrix r (Col k) (Negacyclic (ZMod q) N))

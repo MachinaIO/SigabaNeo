@@ -32,4 +32,34 @@ noncomputable def cosetGauss {n m q : ℕ} (B : Matrix (Fin n) (Fin m) (ZMod q))
       fun z => h.choose + toInt (z : EuclideanSpace ℝ (Fin m)))
   else none
 
+/-- `cosetGauss B u τ` is defined exactly when the coset is nonempty. -/
+theorem cosetGauss_isSome_iff {n m q : ℕ} (B : Matrix (Fin n) (Fin m) (ZMod q))
+    (u : Fin n → ZMod q) (τ : ℝ) (hτ : 0 < τ) :
+    (cosetGauss B u τ hτ).isSome ↔ ∃ x0 : Fin m → ℤ, B *ᵥ (fun i => (x0 i : ZMod q)) = u := by
+  unfold cosetGauss
+  split_ifs with h <;> simp [h]
+
+/-- Every point drawn by `cosetGauss B u τ` is in the coset `{x : B·x = u (mod q)}`. -/
+theorem cosetGauss_mem_coset {n m q : ℕ} (B : Matrix (Fin n) (Fin m) (ZMod q))
+    (u : Fin n → ZMod q) (τ : ℝ) (hτ : 0 < τ) {d : PMF (Fin m → ℤ)}
+    (hd : cosetGauss B u τ hτ = some d) {x : Fin m → ℤ} (hx : x ∈ d.support) :
+    B *ᵥ (fun i => (x i : ZMod q)) = u := by
+  unfold cosetGauss at hd
+  split_ifs at hd with h
+  obtain rfl := Option.some.inj hd
+  have hb : (ZLattice.discreteGaussian (perp B) τ hτ (-(embed m h.choose)) >>= fun a =>
+      pure (a : EuclideanSpace ℝ (Fin m))) =
+      (ZLattice.discreteGaussian (perp B) τ hτ (-(embed m h.choose))).map Subtype.val := rfl
+  rw [PMF.support_map, hb, PMF.support_map] at hx
+  obtain ⟨z, ⟨w, -, rfl⟩, rfl⟩ := hx
+  obtain ⟨y, hy, hyz⟩ := Submodule.mem_map.mp w.2
+  have hte : toInt (embed m y) = y := by funext i; simp [toInt, embed]
+  rw [← hyz]
+  simp only [hte]
+  have hk : B *ᵥ (fun i => (y i : ZMod q)) = 0 := hy
+  have : (fun i => ((h.choose + y) i : ZMod q)) =
+      (fun i => (h.choose i : ZMod q)) + fun i => (y i : ZMod q) := by ext i; simp
+  rw [this, Matrix.mulVec_add, hk, add_zero]
+  exact h.choose_spec
+
 end SigabaNeo.Lattices

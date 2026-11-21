@@ -10,7 +10,7 @@ own. Its proofs are checked by Lean when the core is built.
 | Module | Contents |
 | --- | --- |
 | `Basic` | `embed` (`Z^m ⊂ R^m`), `kernel B`, `perp B = Λ^⊥(B)`, `toInt`; `sampleList`, `sampleMat`, `sampleFun`, `sampleOptList` |
-| `Gaussian` | `gaussZ s` (`D_{Z,s}`) and `cosetGauss B u τ` (`D_{Λ^⊥(B)+x₀,τ}`), cslib-frontier's `ZLattice.discreteGaussian` |
+| `Gaussian` | `gaussZ s` (`D_{Z,s}`) and `cosetGauss B u τ` (`D_{Λ^⊥(B)+x₀,τ}`), cslib-frontier's `ZLattice.discreteGaussian`; `cosetGauss_mem_coset`, `cosetGauss_isSome_iff` |
 | `Gaussian/Sum`, `Smooth`, `Tail`, `Bounds`, `Z`, `Facts` | Gaussian sums; smoothing of `Λ^⊥(B)`; tails (`gauss_tail_gen`, `cosetGauss_tail`, `gaussZ_tail`); point masses of `D_{Z,σ}` |
 | `Encoding` | `matVals`, `encEntries`, `bitsOf`, `intMod` |
 | `Gadget` | `gadget n b q = I_n ⊗ (1, 2, …, 2^{b−1})`, `gadgetInv` (binary decomposition), `gadget_mulVec_gadgetInv` for `q ≤ 2^b` |
@@ -26,6 +26,7 @@ own. Its proofs are checked by Lean when the core is built.
 | `Homomorphic/BinaryDigits` | `binaryDigits`: the gadget digits of `ℤ_q[X]/(X^N + 1)` (cslib-frontier's `Cslib.Negacyclic`): binary digits of the coefficients, `∑ᵢ 2^i dᵢ(a) = a`; `coeffBits`: a matrix as the bits of the coefficients of its entries (`MatrixBits`) |
 | `Homomorphic/Circuit` | NAND circuits `Circuit ι`, evaluated in a ring (`eval`) and on bits (`evalBool`, `eval_bits`); every Boolean function is a circuit (`ofFun`, `evalBool_ofFun`) |
 | `Homomorphic/GTrapdoor` | the gadget trapdoor over a ring: `gTrapdoorMatrix` (`B = [A₀ \| g − A₀ T]`), `gTrapdoorSolve`, `gTrapdoorMatrix_mul_solve` (exact preimages; not the Gaussian sampler) |
+| `Homomorphic/RingGauss` | `rowRot` (coefficient matrix of `z ↦ ∑_c L_c z_c`, `rowRot_mulVec`), `gaussPreimage` (the discrete Gaussian on the solutions over `ℤ_q[X]/(X^N + 1)`), `gaussPreimage_mem`, `gaussPreimage_isSome` |
 | `Homomorphic/Eval` | `evalMat` (BGG+ `EvalF` and Ring-GSW `Eval`), `evalEnc`, `evalErr`, `evalSim`; `bgg_key_relation`, `gsw_invariant`, `sim_relation` (`Aᵢ = B Wᵢ + xᵢ G` ⇒ `A_f = B W_f + f(x) G`), `matrix_key_relation`, `matrix_key_relation_bits` (matrix-valued functions, with a bit decomposition `MatrixBits`) |
 | `Decode` | `encodeBit`, `decodeZMod`, `decodeBit`: threshold decoding of `M · ⌊q/2⌋ + e` in `ℤ_q` and at the constant coefficient of `ℤ_q[X]/(X^N + 1)`, exact when `4|e| + 2 < q` |
 
