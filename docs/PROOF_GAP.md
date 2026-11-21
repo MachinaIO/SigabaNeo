@@ -453,7 +453,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   per width). Even with width-3 acceptance and truncated V7, the relaxed residual is ≥ 2.19·10⁵ nats (β = 800, 0.25·GSA) up to
   8.1·10⁵ (β = 406). **Status:** the best LP packing bounds and all audited probabilistic suppressions are exhausted; closing wall 1
   needs a new estimate — coverage of the fresh column's torus conditioned on prefix survival in deep windows.
-* **Frontier after Parts 1–77 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 78 (audited, minor caveats).** [dual_coverage](research/wall1_dual_coverage.md): hard coverage of the fresh column's
+  torus via the dual (Micciancio–Regev smoothing; the reversed dual is μ-random by V9, so its short vectors are an upper-tail
+  event) fails on the relocated Part 77 boxes: no deep column reaches the Gaussian hard-coverage threshold even with the exact
+  smoothing parameter (all 794 deep prefix ranks, interval-certified); exact Gaussian tails give < 2356 nats along a rank-1023
+  chain, leaving > 2.17·10⁵ nats at β = 800, 0.25·GSA. Scope: height-one Gaussian test only.
+* **Frontier after Parts 1–78 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
