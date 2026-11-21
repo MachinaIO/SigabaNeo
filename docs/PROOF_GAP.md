@@ -108,10 +108,22 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   Haar measure. [Laa26]'s Lean development assumes both (`ClassicalRogersFormula`,
   `ClassicalGramFormula`). For Haar-random lattices the result is therefore conditional on two
   classical theorems not formalized here.
-* In progress: a Lean formalization of the algorithmic layer (S1–S5 as hypotheses), Lean proofs of
-  the `q`-ary Lemmas Q1, Q2 with a study of Lemma Q3, and a new re-randomization argument for (C).
-  For `q`-ary lattices, Lemma Q1 replaces Rogers' formula by elementary linear algebra over
-  `F_q`, so that route can avoid the Haar-measure prerequisites entirely.
+* **`q`-ary lattices (the LWE side).** Here Lemma Q1 replaces Rogers' formula by linear algebra over
+  `F_q`. Proved in Lean (`SigabaNeo.QAry`; axioms `propext`, `Classical.choice`, `Quot.sound`):
+
+  | Theorem | Statement |
+  | --- | --- |
+  | `kernelCount`, `meanValue` | Lemma Q1: for uniform `A ∈ Z_q^{n×m}`, the average of a finite weighted tuple sum over `Λ_q^⊥(A)` is `Σ_x F(x)/q^{n·rk_{F_q}(x)}` |
+  | `shortRank` | Lemma Q2: integer tuples with row norms `≤ R`, `R^k < q`, have equal ranks over `F_q` and `Q` |
+  | `firstMoment` | Siegel analogue: a shell of nonzero integer vectors of radius `R < q` has expected count `|S|/q^n` |
+  | `secondMoment`, `variance` | exact second moment and variance of shell counts for `R² < q` |
+
+  Lemma Q3 (integer points in lens fibres, needed to compare the counts with volumes): proved on
+  paper for separations in `[R/2, 3R/2]`, shell width `≍ 1/n`, `m ≥ n` and `R/m^{3/2} → ∞`
+  ([research/qary.md](research/qary.md)). The general range and the higher-moment integrands are
+  open, and the paper part is not in Lean. Modular coincidences at `m = 2n` are quantified there.
+* In progress: a Lean formalization of the algorithmic layer (S1–S5 as hypotheses), and a reverse
+  Minkowski dichotomy for (C).
 * **Re-randomization for (C) (new; [research/rerandomization.md](research/rerandomization.md)).**
   Replace a block `B` by a uniformly random index-`p` sublattice. A tuple whose residues span
   dimension `r` survives with probability `(p^{d−r} − 1)/(p^d − 1)`, which gives exact moments of
