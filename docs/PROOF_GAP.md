@@ -389,7 +389,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   0.00553 / 0.01338 / 0.03098 / 0.08202 (β = 406/506/647/800), weaker than Part 65. Summary of Parts 50–68: every
   'for all reduced bases' certificate at rank 1023 stays ≈ 60× below 0.85·GSA, while experiments (Part 64) suggest the true
   all-bases floor is ≈ 0.85·typical — the gap is methodological (joint acceptance of overlapping windows).
-* **Frontier after Parts 1–68 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 69 (audited).** [joint_acceptance](research/wall1_joint_acceptance.md): the joint acceptance of all overlapping
+  BKZ-3 window tests (fixed profile, uniform μ) has an exact one-state transfer operator for arbitrary profiles (confirmed by
+  Monte Carlo, including a profile where the box product is rejected at ≈ 36σ). For g_i = r^i the Part 68 box is exact when
+  1 − r⁴ ≤ r²/4; at r = 0.92, rank 8, the true probability is in [4.45, 7.49]·10⁻¹¹ versus the box's 2.70·10⁻⁸ (spectral radius
+  0.017–0.032); at r = 0.90 one triple already has zero acceptance. Width-3 tests bite only at slopes ≲ 0.92, while GSA slopes at
+  β ≈ 406 are ≈ 0.99, so closing the rank-1023 gap needs the asymptotics of width-β joint acceptance (or the algorithm's
+  trajectory).
+* **Frontier after Parts 1–69 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
