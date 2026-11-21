@@ -97,6 +97,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   holds for prefixes chosen adaptively by BKZ — immune to selection bias. Missing: a bound on the selected
   prefix's covolume, and the polynomial-`q` q-ary ensemble; at the GSA values the bound becomes vacuous as
   `n` grows.
+* **Part 6 (audited; [research/wall1_prefix.md](research/wall1_prefix.md)).** Deterministic prefix-covolume
+  envelope and a Schnorr-type ratio bound `g_t ≥ g_0 e^{−p_0^{(t)}}` for fully BKZ-β reduced bases (proven Hermite
+  constants; both recursions are exact LP optima). With `g_0 ≥ λ1(L)` for Haar lattices, the 99% terminal height at
+  `n = 700, β = 200` is only **9.22 bits below GSA**. The ratio bound is deterministic and holds for q-ary lattices too;
+  the cost of producing a fully reduced basis and the projected planted law are not addressed.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
