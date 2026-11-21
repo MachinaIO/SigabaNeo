@@ -9,7 +9,7 @@ import Mathlib.Data.Set.Finite.List
 A randomized algorithm whose valid inputs form a finite set `A` (encoded as tuples of words by an
 injective `encA`), and whose output law on each valid input is an image of `m` fair coins, has a
 machine that realizes these laws exactly on the valid inputs (`Machine.exists_finiteAlg`): its
-output word is the one-variable tuple of the output. The deterministic case is
+output word is the tuple of the outputs. The deterministic case is
 `Machine.exists_finiteAlg_det`.
 -/
 
@@ -19,14 +19,14 @@ open Lattices Cslib
 
 /-- **Machines of algorithms on finitely many valid inputs.** -/
 theorem Machine.exists_finiteAlg {A : Type} [Finite A] (encA : A → List (List Bool))
-    (hinj : Function.Injective encA) (m : ℕ) (g : A → List Bool → List Bool) :
+    (hinj : Function.Injective encA) (m : ℕ) (g : A → List Bool → List (List Bool)) :
     ∃ M : Machine, ∀ a, M.run (encodeTuple (encA a)) =
-      (BitString.uniformList m).map fun w => encodeTuple [g a w] := by
+      (BitString.uniformList m).map fun w => encodeTuple (g a w) := by
   classical
   let encIn : List (List Bool) ↪ List Bool := ⟨encodeTuple, encodeTuple_injective⟩
   let encOut : List (List Bool) ↪ List Bool := ⟨encodeTuple, encodeTuple_injective⟩
   let G : List (List Bool) × List Bool → List (List Bool) := fun xw =>
-    if h : (∃ a, encA a = xw.1) ∧ xw.2.length = m then [g h.1.choose xw.2] else []
+    if h : (∃ a, encA a = xw.1) ∧ xw.2.length = m then g h.1.choose xw.2 else []
   have hG : ∃ b, {xw | G xw ≠ b}.Finite := by
     refine ⟨[], Set.Finite.subset ((Set.finite_range encA).prod
       (List.finite_length_eq Bool m)) fun xw hxw => ?_⟩
