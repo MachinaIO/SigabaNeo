@@ -428,8 +428,14 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   `Reduction/Rogers/Laa26Bridge.lean` copies the archive's statement-level definitions verbatim (arXiv:2609.13635v1 source)
   and proves `archive_rogers` and `archive_gram` — the archive's own `ClassicalRogersFormula` (with an invariant probability
   measure) and `ClassicalGramFormula` (on every `(span ℝ {e})ᗮ`) — with axioms `propext`, `Classical.choice`, `Quot.sound`.
-  Independent audit: faithful. Not done: rebuilding the archive and its consumer theorem `intrinsic_marked_moments_paper` under
-  its own toolchain (v4.32.2); the correctness of the archive's internal proofs is not checked here.
+  Independent audit: faithful. **Archive rebuilt (Nov 22, 2026)**: the arXiv:2609.13635v1 Lean project (599 files; no
+  `sorry`/`axiom`/`native_decide`/`implemented_by`/`#eval` found by scan) builds under its own toolchain v4.32.2 with Mathlib
+  v4.32.2, and its consumer theorem `SphericalStatistics.IntrinsicMarkedMomentPaper.intrinsic_marked_moments_paper` depends
+  only on `propext`, `Classical.choice`, `Quot.sound`. Its only hypotheses are `ClassicalGramFormula` (as `hgram`) and
+  `ClassicalRogersFormula ν c` (per ν), exactly the statements `archive_gram` / `archive_rogers` prove verbatim here. So the
+  [Laa26] marked-moment bounds for Haar-random lattices hold unconditionally, across two environments (archive proofs on
+  v4.32.2, hypotheses on v4.36.0-rc2; not merged into one build). This concerns Haar-random lattices; it does not address
+  assumption (C)/wall 2 (BKZ blocks) or the planted q-ary obstruction above.
 * **`q`-ary lattices (the LWE side).** Here Lemma Q1 replaces Rogers' formula by linear algebra over
   `F_q`. Proved in Lean (`SigabaNeo.QAry`; axioms `propext`, `Classical.choice`, `Quot.sound`):
 
