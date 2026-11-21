@@ -142,6 +142,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   restore covolume-only conditioning: a 4-dimensional binary kernel gives 2/5 vs 4/9 for two histories with the same terminal area.
   Transcript-length (entropy) bounds limit total leakage but a few bits can encode the next minimum itself; a concentration proof
   needs an information bound on that specific observable.
+* **Part 17 (audited; [research/wall1_coupling.md](research/wall1_coupling.md)).** Replacing blocks by fresh Haar lattices has
+  total variation error exactly 1 (rational vs atomless minima); path coupling and a discrete reference (exact for unexamined
+  coordinate blocks) are proved. **Audit finding:** in the 4-dimensional example of Parts 16–17 the discrepancy disappears once
+  one conditions on the full in-block Gram–Schmidt profile, so *profile-only* conditioning (rather than covolume-only) is still
+  open and is the most promising lead.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;

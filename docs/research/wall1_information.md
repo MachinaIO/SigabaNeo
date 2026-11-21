@@ -47,3 +47,7 @@ conditional 4/9; independent of the initial adapted basis; same values for s² =
 bound predicts). Pinsker + Markov, `J ≤ H(T|C) ≤ Σ b_i`, the fair-bit example and the rare-event bound `x log(1/p) ≤ J + 1` are
 correct. Wording: in the fair-bit example `T` is all N bits and `Y` is its first bit (`J = 1`); the table columns are labelled by
 the surviving coefficients `(c,d)` and `(b,d)`.
+
+Cross-reference (audit of wall1_coupling.md): in this 4-dimensional example the two histories have different in-block
+Gram–Schmidt profiles, and conditioning on the full profile equalizes them. The obstruction is to covolume-only conditioning;
+profile-only conditioning is not refuted by this example.
