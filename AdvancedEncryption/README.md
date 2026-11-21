@@ -12,7 +12,7 @@ apart from the definitions to review.
 
 | Implementation | Contents |
 | --- | --- |
-| `PE.Impl.RingBTVW` (`PE/Impl/RingBTVW/`) | the ring variant of the BTVW17 §4.2 scheme (Ring-GSW and BGG+ under one secret, over `ℤ_q[X]/(X^N + 1)`): algorithms, the laws of their coins, correctness (`scheme_correct`, under a bound on the noise), and the algebra of the simulation of its security proof (`keyMatrix_sim`, `simKey_valid`). Not yet: the statistical and Ring-LWE steps of security, a noise bound, polynomial-size `f̂`, and Turing machines for `PE`'s `Impl` |
+| `PE.Impl.RingBTVW` (`PE/Impl/RingBTVW/`) | the ring variant of the BTVW17 §4.2 scheme (Ring-GSW and BGG+ under one secret, over `ℤ_q[X]/(X^N + 1)`): algorithms, the laws of their coins, correctness (`scheme_correct`, under a bound on the noise), and security (`attributeHiding`): the hybrid argument with the exact reduction to Ring-LWE, the statistical steps (regularity, leftover hash lemma, noise flooding) as hypotheses. Not yet: those statistical bounds, a noise bound, polynomial-size `f̂`, and Turing machines for `PE`'s `Impl` |
 
 The project requires the core at `..` and shares its packages (`packagesDir = "../.lake/packages"`),
 so build the core first:

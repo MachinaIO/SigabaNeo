@@ -16,8 +16,9 @@ With columns `W = Fin 2 × Fin k`, the Ring-GSW gadget `G ∈ R^{2×W}` and its 
 * `Enc(mpk, x, M)` (`encrypt`, coins `EncCoins`): `Ψᵢ = [B; sB + e] Rᵢ + xᵢ G`; with `ψ` the bits of
   `Ψ`, `c₀ = sB + e₀`, `c_j = s(B_j − ψ_j G̲) + e_j` and `κ = s p + e' + M ⌊q/2⌋`.
 * `KeyGen(msk, f)`: `B_f̂ = ∑_b EvalF(f̂_b, B) · G̲⁻¹(V_b)` (`keyMatrix`), where `f̂_b` computes the bit
-  `b` of the top row of `Ψ_f = FHE.Eval(f, Ψ)` from the bits of `Ψ`, and a short `sk` with
-  `[B | B_f̂] sk = p` sampled with the trapdoor (`ValidKey`).
+  `b` of the top row of `Ψ_f = FHE.Eval(f, Ψ)` from the bits of `Ψ`, and a key `sk` with
+  `[B | B_f̂] sk = p` (`ValidKey`) from a key sampler whose law depends on `(B, B_f̂, p)` only
+  (`KeySampler`, `keyGenLaw`).
 * `Dec(sk, f, ct)` (`decryptRaw`): `c_f̂ = ∑_b EvalFX(f̂_b, ψ, c) · G̲⁻¹(V_b) + Ψ̄_f` with `Ψ̄_f` the
   bottom row of `Ψ_f`, `κ' = [c₀ | c_f̂] sk`, and `κ − κ'`, decoded at the constant coefficient
   (`decrypt`).
@@ -30,19 +31,20 @@ whole scheme for any coins of `Setup`, `KeyGen` and `Enc` (`scheme_correct`).
 
 **Constructed.** Over `R_q` (`ringSetting`): the gadget digits and the bit decompositions; the
 circuits `f̂` by truth tables (`truthTableFhat`, proved correct by `ringSetting_fhatCorrect`); the
-trapdoor `B = [A₀ | g − A₀ T]` with exact preimages (`setup`, `keyGen`, `keyGen_valid`); the laws
-of the coins (`PE.Impl.RingBTVW.Laws`).
+trapdoor `B = [A₀ | g − A₀ T]`, whose exact preimages show that keys exist (`setup`,
+`trapdoorKey_valid`, `keyGenLaw_valid`); a key sampler (`canonicalKeySampler`); the laws of the
+coins (`PE.Impl.RingBTVW.Laws`).
 
 **Security** (BTVW17 Theorem 4.2, Ring-LWE). The algebra of the simulation is proved: `Enc*`
 (`encodings_sim`), `KeyGen*` (`keyMatrix_sim`) and the keys the simulator answers without the
-trapdoor (`simKey_valid`).
+trapdoor (`simKey_valid`). The hybrid argument and the reduction to Ring-LWE are in
+`PE.Impl.RingBTVW.Security`.
 
 **Not formalized here.**
 
-* The statistical steps of the security proof: the leftover hash lemma for `A Rᵢ` and `B W'_j`,
-  Gaussian preimages that hide the trapdoor (`keyGen` solves exactly, which is enough for
-  correctness but reveals `T`), and noise flooding.
-* The Ring-LWE step (`c = sB + e` against uniform) and the concrete security of `PE`.
+* The statistical steps of the security proof (hypotheses of `PE.Impl.RingBTVW.Security`): the
+  regularity of `B`, the leftover hash lemma for `A Rᵢ` and `B W'_j`, and noise flooding; a short
+  key sampler (the discrete Gaussian on the coset) and the efficient sampler that approximates it.
 * A bound on the noise (a hypothesis of `decrypt_correct`), and polynomial-size circuits `f̂`
   (`truthTableFhat` has exponential size).
 * Machines: the algorithms are Lean functions, not the Turing machines of an `Impl`.
@@ -197,21 +199,55 @@ def setup (S : Setting R k) (A₀ : Fin k → R) (T : MSK k R)
     (Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R) (p : R) : MPK S × MSK k R :=
   ({ B := gTrapdoorMatrix S.D A₀ T, Bj := Bj, p := p }, T)
 
-/-- **KeyGen**, from its coin `k₂`: `k₁ = [T; I] g⁻¹(p − B_f̂ k₂)`. -/
-def keyGen (mpk : MPK S) (T : MSK k R) (f : Circuit S.Attr) (k₂ : Matrix (Col k) (Fin 1) R) :
+/-- An exact key from the trapdoor: `k₁ = [T; I] g⁻¹(p − B_f̂ k₂)`. It shows that keys exist
+(`trapdoorKey_valid`); it reveals `T`, so it is not the key generation of the scheme (`keyGenLaw`). -/
+def trapdoorKey (mpk : MPK S) (T : MSK k R) (f : Circuit S.Attr) (k₂ : Matrix (Col k) (Fin 1) R) :
     SecretKey (R := R) (k := k) :=
   { k₁ := gTrapdoorSolve S.D T (mpk.p - (keyMatrix mpk f * k₂) 0 0), k₂ := k₂ }
 
-/-- Keys generated with the trapdoor are valid. -/
-theorem keyGen_valid (A₀ : Fin k → R) (T : MSK k R)
+/-- Keys solved with the trapdoor are valid. -/
+theorem trapdoorKey_valid (A₀ : Fin k → R) (T : MSK k R)
     (Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R) (p : R) (f : Circuit S.Attr)
     (k₂ : Matrix (Col k) (Fin 1) R) :
-    ValidKey (setup S A₀ T Bj p).1 f (keyGen (setup S A₀ T Bj p).1 T f k₂) := by
-  simp only [ValidKey, setup, keyGen]
+    ValidKey (setup S A₀ T Bj p).1 f (trapdoorKey (setup S A₀ T Bj p).1 T f k₂) := by
+  simp only [ValidKey, setup, trapdoorKey]
   rw [gTrapdoorMatrix_mul_solve]
   ext a b
   fin_cases a; fin_cases b
   simp [scalar]
+
+/-- A key sampler: a law on the keys `sk` with `[B | B_f̂] sk = p` that depends on `(B, B_f̂, p)`
+only, in particular not on any trapdoor. Its support is in the valid keys whenever one exists. The
+intended one is the discrete Gaussian on this coset ([GPV08]), which MP12's sampler approximates
+from the trapdoor of `B` and the simulator's from that of `B_f̂` (`simKey_valid`). -/
+structure KeySampler (R : Type*) [CommRing R] (k : ℕ) where
+  /-- The law of the key for `(B, B_f̂, p)`. -/
+  law : Matrix (Fin 1) (Col k) R → Matrix (Fin 1) (Col k) R → R → PMF (SecretKey (R := R) (k := k))
+  /-- Its keys are valid when valid keys exist. -/
+  valid : ∀ B Bf p, (∃ sk : SecretKey (R := R) (k := k), B * sk.k₁ + Bf * sk.k₂ = scalar p) →
+    ∀ sk ∈ (law B Bf p).support, B * sk.k₁ + Bf * sk.k₂ = scalar p
+
+/-- **KeyGen**: the key sampler at `(B, B_f̂, p)`. -/
+noncomputable def keyGenLaw (ks : KeySampler R k) (mpk : MPK S) (f : Circuit S.Attr) :
+    PMF (SecretKey (R := R) (k := k)) :=
+  ks.law mpk.B (keyMatrix mpk f) mpk.p
+
+/-- Every key that `KeyGen` outputs after `Setup` is valid. -/
+theorem keyGenLaw_valid (ks : KeySampler R k) (A₀ : Fin k → R) (T : MSK k R)
+    (Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R) (p : R) (f : Circuit S.Attr) :
+    ∀ sk ∈ (keyGenLaw ks (setup S A₀ T Bj p).1 f).support, ValidKey (setup S A₀ T Bj p).1 f sk :=
+  ks.valid _ _ _ ⟨_, trapdoorKey_valid A₀ T Bj p f 0⟩
+
+open Classical in
+/-- A key sampler: a fixed valid key when one exists. It shows that key samplers exist; its keys
+need not be short. -/
+noncomputable def canonicalKeySampler : KeySampler R k where
+  law B Bf p := if h : ∃ sk : SecretKey (R := R) (k := k), B * sk.k₁ + Bf * sk.k₂ = scalar p
+    then PMF.pure (Classical.choose h) else PMF.pure ⟨0, 0⟩
+  valid B Bf p h sk hsk := by
+    rw [dite_eq_left_of_eq_true (eq_true h), PMF.support_pure, Set.mem_singleton_iff] at hsk
+    rw [hsk]
+    exact Classical.choose_spec h
 
 /-! ### The circuits `f̂` -/
 
@@ -490,25 +526,24 @@ theorem decrypt_correct {k : ℕ} (hk : q ≤ 2 ^ k) {Attr : Type} [Fintype Attr
   rw [hM]
   exact decodeBit_encodeBit_add hN M _ hν
 
-/-- **Correctness of the whole scheme over `R_q`.** For any coins of `Setup`, `KeyGen` and `Enc`, if
-`f(x) = 0` and the constant coefficient `ν₀` of the noise has `4|ν₀| + 2 < q`, then
-`Dec(KeyGen(msk, f), Enc(mpk, x, M)) = M`. -/
+/-- **Correctness of the whole scheme over `R_q`.** For any coins of `Setup` and `Enc` and any key
+that `KeyGen` outputs, if `f(x) = 0` and the constant coefficient `ν₀` of the noise has
+`4|ν₀| + 2 < q`, then `Dec(sk, Enc(mpk, x, M)) = M`. -/
 theorem scheme_correct {k : ℕ} (hk : q ≤ 2 ^ k) {Attr : Type} [Fintype Attr] (hN : 0 < N)
+    (ks : KeySampler (Negacyclic (ZMod q) N) k)
     (A₀ : Fin k → Negacyclic (ZMod q) N) (T : MSK k (Negacyclic (ZMod q) N))
     (Bj : Attr × (coeffBits N q k hk (Fin 2) (Col k)).Index →
       Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N))
-    (p : Negacyclic (ZMod q) N) (f : Circuit Attr)
-    (k₂ : Matrix (Col k) (Fin 1) (Negacyclic (ZMod q) N)) (x : Attr → Bool) (M : Bool)
+    (p : Negacyclic (ZMod q) N) (f : Circuit Attr) (sk : SecretKey)
+    (hsk : sk ∈ (keyGenLaw ks (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 f).support)
+    (x : Attr → Bool) (M : Bool)
     (r : EncCoins (ringSetting N q k hk Attr)) (hfx : f.evalBool x = false)
-    (hν : 4 * |((noise (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 x f
-        (keyGen (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 T f k₂) r).coeffs
+    (hν : 4 * |((noise (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 x f sk r).coeffs
           ⟨0, hN⟩).valMinAbs| + 2 < q) :
-    decodeBit hN (decryptRaw (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 f
-      (keyGen (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 T f k₂)
+    decodeBit hN (decryptRaw (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 f sk
       (encrypt (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 x M r)) = M :=
-  decrypt_correct hk hN (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 x M r f
-    (keyGen (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 T f k₂)
-    (keyGen_valid (S := ringSetting N q k hk Attr) A₀ T Bj p f k₂) hfx hν
+  decrypt_correct hk hN (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 x M r f sk
+    (keyGenLaw_valid (S := ringSetting N q k hk Attr) ks A₀ T Bj p f sk hsk) hfx hν
 
 end Ring
 

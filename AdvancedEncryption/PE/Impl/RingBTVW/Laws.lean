@@ -10,7 +10,7 @@ each ring element with independent coefficients (`polyLaw`):
 
 * `Setup` (`setupLaw`): `A₀`, every `B_j` and `p` uniform; the trapdoor `T` with `0/1`
   coefficients;
-* `KeyGen` (`keyGenLaw`): `k₂` from the key law `χ_key`, then `k₁` from the trapdoor;
+* `KeyGen`: a key sampler (`KeySampler`, `keyGenLaw` of `PE.Impl.RingBTVW.Scheme`);
 * `Enc` (`encCoinsLaw`): the secret `s` uniform, the errors `e`, `e₀`, `e_j`, `e'` from the error law
   `χ` (a discrete Gaussian, for instance `D_{Z,σ}` reduced mod `q`), and the Ring-GSW randomness
   `Rᵢ` with `0/1` coefficients.
@@ -52,13 +52,6 @@ noncomputable def setupLaw :
   let Bj ← sampleFun (matLaw (polyLaw uniformCoeff))
   let p ← polyLaw uniformCoeff
   pure (setup (ringSetting N q k hk Attr) A₀ T Bj p)
-
-/-- **KeyGen**, with the key law `χ_key`. -/
-noncomputable def keyGenLaw (χkey : PMF (ZMod q)) (mpk : MPK (ringSetting N q k hk Attr))
-    (T : MSK k (Negacyclic (ZMod q) N)) (f : Circuit Attr) :
-    PMF (SecretKey (R := Negacyclic (ZMod q) N) (k := k)) := do
-  let k₂ ← matLaw (polyLaw χkey)
-  pure (keyGen mpk T f k₂)
 
 /-- The coins of **Enc**, with the error law `χ`. -/
 noncomputable def encCoinsLaw (χ : PMF (ZMod q)) : PMF (EncCoins (ringSetting N q k hk Attr)) := do
