@@ -100,8 +100,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   therefore defeat every index cap based on dimension and determinant alone.
 * Lean: `Wall2.dualPair_exceeds`, the scalar Gaussian inequality. The lattice argument and the
   index bound are on paper.
-* Open: how often BKZ blocks of planted lattices have such short dual vectors. This reduces to
-  wall 1.
+* **Fixed coordinate blocks are fine (new; [research/wall2b.md](research/wall2b.md)).** For a fixed
+  coordinate block of dimension `d` in either i.i.d. `q`-ary ensemble, the normalized dual
+  satisfies `Pr[λ₁(D) ≤ δ^{1/d}/3] ≤ δ`. At the Gaussian-heuristic radius the expected dual
+  Gaussian mass is `e^{−Ω(d)}`, so index `p = 1` suffices w.h.p.: before BKZ, the obstruction above
+  does not occur. A zero-plant example shows that unrestricted `q` can force a superpolynomial
+  reciprocal dual minimum. Lean: `Wall2.incidenceTail` (finite incidence inequality); the
+  applications are on paper.
+* Open: blocks chosen adaptively by BKZ (this reduces to wall 1).
 
 ## A route around walls 1 and 2: the full-dimension sieve
 

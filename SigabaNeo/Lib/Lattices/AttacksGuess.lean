@@ -15,6 +15,7 @@ public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.Shifted
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.RandomErrors
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.Uniform
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.CenteredRank
+public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.Solve
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.Translation
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.CubicSolver
 
