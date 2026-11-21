@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Lattices.CoinMaps
+import SigabaNeo.Lib.Lattices.Flood
 
 /-!
 # Laws realized by fair coins
@@ -104,6 +105,36 @@ theorem uniform_ring (N K : ℕ) :
   rw [show (Negacyclic.ofCoeffs : (Fin N → ZMod (2 ^ K)) → _) =
     (Negacyclic.coeffsEquiv (R := ZMod (2 ^ K)) (n := N)).symm from rfl, he] at h
   exact h
+
+/-- **Centered binomial coefficients**: `2η` bits. -/
+theorem cbd {q : ℕ} [NeZero q] (η : ℕ) : BitLaw (ModuleLWE.coeffLaw q (.cbd η)) (η + η) := by
+  let e : (Fin (η + η) → Bool) ≃ (Fin η → Bool) × (Fin η → Bool) :=
+    (Equiv.arrowCongr finSumFinEquiv.symm (Equiv.refl Bool)).trans
+      (Equiv.sumArrowEquivProdArrow _ _ _)
+  exact (uniform_equiv (η + η) e).map _
+
+/-- The uniform law on `{0, …, 2^w − 1}`: `w` bits. -/
+theorem uniform_fin_pow (w : ℕ) : BitLaw (PMF.uniformOfFintype (Fin (2 ^ w))) w :=
+  uniform_equiv w ((Equiv.arrowCongr (Equiv.refl _) finTwoEquiv.symm).trans finFunctionFinEquiv)
+
+/-- Uniform functions from a finite type to a bit law's uniform type. -/
+theorem uniform_fun {ι α : Type} [Fintype ι] [DecidableEq ι] [Fintype α] [Nonempty α] {m : ℕ}
+    (h : BitLaw (PMF.uniformOfFintype α) m) :
+    BitLaw (PMF.uniformOfFintype (ι → α)) (Fintype.card ι * m) := by
+  rw [← Cslib.Probability.PMF.pi_uniformOfFintype]
+  exact pi h
+
+/-- **Uniform binary vectors**: one bit each. -/
+theorem uniform_bits (ι : Type) [Fintype ι] [DecidableEq ι] :
+    BitLaw (PMF.uniformOfFintype (ι → Bool)) (Fintype.card ι) :=
+  uniform_equiv _ (Equiv.arrowCongr (Fintype.equivFin ι).symm (Equiv.refl Bool))
+
+/-- **Flooding errors** with width `2^w`. -/
+theorem floodLaw {N Q : ℕ} [NeZero Q] (ι : Type) [Fintype ι] [DecidableEq ι] (w : ℕ) :
+    haveI : NeZero (2 ^ w) := ⟨by positivity⟩
+    BitLaw (Lattices.floodLaw (N := N) (Q := Q) ι (2 ^ w)) (Fintype.card (ι × Fin N) * w) := by
+  have : NeZero (2 ^ w) := ⟨by positivity⟩
+  exact (uniform_fun (uniform_fin_pow w)).map _
 
 end BitLaw
 
