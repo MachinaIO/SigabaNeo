@@ -28,8 +28,19 @@ and the positive-definite support appear in `SphericalGramFormula`.
    fixed-pole law gives `angularDisintegration`, including n = 3. For arbitrary sample size,
    `gram_angular_recursion` now gives a recursive sampling law for the entire off-diagonal
    tuple. The frame coordinates consist of independent axial cosines and transverse directions.
-   The Schur determinant, affine fiber Jacobian, and Gamma-product recursion are verified
-   separately. Combining these into the finite-index positive-definite density identity and transport to the archive's `ClassicalGramFormula` remain open.
+   `gramLaw_recursion` expresses the law in the volume-preserving `splitGram` chart
+   directly in terms of the lower-dimensional Gram law. `gramDensity_fiber_integral`
+   proves the matching change of density for every interior axial fiber and measurable
+   nonnegative test, including singular and indefinite transverse matrices.
+   The remaining induction must integrate this identity against the product of scalar
+   projection densities, handle axial coordinates outside the open cube, and supply the
+   starting law in the same coordinates.
+   `classicalGramFormula_volume_of_spherical` transports a completed Euclidean identity
+   to volume on any finite-dimensional real inner-product space. The local target follows
+   v1 `SphericalStatistics/ActualGramProbability.lean`: it restricts to PSD correlations
+   and divides by the actual determinant integral. The positive exponent kills the singular
+   boundary, and probability mass one identifies the inverse integral with the Gamma product.
+   This build uses the local statement and does not import the archive.
 2. `sl_commutator_eq_top` proves perfectness for n ≥ 2 by diagonal and
    transvection induction. Conjugation by a two-coordinate diagonal matrix
    with entries 2 and 1/2 scales the transvection parameter by four. Each
@@ -41,7 +52,9 @@ and the positive-definite support appear in `SphericalGramFormula`.
    the first chart meeting it in a countable cover. `arithmetic_domain_mass_le`
    bounds its mass by the mass of any set whose integer translates cover the group.
    `siegel_diagonal_integral` evaluates the weighted integral over the logarithmic
-   simple-root orthant for every positive weight vector. Identifying this coordinate
+   simple-root orthant for every positive weight vector. In dimension two,
+   `siegelSetTwo_covers` lifts modular reduction to a right arithmetic covering in the group.
+   Its strip has |Re z| ≤ 1/2 and 4(Im z)² ≥ 3 for z = g⁻¹·i. Identifying this coordinate
    measure with the diagonal factor of Haar measure and constructing
    a covering set of finite Haar mass in general dimension remain to be established.
 3. `tupleWorkload_measurable` proves quotient measurability for every finite tuple length
@@ -547,6 +560,108 @@ theorem siegel_diagonal_integral {d : ℕ} (w : Fin d → ℝ) (hw : ∀ i, 0 < 
       ENNReal.ofReal (∏ i, Real.exp (-w i * c) / w i)
 ~~~
 
+## Gram density transport and the dimension-two covering
+
+~~~lean
+theorem angular_jacobian_product {s : ℕ} (r : Fin s → ℝ) :
+    (∏ ij : OffDiagonal s, r ij.val.1 * r ij.val.2) = (∏ i, r i) ^ (s-1)
+~~~
+
+~~~lean
+theorem angular_block_posDef {s : ℕ} (B : Matrix Unit (Fin s) ℝ)
+    (r : Fin s → ℝ) (hr : ∀ i, 0 < r i) (H : Matrix (Fin s) (Fin s) ℝ) :
+    (Matrix.fromBlocks 1 B B.transpose
+      (B.transpose * B + Matrix.diagonal r * H * Matrix.diagonal r)).PosDef ↔ H.PosDef
+~~~
+
+~~~lean
+theorem angular_density_pullback (m k : ℕ) (hm : 0 < m)
+    (B : Matrix Unit (Fin (k+1)) ℝ) (r : Fin (k+1) → ℝ) (hr : ∀ i, 0 < r i)
+    (H : Matrix (Fin (k+1)) (Fin (k+1)) ℝ) (hH : H.PosDef) :
+    let p := ((m : ℝ) - k - 2) / 2
+    let G := Matrix.fromBlocks 1 B B.transpose
+      (B.transpose * B + Matrix.diagonal r * H * Matrix.diagonal r)
+    gramConstant (m+1) (k+2) * G.det ^ p *
+        (∏ ij : OffDiagonal (k+1), r ij.val.1 * r ij.val.2) =
+      normalizer (((m : ℝ)+1-3)/2)^(k+1) * (∏ i, r i) ^ ((m : ℝ)-2) *
+        (gramConstant m (k+1) * H.det ^ p)
+~~~
+
+~~~lean
+theorem gramLaw_fiber_integral {m s : ℕ} (hm : 0 < m)
+    (F : (Fin s → ℝ) × (OffDiagonal s → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    (∫⁻ y : Sphere (m+1) × (Fin s → Sphere (m+1)),
+      F (fun i ↦ inner ℝ (y.1 : Ambient (m+1)) (y.2 i),
+        fun ij ↦ inner ℝ (y.2 ij.val.1 : Ambient (m+1)) (y.2 ij.val.2))
+      ∂(uniform (m+1)).prod (Measure.pi fun _ ↦ uniform (m+1))) =
+    ∫⁻ a : Fin s → ℝ, ∫⁻ x, F (a, fun ij ↦ angularThird (a ij.val.1) (a ij.val.2) (x ij))
+      ∂gramLaw m s ∂Measure.pi (fun _ ↦ volume.withDensity (weight (((m:ℝ)+1-3)/2)))
+~~~
+
+~~~lean
+theorem splitGram_volume (s : ℕ) : MeasurePreserving (splitGram s) volume volume
+~~~
+
+~~~lean
+theorem correlation_splitGram {s : ℕ} (a r : Fin s → ℝ)
+    (hr : ∀ i, a i ^ 2 + r i ^ 2 = 1) (x : OffDiagonal s → ℝ) :
+    let B : Matrix Unit (Fin s) ℝ := fun _ i ↦ a i
+    let y := fun ij : OffDiagonal s ↦ a ij.val.1 * a ij.val.2 +
+      (r ij.val.1 * r ij.val.2) * x ij
+    (correlation ((splitGram s).symm (a,y))).submatrix (poleRowIndex s) (poleRowIndex s) =
+      Matrix.fromBlocks 1 B B.transpose
+        (B.transpose * B + Matrix.diagonal r * correlation x * Matrix.diagonal r)
+~~~
+
+~~~lean
+theorem gramDensity_fiber (m k : ℕ) (hm : 0 < m) (a r : Fin (k+1) → ℝ)
+    (hr : ∀ i, 0 < r i) (ha : ∀ i, a i ^ 2 + r i ^ 2 = 1) (x : OffDiagonal (k+1) → ℝ) :
+    let y := fun ij : OffDiagonal (k+1) ↦ a ij.val.1 * a ij.val.2 +
+      (r ij.val.1 * r ij.val.2) * x ij
+    gramDensity (m+1) ((splitGram (k+1)).symm (a,y)) *
+        (∏ ij : OffDiagonal (k+1), r ij.val.1 * r ij.val.2) =
+      normalizer (((m:ℝ)+1-3)/2)^(k+1) * (∏ i, r i) ^ ((m:ℝ)-2) * gramDensity m x
+~~~
+
+~~~lean
+theorem gramDensity_fiber_integral (m k : ℕ) (hm : 0 < m) (a r : Fin (k+1) → ℝ)
+    (hr : ∀ i, 0 < r i) (ha : ∀ i, a i ^ 2 + r i ^ 2 = 1)
+    (F : (OffDiagonal (k+1) → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    let T := fun (x : OffDiagonal (k+1) → ℝ) ij ↦ a ij.val.1 * a ij.val.2 +
+      (r ij.val.1 * r ij.val.2) * x ij
+    (∫⁻ y, ENNReal.ofReal (gramDensity (m+1) ((splitGram (k+1)).symm (a,y))) * F y) =
+      ∫⁻ x, ENNReal.ofReal (normalizer (((m:ℝ)+1-3)/2)^(k+1) *
+        (∏ i, r i) ^ ((m:ℝ)-2) * gramDensity m x) * F (T x)
+~~~
+
+~~~lean
+theorem gramLaw_recursion {m s : ℕ} (hm : 0 < m)
+    (F : (Fin s → ℝ) × (OffDiagonal s → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    (∫⁻ x, F (splitGram s x) ∂gramLaw (m+1) (s+1)) =
+    ∫⁻ a : Fin s → ℝ, ∫⁻ x, F (a, fun ij ↦ angularThird (a ij.val.1) (a ij.val.2) (x ij))
+      ∂gramLaw m s ∂Measure.pi (fun _ ↦ volume.withDensity (weight (((m:ℝ)+1-3)/2)))
+~~~
+
+~~~lean
+theorem gramConstant_pos {n s : ℕ} (hn : s + 2 ≤ n) : 0 < gramConstant n s
+~~~
+
+~~~lean
+theorem euclideanGramFormula_of_spherical {n : ℕ}
+    (h : ∀ s, 2 ≤ s → s + 2 ≤ n → SphericalGramFormula n s) : EuclideanGramFormula n
+~~~
+
+~~~lean
+theorem classicalGramFormula_volume_of_spherical
+    (h : ∀ s, 2 ≤ s → s + 2 ≤ Module.finrank ℝ E → SphericalGramFormula (Module.finrank ℝ E) s) :
+    ClassicalGramFormula (volume : Measure E)
+~~~
+
+~~~lean
+theorem siegelSetTwo_covers (x : SL 2) :
+    ∃ g : (integerGroup 2).op, x ∈ g • siegelSetTwo
+~~~
+
 ## Lean axiom audit
 
 ```text
@@ -616,4 +731,17 @@ theorem siegel_diagonal_integral {d : ℕ} (w : Fin d → ℝ) (hw : ∀ i, 0 < 
 'SigabaNeo.Rogers.Gram.angular_fiber_volume' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.Gram.gramConstant_recursion' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.siegel_diagonal_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.angular_jacobian_product' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.angular_block_posDef' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.angular_density_pullback' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.gramLaw_fiber_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.splitGram_volume' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.correlation_splitGram' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.gramDensity_fiber' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.gramDensity_fiber_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.gramLaw_recursion' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.gramConstant_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.euclideanGramFormula_of_spherical' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.classicalGramFormula_volume_of_spherical' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.siegelSetTwo_covers' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
