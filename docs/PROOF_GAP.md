@@ -536,7 +536,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   certified terminal fraction of 0.85·G. The best values are 45.32% at β = 511 (two-block slide) and 45.44% at β = 512 (terminal
   variant; Part 87's MW certificate gives 0.38627 there). For widths ≥ 512, a combined primal+dual reducer (one extra SVP call)
   exists and terminates but admits exactly the same extensions, so it gives no gain at 647/800. Narrow widths are unresolved.
-* **Frontier after Parts 1–93 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 94 (audited, minor caveats).** [threshold](research/wall1_threshold.md): this part recalibrates the target. In the
+  final projected block (horizontal slice H of rank β−1, plant image (y, 1)), uniqueness of the plant image up to sign holds iff
+  λ1(H) > R, the open-Voronoi condition holds at height 1, and dist(ky, H)² > R² − k² for 2 ≤ k ≤ R. Given only the plant norm,
+  the sharp sufficient cutoff on λ1(H) is T(R) ≈ R². That is ~35× / ~19× of 0.85·GSA at 406 / 506 and about 255× / 142× the
+  Part 92 bound, and it never drops below 0.85·GSA at any width up to 1023. A tail-GS profile cutoff (√((1+2d)(1+a²))) drops
+  below it only from width 892. So terminal-length bounds alone cannot certify uniqueness below 647. The missing input is
+  distributional control of the coset distances dist(ky, H), using independence of u (Part 47).
+* **Frontier after Parts 1–94 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
