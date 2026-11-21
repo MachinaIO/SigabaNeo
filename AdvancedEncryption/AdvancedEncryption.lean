@@ -7,3 +7,4 @@ import PE.Impl.Gates.DateWindow
 import PE.Impl.DualUse.Scheme
 import PE.Impl.DualUse.KeyGen
 import PE.Impl.DualUse.Noise
+import PE.Impl.DualUse.Trapdoor
