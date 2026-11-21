@@ -8,6 +8,14 @@ LWE with `m` samples, secret dimension `n` and modulus `q`: Module-LWE at ring d
 (`Z_q[X]/(X + 1) = Z_q`). A pair is `(A, b)` with `A ∈ Z_q^{m×n}` and `b = A·s + e`, each entry a
 degree-`1` polynomial (`Fin 1 → Z_q`), as cslib-frontier stores it.
 
+## Concrete assumptions (`SigabaNeo.Assumption`)
+
+* `LWE.Params`: `n`, `m`, `q`, the error width `s` (errors from `D_{Z,s}`) and the secret law.
+* `LWE.decision`, `LWE.search`: the Module-LWE assumptions at ring degree `1`
+  (`LWE.Params.toModule`), with the same security function `LWE.H` (no ring penalty).
+
+## Asymptotic form (cslib-frontier)
+
 * `LWE.gaussVec n q s`: `n` entries from `D_{Z,s}`, reduced mod `q`.
 * `LWE.Decision m n q secret error`: the decision assumption on cslib-frontier's encoding, which
   does not include `q`; a distinguisher must compute `q κ` itself.
@@ -25,6 +33,40 @@ namespace SigabaNeo.Lattices
 open Cslib Cslib.Crypto Cslib.Probability
 
 namespace LWE
+
+/-- Concrete LWE parameters. -/
+structure Params where
+  /-- Secret dimension. -/
+  n : ℕ
+  /-- Number of samples. -/
+  m : ℕ
+  /-- Modulus. -/
+  q : ℕ
+  /-- Width of the error law `D_{Z,s}`. -/
+  s : ℚ
+  /-- Law of the secret's entries. -/
+  secret : SecretDist
+  /-- The modulus is positive. -/
+  q_pos : 0 < q := by decide
+
+/-- LWE as Module-LWE at ring degree `1`. -/
+def Params.toModule (p : Params) : ModuleLWE.Params :=
+  { N := 1, rank := p.n, m := p.m, q := p.q, s := p.s, secret := p.secret, q_pos := p.q_pos }
+
+/-- The security function: Module-LWE's at ring degree `1`. -/
+def H (p : Params) : ℕ := ModuleLWE.H p.toModule
+
+/-- **Decision LWE**, with `H p` bits. -/
+noncomputable def decision : Assumption where
+  Params := Params
+  problem p := ModuleLWE.decision.problem p.toModule
+  H := H
+
+/-- **Search LWE**, with `H p` bits. -/
+noncomputable def search : Assumption where
+  Params := Params
+  problem p := ModuleLWE.search.problem p.toModule
+  H := H
 
 /-- An LWE pair `(A, b)`, `A ∈ Z_q^{m×n}`, at ring degree `1`. -/
 abbrev Pair (m n q : ℕ) : Type :=
