@@ -370,7 +370,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   β = 406/506/647/800, rank 1023 — still ≈ 60× below 0.85·GSA. Asymptotically (β/N → a): g_{N−β}/R_T ≥ exp[−O_a(log² N)] for all
   BKZ-β bases simultaneously, off an event of probability ≤ 2^{-N}: the terminal minimum is never exponentially below its own
   Gaussian radius.
-* **Frontier after Parts 1–65 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 66 (audited, minor caveats).** [terminal_constant](research/wall1_terminal_constant.md): on Haar lattices
+  (β/N → a), simultaneously over all fully BKZ-β bases with failure ≤ 2^{-N}: log(g_{N−β}/R_T) ≥ −¼ log² N − O_a(log N); the
+  geometric mean of the last Θ(N) GS lengths has only a polynomial loss, and in this argument the log² loss comes from mean →
+  endpoint. Obstructions: (i) worst case — Hanrot–Stehlé HKZ bases attain −¼ log² N at the terminal index with every crossing
+  window enforced, so any improvement needs Haar typicality; (ii) on the Haar typical event, primitive prefixes within a factor 2
+  of the GSA determinant can have quotient ratio exp[−Ω(N log N)] (−166 / −85 / −6.0 at N = 1023, widths 406/506/647) — such
+  prefixes need not be BKZ-completable, so a proof must combine Haar typicality with BKZ-completability of the prefix.
+* **Frontier after Parts 1–66 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
