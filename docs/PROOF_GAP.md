@@ -219,6 +219,19 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
     * Priority: Kim–Kwon–Lee–Lee (ePrint 2026/2711) already prove exact SVP for random `q`-ary
       kernels in a different density regime. What may be new here is narrower: the
       shrinking-shell statistics at these radii. Even that is not confirmed.
+  * **Lean (`SigabaNeo.Lattices.QAryMain`, partial; axioms `propext`, `Classical.choice`,
+    `Quot.sound`).** No continuum or Gram-density hypothesis is used.
+
+    | Theorem | Statement |
+    | --- | --- |
+    | `markedRawSum`, `markedCenteredSum` | exact raw and centered marked moments over all check matrices |
+    | `markedDeviationUnion`, `staticFailure_le_rankSum` | Markov's inequality and a union bound over marks and levels: `P[S1, S2 or S3′ fails]` is at most an explicit finite sum of modular-rank terms, for the repository's sieve predicates |
+    | `rankReplacement` | modular minus rational raw sums equals a sum over discrepant rank pairs with exact multiplicities |
+    | `innerBallProbability` | for `1 ≤ R < q`, `P[Λ_q^⊥(A) meets the nonzero integer ball of radius R] ≤ #B/q^n` |
+
+    Open in Lean: estimating that finite sum at the T4b radii, which needs the rank-defect
+    multiplicities, cancellation of the partition terms and the continuum non-partition bounds,
+    to reach `e^{−cm}`; and the exact-SVP corollary.
   * **Still far from Kyber and LWE.** `q = 3329` is polynomial and far below `exp(log^6 m)`. LWE
     lattices contain a planted short vector. BKZ runs the sieve on projected blocks, which is
     assumption (C), refuted for worst-case blocks above. The bit model is open.
