@@ -60,10 +60,46 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
 Average-case bounds on `λ_2` and on the projected target from Siegel-type mean value theorems or
 counting.
 
-## Stage 3 (planned): sieving
+## Direction of the GSA error (checked)
 
-The unconditional `2^{n + o(n)}` sieve of Aggarwal–Dadush–Regev–Stephens-Davidowitz, then the gap
-to the heuristic `2^{0.292 n}`.
+The estimator's CN11 simulator models the BKZ basis shape more closely than the GSA, including the
+HKZ tail. It is still empirical. With it, the primal attacks on Kyber cost more than with the GSA:
+
+| Kyber | uSVP GSA | uSVP CN11 | difference | BDD GSA | BDD CN11 | difference |
+| --- | --- | --- | --- | --- | --- | --- |
+| 512 | 143.8 | 146.8 | +3.0 | 140.2 | 142.1 | +1.9 |
+| 768 | 204.9 | 209.9 | +5.0 | 201.0 | 203.9 | +3.0 |
+| 1024 | 275.1 | 282.3 | +7.2 | 270.7 | 275.4 | +4.7 |
+
+So the GSA errs in the attacker's favour here, which keeps `H` on the safe side. This is a
+comparison of two models, not a proof.
+
+## Stage 3: sieving (assumption (B))
+
+The sieving cost `2^{0.292 β}` rests on three assumptions:
+
+* **(A)** the Gaussian heuristic for lattice-point counts. For Haar-random lattices it is a
+  theorem (Siegel, Rogers).
+* **(B)** the list behaves like i.i.d. uniform points on a sphere. This is the open core.
+* **(C)** BKZ's projected blocks behave like random lattices.
+
+Research note: [research/provable_sieving.md](research/provable_sieving.md). Status:
+
+* A claimed solution of (B) for Haar-random lattices: Doulgerakis–Laarhoven, arXiv:2609.37482
+  (2026, not refereed). It solves exact SVP in `2^{0.2924n+o(n)}` time and `2^{0.2075n}` space. It
+  rests on Laarhoven, arXiv:2609.13635 (quenched lattice statistics). Both are **claimed**, not
+  verified here.
+* The note proves the algorithmic layer on paper, given static hypotheses S1–S5 on a fixed
+  lattice: exact uniformity of the lists, the acceptance rate, correctness in time `2^{0.415n}`.
+  It also proves Lemma S3′ (SVP coverage from Rogers' formula at `k ≤ 3`) and the `q`-ary
+  mean-value formula (Lemmas Q1, Q2).
+* The one unverified deep input for exact SVP is gap **G1**: [Laa26] Proposition 5.1, quenched
+  bounds on high moments of lens counts with every non-partition penalty below `3/4`.
+* In progress: an adversarial audit of G1, a Lean formalization of the algorithmic layer (S1–S5 as
+  hypotheses), and Lean proofs of the `q`-ary Lemmas Q1, Q2 with a study of Lemma Q3.
+* Open: (C) has no known approach. BKZ's projected blocks are not Haar-random, and no analogue of
+  Rogers' formula is known for them. So even a verified [DL26] would make sieving a theorem for
+  random lattices, not for the sieve calls inside BKZ on LWE lattices.
 
 ## Stage 4 (planned): dual attacks
 
