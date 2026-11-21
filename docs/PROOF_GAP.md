@@ -652,6 +652,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   trace d and a fixed subgroup H. If H has a nonzero h with ‖h‖² ≤ 1 + (3/2)d − √((9/2)d/99), then the CBD(3) probability of
   all-heights uniqueness is ≤ 99/100. This is the necessary floor of Parts 94/103, end to end in Lean, and it is accepted on
   Prove2Me.
+  NormOnlyCertificate.lean (`allHeightsUnique_of_normOnly`, `allHeightsUnique_of_normSq`) proves the matching sufficient side
+  (Part 94). If every nonzero h ∈ H satisfies ‖h‖ > k‖y‖ + √(R² − k²), or simply ‖h‖ > R², then all-heights uniqueness holds.
+  Both are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
