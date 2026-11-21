@@ -20,3 +20,4 @@ import PE.Impl.DualUse.Registry
 import PE.Impl.Bridge
 import PE.Impl.DualUse.BitLaws
 import PE.Impl.DualUse.Encodings
+import PE.Impl.DualUse.SetupLaw
