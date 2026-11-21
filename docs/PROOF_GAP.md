@@ -431,3 +431,11 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
 Following the Pouly–Shen line of rigorous dual-attack analyses.
 
 The stage-1 numbers come from `python/proof_gap.py` (estimator `RC.MATZOV` costs, `python/lwemodel`).
+
+## Dual attacks: list correlations (audited; [research/dual_list_correlation.md](research/dual_list_correlation.md))
+
+For a complete shell under uniform input the off-diagonal score variance is exactly a (half-weighted) count of
+modular collisions up to sign; for non-uniform input distinct, non-antipodal dual vectors can be perfectly
+correlated (variance `N²`); sign flips and uniform subset selection do not remove correlations. Conditional guarantee:
+mean gap `g` and variance sum `≤ g²/16` give advantage `≥ 3/4` for the midpoint test. Open: establishing these for
+actual BKZ+sieve lists, and bridging fresh-input tests with Pouly–Shen's fixed-input Theorem 6.
