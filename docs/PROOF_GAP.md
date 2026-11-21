@@ -458,7 +458,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   event) fails on the relocated Part 77 boxes: no deep column reaches the Gaussian hard-coverage threshold even with the exact
   smoothing parameter (all 794 deep prefix ranks, interval-certified); exact Gaussian tails give < 2356 nats along a rank-1023
   chain, leaving > 2.17·10⁵ nats at β = 800, 0.25·GSA. Scope: height-one Gaussian test only.
-* **Frontier after Parts 1–78 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Parts 79–81 (audited).** [multiheight_coverage](research/wall1_multiheight_coverage.md) (Part 79: joint multi-height
+  coverage gives only ≈ 6.5 nats on the closest Part 77 box; complete coverage ruled out for 377375/437602 deep pairs);
+  [hole_filling](research/wall1_hole_filling.md) (Part 80: a second coset at a deepest hole gives μ(D) ≤ R(F/2)^{1/j} when the
+  density ratio F to a periodic-packing cap is < 2; every lattice has 2μ/R ≥ √(2j/(j+1)); with Part 77 caps the hard test misses
+  by 0.34 nat); [hole_filling2](research/wall1_hole_filling2.md) (Part 81: with the rigorous Cohn–Elkies cap (Table 3, exact
+  rational arithmetic + Sturm), a rank-33 tail window of every Part 77 box exceeds the packing cap by > 0.127 nat, so those
+  boxes are excluded outright — Part 77 used Blichfeldt at small d).
+* **Frontier after Parts 1–81 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
