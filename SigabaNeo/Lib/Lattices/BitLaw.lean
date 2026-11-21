@@ -136,6 +136,34 @@ theorem floodLaw {N Q : ℕ} [NeZero Q] (ι : Type) [Fintype ι] [DecidableEq ι
   have : NeZero (2 ^ w) := ⟨by positivity⟩
   exact (uniform_fun (uniform_fin_pow w)).map _
 
+/-- **The uniform law on the image of an embedding of `m` bits.** -/
+theorem uniformOfFinset_map {α : Type} [DecidableEq α] (m : ℕ) (emb : (Fin m → Bool) ↪ α) :
+    BitLaw (PMF.uniformOfFinset (Finset.univ.map emb) (Finset.univ_nonempty.map)) m := by
+  classical
+  refine ⟨fun l => emb fun i => l.getD i false, ?_⟩
+  rw [BitString.uniformList, PMF.map_comp]
+  ext a
+  rw [PMF.uniformOfFinset_apply, PMF.map_apply]
+  split_ifs with ha
+  · obtain ⟨b, -, rfl⟩ := Finset.mem_map.mp ha
+    rw [tsum_eq_single b]
+    · simp [Finset.card_map, Fintype.card_bool]
+    · intro b' hb'
+      simp only [Function.comp_apply, List.getD_eq_getElem?_getD, List.getElem?_ofFn]
+      rw [if_neg]
+      intro h
+      apply hb'
+      have := emb.injective h.symm
+      funext i
+      have := congrFun this i
+      simpa using this
+  · refine (tsum_eq_zero_iff.mpr fun b => ?_).symm
+    rw [if_neg]
+    intro h
+    apply ha
+    rw [h]
+    exact Finset.mem_map_of_mem _ (Finset.mem_univ _)
+
 end BitLaw
 
 end SigabaNeo.Lattices
