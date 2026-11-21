@@ -479,7 +479,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   prefix exceeding e^{70921}. Consistent with Part 67 (different radii; counts are extremely steep in ρ). Audit side finding:
   the single-cut chain [0, k, k+1, n] (no piece-size limit is needed for the counting identity) would raise the width-406
   absolute radius from 0.00654 to ≈ 0.0076 (bisection check, to be certified).
-* **Frontier after Parts 1–83 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Parts 84–85 (audited, minor caveats).** [prefix_level](research/wall1_prefix_level.md) (Part 84, Z1): counting distinct
+  BKZ-completable prefixes once (Schmidt-normalized unfolding; T = L/W with its exact Haar law; HKZ-by-truncation caps incl.
+  Korkin–Zolotarev and Pendavingh–van Zwam rank-3/5 inequalities) gives, jointly at 99% per width, g_{1023−β} ≥ 0.00788 / 0.01754
+  / 0.04395 / 0.15577 and g/R_T ≥ 0.00585 / 0.00949 / 0.01567 / 0.03611 (β = 406/506/647/800) — the best single-sided
+  all-bases radii (21–47× below 0.85·GSA). [canonical_bad_basis](research/wall1_canonical_bad_basis.md) (Part 85, Z2): local
+  canonicalization cannot separate bad flags (window endpoints fix internal HKZ flags on generic lattices); rank-(k+1) prefix
+  counting gives 0.00766 / 0.01704 at β = 406/506 (superseded by Part 84).
+* **Frontier after Parts 1–85 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
