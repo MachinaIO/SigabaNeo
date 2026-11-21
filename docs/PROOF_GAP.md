@@ -123,6 +123,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   covolumes, yet an explicit example has a projected horizontal vector shorter than the unique ambient shortest plant. Symmetry
   and independence alone cannot certify `β = 406`; what remains is the probability of a competing vector in the quotient that
   the actual algorithm selects.
+* **Part 11 (audited; [research/wall1_markov_flags.md](research/wall1_markov_flags.md)).** Rerandomized tours are not a Markov
+  chain on flags in general (two bases with the same prefix give disjoint next-prefix laws under the same unimodular update),
+  and a symmetric irreducible walk on primitive lines has no stationary probability. A specific tour with a metric-dependent
+  reduction step is not excluded.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
