@@ -55,15 +55,28 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
   are within `2 (δ₁ + ε + δ₆)` plus the Ring-LWE advantages of the reductions of hybrids 3
   (`reduction3`, secret `t`) and 5 (`reduction5`, normal form) for both challenges.
 
+* `DualUse.attributeHiding_rlwe` (`Registry.lean`): the reductions' instance laws are the
+  registry's Ring-LWE laws, through explicit word distinguishers.
+* Coins: `BitLaws.lean`, `SetupLaw.lean` (every law of the scheme is an image of fair coins), and
+  `SigabaNeo.Lattices.BitLaw.uniformOfFinset_map` (the big box).
+* **Machines** (`Impl.lean`): `DualUse.impl hk c` for the date-window universe, from a
+  configuration `Conf` (ring degree, `q = 2^K`, `|Wd|`, error law, flooding width, boxes,
+  decomposition, `L`). `Setup`, `Enc`, `KeyGen` realize the scheme's laws exactly
+  (`Machine.exists_finiteAlg`), `Dec` computes the decryption, and `Eval`
+  (`Gates.DateWindow.winEvalMachine`) authorizes only window predicates, so correctness concerns
+  finitely many circuits. `DualUse.expressive` for `L ≥ dateBound`.
+* **Correctness** (`ImplCorrect.lean`): `DualUse.correct`: `PE.Correct` under conditions on the
+  parameters (gadget inverse, box coverage by the real trapdoor, short coins, noise bound of every
+  window predicate below `q/4`, abort probability of an inner box at most `2^{-κ}`).
+
 ## To do
 
-* Instantiate the statistical terms over `R_q` (`δ₁`, `δ₆` from `|Wd|`); `ε` is
-  `DualUse.flood_hyp`. The instance laws are linked to the registry's Ring-LWE
-  (`DualUse.attributeHiding_rlwe`).
-* The key oracle: keys from `idealKeyLaw`, sampled in the reductions with `simTrap W_f` (bounded
-  predicates, `GoodTrap` coverage).
-The laws of the coins (binary `Rᵢ`, boxes) and the probability of a correct decryption; hybrid 3 (the trapdoor part of `B` pseudorandom; from `trapRow` to `lawB₁u`), and the game (key oracle from `idealKeyLaw`); then the
-machines (`SigabaNeo.Lib.Machines.Randomized`, `Guarded`) and the machine-level propositions.
+* Concrete parameters: a `Conf` and proofs of the conditions of `DualUse.correct` (trapdoor norm
+  from the error law's support, box sizes for abort `≤ 2^{-128}`, the noise bound of the window
+  circuits).
+* Machine-level attribute hiding: the math-level chain is done (`attributeHiding_rlwe`); the
+  Trusted definition (`HardAt`: `cost / adv² ≥ 2^λ` with explicit cost) needs either reductions
+  as machines with explicit step counts or a relaxed definition. Pending the user's decision.
 
 ## Relation to mxx's PE (`codes/mxx`, branch `claude/dsl-simplification-arbitrary-compute-e010f1`)
 

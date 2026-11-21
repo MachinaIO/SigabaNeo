@@ -130,4 +130,79 @@ theorem expressive (impl : Impl sig) {L : ℕ} (h : impl.machine .eval = evalMac
   rw [he, Bool.not_eq_false']
   exact ⟨fun h => h.2, fun h' => ⟨hlen, h'⟩⟩
 
+/-! ### Evaluation of window predicates only
+
+`Eval` may accept only the window predicates: `winEvalMachine L` authorizes `C` for `x` iff the
+input is at most `L` long, `C` is the predicate of a window, and its last gate is `false` on `x`.
+Correctness then concerns these finitely many predicates only. -/
+
+open Classical in
+/-- `Eval` on `(pw, C, x)` for window predicates only. -/
+noncomputable def winEvalFun (L : ℕ) (xs : List (List Bool)) : List (List Bool) :=
+  [[decide ((encodeTuple xs).length ≤ L) && decide (∃ w : Window, winWord w = xs.getD 1 []) &&
+    !evalGates (xs.getD 2 [], parse (xs.getD 1 []))]]
+
+theorem winEvalFun_almostConst (L : ℕ) : ∃ b, {xs | winEvalFun L xs ≠ b}.Finite := by
+  refine ⟨[[false]], Set.Finite.subset ((List.finite_length_le Bool L).preimage
+    (encodeTuple_injective.injOn)) fun xs hxs => ?_⟩
+  by_contra h
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq] at h
+  exact hxs (by simp [winEvalFun, h])
+
+/-- The machine of `Eval` for window predicates. -/
+noncomputable def winEvalMachine (L : ℕ) : Machine :=
+  Classical.choose (Machine.exists_of_almostConst (encIn := encTuple) (encOut := encTuple)
+    (winEvalFun_almostConst L))
+
+theorem winEvalMachine_deterministic (L : ℕ) : (winEvalMachine L).Deterministic :=
+  (Classical.choose_spec (Machine.exists_of_almostConst (encIn := encTuple) (encOut := encTuple)
+    (winEvalFun_almostConst L))).1
+
+theorem winEvalMachine_run (L : ℕ) (xs : List (List Bool)) :
+    (winEvalMachine L).run (encodeTuple xs) = PMF.pure (encodeTuple (winEvalFun L xs)) :=
+  (Classical.choose_spec (Machine.exists_of_almostConst (encIn := encTuple) (encOut := encTuple)
+    (winEvalFun_almostConst L))).2 xs
+
+/-- **Authorization** for window predicates. -/
+theorem win_authorized_iff (impl : Impl sig) {L : ℕ} (h : impl.machine .eval = winEvalMachine L)
+    (C : List Bool) (x : Date) : Authorized (U := dateUniverse) params impl C x ↔
+      (encodeTuple [paramsWord dateUniverse params, C, encDate x]).length ≤ L ∧
+        (∃ w : Window, winWord w = C) ∧ evalGates (encDate x, parse C) = false := by
+  classical
+  have he : eval (U := dateUniverse) params impl C x =
+      PMF.pure ((winEvalFun L [paramsWord dateUniverse params, C, encDate x]).getD 0 []) := by
+    unfold eval Impl.run
+    rw [h, winEvalMachine_run, PMF.pure_map, PMF.pure_map]
+    have : (sig Alg.eval).outputs.length =
+        (winEvalFun L [paramsWord dateUniverse params, C, encDate x]).length := rfl
+    rw [this]
+    exact congrArg (fun l => PMF.pure (List.getD l 0 []))
+      (decodeTuple_encodeTuple (winEvalFun L [paramsWord dateUniverse params, C, encDate x]))
+  unfold Authorized
+  rw [he, PMF.pure_apply]
+  split_ifs with hw
+  · simp only [winEvalFun, List.getD_cons_zero, List.getD_cons_succ, List.cons.injEq,
+      and_true] at hw
+    simp only [true_iff]
+    have := hw.symm
+    simp only [Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true'] at this
+    exact ⟨this.1.1, this.1.2, this.2⟩
+  · simp only [zero_ne_one, false_iff]
+    rintro ⟨h1, h2, h3⟩
+    exact hw (by simp [winEvalFun, h1, h2, h3])
+
+/-- **Expressiveness** with `Eval` the evaluation of window predicates and `L ≥ dateBound`. -/
+theorem expressive_win (impl : Impl sig) {L : ℕ} (h : impl.machine .eval = winEvalMachine L)
+    (hL : dateBound ≤ L) : Expressive dateUniverse params impl := by
+  intro (w : Window)
+  refine ⟨winWord w, fun (x : Date) => ?_⟩
+  rw [win_authorized_iff impl h (winWord w) x]
+  have hlen := (Finset.le_sup (f := fun wx : Window × Date =>
+      (encodeTuple [paramsWord dateUniverse params, winWord wx.1, dateUniverse.encAttr wx.2]).length)
+      (Finset.mem_univ (α := Window × Date) (w, x))).trans hL
+  have he : evalGates (encDate x, parse (winWord w)) = !accepts w x := by
+    rw [winWord, parse_unparse]; exact evalGates_winGates w x
+  rw [he, Bool.not_eq_false']
+  exact ⟨fun h => h.2.2, fun h' => ⟨hlen, ⟨w, rfl⟩, h'⟩⟩
+
 end AdvancedEncryption.PE.Gates.DateWindow

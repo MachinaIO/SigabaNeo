@@ -16,12 +16,14 @@ For the universe of `PE.DateWindow` (a date as 10 bits, one-bit messages), over
 fixes the remaining parameters of the scheme. `Setup`, `Enc` and `KeyGen` are machines realizing
 the scheme's laws exactly (`Machine.exists_finiteAlg`, with the coin maps of `DualUse.BitLaws`),
 `Dec` a deterministic machine computing the scheme's decryption
-(`Machine.exists_finiteAlg_det`), and `Eval` the gate-list evaluation (`Gates.evalMachine`). A
+(`Machine.exists_finiteAlg_det`), and `Eval` the evaluation of window predicates
+(`Gates.DateWindow.winEvalMachine`: it authorizes only the gate lists `winWord w` of windows). A
 predicate is a gate list, read as a straight-line program by `predOf`. Inputs that encode no
 valid value (wrong parameters, predicates longer than `L`) are answered arbitrarily.
 
 `correct_of_scheme`: the implementation is correct as soon as the scheme decrypts correctly with
-probability at least `1 − 2^{-128}` for every gate list whose last gate is `false` on `x`.
+probability at least `1 − 2^{-κ}` for every window predicate whose last gate is `false` on `x`.
+The implementation is expressive for `L ≥ dateBound` (`expressive`).
 -/
 
 namespace AdvancedEncryption.DualUse
@@ -231,31 +233,31 @@ noncomputable def impl : Impl PE.sig where
     | .enc => encMachine hk c
     | .keyGen => keyMachine hk c
     | .dec => decMachine hk c
-    | .eval => evalMachine c.L
+    | .eval => winEvalMachine c.L
   deterministic a h := by
     cases a
     all_goals first
       | exact absurd h (by decide)
       | exact (Classical.choose_spec (exists_decMachine hk c)).1
-      | exact evalMachine_deterministic _
+      | exact winEvalMachine_deterministic _
 
 /-! ### Correctness -/
 
 /-- **Correctness from the scheme**: the implementation is correct if the scheme decrypts
-correctly with probability at least `1 − 2^{-κ}` for every predicate of at most `L` bits whose
-last gate is `false` on `x`. -/
+correctly with probability at least `1 − 2^{-κ}` for every window predicate whose last gate is
+`false` on `x`. -/
 theorem correct_of_scheme
-    (hscheme : ∀ (x : Date) (C : List Bool), C.length ≤ c.L →
-      evalGates (encDate x, parse C) = false → ∀ b : Bool,
+    (hscheme : ∀ (x : Date) (w : Window), (winWord w).length ≤ c.L →
+      evalGates (encDate x, parse (winWord w)) = false → ∀ b : Bool,
         1 - ((2 : ℝ) ^ params.corrBits)⁻¹ ≤
-          (((setupM hk c).bind fun v => (keyM hk c v.2 C).bind fun sk =>
-            (encM hk c v.1 x b).map fun ct => decM hk c sk C ct) [b]).toReal) :
+          (((setupM hk c).bind fun v => (keyM hk c v.2 (winWord w)).bind fun sk =>
+            (encM hk c v.1 x b).map fun ct => decM hk c sk (winWord w) ct) [b]).toReal) :
     Correct dateUniverse params (impl hk c) := by
   have hauth : ∀ C (x : Date), Authorized (U := dateUniverse) params (impl hk c) C x →
-      C.length ≤ c.L ∧ evalGates (encDate x, parse C) = false := by
+      C.length ≤ c.L ∧ (∃ w : Window, winWord w = C) ∧ evalGates (encDate x, parse C) = false := by
     intro C x h
-    obtain ⟨h1, h2⟩ := (authorized_iff (U := dateUniverse) params (impl hk c) rfl C x).mp h
-    exact ⟨(length_le_encodeTuple (by simp)).trans h1, h2⟩
+    obtain ⟨h1, h2, h3⟩ := (win_authorized_iff (impl hk c) rfl C x).mp h
+    exact ⟨(length_le_encodeTuple (by simp)).trans h1, h2, h3⟩
   refine correct_of_laws (U := dateUniverse) params (impl hk c) (finEnc _) (finEnc _) (finEnc _)
     (finEnc _) (setupM hk c) (keyM hk c) (encM hk c) (decM hk c) ?_ ?_ ?_ ?_ ?_
   · unfold PE.setup
@@ -285,7 +287,11 @@ theorem correct_of_scheme
       PMF.pure_map, PMF.pure_map]
     rfl
   · intro x C hC b
-    obtain ⟨h1, h2⟩ := hauth C x hC
-    exact hscheme x C h1 h2 b
+    obtain ⟨h1, ⟨w, rfl⟩, h3⟩ := hauth C x hC
+    exact hscheme x w h1 h3 b
+
+/-- **Expressiveness.** -/
+theorem expressive (hL : dateBound ≤ c.L) : Expressive dateUniverse params (impl hk c) :=
+  expressive_win (impl hk c) rfl hL
 
 end AdvancedEncryption.DualUse
