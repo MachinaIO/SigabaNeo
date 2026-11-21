@@ -98,7 +98,7 @@ theorem scheme_bound (hd : 0 < c.d)
           (coinsM hk c).map fun r => decide (decodeBit c.hN (decryptRaw v.1 (predC C)
             (keyOfOutput o) (encrypt v.1 (bitsOf x) b r)) = b)).map
           fun β => if β then [b] else [!b] := by
-      rw [keyM_eq, hm, PMF.bind_map, PMF.map_bind]
+      rw [keyM_eq hk c _ _ ⟨w, rfl⟩, hm, PMF.bind_map, PMF.map_bind]
       refine congrArg (PMF.bind _) (funext fun o => ?_)
       simp only [Function.comp_apply, encM, PMF.map_comp]
       refine congrArg (fun g => PMF.map g (coinsM hk c)) (funext fun r => ?_)

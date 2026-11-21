@@ -139,25 +139,44 @@ noncomputable def coinsM : PMF (EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)
 noncomputable def encM (mpk : PK hk c) (x : Date) (b : Bool) : PMF (CT hk c) :=
   (coinsM hk c).map (encrypt mpk (bitsOf x) b)
 
-/-- One try of box rejection for a key of `C`. -/
-noncomputable def keyTry (msk : SKey hk c) (C : List Bool) :
+/-- The key of a predicate outside the class: the zero key (it decrypts nothing). -/
+def dummyKey : SecretKey (Fin c.d) (TrapCol k) (R := Rg N K) (k := k) := ⟨0, 0, 0⟩
+
+/-- One try of box rejection for a key of the box element `p`. -/
+noncomputable def keyTryW (msk : SKey hk c) (C : List Bool) :
     KeyShort (Fin c.d) (TrapCol k) (Rg N K) → SK hk c := fun p =>
   (msk.1, keyOfOutput (if p - realTrap (S := Sdw (N := N) hk) (trapMat msk.2.1 msk.2.2) (keyMatrix msk.1 (predC C))
       (c.dec (msk.1.p - shortMap msk.1 p)) ∈ c.Small then
     some (p - realTrap (S := Sdw (N := N) hk) (trapMat msk.2.1 msk.2.2) (keyMatrix msk.1 (predC C))
       (c.dec (msk.1.p - shortMap msk.1 p)), c.dec (msk.1.p - shortMap msk.1 p)) else none))
 
+open Classical in
+/-- One try of `KeyGen`: a key only for the predicates of the class (window predicates), the
+zero key otherwise. Keys of gate lists outside the class would decrypt challenges whose attribute
+`Eval` does not authorize. -/
+noncomputable def keyTry (msk : SKey hk c) (C : List Bool) :
+    KeyShort (Fin c.d) (TrapCol k) (Rg N K) → SK hk c := fun p =>
+  if ∃ w : Window, winWord w = C then keyTryW hk c msk C p else (msk.1, dummyKey c)
+
 /-- The law of `KeyGen`: the public key and a key from `keyLaw` with the trapdoor of `msk`. -/
 noncomputable def keyM (msk : SKey hk c) (C : List Bool) : PMF (SK hk c) :=
   (PMF.uniformOfFinset c.Big c.hBig).map (keyTry hk c msk C)
 
-theorem keyM_eq (msk : SKey hk c) (C : List Bool) :
+theorem keyM_eq (msk : SKey hk c) (C : List Bool) (hC : ∃ w : Window, winWord w = C) :
     keyM hk c msk C = (keyLaw c.Big c.Small c.hBig c.dec msk.1
       (realTrap (S := Sdw (N := N) hk) (trapMat msk.2.1 msk.2.2) (keyMatrix msk.1 (predC C)))).map
         fun o => (msk.1, keyOfOutput o) := by
+  have : keyTry hk c msk C = keyTryW hk c msk C := funext fun p => by simp [keyTry, hC]
   unfold keyM keyLaw boxSample
-  rw [PMF.map_comp]
+  rw [this, PMF.map_comp]
   rfl
+
+theorem keyM_of_not (msk : SKey hk c) (C : List Bool) (hC : ¬ ∃ w : Window, winWord w = C) :
+    keyM hk c msk C = PMF.pure (msk.1, dummyKey c) := by
+  have : keyTry hk c msk C = fun _ => (msk.1, dummyKey c) := funext fun p => by simp [keyTry, hC]
+  unfold keyM
+  rw [this]
+  exact PMF.map_const _ _
 
 /-- The output of `Dec`. -/
 noncomputable def decM (sk : SK hk c) (C : List Bool) (ct : CT hk c) : List Bool :=
