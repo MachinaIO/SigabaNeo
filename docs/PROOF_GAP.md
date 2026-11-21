@@ -127,6 +127,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   chain on flags in general (two bases with the same prefix give disjoint next-prefix laws under the same unimodular update),
   and a symmetric irreducible walk on primitive lines has no stationary probability. A specific tour with a metric-dependent
   reduction step is not excluded.
+* **Parts 12–14 (audited obstructions).** [wall1_gaussian_blocks.md](research/wall1_gaussian_blocks.md): with Gaussian block
+  insertion the projected plant lies on the unique shortest line but with multiplicity `|b|`; as the width grows (smoothing error
+  → 0) the probability of multiplicity one → 0. [wall1_duality.md](research/wall1_duality.md): exact dual criterion (primitive
+  plant + strictly smallest marked hyperplane kernel), and two lattices with identical reversed dual blocks where the criterion
+  holds in one and fails in the other — unmarked block statistics cannot certify recovery. [wall1_dynamics.md](research/wall1_dynamics.md):
+  along an exact trajectory with a deterministic tie rule, the next block's law is not determined by its covolume (1/3 vs 1/2);
+  random tie-breaking removes this discrepancy in the example.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
