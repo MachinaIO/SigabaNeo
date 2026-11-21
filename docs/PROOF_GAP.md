@@ -167,8 +167,24 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
       or `(3/2)^{m/2+o(m)}` with Hypothesis P. The exponent is in the lattice dimension `m`.
   * Lean (`SigabaNeo.QAry`): `shortMeanValue`, `markedTail`. Axioms `propext`, `Classical.choice`,
     `Quot.sound`. The integration estimate and the sieve corollaries are paper proofs.
-  * **The regime is far from LWE.** It needs `n ≈ √m` and a doubly exponential `q`. Polynomial
-    moduli, cryptographic shapes (`m ≈ 2n`), the planted LWE vector and the bit model are open.
+  * This first regime needs `n ≈ √m` and a doubly exponential `q`.
+* **Toward cryptographic shapes (T4b; new; [research/qary_crypto_shapes.md](research/qary_crypto_shapes.md)).**
+  * **Paper proof (new).** At **`m = 2n`**, and for every aspect ratio with `n/m` bounded away from 0
+    and 1, S1, S2 and S3′ hold simultaneously with probability `1 − e^{−Ω(m)}`. This needs a
+    **quasi-polynomial** prime `q ≍ exp(⌈log m⌉^6)`.
+  * The new ingredient is a counting bound for modular coincidences. A tuple whose rational rank
+    `t` drops to residue rank `u` is suppressed by `q^{−(t−u)(m−n)}`. Centering at the discrete
+    fibre mean cancels the singleton terms exactly.
+  * At fixed moment order, polynomial primes already suffice for the rank bound. The full sieve
+    theorem still uses the quasi-polynomial prime.
+  * Result: exact SVP on random `q`-ary lattices of these shapes in `(4/3)^{m+o(m)}` time w.h.p.,
+    or `(3/2)^{m/2+o(m)}` under Hypothesis P, in the real-RAM model.
+  * Lean: `QAry.meanValue_le_add_defect`, the finite mean-value transfer inequality with a
+    rank-defect term. Axioms `propext`, `Classical.choice`, `Quot.sound`. The geometric counting
+    bound and the corollaries are paper proofs.
+  * **Still far from Kyber and LWE.** `q = 3329` is polynomial and far below `exp(log^6 m)`. LWE
+    lattices contain a planted short vector. BKZ runs the sieve on projected blocks, which is
+    assumption (C), refuted for worst-case blocks above. The bit model is open.
 * **Re-randomization for (C) (new; [research/rerandomization.md](research/rerandomization.md)).**
   Replace a block `B` by a uniformly random index-`p` sublattice. A tuple whose residues span
   dimension `r` survives with probability `(p^{d−r} − 1)/(p^d − 1)`, which gives exact moments of
