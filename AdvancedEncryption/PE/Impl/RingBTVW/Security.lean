@@ -4,7 +4,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Probability.PMF
 
 /-!
-# Security of the ring variant: the hybrid argument and the reduction to Ring-LWE
+# Security of the ring variant under Ring-LWE
 
 The selective weak attribute-hiding game (BTVW17 Definition 3.3 in its indistinguishability form):
 the adversary names two attributes `x₀, x₁` and two messages `M₀, M₁`, gets `mpk` and a challenge
@@ -14,32 +14,21 @@ oracle (`Adversary`); `game A x₀ x₁ x M` is the law of its output bit for th
 
 Keys come from a key sampler, whose law depends on `(B, B_f̂, p)` only (`KeySampler`), so the key
 oracle depends on `mpk` only and the game is a fixed continuation `run` of the law of `(mpk, ct)`.
-This makes the hybrids of BTVW17 Theorem 4.2 statements about the laws of `(mpk, ct)`:
 
-* `H0 = realLaw x M`: the real `Setup` and `Enc`.
-* `H1 = h1Law x M`: `Setup*`, `Enc*` on a Ring-LWE sample `((B, p), (c, p₀))` with
-  `(c, p₀) = s (B, p) + (e, e')` (`simMap`): `B_j = B W'_j + ψ_j G̲`, `Ψᵢ = [B; c] Rᵢ + xᵢ G`,
-  `c_j = c W'_j`, `κ = p₀ + M ⌊q/2⌋`. (With the key sampler, `KeyGen*` is `KeyGen`: hybrid `H2` of
-  the paper is `H1`.)
-* `H3 = h3Law x M`: the same on a uniform sample.
+**The reduction.** A Ring-LWE instance (`Inst`) has public parts `(B, p, aᵢ, a_j)` and the parts
+`(c, p₀, bᵢ, b_j)`, either `s · (public part) + error` (`ringLWEReal`) or uniform (`ringLWEUniform`).
+`simMap` builds `(mpk, ct)` from an instance: `Ψᵢ = [aᵢ; bᵢ] + xᵢ G`, `B_j = a_j + ψ_j G̲`,
+`c₀ = c`, `c_j = b_j`, `κ = p₀ + M ⌊q/2⌋`.
 
-The reduction to Ring-LWE is exact (`game_h1`, `game_h3`): on `H1` and `H3` the game is
-`ringLWEReal.bind (reduction …)` and `ringLWEUniform.bind (reduction …)`, so the distance between
-them is the advantage of the explicit distinguisher `reduction A x₀ x₁ x M` against Ring-LWE with
-`2k + 1` samples and a uniform secret.
+* `H0 = H1` exactly (`realLaw_eq`): on a real instance, `simMap` gives the real `(mpk, ct)`; the
+  uniform `B_j` of `Setup` is `a_j + ψ_j G̲` for a uniform `a_j` (a one-time pad), and then
+  `c_j = s(B_j − ψ_j G̲) + e_j = s a_j + e_j`.
+* `H3` does not depend on the challenge (`h3Law_eq`): on a uniform instance, `[aᵢ; bᵢ] + xᵢ G` and
+  `p₀ + M ⌊q/2⌋` are uniform whatever `x` and `M` are.
 
-**Security** (`attributeHiding`): the games for `(x₀, M₀)` and `(x₁, M₁)` are within
-`ε₀ + δ₀ + ε + δ₁ + ε₁`, where
-
-* `ε₀`, `ε₁` bound `H0 ≈ H1` for each challenge: statistical (the regularity of the trapdoor
-  matrix `B`, the leftover hash lemma for `B W'_j`, and noise flooding for `c_j = s(B_j − ψ_j G̲) +
-  e W'_j` against fresh errors, `encodings_sim`);
-* `δ₀`, `δ₁` are the Ring-LWE advantages of the two reductions;
-* `ε` bounds `H3(x₀) ≈ H3(x₁)`: statistical (the leftover hash lemma for `[B; c] Rᵢ` with `c`
-  uniform, which hides `x`). The message is hidden exactly: in `H3` the uniform `p₀` makes `κ`
-  independent of `M` (`h3Law_message`).
-
-These statistical bounds are hypotheses here.
+**Security** (`attributeHiding`): the games for `(x₀, M₀)` and `(x₁, M₁)` are within `δ₀ + δ₁`, the
+Ring-LWE advantages of the explicit distinguishers `reduction A x₀ x₁ x₀ M₀` and
+`reduction A x₀ x₁ x₁ M₁`. No statistical step remains.
 -/
 
 namespace AdvancedEncryption.RingBTVW
@@ -47,7 +36,7 @@ namespace AdvancedEncryption.RingBTVW
 open SigabaNeo.Lattices Cslib Cslib.Probability
 open scoped ENNReal
 
-variable {N q k : ℕ} [NeZero q] (hk : q ≤ 2 ^ k) {Attr : Type} [Fintype Attr]
+variable {N q k : ℕ} [NeZero q] (hk : q ≤ 2 ^ k) {Attr : Type} [Fintype Attr] [DecidableEq Attr]
 
 instance : Inhabited (SecretKey (R := Negacyclic (ZMod q) N) (k := k)) := ⟨⟨0, 0⟩⟩
 
@@ -62,154 +51,215 @@ variable {hk}
 
 /-- The key oracle: keys for the circuits unauthorized for both `x₀` and `x₁`, the zero key
 otherwise. -/
-noncomputable def keyOracle (ks : KeySampler (Negacyclic (ZMod q) N) k) (x₀ x₁ : Attr → Bool) (mpk : MPK (ringSetting N q k hk Attr)) :
-    (f : Circuit Attr) → StateT Unit PMF (SecretKey (R := (Negacyclic (ZMod q) N)) (k := k)) := fun f _ =>
-  (if f.evalBool x₀ = true ∧ f.evalBool x₁ = true then keyGenLaw ks mpk f
+noncomputable def keyOracle (ks : KeySampler (Negacyclic (ZMod q) N) k) (x₀ x₁ : Attr → Bool)
+    (mpk : MPK (ringSetting N q k hk Attr)) :
+    (f : Circuit Attr) → StateT Unit PMF (SecretKey (R := Negacyclic (ZMod q) N) (k := k)) :=
+  fun f _ => (if f.evalBool x₀ = true ∧ f.evalBool x₁ = true then keyGenLaw ks mpk f
     else PMF.pure default).map fun sk => (sk, ())
 
 /-- The run of the adversary on `(mpk, ct)`. -/
-noncomputable def run (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr) (x₀ x₁ : Attr → Bool)
+noncomputable def run (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr)
+    (x₀ x₁ : Attr → Bool)
     (v : MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr)) : PMF Bool :=
   (ProbOracleComp.runWith (keyOracle ks x₀ x₁ v.1) (A v.1 v.2) ()).map Prod.fst
 
 variable (χ : PMF (ZMod q))
 
 /-- `H0`: the law of `(mpk, ct)` in the real game for the challenge `(x, M)`. -/
-noncomputable def realLaw (x : Attr → Bool) (M : Bool) : PMF (MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr)) := do
-  let (mpk, _) ← setupLaw hk Attr
-  let ct ← encLaw hk Attr χ mpk x M
-  pure (mpk, ct)
+noncomputable def realLaw (x : Attr → Bool) (M : Bool) :
+    PMF (MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr)) := do
+  let mpk ← setupLaw hk Attr
+  let r ← encCoinsLaw hk Attr χ
+  pure (mpk, encrypt mpk x M r)
 
 /-- The game for the challenge `(x, M)`: the law of the adversary's bit. -/
-noncomputable def game (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr) (x₀ x₁ x : Attr → Bool)
-    (M : Bool) : PMF Bool :=
-  (realLaw χ x M).bind (run ks A x₀ x₁)
+noncomputable def game (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr)
+    (x₀ x₁ x : Attr → Bool) (M : Bool) : PMF Bool :=
+  (realLaw (hk := hk) χ x M).bind (run ks A x₀ x₁)
 
-/-- A Ring-LWE sample with `2k + 1` samples: `((B, p), (c, p₀))`. -/
-abbrev RLWESample (N q k : ℕ) :=
-  (Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N) × Negacyclic (ZMod q) N) ×
-    (Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N) × Negacyclic (ZMod q) N)
+variable (N) (hk) (Attr) in
+/-- The positions of the encodings. -/
+abbrev J := (ringSetting N q k hk Attr).Attr × (ringSetting N q k hk Attr).ctBits.Index
 
-/-- Real Ring-LWE samples: `(c, p₀) = s (B, p) + (e, e')` with `s` uniform and errors from `χ`. -/
-noncomputable def ringLWEReal : PMF (RLWESample N q k) := do
-  let B ← matLaw (polyLaw uniformCoeff)
-  let p ← polyLaw uniformCoeff
-  let s ← polyLaw uniformCoeff
-  let e ← matLaw (polyLaw χ)
-  let e' ← polyLaw χ
-  pure ((B, p), (scalar s * B + e, s * p + e'))
+variable (N) (hk) (Attr) in
+/-- One side of a Ring-LWE instance: a row for `B` (or `c`), a ring element for `p` (or `p₀`), a row
+for every attribute bit and a row for every encoding. -/
+abbrev Side := Row N q k × Negacyclic (ZMod q) N × (Attr → Row N q k) × (J N hk Attr → Row N q k)
 
-/-- A uniform ring element. -/
-noncomputable def uniformPoly : PMF (Negacyclic (ZMod q) N) :=
-  ProbComp.eval (ProbComp.uniform (Negacyclic (ZMod q) N))
+variable (N) (hk) (Attr) in
+/-- A Ring-LWE instance: the public side and the other side. -/
+abbrev Inst := Side N hk Attr × Side N hk Attr
 
-/-- A uniform ring element is unchanged by adding a constant. -/
-theorem uniformPoly_bind_add {α : Type} (g : Negacyclic (ZMod q) N → PMF α)
-    (m : Negacyclic (ZMod q) N) : uniformPoly.bind (fun p₀ => g (p₀ + m)) = uniformPoly.bind g := by
-  have h : (uniformPoly (N := N) (q := q)).map (Equiv.addRight m) = uniformPoly := by
-    rw [uniformPoly, ProbComp.eval_uniform]
-    exact PMF.uniformOfFintype_map_equiv _
-  conv_rhs => rw [← h]
-  rw [PMF.bind_map]
-  rfl
+/-- Real Ring-LWE: the public side uniform and the other side `s · (public side) + errors`, with
+the secret and the errors of `Enc`'s coins. -/
+noncomputable def ringLWEReal : PMF (Inst N hk Attr) := do
+  let B ← unif (Row N q k)
+  let p ← unif (Negacyclic (ZMod q) N)
+  let r ← encCoinsLaw hk Attr χ
+  let aJ ← unif (J N hk Attr → Row N q k)
+  pure ((B, p, r.a, aJ),
+    (scalar r.s * B + r.e₀, r.s * p + r.e', fun i => scalar r.s * r.a i + r.eΨ i,
+      fun j => scalar r.s * aJ j + r.ej j))
 
-/-- Uniform samples. -/
-noncomputable def ringLWEUniform : PMF (RLWESample N q k) := do
-  let B ← matLaw (polyLaw uniformCoeff)
-  let p ← polyLaw uniformCoeff
-  let c ← matLaw (polyLaw uniformCoeff)
-  let p₀ ← uniformPoly
-  pure ((B, p), (c, p₀))
+/-- Uniform instances. -/
+noncomputable def ringLWEUniform : PMF (Inst N hk Attr) := unif (Inst N hk Attr)
 
-/-- `[B; c]`. -/
-def stackRows (B c : Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)) : Matrix (Fin 2) (Col k) (Negacyclic (ZMod q) N) :=
-  Matrix.of fun a col => if a = 0 then B 0 col else c 0 col
-
-variable (hk) (Attr)
-
-/-- `Setup*` and `Enc*` on a sample `((B, p), (c, p₀))`, for the challenge `(x, M)`. -/
-noncomputable def simMap (x : Attr → Bool) (M : Bool) (rs : RLWESample N q k) :
-    PMF (MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr)) := do
-  let W' ← sampleFun (ι := Attr × (coeffBits N q k hk (Fin 2) (Col k)).Index)
-    (matLaw (r := Col k) (c := Col k) (polyLaw (N := N) binaryCoeff))
-  let Rm ← sampleFun (ι := Attr) (matLaw (r := Col k) (c := Col k) (polyLaw (N := N) binaryCoeff))
-  let Ψ := fun i => stackRows rs.1.1 rs.2.1 * Rm i + bitR (R := (Negacyclic (ZMod q) N)) (x i) • (ringSetting N q k hk Attr).Γ.G
-  pure ({ B := rs.1.1, Bj := fun j => rs.1.1 * W' j + bitsOf (ringSetting N q k hk Attr) Ψ j • (ringSetting N q k hk Attr).Γ₁.G, p := rs.1.2 },
-    { Ψ := Ψ, c₀ := rs.2.1, cj := fun j => rs.2.1 * W' j,
-      κ := rs.2.2 + (if M then (ringSetting N q k hk Attr).half else 0) })
-
-variable {hk} {Attr}
-
-/-- `H1`: `Setup*`, `Enc*` on a real Ring-LWE sample. -/
-noncomputable def h1Law (x : Attr → Bool) (M : Bool) : PMF (MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr)) :=
-  (ringLWEReal χ).bind (simMap hk Attr x M)
-
-/-- `H3`: `Setup*`, `Enc*` on a uniform sample. -/
-noncomputable def h3Law (x : Attr → Bool) (M : Bool) : PMF (MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr)) :=
-  ringLWEUniform.bind (simMap hk Attr x M)
-
-/-- **The reduction to Ring-LWE**: on a sample, run `Setup*`, `Enc*` and the adversary. -/
-noncomputable def reduction (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr) (x₀ x₁ x : Attr → Bool)
-    (M : Bool) (rs : RLWESample N q k) : PMF Bool :=
-  (simMap hk Attr x M rs).bind (run ks A x₀ x₁)
-
-/-- On `H1`, the game is the reduction on real Ring-LWE samples. -/
-theorem game_h1 (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr) (x₀ x₁ x : Attr → Bool) (M : Bool) :
-    (h1Law χ x M).bind (run ks A x₀ x₁) = (ringLWEReal χ).bind (reduction ks A x₀ x₁ x M) :=
-  PMF.bind_bind _ _ _
-
-/-- On `H3`, the game is the reduction on uniform samples. -/
-theorem game_h3 (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr) (x₀ x₁ x : Attr → Bool) (M : Bool) :
-    (h3Law (N := N) (hk := hk) x M).bind (run ks A x₀ x₁) =
-      (ringLWEUniform (N := N) (q := q) (k := k)).bind (reduction ks A x₀ x₁ x M) :=
-  PMF.bind_bind _ _ _
-
-/-- `Enc*` depends on the message only through `κ = p₀ + M ⌊q/2⌋`. -/
-theorem simMap_message (x : Attr → Bool) (M : Bool) (B c : Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N))
-    (p p₀ : Negacyclic (ZMod q) N) :
-    simMap hk Attr x M ((B, p), (c, p₀)) =
-      simMap hk Attr x false ((B, p), (c, p₀ + (if M then (ringSetting N q k hk Attr).half else 0))) := by
-  simp only [simMap, Bool.false_eq_true, ite_false, add_zero]
-
-/-- **The uniform `p₀` hides the message**: in `H3` the message does not matter. -/
-theorem h3Law_message (x : Attr → Bool) (M : Bool) :
-    h3Law (N := N) (hk := hk) x M = h3Law (N := N) (hk := hk) x false := by
-  simp only [h3Law, ringLWEUniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.pure_bind]
-  refine congrArg (PMF.bind _) (funext fun B => ?_)
-  refine congrArg (PMF.bind _) (funext fun p => ?_)
-  refine congrArg (PMF.bind _) (funext fun c => ?_)
-  simp only [simMap_message (hk := hk) x M B c p]
-  exact uniformPoly_bind_add (fun p₀ => simMap hk Attr x false ((B, p), (c, p₀))) _
+/-- `[a; b]`. -/
+def stackRows (a b : Row N q k) : Matrix (Fin 2) (Col k) (Negacyclic (ZMod q) N) :=
+  Matrix.of fun i col => if i = 0 then a 0 col else b 0 col
 
 omit [NeZero q] in
-/-- `H1` is the real game with `Setup*`, `Enc*`: the bottom row of `[B; c]` is `sB + e` and
-`c W'_j` is a real encoding with the error `e W'_j` (`encodings_sim`). -/
-theorem stackRows_real (B e : Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)) (s : (Negacyclic (ZMod q) N)) :
-    stackRows B (scalar s * B + e) = stackKey B e s := by
-  ext a c
-  fin_cases a <;> simp [stackRows, stackKey, scalar, Matrix.mul_apply]
+theorem stackKey_eq (a e : Row N q k) (s : Negacyclic (ZMod q) N) :
+    stackKey a e s = stackRows a (scalar s * a + e) := by
+  ext i c
+  fin_cases i <;> simp [stackRows, stackKey, scalar, Matrix.mul_apply]
 
-/-- **Security of the ring variant** (BTVW17 Theorem 4.2): the games for `(x₀, M₀)` and `(x₁, M₁)`
-are within `ε₀ + δ₀ + ε + δ₁ + ε₁`, given the statistical steps `H0 ≈ H1` (`ε₀`, `ε₁`) and
-`H3(x₀) ≈ H3(x₁)` for one message (`ε`; the message itself is hidden exactly, `h3Law_message`), and the Ring-LWE advantages `δ₀`, `δ₁` of the reductions. -/
-theorem attributeHiding (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr) (x₀ x₁ : Attr → Bool)
-    (M₀ M₁ : Bool) {ε₀ ε₁ ε δ₀ δ₁ : ℝ≥0∞}
-    (hstat₀ : CloseTo (realLaw (N := N) (hk := hk) χ x₀ M₀) (h1Law χ x₀ M₀) ε₀)
-    (hstat₁ : CloseTo (realLaw (N := N) (hk := hk) χ x₁ M₁) (h1Law χ x₁ M₁) ε₁)
+/-- The attribute ciphertexts of an instance: `Ψᵢ = [aᵢ; bᵢ] + xᵢ G`. -/
+noncomputable def instΨ (x : Attr → Bool) (v : Inst N hk Attr) :
+    Attr → Matrix (Fin 2) (Col k) (Negacyclic (ZMod q) N) :=
+  fun i => stackRows (v.1.2.2.1 i) (v.2.2.2.1 i) +
+    bitR (R := Negacyclic (ZMod q) N) (x i) • (ringSetting N q k hk Attr).Γ.G
+
+/-- `Setup*` and `Enc*` on an instance, for the challenge `(x, M)`. -/
+noncomputable def simMap (x : Attr → Bool) (M : Bool) (v : Inst N hk Attr) :
+    MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr) :=
+  ({ B := v.1.1, p := v.1.2.1,
+     Bj := fun j => v.1.2.2.2 j +
+       bitsOf (ringSetting N q k hk Attr) (instΨ x v) j • (ringSetting N q k hk Attr).Γ₁.G },
+   { Ψ := instΨ x v, c₀ := v.2.1, cj := v.2.2.2.2,
+     κ := v.2.2.1 + (if M then (ringSetting N q k hk Attr).half else 0) })
+
+/-- `H1`: `Setup*`, `Enc*` on a real instance. -/
+noncomputable def h1Law (x : Attr → Bool) (M : Bool) :
+    PMF (MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr)) :=
+  (ringLWEReal χ).map (simMap x M)
+
+/-- `H3`: `Setup*`, `Enc*` on a uniform instance. -/
+noncomputable def h3Law (x : Attr → Bool) (M : Bool) :
+    PMF (MPK (ringSetting N q k hk Attr) × Ciphertext (ringSetting N q k hk Attr)) :=
+  (ringLWEUniform (N := N) (hk := hk) (Attr := Attr)).map (simMap x M)
+
+/-! ### `H0 = H1` -/
+
+/-- The real `mpk` with `B_j = a_j + ψ_j G̲`, `ψ` the bits of the real `Ψ`. -/
+noncomputable def realMPK (x : Attr → Bool) (B : Row N q k) (p : Negacyclic (ZMod q) N)
+    (r : EncCoins (ringSetting N q k hk Attr)) (aJ : J N hk Attr → Row N q k) :
+    MPK (ringSetting N q k hk Attr) where
+  B := B
+  p := p
+  Bj := fun j => aJ j + bitsOf (ringSetting N q k hk Attr)
+    (fun i => stackKey (r.a i) (r.eΨ i) r.s +
+      bitR (R := Negacyclic (ZMod q) N) (x i) • (ringSetting N q k hk Attr).Γ.G) j •
+    (ringSetting N q k hk Attr).Γ₁.G
+
+omit [DecidableEq Attr] in
+/-- On a real instance, `Setup*`, `Enc*` give the real `(mpk, ct)` with `B_j = a_j + ψ_j G̲`. -/
+theorem simMap_real (x : Attr → Bool) (M : Bool) (B : Row N q k) (p : Negacyclic (ZMod q) N)
+    (r : EncCoins (ringSetting N q k hk Attr)) (aJ : J N hk Attr → Row N q k) :
+    simMap x M ((B, p, r.a, aJ), (scalar r.s * B + r.e₀, r.s * p + r.e',
+      fun i => scalar r.s * r.a i + r.eΨ i, fun j => scalar r.s * aJ j + r.ej j)) =
+    (realMPK x B p r aJ, encrypt (realMPK x B p r aJ) x M r) := by
+  have hΨ : instΨ (hk := hk) x ((B, p, r.a, aJ), (scalar r.s * B + r.e₀, r.s * p + r.e',
+      fun i => scalar r.s * r.a i + r.eΨ i, fun j => scalar r.s * aJ j + r.ej j)) =
+      fun i => stackKey (r.a i) (r.eΨ i) r.s +
+        bitR (R := Negacyclic (ZMod q) N) (x i) • (ringSetting N q k hk Attr).Γ.G := by
+    funext i; simp only [instΨ, stackKey_eq]
+  unfold simMap
+  erw [hΨ]
+  simp only [encrypt, realMPK, add_sub_cancel_right]
+
+/-- **`H0 = H1`.** The real game's `(mpk, ct)` is `Setup*`, `Enc*` on a real Ring-LWE instance. -/
+theorem realLaw_eq (x : Attr → Bool) (M : Bool) :
+    realLaw (N := N) (hk := hk) χ x M = h1Law (N := N) (hk := hk) χ x M := by
+  simp only [realLaw, setupLaw, h1Law, ringLWEReal, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, PMF.map_bind, PMF.pure_map]
+  refine congrArg (PMF.bind _) (funext fun B => ?_)
+  refine congrArg (PMF.bind _) (funext fun p => ?_)
+  rw [PMF.bind_comm]
+  refine congrArg (PMF.bind _) (funext fun r => ?_)
+  simp only [simMap_real]
+  exact (unif_bind_add (fun Bj => PMF.pure ((⟨B, Bj, p⟩ : MPK (ringSetting N q k hk Attr)),
+    encrypt (⟨B, Bj, p⟩ : MPK (ringSetting N q k hk Attr)) x M r)) _).symm
+
+/-! ### `H3` does not depend on the challenge -/
+
+/-- The shift of an instance that moves the challenge `(x, M)` to `(x', M')`. -/
+noncomputable def challengeShift (x x' : Attr → Bool) (M M' : Bool) : Inst N hk Attr :=
+  ((0, 0, fun i => topRow ((bitR (R := Negacyclic (ZMod q) N) (x i) -
+      bitR (x' i)) • (ringSetting N q k hk Attr).Γ.G), 0),
+   (0, (if M then (ringSetting N q k hk Attr).half else 0) -
+      (if M' then (ringSetting N q k hk Attr).half else 0),
+    fun i => botRow ((bitR (R := Negacyclic (ZMod q) N) (x i) - bitR (x' i)) •
+      (ringSetting N q k hk Attr).Γ.G), 0))
+
+omit [DecidableEq Attr] in
+/-- `Setup*`, `Enc*` for `(x, M)` are those for `(x', M')` on the shifted instance. -/
+theorem simMap_shift (x x' : Attr → Bool) (M M' : Bool) (v : Inst N hk Attr) :
+    simMap x M v = simMap x' M' (v + challengeShift x x' M M') := by
+  have hΨ : instΨ (hk := hk) x' (v + challengeShift x x' M M') = instΨ x v := by
+    funext i a c
+    fin_cases a <;>
+      simp only [instΨ, challengeShift, stackRows, topRow, botRow, Matrix.add_apply,
+        Matrix.smul_apply, Matrix.of_apply, Prod.fst_add, Prod.snd_add, Pi.add_apply,
+        smul_eq_mul, Fin.zero_eta, Fin.isValue, Fin.mk_one, ite_true, one_ne_zero, ite_false,
+        sub_mul] <;> abel
+  unfold simMap
+  erw [hΨ]
+  simp only [challengeShift, Prod.fst_add, Prod.snd_add, Pi.add_apply, Pi.zero_apply, add_zero,
+    Prod.mk.injEq]
+  refine ⟨rfl, ?_⟩
+  congr 1
+  abel
+
+/-- **`H3` does not depend on the challenge**: on a uniform instance, `[aᵢ; bᵢ] + xᵢ G` and
+`p₀ + M ⌊q/2⌋` are uniform. -/
+theorem h3Law_eq (x x' : Attr → Bool) (M M' : Bool) :
+    h3Law (N := N) (hk := hk) x M = h3Law (N := N) (hk := hk) x' M' := by
+  have h : (ringLWEUniform (N := N) (hk := hk) (Attr := Attr)).map
+      (· + challengeShift x x' M M') = ringLWEUniform := by
+    rw [ringLWEUniform, unif, ProbComp.eval_uniform]
+    exact PMF.uniformOfFintype_map_equiv (Equiv.addRight _)
+  simp only [h3Law]
+  conv_rhs => rw [← h, PMF.map_comp]
+  congr 1
+  funext v
+  exact simMap_shift x x' M M' v
+
+/-! ### The reduction and the security theorem -/
+
+/-- **The reduction to Ring-LWE**: on an instance, run `Setup*`, `Enc*` and the adversary. -/
+noncomputable def reduction (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr)
+    (x₀ x₁ x : Attr → Bool) (M : Bool) (v : Inst N hk Attr) : PMF Bool :=
+  run ks A x₀ x₁ (simMap x M v)
+
+/-- The game is the reduction on real Ring-LWE instances. -/
+theorem game_eq (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr)
+    (x₀ x₁ x : Attr → Bool) (M : Bool) :
+    game χ ks A x₀ x₁ x M = (ringLWEReal χ).bind (reduction ks A x₀ x₁ x M) := by
+  rw [game, realLaw_eq, h1Law, PMF.bind_map]
+  rfl
+
+/-- On uniform instances, the reduction does not depend on the challenge. -/
+theorem reduction_uniform (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr)
+    (x₀ x₁ x x' : Attr → Bool) (M M' : Bool) :
+    ringLWEUniform.bind (reduction ks A x₀ x₁ x M) =
+      ringLWEUniform.bind (reduction ks A x₀ x₁ x' M') := by
+  have h := congrArg (fun μ => μ.bind (run ks A x₀ x₁)) (h3Law_eq (N := N) (hk := hk) x x' M M')
+  simp only [h3Law, PMF.bind_map] at h
+  exact h
+
+/-- **Security of the ring variant under Ring-LWE** (BTVW17 Theorem 4.2). The games for `(x₀, M₀)`
+and `(x₁, M₁)` are within `δ₀ + δ₁`, where `δ₀` and `δ₁` are the Ring-LWE advantages of the
+reductions for the two challenges. -/
+theorem attributeHiding (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr)
+    (x₀ x₁ : Attr → Bool) (M₀ M₁ : Bool) {δ₀ δ₁ : ℝ≥0∞}
     (hrlwe₀ : CloseTo ((ringLWEReal χ).bind (reduction ks A x₀ x₁ x₀ M₀))
       (ringLWEUniform.bind (reduction ks A x₀ x₁ x₀ M₀)) δ₀)
     (hrlwe₁ : CloseTo ((ringLWEReal χ).bind (reduction ks A x₀ x₁ x₁ M₁))
-      (ringLWEUniform.bind (reduction ks A x₀ x₁ x₁ M₁)) δ₁)
-    (hlhl : CloseTo (h3Law (N := N) (hk := hk) x₀ false) (h3Law (N := N) (hk := hk) x₁ false) ε) :
-    CloseTo (game χ ks A x₀ x₁ x₀ M₀) (game χ ks A x₀ x₁ x₁ M₁) (ε₀ + δ₀ + ε + δ₁ + ε₁) := by
-  have h0 := hstat₀.bind_left (run ks A x₀ x₁)
-  rw [game_h1] at h0
-  rw [← h3Law_message x₀ M₀, ← h3Law_message x₁ M₁] at hlhl
-  have h3 := hlhl.bind_left (run ks A x₀ x₁)
-  rw [game_h3, game_h3] at h3
-  have h1 := hstat₁.symm.bind_left (run ks A x₀ x₁)
-  rw [game_h1] at h1
-  exact (((h0.trans hrlwe₀).trans h3).trans hrlwe₁.symm).trans h1
+      (ringLWEUniform.bind (reduction ks A x₀ x₁ x₁ M₁)) δ₁) :
+    CloseTo (game χ ks A x₀ x₁ x₀ M₀) (game χ ks A x₀ x₁ x₁ M₁) (δ₀ + δ₁) := by
+  rw [game_eq, game_eq]
+  rw [reduction_uniform ks A x₀ x₁ x₀ x₁ M₀ M₁] at hrlwe₀
+  exact hrlwe₀.trans hrlwe₁.symm
 
 end AdvancedEncryption.RingBTVW

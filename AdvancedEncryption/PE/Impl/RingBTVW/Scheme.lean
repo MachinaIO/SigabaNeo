@@ -11,40 +11,42 @@ Ring-GSW secret of the attribute ciphertexts `Ψᵢ` and the BGG+ secret of the 
 
 With columns `W = Fin 2 × Fin k`, the Ring-GSW gadget `G ∈ R^{2×W}` and its top row `G̲ ∈ R^{1×W}`:
 
-* `Setup`: a matrix `B ∈ R^{1×W}` with a trapdoor, `B_j ∈ R^{1×W}` for every bit `j` of the
-  attribute ciphertexts, and `p ∈ R` (`MPK`).
-* `Enc(mpk, x, M)` (`encrypt`, coins `EncCoins`): `Ψᵢ = [B; sB + e] Rᵢ + xᵢ G`; with `ψ` the bits of
-  `Ψ`, `c₀ = sB + e₀`, `c_j = s(B_j − ψ_j G̲) + e_j` and `κ = s p + e' + M ⌊q/2⌋`.
+* `Setup`: `B ∈ R^{1×W}`, `B_j ∈ R^{1×W}` for every bit `j` of the attribute ciphertexts, and
+  `p ∈ R`, all uniform (`MPK`, `setupLaw`).
+* `Enc(mpk, x, M)` (`encrypt`, coins `EncCoins`): with a fresh secret `s`, the Ring-GSW ciphertexts
+  `Ψᵢ = [aᵢ; s aᵢ + eᵢ] + xᵢ G` with fresh uniform `aᵢ`; with `ψ` the bits of `Ψ`, `c₀ = sB + e₀`,
+  `c_j = s(B_j − ψ_j G̲) + e_j` and `κ = s p + e' + M ⌊q/2⌋`.
 * `KeyGen(msk, f)`: `B_f̂ = ∑_b EvalF(f̂_b, B) · G̲⁻¹(V_b)` (`keyMatrix`), where `f̂_b` computes the bit
   `b` of the top row of `Ψ_f = FHE.Eval(f, Ψ)` from the bits of `Ψ`, and a key `sk` with
   `[B | B_f̂] sk = p` (`ValidKey`) from a key sampler whose law depends on `(B, B_f̂, p)` only
   (`KeySampler`, `keyGenLaw`).
 * `Dec(sk, f, ct)` (`decryptRaw`): `c_f̂ = ∑_b EvalFX(f̂_b, ψ, c) · G̲⁻¹(V_b) + Ψ̄_f` with `Ψ̄_f` the
   bottom row of `Ψ_f`, `κ' = [c₀ | c_f̂] sk`, and `κ − κ'`, decoded at the constant coefficient
-  (`decrypt`).
+  (`decodeBit`).
+
+The paper encrypts the attribute under `Ψᵢ = A Rᵢ + xᵢ G` with `A = [B; sB + e]` and binary `Rᵢ`,
+which needs the leftover hash lemma; here, as in mxx's predicate encryption (`crates/pe`, attribute
+ciphertexts `[a_t; s a_t + e_t] + … G` with fresh `a_t`), every `Ψᵢ` uses fresh Ring-LWE samples
+under the same `s`, and Ring-LWE alone hides `x` (`PE.Impl.RingBTVW.Security`).
 
 **Correctness** (BTVW17 Theorem 4.1). If `f(x) = 0`, then `κ − κ' = M ⌊q/2⌋ + noise` with the noise
 given explicitly (`decryptRaw_eq`): it is `e'` minus `[e₀ | E_BGG − E_GSW] sk`, with `E_BGG` the
 BGG+ evaluation error and `E_GSW` the Ring-GSW evaluation error. Over `R_q`, decryption returns `M`
-when the constant coefficient of the noise is below `q/4` (`decrypt_correct`), and so does the
-whole scheme for any coins of `Setup`, `KeyGen` and `Enc` (`scheme_correct`).
+when the constant coefficient of the noise is below `q/4` (`decrypt_correct`, `scheme_correct`).
+
+**Security** (BTVW17 Theorem 4.2): under Ring-LWE alone, with no statistical step
+(`PE.Impl.RingBTVW.Security.attributeHiding`).
 
 **Constructed.** Over `R_q` (`ringSetting`): the gadget digits and the bit decompositions; the
-circuits `f̂` by truth tables (`truthTableFhat`, proved correct by `ringSetting_fhatCorrect`); the
-trapdoor `B = [A₀ | g − A₀ T]`, whose exact preimages show that keys exist (`setup`,
-`trapdoorKey_valid`, `keyGenLaw_valid`); a key sampler (`canonicalKeySampler`); the laws of the
+circuits `f̂` by truth tables (`truthTableFhat`, proved correct by `ringSetting_fhatCorrect`); a key
+sampler (`canonicalKeySampler`); the gadget trapdoor `B = [A₀ | g − A₀ T]`, whose exact preimages
+show that valid keys exist for such `B` (`trapdoorKey_valid`, `keyGenLaw_valid`); the laws of the
 coins (`PE.Impl.RingBTVW.Laws`).
-
-**Security** (BTVW17 Theorem 4.2, Ring-LWE). The algebra of the simulation is proved: `Enc*`
-(`encodings_sim`), `KeyGen*` (`keyMatrix_sim`) and the keys the simulator answers without the
-trapdoor (`simKey_valid`). The hybrid argument and the reduction to Ring-LWE are in
-`PE.Impl.RingBTVW.Security`.
 
 **Not formalized here.**
 
-* The statistical steps of the security proof (hypotheses of `PE.Impl.RingBTVW.Security`): the
-  regularity of `B`, the leftover hash lemma for `A Rᵢ` and `B W'_j`, and noise flooding; a short
-  key sampler (the discrete Gaussian on the coset) and the efficient sampler that approximates it.
+* A short key sampler (the discrete Gaussian on the coset) and the efficient trapdoor sampler that
+  approximates it (with `B` from a trapdoor generation, close to uniform).
 * A bound on the noise (a hypothesis of `decrypt_correct`), and polynomial-size circuits `f̂`
   (`truthTableFhat` has exponential size).
 * Machines: the algorithms are Lean functions, not the Turing machines of an `Impl`.
@@ -99,7 +101,7 @@ def Setting.FhatCorrect : Prop :=
 
 /-- The master public key. -/
 structure MPK where
-  /-- `B`, generated with a trapdoor. -/
+  /-- `B`. -/
   B : Matrix (Fin 1) (Col k) R
   /-- `B_j` for every bit `j` of the attribute ciphertexts. -/
   Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R
@@ -110,16 +112,16 @@ structure MPK where
 structure EncCoins where
   /-- The secret. -/
   s : R
-  /-- The error of the Ring-GSW ciphertexts. -/
-  e : Matrix (Fin 1) (Col k) R
+  /-- The fresh top rows `aᵢ` of the Ring-GSW ciphertexts. -/
+  a : S.Attr → Matrix (Fin 1) (Col k) R
+  /-- The errors of the Ring-GSW ciphertexts. -/
+  eΨ : S.Attr → Matrix (Fin 1) (Col k) R
   /-- The error of `c₀`. -/
   e₀ : Matrix (Fin 1) (Col k) R
   /-- The errors of the encodings. -/
   ej : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R
   /-- The error of `κ`. -/
   e' : R
-  /-- The Ring-GSW randomness, a `0/1` matrix for each attribute bit. -/
-  Rm : S.Attr → Matrix (Col k) (Col k) R
 
 /-- A ciphertext. -/
 structure Ciphertext where
@@ -147,13 +149,13 @@ def bitR (b : Bool) : R := if b then 1 else 0
 
 variable {S}
 
-/-- `[B; sB + e]`. -/
+/-- `[a; sa + e]`. -/
 def stackKey (B e : Matrix (Fin 1) (Col k) R) (s : R) : Matrix (Fin 2) (Col k) R :=
   Matrix.of fun a c => if a = 0 then B 0 c else s * B 0 c + e 0 c
 
 /-- **Enc.** -/
 def encrypt (mpk : MPK S) (x : S.Attr → Bool) (M : Bool) (r : EncCoins S) : Ciphertext S :=
-  let Ψ := fun i => stackKey mpk.B r.e r.s * r.Rm i + bitR (R := R) (x i) • S.Γ.G
+  let Ψ := fun i => stackKey (r.a i) (r.eΨ i) r.s + bitR (R := R) (x i) • S.Γ.G
   { Ψ := Ψ
     c₀ := scalar r.s * mpk.B + r.e₀
     cj := fun j => scalar r.s * (mpk.Bj j - bitsOf S Ψ j • S.Γ₁.G) + r.ej j
@@ -184,9 +186,9 @@ def gswSecret (s : R) : Matrix (Fin 1) (Fin 2) R := Matrix.of fun _ a => if a = 
 /-- The noise of decryption: `e' − [e₀ | E_BGG − E_GSW] sk`. -/
 def noise (mpk : MPK S) (x : S.Attr → Bool) (f : Circuit S.Attr) (sk : SecretKey (R := R) (k := k))
     (r : EncCoins S) : R :=
-  let Ψ := fun i => stackKey mpk.B r.e r.s * r.Rm i + bitR (R := R) (x i) • S.Γ.G
+  let Ψ := fun i => stackKey (r.a i) (r.eΨ i) r.s + bitR (R := R) (x i) • S.Γ.G
   let eBgg := ∑ b, evalErr S.Γ₁ mpk.Bj (bitsOf S Ψ) r.ej (S.fhat f b) * S.Γ₁.ginv (S.rowBits.V b)
-  let eGsw := evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -(r.e * r.Rm i)) f
+  let eGsw := evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) f
   r.e' - (r.e₀ * sk.k₁ + (eBgg - eGsw) * sk.k₂) 0 0
 
 /-! ### Setup and KeyGen with the gadget trapdoor -/
@@ -219,7 +221,7 @@ theorem trapdoorKey_valid (A₀ : Fin k → R) (T : MSK k R)
 /-- A key sampler: a law on the keys `sk` with `[B | B_f̂] sk = p` that depends on `(B, B_f̂, p)`
 only, in particular not on any trapdoor. Its support is in the valid keys whenever one exists. The
 intended one is the discrete Gaussian on this coset ([GPV08]), which MP12's sampler approximates
-from the trapdoor of `B` and the simulator's from that of `B_f̂` (`simKey_valid`). -/
+from a trapdoor of `B`. -/
 structure KeySampler (R : Type*) [CommRing R] (k : ℕ) where
   /-- The law of the key for `(B, B_f̂, p)`. -/
   law : Matrix (Fin 1) (Col k) R → Matrix (Fin 1) (Col k) R → R → PMF (SecretKey (R := R) (k := k))
@@ -312,15 +314,14 @@ theorem decryptRaw_eq (hfhat : S.FhatCorrect) (mpk : MPK S) (x : S.Attr → Bool
     (hsk : ValidKey mpk f sk) (hfx : f.eval (fun i => bitR (R := R) (x i)) = 0) :
     decryptRaw mpk f sk (encrypt mpk x M r) =
       (if M then S.half else 0) + noise mpk x f sk r := by
-  set Ψ := fun i => stackKey mpk.B r.e r.s * r.Rm i + bitR (R := R) (x i) • S.Γ.G with hΨ
+  set Ψ := fun i => stackKey (r.a i) (r.eΨ i) r.s + bitR (R := R) (x i) • S.Γ.G with hΨ
   -- The Ring-GSW invariant of the attribute ciphertexts.
   have hinv : ∀ i, gswSecret r.s * Ψ i =
-      bitR (R := R) (x i) • (gswSecret r.s * S.Γ.G) + -(r.e * r.Rm i) := by
+      bitR (R := R) (x i) • (gswSecret r.s * S.Γ.G) + -r.eΨ i := by
     intro i
-    rw [hΨ, Matrix.mul_add, ← Matrix.mul_assoc, gswSecret_mul_stackKey, Matrix.mul_smul,
-      Matrix.neg_mul]
+    rw [hΨ, Matrix.mul_add, gswSecret_mul_stackKey, Matrix.mul_smul]
     abel
-  have hgsw := gsw_invariant S.Γ (gswSecret r.s) Ψ (fun i => bitR (R := R) (x i)) (fun i => -(r.e * r.Rm i)) hinv f
+  have hgsw := gsw_invariant S.Γ (gswSecret r.s) Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) hinv f
   rw [hfx, zero_smul, zero_add] at hgsw
   -- The BGG+ evaluation of every bit of the top row of `Ψ_f`.
   have hbgg : ∀ b, evalEnc S.Γ₁ mpk.Bj (bitsOf S Ψ) (encrypt mpk x M r).cj (S.fhat f b) =
@@ -338,13 +339,13 @@ theorem decryptRaw_eq (hfhat : S.FhatCorrect) (mpk : MPK S) (x : S.Attr → Bool
   have hcf : evalCiphertext mpk f (encrypt mpk x M r) =
       scalar r.s * keyMatrix mpk f +
         (∑ b, evalErr S.Γ₁ mpk.Bj (bitsOf S Ψ) r.ej (S.fhat f b) * S.Γ₁.ginv (S.rowBits.V b) -
-          evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -(r.e * r.Rm i)) f) := by
+          evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) f) := by
     have ht := gswSecret_mul r.s (evalMat S.Γ Ψ f)
     rw [hgsw] at ht
     simp only [evalCiphertext, encrypt, keyMatrix] at hmat ⊢
     rw [hmat, Matrix.mul_sub]
     rw [show botRow (evalMat S.Γ Ψ f) = scalar r.s * topRow (evalMat S.Γ Ψ f) -
-        evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -(r.e * r.Rm i)) f by rw [ht]; abel]
+        evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) f by rw [ht]; abel]
     abel
   -- `κ' = s p + [e₀ | E_BGG − E_GSW] sk`.
   have hsk' := congrArg (fun m => (scalar r.s * m) 0 0) hsk
@@ -357,120 +358,6 @@ theorem decryptRaw_eq (hfhat : S.FhatCorrect) (mpk : MPK S) (x : S.Attr → Bool
   rw [← hsk']
   simp only [mul_assoc]
   ring
-
-/-! ### The simulation of the security proof (BTVW17 Theorem 4.2)
-
-The algebra of the hybrids `H1`, `H2`: in `Setup*` the `B_j = B W'_j + ψ*_j G̲` are built from the
-bits `ψ*` of the challenge ciphertexts `Ψ*ᵢ = A Rᵢ + x*ᵢ G`, `A = [B; c]`. Then
-
-* `Enc*` gives the encodings as `c_j = c W'_j` (`encodings_sim`): with `c = sB + e`, these are real
-  encodings with errors `e W'_j`;
-* `B_f̂ = B (W'_f̂ + R_f) + f(x*) G̲` (`keyMatrix_sim`);
-* for an unauthorized `f` (`f(x*) = 1`) this is `[B | B W + G̲]`, for which `(−W u, u)` with
-  `G̲ u = p` is a key, without the trapdoor of `B` (`simKey_valid`, the [ABB10] trick).
-
-The statistical steps (leftover hash lemma for `A Rᵢ` and `B W'_j`, the distribution of Gaussian
-preimages, noise flooding) and the Ring-LWE step (`c = sB + e` against uniform) are not formalized
-here. -/
-
-theorem topRow_stackKey_mul (B e : Matrix (Fin 1) (Col k) R) (s : R)
-    (M : Matrix (Col k) (Col k) R) : topRow (stackKey B e s * M) = B * M := by
-  ext a c
-  fin_cases a
-  simp [topRow, stackKey, Matrix.mul_apply]
-
-theorem topRow_add (X Y : Matrix (Fin 2) (Col k) R) : topRow (X + Y) = topRow X + topRow Y := by
-  ext a c; simp [topRow]
-
-theorem topRow_smul (a : R) (X : Matrix (Fin 2) (Col k) R) : topRow (a • X) = a • topRow X := by
-  ext b c; simp [topRow]
-
-theorem topRow_gswGadget (D : GadgetDigits R k) : topRow (gswGadget D).G = (topRowGadget D).G := by
-  ext a c
-  fin_cases a
-  simp [topRow, gswGadget, topRowGadget, gadgetOf]
-
-/-- **`Enc*`.** With `B_j = B W'_j + ψ_j G̲`, the encoding `s(B_j − ψ_j G̲) + e W'_j` is `c W'_j` for
-`c = sB + e`. -/
-theorem encodings_sim (B e : Matrix (Fin 1) (Col k) R) (s y : R) (W' : Matrix (Col k) (Col k) R) :
-    scalar s * ((B * W' + y • S.Γ₁.G) - y • S.Γ₁.G) + e * W' = (scalar s * B + e) * W' := by
-  rw [add_sub_cancel_right, Matrix.add_mul, Matrix.mul_assoc]
-
-/-- The Ring-GSW evaluation of the challenge: `Ψ*_f = A R_f + f(x*) G`. -/
-theorem gsw_sim (B e : Matrix (Fin 1) (Col k) R) (s : R) (x : S.Attr → Bool)
-    (Rm : S.Attr → Matrix (Col k) (Col k) R) (f : Circuit S.Attr) :
-    evalMat S.Γ (fun i => stackKey B e s * Rm i + bitR (R := R) (x i) • S.Γ.G) f =
-      stackKey B e s * evalSim S.Γ (fun i => stackKey B e s * Rm i + bitR (R := R) (x i) • S.Γ.G)
-          (fun i => bitR (R := R) (x i)) Rm f +
-        f.eval (fun i => bitR (R := R) (x i)) • S.Γ.G :=
-  sim_relation S.Γ _ _ _ Rm (fun _ => rfl) f
-
-/-- The simulation trapdoor of `B_f̂`: `W'_f̂ + R_f`. -/
-def simTrapdoor (B e : Matrix (Fin 1) (Col k) R) (s : R) (x : S.Attr → Bool)
-    (Rm : S.Attr → Matrix (Col k) (Col k) R) (W' : S.Attr × S.ctBits.Index → Matrix (Col k) (Col k) R)
-    (mpk : MPK S) (f : Circuit S.Attr) : Matrix (Col k) (Col k) R :=
-  let Ψ := fun i => stackKey B e s * Rm i + bitR (R := R) (x i) • S.Γ.G
-  ∑ b, evalSim S.Γ₁ mpk.Bj (bitsOf S Ψ) W' (S.fhat f b) * S.Γ₁.ginv (S.rowBits.V b) +
-    evalSim S.Γ Ψ (fun i => bitR (R := R) (x i)) Rm f
-
-/-- **`KeyGen*`.** Under `Setup*`, `B_f̂ = B (W'_f̂ + R_f) + f(x*) G̲`. -/
-theorem keyMatrix_sim (hfhat : S.FhatCorrect) (B e : Matrix (Fin 1) (Col k) R) (s : R)
-    (x : S.Attr → Bool) (Rm : S.Attr → Matrix (Col k) (Col k) R)
-    (W' : S.Attr × S.ctBits.Index → Matrix (Col k) (Col k) R) (mpk : MPK S) (hB : mpk.B = B)
-    (hBj : ∀ j, mpk.Bj j = B * W' j +
-      bitsOf S (fun i => stackKey B e s * Rm i + bitR (R := R) (x i) • S.Γ.G) j • S.Γ₁.G)
-    (f : Circuit S.Attr) :
-    keyMatrix mpk f =
-      mpk.B * simTrapdoor B e s x Rm W' mpk f + f.eval (fun i => bitR (R := R) (x i)) • S.Γ₁.G := by
-  set Ψ := fun i => stackKey B e s * Rm i + bitR (R := R) (x i) • S.Γ.G with hΨ
-  have hsim : ∀ b, evalMat S.Γ₁ mpk.Bj (S.fhat f b) =
-      B * evalSim S.Γ₁ mpk.Bj (bitsOf S Ψ) W' (S.fhat f b) +
-        S.rowBits.bits (topRow (evalMat S.Γ Ψ f)) b • S.Γ₁.G := by
-    intro b
-    rw [← hfhat f Ψ b]
-    exact sim_relation S.Γ₁ B mpk.Bj (bitsOf S Ψ) W' hBj _
-  have htop : topRow (evalMat S.Γ Ψ f) =
-      B * evalSim S.Γ Ψ (fun i => bitR (R := R) (x i)) Rm f + f.eval (fun i => bitR (R := R) (x i)) • S.Γ₁.G := by
-    rw [gsw_sim, topRow_add, topRow_stackKey_mul, topRow_smul, topRow_gswGadget]
-  have hsum : keyMatrix mpk f = B * ∑ b, evalSim S.Γ₁ mpk.Bj (bitsOf S Ψ) W' (S.fhat f b) *
-      S.Γ₁.ginv (S.rowBits.V b) + topRow (evalMat S.Γ Ψ f) := by
-    simp only [keyMatrix, hsim, Matrix.add_mul, Finset.sum_add_distrib, Matrix.smul_mul,
-      S.Γ₁.mul_ginv, Matrix.mul_sum, Matrix.mul_assoc, S.rowBits.recompose]
-  rw [hsum, htop, hB, simTrapdoor, Matrix.mul_add]
-  abel
-
-/-- A short preimage of `p` under `G̲`: the digits of `p` in the first block. -/
-def gadgetPreimage (D : GadgetDigits R k) (p : R) : Matrix (Col k) (Fin 1) R :=
-  Matrix.of fun c _ => if c.1 = 0 then D.d p c.2 else 0
-
-theorem topRowGadget_mul_gadgetPreimage (D : GadgetDigits R k) (p : R) :
-    (topRowGadget D).G * gadgetPreimage D p = scalar p := by
-  have h10 : ((1 : Fin 2) = 0) ↔ False := by decide
-  ext a b
-  fin_cases a; fin_cases b
-  simp only [topRowGadget, gadgetOf, gadgetPreimage, scalar, Matrix.mul_apply, Matrix.of_apply,
-    Fintype.sum_prod_type, Fin.sum_univ_two, Fin.isValue, ite_true, h10, ite_false, mul_zero,
-    Finset.sum_const_zero, add_zero]
-  exact D.recompose p
-
-/-- The simulated key `(−W u, u)` with `G̲ u = p`. -/
-def simKey (Wsim : Matrix (Col k) (Col k) R) (D : GadgetDigits R k) (p : R) :
-    SecretKey (R := R) (k := k) :=
-  { k₁ := -(Wsim * gadgetPreimage D p), k₂ := gadgetPreimage D p }
-
-/-- **The simulator answers unauthorized key queries without the trapdoor** ([ABB10]). Under
-`Setup*`, for `f(x*) = 1` the key `(−W u, u)` with `W = W'_f̂ + R_f` is valid. -/
-theorem simKey_valid (hfhat : S.FhatCorrect) (B e : Matrix (Fin 1) (Col k) R) (s : R)
-    (x : S.Attr → Bool) (Rm : S.Attr → Matrix (Col k) (Col k) R)
-    (W' : S.Attr × S.ctBits.Index → Matrix (Col k) (Col k) R) (mpk : MPK S) (hB : mpk.B = B)
-    (hBj : ∀ j, mpk.Bj j = B * W' j +
-      bitsOf S (fun i => stackKey B e s * Rm i + bitR (R := R) (x i) • S.Γ.G) j • S.Γ₁.G)
-    (f : Circuit S.Attr) (hfx : f.eval (fun i => bitR (R := R) (x i)) = 1) :
-    ValidKey mpk f (simKey (simTrapdoor B e s x Rm W' mpk f) S.D mpk.p) := by
-  simp only [ValidKey, simKey]
-  rw [keyMatrix_sim hfhat B e s x Rm W' mpk hB hBj f, hfx, one_smul, Matrix.add_mul,
-    Matrix.mul_neg, ← Matrix.mul_assoc, topRowGadget_mul_gadgetPreimage]
-  abel
 
 /-! ### Over `R_q = ℤ_q[X]/(X^N + 1)` -/
 
@@ -526,24 +413,18 @@ theorem decrypt_correct {k : ℕ} (hk : q ≤ 2 ^ k) {Attr : Type} [Fintype Attr
   rw [hM]
   exact decodeBit_encodeBit_add hN M _ hν
 
-/-- **Correctness of the whole scheme over `R_q`.** For any coins of `Setup` and `Enc` and any key
-that `KeyGen` outputs, if `f(x) = 0` and the constant coefficient `ν₀` of the noise has
-`4|ν₀| + 2 < q`, then `Dec(sk, Enc(mpk, x, M)) = M`. -/
+/-- **Correctness of the whole scheme over `R_q`.** For any `mpk` for which `f` has a valid key
+(for instance every `B = [A₀ | g − A₀ T]`, `keyGenLaw_valid`), any key that `KeyGen` outputs and any
+coins of `Enc`: if `f(x) = 0` and the constant coefficient `ν₀` of the noise has `4|ν₀| + 2 < q`, then
+`Dec(sk, Enc(mpk, x, M)) = M`. -/
 theorem scheme_correct {k : ℕ} (hk : q ≤ 2 ^ k) {Attr : Type} [Fintype Attr] (hN : 0 < N)
-    (ks : KeySampler (Negacyclic (ZMod q) N) k)
-    (A₀ : Fin k → Negacyclic (ZMod q) N) (T : MSK k (Negacyclic (ZMod q) N))
-    (Bj : Attr × (coeffBits N q k hk (Fin 2) (Col k)).Index →
-      Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N))
-    (p : Negacyclic (ZMod q) N) (f : Circuit Attr) (sk : SecretKey)
-    (hsk : sk ∈ (keyGenLaw ks (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 f).support)
-    (x : Attr → Bool) (M : Bool)
+    (ks : KeySampler (Negacyclic (ZMod q) N) k) (mpk : MPK (ringSetting N q k hk Attr))
+    (f : Circuit Attr) (hex : ∃ sk : SecretKey, ValidKey mpk f sk) (sk : SecretKey)
+    (hsk : sk ∈ (keyGenLaw ks mpk f).support) (x : Attr → Bool) (M : Bool)
     (r : EncCoins (ringSetting N q k hk Attr)) (hfx : f.evalBool x = false)
-    (hν : 4 * |((noise (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 x f sk r).coeffs
-          ⟨0, hN⟩).valMinAbs| + 2 < q) :
-    decodeBit hN (decryptRaw (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 f sk
-      (encrypt (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 x M r)) = M :=
-  decrypt_correct hk hN (setup (ringSetting N q k hk Attr) A₀ T Bj p).1 x M r f sk
-    (keyGenLaw_valid (S := ringSetting N q k hk Attr) ks A₀ T Bj p f sk hsk) hfx hν
+    (hν : 4 * |((noise mpk x f sk r).coeffs ⟨0, hN⟩).valMinAbs| + 2 < q) :
+    decodeBit hN (decryptRaw mpk f sk (encrypt mpk x M r)) = M :=
+  decrypt_correct hk hN mpk x M r f sk (ks.valid _ _ _ hex sk hsk) hfx hν
 
 end Ring
 

@@ -7,7 +7,8 @@ import PE.Impl.RingBTVW.Security
 
 * `Scheme`: the algorithms, correctness, and the algebra of the security proof.
 * `Laws`: the distributions of the coins.
-* `Security`: the attribute-hiding game, the hybrids, and the reduction to Ring-LWE
+* `Security`: the attribute-hiding game and its reduction to Ring-LWE: the advantage of any
+  adversary is the sum of the Ring-LWE advantages of two explicit distinguishers
   (`attributeHiding`).
 
 The lattice tools it uses are in `SigabaNeo.Lib.Lattices.Homomorphic` and
