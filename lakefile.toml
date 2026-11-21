@@ -21,4 +21,5 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.AlmostConst", "SigabaNeo.Lib.Machines.FiniteAlg",
   "SigabaNeo.Lib.Lattices", "SigabaNeo.Lib.Encode.Enum", "SigabaNeo.Lib.Encode.Ring", "SigabaNeo.Lib.Crypto.QuadLoss",
   "SigabaNeo.Lib.Machines.Prog.Columns", "SigabaNeo.Lib.Machines.Prog.Prims",
-  "SigabaNeo.Lib.Machines.Prog.Basic", "SigabaNeo.Lib.Machines.Prog.Compile"]
+  "SigabaNeo.Lib.Machines.Prog.Basic", "SigabaNeo.Lib.Machines.Prog.Compile",
+  "SigabaNeo.Lib.Machines.Prog.Machine"]
