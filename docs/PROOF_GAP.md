@@ -685,7 +685,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   too weak for Part 115. At 506, log T = 1207.55, but 0.954·GH needs log T ≤ 547.80. For every A, some primitive prefix under the
   cap has quotient minimum < 10⁻¹⁷⁶. So no claim that holds simultaneously over all capped prefixes can work. Only the selected
   prefix (or a random, typical cap) can.
-* **Frontier after Parts 1–116 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 117 (audited).** [idea_round2](research/wall1_idea_round2.md): with probability > 0.99977696, the first 105 graph
+  steps of the first pass freeze prescribed axes. The rest of the pass then couples exactly to a fresh uniform 400×105 graph, so
+  a 99% terminal guarantee needs suffix failure ≤ 0.00977696. A random typical cap cannot rescue Part 115: it would need SVP
+  lengths averaging < 0.154 × own GH. Symmetrization, entropy, a plane sieve and multiscale were triaged as not closing the gap.
+* **Frontier after Parts 1–117 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
