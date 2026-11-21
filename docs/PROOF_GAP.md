@@ -563,7 +563,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   inputs remain open:
   * a bound F_k ≤ 10⁴⁹ on the CBD-weighted dual sums at heights 2..31;
   * actual λ1(H) > 24.66 (necessary, Paley–Zygmund). Only 7.42 is certified (Part 92).
-* **Frontier after Parts 1–97 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 98 (audited, minor caveats).** [hermite_caps](research/wall1_hermite_caps.md): certified enlarged-ball LP Hermite
+  caps at every rank 400–511, each at least 0.727 nats below Part 86 (γ_406 ≤ 45.6963, γ_506 ≤ 56.2142). The Part 88
+  exact-twin radius rises only to 0.126915 / 0.366057 (34.38% / 44.84% of 0.85·GSA), or 0.125656 / 0.362426 with 1% slack.
+  Sharper Hermite caps therefore do not close the gap.
+* **Frontier after Parts 1–98 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
