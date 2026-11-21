@@ -1,6 +1,7 @@
 import PE.Impl.RingBTVW.Laws
 import SigabaNeo.Lib.Lattices.Stat
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
+import CslibFrontier.Probability.PMF
 
 /-!
 # Security of the ring variant: the hybrid argument and the reduction to Ring-LWE
@@ -34,8 +35,9 @@ them is the advantage of the explicit distinguisher `reduction A x₀ x₁ x M` 
   matrix `B`, the leftover hash lemma for `B W'_j`, and noise flooding for `c_j = s(B_j − ψ_j G̲) +
   e W'_j` against fresh errors, `encodings_sim`);
 * `δ₀`, `δ₁` are the Ring-LWE advantages of the two reductions;
-* `ε` bounds `H3(x₀, M₀) ≈ H3(x₁, M₁)`: statistical (the leftover hash lemma for `[B; c] Rᵢ` with
-  `c` uniform, which hides `x`, and the uniform `p₀`, which hides `M`).
+* `ε` bounds `H3(x₀) ≈ H3(x₁)`: statistical (the leftover hash lemma for `[B; c] Rᵢ` with `c`
+  uniform, which hides `x`). The message is hidden exactly: in `H3` the uniform `p₀` makes `κ`
+  independent of `M` (`h3Law_message`).
 
 These statistical bounds are hypotheses here.
 -/
@@ -97,12 +99,26 @@ noncomputable def ringLWEReal : PMF (RLWESample N q k) := do
   let e' ← polyLaw χ
   pure ((B, p), (scalar s * B + e, s * p + e'))
 
+/-- A uniform ring element. -/
+noncomputable def uniformPoly : PMF (Negacyclic (ZMod q) N) :=
+  ProbComp.eval (ProbComp.uniform (Negacyclic (ZMod q) N))
+
+/-- A uniform ring element is unchanged by adding a constant. -/
+theorem uniformPoly_bind_add {α : Type} (g : Negacyclic (ZMod q) N → PMF α)
+    (m : Negacyclic (ZMod q) N) : uniformPoly.bind (fun p₀ => g (p₀ + m)) = uniformPoly.bind g := by
+  have h : (uniformPoly (N := N) (q := q)).map (Equiv.addRight m) = uniformPoly := by
+    rw [uniformPoly, ProbComp.eval_uniform]
+    exact PMF.uniformOfFintype_map_equiv _
+  conv_rhs => rw [← h]
+  rw [PMF.bind_map]
+  rfl
+
 /-- Uniform samples. -/
 noncomputable def ringLWEUniform : PMF (RLWESample N q k) := do
   let B ← matLaw (polyLaw uniformCoeff)
   let p ← polyLaw uniformCoeff
   let c ← matLaw (polyLaw uniformCoeff)
-  let p₀ ← polyLaw uniformCoeff
+  let p₀ ← uniformPoly
   pure ((B, p), (c, p₀))
 
 /-- `[B; c]`. -/
@@ -148,6 +164,24 @@ theorem game_h3 (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk 
       (ringLWEUniform (N := N) (q := q) (k := k)).bind (reduction ks A x₀ x₁ x M) :=
   PMF.bind_bind _ _ _
 
+/-- `Enc*` depends on the message only through `κ = p₀ + M ⌊q/2⌋`. -/
+theorem simMap_message (x : Attr → Bool) (M : Bool) (B c : Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N))
+    (p p₀ : Negacyclic (ZMod q) N) :
+    simMap hk Attr x M ((B, p), (c, p₀)) =
+      simMap hk Attr x false ((B, p), (c, p₀ + (if M then (ringSetting N q k hk Attr).half else 0))) := by
+  simp only [simMap, Bool.false_eq_true, ite_false, add_zero]
+
+/-- **The uniform `p₀` hides the message**: in `H3` the message does not matter. -/
+theorem h3Law_message (x : Attr → Bool) (M : Bool) :
+    h3Law (N := N) (hk := hk) x M = h3Law (N := N) (hk := hk) x false := by
+  simp only [h3Law, ringLWEUniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
+    PMF.pure_bind]
+  refine congrArg (PMF.bind _) (funext fun B => ?_)
+  refine congrArg (PMF.bind _) (funext fun p => ?_)
+  refine congrArg (PMF.bind _) (funext fun c => ?_)
+  simp only [simMap_message (hk := hk) x M B c p]
+  exact uniformPoly_bind_add (fun p₀ => simMap hk Attr x false ((B, p), (c, p₀))) _
+
 omit [NeZero q] in
 /-- `H1` is the real game with `Setup*`, `Enc*`: the bottom row of `[B; c]` is `sB + e` and
 `c W'_j` is a real encoding with the error `e W'_j` (`encodings_sim`). -/
@@ -158,7 +192,7 @@ theorem stackRows_real (B e : Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)) (s
 
 /-- **Security of the ring variant** (BTVW17 Theorem 4.2): the games for `(x₀, M₀)` and `(x₁, M₁)`
 are within `ε₀ + δ₀ + ε + δ₁ + ε₁`, given the statistical steps `H0 ≈ H1` (`ε₀`, `ε₁`) and
-`H3(x₀, M₀) ≈ H3(x₁, M₁)` (`ε`), and the Ring-LWE advantages `δ₀`, `δ₁` of the reductions. -/
+`H3(x₀) ≈ H3(x₁)` for one message (`ε`; the message itself is hidden exactly, `h3Law_message`), and the Ring-LWE advantages `δ₀`, `δ₁` of the reductions. -/
 theorem attributeHiding (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversary N hk Attr) (x₀ x₁ : Attr → Bool)
     (M₀ M₁ : Bool) {ε₀ ε₁ ε δ₀ δ₁ : ℝ≥0∞}
     (hstat₀ : CloseTo (realLaw (N := N) (hk := hk) χ x₀ M₀) (h1Law χ x₀ M₀) ε₀)
@@ -167,10 +201,11 @@ theorem attributeHiding (ks : KeySampler (Negacyclic (ZMod q) N) k) (A : Adversa
       (ringLWEUniform.bind (reduction ks A x₀ x₁ x₀ M₀)) δ₀)
     (hrlwe₁ : CloseTo ((ringLWEReal χ).bind (reduction ks A x₀ x₁ x₁ M₁))
       (ringLWEUniform.bind (reduction ks A x₀ x₁ x₁ M₁)) δ₁)
-    (hlhl : CloseTo (h3Law (N := N) (hk := hk) x₀ M₀) (h3Law (N := N) (hk := hk) x₁ M₁) ε) :
+    (hlhl : CloseTo (h3Law (N := N) (hk := hk) x₀ false) (h3Law (N := N) (hk := hk) x₁ false) ε) :
     CloseTo (game χ ks A x₀ x₁ x₀ M₀) (game χ ks A x₀ x₁ x₁ M₁) (ε₀ + δ₀ + ε + δ₁ + ε₁) := by
   have h0 := hstat₀.bind_left (run ks A x₀ x₁)
   rw [game_h1] at h0
+  rw [← h3Law_message x₀ M₀, ← h3Law_message x₁ M₁] at hlhl
   have h3 := hlhl.bind_left (run ks A x₀ x₁)
   rw [game_h3, game_h3] at h3
   have h1 := hstat₁.symm.bind_left (run ks A x₀ x₁)
