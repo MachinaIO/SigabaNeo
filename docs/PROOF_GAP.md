@@ -557,7 +557,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
 
   Ceilings for the uniform-cap Markov method with exact twins are 0.3850 / 0.5184. That excludes the 0.85·GSA target at 506 and
   leaves 406 open.
-* **Frontier after Parts 1–96 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 97 (audited, minor caveats).** [dist_unique](research/wall1_dist_unique.md): distributional uniqueness for a fixed
+  horizontal slice H with independent CBD(3) plant, via a CBD-weighted dual theta bound and finite primal shell counts. At d = 406
+  the certified determinant root (3.099) fails already at k = 2. At d = 506 the root (7.259) clears the benchmark 5.806, and two
+  inputs remain open:
+  * a bound F_k ≤ 10⁴⁹ on the CBD-weighted dual sums at heights 2..31;
+  * actual λ1(H) > 24.66 (necessary, Paley–Zygmund). Only 7.42 is certified (Part 92).
+* **Frontier after Parts 1–97 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
