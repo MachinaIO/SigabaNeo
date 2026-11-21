@@ -663,7 +663,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   associated. In a rank-4 window, conditioning on a primitive mark being shortest raises the expected short quotient pairs from
   9/4 to 4. Conditioning on a reachable history raises the next-window hit probability from 5^{−2(b−1)} to 5^{−(b−1)}. Both
   were verified by exact enumeration. FKG/Harris-type chaining is ruled out.
-* **Frontier after Parts 1–112 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 113 (audited).** [idea_coupling](research/wall1_idea_coupling.md): replacing the finite displacement by continuous
+  torus noise changes a terminal window hit only on a shell event, and a first moment bounds its probability. Exhaustive tests
+  in ranks 2–5 show that windows keep history dependence even with full torsion. In rank 4 every coupling to a fresh cubic
+  restart disagrees on ≥ 88/729. No improved terminal floor follows.
+* **Frontier after Parts 1–113 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
