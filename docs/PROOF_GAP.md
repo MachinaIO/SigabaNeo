@@ -673,7 +673,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   minimum is ≥ 0.954 × its own GH. The target becomes a relative ratio, comparable with Part 105 (0.925, 99.98%) and Part 107
   (±2%). At b = 406 the first pass cannot reach the floor even with zero error (15.50 < 24.58). The probability of the 0.954
   ratio is open. Upper SVP bounds plus a fixed determinant cannot force a terminal minimum.
-* **Frontier after Parts 1–114 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 115 (audited, minor caveats).** [idea_variants](research/wall1_idea_variants.md): a simultaneous Haar flag bound
+  (Kim's unfolding). At final width 506, outside probability 0.005, every primitive prefix K with det K ≤ T yields a rank-505
+  quotient with λ1 ≥ 0.9 × its own GH. Adaptive selection is covered. The reducer must still land on such a prefix, and that is
+  open. Dual-section constants of 0.986 / 0.989 hold in the section metric only. A coordinate restart on the graph ensemble
+  gives a cubic quotient.
+* **Frontier after Parts 1–115 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
