@@ -106,6 +106,8 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   vector outside `ℤu` exceeds `R` and `‖u‖ ≤ R e^{−p_0^{(d−β)}}`, any fully BKZ-β reduced basis has `b_0 = ±u`. For the
   Kyber plain-LWE shapes the smallest certified `β` is `d` (701/1017/1351), i.e. exact full-dimensional SVP: the
   ratio bound gives no block-size saving, because the projected planted length is only bounded by `‖u‖`.
+  *Superseded for the full-dimension SVP size by Part 39:* an exact integer-point first-moment certificate lowers the
+  plain-LWE 512 dimension from 701 to 662 (1 − 2^-64) or 647 (99%).
 * **Part 8 (audited; [research/wall1_planted_flags.md](research/wall1_planted_flags.md)).** The flag criterion for
   terminal-block recovery must include the case `π_W(u) = a·v`, `a ≥ 2` (a shorter vector on the planted line's image);
   the corrected necessary-and-sufficient criterion is `a = 1` plus "every other line in `Q_W` is longer". Counterexamples:
@@ -207,6 +209,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   p ≤ (I + 1)/log₂(1/h): a 2^-128 reference bound plus one bit of conditional design information would give p ≤ 1/64.
   Caveats (audit): the 'I(U;P) = 0' illustration is the degenerate fixed-plant case; if the bad event depends on output rows or
   coins R, I(A; P, R | U) is needed. Open: the reference bound in π_{P⊥}L_A and an information bound for a concrete reducer.
+* **Part 39 (audited, minor caveats).** [projected_reference](research/wall1_projected_reference.md): for an A-independent
+  coordinate prefix (deleted sample axes, spanned by q·e_i) the projected lattice is exactly the standard embedding of the
+  punctured design, so an exact integer-point count (not a volume estimate) and the exact CBD norm law give a rigorous
+  terminal-recovery certificate with one exact SVP call. Plain LWE (511, 512, 3329): CBD(3) dimension 647 at 99% (≥ 99.51664%),
+  662 at 1 − 2^-64; CBD(2) 627 / 641 (all reproduced in exact arithmetic by the auditor). This is the sample-count optimisation
+  made rigorous and tightens Part 7's 701 → 662 at matched confidence. Heuristic sieve cost 2^{0.2925·647} ≈ 2^189 — the proven
+  cost is only Micciancio–Voulgaris 2^{2D}. General fixed rational planes: exact first moment via finite-field ranks; a fixed
+  rank-one plane fails with certainty. Says nothing about adaptive BKZ prefixes (β ≈ 400–512).
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
