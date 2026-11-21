@@ -364,6 +364,23 @@ theorem leaves_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid p z)
     refine ⟨ht.ext.trans ih.1, List.Forall₂.cons ?_ ih.2⟩
     exact ⟨ht.valid.ext ih.1, ht.length, (nv_ext x ih.1 ht.valid).trans ht.value⟩
 
+/-- The term positions, enumerated explicitly (column-major in `(row, digit)`, then coefficient). -/
+def enumT (N k : ℕ) : List ((Fin 2 × Fin k) × Fin N) :=
+  (List.finRange 2 ×ˢ List.finRange k) ×ˢ List.finRange N
+
+theorem nodup_enumT (N k : ℕ) : (enumT N k).Nodup :=
+  ((List.nodup_finRange 2).product (List.nodup_finRange k)).product (List.nodup_finRange N)
+
+theorem mem_enumT {N k : ℕ} (e : (Fin 2 × Fin k) × Fin N) : e ∈ enumT N k :=
+  List.pair_mem_product.mpr
+    ⟨List.pair_mem_product.mpr ⟨List.mem_finRange _, List.mem_finRange _⟩, List.mem_finRange _⟩
+
+theorem toFinset_enumT (N k : ℕ) : (enumT N k).toFinset = Finset.univ :=
+  Finset.eq_univ_of_forall fun e => List.mem_toFinset.mpr (mem_enumT e)
+
+theorem length_enumT (N k : ℕ) : (enumT N k).length = Fintype.card ((Fin 2 × Fin k) × Fin N) := by
+  rw [← List.toFinset_card_of_nodup (nodup_enumT N k), toFinset_enumT, Finset.card_univ]
+
 /-- The number of rounds: enough to bring `2 |W| N + 1` numbers to one. -/
 def treeHeight (N k : ℕ) : ℕ := Nat.clog 2 (Fintype.card ((Fin 2 × Fin k) × Fin N) + 1)
 
@@ -371,7 +388,7 @@ def treeHeight (N k : ℕ) : ℕ := Nat.clog 2 (Fintype.card ((Fin 2 × Fin k) �
 summed by a balanced tree of modular additions (`treeHeight` rounds). -/
 noncomputable def coefCircuit (z : Wire ι) (q k : ℕ) (repA repB : BI N k → Wire ι) (Gv : ℕ) (a : Fin 2)
     (col : Fin 2 × Fin k) (t : Fin N) (p : SLP ι) : SLP ι × List (Wire ι) :=
-  let r := leaves z q k repA repB a col t p ((Finset.univ : Finset ((Fin 2 × Fin k) × Fin N)).toList)
+  let r := leaves z q k repA repB a col t p (enumT N k)
   let r' := rounds z q k (treeHeight N k) r.1 (constL z k Gv :: r.2)
   foldSum z q k r'.1 r'.2
 
@@ -384,7 +401,7 @@ theorem coefCircuit_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid
       (coefCircuit z q k repA repB (((gswBin hk).G a col).coeffs t).val a col t p)
       ((((gswBin hk).G - Ψa * (gswBin hk).ginv Ψb : Matrix (Fin 2) (Fin 2 × Fin k)
         (Negacyclic (ZMod q) N)) a col).coeffs t) := by
-  set es := (Finset.univ : Finset ((Fin 2 × Fin k) × Fin N)).toList
+  set es := enumT N k
   set Gv := (((gswBin hk).G a col).coeffs t).val
   obtain ⟨e₁, g₁⟩ := leaves_spec x hk hz hz0 ha hb a col t es p (Ext.refl p)
   set r := leaves z q k repA repB a col t p es
@@ -399,7 +416,8 @@ theorem coefCircuit_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid
   have hf := foldSum_spec x hk _ _ vs' hz₂ (by rw [bv_ext x e₂ hz₁]; exact hz0₁) g₂
   have hval : vs'.sum = (((gswBin hk).G - Ψa * (gswBin hk).ginv Ψb : Matrix (Fin 2) (Fin 2 × Fin k)
       (Negacyclic (ZMod q) N)) a col).coeffs t := by
-    rw [hs, List.sum_cons, Finset.sum_map_toList, coeff_gswNand hk Ψa Ψb a col t]
+    rw [hs, List.sum_cons, ← List.sum_toFinset _ (nodup_enumT N k), toFinset_enumT,
+      coeff_gswNand hk Ψa Ψb a col t]
     rfl
   rw [hval] at hf
   exact ⟨e₁.trans (e₂.trans hf.ext), hf.valid, hf.length, hf.value⟩
@@ -408,6 +426,18 @@ theorem coefCircuit_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid
 
 /-- The output positions: row, column, coefficient. -/
 abbrev OI (N k : ℕ) := Fin 2 × (Fin 2 × Fin k) × Fin N
+
+/-- The output positions, enumerated explicitly. -/
+def enumO (N k : ℕ) : List (OI N k) :=
+  List.finRange 2 ×ˢ ((List.finRange 2 ×ˢ List.finRange k) ×ˢ List.finRange N)
+
+theorem nodup_enumO (N k : ℕ) : (enumO N k).Nodup :=
+  (List.nodup_finRange 2).product
+    (((List.nodup_finRange 2).product (List.nodup_finRange k)).product (List.nodup_finRange N))
+
+theorem mem_enumO {N k : ℕ} (o : OI N k) : o ∈ enumO N k :=
+  List.pair_mem_product.mpr ⟨List.mem_finRange _, List.pair_mem_product.mpr
+    ⟨List.pair_mem_product.mpr ⟨List.mem_finRange _, List.mem_finRange _⟩, List.mem_finRange _⟩⟩
 
 /-- The step of the NAND block: compute one output coefficient. -/
 noncomputable def blockStep (z : Wire ι) (q k : ℕ) [NeZero q] (hk : q < 2 ^ k) (repA repB : BI N k → Wire ι)
@@ -419,7 +449,7 @@ noncomputable def blockStep (z : Wire ι) (q k : ℕ) [NeZero q] (hk : q < 2 ^ k
 /-- **The Ring-GSW NAND** `G − Ψ_a G⁻¹(Ψ_b)` on represented ciphertexts. -/
 noncomputable def nandBlock (z : Wire ι) (q k : ℕ) [NeZero q] (hk : q < 2 ^ k) (repA repB : BI N k → Wire ι) (p : SLP ι) :
     SLP ι × (BI N k → Wire ι) :=
-  let r := ((Finset.univ : Finset (OI N k)).toList).foldl (blockStep z q k hk repA repB) (p, fun _ => [])
+  let r := (enumO N k).foldl (blockStep z q k hk repA repB) (p, fun _ => [])
   (r.1, fun b => (r.2 (b.1, b.2.1, b.2.2.2)).getD b.2.2.1 .one)
 
 /-- A computed coefficient. -/
@@ -477,19 +507,19 @@ theorem nandBlock_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid p
       Rep x (nandBlock z q k hk repA repB p).1 (nandBlock z q k hk repA repB p).2
         ((gswBin hk).G - Ψa * (gswBin hk).ginv Ψb) := by
   obtain ⟨he, hg⟩ := foldl_blockStep_spec x hk hz hz0 ha hb (fun _ => False)
-    ((Finset.univ : Finset (OI N k)).toList) (p, fun _ => []) (Ext.refl p) (fun _ h => h.elim)
+    (enumO N k) (p, fun _ => []) (Ext.refl p) (fun _ h => h.elim)
   refine ⟨he, ?_, ?_⟩
   · simp only [nandBlock]
     intro b
-    obtain ⟨hv, hl, -⟩ := hg (b.1, b.2.1, b.2.2.2) (Or.inr (Finset.mem_toList.mpr (Finset.mem_univ _)))
+    obtain ⟨hv, hl, -⟩ := hg (b.1, b.2.1, b.2.2.2) (Or.inr (mem_enumO _))
     show Valid _ (List.getD _ _ _)
-    by_cases hi : b.2.2.1.val < (((Finset.univ : Finset (OI N k)).toList.foldl
+    by_cases hi : b.2.2.1.val < (((enumO N k).foldl
         (blockStep z q k hk repA repB) (p, fun _ => [])).2 (b.1, b.2.1, b.2.2.2)).length
     · rw [List.getD_eq_getElem _ _ hi]; exact hv _ (List.getElem_mem hi)
     · rw [List.getD_eq_default _ _ (Nat.le_of_not_lt hi)]; trivial
   · simp only [nandBlock]
     intro a c i j
-    obtain ⟨-, hl, hn⟩ := hg (a, c, j) (Or.inr (Finset.mem_toList.mpr (Finset.mem_univ _)))
+    obtain ⟨-, hl, hn⟩ := hg (a, c, j) (Or.inr (mem_enumO _))
     show bv x _ (List.getD _ _ _) = _
     rw [bv_getD_of_nv x _ _ _ (by rw [hl]; exact i.isLt), hn]
 

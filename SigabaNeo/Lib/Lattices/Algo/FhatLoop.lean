@@ -115,24 +115,23 @@ theorem gvMath_eq_gvExp (hk : q < 2 ^ k) : gvMath (N := N) hk = gvExp q := by
     · simp [ht]
   · simp [ha]
 
-/-- The chosen order of the terms. -/
-noncomputable def ordT₀ (N k : ℕ) : List ((Fin 2 × Fin k) × Fin N) :=
-  (Finset.univ : Finset ((Fin 2 × Fin k) × Fin N)).toList
+/-- The order of the terms (explicit: `enumT`). -/
+def ordT₀ (N k : ℕ) : List ((Fin 2 × Fin k) × Fin N) := enumT N k
 
-/-- The chosen order of the output coefficients. -/
-noncomputable def ordO₀ (N k : ℕ) : List (OI N k) := (Finset.univ : Finset (OI N k)).toList
+/-- The order of the output coefficients (explicit: `enumO`). -/
+def ordO₀ (N k : ℕ) : List (OI N k) := enumO N k
 
 theorem ordT_perm (l : List ((Fin 2 × Fin k) × Fin N)) (hl : l.Nodup) (hc : ∀ e, e ∈ l) :
     (ordT₀ N k).Perm l := by
   unfold ordT₀
-  rw [List.perm_ext_iff_of_nodup (Finset.nodup_toList _) hl]
-  intro e; simp [hc]
+  rw [List.perm_ext_iff_of_nodup (nodup_enumT N k) hl]
+  intro e; simp [hc, mem_enumT]
 
 theorem ordO_perm (l : List (OI N k)) (hl : l.Nodup) (hc : ∀ e, e ∈ l) :
     (ordO₀ N k).Perm l := by
   unfold ordO₀
-  rw [List.perm_ext_iff_of_nodup (Finset.nodup_toList _) hl]
-  intro e; simp [hc]
+  rw [List.perm_ext_iff_of_nodup (nodup_enumO N k) hl]
+  intro e; simp [hc, mem_enumO]
 
 theorem fhatSLP_eq_L_math {A : Type*} (hk : q < 2 ^ k) (p : SLP A) (w : Wire A) :
     fhatSLP (N := N) hk p w = fhatSLPL (ordT₀ N k) (ordO₀ N k) (gvMath hk) q p w := rfl

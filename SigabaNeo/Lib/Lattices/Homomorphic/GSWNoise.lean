@@ -202,7 +202,7 @@ theorem nb_coefCircuit (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid p
     NBL WN E (coefCircuit z q k repA repB (((gswBin hk).G a col).coeffs t).val a col t p).1
       (coefCircuit z q k repA repB (((gswBin hk).G a col).coeffs t).val a col t p).2
       (gswFactor WN N k * A) := by
-  set es := (Finset.univ : Finset ((Fin 2 × Fin k) × Fin N)).toList
+  set es := enumT N k
   set Gv := (((gswBin hk).G a col).coeffs t).val
   obtain ⟨e₁, g₁⟩ := leaves_spec x hk hz hz0 ha hb a col t es p (Ext.refl p)
   have n₁ := nb_leaves WN E x hk hz hz0 ha hb a col t hzA hAa hAb es p (Ext.refl p)
@@ -228,7 +228,7 @@ theorem nb_coefCircuit (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid p
   have n₂ := nb_rounds WN E x hk (treeHeight N k) r.1 _ _ hz₁ hz0₁ g₁' hzX n₁'
   have hlen : (constL z k Gv :: r.2).length ≤ 2 ^ treeHeight N k := by
     have hl : r.2.length = es.length := by rw [g₁.length_eq, List.length_map]
-    rw [List.length_cons, hl, Finset.length_toList, Finset.card_univ]
+    rw [List.length_cons, hl, length_enumT]
     exact Nat.le_pow_clog (by norm_num) _
   have hX2 : nb WN E (rounds z q k (treeHeight N k) r.1 (constL z k Gv :: r.2)).1 z ≤
       modFactor WN k ^ treeHeight N k * X := by
@@ -279,7 +279,7 @@ theorem nb_nandBlock (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid p z
     RepNB WN E (nandBlock z q k hk repA repB p).1 (nandBlock z q k hk repA repB p).2
       (gswFactor WN N k * A) := by
   obtain ⟨-, hg⟩ := nb_foldl_blockStep WN E x hk hz hz0 ha hb hzA hAa hAb
-    ((Finset.univ : Finset (OI N k)).toList) (p, fun _ => []) (Ext.refl p)
+    (enumO N k) (p, fun _ => []) (Ext.refl p)
     (fun _ => ⟨by simp [AllValid], by simp [NBL]⟩)
   intro b
   simp only [nandBlock]
