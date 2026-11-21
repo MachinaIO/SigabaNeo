@@ -160,12 +160,17 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   | `prescribedScan_dimension` | under explicit geometric margins and coverage, the two-tree terminal scan finds a specified short vector with probability `≥ 1 − e^{−n/(2 log n)}` |
   | `idealUniformLeaves_factor` | the named hypothesis `IdealUniformLeaves` (the S5 sampler) gives the leaf product used by the recurrence |
 
-  Open for T1 in Lean:
-  * the S5 initialization sampler (`IdealUniformLeaves`, assumed);
-  * two geometric margins that should follow from the prescribed shell volumes but are not yet
-    derived. With `x = n/log n` and `u_i = |U_i|`, they are the lens means
-    `M_i α_i/V_i, M_i β_i/V_i ≥ 240 (log(1 + u_i + 2u_{i+1}) + x)` and the terminal occupancy
-    `M_m/u_m ≥ log u_m + x`.
+  **T1 is complete in Lean, given the static hypotheses (`Sieve.prescribedScan_T1`).**
+  * Statement: for fixed `K ≥ 0`, all large `n` and depth `m ≤ K (log n)³`, every lattice whose
+    shells satisfy S1, S2, S3′ and S4, given ideal uniform leaves, has a shortest nonzero vector
+    `v`. The exhaustive sieve hits `v` with probability `≥ 1 − e^{−n/(2 log n)}`, using
+    `≤ (4/3)^n e^{(2K+8) n/log n}` comparisons, and every minimizer of a successful filtered scan
+    is a shortest vector.
+  * The lens margins (`prescribedLensMargins`, via a cylinder inside the lens:
+    `lensVolume_relative`) and the terminal occupancy (`terminalOccupancy_eventually`) are proved.
+  * Axioms `propext`, `Classical.choice`, `Quot.sound`.
+  * Remaining assumptions: S1–S4, S3′ (about the lattice) and `IdealUniformLeaves` (the S5
+    initialization sampler), all explicit premises.
 * **`q`-ary sieving statistics (T4; new; [research/qary_sieving.md](research/qary_sieving.md)).**
   * **Paper proof (new).** For `Λ_q^⊥(A)` with lattice dimension `m`, `n = ⌊√m⌋` parity checks and a
     prime `q ∈ [e^{m^8}, 2⌈e^{m^8}⌉]`, the hypotheses S1, S2 and S3′ hold simultaneously with
