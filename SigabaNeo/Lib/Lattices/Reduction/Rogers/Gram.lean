@@ -455,6 +455,162 @@ theorem pairLaw_of_capVolumes {n : ℕ} (hn : 3 ≤ n) (pole : Sphere n)
     (fun t ↦ by rw [mass _ measurableSet_Ici, cone_Ici_eq]; exact h t)
   exact pairLaw_of_pole hn pole fun s hs ↦ (mass s hs).symm.trans (congrArg (· s) eq)
 
+theorem normalizer_gamma {p : ℝ} (hp : -1 < p) :
+    normalizer p = Real.Gamma (p + 1 + 1/2) / (Real.sqrt Real.pi * Real.Gamma (p+1)) := by
+  have h := Real.Gamma_mul_Gamma_add_half (p+1)
+  have he : 2 * (4 : ℝ)^p * (2 : ℝ)^(1-2*(p+1)) = 1 := by
+    rw [show (4 : ℝ) = 2^(2 : ℝ) by norm_num, ← Real.rpow_mul (by norm_num),
+      mul_assoc, ← Real.rpow_add (by norm_num), show 2*p+(1-2*(p+1)) = -1 by ring]
+    norm_num
+  have g := Real.Gamma_pos_of_pos (by linarith : 0 < p+1)
+  have gg := Real.Gamma_pos_of_pos (by linarith : 0 < 2*(p+1))
+  unfold normalizer beta
+  rw [← two_mul]
+  field_simp
+  rw [show (2*(p+1)+1)/2 = p+1+1/2 by ring, mul_assoc, h]
+  linear_combination -(Real.Gamma (2*(p+1)) * Real.sqrt Real.pi) * he
+
+theorem transverse_ball_volume (m : ℕ) (hm : 2 ≤ m) :
+    volume (Metric.ball (0 : Ambient m) 1) =
+      ENNReal.ofReal (normalizer (((m:ℝ)+1-3)/2) * ((m+1)/m)) *
+        volume (Metric.ball (0 : Ambient (m+1)) 1) := by
+  have : NeZero m := ⟨by omega⟩
+  have hm' : (2:ℝ) ≤ m := by exact_mod_cast hm
+  rw [EuclideanSpace.volume_ball, EuclideanSpace.volume_ball]
+  simp only [Fintype.card_fin, ENNReal.ofReal_one, one_pow, one_mul, Nat.cast_add, Nat.cast_one]
+  rw [normalizer_gamma (by linarith), ← ENNReal.ofReal_mul (by positivity [Real.Gamma_pos_of_pos (by linarith : 0 < ((m:ℝ)+1-3)/2+1+1/2), Real.Gamma_pos_of_pos (by linarith : 0 < ((m:ℝ)+1-3)/2+1)])]
+  congr 1
+  rw [show ((m:ℝ)+1-3)/2+1 = m/2 by ring,
+    show (m:ℝ)/2+1/2 = (m+1)/2 by ring, Real.Gamma_add_one (by positivity : (m:ℝ)/2 ≠ 0),
+    Real.Gamma_add_one (by positivity : ((m:ℝ)+1)/2 ≠ 0), pow_succ]
+  field_simp [Real.Gamma_pos_of_pos (by positivity : 0 < (m:ℝ)/2),
+    Real.Gamma_pos_of_pos (by positivity : 0 < ((m:ℝ)+1)/2)]
+
+theorem normalized_positive_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
+    {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) (Ici t) =
+      (volume.withDensity (weight (((m:ℝ)+1-3)/2))) (Ici t) := by
+  have hd : (2:ℝ) ≤ m := by exact_mod_cast hm
+  have hm0 : (m:ℝ) > 0 := by linarith
+  have hf : Measurable (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) := by fun_prop
+  rw [Measure.map_apply hf measurableSet_Ici, uniform, Measure.smul_apply,
+    Measure.toSphere_apply' _ (hf measurableSet_Ici), Measure.toSphere_apply_univ]
+  simp only [finrank_euclideanSpace_fin, smul_eq_mul]
+  change (_ * volume (Metric.ball (0 : Ambient (m+1)) 1))⁻¹ *
+    (_ * volume (cone pole (Ici t))) = _
+  rw [cone_positive_volume m pole ht, transverse_ball_volume m hm,
+    capSlice_normalized (by linarith) ⟨ht.1.le, ht.2.le⟩, add_sub_cancel_right]
+  let B := volume (Metric.ball (0 : Ambient (m+1)) 1)
+  let d : ℝ≥0∞ := ↑(m+1 : ℕ)
+  have hB : B ≠ 0 := (Metric.measure_ball_pos volume _ zero_lt_one).ne'
+  have hB' : B ≠ ∞ := measure_ball_ne_top
+  have hd0 : d ≠ 0 := by simp [d]
+  have hd' : d ≠ ∞ := by simp [d]
+  change (d*B)⁻¹ * (d * (_ * (_ * B))) = _
+  rw [show ∀ a b : ℝ≥0∞, d * (a * (b * B)) = (d*B)*(b*a) by intros; ac_rfl,
+    ← mul_assoc, ENNReal.inv_mul_cancel (mul_ne_zero hd0 hB)
+      (ENNReal.mul_ne_top hd' hB'), one_mul, ← ENNReal.ofReal_mul]
+  have hg := Real.Gamma_pos_of_pos (by linarith : 0 < ((m:ℝ)+1-3)/2+1)
+  rw [normalizer_gamma (by linarith)]
+  positivity [Real.Gamma_pos_of_pos (by linarith : 0 < ((m:ℝ)+1-3)/2+1+1/2)]
+
+private theorem positive_open_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
+    {t : ℝ} (ht : 0 ≤ t) :
+    (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) (Ioi t) =
+      (volume.withDensity (weight (((m:ℝ)+1-3)/2))) (Ioi t) := by
+  by_cases h : t < 1
+  · obtain ⟨u, hu, hm', hl⟩ := exists_seq_strictAnti_tendsto' h
+    have hs : (⋃ i, Ici (u i)) = Ioi t := by
+      ext x
+      simp only [mem_iUnion, mem_Ici, mem_Ioi]
+      exact ⟨fun ⟨i, hi⟩ ↦ (hm' i).1.trans_le hi, fun hx ↦
+        ((hl.eventually_lt_const hx).exists.imp fun i hi ↦ hi.le)⟩
+    have mono : Monotone (fun i ↦ Ici (u i)) := fun _ _ hij ↦ Ici_subset_Ici.mpr (hu.antitone hij)
+    rw [← hs, mono.measure_iUnion, mono.measure_iUnion]
+    exact iSup_congr fun i ↦ normalized_positive_cap m hm pole ⟨ht.trans_lt (hm' i).1, (hm' i).2⟩
+  · have hf : Measurable (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) := by fun_prop
+    rw [Measure.map_apply hf measurableSet_Ioi, withDensity_apply _ measurableSet_Ioi]
+    have hs : (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) ⁻¹' Ioi t = ∅ := by
+      apply eq_empty_iff_forall_notMem.mpr
+      intro y hy
+      have hb := real_inner_le_norm (pole : Ambient (m+1)) (y : Ambient (m+1))
+      rw [mem_sphere_zero_iff_norm.mp pole.property, mem_sphere_zero_iff_norm.mp y.property] at hb
+      change t < _ at hy
+      linarith
+    rw [hs, measure_empty]
+    symm
+    apply setLIntegral_eq_zero measurableSet_Ioi
+    intro x hx
+    simp [weight, show x ∉ Ioo (-1 : ℝ) 1 from fun hh ↦ h ((show t < x from hx).trans hh.2)]
+
+theorem pole_law (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1)) :
+    (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) =
+      volume.withDensity (weight (((m:ℝ)+1-3)/2)) := by
+  let p := (((m:ℝ)+1-3)/2)
+  let ν := volume.withDensity (weight p)
+  let f (q : Sphere (m+1)) := fun y : Sphere (m+1) ↦ inner ℝ (q : Ambient (m+1)) y
+  have hf (q) : Measurable (f q) := by dsimp [f]; fun_prop
+  let μ (q) := (uniform (m+1)).map (f q)
+  have := uniform_probability (n := m+1) (by omega)
+  have hprob (q : Sphere (m+1)) : IsProbabilityMeasure (μ q) := ⟨by simp [μ, Measure.map_apply (hf q)]⟩
+  have hd : (2:ℝ) ≤ m := by exact_mod_cast hm
+  have : IsProbabilityMeasure ν := ⟨by
+    change volume.withDensity (weight p) univ = 1
+    rw [withDensity_apply _ MeasurableSet.univ, setLIntegral_univ, weight_integral]
+    dsimp [p]; linarith⟩
+  change μ pole = ν
+  apply Measure.ext_of_Ici
+  intro t
+  by_cases ht : 0 < t
+  · obtain ⟨u, hu, hm', hl⟩ := exists_seq_strictMono_tendsto' ht
+    have hs : (⋂ i, Ioi (u i)) = Ici t := by
+      ext x
+      simp only [mem_iInter, mem_Ioi, mem_Ici]
+      exact ⟨fun h ↦ le_of_tendsto hl (Filter.Eventually.of_forall fun i ↦ (h i).le),
+        fun h i ↦ (hm' i).2.trans_le h⟩
+    have anti : Antitone (fun i ↦ Ioi (u i)) := fun _ _ hij ↦ Ioi_subset_Ioi (hu.monotone hij)
+    have mass (ρ : Measure ℝ) [IsFiniteMeasure ρ] := anti.measure_iInter
+      (μ := ρ) (fun _ ↦ measurableSet_Ioi.nullMeasurableSet) ⟨0, measure_ne_top _ _⟩
+    rw [← hs, mass, mass]
+    exact iInf_congr fun i ↦ positive_open_cap m hm pole (hm' i).1.le
+  · let q : Sphere (m+1) := ⟨-(pole : Ambient (m+1)), mem_sphere_zero_iff_norm.mpr
+        (by simp [mem_sphere_zero_iff_norm.mp pole.property])⟩
+    have he : μ pole (Iio t) = μ q (Ioi (-t)) := by
+      simp only [μ, Measure.map_apply (hf _) measurableSet_Iio,
+        Measure.map_apply (hf _) measurableSet_Ioi]
+      congr 1
+      ext y
+      simp [f, q]
+    have hn : ν (Iio t) = ν (Ioi (-t)) := by
+      simp only [ν, withDensity_apply _ measurableSet_Iio, withDensity_apply _ measurableSet_Ioi]
+      have hh := (Measure.measurePreserving_neg (volume : Measure ℝ)).setLIntegral_comp_preimage_emb
+        (Homeomorph.neg ℝ).measurableEmbedding (weight p) (Ioi (-t))
+      simpa [Iio, weight, Set.preimage, and_comm, neg_lt, neg_sq, Function.comp_def,
+        show (fun a : ℝ ↦ -a) ⁻¹' Ioi (-t) = Iio t by ext; simp] using hh
+    rw [← compl_Iio, measure_compl measurableSet_Iio (measure_ne_top _ _),
+      measure_compl measurableSet_Iio (measure_ne_top _ _), he, hn]
+    simp only [measure_univ]
+    rw [show μ q (Ioi (-t)) = ν (Ioi (-t)) from positive_open_cap m hm q (by linarith)]
+
+theorem pair_law {n : ℕ} (hn : 3 ≤ n) : PairLaw n := by
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : n ≠ 0)
+  apply pairLaw_of_coneVolumes hn
+  intro x s hs
+  have hf : Measurable (fun y : Sphere (m+1) ↦ inner ℝ (x : Ambient (m+1)) y) := by fun_prop
+  have h := congrArg (fun μ : Measure ℝ ↦ μ s) (pole_law m (by omega) x)
+  simp only [Measure.map_apply hf hs, uniform, Measure.smul_apply,
+    Measure.toSphere_apply' _ (hf hs), finrank_euclideanSpace_fin, smul_eq_mul] at h
+  simpa only [Set.preimage, Nat.cast_succ, Nat.cast_add, Nat.cast_one] using h
+
+theorem axial_pair_law (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1)) :
+    let f := fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y
+    let ν := volume.withDensity (weight (((m:ℝ)+1-3)/2))
+    ((uniform (m+1)).prod (uniform (m+1))).map (Prod.map f f) = ν.prod ν := by
+  dsimp only
+  have := uniform_probability (n := m+1) (by omega)
+  rw [← Measure.map_prod_map _ _ (by fun_prop) (by fun_prop), pole_law m hm pole]
+
+
 def tripleWeight (n : ℕ) (x : ℝ × ℝ × ℝ) : ℝ≥0∞ :=
   let (a,b,c) := x
   let p := ((n:ℝ)-4)/2
@@ -468,6 +624,44 @@ private theorem normalizer_pos {p : ℝ} (hp : -1 < p) : 0 < normalizer p := by
     (beta_pos (by linarith) (by linarith)))
 
 def angularThird (a b t : ℝ) := a*b + Real.sqrt ((1-a^2)*(1-b^2))*t
+
+theorem transverse_inner {n : ℕ} (x y z : Sphere n) :
+    let a := inner ℝ (x : Ambient n) y
+    let b := inner ℝ (x : Ambient n) z
+    let u := (y : Ambient n) - a • (x : Ambient n)
+    let v := (z : Ambient n) - b • (x : Ambient n)
+    inner ℝ (y : Ambient n) z =
+      angularThird a b (inner ℝ (‖u‖⁻¹ • u) (‖v‖⁻¹ • v)) := by
+  dsimp only
+  generalize ha : inner ℝ (x : Ambient n) y = a
+  generalize hb : inner ℝ (x : Ambient n) z = b
+  let u := (y : Ambient n) - a • (x : Ambient n)
+  let v := (z : Ambient n) - b • (x : Ambient n)
+  have unit (w : Sphere n) : inner ℝ (w : Ambient n) w = 1 := by
+    simp [mem_sphere_zero_iff_norm.mp w.property]
+  have normResidual (w : Sphere n) (c : ℝ) (hc : inner ℝ (x : Ambient n) w = c) :
+      ‖(w : Ambient n) - c • (x : Ambient n)‖^2 = 1-c^2 := by
+    rw [← real_inner_self_eq_norm_sq]
+    simp only [inner_sub_left, inner_sub_right, real_inner_smul_left, real_inner_smul_right,
+      unit, hc, (real_inner_comm _ _).trans hc]
+    ring
+  have hu : ‖u‖^2 = 1-a^2 := normResidual _ _ ha
+  have hv : ‖v‖^2 = 1-b^2 := normResidual _ _ hb
+  have huv : inner ℝ u v = inner ℝ (y : Ambient n) z - a*b := by
+    simp only [u, v, inner_sub_left, inner_sub_right, real_inner_smul_left, real_inner_smul_right,
+      unit, (real_inner_comm _ _).trans ha, hb]
+    ring
+  change _ = angularThird a b (inner ℝ (‖u‖⁻¹ • u) (‖v‖⁻¹ • v))
+  rw [angularThird, ← hu, ← hv, ← mul_pow, Real.sqrt_sq (by positivity)]
+  by_cases h : u = 0
+  · simp [h] at huv ⊢
+    linarith
+  by_cases k : v = 0
+  · simp [k] at huv ⊢
+    linarith
+  rw [real_inner_smul_left, real_inner_smul_right, huv]
+  field_simp [norm_ne_zero_iff.mpr h, norm_ne_zero_iff.mpr k]
+  ring
 
 theorem triple_fiber_test (n : ℕ) (hn : 3 ≤ n) (a b : ℝ)
     (F : ℝ → ℝ≥0∞) (hF : Measurable F) :
@@ -622,5 +816,13 @@ def SphericalGramFormula (n s : ℕ) : Prop :=
 #print axioms cone_positive_volume
 #print axioms capSlice_tail
 #print axioms capSlice_normalized
+
+#print axioms normalizer_gamma
+#print axioms transverse_ball_volume
+#print axioms normalized_positive_cap
+#print axioms pole_law
+#print axioms pair_law
+#print axioms axial_pair_law
+#print axioms transverse_inner
 
 end SigabaNeo.Rogers.Gram

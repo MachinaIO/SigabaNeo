@@ -175,6 +175,79 @@ local instance (n : ℕ) : LocallyCompactSpace (SL n) :=
 
 def groupHaar (n : ℕ) : Measure (SL n) := Measure.haar
 
+theorem groupHaar_rightInvariant_of_perfect {n : ℕ} (h : commutator (SL n) = ⊤) :
+    (groupHaar n).IsMulRightInvariant := by
+  change (Measure.haar : Measure (SL n)).IsMulRightInvariant
+  constructor
+  intro g
+  rw [Measure.map_right_mul_eq_modularCharacterFun_smul]
+  have hg : g ∈ commutator (SL n) := by simp [h]
+  have hk := Abelianization.commutator_le_ker
+    (Measure.modularCharacter (G := SL n)).toHomUnits hg
+  have he := congrArg Units.val (MonoidHom.mem_ker.mp hk)
+  change Measure.modularCharacterFun g = 1 at he
+  rw [he, one_smul]
+
+theorem groupHaar_two_rightInvariant : (groupHaar 2).IsMulRightInvariant :=
+  groupHaar_rightInvariant_of_perfect
+    (Matrix.SL2.commutator_eq_top (a := (2:ℝ)) (by norm_num) (by norm_num))
+
+private def latticeVector {n : ℕ} (g : SL n) (z : Fin n → ℤ) : E n :=
+  WithLp.toLp 2 (g • (fun i ↦ (z i : ℝ)))
+
+private theorem latticeVector_injective {n : ℕ} (g : SL n) : Function.Injective (latticeVector g) := by
+  intro z w h
+  have h' := congrArg WithLp.ofLp h
+  have he : (fun i ↦ (z i : ℝ)) = (fun i ↦ (w i : ℝ)) := MulAction.injective g h'
+  funext i
+  exact_mod_cast congrFun he i
+
+theorem tupleWorkload_measurable {n k : ℕ} {F : (Fin k → E n) → ℝ≥0∞} (hF : Measurable F) :
+    Measurable (tupleWorkload F) := by
+  classical
+  apply QuotientGroup.measurable_from_quotient.mpr
+  let Z := {z : Fin n → ℤ // z ≠ 0}
+  have hz (g : SL n) : latticeVector g 0 = 0 := by
+    simp [latticeVector, Matrix.SpecialLinearGroup.smul_def]
+    exact Matrix.mulVec_zero _
+  have eqn (g : SL n) : tupleWorkload F (QuotientGroup.mk g) =
+      ∑' z : Fin k → Z, F (fun i ↦ latticeVector g (z i)) := by
+    let e : Z → {x : E n // x ∈ points (QuotientGroup.mk g) ∧ x ≠ 0} := fun z ↦
+      ⟨latticeVector g z, by rw [points_mk]; exact ⟨z, rfl⟩,
+        fun h ↦ z.property (latticeVector_injective g (h.trans (hz g).symm))⟩
+    have he : Function.Bijective e := by
+      constructor
+      · intro z w h
+        exact Subtype.ext (latticeVector_injective g (congrArg Subtype.val h))
+      · intro ⟨x, hx, hx'⟩
+        rw [points_mk] at hx
+        obtain ⟨z, rfl⟩ := hx
+        exact ⟨⟨z, fun h ↦ hx' (h ▸ hz g)⟩, rfl⟩
+    let E := Equiv.piCongrRight (fun _ : Fin k ↦ Equiv.ofBijective e he)
+    exact (E.tsum_eq (fun z ↦ F (fun i ↦ (z i).val))).symm
+  change Measurable (fun g : SL n ↦ tupleWorkload F (QuotientGroup.mk g))
+  simp_rw [eqn]
+  apply Measurable.tsum
+  intro z
+  apply hF.comp
+  apply Measurable.of_eval
+  intro i
+  apply Continuous.measurable
+  change Continuous (fun g : SL n ↦ WithLp.toLp 2 (g.val.mulVec (fun j ↦ ((z i).val j : ℝ))))
+  apply (PiLp.continuous_toLp 2 _).comp
+  unfold Matrix.mulVec dotProduct
+  fun_prop
+
+theorem domain_mass_ne_zero {n : ℕ} (μ : Measure (SL n)) [μ.IsMulRightInvariant]
+    (hμ : μ ≠ 0) {D : Set (SL n)} (hD : IsFundamentalDomain (integerGroup n).op D μ) :
+    μ D ≠ 0 := by
+  have : Countable (Matrix (Fin n) (Fin n) ℤ) := inferInstanceAs (Countable (Fin n → Fin n → ℤ))
+  let φ := Matrix.SpecialLinearGroup.map (Int.castRingHom ℝ) (n := Fin n)
+  have : Countable (Matrix.SpecialLinearGroup (Fin n) ℤ) := Subtype.val_injective.countable
+  have : Countable (integerGroup n) := φ.rangeRestrict_surjective.countable
+  have : Countable (integerGroup n).op := (integerGroup n).equivOp.surjective.countable
+  exact hD.measure_ne_zero hμ
+
 theorem domainProbability_invariant {n : ℕ} (μ : Measure (SL n))
     [μ.IsMulLeftInvariant] [μ.IsMulRightInvariant] {D : Set (SL n)}
     (hD : IsFundamentalDomain (integerGroup n).op D μ) :
@@ -203,5 +276,21 @@ theorem siegel_of_domain_unfolding {n : ℕ} (μ : Measure (SL n)) (D : Set (SL 
       ∫⁻ x, f x := by
   rw [domainProbability, lintegral_smul_measure, lintegral_map hm measurable_quotient_mk'',
     smul_eq_mul, hu, ← mul_assoc, ENNReal.inv_mul_cancel hpos hfin, one_mul]
+
+theorem siegel_of_measurable_unfolding {n : ℕ} (μ : Measure (SL n)) [μ.IsMulRightInvariant]
+    (hμ : μ ≠ 0) {D : Set (SL n)} (hD : IsFundamentalDomain (integerGroup n).op D μ)
+    (hfin : μ D ≠ ∞) (f : E n → ℝ≥0∞) (hf : Measurable f)
+    (hu : ∫⁻ g in D, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0))
+      (QuotientGroup.mk g) ∂μ = μ D * ∫⁻ x, f x) :
+    (∫⁻ L, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0)) L ∂domainProbability μ D) =
+      ∫⁻ x, f x :=
+  siegel_of_domain_unfolding μ D (domain_mass_ne_zero μ hμ hD) hfin f
+    (tupleWorkload_measurable (hf.comp (measurable_pi_apply 0))) hu
+
+#print axioms tupleWorkload_measurable
+#print axioms domain_mass_ne_zero
+#print axioms siegel_of_measurable_unfolding
+#print axioms groupHaar_rightInvariant_of_perfect
+#print axioms groupHaar_two_rightInvariant
 
 end SigabaNeo.Rogers

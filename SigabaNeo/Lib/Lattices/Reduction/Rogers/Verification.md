@@ -21,32 +21,22 @@ and the positive-definite support appear in `SphericalGramFormula`.
 
 ## Open obligations
 
-1. For pairs, the Lean obligation is the single-pole cap volume in
-   `pairLaw_of_capVolumes` for all real thresholds. Rotation invariance,
-   reduction to half-lines, the geometric cap description, and the derivative
-   of the proposed slice integral are proved for dimensions n ≥ 3. For every pole and 0 < t < 1, `cone_positive_volume` proves the ambient
-   cap volume by transverse slicing and Fubini. For 0 ≤ t ≤ 1,
-   `capSlice_normalized` identifies the candidate measure's tail including
-   its beta normalizer. To deduce the probability law, the remaining work is
-   to equate the transverse-ball factor after sphere normalization with the
-   candidate constant, and handle reflection, endpoint atoms, and exterior thresholds.
-   For triples, the sole hypothesis of `tripleLaw_of_angularDisintegration`
-   is `AngularDisintegration n`. It identifies the two axial cosines and the
-   relative transverse cosine with independent scalar variables of exponents
-   (n−3)/2, (n−3)/2, and (n−4)/2. The subsequent Jacobian and integration
-   against arbitrary nonnegative measurable tests are proved for n ≥ 3.
+1. `pair_law` proves the local pair law for every n ≥ 3. For triples,
+   `axial_pair_law` gives the independent axial coordinates for each fixed pole.
+   `transverse_inner` expresses the third inner product in terms of the two
+   axial coordinates and the normalized transverse directions, including zero residuals.
+   `AngularDisintegration n` still requires the joint sampling law of those directions.
+   The Jacobian and subsequent integration against nonnegative measurable tests are proved.
    The general-s law and transport to the archive remain open.
-2. `groupHaar` constructs Haar measure on SL from local compactness.
-   `domainProbability` projects its normalized restriction to a domain.
-   Positive finite domain mass gives a probability measure. For a genuine
-   fundamental domain and bi-invariant group measure, quotient invariance
-   follows from Mathlib's quotient theorem. The proof supplies Polishness,
-   countability and closedness of the integral subgroup. An application to
-   `groupHaar` still requires its right invariance and an arithmetic
-   fundamental domain of finite positive mass.
-3. `siegel_of_domain_unfolding` accounts for the exact domain mass. The
-   missing inputs are measurability of the order-one workload and its
-   unnormalized integral on that domain for the prescribed tests. The local
+2. `groupHaar_two_rightInvariant` proves right invariance in dimension two.
+   In general `groupHaar_rightInvariant_of_perfect` reduces it to perfectness
+   of the real special linear group. For a nonzero right-invariant measure
+   `domain_mass_ne_zero` proves positivity on every arithmetic fundamental domain.
+   Constructing such a domain of finite mass remains open.
+3. `tupleWorkload_measurable` proves quotient measurability for every finite tuple length
+   by reindexing each representative's sum over nonzero integer vectors.
+   `siegel_of_measurable_unfolding` uses this and domain positivity. Its
+   unnormalized integral identity still requires arithmetic unfolding. The local
    conclusion concerns nonnegative tests. Signed tests additionally require
    integrability and passage to positive and negative parts. For
    higher orders one needs the integral tuple-orbit decomposition, orbit
@@ -76,12 +66,11 @@ integrates the remaining ball sections. By `capSlice_derivative` the
 negative derivative is (n−1)/n · (1−t²)^((n−3)/2). The total sphere mass
 in the cone formula is n times the ambient unit-ball volume. Hence the
 normalized angular density on (0,1) is proportional to that power.
-Reflection gives the same constant on (−1,0). The cones at the endpoints
-are rays and the equator lies in a hyperplane, all of zero ambient volume.
-The fundamental theorem of calculus on interior intervals therefore gives
-the whole measure. Its mass one and `weight_integral` uniquely determine
-the coefficient as `normalizer ((n−3)/2)`. Integrating the fixed-pole
-law over the independent first point yields the pair law.
+Gamma duplication and the Euclidean unit-ball volume formula identify the coefficient
+in `transverse_ball_volume`. Continuity of measure on nested half-lines gives the
+positive closed tails, including the endpoint. Reflection at the opposite pole,
+evenness of the weight and total mass one give the nonpositive closed tails.
+Integrating the fixed-pole law over the independent first point yields the pair law.
 
 ## Verbatim public theorem statements
 
@@ -297,6 +286,82 @@ theorem capSlice_normalized {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ)
       ENNReal.ofReal (normalizer ((d-3)/2) * (d/(d-1)) * capSlice d t)
 ~~~
 
+~~~lean
+theorem normalizer_gamma {p : ℝ} (hp : -1 < p) :
+    normalizer p = Real.Gamma (p + 1 + 1/2) / (Real.sqrt Real.pi * Real.Gamma (p+1))
+~~~
+
+~~~lean
+theorem transverse_ball_volume (m : ℕ) (hm : 2 ≤ m) :
+    volume (Metric.ball (0 : Ambient m) 1) =
+      ENNReal.ofReal (normalizer (((m:ℝ)+1-3)/2) * ((m+1)/m)) *
+        volume (Metric.ball (0 : Ambient (m+1)) 1)
+~~~
+
+~~~lean
+theorem normalized_positive_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
+    {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) (Ici t) =
+      (volume.withDensity (weight (((m:ℝ)+1-3)/2))) (Ici t)
+~~~
+
+~~~lean
+theorem pole_law (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1)) :
+    (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) =
+      volume.withDensity (weight (((m:ℝ)+1-3)/2))
+~~~
+
+~~~lean
+theorem pair_law {n : ℕ} (hn : 3 ≤ n) : PairLaw n
+~~~
+
+~~~lean
+theorem axial_pair_law (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1)) :
+    let f := fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y
+    let ν := volume.withDensity (weight (((m:ℝ)+1-3)/2))
+    ((uniform (m+1)).prod (uniform (m+1))).map (Prod.map f f) = ν.prod ν
+~~~
+
+~~~lean
+theorem transverse_inner {n : ℕ} (x y z : Sphere n) :
+    let a := inner ℝ (x : Ambient n) y
+    let b := inner ℝ (x : Ambient n) z
+    let u := (y : Ambient n) - a • (x : Ambient n)
+    let v := (z : Ambient n) - b • (x : Ambient n)
+    inner ℝ (y : Ambient n) z =
+      angularThird a b (inner ℝ (‖u‖⁻¹ • u) (‖v‖⁻¹ • v))
+~~~
+
+~~~lean
+theorem tupleWorkload_measurable {n k : ℕ} {F : (Fin k → E n) → ℝ≥0∞} (hF : Measurable F) :
+    Measurable (tupleWorkload F)
+~~~
+
+~~~lean
+theorem domain_mass_ne_zero {n : ℕ} (μ : Measure (SL n)) [μ.IsMulRightInvariant]
+    (hμ : μ ≠ 0) {D : Set (SL n)} (hD : IsFundamentalDomain (integerGroup n).op D μ) :
+    μ D ≠ 0
+~~~
+
+~~~lean
+theorem siegel_of_measurable_unfolding {n : ℕ} (μ : Measure (SL n)) [μ.IsMulRightInvariant]
+    (hμ : μ ≠ 0) {D : Set (SL n)} (hD : IsFundamentalDomain (integerGroup n).op D μ)
+    (hfin : μ D ≠ ∞) (f : E n → ℝ≥0∞) (hf : Measurable f)
+    (hu : ∫⁻ g in D, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0))
+      (QuotientGroup.mk g) ∂μ = μ D * ∫⁻ x, f x) :
+    (∫⁻ L, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0)) L ∂domainProbability μ D) =
+      ∫⁻ x, f x
+~~~
+
+~~~lean
+theorem groupHaar_rightInvariant_of_perfect {n : ℕ} (h : commutator (SL n) = ⊤) :
+    (groupHaar n).IsMulRightInvariant
+~~~
+
+~~~lean
+theorem groupHaar_two_rightInvariant : (groupHaar 2).IsMulRightInvariant
+~~~
+
 ## Lean axiom audit
 
 ```text
@@ -332,4 +397,16 @@ theorem capSlice_normalized {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ)
 'SigabaNeo.Rogers.Gram.cone_positive_volume' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.Gram.capSlice_tail' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.Gram.capSlice_normalized' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.normalizer_gamma' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.transverse_ball_volume' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.normalized_positive_cap' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.pole_law' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.pair_law' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.axial_pair_law' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.transverse_inner' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.tupleWorkload_measurable' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.domain_mass_ne_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.siegel_of_measurable_unfolding' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.groupHaar_rightInvariant_of_perfect' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.groupHaar_two_rightInvariant' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
