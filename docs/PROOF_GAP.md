@@ -222,6 +222,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   `A' ∈ Z_3329^{149×512}`, Pr[∃ z ∉ {0, ±v}, ‖z‖² ≤ ‖v‖²] < 2^-64 — plus `failure_647` (< 1/100) and `exact_svp_recovery`
   (an exact SVP output is ±v and yields s). Independent audit: faithful (true probability, genuine uniform and CBD laws,
   ties counted).
+* **Part 40 (audited, minor caveats).** [finite_family](research/wall1_finite_family.md): (i) width–count tradeoff: deleting
+  sample and secret axes (each costs one factor q; secrets are eliminated by linear algebra, not guessed) gives terminal
+  dimension 600 with > 99.57% recovery for plain LWE (511, 512, 3329), CBD(3), using a family of ≤ 2^575 coordinate planes
+  (existence by averaging, i.e. non-uniform advice; the explicit family has 2^996) and a public selector verified by the
+  Part 36 ambient bound — cost ≈ 2^575 SVP_600 calls, irrelevant as an attack; (ii) over all single fixed rational planes the
+  RMS-vs-GH crossing is first at D = 641, attained by horizontal coordinate planes (Part 39 benchmark is optimal);
+  (iii) at D = 406 every fixed rational plane passes the unique-terminal-pair criterion w.p. < 2^-678.61 (for k > m the
+  projected lattice is A-independent), so a family needs ≥ 2^679 planes; (iv) cardinality does not bound I(A;P|U): a
+  plant-aware selector with zero conditional design information passes the (degenerate) criterion at D = 406.
+  **Consequence:** fixed or low-cardinality A-independent prefixes cannot reach β ≈ 406; any proof there needs adaptive
+  (A-dependent) prefixes, i.e. the actual BKZ/slide selection.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
