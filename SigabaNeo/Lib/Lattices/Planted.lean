@@ -1,6 +1,7 @@
 module
 
 public import SigabaNeo.Lib.Lattices.QAry
+public import SigabaNeo.Lib.Lattices.Planted.Volume
 
 public section
 

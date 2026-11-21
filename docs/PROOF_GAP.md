@@ -139,8 +139,8 @@ proof. It is the cheapest attack whose cost proof is within reach.
 ## Stage 2: the uSVP success condition with a planted vector (in progress)
 
 * **`λ₂` lower bound, polynomial `q` (new; [research/usvp_planted.md](research/usvp_planted.md);
-  paper proof, audited: holds, [research/usvp_planted_audit.md](research/usvp_planted_audit.md);
-  Lean formalization of the probability bound in progress).** For the plain-LWE embedding lattice
+  audited: holds, [research/usvp_planted_audit.md](research/usvp_planted_audit.md);
+  **proved in Lean: `Planted.badMatrices_probability`**).** For the plain-LWE embedding lattice
   (`d = m + n + 1`, planted `(e, s, 1)` with coordinates bounded by `B`), and with
   `G = (q^m / V_d)^{1/d}` the Gaussian-heuristic radius:
   `Pr_A[λ₂(L) ≤ R] ≤ ((R + √d/2)/G)^d` whenever `R √(1 + B²) < q`.
@@ -149,6 +149,12 @@ proof. It is the cheapest attack whose cost proof is within reach.
   * Plain-LWE example of Kyber size: `q = 3329`, `m = 1024`, `n = 512`, `B = 3`, `R = 1000`
     (`G ≈ 2113`) gives failure probability `≈ 2^{−1616}`.
 * Lean (`SigabaNeo.Planted`; axioms `propext`, `Classical.choice`, `Quot.sound`):
+  * `badMatrices_probability`: for prime `q`, fixed `e, s` with `|coords| ≤ B`, `R ≥ 0` and
+    `R √(1+B²) < q`, the uniform probability over `A` that the embedding lattice
+    (`x + Ay ≡ t(As + e) mod q`) contains a nonzero `z` of norm `≤ R` that is not an integer
+    multiple of `(e, s, 1)` is `≤ ((R + √d/2)/G)^d`;
+  * `badMatrices_card` (probability `≤ #integer ball/q^m`) and `integerBall_card_le_volume`
+    (`#integer ball ≤ V_d (R + √d/2)^d`, by disjoint unit cubes);
   * `planted_iff`: embedding membership is `A(y − ts) = te − x` over `F_q`;
   * `affineCount`: a feasible system has `q^{(n − rk X) m}` solutions;
   * `lift_multiple`: short points congruent to multiples of the planted vector are integer
