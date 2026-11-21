@@ -20,6 +20,7 @@ import SigabaNeo.Lib.Lattices.Flood
 import SigabaNeo.Lib.Lattices.RingLWEInst
 import SigabaNeo.Lib.Lattices.CoinMaps
 import SigabaNeo.Lib.Lattices.BitLaw
+import SigabaNeo.Lib.Lattices.SimNorm
 
 /-!
 # Lattice library

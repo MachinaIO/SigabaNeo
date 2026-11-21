@@ -38,6 +38,11 @@ import PE.Impl.DualUse.SimGame
 import PE.Impl.DualUse.SimGame3
 import PE.Impl.DualUse.SimGame5
 import PE.Impl.DualUse.GameChain
+import PE.Impl.DualUse.Params.SimTrapNorm
+import PE.Impl.DualUse.Params.Sizes
+import PE.Impl.DualUse.Params.Conf
+import PE.Impl.DualUse.Params.Stat
+import PE.Impl.DualUse.Params.Advantage
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad
