@@ -1,5 +1,8 @@
 import CslibFrontier.Probability.UniversalHash
 import Mathlib.Data.Matrix.Mul
+import CslibFrontier.Probability.StatisticalDistance.CloseTo
+import CslibFrontier.Probability.StatisticalDistance.Event
+import Cslib.Probability.StatisticalDistance
 
 /-!
 # Binary inputs hashed by a uniform matrix
@@ -15,6 +18,7 @@ lemma this is the statistical step of the simulated setup of BTVW17 §4.2.
 namespace SigabaNeo.Lattices
 
 open Cslib.Probability Matrix
+open scoped Cslib.Probability.PMF
 open scoped ENNReal
 
 variable {R : Type*} [CommRing R] [Fintype R] [DecidableEq R]
@@ -99,5 +103,35 @@ theorem isTwoUniversal_binaryHash [Nonempty mm] :
       Fintype.card_pos_iff.mpr ⟨⟨0, by simp⟩⟩
     exact_mod_cast this.ne'
   rw [ENNReal.mul_inv_cancel hpos (ENNReal.natCast_ne_top _), one_mul]
+
+/-- Statistical distance gives closeness. -/
+theorem closeTo_of_dist {α : Type} [Fintype α] {p q : PMF α} {ε : ℝ} (h : dist p q ≤ ε) :
+    CloseTo p q (ENNReal.ofReal ε) := by
+  intro E
+  have h1 := Cslib.Probability.PMF.abs_toOuterMeasure_toReal_sub_le_dist p q E
+  have hle : ∀ r : PMF α, r.toOuterMeasure E ≠ ⊤ := fun r =>
+    ne_top_of_le_ne_top ENNReal.one_ne_top ((r.toOuterMeasure_mono (Set.subset_univ _)).trans
+      (le_of_eq ((r.toOuterMeasure_apply_eq_one_iff Set.univ).mpr (Set.subset_univ _))))
+  have hp := hle p
+  have hq := hle q
+  rw [← ENNReal.ofReal_toReal hp, ← ENNReal.ofReal_toReal hq,
+    ← ENNReal.ofReal_add ENNReal.toReal_nonneg (le_trans (abs_nonneg _) (h1.trans h))]
+  apply ENNReal.ofReal_le_ofReal
+  have := (abs_le.mp (h1.trans h)).2
+  linarith
+
+/-- **The leftover hash lemma for binary inputs**: `(A, A·x)` with uniform `A` and uniform binary
+`x ∈ {0,1}^m` is within `√(|R|^r · 2^{-m}) / 2` of `(A, u)` with uniform `u`. -/
+theorem closeTo_binaryHash {R : Type} [CommRing R] [Fintype R] [DecidableEq R]
+    {rr mm : Type} [Fintype rr] [Fintype mm] [DecidableEq rr] [DecidableEq mm] [Nonempty mm] :
+    CloseTo (seededHash (PMF.uniformOfFintype (Matrix rr mm R))
+        (PMF.uniformOfFintype (mm → Bool)) (binaryHash (R := R)))
+      ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A =>
+        (PMF.uniformOfFintype (rr → R)).map (A, ·))
+      (ENNReal.ofReal (Real.sqrt (Fintype.card (rr → R) * (2 ^ Fintype.card mm : ℝ)⁻¹) / 2)) := by
+  apply closeTo_of_dist
+  refine (isTwoUniversal_binaryHash (R := R) (rr := rr) (mm := mm)).leftover_hash_of_mass_le _
+    fun x => ?_
+  simp [PMF.uniformOfFintype_apply, Fintype.card_bool]
 
 end SigabaNeo.Lattices
