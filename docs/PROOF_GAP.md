@@ -392,7 +392,13 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   reindexing and the order-2 frame measure, full rank via Cramer shears + Haar uniqueness + lattice-point counting calibration).
   Independent audit: faithful (the congruence coefficient |row image|^{-n} equals Rogers' Π (gcd(ε_i,q)/q)^n; checked on 9000
   rank-2 diagrams and 3000 random matrices). So orders 1–3, the ones the sieve analysis uses, are all proved. Still open for
-  discharging [Laa26]'s hypothesis literally: the structure `ClassicalRogersFormula` asks for every order k < n (in progress).
+  discharging [Laa26]'s hypothesis literally: the structure `ClassicalRogersFormula` asks for every order k < n.
+  **This is now proved too**: `rogers_formula_all` (`Reduction/Rogers/RogersAllOrders.lean`; axioms `propext`,
+  `Classical.choice`, `Quot.sound`): for every `n ≥ 2` there is a measurable fundamental domain of positive finite Haar mass
+  whose normalized quotient measure is an `SL_n(ℝ)`-invariant probability satisfying `ClassicalRogersFormula` with
+  `congruenceCoefficient n` (every `1 ≤ k < n`); `rogers_formula_domain` gives it for any finite-mass fundamental domain.
+  **Both hypotheses of [Laa26]'s Lean development (`ClassicalGramFormula`, `ClassicalRogersFormula`) are therefore
+  discharged** against the local transcription of the archive statements; the external archive was not rebuilt.
 * **`q`-ary lattices (the LWE side).** Here Lemma Q1 replaces Rogers' formula by linear algebra over
   `F_q`. Proved in Lean (`SigabaNeo.QAry`; axioms `propext`, `Classical.choice`, `Quot.sound`):
 
