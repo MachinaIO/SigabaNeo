@@ -330,7 +330,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   condition λ_1(H) > T(R_+) ≈ R_+² (742 at β = 406 … 1702 at 1000 — far above the certified 80–89 and above GSA at every width).
   Heights 0, ±1 alone need λ_1(H) > 2√(R_+² − 1), certified at width 1020. Heights ≥ 2 need anti-concentration of k·v mod H,
   i.e. information on det H or the dual minimum — again the average-case profile.
-* **Frontier after Parts 1–58 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 59 (audited).** [volume_product](research/wall1_volume_product.md): the crossing-start product bound in its
+  exponential form exp(−Σ_j p_j), p_j ≤ 1, removes at most ≈ 1022 log units, while the bad Haar mass is ≈ e^{34000}; a feasible
+  box proves the integral > 0.01 at the bracket ends, so this relaxation cannot pass the HKZ-certified radii (0.0058…0.1399).
+  The missing ingredient is a Poisson-type small-ball bound Pr[no short vector] ≤ exp(−c·E[#short]) for the μ-random lattice
+  family with fixed profile (in progress).
+* **Frontier after Parts 1–59 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
