@@ -418,7 +418,25 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   (129.82/159.10/200.08/244.28 vs 133.44/162.87/204.11/249.99 at b = 406/506/647/800); the Part 71 boxes saturate Part 65's H_b,
   so all twelve have zero void probability in a full-width window (deterministically). This shows the Part 65 relaxation was
   loose at d = b; feeding the bound back into Part 65's candidate list relocates the relaxed mass rather than certifying a radius.
-* **Frontier after Parts 1–73 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 74 (audited; ten parallel routes on the void probability of the fixed-profile μ-random block).** Problem: bound
+  Pr_μ[no vector shorter than g_0] in terms of E = E[#short] (needed on the surviving rank-1023 domain).
+  Positive: [void_numerics](research/wall1_void_numerics.md) (V7) proves, for ANY profile, Pr[N=0] = Π_j (1 − e_j) ≤ e^{−E} when
+  min_j g_j/g_0 ≥ √3/2, and −log Pr[N=0] ≥ Σ_{j: g_j/g_0 > 1/√2} (2g_j²/g_0² − 1)·e_j in general (bounded-overlap of lifts on a
+  surviving prefix); width-3 extinction at r* = 0.898733468…; Monte Carlo up to width 30 shows −log P ≈ A·E^{≈1} (Poisson-like).
+  Second-moment-type bounds (log-size suppression only): [void_affine](research/wall1_void_affine.md) (V2),
+  [void_fourier](research/wall1_void_fourier.md) (V5; its per-history Fourier/Hoeffding martingale is capped at j/2 per column,
+  ≤ 1.72·10⁵ nats in total at rank 1023 — an obstruction, below the residual 2.3·10⁵–8.3·10⁵),
+  [void_concentration](research/wall1_void_concentration.md) (V3), [void_multiscale](research/wall1_void_multiscale.md) (V4; per-cut
+  miss ≤ (1 + Σ p_v/(1−p_v))^{-1} from pairwise independence of distinct primitive directions, sharp: Θ(1/k) example).
+  Obstructions: [void_janson](research/wall1_void_janson.md) (V1; restricted families capture a vanishing part of E, Suen ≤ |J|),
+  [void_entropy](research/wall1_void_entropy.md) (V8; projections lose the whole exponent; overlapping-window Hölder = disjoint
+  product), [void_duality](research/wall1_void_duality.md) (V9; the reversed reduced dual of a μ-uniform basis is again μ-uniform,
+  but theta duality maps the void to a dual lower tail), [void_theta](research/wall1_void_theta.md) (V10; Θ_t is neither convex
+  nor concave in a shear), [void_haar_transfer](research/wall1_void_haar_transfer.md) (V6; void probability is monotone under
+  componentwise ratio comparison, but not ordered by E). **Common missing ingredient:** coverage of the fresh column's torus
+  conditioned on prefix survival when the terminal GS ratios drop below 1/√2 (deep windows) — beyond both the probabilistic
+  ceilings and the deterministic packing bounds.
+* **Frontier after Parts 1–74 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
