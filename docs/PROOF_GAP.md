@@ -651,7 +651,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   first-tour law is an exact finite recursion (Part 108). Chaining fails in every form tried: selector-uniform (Part 106),
   worst-case/additive (Parts 109–110), and spectral/L² (Part 111). The best pathwise floor is ≈ 10⁻⁵ × own GH, against the
   ≈ 0.9 needed. A tool for the conditioning effect of the SVP selections on discrete laws is missing.
-* **Frontier after Parts 1–111 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 112 (audited).** [void_monotone](research/wall1_void_monotone.md): SVP void conditioning is not negatively
+  associated. In a rank-4 window, conditioning on a primitive mark being shortest raises the expected short quotient pairs from
+  9/4 to 4. Conditioning on a reachable history raises the next-window hit probability from 5^{−2(b−1)} to 5^{−(b−1)}. Both
+  were verified by exact enumeration. FKG/Harris-type chaining is ruled out.
+* **Frontier after Parts 1–112 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
