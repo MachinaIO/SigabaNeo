@@ -14,6 +14,7 @@ import SigabaNeo.Lib.Lattices.Trapdoor.Family
 import SigabaNeo.Lib.Lattices.Homomorphic
 import SigabaNeo.Lib.Lattices.Decode
 import SigabaNeo.Lib.Lattices.BinaryHash
+import SigabaNeo.Lib.Lattices.BoxSampler
 
 /-!
 # Lattice library
@@ -44,6 +45,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   Ring-GSW ciphertexts (the key relation and the Ring-GSW invariant).
 * `BinaryHash`: `x ↦ A · x` for a uniform matrix over any finite ring and binary inputs is
   two-universal (`isTwoUniversal_binaryHash`), for cslib's leftover hash lemma.
+* `BoxSampler`: one try of preimage sampling by box rejection (Lyubashevsky–Wichs); its law does
+  not depend on the trapdoor (`boxSample_eq`).
 * `Decode`: threshold decoding of a bit `M · ⌊q/2⌋ + e` in `ℤ_q` and in `ℤ_q[X]/(X^N + 1)`, exact when
   `4|e| + 2 < q`.
 -/
