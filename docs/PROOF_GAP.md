@@ -90,6 +90,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * the projection bound for the planted vector;
   * the resulting provable block size and cost for Kyber.
 
+## Wall 2: the sieve on BKZ-produced blocks (in progress)
+
+* **Necessary condition for a smoothing invariant (new; [research/wall2.md](research/wall2.md)).**
+  Take a determinant-one block of dimension `d` with a nonzero dual vector of length `1/T`. For
+  every index-`p` sublattice, smoothing at width `R` after normalization requires
+  `p ≥ ((T/R)·√(log(2/ε)/π))^d`. The dual vector survives every sublattice, and it and its
+  negative alone contribute `2·exp(−πR²p^{2/d}/T²)` to the dual Gaussian mass. Skewed blocks
+  therefore defeat every index cap based on dimension and determinant alone.
+* Lean: `Wall2.dualPair_exceeds`, the scalar Gaussian inequality. The lattice argument and the
+  index bound are on paper.
+* Open: how often BKZ blocks of planted lattices have such short dual vectors. This reduces to
+  wall 1.
+
 ## A route around walls 1 and 2: the full-dimension sieve
 
 Walls 1 and 2 only arise because the estimator's attacks call a sieve inside BKZ. Running the
