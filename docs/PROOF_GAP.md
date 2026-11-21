@@ -413,7 +413,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   dependency graph) and positive association (Harris fails) are ruled out as shortcuts. On every Part 71 box one window has
   log E > 131–247, so a void bound as weak as Pr[N = 0] ≤ exp(−10^{-49}·E) would eliminate the box: **the remaining core of
   wall 1 is a dense-packing large-deviation bound for the μ-random block** (in progress).
-* **Frontier after Parts 1–72 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 73 (audited, minor caveats).** [dense_packing_ld](research/wall1_dense_packing_ld.md): the full Levenshtein
+  ratio with Cohn–Zhao's same-dimension packing inequality gives full-width block caps 3.6–5.7 nats below Part 65's H_b
+  (129.82/159.10/200.08/244.28 vs 133.44/162.87/204.11/249.99 at b = 406/506/647/800); the Part 71 boxes saturate Part 65's H_b,
+  so all twelve have zero void probability in a full-width window (deterministically). This shows the Part 65 relaxation was
+  loose at d = b; feeding the bound back into Part 65's candidate list relocates the relaxed mass rather than certifying a radius.
+* **Frontier after Parts 1–73 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
