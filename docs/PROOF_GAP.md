@@ -309,7 +309,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   [avg_prefix](research/wall1_avg_prefix.md) (Part 53: on Haar lattices at proportional prefix rank the Rankin numerator over the
   largest BKZ prefix determinant is exp(−Ω(n log n)) — the Rankin route cannot work in the bulk even with average-case
   denominators; with the exact GSA denominator as hypothesis it would first pass at width 1018).
-* **Frontier after Parts 1–53 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Parts 54–56 (audited).** [qary_basis_count](research/wall1_qary_basis_count.md) (Part 54: whp > 1 − 2^-360 every
+  fully BKZ-reduced basis of the rank-1023 null lattice has terminal g ≤ 600 at β = 406/506/647/800 — so Part 47's worst-case
+  quadratic condition (≥ 608.5) is unattainable; the linear target √(6β) also fails whp on punctured ranks 700/661/646, uniformly
+  over data-dependent projectors); [volume_svp_weights](research/wall1_volume_svp_weights.md) (Part 55: keeping SVP tests on
+  disjoint intervals (each interval HKZ, independent coefficients) improves the Haar terminal radii only to 0.006/0.015/0.039/0.140
+  at β = 406/506/647/800; crossing-block tests and exponential suppression are open); [literature2](research/wall1_literature2.md)
+  (Part 56: no theorem gives the needed quantile; closest: Laarhoven Prop. 3, Joux–Węgrzycki's all-coordinate slide upper
+  bound, El-Baz–Lee–Strömbergsson's Hecke rate; conditioning a uniform kernel to the graph law costs < 1/3328 in TV).
+* **Frontier after Parts 1–56 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
