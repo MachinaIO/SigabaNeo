@@ -36,10 +36,13 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
 * `SigabaNeo.Lattices.slp_sim_relation`, `RingBTVW.keyMatrix_sim` (hybrid 2's algebra).
 * `SigabaNeo.Lattices.isTwoUniversal_binaryHash`, `closeTo_binaryHash` (hybrids 1, 6; Lib
   `Lattices/LeftoverHash`).
-* `DualUse.decryptRaw_eq` (correctness, exactly).
+* `DualUse.decryptRaw_eq` (correctness, exactly); `DualUse.decrypt_correct_of_bounds` over `R_q`
+  (the noise reduces to `PE.Impl.RingBTVW`'s with `aᵢ = B₀ Rᵢ`, `eΨᵢ = e₀ Rᵢ`).
+* `DualUse.keyLaw_real_eq_sim` (hybrid 2: real and simulated keys have the same law),
+  `DualUse.valid_of_mem_support` (keys are valid unless the try aborts).
 * `SigabaNeo.Lattices.boxSample_eq` (hybrid 2's exactness).
 
 ## To do
 
-Scheme with general widths; correctness (noise with `Rᵢ`, box keys); hybrids 1–6; then the
+The laws of the coins (binary `Rᵢ`, boxes) and the probability of a correct decryption; hybrids 1, 3–6; then the
 machines (`SigabaNeo.Lib.Machines.Randomized`, `Guarded`) and the machine-level propositions.
