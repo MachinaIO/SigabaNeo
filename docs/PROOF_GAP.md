@@ -184,6 +184,23 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   (success = some output basis row is ±u, or the terminal criterion holds; everything else unchanged) are SKETCH_ACCEPTED with four
   open leaves (`Wall1{Slide,GSA}CaptureOr{SameLine,OffLine}`); `Research/Wall1/CapturedSlide.lean`. The terminal-only originals stay
   registered and open; no disproof at the registered width (n ≥ 512, β ≥ 40) was found.
+* **Parts 30–37 (audited; eight more parallel routes, Nov 2026).** One positive partial result and seven obstructions; every
+  explicit example re-checked in exact arithmetic by two independent auditors:
+  [contained](research/wall1_contained.md) (**positive**: for prefix rank k ≤ β, containment plus ambient uniqueness forces capture,
+  so the contained-without-capture stratum has probability ≤ 2^-63 at d = 701, β = 406 — implied by Part 7's uniqueness event;
+  fails already at k = β+1, explicit d = 5 example),
+  [interior](research/wall1_interior.md) (exact fixed-plane interior probability via finite-field rank expectations; adaptive
+  selectors reach 1 and 0 where every fixed plane has 1/3),
+  [capture_depth](research/wall1_capture_depth.md) (ambient uniqueness forces capture-or-terminal only at β = d: integral bases in
+  every d ≥ 3, BKZ-β reduced for all β < d, missing the unique shortest pair),
+  [canonical](research/wall1_canonical.md) (two HKZ reducers with the same flag, one captures and one misses: flag-only counting
+  fails), [ties](research/wall1_ties.md) (no tie at the minimum for terminal dimension 2, odd q, irrational height; q = 5
+  terminal-dimension-3 tie on [1/24, 1]), [monotone_beta](research/wall1_monotone_beta.md) (one basis BKZ-2 and BKZ-3 reduced:
+  success at width 2, failure at width 3), [lower_bound](research/wall1_lower_bound.md) (BKZ reducedness alone gives no necessary
+  block size above 2: an HKZ selector captures w.p. > 1 − 2^-1900 at (511, 512, 3329)),
+  [random_scale](research/wall1_random_scale.md) (signed-permutation averaging keeps the plant correlated with the prefix:
+  TV distance 3/4 in a 4-dimensional example). **Consequence:** any β < d bound must use how the concrete slide/BKZ algorithm
+  selects its output; reducedness, flags, monotonicity and symmetrization arguments are each refuted.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
