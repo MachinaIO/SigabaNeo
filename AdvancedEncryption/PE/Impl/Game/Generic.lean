@@ -215,6 +215,71 @@ theorem closeTo_runWith_setup {α : Type}
 
 end Eager
 
+/-! ### Answers that agree on the support -/
+
+/-- The secret, if any, lies in the support of the law of the selected attribute. -/
+def InSupport (sp : Spec U Sig) (s : GState U Sig) : Prop :=
+  ∀ σ, s.sec = some σ → ∃ x, s.attr = some x ∧ σ ∈ (sp.setup x).support
+
+/-- **Agreement on the support**: two challengers with the same law of the secret whose answers
+agree on every secret in its support run the same experiment. -/
+theorem runWith_congr_support {α : Type} (sp sp' : Spec U Sig) (hsetup : sp'.setup = sp.setup)
+    (hpub : ∀ x, ∀ σ ∈ (sp.setup x).support, sp'.pub σ = sp.pub σ)
+    (hkey : ∀ x, ∀ σ ∈ (sp.setup x).support, sp'.key σ = sp.key σ)
+    (hchal : ∀ x, ∀ σ ∈ (sp.setup x).support, sp'.chal σ = sp.chal σ)
+    (hauth : sp'.auth = sp.auth)
+    (program : ProbOracleComp (fun _ : Fin 3 × List Bool => List Bool) α) :
+    ProbOracleComp.runWith (oracle sp') program ({} : GState U Sig) =
+      ProbOracleComp.runWith (oracle sp) program {} := by
+  have h := ProbOracleComp.runWith_map_state_of_invariant (oracle sp') (oracle sp) id
+    (InSupport sp) ?_ ?_ program {} (fun σ h => by simp at h)
+  · have hid' : (fun x : α × GState U Sig => match x with | (a, s') => (a, id s')) = id :=
+      funext fun _ => rfl
+    rw [hid', PMF.map_id] at h
+    exact h
+  · intro q s hs a s' h
+    rcases s with ⟨attr, sec, msg, bad⟩
+    unfold oracle oracleWith at h
+    split_ifs at h with hq hk
+    · split at h
+      · rw [PMF.mem_support_map_iff] at h
+        obtain ⟨σ, hσ, he⟩ := h
+        cases he
+        intro σ' hσ'
+        simp only [Option.some.injEq] at hσ'
+        subst hσ'
+        rename_i x _ _
+        exact ⟨x, rfl, by rw [hsetup] at hσ; exact hσ⟩
+      · rw [PMF.mem_support_pure_iff] at h; cases h; exact hs
+    · split at h
+      · rw [PMF.mem_support_map_iff] at h
+        obtain ⟨sk, -, he⟩ := h; cases he; exact hs
+      · rw [PMF.mem_support_pure_iff] at h; cases h; exact hs
+    · split at h
+      · rw [PMF.mem_support_map_iff] at h
+        obtain ⟨ct, -, he⟩ := h; cases he; exact hs
+      · rw [PMF.mem_support_pure_iff] at h; cases h; exact hs
+  · intro q s hs
+    have hid : (fun r : List Bool × GState U Sig => (r.1, id r.2)) = id := funext fun _ => rfl
+    rw [hid, PMF.map_id]
+    rcases s with ⟨attr, sec, msg, bad⟩
+    by_cases hq : q.1 = selectOp
+    · rcases attr with _ | x
+      · rcases hd : decode U.encAttr q.2 with _ | x
+        · simp [oracle, oracleWith, hq, hd]
+        · simp only [oracle, oracleWith, hq, hd, if_true, hsetup]
+          exact Cslib.Probability.PMF.map_congr_on_support _ _ _ fun σ hσ => by simp only [hpub x σ hσ]; rfl
+      · simp [oracle, oracleWith, hq]
+    · rcases attr with _ | x
+      · simp [oracle, oracleWith, hq]
+      · rcases sec with _ | σ
+        · simp [oracle, oracleWith, hq]
+        · obtain ⟨y, hy, hσ⟩ := hs σ rfl
+          simp only [Option.some.injEq] at hy
+          subst hy
+          simp only [oracle, oracleWith, hq, if_false, hkey _ σ hσ, hchal _ σ hσ, hauth]
+          split_ifs <;> rfl
+
 /-! ### What the adversary and the distinguisher see -/
 
 /-- The observable part of a run: the output, the attribute, the message and the flag. -/
