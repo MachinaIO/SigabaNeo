@@ -147,6 +147,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   coordinate blocks) are proved. **Audit finding:** in the 4-dimensional example of Parts 16–17 the discrepancy disappears once
   one conditions on the full in-block Gram–Schmidt profile, so *profile-only* conditioning (rather than covolume-only) is still
   open and is the most promising lead.
+* **Part 18 (audited; [research/wall1_smoothed.md](research/wall1_smoothed.md)).** Generic continuous metric noise makes
+  reduction trajectories almost surely tie-free and locally stable, but an arbitrarily small anisotropic perturbation still gives
+  conditional tail probabilities 1/3 vs 1/2 for two histories at almost every common covolume. Isotropic smoothing and
+  profile-only conditioning remain open.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
