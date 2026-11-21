@@ -1,6 +1,7 @@
 module
 
 public import Mathlib
+public import SigabaNeo.Lib.Lattices.AvgBKZ.Gaussian
 public import SigabaNeo.Lib.Lattices.AvgBKZ.Plane
 public import SigabaNeo.Lib.Lattices.AvgBKZ.Selection
 
