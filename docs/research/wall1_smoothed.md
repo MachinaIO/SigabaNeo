@@ -48,3 +48,51 @@ completions; (3) checked by hand and by Monte Carlo (e = 0.009, 200k samples: �
 prefixes suffice for discreteness (primitivity not needed). Cross-reference: the audit of wall1_coupling.md found that in the
 4-dimensional example conditioning on the full in-block profile removes the discrepancy; whether the same holds for the
 anisotropic example of (3) is being examined in docs/research/wall1_profile.md.
+
+## Small linear perturbations of the rank-1023 null family
+
+Let $m=511$, $n=512$, $N=m+n$, $q=3329$, and $L=q^{-m/N}L_0$ for the graph kernel of Part 52. Work on the determinant-one space $X_N$ with Haar probability $\mu$. Write $k=N-\beta$ with zero-based GS indices. At this finite rank there is a quantitative obstruction to mixing by a near-identity perturbation, even after averaging over **all** graphs.
+
+**A common-vector test.** Every graph kernel contains $q\mathbb Z^N$. In particular $v=q^{n/N}e_1$ belongs to every normalized lattice and has length $c=57.92666\ldots$. Let $T$ be any determinant-one perturbation, possibly input-dependent, and $P$ the law of $TL$. If $\Pr(\|(T-I)e_1\|\le u)\ge1-\delta$, then
+$$
+ d_{\rm TV}(P,\mu)\ge 1-\delta-V_N(cu)^N,\qquad
+ V_N=\pi^{N/2}/\Gamma(1+N/2).
+$$
+Indeed use the event of a nonzero lattice point in the ball centered at $v$ of radius $cu$. The point $Tv$ witnesses it under the coupling. Under Haar its probability is at most the expected nonzero count, exactly the ball volume by Siegel's formula. The argument applies to the full Hecke family of this Smith type as well. [Siegel mean value formula](https://www.sciencedirect.com/science/article/abs/pii/S0022314X22000117) · [Hecke family](wall1_hecke_transfer.md)
+
+Here $V_N^{-1/N}/c=0.1341332\ldots$, so at $u=0.10$ the volume is below $10^{-130}$. For a law supported in $\|T-I\|_{\rm op}\le u$, even TV distance $0.01$ requires $u\ge0.99^{1/N}V_N^{-1/N}/c$. This is a necessary radius, with no sufficiency assertion above it. A walk with many small steps obeys the same obstruction whenever its **product** stays near the identity. Mixing estimates for escaping products alone give no control of their final distortion. Part 52's fixed-rank convergence takes $q$ to infinity. Its finite sharp-cutoff power $q^{-511/1023^2}\simeq0.996$ supplies no small error here. The common-vector test uses orientation. A terminal event is rotation invariant and can have small discrepancy even at TV distance near one.
+
+**Transport of a marked basis.** Suppose $a\le s_{\min}(T)\le s_{\max}(T)\le b$, $a>0$, and set $K=b/a$. For every prefix span $W$ and vector $x$,
+$$
+ a\,d(x,W)\le d(Tx,TW)\le b\,d(x,W).
+$$
+Take the infimum of the singular-value inequalities for $x-w$ over $w\in W$. This simultaneously bounds every GS length of the transported basis and every projected competitor in every full or truncated window. Thus an exactly reduced basis becomes $K$-approximate in the block-head length tests. For exact transport it suffices that the least competing length on a different line divided by the head length exceed $K$ in every window. This is Part 25's squared-length margin after centering the log metric by a scalar. Earlier-column integer size reduction can be redone without changing any projected window lattice or GS length. Preserving an implementation's entire sequence of branch decisions requires its other margins as well. The standard basis of the cubic lattice has a tied first window and an arbitrarily small diagonal stretch of the head breaks that test. There is no positive uniform exact radius over reduced bases of arbitrary inputs. Part 64 measures terminal lengths after search at ranks up to 60 and provides no lower quantile for these margins at 1023. [Part 25](wall1_stability.md) · [Part 64](wall1_bad_bases_experiment.md)
+
+For $A=I+\sigma G$ with iid standard normal entries, on $t=\sigma\|G\|_{\rm op}<1$ the determinant is positive by continuity along the segment from $I$. The raw singular values lie in $[1-t,1+t]$. For $T=A/(\det A)^{1/N}$ one may take $a=(1-t)/(1+t)$, $b=1/a$, while the actual condition number is at most $(1+t)/(1-t)$. Also $\|T-I\|_{\rm op}\le 2t/(1-t)$ by expanding around the scalar identity. On the exceptional event one may use absolute determinant normalization for the lattice or resample, accounting for its probability. For an elementary explicit tail take two $1/4$-nets of the unit sphere of size at most $9^N$ (disjoint-ball packing). Approximating the two maximizing vectors costs at most half the operator norm, and each fixed bilinear test is standard normal. Hence except with probability $\delta$,
+$$
+ \|G\|_{\rm op}\le 2\sqrt{2\log(2\cdot9^{2N}/\delta)}.
+$$
+This gives $1+O(\sigma\sqrt{N+\log(1/\delta)})$ multiplicative GS distortion in the small-noise regime. For example at $\delta=0.01$, $\sigma=0.00024$ gives $t<0.046$, so the normalized law has TV distance at least $0.99-10^{-130}$ (using the displayed bounds on the good event). The net bound is conservative.
+
+**What transfers.** Let $E_\beta(r)$ mean that some exactly reduced basis has $g_k<r$. Part 82 certifies $\mu(E_\beta(r))<0.01$ per width, with determinant-one radii conservatively rounded down as follows.
+
+| $\beta$ | 406 | 506 | 647 | 800 |
+|---|---:|---:|---:|---:|
+| $r$ | 0.00654 | 0.01696 | 0.04255 | 0.15090 |
+
+If $P(E_\beta(r))\le\mu(E_\beta(r))+\epsilon$, a fresh exact reducer on $TL$ has $g_k\ge r$ with probability at least $0.99-\epsilon$. For a selected exact basis on $L$, if its transport passes all exact tests and $s_{\max}(T)\le b$ except on mass $\eta$, its original $g_k\ge r/b$ with probability at least $0.99-\epsilon-\eta$. To quantify over all original bases via this implication requires simultaneous transport or control of a measurable bad witness. Approximate transport alone would require a Haar bound for approximate heads. Part 46's shortest-line disintegration includes avoidance and selection weights, and an arbitrary finite-width output needs its own selector. Conditioning on a trajectory can amplify discrepancy by the inverse probability of the conditioning event. [Part 82 certificates](wall1_small_d_caps.md) · [Part 46 disintegration](wall1_haar_prefix_law.md)
+
+One unconditional smoothed bound is available directly. Part 48 gives a physical ambient minimum exceeding 443.0664 with probability at least 0.99 (using its stated threshold). Its deterministic propagation applies anew to **every exact output on the perturbed lattice**. With the Part 48 coefficients $P_k$, this gives $g_k(TL)\ge a\,443.0664\,q^{-m/N}e^{-P_k}$ on mass at least $0.99-\Pr(s_{\min}(T)<a)$. This uses no continuity of a basis selector. It inherits the ambient propagation loss. [Part 48](wall1_null_terminal.md)
+
+**Randomize, round, then reduce.** For a physical column basis $B$, use grid spacing $h$ and integer input $C=\operatorname{round}(TB/h)$ entrywise. Then $hC=(I+F)TB$ with $F=(hC-TB)(TB)^{-1}$ and $\|F\|_{\rm op}\le z=hN\|(TB)^{-1}\|_{\rm op}/2$ by the Frobenius bound. Choose $h$ for $z<1$. Any unimodular output change $U$ on $C$ yields the original basis $BU$. In physical length units every GS length of $hCU$ lies between $(1-z)a$ and $(1+z)b$ times its counterpart in $BU$, uniformly even for adaptively selected $U$. Exact heads on $C$ give at most $K(1+z)/(1-z)$-approximate heads on $B$. In the other direction, a strict margin exceeding $(1+z)/(1-z)$ suffices to retain an exact head when passing from $TB$ to $hC$. Mesh choice must account for basis conditioning. Rounded normalized inputs have countable support and TV distance one from Haar. Eventwise comparison before rounding plus a decision-boundary estimate, or a direct analysis of rounded inputs, is needed. The integer coefficients map back exactly, but a target vector's primitivity, survival in the chosen quotient, and competition there must still be checked for any recovery claim.
+
+**Gap at rank 1023.** Genuinely small near-identity motions fail the proposed full-space mixing test. No proved width-specific margin law and event-specific discrepancy bound identify a compatible $\sigma$ outside that obstruction. Small condition number by itself allows large rotations, and failure of the oriented TV test supplies no lower bound on terminal-event discrepancy. Neither a near-GSA lower quantile nor an impossibility theorem for every noise scale or selector follows. Randomizing first removes the need to preserve the original reducer's transcript for a guarantee on the new input, but leaves the law of its selected terminal block and the accuracy of pullback to be established.
+
+### Audit note for the appended section (Nov 2026)
+
+Independent audit (Codex): CORRECT WITH MINOR ISSUES.
+
+* **Common-vector TV bound.** Verified. V_1023(0.1c)^1023 ≈ 3.391·10⁻¹³¹, and t < 0.04554 at the stated Gaussian parameters.
+* **Transport and strict margins.** Verified, including adaptive U.
+* **Correction.** "A terminal event is rotation invariant" holds for the existential event E_β(r). For a particular selector's
+  returned length, it additionally needs the selector to be rotation-equivariant, or its output law to be invariant.

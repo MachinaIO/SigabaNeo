@@ -594,7 +594,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     955. The profile-free height-one condition is first met at final rank 999.
   * **Conclusion.** The current terminal-minimum certificates give no improvement over Part 39's dimension 647 (10.62 vs 31.06
     at 647). Beating 647 needs distributional control of the selected block itself.
-* **Frontier after Parts 1–103 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 104 (audited; four earlier notes).**
+  * [markov_reducer](research/wall1_markov_reducer.md): for the one-pass shortest-in-block chain, the infimum of the terminal 1%
+    quantile over unrestricted fresh-basis selectors is 0 (by choosing the penultimate basis). Every fixed selector has a
+    positive quantile.
+  * [smoothed](research/wall1_smoothed.md) (appendix): a vector common to all graph lattices forces near-one TV distance to Haar
+    for any small perturbation.
+  * [list_success](research/wall1_list_success.md): an exact signed competitor count conditional on the prefix. CBD
+    independence gives no uniform torus translate.
+  * [selfdual_qary](research/wall1_selfdual_qary.md): an exact finite first moment of primitive sublattices in the graph
+    ensemble. It needs height-stratified plane counts to evaluate.
+* **Frontier after Parts 1–104 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
