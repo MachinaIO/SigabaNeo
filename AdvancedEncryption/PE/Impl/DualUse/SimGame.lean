@@ -75,4 +75,26 @@ theorem accept_sim (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u
   rw [← hmpk σ]
   exact KGsim_eq_KGi hdec hL hcov (sd σ) (hvalid x σ hσ) C (by rw [hx x σ hσ]; exact hC)
 
+/-- **The acceptance of a Ring-LWE step is that of the reduction's experiment**, averaged over the
+instance. -/
+theorem accOn_sim {Inst : Type} (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
+    (hL : dateBound ≤ c.L) (hcov : SimCovered hk c) (A : Machine 3) (D : Machine)
+    (inst : PMF Inst) (F : Date → Inst → PMF (PK hk c × CT hk c))
+    (setupI : Inst → Date → PMF Sec) (viewI : Inst → Sec → PK hk c × CT hk c)
+    (sdI : Inst → Sec → SimData hk c) (hF : ∀ x i, F x i = (setupI i x).map (viewI i))
+    (hmpk : ∀ i σ, (sdI i σ).mpk = (viewI i σ).1)
+    (hx : ∀ i x, ∀ σ ∈ (setupI i x).support, (sdI i σ).x = x)
+    (hvalid : ∀ i x, ∀ σ ∈ (setupI i x).support, SimValid (sdI i σ)) :
+    accOn A D inst F = ((inst.bind fun i =>
+      ((A.runWith (Generic.oracle (specSim (setupI i) (viewI i) (sdI i)))
+        (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal := by
+  unfold accOn
+  congr 1
+  rw [PMF.bind_apply, PMF.bind_apply]
+  refine tsum_congr fun i => ?_
+  congr 1
+  have hFi : (fun x => F x i) = fun x => (setupI i x).map (viewI i) := funext fun x => hF x i
+  rw [hFi]
+  exact accept_sim (setupI i) (viewI i) (sdI i) hdec hL hcov (hmpk i) (hx i) (hvalid i) A D
+
 end AdvancedEncryption.DualUse
