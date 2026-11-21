@@ -354,9 +354,15 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   `Reduction/Rogers/ClassicalGram.lean`, from the spherical Gram law for every `s`,
   `spherical_gram_formula_all`; axioms `propext`, `Classical.choice`, `Quot.sound`). The archive
   statement was transcribed locally (`GramDensity.lean`); the archive itself was not rebuilt.
-  `ClassicalRogersFormula` (Rogers' formula for Haar measure) remains open: Haar right invariance,
-  a positive-mass arithmetic domain and the finite type-A diagonal integral are proved; the Siegel-set
-  covering in general rank, the Haar bound on it, and the unfolding with the covolume factor remain.
+  **The order-1 case of `ClassicalRogersFormula` (Siegel's mean value theorem) is now proved**:
+  `siegel_mean_value` (`Reduction/Rogers/SiegelMeanValue.lean`, assembled from the closed local-P2M
+  decomposition, files `SiegelAssembly*.lean`, `UnitBallQR*.lean`; axioms `propext`, `Classical.choice`,
+  `Quot.sound`): for `n ≥ 2` there is a measurable fundamental domain `D` of `SL_n(ℤ)` with
+  `0 < Haar(D) < ∞` whose normalized pushforward to `SL_n(ℝ)/SL_n(ℤ)` is an `SL_n(ℝ)`-invariant
+  probability measure with `E[Σ_{v ∈ L∖0} f(v)] = ∫ f` for every measurable `f ≥ 0`. Independent audit:
+  faithful (genuine nonzero Haar measure, correct action, each nonzero vector counted once; a
+  Minkowski–Hlawka corollary was derived from it). Orders 2 and 3 of Rogers' formula (needed for the
+  full [Laa26] constant) remain open.
 * **`q`-ary lattices (the LWE side).** Here Lemma Q1 replaces Rogers' formula by linear algebra over
   `F_q`. Proved in Lean (`SigabaNeo.QAry`; axioms `propext`, `Classical.choice`, `Quot.sound`):
 
