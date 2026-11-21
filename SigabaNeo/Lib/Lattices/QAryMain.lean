@@ -4,7 +4,7 @@ public import SigabaNeo.Lib.Lattices.QAry.RankDefect
 public import SigabaNeo.Lib.Lattices.QAry.MainCounting
 public import SigabaNeo.Lib.Lattices.QAry.MainRowSpaces
 public import SigabaNeo.Lib.Lattices.QAry.MainPatterns
-public import SigabaNeo.Lib.Lattices.Sieve.Core
+public import SigabaNeo.Lib.Lattices.Reduction.Sieve.Core
 
 /-! # Finite marked kernel moments
 

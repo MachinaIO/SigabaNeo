@@ -4,7 +4,7 @@ For exact, fully BKZ-reduced bases there is a deterministic cutoff for the audit
 
 ## Deterministic prefix envelope
 
-Index from zero. Put $g_i=\|b_i^*\|$, $S_j=\sum_{i<j}\log g_i$, and first normalize $S_n=0$. Use the shortest-in-every-projected-block definition in [BKZ.lean](../../SigabaNeo/Lib/Lattices/BKZ.lean). The first vector remains shortest when a block is truncated on the right, because the sublattice contains that vector. Thus for every $2\le d\le\min(\beta,n-i)$,
+Index from zero. Put $g_i=\|b_i^*\|$, $S_j=\sum_{i<j}\log g_i$, and first normalize $S_n=0$. Use the shortest-in-every-projected-block definition in [Reduction/BKZ.lean](../../SigabaNeo/Lib/Lattices/Reduction/BKZ.lean). The first vector remains shortest when a block is truncated on the right, because the sublattice contains that vector. Thus for every $2\le d\le\min(\beta,n-i)$,
 $$
 d(S_{i+1}-S_i)\le S_{i+d}-S_i+d c_d.
 $$

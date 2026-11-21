@@ -8,7 +8,7 @@ open.
 
 ## Stage 1: BKZ output quality without the GSA
 
-**Proved in Lean** (`SigabaNeo/Lib/Lattices/BKZ.lean`, `BKZ/Profile.lean`, `BKZ/Hermite.lean`;
+**Proved in Lean** (`SigabaNeo/Lib/Lattices/Reduction/BKZ.lean`, `Reduction/BKZ/Profile.lean`, `Reduction/BKZ/Hermite.lean`;
 axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 
 | Theorem | Statement |
@@ -21,7 +21,7 @@ axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 | `BKZ.hermite_ball_linear`, `BKZ.gamma_half_nat_bound` | `γ_k ≤ (k+4)/π` for every `k ≥ 1` (from `Γ(k/2+1) ≤ ((k+4)/4)^{k/2}`) |
 | `BKZ.reduced_first_norm_bound_covolume_ball` | for a BKZ-β-reduced basis, `‖b_0‖ ≤ ((β+4)/π)^{(n−1)/(2(β−1)) + 1/2} covol(L)^{1/n}` |
 | `BKZ.reduced_approx_factor` | Schnorr's approximation factor: for a BKZ-β-reduced basis and every nonzero `v ∈ L`, `‖b_0‖ ≤ ((β+4)/π)^{(n−1)/(β−1)} ‖v‖` |
-| `BKZ.hermite_blichfeldt` (`Hermite2.lean`) | Blichfeldt: `γ_k ≤ (2/π) Γ(k/2+2)^{2/k}`, with corollaries `reduced_first_norm_bound_covolume_blichfeldt` and `reduced_approx_factor_blichfeldt` (machine-checked; axioms `propext`, `Classical.choice`, `Quot.sound`) |
+| `BKZ.hermite_blichfeldt` (`Reduction/Hermite2.lean`) | Blichfeldt: `γ_k ≤ (2/π) Γ(k/2+2)^{2/k}`, with corollaries `reduced_first_norm_bound_covolume_blichfeldt` and `reduced_approx_factor_blichfeldt` (machine-checked; axioms `propext`, `Classical.choice`, `Quot.sound`) |
 | `BKZ.hermite_ball` | Minkowski with the ball volume: some nonzero lattice vector has `‖v‖ ≤ 2 (covol / V_k)^{1/k}`, `V_k = π^{k/2}/Γ(k/2+1)` |
 
 **Open in stage 1:**
@@ -311,7 +311,7 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   | `terminalFailure_count`, `latticeScan_shortest` | Lemma F: under terminal coverage, S3′ and S4, every minimizer of the filtered scan is a shortest nonzero vector |
   | `scanBudget_le` | the exhaustive-scan comparison budget `≤ m·2^m·(2B²) + B²` |
 
-  Added (`Sieve/{Core,Bounds,Movers,Tree,Estimates}.lean`, same axioms):
+  Added (`Reduction/Sieve/{Core,Bounds,Movers,Tree,Estimates}.lean`, same axioms):
 
   | Theorem | Statement |
   | --- | --- |

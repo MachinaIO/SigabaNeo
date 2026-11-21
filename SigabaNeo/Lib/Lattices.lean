@@ -5,7 +5,7 @@ import SigabaNeo.Lib.Lattices.Gadget
 import SigabaNeo.Lib.Lattices.Gaussian.Facts
 import SigabaNeo.Lib.Lattices.Stat
 import SigabaNeo.Lib.Lattices.Hardness
-import SigabaNeo.Lib.Lattices.BKZ
+import SigabaNeo.Lib.Lattices.Reduction.BKZ
 import SigabaNeo.Lib.Lattices.LWE
 import SigabaNeo.Lib.Lattices.RingLWE
 import SigabaNeo.Lib.Lattices.ModuleLWE
@@ -24,7 +24,12 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Gadget`: the gadget matrix and binary decomposition.
 * `LWE`, `RingLWE`, `ModuleLWE`: the assumptions, concrete (`SigabaNeo.Assumption`: parameters,
   problem, security function) and asymptotic (cslib-frontier).
-* `BKZ`: a GSA-free bound on the first vector of a BKZ-reduced basis (`docs/PROOF_GAP.md`).
+* `Reduction/`: lattice reduction and SVP tools shared by the attacks — `LLL`, `BKZ` (GSA-free bound on the first
+  vector of a BKZ-reduced basis, `docs/PROOF_GAP.md`), `Hermite2`, `AvgBKZ`, `Slide`, `Sieve`, `SieveWide`,
+  `QArySieve`, `Search`, `Rogers`.
+* `Attacks/` (entry point `Attacks.lean`): proofs of LWE attacks — `Primal`, `Dual`, `Bkw`, `Guess`, `AroraGe`, `Mitm`
+  (`docs/ATTACK_PROOFS.md`).
+* `Research/`: the open walls and recorded obstructions — `Wall1`, `Wall2`, `Wall1Rej`, `PolyQ`, `Rerand`, `RevMink`.
 * `Estimator/`: the lattice estimator's attack cost models; `estimatorBits` is the `H` of the
   concrete assumptions (`docs/LWE_ESTIMATOR.md`).
 * `Hardness`: an earlier conservative bound, kept as a cross-check (`docs/LWE_HARDNESS.md`).

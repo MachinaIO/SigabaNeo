@@ -2,7 +2,7 @@ module
 
 public import SigabaNeo.Lib.Lattices.Planted.Probability
 import all SigabaNeo.Lib.Lattices.Planted.Probability
-public import SigabaNeo.Lib.Lattices.LLL.Algorithm
+public import SigabaNeo.Lib.Lattices.Reduction.LLL.Algorithm
 
 @[expose] public section
 
