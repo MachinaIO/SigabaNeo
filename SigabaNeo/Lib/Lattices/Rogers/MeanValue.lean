@@ -145,4 +145,63 @@ theorem siegel_of_rogers {n : ℕ} {ν : Measure (LatticeSpace n)} {c : Coeffici
     (∫⁻ L, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0)) L ∂ν) = ∫⁻ x, f x :=
   (h.formula 1 le_rfl hn _ hf).trans (diagramSum_one (h.unit 1 0) f)
 
+/-- Push the normalized restriction of group measure to representatives down to lattices. -/
+def domainProbability {n : ℕ} (μ : Measure (SL n)) (D : Set (SL n)) : Measure (LatticeSpace n) :=
+  (μ D)⁻¹ • (μ.restrict D).map QuotientGroup.mk
+
+theorem domainProbability_probability {n : ℕ} (μ : Measure (SL n)) (D : Set (SL n))
+    (hpos : μ D ≠ 0) (hfin : μ D ≠ ∞) : IsProbabilityMeasure (domainProbability μ D) := by
+  constructor
+  rw [domainProbability, Measure.smul_apply, Measure.map_apply measurable_quotient_mk''
+    MeasurableSet.univ]
+  simpa using ENNReal.inv_mul_cancel hpos hfin
+
+local instance (n : ℕ) : PolishSpace (Matrix (Fin n) (Fin n) ℝ) :=
+  inferInstanceAs (PolishSpace (Fin n → Fin n → ℝ))
+
+local instance (n : ℕ) : LocallyCompactSpace (Matrix (Fin n) (Fin n) ℝ) :=
+  inferInstanceAs (LocallyCompactSpace (Fin n → Fin n → ℝ))
+
+local instance (n : ℕ) : Countable (Matrix (Fin n) (Fin n) ℤ) :=
+  inferInstanceAs (Countable (Fin n → Fin n → ℤ))
+
+local instance (n : ℕ) : BorelSpace (SL n) := ⟨rfl⟩
+
+local instance (n : ℕ) : PolishSpace (SL n) :=
+  Matrix.SpecialLinearGroup.isClosedEmbedding_val.polishSpace
+
+local instance (n : ℕ) : LocallyCompactSpace (SL n) :=
+  Matrix.SpecialLinearGroup.isClosedEmbedding_val.locallyCompactSpace
+
+def groupHaar (n : ℕ) : Measure (SL n) := Measure.haar
+
+theorem domainProbability_invariant {n : ℕ} (μ : Measure (SL n))
+    [μ.IsMulLeftInvariant] [μ.IsMulRightInvariant] {D : Set (SL n)}
+    (hD : IsFundamentalDomain (integerGroup n).op D μ) :
+    SMulInvariantMeasure (SL n) (LatticeSpace n) (domainProbability μ D) := by
+  let φ := Matrix.SpecialLinearGroup.map (Int.castRingHom ℝ) (n := Fin n)
+  have : Countable (Matrix.SpecialLinearGroup (Fin n) ℤ) :=
+    Subtype.val_injective.countable
+  have : Countable (integerGroup n) := φ.rangeRestrict_surjective.countable
+  have he : Topology.IsClosedEmbedding (Int.castRingHom ℝ) := Int.isClosedEmbedding_coe_real
+  have : IsClosed (integerGroup n : Set (SL n)) := he.specialLinearGroup_map.isClosed_range
+  have : HasFundamentalDomain (integerGroup n).op (SL n) μ := ⟨⟨D,hD⟩⟩
+  let ν : Measure (LatticeSpace n) := (μ.restrict D).map QuotientGroup.mk
+  have : QuotientMeasureEqMeasurePreimage μ ν := hD.quotientMeasureEqMeasurePreimage_quotientMeasure
+  have : SMulInvariantMeasure (SL n) (LatticeSpace n) ν :=
+    QuotientMeasureEqMeasurePreimage.smulInvariantMeasure_quotient μ
+  change SMulInvariantMeasure _ _ ((μ D)⁻¹ • ν)
+  infer_instance
+
+/-- Unnormalized unfolding on a domain suffices, with its actual covolume as factor. -/
+theorem siegel_of_domain_unfolding {n : ℕ} (μ : Measure (SL n)) (D : Set (SL n))
+    (hpos : μ D ≠ 0) (hfin : μ D ≠ ∞) (f : E n → ℝ≥0∞)
+    (hm : Measurable (tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0))))
+    (hu : ∫⁻ g in D, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0))
+      (QuotientGroup.mk g) ∂μ = μ D * ∫⁻ x, f x) :
+    (∫⁻ L, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0)) L ∂domainProbability μ D) =
+      ∫⁻ x, f x := by
+  rw [domainProbability, lintegral_smul_measure, lintegral_map hm measurable_quotient_mk'',
+    smul_eq_mul, hu, ← mul_assoc, ENNReal.inv_mul_cancel hpos hfin, one_mul]
+
 end SigabaNeo.Rogers

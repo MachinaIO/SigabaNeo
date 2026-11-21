@@ -21,18 +21,30 @@ and the positive-definite support appear in `SphericalGramFormula`.
 
 ## Open obligations
 
-1. Evaluate the solid cone volumes in `pairLaw_of_coneVolumes` to identify the
-   actual pair pushforward. For triples, identify the transverse angular
-   coordinate with the lower-dimensional scalar sphere law and establish the
-   joint disintegration for the actual sphere samples. The general-s
-   pushforward and the conversion to the archive's normalized determinant
-   measure on transverse spaces remain open.
-2. Supply finite positive covolume for the arithmetic subgroup in the real
-   special linear group, construct the induced normalized invariant quotient
-   measure and instantiate it in the mean-value theorem. Mathlib provides
-   generic fundamental-domain and quotient-measure invariance lemmas in
-   `Mathlib.MeasureTheory.Measure.Haar.Quotient`.
-3. Establish Siegel's normalized unfolding identity on that measure. For
+1. For pairs, the Lean obligation is the single-pole cap volume in
+   `pairLaw_of_capVolumes` for all real thresholds. Rotation invariance,
+   reduction to half-lines, the geometric cap description, and the derivative
+   of the proposed slice integral are proved for dimensions n ≥ 3. The
+   slicing calculation and its normalization below still need Lean proofs.
+   For triples, the sole hypothesis of `tripleLaw_of_angularDisintegration`
+   is `AngularDisintegration n`. It identifies the two axial cosines and the
+   relative transverse cosine with independent scalar variables of exponents
+   (n−3)/2, (n−3)/2, and (n−4)/2. The subsequent Jacobian and integration
+   against arbitrary nonnegative measurable tests are proved for n ≥ 3.
+   The general-s law and transport to the archive remain open.
+2. `groupHaar` constructs Haar measure on SL from local compactness.
+   `domainProbability` projects its normalized restriction to a domain.
+   Positive finite domain mass gives a probability measure. For a genuine
+   fundamental domain and bi-invariant group measure, quotient invariance
+   follows from Mathlib's quotient theorem. The proof supplies Polishness,
+   countability and closedness of the integral subgroup. An application to
+   `groupHaar` still requires its right invariance and an arithmetic
+   fundamental domain of finite positive mass.
+3. `siegel_of_domain_unfolding` accounts for the exact domain mass. The
+   missing inputs are measurability of the order-one workload and its
+   unnormalized integral on that domain for the prescribed tests. The local
+   conclusion concerns nonnegative tests. Signed tests additionally require
+   integrability and passage to positive and negative parts. For
    higher orders one needs the integral tuple-orbit decomposition, orbit
    measures with their stabilizer covolumes, and the resulting weights for
    primitive and dependent tuples. The modular-index bound alone does not
@@ -42,6 +54,30 @@ and the positive-definite support appear in `SphericalGramFormula`.
    point set is proved independent of the representative. A formal transport
    to the archive's measurable basis-coordinate sum and its definitions
    remains open. No archive module has been modified or rebuilt.
+
+## Pair law by slicing (mathematical proof)
+
+By `cone_volume_eq`, take the first coordinate as pole. For 0 < t < 1,
+write a point as (u,w) with transverse dimension n−1. In the open unit ball
+the condition for the cap is u ≥ t‖(u,w)‖. At 0 < u < 1 its section is a
+ball up to its boundary, of radius
+min(√(1−u²), u√(1−t²)/t). The two radii agree at u=t. Its boundary has
+zero transverse volume. Write V for the transverse unit-ball volume.
+Integrating the smaller radius to the power n−1 gives
+
+    volume(cap) / V = t/n · (1−t²)^((n−1)/2) + ∫_[t,1] (1−u²)^((n−1)/2) du.
+
+The first term integrates the cone portion from 0 to t. The second
+integrates the remaining ball sections. By `capSlice_derivative` the
+negative derivative is (n−1)/n · (1−t²)^((n−3)/2). The total sphere mass
+in the cone formula is n times the ambient unit-ball volume. Hence the
+normalized angular density on (0,1) is proportional to that power.
+Reflection gives the same constant on (−1,0). The cones at the endpoints
+are rays and the equator lies in a hyperplane, all of zero ambient volume.
+The fundamental theorem of calculus on interior intervals therefore gives
+the whole measure. Its mass one and `weight_integral` uniquely determine
+the coefficient as `normalizer ((n−3)/2)`. Integrating the fixed-pole
+law over the independent first point yields the pair law.
 
 ## Verbatim public theorem statements
 
@@ -91,7 +127,7 @@ theorem uniform_probability {n : ℕ} (hn : 0 < n) : IsProbabilityMeasure (unifo
 ```
 
 ```lean
-theorem pairLaw_of_coneVolumes {n : ℕ} (hn : 4 ≤ n)
+theorem pairLaw_of_coneVolumes {n : ℕ} (hn : 3 ≤ n)
     (h : ∀ (x : Sphere n) (s : Set ℝ), MeasurableSet s →
       ((volume : Measure (Ambient n)).toSphere univ)⁻¹ *
         (n * volume (Ioo (0:ℝ) 1 • (Subtype.val ''
@@ -100,13 +136,13 @@ theorem pairLaw_of_coneVolumes {n : ℕ} (hn : 4 ≤ n)
 ```
 
 ```lean
-theorem triple_marginal (n : ℕ) (hn : 5 ≤ n) (a b : ℝ) :
+theorem triple_marginal (n : ℕ) (hn : 3 ≤ n) (a b : ℝ) :
     ∫⁻ c, tripleWeight n (a,b,c) =
       weight (((n:ℝ)-4)/2+1/2) a * weight (((n:ℝ)-4)/2+1/2) b
 ```
 
 ```lean
-theorem triple_integral (n : ℕ) (hn : 5 ≤ n) : ∫⁻ x, tripleWeight n x = 1
+theorem triple_integral (n : ℕ) (hn : 3 ≤ n) : ∫⁻ x, tripleWeight n x = 1
 ```
 
 ```lean
@@ -139,6 +175,84 @@ theorem siegel_of_rogers {n : ℕ} {ν : Measure (LatticeSpace n)} {c : Coeffici
     (∫⁻ L, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0)) L ∂ν) = ∫⁻ x, f x
 ```
 
+~~~lean
+theorem cone_volume_eq {n : ℕ} (x y : Sphere n) (s : Set ℝ) :
+    volume (cone x s) = volume (cone y s)
+~~~
+
+~~~lean
+theorem pairLaw_of_pole {n : ℕ} (hn : 3 ≤ n) (pole : Sphere n)
+    (h : ∀ s : Set ℝ, MeasurableSet s →
+      ((volume : Measure (Ambient n)).toSphere univ)⁻¹ * (n * volume (cone pole s)) =
+        (volume.withDensity (weight (((n : ℝ) - 3) / 2))) s) : PairLaw n
+~~~
+
+~~~lean
+theorem cone_Ici_eq {n : ℕ} (pole : Sphere n) (t : ℝ) :
+    cone pole (Ici t) = {z | 0 < ‖z‖ ∧ ‖z‖ < 1 ∧ t * ‖z‖ ≤ inner ℝ (pole : Ambient n) z}
+~~~
+
+~~~lean
+theorem capSlice_derivative {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Ioo (0 : ℝ) 1) :
+    HasDerivAt (capSlice d) (-((d-1)/d) * (1-t^2)^((d-3)/2)) t
+~~~
+
+~~~lean
+theorem pairLaw_of_capVolumes {n : ℕ} (hn : 3 ≤ n) (pole : Sphere n)
+    (h : ∀ t : ℝ, ((volume : Measure (Ambient n)).toSphere univ)⁻¹ *
+      (n * volume {z : Ambient n | 0 < ‖z‖ ∧ ‖z‖ < 1 ∧ t * ‖z‖ ≤ inner ℝ (pole : Ambient n) z}) =
+      (volume.withDensity (weight (((n : ℝ)-3)/2))) (Ici t)) : PairLaw n
+~~~
+
+~~~lean
+theorem triple_fiber_test (n : ℕ) (hn : 3 ≤ n) (a b : ℝ)
+    (F : ℝ → ℝ≥0∞) (hF : Measurable F) :
+    let p := ((n : ℝ)-4)/2
+    ∫⁻ c, tripleWeight n (a,b,c) * F c =
+      weight (p+1/2) a * weight (p+1/2) b *
+        ∫⁻ t, weight p t * F (angularThird a b t)
+~~~
+
+~~~lean
+def AngularDisintegration (n : ℕ) : Prop :=
+  ∀ F : ℝ × ℝ × ℝ → ℝ≥0∞, Measurable F →
+    let p := ((n : ℝ)-4)/2
+    (∫⁻ z : Sphere n × Sphere n × Sphere n,
+      F (inner ℝ (z.1 : Ambient n) (z.2.1 : Ambient n),
+         inner ℝ (z.1 : Ambient n) (z.2.2 : Ambient n),
+         inner ℝ (z.2.1 : Ambient n) (z.2.2 : Ambient n))
+      ∂(uniform n).prod ((uniform n).prod (uniform n))) =
+      ∫⁻ a, ∫⁻ b, weight (p+1/2) a * weight (p+1/2) b *
+        ∫⁻ t, weight p t * F (a,b,angularThird a b t)
+~~~
+
+~~~lean
+theorem tripleLaw_of_angularDisintegration {n : ℕ} (hn : 3 ≤ n)
+    (h : AngularDisintegration n) : TripleLaw n
+~~~
+
+~~~lean
+theorem domainProbability_probability {n : ℕ} (μ : Measure (SL n)) (D : Set (SL n))
+    (hpos : μ D ≠ 0) (hfin : μ D ≠ ∞) : IsProbabilityMeasure (domainProbability μ D)
+~~~
+
+~~~lean
+theorem domainProbability_invariant {n : ℕ} (μ : Measure (SL n))
+    [μ.IsMulLeftInvariant] [μ.IsMulRightInvariant] {D : Set (SL n)}
+    (hD : IsFundamentalDomain (integerGroup n).op D μ) :
+    SMulInvariantMeasure (SL n) (LatticeSpace n) (domainProbability μ D)
+~~~
+
+~~~lean
+theorem siegel_of_domain_unfolding {n : ℕ} (μ : Measure (SL n)) (D : Set (SL n))
+    (hpos : μ D ≠ 0) (hfin : μ D ≠ ∞) (f : E n → ℝ≥0∞)
+    (hm : Measurable (tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0))))
+    (hu : ∫⁻ g in D, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0))
+      (QuotientGroup.mk g) ∂μ = μ D * ∫⁻ x, f x) :
+    (∫⁻ L, tupleWorkload (fun v : Fin 1 → E n ↦ f (v 0)) L ∂domainProbability μ D) =
+      ∫⁻ x, f x
+~~~
+
 ## Lean axiom audit
 
 ```text
@@ -158,4 +272,14 @@ theorem siegel_of_rogers {n : ℕ} {ν : Measure (LatticeSpace n)} {c : Coeffici
 'SigabaNeo.Rogers.sieveWorkload' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.diagramSum_one' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.siegel_of_rogers' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.cone_volume_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.pairLaw_of_pole' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.cone_Ici_eq' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.capSlice_derivative' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.pairLaw_of_capVolumes' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.triple_fiber_test' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.tripleLaw_of_angularDisintegration' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.domainProbability_probability' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.domainProbability_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.siegel_of_domain_unfolding' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```

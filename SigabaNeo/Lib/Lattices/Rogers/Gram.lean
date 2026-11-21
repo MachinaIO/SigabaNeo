@@ -119,7 +119,7 @@ theorem uniform_probability {n : ℕ} (hn : 0 < n) : IsProbabilityMeasure (unifo
 
 open scoped Pointwise in
 /-- The remaining scalar input can be expressed entirely as volumes of solid cones. -/
-theorem pairLaw_of_coneVolumes {n : ℕ} (hn : 4 ≤ n)
+theorem pairLaw_of_coneVolumes {n : ℕ} (hn : 3 ≤ n)
     (h : ∀ (x : Sphere n) (s : Set ℝ), MeasurableSet s →
       ((volume : Measure (Ambient n)).toSphere univ)⁻¹ *
         (n * volume (Ioo (0:ℝ) 1 • (Subtype.val ''
@@ -141,6 +141,100 @@ theorem pairLaw_of_coneVolumes {n : ℕ} (hn : 4 ≤ n)
   simp_rw [he]
   simp
 
+open scoped Pointwise in
+def cone {n : ℕ} (x : Sphere n) (s : Set ℝ) : Set (Ambient n) :=
+  Ioo (0 : ℝ) 1 • (Subtype.val '' {y : Sphere n | inner ℝ (x : Ambient n) (y : Ambient n) ∈ s})
+
+/-- Orthogonal invariance reduces every cone section to a single prescribed pole. -/
+theorem cone_volume_eq {n : ℕ} (x y : Sphere n) (s : Set ℝ) :
+    volume (cone x s) = volume (cone y s) := by
+  let e := (ℝ ∙ ((x : Ambient n) - y))ᗮ.reflection
+  have he : e x = y := Submodule.reflection_sub
+    ((mem_sphere_zero_iff_norm.mp x.property).trans (mem_sphere_zero_iff_norm.mp y.property).symm)
+  have forward (u v : Sphere n) (T : Ambient n ≃ₗᵢ[ℝ] Ambient n) (h : T u = v)
+      {z : Ambient n} (hz : z ∈ cone u s) : T z ∈ cone v s := by
+    obtain ⟨r, hr, _, ⟨w, hw, rfl⟩, rfl⟩ := hz
+    rw [map_smul]
+    refine ⟨r, hr, T w, ⟨⟨T w, mem_sphere_zero_iff_norm.mpr ?_⟩, ?_, rfl⟩, rfl⟩
+    · rw [T.norm_map]
+      exact mem_sphere_zero_iff_norm.mp w.property
+    · change inner ℝ (v : Ambient n) (T w) ∈ s
+      rwa [← h, T.inner_map_map]
+  have hset : cone x s = e ⁻¹' cone y s := by
+    ext z
+    exact ⟨forward x y e he, fun hz ↦ by
+      simpa using forward y x e.symm (e.symm_apply_eq.mpr he.symm) hz⟩
+  rw [hset]
+  exact e.measurePreserving.measure_preimage_emb e.toHomeomorph.measurableEmbedding _
+
+theorem pairLaw_of_pole {n : ℕ} (hn : 3 ≤ n) (pole : Sphere n)
+    (h : ∀ s : Set ℝ, MeasurableSet s →
+      ((volume : Measure (Ambient n)).toSphere univ)⁻¹ * (n * volume (cone pole s)) =
+        (volume.withDensity (weight (((n : ℝ) - 3) / 2))) s) : PairLaw n := by
+  apply pairLaw_of_coneVolumes hn
+  intro x s hs
+  change _ * (_ * volume (cone x s)) = _
+  rw [cone_volume_eq x pole s]
+  exact h s hs
+
+theorem cone_Ici_eq {n : ℕ} (pole : Sphere n) (t : ℝ) :
+    cone pole (Ici t) = {z | 0 < ‖z‖ ∧ ‖z‖ < 1 ∧ t * ‖z‖ ≤ inner ℝ (pole : Ambient n) z} := by
+  ext z
+  constructor
+  · rintro ⟨r, hr, _, ⟨y, hy, rfl⟩, rfl⟩
+    change t ≤ inner ℝ (pole : Ambient n) (y : Ambient n) at hy
+    simp only [mem_ofPred_eq, norm_smul, Real.norm_eq_abs, abs_of_pos hr.1,
+      mem_sphere_zero_iff_norm.mp y.property, mul_one, real_inner_smul_right]
+    exact ⟨hr.1, hr.2, by nlinarith [mul_le_mul_of_nonneg_left hy hr.1.le]⟩
+  · rintro ⟨hz, hz', ht⟩
+    let y : Sphere n := ⟨‖z‖⁻¹ • z, mem_sphere_zero_iff_norm.mpr (by
+      simp [norm_smul, hz.ne'])⟩
+    refine ⟨‖z‖, ⟨hz,hz'⟩, y, ⟨y, ?_, rfl⟩, ?_⟩
+    · change t ≤ inner ℝ (pole : Ambient n) (‖z‖⁻¹ • z)
+      rw [real_inner_smul_right, ← div_eq_inv_mul, le_div_iff₀ hz]
+      exact ht
+    · change ‖z‖ • (‖z‖⁻¹ • z) = z
+      simp [smul_smul, hz.ne']
+
+/-- Axial slice integral for a positive cap, omitting the transverse unit-ball volume. -/
+def capSlice (d t : ℝ) : ℝ :=
+  t / d * (1-t^2)^((d-1)/2) + ∫ u in t..1, (1-u^2)^((d-1)/2)
+
+theorem capSlice_derivative {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Ioo (0 : ℝ) 1) :
+    HasDerivAt (capSlice d) (-((d-1)/d) * (1-t^2)^((d-3)/2)) t := by
+  let q := (d-1)/2
+  have hq : 0 ≤ q := by dsimp [q]; linarith
+  have hc : Continuous (fun u : ℝ ↦ (1-u^2)^q) :=
+    (continuous_const.sub (continuous_id.pow 2)).rpow_const fun _ ↦ Or.inr hq
+  have hp : 0 < 1-t^2 := interval_pos ⟨by linarith [ht.1], ht.2⟩
+  have hpow := (((hasDerivAt_id t).pow 2).const_sub 1).rpow_const (p := q) (Or.inl hp.ne')
+  have hInt := intervalIntegral.integral_hasDerivAt_left (hc.intervalIntegrable t 1)
+    hc.stronglyMeasurable.stronglyMeasurableAtFilter hc.continuousAt
+  convert (((hasDerivAt_id t).div_const d).mul hpow).add hInt using 1 <;> try rfl
+  dsimp
+  have h : (1-t^2)^q = (1-t^2)^(q-1) * (1-t^2) := by
+    convert Real.rpow_add_one hp.ne' (q-1) using 2; ring
+  rw [h, show (d-3)/2 = q-1 by dsimp [q]; ring]
+  field_simp [show d ≠ 0 by linarith]
+  dsimp [q]
+  ring
+
+theorem pairLaw_of_capVolumes {n : ℕ} (hn : 3 ≤ n) (pole : Sphere n)
+    (h : ∀ t : ℝ, ((volume : Measure (Ambient n)).toSphere univ)⁻¹ *
+      (n * volume {z : Ambient n | 0 < ‖z‖ ∧ ‖z‖ < 1 ∧ t * ‖z‖ ≤ inner ℝ (pole : Ambient n) z}) =
+      (volume.withDensity (weight (((n : ℝ)-3)/2))) (Ici t)) : PairLaw n := by
+  let := uniform_probability (n := n) (by omega)
+  let f := fun y : Sphere n ↦ inner ℝ (pole : Ambient n) (y : Ambient n)
+  have hf : Measurable f := by dsimp [f]; fun_prop
+  have mass (s : Set ℝ) (hs : MeasurableSet s) :
+      (Measure.map f (uniform n)) s = ((volume : Measure (Ambient n)).toSphere univ)⁻¹ *
+        (n * volume (cone pole s)) := by
+    rw [Measure.map_apply hf hs, uniform, Measure.smul_apply, Measure.toSphere_apply' _ (hf hs)]
+    simp [cone, f, Set.preimage]
+  have eq := Measure.ext_of_Ici ((uniform n).map f) (volume.withDensity (weight (((n : ℝ)-3)/2)))
+    (fun t ↦ by rw [mass _ measurableSet_Ici, cone_Ici_eq]; exact h t)
+  exact pairLaw_of_pole hn pole fun s hs ↦ (mass s hs).symm.trans (congrArg (· s) eq)
+
 def tripleWeight (n : ℕ) (x : ℝ × ℝ × ℝ) : ℝ≥0∞ :=
   let (a,b,c) := x
   let p := ((n:ℝ)-4)/2
@@ -153,61 +247,78 @@ private theorem normalizer_pos {p : ℝ} (hp : -1 < p) : 0 < normalizer p := by
   exact inv_pos.mpr (mul_pos (mul_pos (by norm_num) (Real.rpow_pos_of_pos (by norm_num) _))
     (beta_pos (by linarith) (by linarith)))
 
-/-- Integrating out the third coordinate gives the independent first two marginals. -/
-theorem triple_marginal (n : ℕ) (hn : 5 ≤ n) (a b : ℝ) :
-    ∫⁻ c, tripleWeight n (a,b,c) =
-      weight (((n:ℝ)-4)/2+1/2) a * weight (((n:ℝ)-4)/2+1/2) b := by
-  let p := ((n:ℝ)-4)/2
+def angularThird (a b t : ℝ) := a*b + Real.sqrt ((1-a^2)*(1-b^2))*t
+
+theorem triple_fiber_test (n : ℕ) (hn : 3 ≤ n) (a b : ℝ)
+    (F : ℝ → ℝ≥0∞) (hF : Measurable F) :
+    let p := ((n : ℝ)-4)/2
+    ∫⁻ c, tripleWeight n (a,b,c) * F c =
+      weight (p+1/2) a * weight (p+1/2) b *
+        ∫⁻ t, weight p t * F (angularThird a b t) := by
+  let p := ((n : ℝ)-4)/2
   have hp : -1 < p := by
     dsimp [p]
-    have : (5:ℝ) ≤ n := by exact_mod_cast hn
+    have : (3:ℝ) ≤ n := by exact_mod_cast hn
     linarith
   have hN := (normalizer_pos hp).le
   have hM := (normalizer_pos (show -1 < p+1/2 by linarith)).le
+  dsimp only
   by_cases ha : a ∈ Ioo (-1 : ℝ) 1
   · by_cases hb : b ∈ Ioo (-1 : ℝ) 1
-    · have hu := mul_pos (interval_pos ha) (interval_pos hb)
+    · let u := (1-a^2)*(1-b^2)
+      have hu : 0 < u := mul_pos (interval_pos ha) (interval_pos hb)
       let K := normalizer (p+1/2)^2 * normalizer p
       have hK : 0 ≤ K := mul_nonneg (sq_nonneg _) hN
-      have he : (fun c ↦ tripleWeight n (a,b,c)) = {c | 0 < det3 a b c}.indicator
-          (fun c ↦ ENNReal.ofReal K * ENNReal.ofReal (det3 a b c ^ p)) := by
+      have hd : (fun c ↦ tripleWeight n (a,b,c) * F c) =
+          {c | 0 < det3 a b c}.indicator
+          (fun c ↦ ENNReal.ofReal K * (ENNReal.ofReal (det3 a b c ^ p) * F c)) := by
         funext c
-        by_cases hc : 0 < det3 a b c <;> simp [tripleWeight, ha, hb, hc, indicator, K, p]
-        apply ENNReal.ofReal_mul
-        simpa [K,p] using hK
-      rw [he, lintegral_indicator (isOpen_lt continuous_const (by unfold det3; fun_prop)).measurableSet,
-        lintegral_const_mul'' _ (by unfold det3; fun_prop)]
-      have hf := fiber_integral a b p ha hb (fun _ ↦ 1)
-      simp only [mul_one, ENNReal.ofReal_mul (Real.rpow_pos_of_pos hu _).le] at hf
-      rw [hf, lintegral_const_mul'' _ (by fun_prop)]
-      have hw := weight_integral hp
-      have hw' : (fun t ↦ weight p t) = (Ioo (-1 : ℝ) 1).indicator
-          (fun t ↦ ENNReal.ofReal (normalizer p) * ENNReal.ofReal ((1-t^2)^p)) := by
+        by_cases hc : 0 < det3 a b c <;>
+          simp only [tripleWeight, ha, hb, hc, indicator, mem_ofPred_eq, and_self, and_false, ite_true, ite_false, zero_mul]
+        change ENNReal.ofReal (K * _) * _ = _
+        rw [ENNReal.ofReal_mul hK, mul_assoc]
+      have ht : (fun t ↦ weight p t * F (angularThird a b t)) =
+          (Ioo (-1 : ℝ) 1).indicator (fun t ↦ ENNReal.ofReal (normalizer p) *
+            (ENNReal.ofReal ((1-t^2)^p) * F (angularThird a b t))) := by
         funext t
-        simp [weight, indicator, ENNReal.ofReal_mul hN]
-      rw [hw', lintegral_indicator measurableSet_Ioo, lintegral_const_mul'' _ (by fun_prop)] at hw
-      change _ = weight (p+1/2) a * weight (p+1/2) b
-      rw [weight, ite_eq_left ha, weight, ite_eq_left hb]
+        by_cases h : t ∈ Ioo (-1 : ℝ) 1 <;>
+          simp [weight, h, indicator, ENNReal.ofReal_mul hN, mul_assoc]
+      change _ = weight (p+1/2) a * weight (p+1/2) b * _
+      rw [hd, ht, lintegral_indicator (isOpen_lt continuous_const (by unfold det3; fun_prop)).measurableSet,
+        lintegral_indicator measurableSet_Ioo, lintegral_const_mul'' _ (by unfold det3; fun_prop),
+        fiber_integral a b p ha hb F, lintegral_const_mul'' _ (by unfold angularThird; fun_prop)]
+      simp only [ENNReal.ofReal_mul (Real.rpow_pos_of_pos (mul_pos (interval_pos ha) (interval_pos hb)) (p+1/2)).le, mul_assoc]
+      rw [lintegral_const_mul'' _ (by fun_prop), weight, ite_eq_left ha, weight, ite_eq_left hb]
       dsimp [K]
-      rw [ENNReal.ofReal_mul (sq_nonneg _), Real.mul_rpow (interval_pos ha).le (interval_pos hb).le]
-      rw [ENNReal.ofReal_mul (Real.rpow_pos_of_pos (interval_pos ha) _).le]
-      simp only [sq, ENNReal.ofReal_mul hM] at hw ⊢
-      conv_rhs => rw [← mul_one (_ * _), ← hw]
+      rw [ENNReal.ofReal_mul (sq_nonneg _), Real.mul_rpow (interval_pos ha).le (interval_pos hb).le,
+        ENNReal.ofReal_mul (Real.rpow_pos_of_pos (interval_pos ha) _).le]
+      simp only [sq, ENNReal.ofReal_mul hM, angularThird]
       ac_rfl
     · simp [tripleWeight, weight, hb]
   · simp [tripleWeight, weight, ha]
 
-theorem triple_integral (n : ℕ) (hn : 5 ≤ n) : ∫⁻ x, tripleWeight n x = 1 := by
-  have hm : Measurable (tripleWeight n) := by
-    unfold tripleWeight det3
-    dsimp only
-    apply Measurable.ite _ (by fun_prop) measurable_const
-    change MeasurableSet ((Prod.fst ⁻¹' Ioo (-1:ℝ) 1) ∩
-      ((fun x : ℝ × ℝ × ℝ ↦ x.2.1) ⁻¹' Ioo (-1:ℝ) 1 ∩ {x | 0 < det3 x.1 x.2.1 x.2.2}))
-    apply MeasurableSet.inter (measurable_fst measurableSet_Ioo)
-    apply MeasurableSet.inter ((measurable_fst.comp measurable_snd) measurableSet_Ioo)
-    exact measurableSet_lt (f := fun _ ↦ (0 : ℝ))
-      (g := fun x : ℝ × ℝ × ℝ ↦ det3 x.1 x.2.1 x.2.2) measurable_const (by unfold det3; fun_prop)
+/-- Integrating out the third coordinate gives the independent first two marginals. -/
+theorem triple_marginal (n : ℕ) (hn : 3 ≤ n) (a b : ℝ) :
+    ∫⁻ c, tripleWeight n (a,b,c) =
+      weight (((n:ℝ)-4)/2+1/2) a * weight (((n:ℝ)-4)/2+1/2) b := by
+  have hp : -1 < ((n : ℝ)-4)/2 := by
+    have : (3 : ℝ) ≤ n := by exact_mod_cast hn
+    linarith
+  simpa [weight_integral hp] using triple_fiber_test n hn a b (fun _ ↦ 1) measurable_const
+
+private theorem measurable_tripleWeight (n : ℕ) : Measurable (tripleWeight n) := by
+  unfold tripleWeight det3
+  dsimp only
+  apply Measurable.ite _ (by fun_prop) measurable_const
+  change MeasurableSet ((Prod.fst ⁻¹' Ioo (-1:ℝ) 1) ∩
+    ((fun x : ℝ × ℝ × ℝ ↦ x.2.1) ⁻¹' Ioo (-1:ℝ) 1 ∩ {x | 0 < det3 x.1 x.2.1 x.2.2}))
+  apply MeasurableSet.inter (measurable_fst measurableSet_Ioo)
+  apply MeasurableSet.inter ((measurable_fst.comp measurable_snd) measurableSet_Ioo)
+  exact measurableSet_lt (f := fun _ ↦ (0 : ℝ))
+    (g := fun x : ℝ × ℝ × ℝ ↦ det3 x.1 x.2.1 x.2.2) measurable_const (by unfold det3; fun_prop)
+
+theorem triple_integral (n : ℕ) (hn : 3 ≤ n) : ∫⁻ x, tripleWeight n x = 1 := by
+  have hm := measurable_tripleWeight n
   rw [Measure.volume_eq_prod, lintegral_prod _ hm.aemeasurable]
   have h (a : ℝ) : Measurable (fun y : ℝ × ℝ ↦ tripleWeight n (a,y)) :=
     hm.comp (measurable_const.prodMk measurable_id)
@@ -215,7 +326,7 @@ theorem triple_integral (n : ℕ) (hn : 5 ≤ n) : ∫⁻ x, tripleWeight n x = 
     triple_marginal n hn]
   have hw : Measurable (weight (((n:ℝ)-4)/2+1/2)) := by unfold weight; exact Measurable.ite measurableSet_Ioo (by fun_prop) measurable_const
   have hp : -1 < ((n:ℝ)-4)/2+1/2 := by
-    have : (5:ℝ) ≤ n := by exact_mod_cast hn
+    have : (3:ℝ) ≤ n := by exact_mod_cast hn
     linarith
   simp_rw [lintegral_const_mul'' _ hw.aemeasurable, weight_integral hp, mul_one]
   exact weight_integral hp
@@ -226,6 +337,45 @@ def TripleLaw (n : ℕ) : Prop :=
      inner ℝ (z.1 : Ambient n) (z.2.2 : Ambient n),
      inner ℝ (z.2.1 : Ambient n) (z.2.2 : Ambient n)))
     ((uniform n).prod ((uniform n).prod (uniform n))) = volume.withDensity (tripleWeight n)
+
+/-- Sampling identity for the three angles before changing transverse coordinate. -/
+def AngularDisintegration (n : ℕ) : Prop :=
+  ∀ F : ℝ × ℝ × ℝ → ℝ≥0∞, Measurable F →
+    let p := ((n : ℝ)-4)/2
+    (∫⁻ z : Sphere n × Sphere n × Sphere n,
+      F (inner ℝ (z.1 : Ambient n) (z.2.1 : Ambient n),
+         inner ℝ (z.1 : Ambient n) (z.2.2 : Ambient n),
+         inner ℝ (z.2.1 : Ambient n) (z.2.2 : Ambient n))
+      ∂(uniform n).prod ((uniform n).prod (uniform n))) =
+      ∫⁻ a, ∫⁻ b, weight (p+1/2) a * weight (p+1/2) b *
+        ∫⁻ t, weight p t * F (a,b,angularThird a b t)
+
+theorem tripleLaw_of_angularDisintegration {n : ℕ} (hn : 3 ≤ n)
+    (h : AngularDisintegration n) : TripleLaw n := by
+  apply Measure.ext
+  intro s hs
+  let F := s.indicator (fun _ ↦ (1 : ℝ≥0∞))
+  have hF : Measurable F := measurable_const.indicator hs
+  let g := fun z : Sphere n × Sphere n × Sphere n ↦
+    (inner ℝ (z.1 : Ambient n) (z.2.1 : Ambient n),
+     inner ℝ (z.1 : Ambient n) (z.2.2 : Ambient n),
+     inner ℝ (z.2.1 : Ambient n) (z.2.2 : Ambient n))
+  have hg : Measurable g := by dsimp [g]; fun_prop
+  change Measure.map g _ s = _
+  rw [← lintegral_indicator_one hs, ← lintegral_indicator_one hs (μ := volume.withDensity (tripleWeight n))]
+  change (∫⁻ z, F z ∂Measure.map g _) = ∫⁻ z, F z ∂_
+  rw [lintegral_map hF hg]
+  change (∫⁻ z, F (g z) ∂_) = ∫⁻ z, F z ∂_
+  rw [h F hF, lintegral_withDensity_eq_lintegral_mul _ (measurable_tripleWeight n) hF,
+    Measure.volume_eq_prod, lintegral_prod _ ((measurable_tripleWeight n).mul hF).aemeasurable]
+  apply lintegral_congr
+  intro a
+  have hm : Measurable (fun y : ℝ × ℝ ↦ (tripleWeight n * F) (a,y)) :=
+    ((measurable_tripleWeight n).mul hF).comp (measurable_const.prodMk measurable_id)
+  rw [Measure.volume_eq_prod, lintegral_prod _ hm.aemeasurable]
+  apply lintegral_congr
+  intro b
+  exact (triple_fiber_test n hn a b (fun c ↦ F (a,b,c)) (by fun_prop)).symm
 
 abbrev OffDiagonal (s : ℕ) := {ij : Fin s × Fin s // ij.1 < ij.2}
 
