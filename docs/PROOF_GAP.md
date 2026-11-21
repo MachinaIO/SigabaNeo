@@ -667,7 +667,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   torus noise changes a terminal window hit only on a shell event, and a first moment bounds its probability. Exhaustive tests
   in ranks 2–5 show that windows keep history dependence even with full torsion. In rank 4 every coupling to a fresh cubic
   restart disagrees on ≥ 88/729. No improved terminal floor follows.
-* **Frontier after Parts 1–113 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 114 (audited, minor caveats).** [idea_drift](research/wall1_idea_drift.md): in Part 108's first pass the retained
+  log-determinant obeys the exact recurrence D_t = D_{t−1}/s_t. With the Part 98 Hermite caps, at b = 506 the rank-505 retained
+  lattice has GH radius ≥ 28.8095 on every history. So the height-zero necessary floor 27.4538 is met as soon as the terminal
+  minimum is ≥ 0.954 × its own GH. The target becomes a relative ratio, comparable with Part 105 (0.925, 99.98%) and Part 107
+  (±2%). At b = 406 the first pass cannot reach the floor even with zero error (15.50 < 24.58). The probability of the 0.954
+  ratio is open. Upper SVP bounds plus a fixed determinant cannot force a terminal minimum.
+* **Frontier after Parts 1–114 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
