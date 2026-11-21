@@ -8,7 +8,7 @@ A key for `f` solves `B₀ k₀ + B₁ k₁ + B_f̂ k₂ = p`. It is drawn by on
 (`SigabaNeo.Lattices.boxSample`) with the decomposition `z = k₂` attached to the columns of `B_f̂`
 and `(k₀, k₁)` in a small box:
 
-* **real** (`realTrap`): `B₁ T = G̲` gives the trapdoor `T · G̲⁻¹(B_f̂ − G̲)` of
+* **real** (`realTrap`): `B₁ T = G̲` (`T ∈ R^{Wt × W}`) gives the trapdoor `T · G̲⁻¹(B_f̂ − G̲)` of
   `[B₁ | B_f̂] = [B₁ | B₁ T G̲⁻¹(B_f̂ − G̲) + G̲]`;
 * **simulated** (`simTrap`, BTVW17 `KeyGen*`): when `B_f̂ = B₀ W + G̲` (`keyMatrix_sim` with
   `f(x) = 1`), `W` is a trapdoor of `[B₀ | B_f̂]`.
@@ -21,14 +21,14 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW
 
-variable {R : Type*} [CommRing R] {k : ℕ} {S : Setting R k} {Wd : Type*} [Fintype Wd]
-  [DecidableEq R]
+variable {R : Type*} [CommRing R] {k : ℕ} {S : Setting R k} {Wd Wt : Type*} [Fintype Wd]
+  [Fintype Wt] [DecidableEq R]
 
 /-- The short part of a key: against `B₀` and `B₁`. -/
-abbrev KeyShort (Wd : Type*) (R : Type*) (k : ℕ) := (Wd → R) × (Col k → R)
+abbrev KeyShort (Wd Wt : Type*) (R : Type*) := (Wd → R) × (Wt → R)
 
 /-- The public map on the short part: `(k₀, k₁) ↦ B₀ k₀ + B₁ k₁`. -/
-def shortMap (mpk : MPK S Wd) : KeyShort Wd R k →+ R where
+def shortMap (mpk : MPK S Wd Wt) : KeyShort Wd Wt R →+ R where
   toFun x := ∑ c, mpk.B₀ 0 c * x.1 c + ∑ c, mpk.B₁ 0 c * x.2 c
   map_zero' := by simp
   map_add' x y := by
@@ -39,17 +39,17 @@ def shortMap (mpk : MPK S Wd) : KeyShort Wd R k →+ R where
 def gadgetMap (z : Col k → R) : R := ∑ c, S.Γ₁.G 0 c * z c
 
 /-- The real trapdoor: `z ↦ (0, T · G̲⁻¹(B_f̂ − G̲) · z)`. -/
-def realTrap (Tm : Matrix (Col k) (Col k) R) (Bf : Matrix (Fin 1) (Col k) R) (z : Col k → R) :
-    KeyShort Wd R k :=
+def realTrap (Tm : Matrix Wt (Col k) R) (Bf : Matrix (Fin 1) (Col k) R) (z : Col k → R) :
+    KeyShort Wd Wt R :=
   (0, (Tm * S.Γ₁.ginv (Bf - S.Γ₁.G)) *ᵥ z)
 
 /-- The simulated trapdoor: `z ↦ (W z, 0)`. -/
-def simTrap (W : Matrix Wd (Col k) R) (z : Col k → R) : KeyShort Wd R k := (W *ᵥ z, 0)
+def simTrap (W : Matrix Wd (Col k) R) (z : Col k → R) : KeyShort Wd Wt R := (W *ᵥ z, 0)
 
 omit [DecidableEq R] in
-theorem shortMap_realTrap (mpk : MPK S Wd) (Tm : Matrix (Col k) (Col k) R)
+theorem shortMap_realTrap (mpk : MPK S Wd Wt) (Tm : Matrix Wt (Col k) R)
     (hT : mpk.B₁ * Tm = S.Γ₁.G) (Bf : Matrix (Fin 1) (Col k) R) (z : Col k → R) :
-    shortMap mpk (realTrap (Wd := Wd) (S := S) Tm Bf z) = ((Bf - S.Γ₁.G) *ᵥ z) 0 := by
+    shortMap mpk (realTrap (Wd := Wd) (Wt := Wt) (S := S) Tm Bf z) = ((Bf - S.Γ₁.G) *ᵥ z) 0 := by
   have h : mpk.B₁ * (Tm * S.Γ₁.ginv (Bf - S.Γ₁.G)) = Bf - S.Γ₁.G := by
     rw [← Matrix.mul_assoc, hT, S.Γ₁.mul_ginv]
   have h2 := congrArg (fun M => (M *ᵥ z) 0) h
@@ -61,9 +61,9 @@ theorem shortMap_realTrap (mpk : MPK S Wd) (Tm : Matrix (Col k) (Col k) R)
   rw [Finset.sum_comm]
 
 omit [DecidableEq R] in
-theorem shortMap_simTrap (mpk : MPK S Wd) (W : Matrix Wd (Col k) R) (Bf : Matrix (Fin 1) (Col k) R)
+theorem shortMap_simTrap (mpk : MPK S Wd Wt) (W : Matrix Wd (Col k) R) (Bf : Matrix (Fin 1) (Col k) R)
     (hBf : Bf = mpk.B₀ * W + S.Γ₁.G) (z : Col k → R) :
-    shortMap mpk (simTrap (k := k) W z) = ((Bf - S.Γ₁.G) *ᵥ z) 0 := by
+    shortMap mpk (simTrap (Wt := Wt) W z) = ((Bf - S.Γ₁.G) *ᵥ z) 0 := by
   rw [hBf, add_sub_cancel_right]
   simp only [shortMap, simTrap, AddMonoidHom.coe_mk, ZeroHom.coe_mk, Pi.zero_apply, mul_zero,
     Finset.sum_const_zero, add_zero, Matrix.mulVec, dotProduct, Matrix.mul_apply,
@@ -71,24 +71,24 @@ theorem shortMap_simTrap (mpk : MPK S Wd) (W : Matrix Wd (Col k) R) (Bf : Matrix
   rw [Finset.sum_comm]
 
 /-- The key of an output: `(k₀, k₁)` and `k₂ = z`, or the zero key on abort. -/
-def keyOfOutput : Option (KeyShort Wd R k × (Col k → R)) → SecretKey Wd (R := R) (k := k)
+def keyOfOutput : Option (KeyShort Wd Wt R × (Col k → R)) → SecretKey Wd Wt (R := R) (k := k)
   | some (x, z) => ⟨Matrix.of fun c _ => x.1 c, Matrix.of fun c _ => x.2 c, Matrix.of fun c _ => z c⟩
   | none => ⟨0, 0, 0⟩
 
-variable (Big Small : Finset (KeyShort Wd R k)) (hBig : Big.Nonempty) (dec : R → (Col k → R))
+variable (Big Small : Finset (KeyShort Wd Wt R)) (hBig : Big.Nonempty) (dec : R → (Col k → R))
 
 /-- The law of a key with the trapdoor `T`, for the public row `B_f̂`. -/
-noncomputable def keyLaw (mpk : MPK S Wd) (T : (Col k → R) → KeyShort Wd R k) :
-    PMF (Option (KeyShort Wd R k × (Col k → R))) :=
+noncomputable def keyLaw (mpk : MPK S Wd Wt) (T : (Col k → R) → KeyShort Wd Wt R) :
+    PMF (Option (KeyShort Wd Wt R × (Col k → R))) :=
   boxSample Big hBig Small (shortMap mpk) dec T mpk.p
 
 /-- **Exact simulation of keys** (BTVW17 `KeyGen*`): when `B_f̂ = B₀ W + G̲`, the key law with the
 real trapdoor equals the one with `W`, provided the big box covers both. -/
-theorem keyLaw_real_eq_sim (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd)
-    (Tm : Matrix (Col k) (Col k) R) (hT : mpk.B₁ * Tm = S.Γ₁.G) (W : Matrix Wd (Col k) R)
+theorem keyLaw_real_eq_sim (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd Wt)
+    (Tm : Matrix Wt (Col k) R) (hT : mpk.B₁ * Tm = S.Γ₁.G) (W : Matrix Wd (Col k) R)
     (Bf : Matrix (Fin 1) (Col k) R) (hBf : Bf = mpk.B₀ * W + S.Γ₁.G)
-    (hcov : ∀ x ∈ Small, ∀ y, x + realTrap (Wd := Wd) (S := S) Tm Bf (dec y) ∈ Big)
-    (hcov' : ∀ x ∈ Small, ∀ y, x + simTrap (k := k) W (dec y) ∈ Big) :
+    (hcov : ∀ x ∈ Small, ∀ y, x + realTrap (Wd := Wd) (Wt := Wt) (S := S) Tm Bf (dec y) ∈ Big)
+    (hcov' : ∀ x ∈ Small, ∀ y, x + simTrap (Wt := Wt) W (dec y) ∈ Big) :
     keyLaw Big Small hBig dec mpk (realTrap (S := S) Tm Bf) = keyLaw Big Small hBig dec mpk (simTrap W) :=
   boxSample_eq Big hBig Small (shortMap mpk) (gadgetMap (S := S)) dec hdec _ _ mpk.p hcov hcov'
     fun z => by rw [shortMap_realTrap mpk Tm hT, shortMap_simTrap mpk W Bf hBf]
@@ -98,12 +98,12 @@ theorem gadgetMap_eq (z : Col k → R) : gadgetMap (S := S) z = (S.Γ₁.G *ᵥ 
 
 /-- **Keys are valid**: every key output with a trapdoor `T` of `B_f̂` (that is,
 `B₀ T₀ z + B₁ T₁ z + G̲ z = B_f̂ z`) satisfies `B₀ k₀ + B₁ k₁ + B_f̂ k₂ = p`, unless the try aborts. -/
-theorem valid_of_mem_support (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd)
-    (T : (Col k → R) → KeyShort Wd R k) (Bf : Matrix (Fin 1) (Col k) R)
+theorem valid_of_mem_support (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd Wt)
+    (T : (Col k → R) → KeyShort Wd Wt R) (Bf : Matrix (Fin 1) (Col k) R)
     (hT : ∀ z, shortMap mpk (T z) + gadgetMap (S := S) z = (Bf *ᵥ z) 0)
     (hcov : ∀ x ∈ Small, ∀ y, x + T (dec y) ∈ Big)
-    (o : Option (KeyShort Wd R k × (Col k → R))) (ho : o ∈ (keyLaw Big Small hBig dec mpk T).support)
-    (x : KeyShort Wd R k × (Col k → R)) (hox : o = some x) :
+    (o : Option (KeyShort Wd Wt R × (Col k → R))) (ho : o ∈ (keyLaw Big Small hBig dec mpk T).support)
+    (x : KeyShort Wd Wt R × (Col k → R)) (hox : o = some x) :
     mpk.B₀ * (keyOfOutput o).k₀ + mpk.B₁ * (keyOfOutput o).k₁ + Bf * (keyOfOutput o).k₂ =
       scalar mpk.p := by
   subst hox
@@ -121,22 +121,22 @@ theorem valid_of_mem_support (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk
   · exact absurd rfl hpos
 
 /-- A trapdoor of the public row `B_f̂` covered by the boxes. -/
-def GoodTrap (dec : R → (Col k → R)) (mpk : MPK S Wd)
-    (Bf : Matrix (Fin 1) (Col k) R) (T : (Col k → R) → KeyShort Wd R k) : Prop :=
+def GoodTrap (dec : R → (Col k → R)) (mpk : MPK S Wd Wt)
+    (Bf : Matrix (Fin 1) (Col k) R) (T : (Col k → R) → KeyShort Wd Wt R) : Prop :=
   (∀ z, shortMap mpk (T z) + gadgetMap (S := S) z = (Bf *ᵥ z) 0) ∧
     ∀ x ∈ Small, ∀ y, x + T (dec y) ∈ Big
 
 open Classical in
 /-- **The ideal key law** of the public row `B_f̂`: the law of one try with any covered trapdoor
 (and an abort if there is none). It depends on public data only. -/
-noncomputable def idealKeyLaw (mpk : MPK S Wd) (Bf : Matrix (Fin 1) (Col k) R) :
-    PMF (Option (KeyShort Wd R k × (Col k → R))) :=
+noncomputable def idealKeyLaw (mpk : MPK S Wd Wt) (Bf : Matrix (Fin 1) (Col k) R) :
+    PMF (Option (KeyShort Wd Wt R × (Col k → R))) :=
   if h : ∃ T, GoodTrap Big Small dec mpk Bf T then keyLaw Big Small hBig dec mpk h.choose
   else PMF.pure none
 
 /-- **Every covered trapdoor gives the ideal key law.** -/
-theorem keyLaw_eq_ideal (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd)
-    (Bf : Matrix (Fin 1) (Col k) R) (T : (Col k → R) → KeyShort Wd R k)
+theorem keyLaw_eq_ideal (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd Wt)
+    (Bf : Matrix (Fin 1) (Col k) R) (T : (Col k → R) → KeyShort Wd Wt R)
     (hT : GoodTrap Big Small dec mpk Bf T) :
     keyLaw Big Small hBig dec mpk T = idealKeyLaw Big Small hBig dec mpk Bf := by
   have h : ∃ T, GoodTrap Big Small dec mpk Bf T := ⟨T, hT⟩

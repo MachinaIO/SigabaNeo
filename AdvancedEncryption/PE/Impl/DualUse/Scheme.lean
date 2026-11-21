@@ -6,11 +6,12 @@ import PE.Impl.RingBTVW.Scheme
 BTVW17 §4.2 with the paper's Ring-GSW ciphertexts: the attribute ciphertexts are
 `Ψᵢ = A Rᵢ + xᵢ G` with `A = [B₀; c₀]`, the row `B₀` of the public key and its BGG+ encoding
 `c₀ = s B₀ + e₀` ("dual use"), and binary `Rᵢ`. The public key is `B = [B₀ | B₁]`: `B₀` is uniform
-(the seed of the leftover hash lemma in the security proof), `B₁` carries the trapdoor. A key for
+(the seed of the leftover hash lemma in the security proof), `B₁` carries the trapdoor; `Wd` and
+`Wt` index their columns. A key for
 `f` is `sk = (k₀, k₁, k₂)` with `B₀ k₀ + B₁ k₁ + B_f̂ k₂ = p`.
 
 The parameters (`Setting`: gadget, bit decompositions, `f̂`, `⌊q/2⌋`) are those of
-`PE.Impl.RingBTVW.Scheme`; `Wd` indexes the columns of `B₀`.
+`PE.Impl.RingBTVW.Scheme`.
 
 **Correctness** (`decryptRaw_eq`): if `f(x) = 0` and the key is valid, `κ − κ' = M ⌊q/2⌋ + noise`.
 The Ring-GSW error of `Ψᵢ` is `−e₀ Rᵢ`.
@@ -20,14 +21,14 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW
 
-variable {R : Type*} [CommRing R] {k : ℕ} (S : Setting R k) (Wd : Type*) [Fintype Wd]
+variable {R : Type*} [CommRing R] {k : ℕ} (S : Setting R k) (Wd Wt : Type*) [Fintype Wd] [Fintype Wt]
 
 /-- The master public key. -/
 structure MPK where
   /-- `B₀`: uniform. -/
   B₀ : Matrix (Fin 1) Wd R
   /-- `B₁`: with a trapdoor. -/
-  B₁ : Matrix (Fin 1) (Col k) R
+  B₁ : Matrix (Fin 1) Wt R
   /-- `B_j` for every bit `j` of the attribute ciphertexts. -/
   Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R
   /-- `p`. -/
@@ -40,7 +41,7 @@ structure EncCoins where
   /-- The error of `c₀`. -/
   e₀ : Matrix (Fin 1) Wd R
   /-- The error of `c₁`. -/
-  e₁ : Matrix (Fin 1) (Col k) R
+  e₁ : Matrix (Fin 1) Wt R
   /-- The binary matrices of the Ring-GSW ciphertexts. -/
   Rm : S.Attr → Matrix Wd (Col k) R
   /-- The errors of the encodings. -/
@@ -55,7 +56,7 @@ structure Ciphertext where
   /-- `c₀ = s B₀ + e₀`. -/
   c₀ : Matrix (Fin 1) Wd R
   /-- `c₁ = s B₁ + e₁`. -/
-  c₁ : Matrix (Fin 1) (Col k) R
+  c₁ : Matrix (Fin 1) Wt R
   /-- The encodings of the bits of `Ψ`. -/
   cj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R
   /-- `κ`. -/
@@ -66,24 +67,24 @@ structure SecretKey where
   /-- The part against `B₀`. -/
   k₀ : Matrix Wd (Fin 1) R
   /-- The part against `B₁`. -/
-  k₁ : Matrix (Col k) (Fin 1) R
+  k₁ : Matrix Wt (Fin 1) R
   /-- The part against `B_f̂`. -/
   k₂ : Matrix (Col k) (Fin 1) R
 
-variable {S Wd}
+variable {S Wd Wt}
 
 /-- `A = [B₀; c₀]`. -/
 def gswPK (B₀ c₀ : Matrix (Fin 1) Wd R) : Matrix (Fin 2) Wd R :=
   Matrix.of fun a c => if a = 0 then B₀ 0 c else c₀ 0 c
 
 /-- The Ring-GSW ciphertexts `Ψᵢ = A Rᵢ + xᵢ G`. -/
-def gswCts (mpk : MPK S Wd) (x : S.Attr → Bool) (r : EncCoins S Wd) :
+def gswCts (mpk : MPK S Wd Wt) (x : S.Attr → Bool) (r : EncCoins S Wd Wt) :
     S.Attr → Matrix (Fin 2) (Col k) R :=
   fun i => gswPK mpk.B₀ (scalar r.s * mpk.B₀ + r.e₀) * r.Rm i + bitR (R := R) (x i) • S.Γ.G
 
 /-- **Enc.** -/
-def encrypt (mpk : MPK S Wd) (x : S.Attr → Bool) (M : Bool) (r : EncCoins S Wd) :
-    Ciphertext S Wd :=
+def encrypt (mpk : MPK S Wd Wt) (x : S.Attr → Bool) (M : Bool) (r : EncCoins S Wd Wt) :
+    Ciphertext S Wd Wt :=
   { Ψ := gswCts mpk x r
     c₀ := scalar r.s * mpk.B₀ + r.e₀
     c₁ := scalar r.s * mpk.B₁ + r.e₁
@@ -91,28 +92,28 @@ def encrypt (mpk : MPK S Wd) (x : S.Attr → Bool) (M : Bool) (r : EncCoins S Wd
     κ := r.s * mpk.p + r.e' + (if M then S.half else 0) }
 
 /-- `B_f̂ = ∑_b EvalF(f̂_b, B) · G̲⁻¹(V_b)`. -/
-def keyMatrix (mpk : MPK S Wd) (f : S.Pred) : Matrix (Fin 1) (Col k) R :=
+def keyMatrix (mpk : MPK S Wd Wt) (f : S.Pred) : Matrix (Fin 1) (Col k) R :=
   ∑ b, slpPK S.Γ₁ mpk.Bj (S.fhat f).1 ((S.fhat f).2 b) * S.Γ₁.ginv (S.rowBits.V b)
 
 /-- A valid key: `B₀ k₀ + B₁ k₁ + B_f̂ k₂ = p`. -/
-def ValidKey (mpk : MPK S Wd) (f : S.Pred) (sk : SecretKey Wd (R := R) (k := k)) : Prop :=
+def ValidKey (mpk : MPK S Wd Wt) (f : S.Pred) (sk : SecretKey Wd Wt (R := R) (k := k)) : Prop :=
   mpk.B₀ * sk.k₀ + mpk.B₁ * sk.k₁ + keyMatrix mpk f * sk.k₂ = scalar mpk.p
 
 /-- `c_f̂ = ∑_b EvalFX(f̂_b, ψ, c) · G̲⁻¹(V_b) + Ψ̄_f`. -/
-def evalCiphertext (mpk : MPK S Wd) (f : S.Pred) (ct : Ciphertext S Wd) :
+def evalCiphertext (mpk : MPK S Wd Wt) (f : S.Pred) (ct : Ciphertext S Wd Wt) :
     Matrix (Fin 1) (Col k) R :=
   ∑ b, slpEnc S.Γ₁ mpk.Bj (bitsOf S ct.Ψ) ct.cj (S.fhat f).1 ((S.fhat f).2 b) *
       S.Γ₁.ginv (S.rowBits.V b) +
     botRow (evalMat S.Γ ct.Ψ (S.circ f))
 
 /-- **Dec**, before rounding: `κ − [c₀ | c₁ | c_f̂] sk`. -/
-def decryptRaw (mpk : MPK S Wd) (f : S.Pred) (sk : SecretKey Wd (R := R) (k := k))
-    (ct : Ciphertext S Wd) : R :=
+def decryptRaw (mpk : MPK S Wd Wt) (f : S.Pred) (sk : SecretKey Wd Wt (R := R) (k := k))
+    (ct : Ciphertext S Wd Wt) : R :=
   ct.κ - (ct.c₀ * sk.k₀ + ct.c₁ * sk.k₁ + evalCiphertext mpk f ct * sk.k₂) 0 0
 
 /-- The noise of decryption: `e' − [e₀ | e₁ | E_BGG − E_GSW] sk`. -/
-def noise (mpk : MPK S Wd) (x : S.Attr → Bool) (f : S.Pred) (sk : SecretKey Wd (R := R) (k := k))
-    (r : EncCoins S Wd) : R :=
+def noise (mpk : MPK S Wd Wt) (x : S.Attr → Bool) (f : S.Pred) (sk : SecretKey Wd Wt (R := R) (k := k))
+    (r : EncCoins S Wd Wt) : R :=
   let eBgg := ∑ b, slpEnc S.Γ₁ mpk.Bj (bitsOf S (gswCts mpk x r)) r.ej (S.fhat f).1
     ((S.fhat f).2 b) * S.Γ₁.ginv (S.rowBits.V b)
   let eGsw := evalErr S.Γ (gswCts mpk x r) (fun i => bitR (R := R) (x i))
@@ -128,8 +129,8 @@ theorem gswSecret_mul_gswPK (s : R) (B₀ e₀ : Matrix (Fin 1) Wd R) :
 
 /-- **Correctness, exactly.** If `f(x) = 0`, the key is valid and `f̂` computes the Ring-GSW
 evaluation, then `κ − κ' = M ⌊q/2⌋ + noise`. -/
-theorem decryptRaw_eq (hfhat : S.FhatCorrect) (mpk : MPK S Wd) (x : S.Attr → Bool) (M : Bool)
-    (r : EncCoins S Wd) (f : S.Pred) (sk : SecretKey Wd (R := R) (k := k))
+theorem decryptRaw_eq (hfhat : S.FhatCorrect) (mpk : MPK S Wd Wt) (x : S.Attr → Bool) (M : Bool)
+    (r : EncCoins S Wd Wt) (f : S.Pred) (sk : SecretKey Wd Wt (R := R) (k := k))
     (hsk : ValidKey mpk f sk) (hfx : (S.circ f).eval (fun i => bitR (R := R) (x i)) = 0) :
     decryptRaw mpk f sk (encrypt mpk x M r) = (if M then S.half else 0) + noise mpk x f sk r := by
   set Ψ := gswCts mpk x r with hΨ
