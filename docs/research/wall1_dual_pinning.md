@@ -131,3 +131,8 @@ vacuous. The Micciancio–Walter Definition 1 column is the one attained by a re
 Lemma 1): at β = 406 / 506 every MW-reduced basis has g_{1023−β} ≥ 0.12656799 / 0.36551297 (99%, Haar); at β = 647 / 800 no
 positive uniform bound exists under Definition 1 (in-block basis changes send g_k → 0 when k < β − 1). Gains over Part 82:
 ≈ 19× / 21.5× at 406 / 506. The plain Blichfeldt cap alone already gives 0.1191 at β = 406.
+
+**Stopping qualification (literature survey, wall1_literature3.md).** Micciancio–Walter prove their recursive predicate
+(Definition 1) for the output when the projected basis stabilizes across a tour (Lemma 1); they leave open whether that test
+always fires. The radii above therefore apply to bases satisfying Definition 1; applying them to a capped run of Algorithm 1
+needs separate evidence that its output satisfies the predicate.

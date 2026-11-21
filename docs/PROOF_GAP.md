@@ -493,6 +493,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   β = 647 / 800 (k < β − 1 allows in-block changes with g_k → 0). Under the stronger 'primal and reversed dual both fully
   BKZ-reduced' predicate the bounds are 0.1266 / 0.3655 / 0.5897 / 1.0181, but that predicate may be empty on typical lattices.
   Deterministically (Part 48 event), width 985 under the stronger predicate.
+  *Qualification:* MW prove Definition 1 only when Algorithm 1's stabilization test fires (left open in their paper), so
+  the bound applies to bases satisfying Definition 1. Survey: [literature3](research/wall1_literature3.md) (Kelmer's
+  mean-square theorem over random triangular coefficients matches the open void lemma's setting; Li–Walter generalized slide
+  reduces widths 406/506 at rank 1023 to two blocks).
 * **Frontier after Parts 1–86 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
