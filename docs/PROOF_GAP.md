@@ -248,6 +248,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   β = 406 and ≥ 1 at 512; at punctured width 647 the prefix is empty and Part 39 applies. No new width certified: the filtered
   first moment at positive prefix rank is not evaluated, and whether divisible witnesses survive for every planted matrix at
   406/647 is open.
+* **Part 43 (audited, minor caveats).** [filtered_moment](research/wall1_filtered_moment.md): first rigorous filtered first
+  moment at positive prefix rank, simultaneous over all reduced outputs: at punctured D = 699 (plain LWE (511,512,3329) CBD(3)),
+  every fully BKZ-698-reduced basis yields recovery with probability > 99.218% (bad-line mean ≤ 2^-301 + 2^-7 + 2^-1774;
+  certificate passes for D = 699..800 at k = 1). Not useful as a cost (BKZ-698 is worse than Part 39's single SVP at 647).
+  Decisive negative: at D = 647, β = 646 the k = 1 filtered mean exceeds 2^163 (consistent full-rank witnesses), so first
+  moments over profile-admissible prefixes cannot lower the width — any improvement needs information about the reducer's
+  selection, not counting. D = 1024 at widths 512/647: rank-stratified upper bounds too large to decide.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
