@@ -9,7 +9,7 @@ own. Its proofs are checked by Lean when the core is built.
 
 | Module | Contents |
 | --- | --- |
-| `Basic` | `embed` (`Z^m ⊂ R^m`), `kernel B`, `perp B = Λ^⊥(B)`, `toInt`; `sampleList`, `sampleMat`, `sampleFun`, `sampleOptList` |
+| `Basic` | `embed` (`Z^m ⊂ R^m`), `kernel B`, `perp B = Λ^⊥(B)`, `toInt`; `sampleList`, `sampleMat`, `sampleFun`, `sampleOptList`; `sampleFun_support` |
 | `Gaussian` | `gaussZ s` (`D_{Z,s}`) and `cosetGauss B u τ` (`D_{Λ^⊥(B)+x₀,τ}`), cslib-frontier's `ZLattice.discreteGaussian`; `cosetGauss_mem_coset`, `cosetGauss_isSome_iff` |
 | `Gaussian/Sum`, `Smooth`, `Tail`, `Bounds`, `Z`, `Facts` | Gaussian sums; smoothing of `Λ^⊥(B)`; tails (`gauss_tail_gen`, `cosetGauss_tail`, `gaussZ_tail`); point masses of `D_{Z,σ}` |
 | `Encoding` | `matVals`, `encEntries`, `bitsOf`, `intMod` |
@@ -26,7 +26,7 @@ own. Its proofs are checked by Lean when the core is built.
 | `Homomorphic/BinaryDigits` | `binaryDigits`: the gadget digits of `ℤ_q[X]/(X^N + 1)` (cslib-frontier's `Cslib.Negacyclic`): binary digits of the coefficients, `∑ᵢ 2^i dᵢ(a) = a`; `coeffBits`: a matrix as the bits of the coefficients of its entries (`MatrixBits`) |
 | `Homomorphic/Circuit` | NAND circuits `Circuit ι`, evaluated in a ring (`eval`) and on bits (`evalBool`, `eval_bits`); every Boolean function is a circuit (`ofFun`, `evalBool_ofFun`) |
 | `Homomorphic/GTrapdoor` | the gadget trapdoor over a ring: `gTrapdoorMatrix` (`B = [A₀ \| g − A₀ T]`), `gTrapdoorSolve`, `gTrapdoorMatrix_mul_solve` (exact preimages; not the Gaussian sampler) |
-| `Homomorphic/RingGauss` | `rowRot` (coefficient matrix of `z ↦ ∑_c L_c z_c`, `rowRot_mulVec`), `gaussPreimage` (the discrete Gaussian on the solutions over `ℤ_q[X]/(X^N + 1)`), `gaussPreimage_mem`, `gaussPreimage_isSome` |
+| `Homomorphic/RingGauss` | `rowRot` (coefficient matrix of `z ↦ ∑_c L_c z_c`, `rowRot_mulVec`), `gaussPreimage` (the discrete Gaussian on the solutions over `ℤ_q[X]/(X^N + 1)`), `gaussPreimage_mem`, `gaussPreimage_isSome`, `gaussPreimage_tail` (coefficients at most `K ≥ τ√m` except with probability `3 · 2^{−m}`) |
 | `Homomorphic/Norm` | `zabs` (centered absolute value in `ℤ_q`), `cnorm` (coefficient norm of `ℤ_q[X]/(X^N + 1)`): `cnorm_add_le`, `cnorm_neg`, `cnorm_sum_le`, `cnorm_mul_le` (`≤ N · cnorm a · cnorm b`) |
 | `Homomorphic/NoiseBound` | `rnorm` (norm of a row), `rnorm_mul_le`, `errBound`, `rnorm_evalErr_le` (the noise of BGG+ / Ring-GSW evaluation on `0/1` inputs), `cnorm_gadgetOf_binary_ginv_le` (binary decompositions have norm `1`) |
 | `Homomorphic/Eval` | `evalMat` (BGG+ `EvalF` and Ring-GSW `Eval`), `evalEnc`, `evalErr`, `evalSim`; `bgg_key_relation`, `gsw_invariant`, `sim_relation` (`Aᵢ = B Wᵢ + xᵢ G` ⇒ `A_f = B W_f + f(x) G`), `matrix_key_relation`, `matrix_key_relation_bits` (matrix-valued functions, with a bit decomposition `MatrixBits`) |

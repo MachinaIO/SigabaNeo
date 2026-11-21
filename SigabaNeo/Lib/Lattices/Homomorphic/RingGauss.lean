@@ -1,4 +1,5 @@
-import SigabaNeo.Lib.Lattices.Gaussian
+import SigabaNeo.Lib.Lattices.Gaussian.Tail
+import SigabaNeo.Lib.Lattices.Homomorphic.Norm
 import CslibFrontier.Foundations.Algebra.Negacyclic
 
 /-!
@@ -8,8 +9,9 @@ The solutions `z` of `∑_c L_c z_c = y` in `ℤ_q[X]/(X^N + 1)` (cslib-frontier
 drawn from the discrete Gaussian on their coset ([GPV08]). In coefficients the equation is
 `rowRot L · coeffs(z) = coeffs(y)` over `ℤ_q` (`rowRot_mulVec`), with `rowRot L` the negacyclic
 matrices of the `L_c` side by side; `gaussPreimage L y τ` is `cosetGauss` of that system, read back
-as ring elements. It is defined exactly when a solution exists (`gaussPreimage_isSome`), and every
-point it draws is a solution (`gaussPreimage_mem`).
+as ring elements. It is defined exactly when a solution exists (`gaussPreimage_isSome`), every
+point it draws is a solution (`gaussPreimage_mem`), and, past smoothing, every coefficient is at most
+`K ≥ τ √m` except with probability `3 · 2^{−m}` (`gaussPreimage_tail`).
 -/
 
 namespace SigabaNeo.Lattices
@@ -17,13 +19,12 @@ namespace SigabaNeo.Lattices
 open Cslib
 open scoped Matrix
 
-variable {N q : ℕ} {ι : Type} [Fintype ι] [DecidableEq ι]
+variable {N q : ℕ} {ι : Type} [Fintype ι]
 
 /-- The coefficient matrix of `z ↦ ∑_c L_c z_c`. -/
 def rowRot (L : ι → Negacyclic (ZMod q) N) : Matrix (Fin N) (ι × Fin N) (ZMod q) :=
   Matrix.of fun i cj => rotMatrix (L cj.1).coeffs i cj.2
 
-omit [DecidableEq ι] in
 /-- The coefficients of `∑_c L_c z_c`. -/
 theorem rowRot_mulVec (L z : ι → Negacyclic (ZMod q) N) :
     rowRot L *ᵥ (fun cj => (z cj.1).coeffs cj.2) = (∑ c, L c * z c).coeffs := by
@@ -84,5 +85,36 @@ theorem gaussPreimage_isSome (L : ι → Negacyclic (ZMod q) N) (y : Negacyclic 
   congr 1
   ext j
   simp [ofIntCoeffs]
+
+/-- **Short Gaussian preimages.** Past smoothing (`dualMassE ≤ 1/2`), every coefficient of a drawn
+preimage is at most `K ≥ τ √m` in centered absolute value, except with probability `3 · 2^{−m}`. -/
+theorem gaussPreimage_tail [NeZero q] (L : ι → Negacyclic (ZMod q) N) (y : Negacyclic (ZMod q) N)
+    {τ : ℝ} (hτ : 0 < τ) (hB : dualMassE (rowRotFin L) τ ≤ 1 / 2)
+    {d : PMF (ι → Negacyclic (ZMod q) N)} (hd : gaussPreimage L y τ hτ = some d) (K : ℕ)
+    (hK : τ * Real.sqrt (Fintype.card (ι × Fin N)) ≤ K) :
+    d.toOuterMeasure {z | ¬ ∀ c, cnorm (z c) ≤ K} ≤
+      ENNReal.ofReal (3 * (1 / 2) ^ Fintype.card (ι × Fin N)) := by
+  unfold gaussPreimage at hd
+  obtain ⟨d', hd', rfl⟩ := Option.map_eq_some_iff.mp hd
+  rw [PMF.toOuterMeasure_map_apply]
+  refine le_trans (MeasureTheory.measure_mono ?_) (cosetGauss_tail _ _ hτ hB hd')
+  intro x hx
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq] at hx ⊢
+  by_contra hlt
+  push Not at hlt
+  apply hx
+  intro c
+  rw [cnorm_le_iff]
+  intro j
+  simp only [ofIntCoeffs, Negacyclic.coeffs_ofCoeffs]
+  refine (zabs_intCast_le _).trans ?_
+  set t := Fintype.equivFin (ι × Fin N) (c, j)
+  have h1 : |(x t : ℝ)| ≤ ‖embed _ x‖ := by
+    have := PiLp.norm_apply_le (embed _ x) t
+    simpa [embed, Real.norm_eq_abs] using this
+  have h2 : ((x t).natAbs : ℝ) < K := by
+    rw [Nat.cast_natAbs, Int.cast_abs]
+    exact lt_of_le_of_lt h1 (lt_of_lt_of_le hlt hK)
+  exact_mod_cast h2.le
 
 end SigabaNeo.Lattices

@@ -14,7 +14,9 @@ where `E(g) = errBound WN Bχ g` grows by `WN` at each NAND on the left (`rnorm_
 Decryption is then correct whenever `4 · noiseBound + 2 < q` (`decrypt_correct_of_bounds`): the
 noise is no longer a hypothesis but a function of the parameters and the circuits. With an error
 law bounded by `Bχ` (a truncated Gaussian), every coin of `Enc` meets the bound
-(`encCoinsLaw_bounded`), so every ciphertext decrypts (`scheme_correct_bounded`).
+(`encCoinsLaw_bounded`), so every ciphertext decrypts (`scheme_correct_bounded`). Past smoothing,
+Gaussian keys are short except with probability `3 · 2^{−m}` (`gaussKey_short`), which bounds the
+probability of a decryption error (`decryption_error_le`).
 -/
 
 namespace AdvancedEncryption.RingBTVW
@@ -171,5 +173,51 @@ theorem scheme_correct_bounded (hN : 0 < N) (mpk : MPK (ringSetting N q k hk Att
     decodeBit hN (decryptRaw mpk f sk (encrypt mpk x M r)) = M := by
   obtain ⟨he', he₀, heΨ, hej⟩ := encCoinsLaw_bounded hk hχ hr
   exact decrypt_correct_of_bounds hk hN mpk x M r f sk hsk hfx Bχ K he' he₀ heΨ hej hk₁ hk₂ hq
+
+/-! ### Short Gaussian keys and the probability of a decryption error -/
+
+omit [DecidableEq Attr] in
+/-- **Gaussian keys are short.** Past smoothing, a key from `gaussKeySampler τ` has coefficients at
+most `K ≥ τ √m` except with probability `3 · 2^{−m}`, `m = 2 · |W| · N`. -/
+theorem gaussKey_short (τ : ℝ) (hτ : 0 < τ) (mpk : MPK (ringSetting N q k hk Attr))
+    (f : Circuit Attr) (hex : ∃ sk : SecretKey, ValidKey mpk f sk)
+    (hB : dualMassE (rowRotFin (keyRow mpk.B (keyMatrix mpk f))) τ ≤ 1 / 2) (K : ℕ)
+    (hK : τ * Real.sqrt (Fintype.card ((Fin 2 × Col k) × Fin N)) ≤ K) :
+    (keyGenLaw (gaussKeySampler τ hτ) mpk f).toOuterMeasure
+        {sk | ¬ ((∀ c d, cnorm (sk.k₁ c d) ≤ K) ∧ (∀ c d, cnorm (sk.k₂ c d) ≤ K))} ≤
+      ENNReal.ofReal (3 * (1 / 2) ^ Fintype.card ((Fin 2 × Col k) × Fin N)) := by
+  obtain ⟨sk₀, hsk₀⟩ := hex
+  have hsome := gaussPreimage_isSome (keyRow mpk.B (keyMatrix mpk f)) mpk.p hτ
+    ⟨keyVec sk₀, (validKey_iff _ _ _ sk₀).mp hsk₀⟩
+  obtain ⟨d, hd⟩ := Option.isSome_iff_exists.mp hsome
+  have hlaw : keyGenLaw (gaussKeySampler τ hτ) mpk f = d.map keyOf := by
+    simp only [keyGenLaw, gaussKeySampler, hd]
+  rw [hlaw, PMF.toOuterMeasure_map_apply]
+  refine le_trans (MeasureTheory.measure_mono ?_) (gaussPreimage_tail _ _ hτ hB hd K hK)
+  intro z hz
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq] at hz ⊢
+  intro hall
+  exact hz ⟨fun c _ => hall (0, c), fun c _ => hall (1, c)⟩
+
+/-- **The probability of a decryption error.** For `f(x) = 0`, with an error law bounded by `Bχ` and
+`4 · noiseBound + 2 < q` for `K ≥ τ √m`, the probability over `KeyGen` that some ciphertext of `M`
+fails to decrypt is at most `3 · 2^{−m}`. -/
+theorem decryption_error_le (hN : 0 < N) (τ : ℝ) (hτ : 0 < τ)
+    (mpk : MPK (ringSetting N q k hk Attr)) (f : Circuit Attr)
+    (hex : ∃ sk : SecretKey, ValidKey mpk f sk)
+    (hB : dualMassE (rowRotFin (keyRow mpk.B (keyMatrix mpk f))) τ ≤ 1 / 2) (K : ℕ)
+    (hK : τ * Real.sqrt (Fintype.card ((Fin 2 × Col k) × Fin N)) ≤ K)
+    {χ : PMF (ZMod q)} {Bχ : ℕ} (hχ : ∀ e ∈ χ.support, zabs e ≤ Bχ)
+    (hq : 4 * noiseBound (N := N) hk Bχ K f + 2 < q) (x : Attr → Bool) (hfx : f.evalBool x = false)
+    (M : Bool) :
+    (keyGenLaw (gaussKeySampler τ hτ) mpk f).toOuterMeasure
+        {sk | ∃ r ∈ (encCoinsLaw hk Attr χ).support,
+          decodeBit hN (decryptRaw mpk f sk (encrypt mpk x M r)) ≠ M} ≤
+      ENNReal.ofReal (3 * (1 / 2) ^ Fintype.card ((Fin 2 × Col k) × Fin N)) := by
+  rw [← PMF.toOuterMeasure_apply_inter_support]
+  refine le_trans (MeasureTheory.measure_mono ?_) (gaussKey_short hk τ hτ mpk f hex hB K hK)
+  rintro sk ⟨⟨r, hr, hne⟩, hsupp⟩ ⟨hk₁, hk₂⟩
+  exact hne (scheme_correct_bounded hk hN mpk f sk
+    ((gaussKeySampler τ hτ).valid _ _ _ hex sk hsupp) K hk₁ hk₂ hχ hq x hfx M r hr)
 
 end AdvancedEncryption.RingBTVW
