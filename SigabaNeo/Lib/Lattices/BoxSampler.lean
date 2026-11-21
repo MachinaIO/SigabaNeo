@@ -125,4 +125,36 @@ theorem boxSample_eq (Big : Finset P) (hBig : Big.Nonempty) (Small : Finset P) (
     exact if_congr this rfl rfl
   exact PMF.ext_option hsome
 
+/-- **The abort probability**: every proposal in `Inner` (whose shifts by the trapdoor all stay in
+the small box) is accepted, so a try aborts with probability at most `1 − |Inner| / |Big|`. -/
+theorem boxSample_none_le (Big : Finset P) (hBig : Big.Nonempty) (Small : Finset P) (F : P →+ Y)
+    (dec : Y → Z) (T : Z → P) (u : Y) (Inner : Finset P) (hIn : Inner ⊆ Big)
+    (hInner : ∀ p ∈ Inner, ∀ y, p - T (dec y) ∈ Small) :
+    boxSample Big hBig Small F dec T u none ≤
+      ((Big.card - Inner.card : ℕ) : ℝ≥0∞) / Big.card := by
+  classical
+  unfold boxSample
+  rw [PMF.map_apply]
+  refine le_trans (tsum_le_tsum (g := fun p => if p ∈ Big \ Inner then (Big.card : ℝ≥0∞)⁻¹
+    else 0) (fun p => ?_)) (le_of_eq ?_)
+  · have hu : (PMF.uniformOfFinset Big hBig) p ≤ (Big.card : ℝ≥0∞)⁻¹ := by
+      rw [PMF.uniformOfFinset_apply]; split_ifs <;> simp
+    by_cases hp : p ∈ Big \ Inner
+    · simp only [hp, ite_true]
+      refine le_trans ?_ hu
+      split_ifs
+      all_goals first | exact le_rfl | exact zero_le
+    · simp only [hp, ite_false]
+      simp only [Finset.mem_sdiff, not_and, not_not] at hp
+      by_cases hB : p ∈ Big
+      · have hs := hInner p (hp hB) (u - F p)
+        simp [hs]
+      · have : (PMF.uniformOfFinset Big hBig) p = 0 := by
+          rw [PMF.uniformOfFinset_apply]; simp [hB]
+        split_ifs
+        all_goals first | exact le_rfl | exact this.le
+  · rw [tsum_eq_sum (s := Big \ Inner) (fun p hp => by simp [hp])]
+    rw [Finset.sum_ite_of_true (fun p hp => hp), Finset.sum_const, nsmul_eq_mul,
+      Finset.card_sdiff_of_subset hIn, div_eq_mul_inv]
+
 end SigabaNeo.Lattices
