@@ -377,7 +377,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   window enforced, so any improvement needs Haar typicality; (ii) on the Haar typical event, primitive prefixes within a factor 2
   of the GSA determinant can have quotient ratio exp[−Ω(N log N)] (−166 / −85 / −6.0 at N = 1023, widths 406/506/647) — such
   prefixes need not be BKZ-completable, so a proof must combine Haar typicality with BKZ-completability of the prefix.
-* **Frontier after Parts 1–66 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 67 (audited, minor caveats).** [completable_prefixes](research/wall1_completable_prefixes.md): counting only
+  BKZ-completable prefixes (unfolding over flags with exact completability consequences) drives the expected number of bad
+  completable prefixes below 2^{-1023} at relative radii c = 0.00354 / 0.00850 / 0.01413 (β = 406/506/647, rank 1023), versus a
+  divergent count for all primitive prefixes; but E B ∝ c^{kb}, so the radius sits at a steep break-even and essentially recovers
+  Part 65. The open ingredient is unchanged: the joint acceptance probability of the overlapping windows' shortest-vector tests.
+* **Frontier after Parts 1–67 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
