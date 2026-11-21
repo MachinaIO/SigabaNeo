@@ -323,7 +323,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   crossing test retained in the integral removes positive mass but changes no displayed digit. Certified Haar terminal radii stay
   0.0058/0.0154/0.0392/0.1399 (β = 406/506/647/800) vs targets 0.86–1.21; the bound's modal prefix covolume (log ≈ 420) is far
   from GSA (≈ 984). A uniform exp(−cE) suppression over overlapping tests remains the missing ingredient.
-* **Frontier after Parts 1–57 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 58 (audited).** [random_plant_heights](research/wall1_random_plant_heights.md),
+  [height_union_fix](research/wall1_height_union_fix.md): for the decoupled attack, with the plant's projection independent of H,
+  CBD(3) is sub-Gaussian (proxy 3/2), with explicit upper and (new) lower norm tails; for |k| ≥ 2 the height-k event is a
+  fixed-direction tail on {‖v‖ ≥ R_-}. Using only λ_1(H) and packing counts, the union over (k, x) cannot beat the geometric
+  condition λ_1(H) > T(R_+) ≈ R_+² (742 at β = 406 … 1702 at 1000 — far above the certified 80–89 and above GSA at every width).
+  Heights 0, ±1 alone need λ_1(H) > 2√(R_+² − 1), certified at width 1020. Heights ≥ 2 need anti-concentration of k·v mod H,
+  i.e. information on det H or the dual minimum — again the average-case profile.
+* **Frontier after Parts 1–58 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
