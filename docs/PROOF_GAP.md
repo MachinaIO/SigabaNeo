@@ -180,6 +180,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   [stability](research/wall1_stability.md) (stability radius explicit; averaging loss too large),
   [literature](research/wall1_literature.md) (closest: Laarhoven 2610.15265 Prop. 3, prefix covolumes of quasi-HKZ bases of Haar
   lattices; nothing bounds the selected terminal block), plus reachable and small_exact (Parts 20–21).
+* **Corrected Lean core statements (local P2M).** `Wall1SlideCaptureOrTerminalRecovery` and `Wall1GSACaptureOrTerminalRecovery`
+  (success = some output basis row is ±u, or the terminal criterion holds; everything else unchanged) are SKETCH_ACCEPTED with four
+  open leaves (`Wall1{Slide,GSA}CaptureOr{SameLine,OffLine}`); `Research/Wall1/CapturedSlide.lean`. The terminal-only originals stay
+  registered and open; no disproof at the registered width (n ≥ 512, β ≥ 40) was found.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
