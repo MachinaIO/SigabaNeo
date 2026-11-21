@@ -93,10 +93,25 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   lattice: exact uniformity of the lists, the acceptance rate, correctness in time `2^{0.415n}`.
   It also proves Lemma S3′ (SVP coverage from Rogers' formula at `k ≤ 3`) and the `q`-ary
   mean-value formula (Lemmas Q1, Q2).
-* The one unverified deep input for exact SVP is gap **G1**: [Laa26] Proposition 5.1, quenched
-  bounds on high moments of lens counts with every non-partition penalty below `3/4`.
-* In progress: an adversarial audit of G1, a Lean formalization of the algorithmic layer (S1–S5 as
-  hypotheses), and Lean proofs of the `q`-ary Lemmas Q1, Q2 with a study of Lemma Q3.
+* The deep input for exact SVP is gap **G1**: [Laa26] Proposition 5.1, quenched bounds on high
+  moments of lens counts with every non-partition penalty below `3/4`. An adversarial audit
+  ([research/g1_audit.md](research/g1_audit.md)) re-derived both bounds and found G1 **holds on
+  the domain it states**, *given* the classical Rogers formula and spherical Gram density:
+  * the feared two-free-parent relation `x₃ = x₁ + x₂ − d` has empty support, because the
+    longitudinal constraint forces projection `≈ d/2`;
+  * the worst surviving base is `e/4 < 3/4`;
+  * the prefactor is `e^{O(h² log n)}`, a correction to the note, still `2^{o(n)}` at
+    `h ≈ ln n`;
+  * the endpoint bound excludes `α = 1`, which the SVP route does not use.
+
+  Not verified: proofs of Rogers' formula and of the Gram density, and their instantiation for the
+  Haar measure. [Laa26]'s Lean development assumes both (`ClassicalRogersFormula`,
+  `ClassicalGramFormula`). For Haar-random lattices the result is therefore conditional on two
+  classical theorems not formalized here.
+* In progress: a Lean formalization of the algorithmic layer (S1–S5 as hypotheses), Lean proofs of
+  the `q`-ary Lemmas Q1, Q2 with a study of Lemma Q3, and a new re-randomization argument for (C).
+  For `q`-ary lattices, Lemma Q1 replaces Rogers' formula by elementary linear algebra over
+  `F_q`, so that route can avoid the Haar-measure prerequisites entirely.
 * Open: (C) has no known approach. BKZ's projected blocks are not Haar-random, and no analogue of
   Rogers' formula is known for them. So even a verified [DL26] would make sieving a theorem for
   random lattices, not for the sieve calls inside BKZ on LWE lattices.
