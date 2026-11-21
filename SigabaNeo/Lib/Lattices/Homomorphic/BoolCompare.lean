@@ -186,4 +186,76 @@ theorem compile_spec (x : ι → Bool) : ∀ (e : BExp ι) (p : SLP ι), e.WF �
 
 end SLP
 
+namespace SLP
+
+variable {ι : Type*}
+
+theorem length_notW (p : SLP ι) (a : Wire ι) : (notW p a).1.length = p.length + 1 := by
+  simp [notW, addNand]
+
+theorem length_andW (p : SLP ι) (a b : Wire ι) : (andW p a b).1.length = p.length + 2 := by
+  simp [andW, notW, addNand]
+
+theorem length_orW (p : SLP ι) (a b : Wire ι) : (orW p a b).1.length = p.length + 3 := by
+  simp [orW, notW, addNand]
+
+theorem length_geConst (p : SLP ι) : ∀ (xs : List (Wire ι)) (as : List Bool),
+    (geConst p xs as).1.length ≤ p.length + 3 * xs.length
+  | x :: xs, a :: as => by
+    have ih := length_geConst p xs as
+    simp only [geConst, List.length_cons]
+    split_ifs
+    · rw [length_andW]; omega
+    · rw [length_orW]; omega
+  | [], _ => by simp [geConst]
+  | _ :: _, [] => by simp [geConst]
+
+theorem length_leConst (p : SLP ι) : ∀ (xs : List (Wire ι)) (bs : List Bool),
+    (leConst p xs bs).1.length ≤ p.length + 4 * xs.length
+  | x :: xs, b :: bs => by
+    have ih := length_leConst p xs bs
+    simp only [leConst, List.length_cons]
+    split_ifs
+    · rw [length_orW, length_notW]; omega
+    · rw [length_andW, length_notW]; omega
+  | [], _ => by simp [leConst]
+  | _ :: _, [] => by simp [leConst]
+
+end SLP
+
+namespace SLP.BExp
+
+variable {ι : Type*}
+
+/-- A bound on the number of gates of the compiled expression. -/
+def size : BExp ι → ℕ
+  | ge is _ => 3 * is.length
+  | le is _ => 4 * is.length
+  | not e => e.size + 1
+  | and e f => e.size + f.size + 2
+  | or e f => e.size + f.size + 3
+
+end SLP.BExp
+
+namespace SLP
+
+variable {ι : Type*}
+
+theorem length_compile : ∀ (e : BExp ι) (p : SLP ι), (compile p e).1.length ≤ p.length + e.size
+  | .ge is as, p => by simpa [compile, BExp.size] using length_geConst p (is.map .input) as
+  | .le is bs, p => by simpa [compile, BExp.size] using length_leConst p (is.map .input) bs
+  | .not e, p => by
+    have := length_compile e p
+    simp only [compile, length_notW, BExp.size]; omega
+  | .and e f, p => by
+    have h1 := length_compile e p
+    have h2 := length_compile f (compile p e).1
+    simp only [compile, length_andW, BExp.size]; omega
+  | .or e f, p => by
+    have h1 := length_compile e p
+    have h2 := length_compile f (compile p e).1
+    simp only [compile, length_orW, BExp.size]; omega
+
+end SLP
+
 end SigabaNeo.Lattices

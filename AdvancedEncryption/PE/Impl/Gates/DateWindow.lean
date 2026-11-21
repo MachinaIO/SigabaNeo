@@ -49,6 +49,20 @@ def winGates (w : Window) : GateList :=
 /-- The predicate of a window. -/
 def winWord (w : Window) : List Bool := unparse (winGates w)
 
+/-! ### Its size -/
+
+theorem size_winExp (a b : Date) : (winExp a b).size = 374 := by
+  simp [winExp, validExp, eqE, BExp.size, M, D, A]
+
+/-- **A window predicate has at most 375 gates.** -/
+theorem length_winGates (w : Window) : (winGates w).length ≤ 375 := by
+  have h := SLP.length_compile (winExp w.1.1 w.1.2) []
+  rw [size_winExp] at h
+  simp only [winGates, predGates, toGates, List.length_map, List.length_append,
+    List.length_singleton]
+  simp at h
+  omega
+
 /-! ### Its value -/
 
 /-- The bits of a date as inputs. -/
