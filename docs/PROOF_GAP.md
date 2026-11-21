@@ -715,7 +715,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   failure has an exact fiber-retaining first moment. At width 506 every witness has area < 1.04144·GH(W)². It now suffices to
   bound two history averages, the horizontal failure and the positive-height moment, by 0.00488848 each. Plane counts at a fixed
   area cutoff do not propagate (a scaled D_3 example), so the induction for these averages is open.
-* **Frontier after Parts 1–120 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 121 (audited).** [global_quotient](research/wall1_global_quotient.md): Part 120's horizontal term involves the
+  global-selection statistic ψ(Λ) = λ1(π_{x_0}Λ)/GH. However, (λ1/GH, ψ) does not determine the next ψ: an explicit
+  rectangular counterexample with equal determinant and subgroup gives different next values. Horizontal witnesses can need one
+  more old direction per step (rank 408 over the width-506 suffix), and fixed-depth hierarchies fail on the general state space.
+  Small exact runs (evidence only) show depth ≤ 1 in 1,280 designated planes.
+* **Frontier after Parts 1–121 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
