@@ -52,8 +52,10 @@ files, and a result counts only after it builds in the core and passes an indepe
   domain), the [Laa26] archive bridge (`archive_rogers`, `archive_gram`), the sample-deletion results (dimension 662 / 647,
   exact-SVP recovery), the ratio-lemma BKZ composition (`reduced_finds_plant`, `competitor_design_bound`), and the wall-1
   contained-prefix capture lemmas (BKZ and slide).
+* **Added later on Nov 22, 2026** (all ACCEPTED): the Haar λ1 two-sided window, consisting of `count_hit_bounds`,
+  `primitiveBallPairs_hit_upper` and `primitiveBallPairs_hit_lower`.
 * **Open Lean statements**: the general spherical Gram formula and the finite Haar mass of the
   arithmetic fundamental domain (Siegel), tagged `open`.
 * **Research results on walls 1 and 2** are paper results, not Lean statements; they are indexed in
-  [PROOF_GAP.md](PROOF_GAP.md) (Wall 1 parts 1–19, Wall 2) with their audits under
+  [PROOF_GAP.md](PROOF_GAP.md) (Wall 1 parts 1–111, Wall 2) with their audits under
   [research/](research/).
