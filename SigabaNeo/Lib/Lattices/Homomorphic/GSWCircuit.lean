@@ -12,9 +12,12 @@ With `W = Fin 2 × Fin k` and `rot(v)_{t,j} = v_{t−j}` for `j ≤ t` and `−v
   `(G − Ψ_a G⁻¹(Ψ_b))_{a,col,t} = G_{a,col,t} − ∑_{c' ∈ W} ∑_{j < N} rot((Ψ_a)_{a,c'})_{t,j} d_{c',j}`
 
 (`coeff_gswNand`), where `d_{c',j}` is the bit `c'.2` of the coefficient `j` of `(Ψ_b)_{c'.1,col}`:
-the digits are the input bits themselves. One output coefficient is a running sum modulo `q` over
-the `|W| · N` terms (`coefCircuit`, `coefCircuit_spec`), each a bitwise `and` and one modular
-addition or subtraction of `k`-bit numbers; a NAND is `2 · |W| · N` of them.
+the digits are the input bits themselves. One output coefficient is the sum modulo `q` of the
+gadget's coefficient and the `|W| · N` terms, each computed from `0` by a bitwise `and` and one
+modular addition or subtraction of `k`-bit numbers (`leaves`), then added by a balanced tree of
+modular additions (`pairRound`, `rounds`, `treeHeight` rounds): the depth, and so the noise of
+evaluating `f̂` homomorphically, grows with `log(|W| N)` per NAND (`coefCircuit`,
+`coefCircuit_spec`).
 -/
 
 namespace SigabaNeo.Lattices
@@ -210,11 +213,167 @@ theorem foldl_termStep_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Va
     rw [List.foldl_cons, List.map_cons, List.sum_cons, ← add_assoc]
     exact foldl_termStep_spec hk hz hz0 ha hb a col t es _ _ (termStep_spec x hk hz hz0 ha hb a col t h e)
 
-/-- One output coefficient of a NAND: the running sum from the gadget's coefficient `Gv`. -/
+/-! ### Summing by a balanced tree -/
+
+/-- Pairwise sums of a list of values. -/
+def pairSums {M : Type*} [Add M] : List M → List M
+  | a :: b :: rest => (a + b) :: pairSums rest
+  | l => l
+
+omit [NeZero q] in
+theorem sum_pairSums : ∀ (vs : List (ZMod q)), (pairSums vs).sum = vs.sum
+  | [] => rfl
+  | [_] => rfl
+  | a :: b :: rest => by
+    simp only [pairSums, List.sum_cons, sum_pairSums rest]; ring
+
+theorem length_pairSums {M : Type*} [Add M] : ∀ (vs : List M),
+    (pairSums vs).length = (vs.length + 1) / 2
+  | [] => by simp [pairSums]
+  | [_] => by simp [pairSums]
+  | a :: b :: rest => by
+    simp only [pairSums, List.length_cons, length_pairSums rest]; omega
+
+/-- The computed numbers `L` have the values `vs`. -/
+def LGood (p : SLP ι) (L : List (List (Wire ι))) (vs : List (ZMod q)) : Prop :=
+  List.Forall₂ (fun ws v => AllValid p ws ∧ ws.length = k ∧ nv x p ws = v.val) L vs
+
+omit [NeZero q] in
+theorem LGood.ext {p p' : SLP ι} (h : Ext p p') {L : List (List (Wire ι))} {vs : List (ZMod q)}
+    (hg : LGood (k := k) x p L vs) : LGood (k := k) x p' L vs :=
+  hg.imp fun _ _ hw => ⟨hw.1.ext h, hw.2.1, by rw [nv_ext x h hw.1]; exact hw.2.2⟩
+
+/-- One round: add adjacent numbers modulo `q`. -/
+def pairRound (z : Wire ι) (q k : ℕ) : SLP ι → List (List (Wire ι)) → SLP ι × List (List (Wire ι))
+  | p, a :: b :: rest =>
+    let r := modAdd z q k p a b
+    let r' := pairRound z q k r.1 rest
+    (r'.1, r.2 :: r'.2)
+  | p, l => (p, l)
+
+theorem pairRound_spec (hk : q < 2 ^ k) {z : Wire ι} :
+    ∀ (p : SLP ι) (L : List (List (Wire ι))) (vs : List (ZMod q)), Valid p z → bv x p z = false →
+      LGood (k := k) x p L vs →
+      Ext p (pairRound z q k p L).1 ∧ LGood (k := k) x (pairRound z q k p L).1
+        (pairRound z q k p L).2 (pairSums vs)
+  | p, [], _, _, _, h => by cases h; exact ⟨Ext.refl p, List.Forall₂.nil⟩
+  | p, [a], _, _, _, h => by
+    cases h with
+    | cons h1 h2 => cases h2; exact ⟨Ext.refl p, List.Forall₂.cons h1 List.Forall₂.nil⟩
+  | p, a :: b :: rest, vs, hz, hz0, h => by
+    have hq : 0 < q := Nat.pos_of_ne_zero (NeZero.ne q)
+    cases h with
+    | @cons _ va _ vs₁ ha h' =>
+      cases h' with
+      | @cons _ vb _ vs'' hb hr =>
+        have hm := modAdd_spec x z q k p a b hz hz0 ha.1 hb.1 ha.2.1 hb.2.1 hq hk.le
+          (by rw [ha.2.2]; exact ZMod.val_lt _) (by rw [hb.2.2]; exact ZMod.val_lt _)
+        have ih := pairRound_spec hk (modAdd z q k p a b).1 rest vs'' (hz.ext hm.ext)
+          (by rw [bv_ext x hm.ext hz]; exact hz0) (LGood.ext (k := k) x hm.ext hr)
+        refine ⟨hm.ext.trans ih.1, List.Forall₂.cons ?_ ih.2⟩
+        refine ⟨hm.valid.ext ih.1, hm.length, ?_⟩
+        change nv x (pairRound z q k (modAdd z q k p a b).1 rest).1 _ = _
+        rw [nv_ext x ih.1 hm.valid, hm.value, ha.2.2, hb.2.2, modAdd_val]
+        simp
+
+/-- `h` rounds. -/
+def rounds (z : Wire ι) (q k : ℕ) : ℕ → SLP ι → List (List (Wire ι)) → SLP ι × List (List (Wire ι))
+  | 0, p, L => (p, L)
+  | h + 1, p, L =>
+    let r := pairRound z q k p L
+    rounds z q k h r.1 r.2
+
+theorem rounds_spec (hk : q < 2 ^ k) {z : Wire ι} :
+    ∀ (h : ℕ) (p : SLP ι) (L : List (List (Wire ι))) (vs : List (ZMod q)), Valid p z →
+      bv x p z = false → LGood (k := k) x p L vs →
+      Ext p (rounds z q k h p L).1 ∧ ∃ vs', vs'.sum = vs.sum ∧
+        LGood (k := k) x (rounds z q k h p L).1 (rounds z q k h p L).2 vs'
+  | 0, p, L, vs, _, _, hg => ⟨Ext.refl p, vs, rfl, hg⟩
+  | h + 1, p, L, vs, hz, hz0, hg => by
+    obtain ⟨e₁, g₁⟩ := pairRound_spec x hk p L vs hz hz0 hg
+    obtain ⟨e₂, vs', hs, g₂⟩ := rounds_spec hk h _ _ _ (hz.ext e₁)
+      (by rw [bv_ext x e₁ hz]; exact hz0) g₁
+    exact ⟨e₁.trans e₂, vs', by rw [hs, sum_pairSums], g₂⟩
+
+/-- The sum of the remaining numbers, from left to right (`0` if none). -/
+def foldSum (z : Wire ι) (q k : ℕ) : SLP ι → List (List (Wire ι)) → SLP ι × List (Wire ι)
+  | p, [] => (p, constL z k 0)
+  | p, a :: rest => rest.foldl (fun st b => modAdd z q k st.1 st.2 b) (p, a)
+
+theorem foldl_modAdd_spec (hk : q < 2 ^ k) {z : Wire ι} {p₀ : SLP ι} (hz : Valid p₀ z)
+    (hz0 : bv x p₀ z = false) :
+    ∀ (L : List (List (Wire ι))) (vs : List (ZMod q)) (st : SLP ι × List (Wire ι)) (v : ZMod q),
+      AccSpec (k := k) x p₀ z st v → LGood (k := k) x st.1 L vs →
+      AccSpec (k := k) x p₀ z (L.foldl (fun st b => modAdd z q k st.1 st.2 b) st) (v + vs.sum)
+  | [], vs, st, v, hst, hg => by cases hg; simpa using hst
+  | b :: rest, vs, st, v, hst, hg => by
+    have hq : 0 < q := Nat.pos_of_ne_zero (NeZero.ne q)
+    cases hg with
+    | @cons _ vb _ vs' hb hr =>
+      have hz' := hz.ext hst.ext
+      have hm := modAdd_spec x z q k st.1 st.2 b hz' (by rw [bv_ext x hst.ext hz]; exact hz0)
+        hst.valid hb.1 hst.length hb.2.1 hq hk.le (by rw [hst.value]; exact ZMod.val_lt _)
+        (by rw [hb.2.2]; exact ZMod.val_lt _)
+      have hacc : AccSpec (k := k) x p₀ z (modAdd z q k st.1 st.2 b) (v + vb) :=
+        ⟨hst.ext.trans hm.ext, hm.valid, hm.length, by
+          rw [hm.value, hst.value, hb.2.2, modAdd_val]; simp⟩
+      have := foldl_modAdd_spec hk hz hz0 rest vs' _ _ hacc (LGood.ext (k := k) x hm.ext hr)
+      rw [List.foldl_cons, List.sum_cons, ← add_assoc]
+      exact this
+
+theorem foldSum_spec (hk : q < 2 ^ k) {z : Wire ι} (p : SLP ι) (L : List (List (Wire ι)))
+    (vs : List (ZMod q)) (hz : Valid p z) (hz0 : bv x p z = false)
+    (hg : LGood (k := k) x p L vs) : AccSpec (k := k) x p z (foldSum z q k p L) vs.sum := by
+  cases hg with
+  | nil =>
+    obtain ⟨hcv, hcl, hcn⟩ := constL_spec x p z hz hz0 k 0
+    exact ⟨Ext.refl p, hcv, hcl, by simp [foldSum, hcn]⟩
+  | @cons a va rest vs' ha hr =>
+    have := foldl_modAdd_spec x hk hz hz0 rest vs' (p, a) va
+      ⟨Ext.refl p, ha.1, ha.2.1, ha.2.2⟩ hr
+    simpa [foldSum, List.sum_cons] using this
+
+/-- The terms of a coefficient, each computed from `0`. -/
+def leaves (z : Wire ι) (q k : ℕ) (repA repB : BI N k → Wire ι) (a : Fin 2)
+    (col : Fin 2 × Fin k) (t : Fin N) :
+    SLP ι → List ((Fin 2 × Fin k) × Fin N) → SLP ι × List (List (Wire ι))
+  | p, [] => (p, [])
+  | p, e :: es =>
+    let r := termStep z q k repA repB a col t (p, constL z k 0) e
+    let r' := leaves z q k repA repB a col t r.1 es
+    (r'.1, r.2 :: r'.2)
+
+theorem leaves_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid p z)
+    (hz0 : bv x p z = false) {repA repB : BI N k → Wire ι}
+    {Ψa Ψb : Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N)}
+    (ha : Rep x p repA Ψa) (hb : Rep x p repB Ψb) (a : Fin 2) (col : Fin 2 × Fin k) (t : Fin N) :
+    ∀ (es : List ((Fin 2 × Fin k) × Fin N)) (p' : SLP ι), Ext p p' →
+      Ext p' (leaves z q k repA repB a col t p' es).1 ∧
+        LGood (k := k) x (leaves z q k repA repB a col t p' es).1
+          (leaves z q k repA repB a col t p' es).2 (es.map (termZ Ψa Ψb a col t))
+  | [], p', _ => ⟨Ext.refl p', List.Forall₂.nil⟩
+  | e :: es, p', he => by
+    have hz' := hz.ext he
+    have hz0' : bv x p' z = false := by rw [bv_ext x he hz]; exact hz0
+    obtain ⟨hcv, hcl, hcn⟩ := constL_spec x p' z hz' hz0' k 0
+    have h0 : AccSpec (k := k) x p' z (p', constL z k 0) (0 : ZMod q) :=
+      ⟨Ext.refl p', hcv, hcl, by simp [hcn]⟩
+    have ht := termStep_spec x hk hz' hz0' (ha.ext x he) (hb.ext x he) a col t h0 e
+    rw [zero_add] at ht
+    have ih := leaves_spec hk hz hz0 ha hb a col t es _ (he.trans ht.ext)
+    refine ⟨ht.ext.trans ih.1, List.Forall₂.cons ?_ ih.2⟩
+    exact ⟨ht.valid.ext ih.1, ht.length, (nv_ext x ih.1 ht.valid).trans ht.value⟩
+
+/-- The number of rounds: enough to bring `2 |W| N + 1` numbers to one. -/
+def treeHeight (N k : ℕ) : ℕ := Nat.clog 2 (Fintype.card ((Fin 2 × Fin k) × Fin N) + 1)
+
+/-- One output coefficient of a NAND: the gadget's coefficient `Gv` and the `2 |W| N` terms,
+summed by a balanced tree of modular additions (`treeHeight` rounds). -/
 noncomputable def coefCircuit (z : Wire ι) (q k : ℕ) (repA repB : BI N k → Wire ι) (Gv : ℕ) (a : Fin 2)
     (col : Fin 2 × Fin k) (t : Fin N) (p : SLP ι) : SLP ι × List (Wire ι) :=
-  ((Finset.univ : Finset ((Fin 2 × Fin k) × Fin N)).toList).foldl (termStep z q k repA repB a col t)
-    (p, constL z k Gv)
+  let r := leaves z q k repA repB a col t p ((Finset.univ : Finset ((Fin 2 × Fin k) × Fin N)).toList)
+  let r' := rounds z q k (treeHeight N k) r.1 (constL z k Gv :: r.2)
+  foldSum z q k r'.1 r'.2
 
 /-- **One output coefficient of a NAND** is computed. -/
 theorem coefCircuit_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid p z)
@@ -225,19 +384,25 @@ theorem coefCircuit_spec (hk : q < 2 ^ k) {p : SLP ι} {z : Wire ι} (hz : Valid
       (coefCircuit z q k repA repB (((gswBin hk).G a col).coeffs t).val a col t p)
       ((((gswBin hk).G - Ψa * (gswBin hk).ginv Ψb : Matrix (Fin 2) (Fin 2 × Fin k)
         (Negacyclic (ZMod q) N)) a col).coeffs t) := by
-  obtain ⟨hcv, hcl, hcn⟩ := constL_spec x p z hz hz0 k (((gswBin hk).G a col).coeffs t).val
-  have h0 : AccSpec (k := k) x p z (p, constL z k (((gswBin hk).G a col).coeffs t).val)
-      (((gswBin hk).G a col).coeffs t) :=
-    ⟨Ext.refl p, hcv, hcl, by rw [hcn, Nat.mod_eq_of_lt ((ZMod.val_lt _).trans hk)]⟩
-  have h := foldl_termStep_spec x hk hz hz0 ha hb a col t
-    ((Finset.univ : Finset ((Fin 2 × Fin k) × Fin N)).toList) _ _ h0
-  rw [Finset.sum_map_toList] at h
-  have hc := coeff_gswNand hk Ψa Ψb a col t
-  have hsum : Finset.univ.sum (termZ Ψa Ψb a col t) =
-      ∑ e : (Fin 2 × Fin k) × Fin N, -(rotMatrix (Ψa a e.1).coeffs t e.2 * digitZ Ψb col e.1 e.2) :=
+  set es := (Finset.univ : Finset ((Fin 2 × Fin k) × Fin N)).toList
+  set Gv := (((gswBin hk).G a col).coeffs t).val
+  obtain ⟨e₁, g₁⟩ := leaves_spec x hk hz hz0 ha hb a col t es p (Ext.refl p)
+  set r := leaves z q k repA repB a col t p es
+  have hz₁ := hz.ext e₁
+  have hz0₁ : bv x r.1 z = false := by rw [bv_ext x e₁ hz]; exact hz0
+  obtain ⟨hcv, hcl, hcn⟩ := constL_spec x r.1 z hz₁ hz0₁ k Gv
+  have g₁' : LGood (k := k) x r.1 (constL z k Gv :: r.2)
+      ((((gswBin hk).G a col).coeffs t) :: es.map (termZ Ψa Ψb a col t)) :=
+    List.Forall₂.cons ⟨hcv, hcl, by rw [hcn, Nat.mod_eq_of_lt ((ZMod.val_lt _).trans hk)]⟩ g₁
+  obtain ⟨e₂, vs', hs, g₂⟩ := rounds_spec x hk (treeHeight N k) r.1 _ _ hz₁ hz0₁ g₁'
+  have hz₂ := hz₁.ext e₂
+  have hf := foldSum_spec x hk _ _ vs' hz₂ (by rw [bv_ext x e₂ hz₁]; exact hz0₁) g₂
+  have hval : vs'.sum = (((gswBin hk).G - Ψa * (gswBin hk).ginv Ψb : Matrix (Fin 2) (Fin 2 × Fin k)
+      (Negacyclic (ZMod q) N)) a col).coeffs t := by
+    rw [hs, List.sum_cons, Finset.sum_map_toList, coeff_gswNand hk Ψa Ψb a col t]
     rfl
-  rw [hsum, ← hc] at h
-  exact h
+  rw [hval] at hf
+  exact ⟨e₁.trans (e₂.trans hf.ext), hf.valid, hf.length, hf.value⟩
 
 /-! ### A NAND on represented ciphertexts -/
 
