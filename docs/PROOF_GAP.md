@@ -363,7 +363,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   typical (depending on the baseline), always via a single local dip g_k/g_{k−1} → √3/2 with prefix covolumes almost unchanged.
   So 'every BKZ basis has g_{N−β} ≥ 1·typical' is false, while ≈ 0.8·typical is consistent with the data — the volume method's
   gap (Parts 50–61) is a weakness of the method, not of the statement (small ranks; large-N steepening not excluded).
-* **Frontier after Parts 1–64 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 65 (audited, minor caveats).** [one_sided_terminal](research/wall1_one_sided_terminal.md): higher-degree
+  spherical-code (Christoffel–Darboux/Gegenbauer LP) block bounds improve H_d in 867 dimensions (up to ≈ 40.7 nats near
+  d ≈ 1022); with the Part 61 cap/chain-counting framework this gives, per width at 99%, g_{N−β} ≥ 0.00609 / 0.01588 / 0.03996 /
+  0.14264 and g_{N−β}/R_T ≥ 0.00357 / 0.00858 / 0.01425 / 0.03307 (R_T the Gaussian radius of the terminal quotient) at
+  β = 406/506/647/800, rank 1023 — still ≈ 60× below 0.85·GSA. Asymptotically (β/N → a): g_{N−β}/R_T ≥ exp[−O_a(log² N)] for all
+  BKZ-β bases simultaneously, off an event of probability ≤ 2^{-N}: the terminal minimum is never exponentially below its own
+  Gaussian radius.
+* **Frontier after Parts 1–65 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
