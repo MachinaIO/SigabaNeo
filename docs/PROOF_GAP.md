@@ -639,7 +639,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   #(L_k ∩ B)/|kH| is valid but cannot rescue it. Tracking the final subunit run gives zero-failure floors of
   8.7·10⁻⁶ / 5.3·10⁻⁶ × own GH. Diagnosis: short terminal vectors trace back to earlier window vectors longer than GH, where
   counting is powerless. A tool that captures the conditioning effect of the SVP selections is missing.
-* **Frontier after Parts 1–110 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 111 (audited).** [hecke_gap](research/wall1_hecke_gap.md): the full-torsion append is, up to < 1/q, an index-q Hecke
+  correspondence. Its mean-zero norm is ≤ 2√q/(q+1) < 0.0347 (Clozel–Oh–Ullmo, d ≥ 3). An L²(Haar) iteration still fails, for
+  two reasons. Every appended window has parallel primal and dual vectors, which is a Haar-null condition. From the cubic start
+  the retained shape law is finitely supported, so no density exists. The terminal floors are unchanged.
+* **Summary of the direct output-law program (Parts 105–111).** The one-step selection law is near-Haar (Part 105), and the
+  first-tour law is an exact finite recursion (Part 108). Chaining fails in every form tried: selector-uniform (Part 106),
+  worst-case/additive (Parts 109–110), and spectral/L² (Part 111). The best pathwise floor is ≈ 10⁻⁵ × own GH, against the
+  ≈ 0.9 needed. A tool for the conditioning effect of the SVP selections on discrete laws is missing.
+* **Frontier after Parts 1–111 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
