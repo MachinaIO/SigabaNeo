@@ -233,6 +233,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   plant-aware selector with zero conditional design information passes the (degenerate) criterion at D = 406.
   **Consequence:** fixed or low-cardinality A-independent prefixes cannot reach β ≈ 406; any proof there needs adaptive
   (A-dependent) prefixes, i.e. the actual BKZ/slide selection.
+* **Part 41 (audited, minor caveats).** [sublattice_union](research/wall1_sublattice_union.md): a union bound over the
+  determinant-only family (all primitive rank-k sublattices of covolume ≤ the Part 6 cutoff) cannot certify success for any
+  2 ≤ β ≤ 1007 on the full 1024-dim embedding: for every A and planting, B_a = V_{k−1} + Z(u + a b_k) (HKZ basis of the
+  horizontal part) are primitive prefixes under the cutoff on which π u is |a| times a shorter vector — > 2^635 of them at
+  β = 406, > 2^286 at 647 (interval-certified; also with GSA cutoffs). At β = 406 the rational-rank (Haar) mean is exactly 0
+  because consistency mod q forces a rank loss ≥ 106. Only β = d = 1024 is certified (< 2^-1900). Caveat: these witnesses
+  have last Gram–Schmidt length ≈ |a|·‖b_k*‖ and are not BKZ-like; a family constrained by the per-index Part 6 profile (or
+  a λ_1/last-GS condition) is not ruled out.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
