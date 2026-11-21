@@ -18,6 +18,7 @@ import SigabaNeo.Lib.Lattices.BoxSampler
 import SigabaNeo.Lib.Lattices.Flood
 import SigabaNeo.Lib.Lattices.RingLWEInst
 import SigabaNeo.Lib.Lattices.CoinMaps
+import SigabaNeo.Lib.Lattices.BitLaw
 
 /-!
 # Lattice library
@@ -55,6 +56,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `RingLWEInst`: the registry's Ring-LWE laws as laws on ring elements (`ringReal`,
   `ringLWE_realLaw_eq`, `ringLWE_idealLaw_eq`).
 * `CoinMaps`: samples from fair coins (`bitsToZMod`, `uniform_bitsToZMod`).
+* `BitLaw`: laws that are images of `m` uniform bits, closed under `pure`, `map`, `bind` and
+  independent products; uniform residues mod `2^K`.
 * `Decode`: threshold decoding of a bit `M · ⌊q/2⌋ + e` in `ℤ_q` and in `ℤ_q[X]/(X^N + 1)`, exact when
   `4|e| + 2 < q`.
 -/
