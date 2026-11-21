@@ -586,7 +586,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   The second is λ1(H) ≥ 61.3 alone (failure < 0.00207). The height-zero floor alone is not enough: a fixed lattice with minimum
   above 25 and arbitrarily large covolume has CBD height-one failure > 70%. For the actual q-ary quotient, height one remains
   open.
-* **Frontier after Parts 1–102 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 103 (audited after correction).** [width_scan](research/wall1_width_scan.md):
+  * **Necessary floor.** The Cantelli height-zero floor for 99% conditional success is √(1 + 1.5d − √(4.5d/99)), d = β − 1,
+    which is 27.4538 at β = 506.
+  * **Probability.** Part 101's design guarantee 0.990001 leaves ≤ 1/990001 for all conditional plant failures.
+  * **Width scan.** Extended to width 1020, Part 101's certified q-ary minimum first exceeds the height-zero floor at final rank
+    955. The profile-free height-one condition is first met at final rank 999.
+  * **Conclusion.** The current terminal-minimum certificates give no improvement over Part 39's dimension 647 (10.62 vs 31.06
+    at 647). Beating 647 needs distributional control of the selected block itself.
+* **Frontier after Parts 1–103 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
