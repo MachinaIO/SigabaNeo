@@ -36,7 +36,7 @@ namespace AdvancedEncryption.RingBTVW
 open SigabaNeo.Lattices Cslib Cslib.Probability
 open scoped ENNReal
 
-variable {N q k : ℕ} [NeZero q] (hk : q ≤ 2 ^ k) {Attr : Type} [Fintype Attr] [DecidableEq Attr]
+variable {N q k : ℕ} [NeZero q] (hk : q < 2 ^ k) {Attr : Type} [Fintype Attr] [DecidableEq Attr]
 
 instance : Inhabited (SecretKey (R := Negacyclic (ZMod q) N) (k := k)) := ⟨⟨0, 0⟩⟩
 
@@ -152,7 +152,7 @@ noncomputable def realMPK (x : Attr → Bool) (B : Row N q k) (p : Negacyclic (Z
       bitR (R := Negacyclic (ZMod q) N) (x i) • (ringSetting N q k hk Attr).Γ.G) j •
     (ringSetting N q k hk Attr).Γ₁.G
 
-omit [DecidableEq Attr] in
+omit [DecidableEq Attr] [Fintype Attr] in
 /-- On a real instance, `Setup*`, `Enc*` give the real `(mpk, ct)` with `B_j = a_j + ψ_j G̲`. -/
 theorem simMap_real (x : Attr → Bool) (M : Bool) (B : Row N q k) (p : Negacyclic (ZMod q) N)
     (r : EncCoins (ringSetting N q k hk Attr)) (aJ : J N hk Attr → Row N q k) :
@@ -192,7 +192,7 @@ noncomputable def challengeShift (x x' : Attr → Bool) (M M' : Bool) : Inst N h
     fun i => botRow ((bitR (R := Negacyclic (ZMod q) N) (x i) - bitR (x' i)) •
       (ringSetting N q k hk Attr).Γ.G), 0))
 
-omit [DecidableEq Attr] in
+omit [DecidableEq Attr] [Fintype Attr] in
 /-- `Setup*`, `Enc*` for `(x, M)` are those for `(x', M')` on the shifted instance. -/
 theorem simMap_shift (x x' : Attr → Bool) (M M' : Bool) (v : Inst N hk Attr) :
     simMap x M v = simMap x' M' (v + challengeShift x x' M M') := by

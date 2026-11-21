@@ -51,7 +51,7 @@ noncomputable def matLaw {α : Type} [Inhabited α] {r c : Type} [Fintype r] [Fi
     (d : PMF α) : PMF (Matrix r c α) :=
   (sampleFun (ι := r × c) d).map fun g => Matrix.of fun a b => g (a, b)
 
-variable {k : ℕ} (hk : q ≤ 2 ^ k) (Attr : Type) [Fintype Attr] [DecidableEq Attr]
+variable {k : ℕ} (hk : q < 2 ^ k) (Attr : Type) [Fintype Attr] [DecidableEq Attr]
 
 instance : Fintype (ringSetting N q k hk Attr).Attr := inferInstanceAs (Fintype Attr)
 

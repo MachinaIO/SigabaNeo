@@ -6,6 +6,11 @@ import SigabaNeo.Lib.Lattices.Homomorphic.GTrapdoor
 import SigabaNeo.Lib.Lattices.Homomorphic.RingGauss
 import SigabaNeo.Lib.Lattices.Homomorphic.Norm
 import SigabaNeo.Lib.Lattices.Homomorphic.NoiseBound
+import SigabaNeo.Lib.Lattices.Homomorphic.SLP
+import SigabaNeo.Lib.Lattices.Homomorphic.SLPEval
+import SigabaNeo.Lib.Lattices.Homomorphic.BoolBuild
+import SigabaNeo.Lib.Lattices.Homomorphic.BoolArith
+import SigabaNeo.Lib.Lattices.Homomorphic.GSWCircuit
 
 /-!
 # Homomorphic evaluation over rings
@@ -23,6 +28,12 @@ import SigabaNeo.Lib.Lattices.Homomorphic.NoiseBound
 * `Homomorphic/Norm`, `Homomorphic/NoiseBound`: the coefficient norm of `ℤ_q[X]/(X^N + 1)`
   (`cnorm (a * b) ≤ N · cnorm a · cnorm b`) and the noise of homomorphic evaluation
   (`rnorm_evalErr_le`: at most `errBound (|W| N) E f` with binary digits).
+* `Homomorphic/SLP`, `Homomorphic/SLPEval`: straight-line programs (shared NAND gates) and their
+  homomorphic evaluation: the BGG+ key relation, the Ring-GSW invariant and the noise.
+* `Homomorphic/BoolBuild`, `Homomorphic/BoolArith`: building Boolean programs: gates, adders,
+  constants, and addition and subtraction modulo `q`, with their values.
+* `Homomorphic/GSWCircuit`: the Ring-GSW evaluation of a circuit as a polynomial-size Boolean
+  program on the bits of the ciphertexts (`fhatProgram`, `fhatProgram_spec`).
 * `Homomorphic/Eval`: one evaluation for BGG+ public keys and Ring-GSW ciphertexts; the BGG+ key
   relation, the Ring-GSW invariant, and the evaluation of matrix-valued functions (`MatrixBits`).
 
