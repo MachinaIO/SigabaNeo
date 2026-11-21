@@ -436,7 +436,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   componentwise ratio comparison, but not ordered by E). **Common missing ingredient:** coverage of the fresh column's torus
   conditioned on prefix survival when the terminal GS ratios drop below 1/√2 (deep windows) — beyond both the probabilistic
   ceilings and the deterministic packing bounds.
-* **Frontier after Parts 1–74 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 75 (audited, minor caveats).** [void_combined](research/wall1_void_combined.md): combining V7 on truncated shallow
+  windows, V5 on deep columns (granting the full j/2 budget) and Part 73 caps over disjoint schedules still leaves ≥
+  706153 / 720898 / 723246 (β = 406), 435237 / 451925 / 456300 (506), 225368 / 239938 / 244817 (647), 50526 / 67010 / 73211 (800)
+  nats at ρ = 0.25 / 0.5 / 0.85·GSA. Probabilistic suppression on the relocated boxes is capped (≤ 6 per shallow column, ≤ j/2
+  per deep column); closing wall 1 this way needs exact (deterministic) coverage of the fresh column's torus on deep windows,
+  e.g. further packing certificates at the relocated boxes' widths.
+* **Frontier after Parts 1–75 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
