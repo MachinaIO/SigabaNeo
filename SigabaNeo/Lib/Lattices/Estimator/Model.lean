@@ -1,4 +1,11 @@
 import SigabaNeo.Lib.Lattices.Estimator.Usvp
+import SigabaNeo.Lib.Lattices.Estimator.PrimalBdd
+import SigabaNeo.Lib.Lattices.Estimator.PrimalHybrid
+import SigabaNeo.Lib.Lattices.Estimator.Dual
+import SigabaNeo.Lib.Lattices.Estimator.DualHybrid
+import SigabaNeo.Lib.Lattices.Estimator.Bkw
+import SigabaNeo.Lib.Lattices.Estimator.AroraGB
+import SigabaNeo.Lib.Lattices.Estimator.Guess
 import Mathlib.Tactic.Linarith
 import Mathlib.Order.MinMax
 
@@ -134,9 +141,19 @@ theorem floorBits_tight {as : List AttackModel} {p : LWEParams} (h : (minCost as
   have h3 : (0 : ℤ) < Fx.ONE := by decide
   nlinarith
 
-/-- The attacks of the lattice estimator that are formalized. -/
+/-- The LWE attacks of the lattice estimator: the eight of `LWE.estimate` (with their default
+arguments) and the two guessing attacks of `lwe_guess.py`. -/
 def attacks : List AttackModel :=
-  [ ⟨"usvp", Usvp.cost⟩ ]
+  [ ⟨"arora-gb", AroraGB.cost⟩,
+    ⟨"bkw", Bkw.cost⟩,
+    ⟨"usvp", Usvp.cost⟩,
+    ⟨"bdd", PrimalBdd.cost⟩,
+    ⟨"bdd_hybrid", PrimalHybrid.costBdd⟩,
+    ⟨"bdd_mitm_hybrid", PrimalHybrid.costMitm⟩,
+    ⟨"dual", Dual.cost⟩,
+    ⟨"dual_hybrid", DualHybrid.cost⟩,
+    ⟨"exhaustive_search", Guess.exhaustiveCost⟩,
+    ⟨"mitm", Guess.mitmCost⟩ ]
 
 /-- `⌊min over the estimator's attacks⌋`. -/
 def estimatorBits (p : LWEParams) : ℕ := floorBits attacks p

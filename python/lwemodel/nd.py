@@ -39,10 +39,8 @@ class ND:
     def bounds(self):
         """(lo, hi) integers, or None if unbounded."""
         if self.kind == "gauss":
-            if self.n is None:
-                return None
-            b = fx.ceil(fx.mul(fx.log2(fx.of_int(self.n)), self.arg))
-            return (-b, b)
+            # the estimator's resize keeps the default constructor's infinite bounds
+            return None
         if self.kind == "cbd":
             return (-self.arg, self.arg)
         return self.arg

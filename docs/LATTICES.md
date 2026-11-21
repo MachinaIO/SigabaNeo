@@ -14,9 +14,11 @@ own. Its proofs are checked by Lean when the core is built.
 | `Gaussian/Sum`, `Smooth`, `Tail`, `Bounds`, `Z`, `Facts` | Gaussian sums; smoothing of `Λ^⊥(B)`; tails (`gauss_tail_gen`, `cosetGauss_tail`, `gaussZ_tail`); point masses of `D_{Z,σ}` |
 | `Encoding` | `matVals`, `encEntries`, `bitsOf`, `intMod` |
 | `Gadget` | `gadget n b q = I_n ⊗ (1, 2, …, 2^{b−1})`, `gadgetInv` (binary decomposition), `gadget_mulVec_gadgetInv` for `q ≤ 2^b` |
-| `ModuleLWE` | `ModuleLWE.Decision m d n q secret error` (cslib-frontier's `DecisionModuleLWEWith`), `DecisionGauss`, `DecisionGaussSecret`, `gaussVec` |
-| `RingLWE` | `RingLWE.Decision`: Module-LWE of rank 1 |
-| `LWE` | `LWE.Decision`: Module-LWE at ring degree 1; `LWE.DecisionPub`: with the modulus public in the sample (`encodePub`) |
+| `ModuleLWE` | concrete: `ModuleLWE.Params`, `ModuleLWE.decision`, `ModuleLWE.search` (`Assumption`s with `H`, [ASSUMPTIONS.md](ASSUMPTIONS.md)); asymptotic: `ModuleLWE.Decision m d n q secret error` (cslib-frontier's `DecisionModuleLWEWith`), `DecisionGauss`, `DecisionGaussSecret`, `gaussVec` |
+| `RingLWE` | Module-LWE of rank 1: `RingLWE.decision`, `RingLWE.search`, `RingLWE.Decision` |
+| `LWE` | Module-LWE at ring degree 1: `LWE.decision`, `LWE.search`, `LWE.Decision`; `LWE.DecisionPub`: with the modulus public in the sample (`encodePub`) |
+| `Estimator/` | the lattice estimator's attack cost models and `estimatorBits` ([LWE_ESTIMATOR.md](LWE_ESTIMATOR.md)) |
+| `Hardness` | the earlier conservative bound `securityBits` ([LWE_HARDNESS.md](LWE_HARDNESS.md)) |
 | `Trapdoor` | `Trapdoor.preimage`, `Trapdoor.ideal`, `Trapdoor.Sampler`, `Trapdoor.Exists` |
 | `Trapdoor/Family` | `Trapdoor.Family.exists_sampler`, for one parameter family |
 | `Prob`, `Stat` | expectations (`ev`, `ind`) and statistical distance (`CloseTo`) lemmas |

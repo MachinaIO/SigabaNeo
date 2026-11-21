@@ -1,11 +1,9 @@
-# The security function of LWE (`SigabaNeo/Lib/Lattices/Hardness.lean`)
+# A conservative bound on LWE (`SigabaNeo/Lib/Lattices/Hardness.lean`)
 
-`Hardness.securityBits N rank m q s secret` is the `H` of `ModuleLWE.decision`/`search`,
-`RingLWE.decision`/`search` (rank 1) and `LWE.decision`/`search` (`N = 1`)
-([ASSUMPTIONS.md](ASSUMPTIONS.md)). It is the number of bits these assumptions claim. It is
-designed as a **conservative lower bound on the cost of every known classical attack**. Any looseness
-should make it smaller than the best attack, never larger. Proven attacks then lower it further
-(Section 3.3 of the concept).
+The assumptions' `H` is now the formalized lattice estimator ([LWE_ESTIMATOR.md](LWE_ESTIMATOR.md)).
+`Hardness.securityBits N rank m q error secret` is kept as a cross-check: a
+**deliberately conservative lower bound on the cost of every known classical attack**, designed so
+that any looseness makes it smaller than the best attack, never larger.
 
 `python/lwe_hardness.py` mirrors the Lean definition with the same integer arithmetic.
 `python/tests/test_hardness.py` checks that the two agree, and `lwe_hardness.py validate` compares

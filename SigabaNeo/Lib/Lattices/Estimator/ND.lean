@@ -37,13 +37,13 @@ def mean (X : ND) : Fx :=
   | .uniform a b => Fx.ofRat (a + b) 2
   | _ => 0
 
-/-- Bounds `(lo, hi)`, or `none` if unbounded. -/
+/-- Bounds `(lo, hi)`, or `none` if unbounded. A discrete Gaussian is unbounded: the estimator's
+`resize` keeps the bounds of the default constructor. -/
 def bounds (X : ND) : Option (ℤ × ℤ) :=
-  match X.kind, X.n with
-  | .gauss _, none => none
-  | .gauss s, some n => let b := Fx.ceil (Fx.mul (Fx.log2 (Fx.ofInt n)) s); some (-b, b)
-  | .cbd e, _ => some (-(e : ℤ), e)
-  | .uniform a b, _ => some (a, b)
+  match X.kind with
+  | .gauss _ => none
+  | .cbd e => some (-(e : ℤ), e)
+  | .uniform a b => some (a, b)
 
 def density (X : ND) : Fx :=
   match X.kind with

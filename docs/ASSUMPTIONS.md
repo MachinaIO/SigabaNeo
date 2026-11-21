@@ -54,14 +54,13 @@ lowered to `c` and no true claim is lost.
 ## Lattice assumptions
 
 `ModuleLWE.decision`, `ModuleLWE.search`, `RingLWE.decision`, `RingLWE.search`, `LWE.decision` and
-`LWE.search` are `Assumption`s ([LATTICES.md](LATTICES.md)). Their `H` is
-`Hardness.securityBits` ([LWE_HARDNESS.md](LWE_HARDNESS.md)), which is computable. A premise can be
-discharged in Lean:
+`LWE.search` are `Assumption`s ([LATTICES.md](LATTICES.md)). Their `H` is the floor of the cheapest
+attack of the lattice estimator, formalized in `SigabaNeo/Lib/Lattices/Estimator/`
+([LWE_ESTIMATOR.md](LWE_ESTIMATOR.md)). It is computable, so the harness compares `#eval LWE.H p`
+with `k`:
 
 ```lean
-def p : LWE.Params := { n := 256, m := 512, q := 1023, s := 3, secret := .bounded 1 }
-theorem premise (h : LWE.decision.Holds) : LWE.decision.HardAt p 40 :=
-  h.hardAt (by decide +kernel)
+def kyber512 : ModuleLWE.Params :=
+  { N := 256, rank := 2, m := 2, q := 3329, error := .cbd 3, secret := .cbd 3 }
+#eval ModuleLWE.H kyber512
 ```
-
-The harness can also compare `#eval LWE.H p` with `k`.
