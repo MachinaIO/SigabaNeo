@@ -358,7 +358,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   β = 406/506/647 for every covolume-1 lattice. The one-sided statement 'every BKZ-β basis has g_{N−β} ≥ c·GSA' remains open (it
   depends on a difference of adjacent prefix errors); the unrestricted short-vector deficit has infinite supremum on every
   lattice, so any moment argument must use the crossing windows (in progress).
-* **Frontier after Parts 1–63 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 64 (experiment, audited).** [bad_bases_experiment](research/wall1_bad_bases_experiment.md): at ranks 24–60, β = 8–20
+  (q-ary and Goldstein–Mayer, exact verification), the smallest terminal GS found over fully BKZ-β reduced bases is ≈ 0.84–0.87×
+  typical (depending on the baseline), always via a single local dip g_k/g_{k−1} → √3/2 with prefix covolumes almost unchanged.
+  So 'every BKZ basis has g_{N−β} ≥ 1·typical' is false, while ≈ 0.8·typical is consistent with the data — the volume method's
+  gap (Parts 50–61) is a weakness of the method, not of the statement (small ranks; large-N steepening not excluded).
+* **Frontier after Parts 1–64 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
