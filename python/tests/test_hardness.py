@@ -1,5 +1,5 @@
-"""The Lean security function (`SigabaNeo.Lattices.Hardness.securityBits`) agrees with its Python
-mirror (`python/lwe_hardness.py`), and `decide +kernel` checks a premise against it."""
+"""The conservative bound (`SigabaNeo.Lattices.Hardness.securityBits`) agrees with its Python
+mirror (`python/lwe_hardness.py`), and `decide +kernel` evaluates it."""
 
 from __future__ import annotations
 
@@ -61,21 +61,22 @@ class Hardness(unittest.TestCase):
     def test_mirror(self):
         lines = ["import SigabaNeo.Lib.Lattices.Hardness", "open SigabaNeo.Lattices"]
         for N, rank, m, q, s, sec in POINTS:
-            lines.append(f"#eval Hardness.securityBits {N} {rank} {m} {q} {lean_q(s)} "
-                         f"{lean_secret(sec)}")
+            lines.append(f"#eval Hardness.securityBits {N} {rank} {m} {q} "
+                         f"{lean_secret(('gauss', s))} {lean_secret(sec)}")
         out = self.run_lean("\n".join(lines) + "\n").split()
-        expected = [L.H(N, rank, m, q, s, py_secret(sec)) for N, rank, m, q, s, sec in POINTS]
+        expected = [L.H(N, rank, m, q, L.Secret("gauss", s), py_secret(sec))
+                    for N, rank, m, q, s, sec in POINTS]
         self.assertEqual([int(x) for x in out], expected)
 
     def test_decide(self):
-        h = L.H(1, 256, 512, 1023, Fraction(3), L.Secret("bounded", 1))
+        h = L.H(1, 256, 512, 1023, L.Secret("gauss", Fraction(3)), L.Secret("bounded", 1))
         self.run_lean("\n".join([
-            "import SigabaNeo.Lib.Lattices.LWE",
-            "open SigabaNeo SigabaNeo.Lattices",
-            "def p : LWE.Params := { n := 256, m := 512, q := 1023, s := 3, secret := .bounded 1 }",
-            f"theorem premise (h : LWE.decision.Holds) : LWE.decision.HardAt p {h} :=",
-            "  h.hardAt (by decide +kernel)",
+            "import SigabaNeo.Lib.Lattices.Hardness",
+            "open SigabaNeo.Lattices",
+            f"example : {h} ≤ Hardness.securityBits 1 256 512 1023 (.gauss 3) (.bounded 1) :=",
+            "  by decide +kernel",
             ""]))
+        self.assertGreater(h, 0)
 
 
 if __name__ == "__main__":

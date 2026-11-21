@@ -198,6 +198,8 @@ class Secret:
 
 
 def secret_log2_sigma(sec: Secret, q: int):
+    if sec.kind == "cbd":
+        return iv_div_nat(iv_sub(log2_nat(sec.arg), log2_nat(2)), 2)
     if sec.kind == "uniform":
         v = Fraction(q * q - 1, 12)
         a = log2_q(v)
@@ -209,7 +211,13 @@ def secret_log2_sigma(sec: Secret, q: int):
     return iv_div_nat(a, 2)
 
 
+def cbd_min_entropy_lo(eta: int) -> int:
+    return max(0, log2_nat(4 ** eta)[0] - log2_nat(math.comb(2 * eta, eta))[1])
+
+
 def secret_min_entropy_lo(sec: Secret, q: int) -> int:
+    if sec.kind == "cbd":
+        return cbd_min_entropy_lo(sec.arg)
     if sec.kind == "uniform":
         return log2_nat(q)[0]
     if sec.kind == "gauss":
@@ -290,6 +298,10 @@ def ell_dist(B: int, dist: Secret, q: int) -> int:
     """Lower bound (fixed point) on log2(1/Pr[|e| <= B]) for e from `dist`."""
     if dist.kind == "gauss":
         return ell(B, dist.arg)
+    if dist.kind == "cbd":
+        if dist.arg <= B:
+            return 0
+        return max(0, cbd_min_entropy_lo(dist.arg) - log2_nat(2 * B + 1)[1])
     width = 2 * dist.arg + 1 if dist.kind == "bounded" else q
     if 2 * B + 1 >= width:
         return 0
@@ -310,7 +322,7 @@ def gb_lb(n, m, err: Secret, sec: Secret | None, q: int, best: int) -> int:
 
     # Secret equations: (degree, penalty) choices; degree None if there are none.
     sec_choices = [(None, 0)]
-    if sec is not None and sec.kind == "bounded":
+    if sec is not None and sec.kind in ("bounded", "cbd"):
         sec_choices = [(2 * sec.arg + 1, 0)]
     elif sec is not None and sec.kind == "gauss":
         sec_choices = []
@@ -350,16 +362,16 @@ def is_pow2(x: int) -> bool:
     return x >= 1 and x & (x - 1) == 0
 
 
-def H(N: int, rank: int, m: int, q: int, se: Fraction, sec: Secret) -> int:
-    """Security bits of Module-LWE over Z_q[X]/(X^N + 1), rank `rank`, `m` module samples."""
-    if not (is_pow2(N) and rank >= 1 and m >= 1 and q >= 2 and se > 0):
-        return 0
-    if sec.kind == "gauss" and sec.arg <= 0:
-        return 0
-    if sec.kind == "bounded" and sec.arg <= 0:
+def valid(d: Secret) -> bool:
+    return d.kind == "uniform" or d.arg > 0
+
+
+def H(N: int, rank: int, m: int, q: int, err: Secret, sec: Secret) -> int:
+    """Conservative security bits of Module-LWE over Z_q[X]/(X^N + 1), rank `rank`, `m` module
+    samples, error law `err`, secret law `sec`."""
+    if not (is_pow2(N) and rank >= 1 and m >= 1 and q >= 2 and valid(err) and valid(sec)):
         return 0
     n, mm = N * rank, N * m
-    err = Secret("gauss", se)
     # Views (samples, secret law, error law): the instance; its normal form (secret distributed
     # like the errors, n samples fewer); with at least n samples, secret and errors swapped
     # (for n samples with A invertible, A^{-1} b = s + A^{-1} e is LWE with secret e, error s).
@@ -392,7 +404,7 @@ def parse_secret(args):
 if __name__ == "__main__":
     if sys.argv[1] == "H":
         N, rank, m, q, a, b = map(int, sys.argv[2:8])
-        print(H(N, rank, m, q, Fraction(a, b), parse_secret(sys.argv[8:])))
+        print(H(N, rank, m, q, Secret("gauss", Fraction(a, b)), parse_secret(sys.argv[8:])))
 
 
 # ---------------------------------------------------------------- validation against the estimator
@@ -440,7 +452,7 @@ def _validate_point(pt):
         Xs, sec = ND.Uniform(-1, 1), Secret("bounded", 1)
     m_est = oo if mfac == 0 else mfac * n
     m_ours = 2 ** 64 if mfac == 0 else mfac * n
-    h = H(1, n, m_ours, q, sw, sec)
+    h = H(1, n, m_ours, q, Secret("gauss", sw), sec)
     params = LWE.Parameters(n=n, q=q, Xs=Xs, Xe=Xe, m=m_est)
     costs = {}
     for tag, fn in [("default", lambda: LWE.estimate(params, quiet=True, jobs=1)),

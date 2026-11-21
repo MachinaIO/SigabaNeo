@@ -10,7 +10,7 @@ degree-`1` polynomial (`Fin 1 → Z_q`), as cslib-frontier stores it.
 
 ## Concrete assumptions (`SigabaNeo.Assumption`)
 
-* `LWE.Params`: `n`, `m`, `q`, the error width `s` (errors from `D_{Z,s}`) and the secret law.
+* `LWE.Params`: `n`, `m`, `q`, the error law and the secret law.
 * `LWE.decision`, `LWE.search`: the Module-LWE assumptions at ring degree `1`
   (`LWE.Params.toModule`), with the same security function `LWE.H` (no ring penalty).
 
@@ -42,8 +42,8 @@ structure Params where
   m : ℕ
   /-- Modulus. -/
   q : ℕ
-  /-- Width of the error law `D_{Z,s}`. -/
-  s : ℚ
+  /-- Law of the error's coefficients. -/
+  error : SecretDist
   /-- Law of the secret's entries. -/
   secret : SecretDist
   /-- The modulus is positive. -/
@@ -51,7 +51,7 @@ structure Params where
 
 /-- LWE as Module-LWE at ring degree `1`. -/
 def Params.toModule (p : Params) : ModuleLWE.Params :=
-  { N := 1, rank := p.n, m := p.m, q := p.q, s := p.s, secret := p.secret, q_pos := p.q_pos }
+  { N := 1, rank := p.n, m := p.m, q := p.q, error := p.error, secret := p.secret, q_pos := p.q_pos }
 
 /-- The security function: Module-LWE's at ring degree `1`. -/
 def H (p : Params) : ℕ := ModuleLWE.H p.toModule

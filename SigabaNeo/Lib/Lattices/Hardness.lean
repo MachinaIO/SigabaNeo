@@ -1,5 +1,6 @@
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.Nat.Sqrt
+import Mathlib.Data.Nat.Choose.Basic
 
 /-!
 # The security function of LWE, Ring-LWE and Module-LWE
@@ -45,6 +46,8 @@ inductive SecretDist where
   | gauss (s : ℚ)
   /-- Uniform over `{-B, …, B}` reduced mod `q` (`B = 1`: ternary). -/
   | bounded (B : ℕ)
+  /-- Centered binomial: `Σ_{i<η} (a_i − b_i)` for fair bits `a_i, b_i`, reduced mod `q`. -/
+  | cbd (η : ℕ)
   deriving DecidableEq, Repr
 
 /-- The secret law is non-degenerate: a positive width, or a positive bound. -/
@@ -52,6 +55,7 @@ def SecretDist.valid : SecretDist → Bool
   | .uniform => true
   | .gauss s => decide (0 < s)
   | .bounded B => decide (0 < B)
+  | .cbd η => decide (0 < η)
 
 namespace Hardness
 
@@ -188,12 +192,14 @@ def secretLog2Sigma (q : ℕ) : SecretDist → Iv
   | .uniform => ivDivNat (log2Q (((q * q - 1 : ℕ) : ℚ) / 12)) 2
   | .gauss s => gaussLog2Sigma s
   | .bounded B => ivDivNat (ivSub (log2Nat (B * (B + 1))) (log2Nat 3)) 2
+  | .cbd η => ivDivNat (ivSub (log2Nat η) (log2Nat 2)) 2
 
 /-- A lower bound (fixed point) on the min-entropy of one coefficient of the secret. -/
 def secretMinEntropyLo (q : ℕ) : SecretDist → ℤ
   | .uniform => (log2Nat q).1
   | .gauss s => max 0 (log2Q s).1
   | .bounded B => (log2Nat (2 * B + 1)).1
+  | .cbd η => max 0 ((log2Nat (4 ^ η)).1 - (log2Nat ((2 * η).choose η)).2)
 
 /-- An upper bound (fixed point) on the dimensions for free `β log(4/3)/log(β/(2πe))`, at
 most `β`. -/
@@ -270,6 +276,7 @@ def gaussChoices (n : ℕ) (s : ℚ) : (fuel Bs : ℕ) → Option (List (Option 
 
 def secretChoices (n : ℕ) : Option SecretDist → Option (List (Option ℕ × ℤ))
   | some (.bounded B) => some [(some (2 * B + 1), 0)]
+  | some (.cbd η) => some [(some (2 * η + 1), 0)]
   | some (.gauss s) => gaussChoices n s (fuelFor n) 0
   | _ => some [(none, 0)]
 
@@ -279,6 +286,9 @@ def ellDist (q B : ℕ) : SecretDist → ℤ
   | .bounded Be =>
     if 2 * Be + 1 ≤ 2 * B + 1 then 0
     else max 0 ((log2Nat (2 * Be + 1)).1 - (log2Nat (2 * B + 1)).2)
+  | .cbd η =>
+    if η ≤ B then 0
+    else max 0 ((log2Nat (4 ^ η)).1 - (log2Nat ((2 * η).choose η)).2 - (log2Nat (2 * B + 1)).2)
   | .uniform =>
     if q ≤ 2 * B + 1 then 0 else max 0 ((log2Nat q).1 - (log2Nat (2 * B + 1)).2)
 
@@ -335,11 +345,11 @@ def viewLb (n q : ℕ) (best : ℤ) (view : ℕ × SecretDist × SecretDist) : �
 
 /-- **The security function.** Bits claimed for Module-LWE over `Z_q[X]/(X^N + 1)` of rank
 `rank` with `m` samples, errors from `D_{Z,s}` and secret law `secret`. -/
-def securityBits (N rank m q : ℕ) (s : ℚ) (secret : SecretDist) : ℕ :=
-  if isPow2 N && 1 ≤ rank && 1 ≤ m && 2 ≤ q && decide (0 < s) && secret.valid then
+def securityBits (N rank m q : ℕ) (error secret : SecretDist) : ℕ :=
+  if isPow2 N && 1 ≤ rank && 1 ≤ m && 2 ≤ q && error.valid && secret.valid then
     let n := N * rank
     let mm := N * m
-    let err := SecretDist.gauss s
+    let err := error
     -- the instance; its normal form (secret distributed like the errors, `n` samples fewer); with
     -- at least `n` samples, secret and errors swapped (`A⁻¹ b = s + A⁻¹ e`)
     let views : List (ℕ × SecretDist × SecretDist) :=

@@ -8,8 +8,8 @@ is `(a_i, a_i·s + e_i)_{i<m}` for uniform `a_i ∈ R_q`.
 
 ## Concrete assumptions (`SigabaNeo.Assumption`)
 
-* `RingLWE.Params`: `N` (a power of two, or the claim is `0`), `m`, `q`, the error width `s` and
-  the secret law.
+* `RingLWE.Params`: `N` (a power of two, or the claim is `0`), `m`, `q`, the error law and the
+  secret law.
 * `RingLWE.decision`, `RingLWE.search`: the Module-LWE assumptions at rank `1`
   (`RingLWE.Params.toModule`), with the same security function `RingLWE.H`.
 
@@ -32,8 +32,8 @@ structure Params where
   m : ℕ
   /-- Modulus. -/
   q : ℕ
-  /-- Width of the error law `D_{Z,s}`. -/
-  s : ℚ
+  /-- Law of the error's coefficients. -/
+  error : SecretDist
   /-- Law of the secret's coefficients. -/
   secret : SecretDist
   /-- The modulus is positive. -/
@@ -41,7 +41,7 @@ structure Params where
 
 /-- Ring-LWE as Module-LWE of rank `1`. -/
 def Params.toModule (p : Params) : ModuleLWE.Params :=
-  { N := p.N, rank := 1, m := p.m, q := p.q, s := p.s, secret := p.secret, q_pos := p.q_pos }
+  { N := p.N, rank := 1, m := p.m, q := p.q, error := p.error, secret := p.secret, q_pos := p.q_pos }
 
 /-- The security function: Module-LWE's at rank `1`. -/
 def H (p : Params) : ℕ := ModuleLWE.H p.toModule

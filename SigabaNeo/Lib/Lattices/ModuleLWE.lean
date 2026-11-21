@@ -1,5 +1,6 @@
 import SigabaNeo.Lib.Lattices.Gaussian
 import SigabaNeo.Lib.Lattices.Hardness
+import SigabaNeo.Lib.Lattices.Estimator.Model
 import SigabaNeo.Lib.Assumption
 import CslibFrontier.Crypto.Computational.LWE.Module
 
@@ -13,13 +14,16 @@ pair. Pairs are encoded with cslib-frontier's `ModuleLWE.encodeSample`.
 ## Concrete assumptions (`SigabaNeo.Assumption`)
 
 * `ModuleLWE.Params`: the ring degree `N`, the rank, the number of samples `m`, the modulus `q`,
-  the error width `s` (errors from `D_{Z,s}`, `ρ_s(x) = exp(-π x²/s²)`, reduced mod `q`) and the
-  secret law (`SecretDist`: uniform, `D_{Z,s'}`, or uniform on `{-B, …, B}`). The parameters are
-  fixed, so an attacker may depend on them.
+  and the laws of the error's and the secret's coefficients (`SecretDist`: uniform, `D_{Z,s}` with
+  `ρ_s(x) = exp(-π x²/s²)`, uniform on `{-B, …, B}`, or centered binomial), reduced mod `q`. The
+  parameters are fixed, so an attacker may depend on them.
 * `ModuleLWE.decision`: distinguish the real pair from a uniform pair.
 * `ModuleLWE.search`: find the secret from the real pair.
-* Both claim `ModuleLWE.H p = Hardness.securityBits …` bits (`SigabaNeo.Lib.Lattices.Hardness`,
-  `docs/LWE_HARDNESS.md`): a conservative lower bound on every known classical attack.
+* Both claim `ModuleLWE.H p` bits: `Estimator.estimatorBits` of the LWE view (dimension `N·rank`,
+  `N·m` samples), the floor of the cheapest attack of the lattice estimator in its default cost
+  model (`SigabaNeo.Lib.Lattices.Estimator`, `docs/LWE_HARDNESS.md`). `ModuleLWE.H_le` and
+  `ModuleLWE.H_tight` state that no modelled attack costs less than `2^{H p}` and that one costs
+  less than `2^{H p + 1}`. `N` must be a power of two (otherwise the claim is `0`).
 
 `HardAt ModuleLWE.decision p k` says that every attacker (an explicit multi-tape Turing machine)
 has `(steps + description length) / advantage² ≥ 2^k` at `p`.
@@ -58,8 +62,8 @@ structure Params where
   m : ℕ
   /-- Modulus. -/
   q : ℕ
-  /-- Width of the error law `D_{Z,s}`. -/
-  s : ℚ
+  /-- Law of the error's coefficients. -/
+  error : SecretDist
   /-- Law of the secret's coefficients. -/
   secret : SecretDist
   /-- The modulus is positive. -/
@@ -73,14 +77,17 @@ noncomputable def coeffLaw (q : ℕ) [NeZero q] : SecretDist → PMF (ZMod q)
   | .gauss s => if h : 0 < s then (gaussZ s (by exact_mod_cast h)).map fun z => (z : ZMod q)
       else PMF.pure 0
   | .bounded B => (PMF.uniformOfFintype (Fin (2 * B + 1))).map fun i => ((i : ℤ) - B : ZMod q)
+  | .cbd η => (PMF.uniformOfFintype ((Fin η → Bool) × (Fin η → Bool))).map fun ab =>
+      (((Finset.univ.filter fun i => ab.1 i).card : ℤ) -
+        ((Finset.univ.filter fun i => ab.2 i).card : ℤ) : ZMod q)
 
 /-- The secret law: `rank` ring elements with independent coefficients. -/
 noncomputable def secretLaw (p : Params) : PMF (Fin p.rank → Fin p.N → ZMod p.q) :=
   sampleMat (coeffLaw p.q p.secret) p.rank p.N
 
-/-- The error law: `m` ring elements with coefficients from `D_{Z,s}`. -/
+/-- The error law: `m` ring elements with independent coefficients. -/
 noncomputable def errorLaw (p : Params) : PMF (Fin p.m → Fin p.N → ZMod p.q) :=
-  if h : 0 < p.s then gaussVec p.m p.N p.q p.s (by exact_mod_cast h) else PMF.pure 0
+  sampleMat (coeffLaw p.q p.error) p.m p.N
 
 /-- A Module-LWE pair `(A, b)`. -/
 abbrev Pair (p : Params) : Type :=
@@ -107,8 +114,42 @@ noncomputable def searchLaw (p : Params) : PMF (List Bool × Set (List Bool)) :=
   return (Cslib.Crypto.ModuleLWE.encodeSample (A, Cslib.Crypto.ModuleLWE.sample A secret error),
     {encodeSecret secret})
 
-/-- The security function (`Hardness.securityBits`). -/
-def H (p : Params) : ℕ := Hardness.securityBits p.N p.rank p.m p.q p.s p.secret
+/-- The estimator's distribution for a coefficient law (`D_{Z,s}` has standard deviation
+`s/√(2π)` in the estimator's convention). -/
+def toND (q : ℕ) : SecretDist → Estimator.ND
+  | .uniform => Estimator.ND.uniformMod q
+  | .gauss s => Estimator.ND.gauss (Estimator.Fx.div (Estimator.Fx.ofRat s.num s.den)
+      Estimator.Fx.SQRT2PI)
+  | .bounded B => Estimator.ND.uniform (-(B : ℤ)) B
+  | .cbd η => Estimator.ND.cbd η
+
+/-- The LWE view: dimension `N·rank`, `N·m` samples. -/
+def toEstimator (p : Params) : Estimator.LWEParams :=
+  Estimator.LWEParams.mk' (p.N * p.rank) p.q (toND p.q p.secret) (toND p.q p.error)
+    (some (p.N * p.m))
+
+/-- The parameters on which a claim is made: a power-of-two ring degree, at least one sample, a
+non-trivial modulus and non-degenerate laws. -/
+def Params.inDomain (p : Params) : Bool :=
+  Hardness.isPow2 p.N && 1 ≤ p.rank && 1 ≤ p.m && 2 ≤ p.q && p.error.valid && p.secret.valid
+
+/-- **The security function**: the estimator's bits on the LWE view, on the domain. -/
+def H (p : Params) : ℕ := if p.inDomain then Estimator.estimatorBits (toEstimator p) else 0
+
+/-- No attack of the estimator, as formalized, costs less than `2^{H p}`. -/
+theorem H_le (p : Params) {a : Estimator.AttackModel} (ha : a ∈ Estimator.attacks) {x : Estimator.Fx}
+    (hx : a.cost (toEstimator p) = some x) : (H p : ℤ) ≤ max 0 (Estimator.Fx.floor x) := by
+  unfold H
+  split
+  · exact Estimator.estimatorBits_le ha hx
+  · simp
+
+/-- On the domain, when some attack is finite, one costs less than `2^{H p + 1}`. -/
+theorem H_tight (p : Params) (hp : p.inDomain) (h : (Estimator.minCost Estimator.attacks
+    (toEstimator p)).isSome) : ∃ a ∈ Estimator.attacks, ∃ x, a.cost (toEstimator p) = some x ∧
+      x < ((H p : ℤ) + 1) * Estimator.Fx.ONE := by
+  simp only [H, hp, if_true]
+  exact Estimator.estimatorBits_tight h
 
 /-- **Decision Module-LWE**: distinguish real pairs from uniform pairs, with `H p` bits. -/
 noncomputable def decision : Assumption where
