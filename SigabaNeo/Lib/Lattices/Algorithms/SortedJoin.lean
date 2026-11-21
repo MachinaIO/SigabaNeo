@@ -52,7 +52,7 @@ def sort (le : α → α → Bool) : Nat → List α → List α × Nat
     let r := merge le (xs.length + 2) a.1 b.1
     (r.1, a.2 + b.2 + r.2)
 
-private theorem sort_spec (le : α → α → Bool) (f : Nat) (xs : List α)
+theorem sort_spec (le : α → α → Bool) (f : Nat) (xs : List α)
     (h : xs.length ≤ 2 ^ f) :
     (sort le f xs).1 = xs.mergeSort le ∧ (sort le f xs).2 ≤ xs.length * f := by
   induction f generalizing xs with
@@ -155,7 +155,7 @@ def probe (key : α → κ) (a : Array α) (k : κ) :=
   let r := scanArray (fun x ↦ decide (key x = k)) a b.1
   (r.1, b.2 + r.2)
 
-private theorem probe_spec (key : α → κ) (xs : List α) (k : κ)
+theorem probe_spec (key : α → κ) (xs : List α) (k : κ)
     (hs : xs.Pairwise (fun a b ↦ key a ≤ key b)) :
     (probe key xs.toArray k).1 = xs.filter (fun x ↦ decide (key x = k)) ∧
     (probe key xs.toArray k).2 ≤ Nat.clog 2 (xs.length + 1) + 1 +
