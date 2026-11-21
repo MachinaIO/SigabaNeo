@@ -255,6 +255,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Decisive negative: at D = 647, β = 646 the k = 1 filtered mean exceeds 2^163 (consistent full-rank witnesses), so first
   moments over profile-admissible prefixes cannot lower the width — any improvement needs information about the reducer's
   selection, not counting. D = 1024 at widths 512/647: rank-stratified upper bounds too large to decide.
+* **Part 44 (audited, minor caveats).** [zshape](research/wall1_zshape.md): for exact BKZ on the full 1024-dim embedding
+  (det q^511) with the canonical basis and the repo's strict-insertion scan (`needsInsertion`), a head q·e_i survives a scan
+  iff its projected block has no strictly shorter vector. Block Hermite bounds force the first row of any fully BKZ-β-reduced
+  basis below 2138 / 2131 < q at β = 646 / 647, so no q-prefix persists (k = 0) for every A; at β = 406 / 512 at most 105 / 22
+  q-heads can persist, leaving ≈ 513 / 490 adaptive directions before the terminal block. While the coordinate prefix
+  survives, the quotient is exactly the Part 39 punctured lattice — the Z-shape route re-derives Part 39 and gives no β < 647.
 * **Frontier after Parts 1–43 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
