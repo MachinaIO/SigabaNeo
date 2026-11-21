@@ -19,6 +19,8 @@ finite commutative ring `R`, for instance `ℤ_q` or `ℤ_q[X]/(X^N + 1)`:
   `x ∈ {0,1}^m` is within `√(|R|^r · 2^{−m}) / 2` of `(A, u)` with uniform `u ∈ R^r`.
 * `dist_binaryHash_pi`: the same for `n` independent inputs hashed by one public `A`: within
   `n · √(|R|^r · 2^{−m}) / 2`.
+* `closeTo_binaryHash_bind`: the same inside any experiment that uses `A`, the hashes and further
+  independent coins.
 * `closeTo_of_dist`: statistical distance (cslib's `dist`) gives `CloseTo`.
 
 The general statements, for any two-universal family, with min-entropy sources and with side
@@ -172,5 +174,24 @@ theorem dist_binaryHash_pi {R : Type} [CommRing R] [Fintype R] [DecidableEq R]
   funext A
   rw [PMF.map_comp]
   rfl
+
+/-- **The leftover hash lemma inside an experiment**: an experiment that draws `A`, the hashes
+`A · xᵢ` of independent uniform binary `xᵢ` and then continues with `F` (which may use `A` and
+further coins) is within `|I| · √(|R|^r · 2^{−m}) / 2` of the same experiment with uniform values
+in place of the hashes. -/
+theorem closeTo_binaryHash_bind {R : Type} [CommRing R] [Fintype R] [DecidableEq R]
+    {rr mm I V : Type} [Fintype rr] [Fintype mm] [Fintype I] [DecidableEq rr] [DecidableEq mm]
+    [DecidableEq I] [Nonempty mm] (F : Matrix rr mm R → (I → rr → R) → PMF V) :
+    CloseTo ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A =>
+        (Cslib.Probability.PMF.pi fun _ : I =>
+          (PMF.uniformOfFintype (mm → Bool)).map (binaryHash A)).bind (F A))
+      ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A =>
+        (Cslib.Probability.PMF.pi fun _ : I => PMF.uniformOfFintype (rr → R)).bind (F A))
+      (ENNReal.ofReal
+        (Fintype.card I * (Real.sqrt (Fintype.card (rr → R) * (2 ^ Fintype.card mm : ℝ)⁻¹) / 2))) := by
+  have h := (closeTo_of_dist (dist_binaryHash_pi (R := R) (rr := rr) (mm := mm) (I := I))).bind_left
+    (fun v => F v.1 v.2)
+  simp only [PMF.bind_bind, PMF.bind_map] at h
+  convert h using 2 <;> funext A <;> congr 1
 
 end SigabaNeo.Lattices
