@@ -1,6 +1,7 @@
 module
 
 public import SigabaNeo.Lib.Lattices.Wall2.Incidence
+public import SigabaNeo.Lib.Lattices.Wall2.Adaptive
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Tactic
 
