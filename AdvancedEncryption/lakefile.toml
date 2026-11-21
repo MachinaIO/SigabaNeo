@@ -11,5 +11,9 @@ packagesDir = "../.lake/packages"
 name = "SigabaNeo"
 path = ".."
 
+# Sources sit directly in this directory: each primitive's definition is one module (`PE.lean`),
+# and its implementations go below it (`PE/…`, modules `PE.…`). Their Lean namespace is still
+# `AdvancedEncryption`.
 [[lean_lib]]
 name = "AdvancedEncryption"
+globs = ["AdvancedEncryption", "PE.*"]

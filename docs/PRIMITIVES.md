@@ -84,4 +84,4 @@ the same as for attackers on assumptions, whose `descLen` counts the channels
 
 | Project | Primitive |
 | --- | --- |
-| `AdvancedEncryption/` | predicate encryption, weakly attribute-hiding (`AdvancedEncryption.PE`) |
+| `AdvancedEncryption/` | predicate encryption, weakly attribute-hiding (`AdvancedEncryption.PE` in `AdvancedEncryption/PE.lean`) |
