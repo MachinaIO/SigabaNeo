@@ -21,14 +21,15 @@ axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 | `BKZ.hermite_ball_linear`, `BKZ.gamma_half_nat_bound` | `γ_k ≤ (k+4)/π` for every `k ≥ 1` (from `Γ(k/2+1) ≤ ((k+4)/4)^{k/2}`) |
 | `BKZ.reduced_first_norm_bound_covolume_ball` | for a BKZ-β-reduced basis, `‖b_0‖ ≤ ((β+4)/π)^{(n−1)/(2(β−1)) + 1/2} covol(L)^{1/n}` |
 | `BKZ.reduced_approx_factor` | Schnorr's approximation factor: for a BKZ-β-reduced basis and every nonzero `v ∈ L`, `‖b_0‖ ≤ ((β+4)/π)^{(n−1)/(β−1)} ‖v‖` |
+| `BKZ.hermite_blichfeldt` (`Hermite2.lean`) | Blichfeldt: `γ_k ≤ (2/π) Γ(k/2+2)^{2/k}`, with corollaries `reduced_first_norm_bound_covolume_blichfeldt` and `reduced_approx_factor_blichfeldt` (audit pending) |
 | `BKZ.hermite_ball` | Minkowski with the ball volume: some nonzero lattice vector has `‖v‖ ≤ 2 (covol / V_k)^{1/k}`, `V_k = π^{k/2}/Γ(k/2+1)` |
 
 **Open in stage 1:**
 
 * The HPS theorem for polynomially many tours (`2 Γ_β^{(n−1)/(2(β−1)) + 3/2}`) and its tour count
   are not proved. Only the fully reduced case is.
-* `γ_β ≤ 1 + β/4` and Blichfeldt's bound are not proved in Lean. `γ_k ≤ k` and
-  `γ_k ≤ (k+4)/π` are.
+* `γ_k ≤ k`, `γ_k ≤ (k+4)/π` and Blichfeldt's bound are proved in Lean.
+  Kabatiansky–Levenshtein is open.
 
 **What it gives the primal attack.** The worst-case approximation-factor bound for BKZ-β,
 `‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1` (proved in Lean with `γ_β ≤ (β+4)/π`: `reduced_approx_factor`), recovers the target when that factor times `‖(e, s, 1)‖` is below
@@ -36,11 +37,20 @@ axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 smallest `β` (optimised over the number of samples) and its cost in the estimator's `RC.MATZOV`
 model. The GSA column is the estimator's primal uSVP.
 
-| Kyber | GSA (estimator) | `γ_β ≤ β` (proved) | `γ_β ≤ (β+4)/π` (proved) | `γ_β ≤ 1 + β/4` | Blichfeldt | `γ_β` at its heuristic value `β/(2πe)` |
-| --- | --- | --- | --- | --- | --- | --- |
-| 512 | β = 406, 143.8 bits | β = 3440, 988.7 bits | β = 2883, 831.1 bits | β = 2763, 797.2 bits | β = 2384, 690.1 bits | β = 2016, 586.3 bits |
-| 768 | β = 624, 204.9 bits | β = 4971, 1422.7 bits | β = 4205, 1205.4 bits | β = 4041, 1159.0 bits | β = 3521, 1011.6 bits | β = 3024, 871.0 bits |
-| 1024 | β = 874, 275.1 bits | β = 6876, 1963.8 bits | β = 5862, 1675.7 bits | β = 5645, 1614.0 bits | β = 4957, 1418.7 bits | β = 4304, 1233.5 bits |
+**Correction (block size `β ≤ d`).** The earlier version of this table reported `β` up to 6876. That
+is invalid: Kyber gives at most `m = n` samples, so the embedding dimension is
+`d ≤ n + m + 1` (1025 for Kyber512), and the theorems need `β ≤ d`. With `β ≤ d` enforced
+(`python/proof_gap.py`), **no admissible block size exists for Kyber512/768/1024 under any of the
+constants**: the proved `β`, `(β+4)/π`, the exact Minkowski ball, Blichfeldt, and even the
+heuristic `β/(2πe)`. The worst-case approximation-factor route therefore gives no cost at all for
+Kyber. At `β = d`, BKZ is an exact SVP call, and Schnorr's bound is loose there. Solving SVP
+directly in dimension `d` is exactly the full-dimension sieve route below.
+
+| Kyber | GSA (estimator) | worst-case BKZ route, any proved or heuristic `γ_β`, `β ≤ d` |
+| --- | --- | --- |
+| 512 | β = 406, 143.8 bits | no admissible `β` |
+| 768 | β = 624, 204.9 bits | no admissible `β` |
+| 1024 | β = 874, 275.1 bits | no admissible `β` |
 
 The Hermite-factor bound that is proved (`first_norm_bound`) does not by itself recover the target
 at any `β < 6000` for these instances. It does not use the shortness of the target.
@@ -84,13 +94,13 @@ conditions:
 
 Then the planted vector is the unique shortest vector and the sieve finds it (`python/full_dim_sieve.py`):
 
-| Kyber (plain-LWE shape, `q = 3329`) | `d` | sieve `2^{0.2925 d}` (with P′) | T1 `2^{0.415 d}` | estimator | BKZ route, proved `γ ≤ (β+4)/π` |
+| Kyber (plain-LWE shape, `q = 3329`) | `d` | sieve `2^{0.2925 d}` (with P′) | T1 `2^{0.415 d}` | estimator | worst-case BKZ route |
 | --- | --- | --- | --- | --- | --- |
-| 512 | 688 | **201** | 286 | 143.8 | 831.1 |
-| 768 | 1004 | **294** | 417 | 204.9 | 1205.4 |
-| 1024 | 1336 | **391** | 554 | 275.1 | 1675.7 |
+| 512 | 688 | **201** | 286 | 143.8 | no admissible β |
+| 768 | 1004 | **294** | 417 | 204.9 | no admissible β |
+| 1024 | 1336 | **391** | 554 | 275.1 | no admissible β |
 
-For Kyber512 the gap to the estimator drops from about 690 bits (BKZ route) to about 57 bits. What
+For Kyber512 the gap to the estimator is about 57 bits. The worst-case BKZ route gives no cost at all once `β ≤ d` is enforced. What
 this route still needs:
 1. **Static statistics S1, S2, S3′ for the planted embedding lattice at polynomial `q = 3329`**,
    with ratio `m/d ≈ 0.25`. T4b covers quasi-polynomial `q` and no planted vector: open, in

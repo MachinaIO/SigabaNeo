@@ -12,8 +12,9 @@ from lwemodel import fx, reduction
 GAMMA = {
     "b (proved in Lean: hermite_cube)": lambda b: math.log(b),
     "(b+4)/pi (proved in Lean: hermite_ball_linear)": lambda b: math.log((b + 4) / math.pi),
+    "exact Minkowski ball (hermite_ball)": lambda b: math.log(4 / math.pi) + 2 / b * math.lgamma(1 + b / 2),
     "1+b/4 (Minkowski)": lambda b: math.log(1 + b / 4),
-    "Blichfeldt": lambda b: math.log(2 / math.pi) + 2 / b * math.lgamma(2 + b / 2),
+    "Blichfeldt (hermite_blichfeldt)": lambda b: math.log(2 / math.pi) + 2 / b * math.lgamma(2 + b / 2),
     "heuristic b/(2 pi e)": lambda b: math.log(b / (2 * math.pi * math.e)),
 }
 KYBER = [("Kyber512", 512, 3), ("Kyber768", 768, 2), ("Kyber1024", 1024, 2)]
@@ -22,13 +23,16 @@ Q = 3329
 
 def smallest_beta(n, sigma, log_gamma, max_beta=8000):
     lq = math.log(Q)
-    for beta in range(40, max_beta):
+    for beta in range(40, min(max_beta, 2 * n + 2)):
+        gamma = log_gamma(beta)
         for mp in range(1, n + 1, 4):
             d = mp + n + 1
+            if beta > d:
+                continue
             lvol = (mp * lq + math.log(sigma)) / d
             target = math.log(sigma * math.sqrt(d))
             gh = 0.5 * math.log(d / (2 * math.pi * math.e)) + lvol
-            if (d - 1) / (beta - 1) * log_gamma(beta) + target < gh:
+            if (d - 1) / (beta - 1) * gamma + target < gh:
                 return beta, d
     return None
 
@@ -38,5 +42,9 @@ if __name__ == "__main__":
         sigma = math.sqrt(eta / 2)
         print(name)
         for label, lg in GAMMA.items():
-            beta, d = smallest_beta(n, sigma, lg)
+            result = smallest_beta(n, sigma, lg)
+            if result is None:
+                print(f"  {label}: no admissible block size on the sample grid")
+                continue
+            beta, d = result
             print(f"  {label}: beta={beta} cost={reduction.matzov_bits(beta, d) / fx.ONE:.1f}")
