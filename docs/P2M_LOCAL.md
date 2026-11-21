@@ -20,7 +20,8 @@ with a configuration such as
  "apiKeys": {"<key>": "operator", "<key>": "agent1", "...": "..."}}
 ```
 
-`python/server-data/` is git-ignored. API keys are secrets: keep the configuration outside the
+Run it detached (no time limit), e.g. `setsid nohup python3 -u p2m_server.py serve --config <config>.json > server.log 2>&1 &`;
+a tool-managed background job may be killed at its time limit. `python/server-data/` is git-ignored. API keys are secrets: keep the configuration outside the
 repository and give each agent its own key. Port 8090 may already be used by another local
 platform; this instance uses 8097.
 
@@ -47,6 +48,10 @@ files, and a result counts only after it builds in the core and passes an indepe
   theorems of [ATTACK_PROOFS.md](ATTACK_PROOFS.md) (exhaustive search, MITM, Arora–Ge, XL counts,
   BKW, coded BKW, dual tests, LLL primal), LLL/slide/BKZ reduction results, planted uniqueness, the
   conditional sieve T1, the pair and triple Gram laws, Haar right invariance, and `H_le`/`H_tight`.
+* **Added Nov 22, 2026** (all ACCEPTED): Rogers formulas of order 2, 3 and all orders (`rogers_formula_all`, any finite-mass
+  domain), the [Laa26] archive bridge (`archive_rogers`, `archive_gram`), the sample-deletion results (dimension 662 / 647,
+  exact-SVP recovery), the ratio-lemma BKZ composition (`reduced_finds_plant`, `competitor_design_bound`), and the wall-1
+  contained-prefix capture lemmas (BKZ and slide).
 * **Open Lean statements**: the general spherical Gram formula and the finite Haar mass of the
   arithmetic fundamental domain (Siegel), tagged `open`.
 * **Research results on walls 1 and 2** are paper results, not Lean statements; they are indexed in
