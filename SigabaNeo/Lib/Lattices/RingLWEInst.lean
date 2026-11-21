@@ -11,7 +11,9 @@ with `sampleMat`. Here the same laws as laws on ring elements:
 * `sampleMat_eq_pi`: `sampleMat` is the independent product, reindexed;
 * `pi_comp_equiv`, `pi_curry`: independent products are invariant under reindexing and currying;
 * `ringReal`: real pairs `(aᵢ, aᵢ σ + eᵢ)` over the ring; `ringLWE_realLaw_eq`,
-  `ringLWE_idealLaw_eq`: the registry's laws are the encoded ring-level laws (`encodeRing`).
+  `ringLWE_idealLaw_eq`: the registry's laws are the encoded ring-level laws (`encodeRing`);
+* `wordDist`, `realLaw_bind_wordDist`, `idealLaw_bind_wordDist`: a distinguisher on ring-level pairs
+  (indexed by any finite type) is one on the registry's words, with the same laws.
 -/
 
 namespace SigabaNeo.Lattices
@@ -193,5 +195,60 @@ theorem ringLWE_idealLaw_eq (p : RingLWE.Params) :
   have : NeZero p.q := ⟨p.q_pos.ne'⟩
   unfold ModuleLWE.idealLaw
   exact (congrArg (PMF.map _) (uniform_pair_eq (N := p.N) p.m)).trans (PMF.map_comp _ _ _)
+
+theorem encodeRing_injective {m : ℕ} :
+    Function.Injective (encodeRing (N := N) (q := q) (m := m)) := by
+  intro v w h
+  have h2 := Cslib.Crypto.ModuleLWE.encodeSample_injective h
+  simp only [coeffPair, Prod.mk.injEq] at h2
+  obtain ⟨h1, h3⟩ := h2
+  refine Prod.ext (funext fun i => ?_) (funext fun i => ?_)
+  · exact Negacyclic.ext (congrFun (congrFun h1 i) 0)
+  · exact Negacyclic.ext (congrFun h3 i)
+
+open Classical in
+/-- A distinguisher on ring-level pairs indexed by `ι`, as one on the registry's words: decode the
+pair and reindex it (words that encode no pair are answered with `false`). -/
+noncomputable def wordDist {ι : Type} {m : ℕ} (e : ι ≃ Fin m)
+    (D : (ι → Negacyclic (ZMod q) N) × (ι → Negacyclic (ZMod q) N) → PMF Bool) (w : List Bool) :
+    PMF Bool :=
+  if h : ∃ v : (Fin m → Negacyclic (ZMod q) N) × (Fin m → Negacyclic (ZMod q) N),
+      encodeRing v = w then D (h.choose.1 ∘ e, h.choose.2 ∘ e) else PMF.pure false
+
+theorem wordDist_encode {ι : Type} {m : ℕ} (e : ι ≃ Fin m)
+    (D : (ι → Negacyclic (ZMod q) N) × (ι → Negacyclic (ZMod q) N) → PMF Bool)
+    (v : (Fin m → Negacyclic (ZMod q) N) × (Fin m → Negacyclic (ZMod q) N)) :
+    wordDist e D (encodeRing v) = D (v.1 ∘ e, v.2 ∘ e) := by
+  have h : ∃ v' : (Fin m → Negacyclic (ZMod q) N) × (Fin m → Negacyclic (ZMod q) N),
+      encodeRing v' = encodeRing v := ⟨v, rfl⟩
+  unfold wordDist
+  rw [dif_pos h, encodeRing_injective h.choose_spec]
+
+/-- **Distinguishers on ring-level real pairs are distinguishers on the registry's real law.** -/
+theorem realLaw_bind_wordDist (p : RingLWE.Params) {ι : Type} [Fintype ι] [DecidableEq ι]
+    (e : ι ≃ Fin p.m)
+    (D : (ι → Negacyclic (ZMod p.q) p.N) × (ι → Negacyclic (ZMod p.q) p.N) → PMF Bool) :
+    haveI : NeZero p.q := ⟨p.q_pos.ne'⟩
+    (ModuleLWE.realLaw p.toModule).bind (wordDist e D) =
+      (ringRealOn ι (ModuleLWE.coeffLaw p.q p.secret) (ModuleLWE.coeffLaw p.q p.error)).bind D := by
+  have : NeZero p.q := ⟨p.q_pos.ne'⟩
+  rw [ringLWE_realLaw_eq, PMF.bind_map, ← ringReal_reindex p.m e, PMF.bind_map]
+  congr 1
+  funext v
+  exact wordDist_encode e D v
+
+/-- **The same for uniform pairs.** -/
+theorem idealLaw_bind_wordDist (p : RingLWE.Params) {ι : Type} [Fintype ι] [DecidableEq ι]
+    (e : ι ≃ Fin p.m)
+    (D : (ι → Negacyclic (ZMod p.q) p.N) × (ι → Negacyclic (ZMod p.q) p.N) → PMF Bool) :
+    haveI : NeZero p.q := ⟨p.q_pos.ne'⟩
+    (ModuleLWE.idealLaw p.toModule).bind (wordDist e D) =
+      (PMF.uniformOfFintype ((ι → Negacyclic (ZMod p.q) p.N) ×
+        (ι → Negacyclic (ZMod p.q) p.N))).bind D := by
+  have : NeZero p.q := ⟨p.q_pos.ne'⟩
+  rw [ringLWE_idealLaw_eq, PMF.bind_map, ← uniform_reindex p.m e, PMF.bind_map]
+  congr 1
+  funext v
+  exact wordDist_encode e D v
 
 end SigabaNeo.Lattices
