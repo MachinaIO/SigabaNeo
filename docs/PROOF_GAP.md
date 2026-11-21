@@ -163,6 +163,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   does not project to zero and no shorter vector lies on its projected line; off-line: no competing line is as short). Also
   registered: `Wall1FixedCBD2Projection` (open; fixed-projector concentration), `wall1_terminal_primitive_iff` (proved),
   `wall1_prefix_ratio` (open).
+* **Parts 20–21 (audited).** [wall1_reachable.md](research/wall1_reachable.md): the Part 9 divisibility failure depends only on the
+  prefix plane modulo any prime p ≠ q, so union bounds over reachable prefixes are vacuous whenever one reachable plane contains
+  the plant mod p; the selected failure probability equals the fraction of inputs whose output plane contains the plant mod p.
+  [wall1_small_exact.md](research/wall1_small_exact.md): in dimension 3 with plant (1,1,1), every fully BKZ-2 reduced basis has
+  terminal success probability exactly 5/q (proved ≤ 11/q); every ambient-unique instance puts ±p in the FIRST row. **Consequence:**
+  'terminal recovery' undercounts success (early recovery), so the Lean core statements registered with terminal-only success can
+  be false; they are being re-registered with success = '±u is an output basis vector or the terminal criterion holds'.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
