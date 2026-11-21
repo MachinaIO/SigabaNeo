@@ -1,6 +1,7 @@
 # Pouly–Shen cost evidence for Kyber
 
-> Status: incomplete. No sampler-inclusive bit-operation count was obtained; the revised (2026-05-28) paper could not be retrieved, so only the authors' historical 2024 totals are compared. Not audited as a result.
+> Status: updated with the fixed ePrint version (PDF supplied by the user). Section "Fixed Table 1, decomposed" below
+> reproduces the corrected totals 238/347/478 component by component and adds the omitted polynomial factors.
 
 The authors describe the Kyber costs as rough estimates using an MCMC discrete Gaussian sampler. The archive dates their correction to May 28, 2026. Retrieval of the revised PDF returned HTTP 403, and the scratchpad file with a PDF suffix contained HTML. The revised table, its individual components, and any changes to Theorem 6 could not be verified from that version. The repository literature survey labels its corrected totals as inferred. [Revision history and authors’ abstract](https://eprint.iacr.org/2023/1508)
 
@@ -19,3 +20,37 @@ The PS column transcribes the no-modulus-switching estimate on slide 9. The orig
 | 512 | 185 | 149.88 | 139.66 | 35.12 | 45.34 |
 | 768 | 273 | 214.29 | 196.37 | 58.71 | 76.63 |
 | 1024 | 376 | 288.53 | 262.34 | 87.47 | 113.66 |
+
+
+## Fixed Table 1, decomposed (from the corrected ePrint version)
+
+Source: the fixed ePrint version (banner: "The published version ... contains incorrect numbers in Table 1 due to a
+mistake in the implementation of the estimator ... This version contains fixed estimates"), Section 4.4, formulas
+(21)–(25), Table 1 (no modulus switching: Kyber512/768/1024 = **238 / 347 / 478**, `m = 1023/1519/2025`,
+`n_guess = 19/29/39`, `β = 746/1129/1602`, `s = 0.09/0.11/0.11`). The authors' public estimator
+(gitlab.inria.fr/apouly/dual-attack-estimator, `compute_cost`) was read (not executed); `python/pouly_shen_cost.py`
+is an independent reimplementation of its formula:
+
+`rop = N·T_MCMC + q^{n_guess} + T_BKZ(m, β)`, `δ = e^{−m s² σ_e²/2}/100`, `N = n ln q / δ²`, `σ_e = √(2π)·stddev`,
+`T_MCMC = ∏_i ρ_{‖b̃_i‖/(qs)}(ℤ)` with the GSA profile `‖b̃_i‖ = q^{n_dual/m} δ_β^{m−1−2(i−1)}`, and `T_BKZ` the
+estimator's MATZOV (list-decoding, classical) model.
+
+| Kyber | log2 δ | log2 N | log2 T_MCMC (per sample) | log2 q^{n_guess} | log2 T_BKZ | total (formula) | Table 1 | with explicit poly factors | − est. dual | − est. dual hybrid |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 512 | −62.98 | 137.98 | 98.30 | 222.32 | 237.45 | 237.98 | 238 | 262.92 | +113.04 | +123.26 |
+| 768 | −89.95 | 192.50 | 154.78 | 339.33 | 345.24 | 347.60 | 347 | 375.53 | +161.24 | +179.16 |
+| 1024 | −117.70 | 248.42 | 224.51 | 456.33 | 478.33 | 478.36 | 478 | 502.36 | +213.83 | +240.02 |
+
+"Explicit poly factors" (our accounting, not in the paper, which states "all our complexity estimates ignore the
+polynomial factors"): scoring `N·m` multiplications plus a DFT over `ℤ_q^{n_guess}` costing `q^{n_guess}·n_guess·log2 q`;
+MCMC mixing `ln(1/ε)·Δ` steps per sample with `ε = 1/(100N)` (the paper requires `ε ≪ 1/N`) and `m²` operations per
+step. These add about 25–28 bits. The estimator columns are this repository's dual / dual-hybrid values.
+
+What is proven and what is not:
+* **proven** (Theorem 6): success probability `1 − q^m 2^{−Ω(Nδ²)}` given exact independent samples from
+  `D_{L_q^⊥(A_dual), qs}` and the geometric conditions; the `Ω` constant is not explicit in the theorem.
+* **proven** (MCMC, [51] Theorem 2): ε-closeness and the mixing time `ln(1/ε)·Δ·poly(n)` for a given basis.
+* **heuristic**: `Δ` is evaluated with the GSA profile of a BKZ-β basis; `T_BKZ` is the MATZOV sieve model
+  (`2^{0.2961β'+20.39}`); `λ1(L_q(A))` is taken at the Gaussian heuristic; `σ_e = √(πη)` matches CBD by variance only.
+* The analysis uses `m ∈ [3n/2, 2n]` samples (1023 for Kyber512); a Kyber public key provides `n` samples.
+* BKZ dominates for Kyber512 (`2^{237.45}` vs `N·T_MCMC = 2^{236.28}`).
