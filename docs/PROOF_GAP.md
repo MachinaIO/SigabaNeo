@@ -648,6 +648,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   CBDQuadratic.lean proves the CBD(3) moments (0, 3/2, 6, odd moments 0), E[XᵀQX] = (3/2)·tr Q, the exact variance, the bound
   Var ≤ (9/2)·tr Q for projections, and Cantelli. These are the ingredients of the height-zero necessary floor (Parts 94/103).
   All ten theorems are accepted on Prove2Me.
+  HeightZeroFloor.lean (`heightZeroFloor`) combines the uniqueness criterion with Cantelli. Take a fixed projection Q of
+  trace d and a fixed subgroup H. If H has a nonzero h with ‖h‖² ≤ 1 + (3/2)d − √((9/2)d/99), then the CBD(3) probability of
+  all-heights uniqueness is ≤ 99/100. This is the necessary floor of Parts 94/103, end to end in Lean, and it is accepted on
+  Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
