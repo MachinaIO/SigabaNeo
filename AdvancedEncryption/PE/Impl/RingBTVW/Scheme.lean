@@ -48,8 +48,9 @@ coins (`PE.Impl.RingBTVW.Laws`).
 
 * The efficient trapdoor sampler that approximates `gaussKeySampler` (with `B` from a trapdoor
   generation, close to uniform).
-* A bound on the noise (a hypothesis of `decrypt_correct`), and polynomial-size circuits `f̂`
-  (`truthTableFhat` has exponential size).
+* Polynomial-size circuits `f̂` (`truthTableFhat` has exponential size, so `noiseBound` of
+  `PE.Impl.RingBTVW.Noise` is large), and the probability that the sampled errors and keys exceed
+  their bounds (from the tails of the Gaussians, `cosetGauss_tail`).
 * Machines: the algorithms are Lean functions, not the Turing machines of an `Impl`.
 -/
 

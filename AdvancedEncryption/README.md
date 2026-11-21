@@ -12,7 +12,7 @@ apart from the definitions to review.
 
 | Implementation | Contents |
 | --- | --- |
-| `PE.Impl.RingBTVW` (`PE/Impl/RingBTVW/`) | the ring variant of the BTVW17 §4.2 scheme (Ring-GSW and BGG+ under one secret, over `ℤ_q[X]/(X^N + 1)`, with fresh Ring-LWE samples for the attribute ciphertexts as in mxx's PE): algorithms, the laws of their coins, correctness (`scheme_correct`, under a bound on the noise), and security under Ring-LWE alone (`attributeHiding`: the advantage is the sum of the Ring-LWE advantages of two explicit reductions). The key sampler `gaussKeySampler` draws keys from the discrete Gaussian on their coset. Not yet: its efficient trapdoor realization, a noise bound, polynomial-size `f̂`, and Turing machines for `PE`'s `Impl` |
+| `PE.Impl.RingBTVW` (`PE/Impl/RingBTVW/`) | the ring variant of the BTVW17 §4.2 scheme (Ring-GSW and BGG+ under one secret, over `ℤ_q[X]/(X^N + 1)`, with fresh Ring-LWE samples for the attribute ciphertexts as in mxx's PE): algorithms, the laws of their coins, correctness (`scheme_correct`; `decrypt_correct_of_bounds`: correct when `4 · noiseBound + 2 < q`, the noise bounded by the errors and the key), and security under Ring-LWE alone (`attributeHiding`: the advantage is the sum of the Ring-LWE advantages of two explicit reductions). The key sampler `gaussKeySampler` draws keys from the discrete Gaussian on their coset. Not yet: its efficient trapdoor realization, the tail probabilities of the errors and keys, polynomial-size `f̂`, and Turing machines for `PE`'s `Impl` |
 
 The project requires the core at `..` and shares its packages (`packagesDir = "../.lake/packages"`),
 so build the core first:

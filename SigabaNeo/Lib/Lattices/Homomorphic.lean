@@ -4,6 +4,8 @@ import SigabaNeo.Lib.Lattices.Homomorphic.Eval
 import SigabaNeo.Lib.Lattices.Homomorphic.BinaryDigits
 import SigabaNeo.Lib.Lattices.Homomorphic.GTrapdoor
 import SigabaNeo.Lib.Lattices.Homomorphic.RingGauss
+import SigabaNeo.Lib.Lattices.Homomorphic.Norm
+import SigabaNeo.Lib.Lattices.Homomorphic.NoiseBound
 
 /-!
 # Homomorphic evaluation over rings
@@ -18,6 +20,9 @@ import SigabaNeo.Lib.Lattices.Homomorphic.RingGauss
   preimages.
 * `Homomorphic/RingGauss`: Gaussian preimages of a row over `ℤ_q[X]/(X^N + 1)`: the discrete
   Gaussian on the solutions of `∑_c L_c z_c = y`.
+* `Homomorphic/Norm`, `Homomorphic/NoiseBound`: the coefficient norm of `ℤ_q[X]/(X^N + 1)`
+  (`cnorm (a * b) ≤ N · cnorm a · cnorm b`) and the noise of homomorphic evaluation
+  (`rnorm_evalErr_le`: at most `errBound (|W| N) E f` with binary digits).
 * `Homomorphic/Eval`: one evaluation for BGG+ public keys and Ring-GSW ciphertexts; the BGG+ key
   relation, the Ring-GSW invariant, and the evaluation of matrix-valued functions (`MatrixBits`).
 
