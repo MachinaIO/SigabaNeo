@@ -707,7 +707,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   and subgroup deficiency does not predict them. Proved: for fixed n, q, the terminal ratio → V_d^{1/d}·q^{n/d} → 0 as the width
   grows, because the cubic structure persists. A sufficient condition via short planes through the final selected line is
   given. Its expected-count estimate is open.
-* **Frontier after Parts 1–119 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 120 (audited).** [plane_count](research/wall1_plane_count.md): the remaining obligation is split at the last step.
+  The horizontal failure is exactly Pr[old shortest line wins] × 1{it lies in an old plane of area < A}. The positive-height
+  failure has an exact fiber-retaining first moment. At width 506 every witness has area < 1.04144·GH(W)². It now suffices to
+  bound two history averages, the horizontal failure and the positive-height moment, by 0.00488848 each. Plane counts at a fixed
+  area cutoff do not propagate (a scaled D_3 example), so the induction for these averages is open.
+* **Frontier after Parts 1–120 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
