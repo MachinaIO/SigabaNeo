@@ -20,6 +20,8 @@ import SigabaNeo.Lib.Lattices.Flood
 import SigabaNeo.Lib.Lattices.RingLWEInst
 import SigabaNeo.Lib.Lattices.CoinMaps
 import SigabaNeo.Lib.Lattices.BitLaw
+import SigabaNeo.Lib.Lattices.Algo.Words
+import SigabaNeo.Lib.Lattices.Algo.RingWords
 
 /-!
 # Lattice library
@@ -61,4 +63,7 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   independent products; uniform residues mod `2^K`.
 * `Decode`: threshold decoding of a bit `M · ⌊q/2⌋ + e` in `ℤ_q` and in `ℤ_q[X]/(X^N + 1)`, exact when
   `4|e| + 2 < q`.
+* `Algo/`: bit-level algorithms, first-order loops over words proven equal to the mathematical
+  definitions, with step counts — `Words` (fixed-width arithmetic mod `2^K` on `zmodEnc` words),
+  `RingWords` (negacyclic addition and schoolbook multiplication on `ringEnc` words).
 -/
