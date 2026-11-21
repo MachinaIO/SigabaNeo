@@ -84,7 +84,7 @@ theorem pot_step (c : Config kA Bool SA (Fin ops) x) (act : Turing.Action kA Boo
         have h2 : ((c.channels o).answerPos + (mv o : ℤ)).natAbs ≤
             (c.channels o).answerPos.natAbs + 1 := by
           rcases mv o with _ | _ | _ <;> simp <;> omega
-        by_cases ha : (c.channels o).answer = [] <;> simp only [ha, if_true, if_false] <;> omega
+        by_cases ha : (c.channels o).answer = [] <;> simp only [ha, ite_true, ite_false] <;> omega
     _ = _ := by rw [Finset.sum_add_distrib]; simp [mul_comm]
 
 theorem symbols_embA (c : Config kA Bool SA (Fin ops) x) (fl : Fin ops → AFlag) (s : List Bool)
@@ -139,7 +139,7 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
         apply lawR_det
         intro bit
         simp only [machine, simS, simAct]
-        rw [if_pos (by
+        rw [ite_eq_left (by
           simp only [kind_idx, frameF, frameP, Nat.cast_zero, zero_sub]
           rw [show tapeOfList (List.replicate T true) (-1) = none from tapeOfList_negSucc _ 0]
           simp)]
@@ -200,7 +200,7 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
               (M.tr q c.tapes.inputSymbol c.tapes.workTapeSymbols c.answerSymbols bit)).map
               (projA enc) := by
         intro bit
-        simp only [simAct, hclock, ne_eq, not_true_eq_false, if_false, hinp]
+        simp only [simAct, hclock, ne_eq, not_true_eq_false, ite_false, hinp]
         rw [hwork, hans]
         cases hM : M.tr q c.tapes.inputSymbol c.tapes.workTapeSymbols c.answerSymbols bit with
         | step act sy mv =>
@@ -252,7 +252,7 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
           have hNj : j ≤ N' := by
             have := hQ op
             have := hg.ans_le op
-            split_ifs at hj with ha <;> simp only [ha, if_true, if_false] at hpot <;>
+            split_ifs at hj with ha <;> simp only [ha, ite_true, ite_false] at hpot <;>
               nlinarith [hpot []]
           obtain ⟨N'', rfl⟩ : ∃ N'', N' = j + N'' := ⟨N' - j, by omega⟩
           have hgood' : ∀ r ∈ (oracle (op, b) s).support,
@@ -281,7 +281,7 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
             · have h1 := hpot r.1
               have := hQ op
               have := hg.ans_le op
-              split_ifs at hj with ha <;> simp only [ha, if_true, if_false] at h1 <;> nlinarith
+              split_ifs at hj with ha <;> simp only [ha, ite_true, ite_false] at h1 <;> nlinarith
           rw [hq N'' (fun r hr => (ih _ _ _ (hgood' r hr).1 N'' (hgood' r hr).2).1)]
           refine ⟨fun g hg' => ?_, ?_⟩
           · obtain ⟨r, hr, hg''⟩ := (PMF.mem_support_bind_iff _ _ _).mp hg'

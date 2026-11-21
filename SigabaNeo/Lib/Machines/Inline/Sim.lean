@@ -50,7 +50,7 @@ theorem answer_read (a : List Bool) (p : ℤ) :
   simp only [Channel.answerSymbol]
   by_cases ha : a = []
   · subst ha; simp
-  · rw [if_neg ha]
+  · rw [ite_eq_right ha]
     rcases p with p | p
     · simp
     · simp

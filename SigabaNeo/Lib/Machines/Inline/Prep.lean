@@ -29,7 +29,7 @@ def prepP (i : ℕ) : Tape kA ops m → ℤ
   | _ => 0
 
 theorem take_succ_eq (i : ℕ) (h : i < w.length) : w.take (i + 1) = w.take i ++ [w[i]] := by
-  rw [List.take_succ, List.getElem?_eq_getElem h]; rfl
+  rw [List.take_add_one, List.getElem?_eq_getElem h]; rfl
 
 /-- One preparation step. -/
 theorem lawR_prep_step (i : ℕ) (hi : i + 1 < 2 * w.length + T + 1) (N : ℕ) :
@@ -39,7 +39,7 @@ theorem lawR_prep_step (i : ℕ) (hi : i + 1 < 2 * w.length + T + 1) (N : ℕ) :
         (prepF (m := m) (kA := kA) (ops := ops) w (i + 1)) (prepP w (i + 1)) []) := by
   have hnext : (if h : i + 1 < 2 * w.length + T + 1 then
       (some (.inl ⟨i + 1, h⟩) : Option (RState SA H T w)) else
-      some (simS H T w M.initial (fun _ => .empty))) = some (.inl ⟨i + 1, hi⟩) := dif_pos hi
+      some (simS H T w M.initial (fun _ => .empty))) = some (.inl ⟨i + 1, hi⟩) := dite_eq_left hi
   by_cases h1 : i < w.length
   · have hact : prepAct H M T w ⟨i, by omega⟩ = mkAct 0 (mv1 .st (some (some w[i])) 1) none
         (some (.inl ⟨i + 1, hi⟩)) := by
@@ -50,7 +50,7 @@ theorem lawR_prep_step (i : ℕ) (hi : i + 1 < 2 * w.length + T + 1) (N : ℕ) :
     · funext t
       by_cases ht : t = .st
       · subst ht
-        simp only [Function.update_self, prepF, prepP, wr, show i ≤ w.length by omega, if_true]
+        simp only [Function.update_self, prepF, prepP, wr, show i ≤ w.length by omega, ite_true]
         rw [take_succ_eq w i h1, tapeOfList_append_single, List.length_take,
           min_eq_left (by omega)]
       · rw [Function.update_of_ne ht]
@@ -61,14 +61,14 @@ theorem lawR_prep_step (i : ℕ) (hi : i + 1 < 2 * w.length + T + 1) (N : ℕ) :
       by_cases ht : t = .st
       · subst ht
         simp only [Function.update_self, prepP, show i ≤ w.length by omega,
-          show i + 1 ≤ w.length by omega, if_true]
+          show i + 1 ≤ w.length by omega, ite_true]
         simp
       · rw [Function.update_of_ne ht]
-        rcases t with _ | _ | _ | _ | _ | _ <;> simp_all [prepP] <;> omega
+        rcases t with _ | _ | _ | _ | _ | _ <;> simp_all [prepP]; omega
   by_cases h2 : i < 2 * w.length
   · have hact : prepAct H M T w ⟨i, by omega⟩ = mkAct 0 (mv1 .st none (-1)) none
         (some (.inl ⟨i + 1, hi⟩)) := by
-      simp only [prepAct, h1, h2, dite_false, if_true]; rw [hnext]
+      simp only [prepAct, h1, h2, dite_false, ite_true]; rw [hnext]
     rw [lawR_det H M T w N _ 1 _ _ [] 0 _ none _ (fun bit => by simp only [machine]; rw [hact])]
     simp only [wr_mv1, pos_mv1, moveInputPos_zero, Option.toList_none, List.append_nil, wr_none]
     congr 2
@@ -87,11 +87,11 @@ theorem lawR_prep_step (i : ℕ) (hi : i + 1 < 2 * w.length + T + 1) (N : ℕ) :
         simp only [Function.update_self, prepP]
         split_ifs <;> simp <;> omega
       · rw [Function.update_of_ne ht]
-        rcases t with _ | _ | _ | _ | _ | _ <;> simp_all [prepP] <;> omega
+        rcases t with _ | _ | _ | _ | _ | _ <;> simp_all [prepP]; omega
   have h3 : i < 2 * w.length + T := by omega
   have hact : prepAct H M T w ⟨i, by omega⟩ = mkAct 0 (mv1 .clock (some (some true)) 1) none
       (some (.inl ⟨i + 1, hi⟩)) := by
-    simp only [prepAct, h1, h2, h3, dite_false, if_false, if_true]; rw [hnext]
+    simp only [prepAct, h1, h2, h3, dite_false, ite_false, ite_true]; rw [hnext]
   rw [lawR_det H M T w N _ 1 _ _ [] 0 _ none _ (fun bit => by simp only [machine]; rw [hact])]
   simp only [wr_mv1, pos_mv1, moveInputPos_zero, Option.toList_none, List.append_nil]
   congr 2
@@ -102,7 +102,7 @@ theorem lawR_prep_step (i : ℕ) (hi : i + 1 < 2 * w.length + T + 1) (N : ℕ) :
       rw [show i + 1 - 2 * w.length = (i - 2 * w.length) + 1 by omega, List.replicate_succ',
         tapeOfList_append_single, List.length_replicate]
     · rw [Function.update_of_ne ht]
-      rcases t with _ | _ | _ | _ | _ | _ <;> simp_all [prepF] <;>
+      rcases t with _ | _ | _ | _ | _ | _ <;> simp_all [prepF];
         rw [List.take_of_length_le (by omega), List.take_of_length_le (by omega)]
   · funext t
     by_cases ht : t = .clock
@@ -111,7 +111,7 @@ theorem lawR_prep_step (i : ℕ) (hi : i + 1 < 2 * w.length + T + 1) (N : ℕ) :
       push_cast [show 2 * w.length ≤ i by omega, show 2 * w.length ≤ i + 1 by omega]
       simp; omega
     · rw [Function.update_of_ne ht]
-      rcases t with _ | _ | _ | _ | _ | _ <;> simp_all [prepP] <;> omega
+      rcases t with _ | _ | _ | _ | _ | _ <;> simp_all [prepP]; omega
 
 /-- The last preparation step. -/
 theorem lawR_prep_last (N : ℕ) :
@@ -121,7 +121,7 @@ theorem lawR_prep_last (N : ℕ) :
   have hact : prepAct H M T w ⟨2 * w.length + T, by omega⟩ = mkAct 0 (mv1 .clock none (-1)) none
       (some (simS H T w M.initial (fun _ => .empty))) := by
     simp only [prepAct]
-    rw [dif_neg (by omega), if_neg (by omega), if_neg (by omega), dif_neg (by omega)]
+    rw [dite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega), dite_eq_right (by omega)]
   rw [lawR_det H M T w N _ 1 _ _ [] 0 _ none _ (fun bit => by simp only [machine]; rw [hact])]
   simp only [wr_mv1, pos_mv1, moveInputPos_zero, Option.toList_none, List.append_nil, wr_none]
   unfold embA
