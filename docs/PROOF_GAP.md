@@ -472,7 +472,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   second relocation evades every hard exclusion) and the residual stays ≥ 2.18·10⁵ nats. **Pattern:** each stronger
   deterministic exclusion kills specific boxes but the relaxed mass relocates with an essentially unchanged residual; closing
   wall 1 needs a genuinely new estimate (conditioned deep-window coverage), not more caps.
-* **Frontier after Parts 1–82 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 83 (audited, minor caveats).** [basis_multiplicity](research/wall1_basis_multiplicity.md): the relaxed residual is
+  partly basis multiplicity — for exact BKZ with fixed width the Haar mean number of reduced bases grows like e^{Θ_β(n³)}
+  (width-2 means certified through rank 10; full width: one basis a.s.); counting each eligible primitive prefix once lowers the
+  quarter-GSA log mean at width 800 to ≤ 152955 (vs Part 82's weighted 218002), the mean number of profile-bad completions per
+  prefix exceeding e^{70921}. Consistent with Part 67 (different radii; counts are extremely steep in ρ). Audit side finding:
+  the single-cut chain [0, k, k+1, n] (no piece-size limit is needed for the counting identity) would raise the width-406
+  absolute radius from 0.00654 to ≈ 0.0076 (bisection check, to be certified).
+* **Frontier after Parts 1–83 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
