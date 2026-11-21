@@ -398,7 +398,12 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   whose normalized quotient measure is an `SL_n(ℝ)`-invariant probability satisfying `ClassicalRogersFormula` with
   `congruenceCoefficient n` (every `1 ≤ k < n`); `rogers_formula_domain` gives it for any finite-mass fundamental domain.
   **Both hypotheses of [Laa26]'s Lean development (`ClassicalGramFormula`, `ClassicalRogersFormula`) are therefore
-  discharged** against the local transcription of the archive statements; the external archive was not rebuilt.
+  discharged**. The local statements are paraphrases (different diagram type, set-based workload); the bridge
+  `Reduction/Rogers/Laa26Bridge.lean` copies the archive's statement-level definitions verbatim (arXiv:2609.13635v1 source)
+  and proves `archive_rogers` and `archive_gram` — the archive's own `ClassicalRogersFormula` (with an invariant probability
+  measure) and `ClassicalGramFormula` (on every `(span ℝ {e})ᗮ`) — with axioms `propext`, `Classical.choice`, `Quot.sound`.
+  Independent audit: faithful. Not done: rebuilding the archive and its consumer theorem `intrinsic_marked_moments_paper` under
+  its own toolchain (v4.32.2); the correctness of the archive's internal proofs is not checked here.
 * **`q`-ary lattices (the LWE side).** Here Lemma Q1 replaces Rogers' formula by linear algebra over
   `F_q`. Proved in Lean (`SigabaNeo.QAry`; axioms `propext`, `Classical.choice`, `Quot.sound`):
 
