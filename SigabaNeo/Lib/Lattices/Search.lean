@@ -1,6 +1,7 @@
 module
 
 public import Mathlib.MeasureTheory.Measure.MeasureSpaceDef
+public import SigabaNeo.Lib.Lattices.Search.ProductRecall
 
 public section
 

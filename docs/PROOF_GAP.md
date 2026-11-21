@@ -214,8 +214,14 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
         cosines in `[1/2 − 1/ℓ, 2/3]`.
       * Lean: `Search.transcriptMiss_le`, the finite-transcript union bound. The product-code
         construction and the running time are paper proofs.
-      * P′ relies on [GFH26b] Theorem 4.2 / Proposition 4.3 (ePrint 2026/1844, not refereed),
-        which is **cited, not independently verified**.
+      * P′ relies on [GFH26b] Theorem 4.2 / Proposition 4.3 (ePrint 2026/1844, not refereed).
+        **Audit ([research/gfh_audit.md](research/gfh_audit.md)):** they support P′ for non-empty
+        fixed lists in the real-RAM regime. Eq. (19) has a harmless empty-input defect, since P′
+        returns immediately on empty lists. One shared Haar rotation per batch suffices.
+        * Lean: `Search.productCodeMiss_le`, the conditional `m·q^B` miss bound. Axioms
+          `propext`, `Classical.choice`, `Quot.sound`.
+        * Checked on paper only: Haar concentration, wedge volumes, averaging over rotations,
+          and traversal correctness and cost.
     * Priority: Kim–Kwon–Lee–Lee (ePrint 2026/2711) already prove exact SVP for random `q`-ary
       kernels in a different density regime. What may be new here is narrower: the
       shrinking-shell statistics at these radii. Even that is not confirmed.
