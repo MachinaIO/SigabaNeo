@@ -102,4 +102,76 @@ theorem advantage_le (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) =
   rw [real_view_bind hdec hcov A D, ideal_view_bind hdec hcov A D]
   exact abs_sub_le_of_closeTo h hfin [true]
 
+/-- The distinguisher that rejects runs whose flag is up. -/
+noncomputable def DcStar (D : Machine) (o : List Bool × Option Date × Option Bool × Bool) :
+    PMF (List Bool) := if o.2.2.2 then PMF.pure [false] else Dc D o
+
+/-- With an admissible adversary, rejecting the runs with the flag up changes nothing. -/
+theorem bind_star {μ : PMF (List Bool × Option Date × Option Bool × Bool)} (D : Machine)
+    (h : ∀ o ∈ μ.support, o.2.2.2 = false) : μ.bind (DcStar D) = μ.bind (Dc D) :=
+  PMF.bind_congr_on_support _ _ _ fun o ho => by simp [DcStar, h o ho]
+
+theorem real_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
+    (hcov : RealCovered hk c) (A : Machine 3) (D : Machine)
+    (hadm : ∀ r ∈ (PE.real dateUniverse params (impl hk c) A).support, r.2.bad = false) :
+    ((PE.real dateUniverse params (impl hk c) A).map view).bind D.run =
+      (G A (V0 hk c)).bind (DcStar D) := by
+  rw [real_view_bind hdec hcov A D]
+  refine (bind_star D ?_).symm
+  intro o ho
+  have e := real_eq_gameV hdec hcov A
+  rw [show G A (V0 hk c) = _ from e.symm] at ho
+  rw [PMF.mem_support_map_iff] at ho
+  obtain ⟨r, hr, rfl⟩ := ho
+  exact hadm r hr
+
+theorem ideal_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
+    (hcov : RealCovered hk c) (A : Machine 3) (D : Machine)
+    (hadm : ∀ r ∈ (PE.ideal dateUniverse params (impl hk c) (simMachine hk c) A).support,
+      r.2.bad = false) :
+    ((PE.ideal dateUniverse params (impl hk c) (simMachine hk c) A).map view).bind D.run =
+      (G A (VI0 hk c)).bind (DcStar D) := by
+  rw [ideal_view_bind hdec hcov A D]
+  refine (bind_star D ?_).symm
+  intro o ho
+  have e := ideal_eq_gameV hdec hcov A
+  rw [show G A (VI0 hk c) = _ from e.symm] at ho
+  rw [PMF.mem_support_map_iff] at ho
+  obtain ⟨r, hr, rfl⟩ := ho
+  exact hadm r hr
+
+/-- **The advantage of any distinguisher against an admissible adversary**, with the
+experiments-as-distinguishers rejecting the runs with the flag up. -/
+theorem advantage_le_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
+    (hcov : RealCovered hk c) (A : Machine 3) (D : Machine)
+    (hadm : Admissible dateUniverse params (impl hk c) (simMachine hk c) A) {ε δ₃ δ₅ δI : ℝ≥0∞}
+    (hflood : ∀ rest ∈ (lawRestC hk c).support, ∀ w : JC (Sdw (N := N) hk) → (Fin c.d → Bool),
+      CloseTo ((lawEc hk c).map fun e j => e j + rest.2.1 * wMat w j) (lawEc hk c) ε)
+    (h₃ : CloseTo ((inst3Real (k := k) (χR c)).bind fun ab =>
+        (G A fun x => F3 hk c x ab).bind (DcStar D))
+      (inst3Unif.bind fun ab => (G A fun x => F3 hk c x ab).bind (DcStar D)) δ₃)
+    (h₅ : CloseTo ((nfReal (χR c)).bind fun i => (G A fun x => F5 hk c x i).bind (DcStar D))
+      (nfUnif.bind fun i => (G A fun x => F5 hk c x i).bind (DcStar D)) δ₅)
+    (hI : CloseTo ((inst3Real (k := k) (χR c)).bind fun ab =>
+        (G A fun x => FI hk c x ab).bind (DcStar D))
+      (inst3Unif.bind fun ab => (G A fun x => FI hk c x ab).bind (DcStar D)) δI)
+    (hfin : (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ +
+        δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
+      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
+        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d)) ≠ ⊤) :
+    |D.acceptProb ((PE.real dateUniverse params (impl hk c) A).map view) -
+        D.acceptProb ((PE.ideal dateUniverse params (impl hk c) (simMachine hk c) A).map view)| ≤
+      ((Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ +
+        δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
+      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
+        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d))).toReal := by
+  have cr := chain_real hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A
+    (DcStar D) hflood h₃ h₅
+  have ci := chain_ideal hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A
+    (DcStar D) hI
+  have h := cr.trans ci.symm
+  unfold Machine.acceptProb
+  rw [real_star hdec hcov A D hadm.1, ideal_star hdec hcov A D hadm.2]
+  exact abs_sub_le_of_closeTo h hfin [true]
+
 end AdvancedEncryption.DualUse
