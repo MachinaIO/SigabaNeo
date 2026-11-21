@@ -60,26 +60,30 @@ theorem cnorm_of_mem_keyBall {r : ℕ} {v : KeyShort (Fin d) Wt (Negacyclic (ZMo
     fun i => (cnorm_le_iff _ _).mpr fun j => hv (.inr i, j)⟩
 
 /-- The bits of the big box. -/
-noncomputable def bitsOfKey (d : ℕ) (Wt : Type) [Fintype Wt] (N B : ℕ) :
-    (Fin (Fintype.card (Coef d Wt N) * B) → Bool) ≃ (Coef d Wt N → Fin B → Bool) :=
-  (Equiv.arrowCongr (Fintype.equivFinOfCardEq (by simp)).symm (Equiv.refl Bool)).trans
+noncomputable def bitsOfKey (d : ℕ) (Wt : Type) [Fintype Wt] (N B m : ℕ)
+    (hm : Fintype.card (Coef d Wt N) * B = m) :
+    (Fin m → Bool) ≃ (Coef d Wt N → Fin B → Bool) :=
+  (Equiv.arrowCongr (Fintype.equivFinOfCardEq (by rw [Fintype.card_prod, Fintype.card_fin, hm])).symm
+    (Equiv.refl Bool)).trans
     (Equiv.curry _ _ _)
 
 /-- **The big box** as the image of fair bits. -/
-noncomputable def keyEmb (B : ℕ) (hB : 2 ^ B ≤ Q) :
-    (Fin (Fintype.card (Coef d Wt N) * B) → Bool) ↪ KeyShort (Fin d) Wt (Negacyclic (ZMod Q) N) :=
-  (bitsOfKey d Wt N B).toEmbedding.trans
+noncomputable def keyEmb (B : ℕ) (hB : 2 ^ B ≤ Q) (m : ℕ) (hm : Fintype.card (Coef d Wt N) * B = m) :
+    (Fin m → Bool) ↪ KeyShort (Fin d) Wt (Negacyclic (ZMod Q) N) :=
+  (bitsOfKey d Wt N B m hm).toEmbedding.trans
     ((Function.Embedding.piCongrRight fun _ => cenEmb B hB).trans keyEquiv.symm.toEmbedding)
 
-theorem univ_map_keyEmb (B : ℕ) (hB : 2 ^ B ≤ Q) :
-    Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB) =
+theorem univ_map_keyEmb (B : ℕ) (hB : 2 ^ B ≤ Q) (m : ℕ) (hm : Fintype.card (Coef d Wt N) * B = m) :
+    Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB m hm) =
       (bigBox B hB).map keyEquiv.symm.toEmbedding := by
   rw [keyEmb, ← Finset.map_map, ← Finset.map_map, bigBox]
   congr 2
   exact Finset.map_univ_equiv _
 
-theorem keyBall_subset_big (B : ℕ) (hB : 2 ^ B ≤ Q) (hB1 : 1 ≤ B) :
-    keyBall Q d Wt N (2 ^ (B - 1) - 1) ⊆ Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB) := by
+theorem keyBall_subset_big (B : ℕ) (hB : 2 ^ B ≤ Q) (hB1 : 1 ≤ B) (m : ℕ)
+    (hm : Fintype.card (Coef d Wt N) * B = m) :
+    keyBall Q d Wt N (2 ^ (B - 1) - 1) ⊆
+      Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB m hm) := by
   rw [univ_map_keyEmb, keyBall]
   exact Finset.map_subset_map.mpr (ball_subset_bigBox B hB hB1)
 
@@ -115,16 +119,19 @@ theorem zabs_keyEquiv_le {τ : ℕ} {T : KeyShort (Fin d) Wt (Negacyclic (ZMod Q
 
 /-- **The abort probability of box rejection** for the big box of `B` bits and the inner ball of
 radius `2^{B−1} − 1 − 2τ`: at most `2^{−κ}` when `n (4τ + 1) 2^κ ≤ 2^B`. -/
-theorem abort_le (B τ κ : ℕ) (hB : 2 ^ B ≤ Q) (hB1 : 1 ≤ B) (hτ : 4 * τ + 1 ≤ 2 ^ B)
+theorem abort_le (B τ κ : ℕ) (hB : 2 ^ B ≤ Q) (hB1 : 1 ≤ B) (m : ℕ)
+    (hm : Fintype.card (Coef d Wt N) * B = m) (hτ : 4 * τ + 1 ≤ 2 ^ B)
     (hκ : Fintype.card (Coef d Wt N) * (4 * τ + 1) * 2 ^ κ ≤ 2 ^ B) :
-    (((Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB)).card -
+    (((Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB m hm)).card -
         (keyBall Q d Wt N (2 ^ (B - 1) - 1 - 2 * τ)).card : ℕ) : ℝ≥0∞) /
-      (Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB)).card ≤ ((2 : ℝ≥0∞) ^ κ)⁻¹ := by
+      (Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB m hm)).card ≤
+        ((2 : ℝ≥0∞) ^ κ)⁻¹ := by
   set n := Fintype.card (Coef d Wt N)
   have hpow : 2 ^ B = 2 * 2 ^ (B - 1) := by rw [← pow_succ']; congr 1; omega
-  have hcB : (Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB)).card = (2 ^ B) ^ n := by
+  have hcB : (Finset.univ.map (keyEmb (d := d) (Wt := Wt) (N := N) B hB m hm)).card =
+      (2 ^ B) ^ n := by
     rw [Finset.card_map, Finset.card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
-      ← pow_mul, mul_comm]
+      ← hm, ← pow_mul, mul_comm]
   have hrad : 2 * (2 ^ (B - 1) - 1 - 2 * τ) + 1 = 2 ^ B - (4 * τ + 1) := by omega
   have hcI : (keyBall Q d Wt N (2 ^ (B - 1) - 1 - 2 * τ)).card = (2 ^ B - (4 * τ + 1)) ^ n := by
     rw [keyBall, Finset.card_map, card_ball _ (by omega), hrad]

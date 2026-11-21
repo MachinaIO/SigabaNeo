@@ -21,8 +21,8 @@ irreducible_def Kc : ℕ := 2 ^ 24
 def kc : ℕ := Kc + 1
 /-- The ring degree. -/
 def Nc : ℕ := 2 ^ 10
-/-- The columns of `B₀`. -/
-def dc : ℕ := 2 ^ 35
+/-- The columns of `B₀` (opaque, so that `Fin dc` is never enumerated). -/
+irreducible_def dc : ℕ := 2 ^ 35
 
 theorem hkc : 2 ^ Kc < 2 ^ kc := Nat.pow_lt_pow_right (by norm_num) (Nat.lt_succ_self Kc)
 
@@ -107,7 +107,7 @@ theorem RW_le : Fintype.card (Fin 1 × Col kc × Fin kc × Fin Nc) * (Fintype.ca
   omega
 
 theorem E_le : Fintype.card (Fin dc) * Nc * 2 ^ 512 ≤ 2 ^ 557 := by
-  rw [Fintype.card_fin, dc, Nc, ← pow_add, ← pow_add]
+  rw [Fintype.card_fin, dc_def, Nc, ← pow_add, ← pow_add]
 
 theorem Nc_le : Nc ≤ 2 ^ 10 := le_refl _
 

@@ -69,14 +69,25 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
   parameters (gadget inverse, box coverage by the real trapdoor, short coins, noise bound of every
   window predicate below `q/4`, abort probability of an inner box at most `2^{-κ}`).
 
+* **Shallow `f̂`** (`SigabaNeo.Lib.Lattices.Homomorphic`): the coefficients of a Ring-GSW NAND are
+  summed by a balanced tree of modular additions (`GSWCircuit`), the carry of the adders enters
+  gates on the right and NOT is `NAND(1, a)` (`BoolBuild`, `BoolArith`), so a NAND block multiplies
+  the noise by `gswFactor WN N k` (`GSWNoise.nb_nandBlock`) and `f̂` of `n` gates stays within
+  `gswFactor^n · E` (`nb_fhatSLP`), as BTVW17 requires (the depth of `FHE.Eval` is
+  `d · polylog`). The closed form of the noise bound: `RingBTVW.noiseBound_le`.
+* **Concrete parameters** (`ConcreteNoise.lean`, `Concrete.lean`): `q = 2^(2^24)`, `k = 2^24 + 1`,
+  `N = 2^10`, `|Wd| = 2^35`, centered binomial errors of width 16, flooding below `2^512`,
+  `512`-bit key boxes. `DualUse.Concrete.correct_concrete`: **`PE.Correct` for the date-window
+  universe, with no hypothesis**, and `expressive_concrete`. The window predicates have at most
+  375 gates (`Gates.DateWindow.length_winGates`).
+
 ## To do
 
-* Concrete parameters: a `Conf` and proofs of the conditions of `DualUse.correct` (trapdoor norm
-  from the error law's support, box sizes for abort `≤ 2^{-128}`, the noise bound of the window
-  circuits).
 * Machine-level attribute hiding: the math-level chain is done (`attributeHiding_rlwe`); the
   Trusted definition (`HardAt`: `cost / adv² ≥ 2^λ` with explicit cost) needs either reductions
   as machines with explicit step counts or a relaxed definition. Pending the user's decision.
+* Tighter parameters: the noise analysis is coarse (a uniform bound over all gates of the
+  predicate, crude powers of two); a depth-based bound would shrink `q` by orders of magnitude.
 
 ## Relation to mxx's PE (`codes/mxx`, branch `claude/dsl-simplification-arbitrary-compute-e010f1`)
 
