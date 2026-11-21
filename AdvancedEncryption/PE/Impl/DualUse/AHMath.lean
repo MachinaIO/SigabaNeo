@@ -121,8 +121,7 @@ theorem real_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
   intro o ho
   have e := real_eq_gameV hdec hcov A
   rw [show G A (V0 hk c) = _ from e.symm] at ho
-  rw [PMF.mem_support_map_iff] at ho
-  obtain ⟨r, hr, rfl⟩ := ho
+  obtain ⟨r, hr, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp ho
   exact hadm r hr
 
 theorem ideal_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
@@ -136,8 +135,7 @@ theorem ideal_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u
   intro o ho
   have e := ideal_eq_gameV hdec hcov A
   rw [show G A (VI0 hk c) = _ from e.symm] at ho
-  rw [PMF.mem_support_map_iff] at ho
-  obtain ⟨r, hr, rfl⟩ := ho
+  obtain ⟨r, hr, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp ho
   exact hadm r hr
 
 /-- **The advantage of any distinguisher against an admissible adversary**, with the
