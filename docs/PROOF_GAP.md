@@ -73,10 +73,27 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * the projection bound for the planted vector;
   * the resulting provable block size and cost for Kyber.
 
-## Stage 2 (planned): the uSVP success condition on random q-ary lattices
+## Stage 2: the uSVP success condition with a planted vector (in progress)
 
-Average-case bounds on `λ_2` and on the projected target from Siegel-type mean value theorems or
-counting.
+* **`λ₂` lower bound, polynomial `q` (new; [research/usvp_planted.md](research/usvp_planted.md);
+  paper proof, audit and Lean formalization pending).** For the plain-LWE embedding lattice
+  (`d = m + n + 1`, planted `(e, s, 1)` with coordinates bounded by `B`), and with
+  `G = (q^m / V_d)^{1/d}` the Gaussian-heuristic radius:
+  `Pr_A[λ₂(L) ≤ R] ≤ ((R + √d/2)/G)^d` whenever `R √(1 + B²) < q`.
+  * At `m = 2n`, bounded `B` and prime `q = Θ(n^a)` with `a > 3/2`, the failure probability is
+    exponentially small at every fixed fraction of `G`.
+  * Plain-LWE example of Kyber size: `q = 3329`, `m = 1024`, `n = 512`, `B = 3`, `R = 1000`
+    (`G ≈ 2113`) gives failure probability `≈ 2^{−1616}`.
+* Lean (`SigabaNeo.Planted`; axioms `propext`, `Classical.choice`, `Quot.sound`):
+  * `planted_iff`: embedding membership is `A(y − ts) = te − x` over `F_q`;
+  * `affineCount`: a feasible system has `q^{(n − rk X) m}` solutions;
+  * `lift_multiple`: short points congruent to multiples of the planted vector are integer
+    multiples.
+* Open:
+  * the success condition for windows chosen by BKZ from the same matrix (fixed windows have
+    exact moments in the note);
+  * full shell statistics at polynomial `q`;
+  * Kyber's module structure.
 
 ## Direction of the GSA error (checked)
 
