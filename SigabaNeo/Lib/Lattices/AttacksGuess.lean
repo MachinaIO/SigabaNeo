@@ -5,10 +5,12 @@ public import SigabaNeo.Lib.Lattices.Attacks.Guess.Collision
 public import SigabaNeo.Lib.Lattices.Attacks.Mitm
 public import SigabaNeo.Lib.Lattices.Attacks.Mitm.ErrorBox
 public import SigabaNeo.Lib.Lattices.Attacks.Mitm.IndexedLookup
+public import SigabaNeo.Lib.Lattices.Attacks.Mitm.BucketCost
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.Rank
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.Shifted
 public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.RandomErrors
+public import SigabaNeo.Lib.Lattices.Attacks.AroraGe.Uniform
 
 #print axioms SigabaNeo.Lattices.AroraGe.boundedErrorEquation
 #print axioms SigabaNeo.Lattices.AroraGe.homogeneous_not_injective
