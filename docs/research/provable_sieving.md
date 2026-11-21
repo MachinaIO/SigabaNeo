@@ -5,6 +5,8 @@
 > `(3/2)^{n/2}` time claim below that rests on P (Theorem J, T0's time bound) is unverified. The
 > `2^{0.415n}` route (T1) is unaffected. The acceptance-rate constant is `99/1212` under S1, not
 > `1/12` (Lean `Sieve.acceptance`). The prefactor in G1 is `e^{O(h² log n)}` (g1_audit.md).
+> A corrected search lemma P′ ([search_lemma.md](search_lemma.md)) restores the `0.2925` time,
+> conditional on [GFH26b]'s product-code theorem (cited, not verified).
 
 Research note, 2026-11-21. This is the pen-and-paper step: no Lean or Python code is touched.
 

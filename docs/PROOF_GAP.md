@@ -204,8 +204,18 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
       **Hypothesis P** (§3.9 of the note, behind every `(3/2)^{m/2}` / `2^{0.2925·}` time claim)
       **is self-contradictory as written**: at cosine `0.45`, P1 demands reporting with
       probability → 1 while P2 makes candidacy exponentially unlikely. The `0.2925` time bounds
-      of the notes are therefore **unverified**. A repair restricted to the actual query angles
-      is sketched there, but the existence of a product-code structure meeting it is unverified.
+      of the notes were therefore unverified until the repair below.
+    * **Repair, Hypothesis P′ ([research/search_lemma.md](research/search_lemma.md); new).**
+      Recall is required only at the query cosines the sieve actually uses. For arbitrary fixed
+      indexed lists, Gao–Feng–Hu's product code with fresh rotations misses each required pair
+      with probability `≤ e^{−Cn}`. With Lemmas H and I this gives real-RAM time
+      `2^{(0.29248…+o(1))n}` and space `2^{(0.20751…+o(1))n}`.
+      * [DL26]'s own `0.2924` claim is **not** affected: its Lemma 19(ii) asks for recall only on
+        cosines in `[1/2 − 1/ℓ, 2/3]`.
+      * Lean: `Search.transcriptMiss_le`, the finite-transcript union bound. The product-code
+        construction and the running time are paper proofs.
+      * P′ relies on [GFH26b] Theorem 4.2 / Proposition 4.3 (ePrint 2026/1844, not refereed),
+        which is **cited, not independently verified**.
     * Priority: Kim–Kwon–Lee–Lee (ePrint 2026/2711) already prove exact SVP for random `q`-ary
       kernels in a different density regime. What may be new here is narrower: the
       shrinking-shell statistics at these radii. Even that is not confirmed.
