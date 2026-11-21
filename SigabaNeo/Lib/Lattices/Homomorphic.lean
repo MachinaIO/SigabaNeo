@@ -8,6 +8,7 @@ import SigabaNeo.Lib.Lattices.Homomorphic.Norm
 import SigabaNeo.Lib.Lattices.Homomorphic.NoiseBound
 import SigabaNeo.Lib.Lattices.Homomorphic.SLP
 import SigabaNeo.Lib.Lattices.Homomorphic.SLPEval
+import SigabaNeo.Lib.Lattices.Homomorphic.Depth
 import SigabaNeo.Lib.Lattices.Homomorphic.SLPSim
 import SigabaNeo.Lib.Lattices.Homomorphic.BoolBuild
 import SigabaNeo.Lib.Lattices.Homomorphic.BoolArith
