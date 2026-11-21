@@ -3,6 +3,7 @@ module
 public import SigabaNeo.Lib.Lattices.Attacks.Bkw
 public import SigabaNeo.Lib.Lattices.Attacks.Bkw.Fresh
 public import SigabaNeo.Lib.Lattices.Attacks.Bkw.BinaryPair
+public import SigabaNeo.Lib.Lattices.Attacks.Bkw.BinaryBias
 public import SigabaNeo.Lib.Lattices.Attacks.Bkw.Fourier
 public import SigabaNeo.Lib.Lattices.Attacks.Bkw.Leaves
 public import SigabaNeo.Lib.Lattices.Attacks.Bkw.Retry
