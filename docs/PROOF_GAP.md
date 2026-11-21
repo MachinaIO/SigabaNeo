@@ -645,6 +645,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   QaryMembership.lean (`dual_fixed`, `kernel_fixed`, `dual_counts`, `kernel_counts`) proves that a fixed vector with a nonzero
   residue lies in the q-ary dual or kernel lattice for exactly a q^{−n} (resp. q^{−m}) fraction of A. It also proves the first
   moment and the hit bounds, halved under ± symmetry, used in Part 92. It is accepted on Prove2Me.
+  CBDQuadratic.lean proves the CBD(3) moments (0, 3/2, 6, odd moments 0), E[XᵀQX] = (3/2)·tr Q, the exact variance, the bound
+  Var ≤ (9/2)·tr Q for projections, and Cantelli. These are the ingredients of the height-zero necessary floor (Parts 94/103).
+  All ten theorems are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws

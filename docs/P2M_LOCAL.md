@@ -53,7 +53,7 @@ files, and a result counts only after it builds in the core and passes an indepe
   exact-SVP recovery), the ratio-lemma BKZ composition (`reduced_finds_plant`, `competitor_design_bound`), and the wall-1
   contained-prefix capture lemmas (BKZ and slide).
 * **Added later on Nov 22, 2026** (all ACCEPTED): the Haar λ1 two-sided window, consisting of `count_hit_bounds`,
-  `primitiveBallPairs_hit_upper` and `primitiveBallPairs_hit_lower`; and `allHeightsUniquenessCriterion` (Part 94) and the three FreshDisplacement counting theorems (Part 108), the five CBDTail theorems (Parts 97/102), the four QaryMembership theorems (Part 92), all of which agents submitted directly.
+  `primitiveBallPairs_hit_upper` and `primitiveBallPairs_hit_lower`; and `allHeightsUniquenessCriterion` (Part 94) and the three FreshDisplacement counting theorems (Part 108), the five CBDTail theorems (Parts 97/102), the four QaryMembership theorems (Part 92), the ten CBDQuadratic theorems (Parts 94/103), all of which agents submitted directly.
 * **Open Lean statements**: the general spherical Gram formula and the finite Haar mass of the
   arithmetic fundamental domain (Siegel), tagged `open`.
 * **Research results on walls 1 and 2** are paper results, not Lean statements; they are indexed in
