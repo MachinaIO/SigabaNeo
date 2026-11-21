@@ -10,6 +10,7 @@ import SigabaNeo.Lib.Lattices.Homomorphic.SLP
 import SigabaNeo.Lib.Lattices.Homomorphic.SLPEval
 import SigabaNeo.Lib.Lattices.Homomorphic.BoolBuild
 import SigabaNeo.Lib.Lattices.Homomorphic.BoolArith
+import SigabaNeo.Lib.Lattices.Homomorphic.BoolCompare
 import SigabaNeo.Lib.Lattices.Homomorphic.GSWCircuit
 
 /-!
@@ -32,6 +33,8 @@ import SigabaNeo.Lib.Lattices.Homomorphic.GSWCircuit
   homomorphic evaluation: the BGG+ key relation, the Ring-GSW invariant and the noise.
 * `Homomorphic/BoolBuild`, `Homomorphic/BoolArith`: building Boolean programs: gates, adders,
   constants, and addition and subtraction modulo `q`, with their values.
+* `Homomorphic/BoolCompare`: comparisons of wires with constants and Boolean combinations of
+  them (`BExp`, `compile`).
 * `Homomorphic/GSWCircuit`: the Ring-GSW evaluation of a circuit as a polynomial-size Boolean
   program on the bits of the ciphertexts (`fhatProgram`, `fhatProgram_spec`).
 * `Homomorphic/Eval`: one evaluation for BGG+ public keys and Ring-GSW ciphertexts; the BGG+ key

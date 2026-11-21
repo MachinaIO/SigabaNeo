@@ -41,20 +41,20 @@ variable {N q k : ℕ} [NeZero q] (hk : q < 2 ^ k) {Attr : Type} [Fintype Attr] 
 instance : Inhabited (SecretKey (R := Negacyclic (ZMod q) N) (k := k)) := ⟨⟨0, 0⟩⟩
 
 variable (N) (Attr) in
-/-- An adversary: given `mpk` and the challenge, a program that may ask keys for circuits and
+/-- An adversary: given `mpk` and the challenge, a program that may ask keys for predicates and
 outputs a bit. -/
 abbrev Adversary :=
   MPK (ringSetting N q k hk Attr) → Ciphertext (ringSetting N q k hk Attr) →
-    ProbOracleComp (fun _ : Circuit Attr => SecretKey (R := Negacyclic (ZMod q) N) (k := k)) Bool
+    ProbOracleComp (fun _ : SLP Attr × Wire Attr => SecretKey (R := Negacyclic (ZMod q) N) (k := k)) Bool
 
 variable {hk}
 
-/-- The key oracle: keys for the circuits unauthorized for both `x₀` and `x₁`, the zero key
+/-- The key oracle: keys for the predicates unauthorized for both `x₀` and `x₁`, the zero key
 otherwise. -/
 noncomputable def keyOracle (ks : KeySampler (Negacyclic (ZMod q) N) k) (x₀ x₁ : Attr → Bool)
     (mpk : MPK (ringSetting N q k hk Attr)) :
-    (f : Circuit Attr) → StateT Unit PMF (SecretKey (R := Negacyclic (ZMod q) N) (k := k)) :=
-  fun f _ => (if f.evalBool x₀ = true ∧ f.evalBool x₁ = true then keyGenLaw ks mpk f
+    (f : SLP Attr × Wire Attr) → StateT Unit PMF (SecretKey (R := Negacyclic (ZMod q) N) (k := k)) :=
+  fun f _ => (if SLP.evalBool x₀ f.1 f.2 = true ∧ SLP.evalBool x₁ f.1 f.2 = true then keyGenLaw ks mpk f
     else PMF.pure default).map fun sk => (sk, ())
 
 /-- The run of the adversary on `(mpk, ct)`. -/

@@ -26,11 +26,11 @@ open SigabaNeo.Lattices Cslib Cslib.Probability
 variable {N q k : ℕ} [NeZero q] (hk : q < 2 ^ k) {Attr : Type} [Fintype Attr]
 
 /-- The noise bound. -/
-noncomputable def noiseBound (Bχ K : ℕ) (f : Circuit Attr) : ℕ :=
+noncomputable def noiseBound (Bχ K : ℕ) (f : SLP Attr × Wire Attr) : ℕ :=
   let WN := Fintype.card (Col k) * N
   Bχ + WN * Bχ * K +
     WN * (∑ b, WN * slpBound WN Bχ ((ringSetting N q k hk Attr).fhat f).1
-      (((ringSetting N q k hk Attr).fhat f).2 b) + errBound WN Bχ f) * K
+      (((ringSetting N q k hk Attr).fhat f).2 b) + errBound WN Bχ (f.1.circuit f.2)) * K
 
 omit [NeZero q] in
 theorem bitR_bit {R : Type*} [CommRing R] (b : Bool) : bitR (R := R) b = 0 ∨ bitR (R := R) b = 1 := by
@@ -39,7 +39,7 @@ theorem bitR_bit {R : Type*} [CommRing R] (b : Bool) : bitR (R := R) b = 0 ∨ b
 omit [Fintype Attr] in
 /-- **The noise is bounded** by the errors of `Enc` and the key. -/
 theorem cnorm_noise_le (mpk : MPK (ringSetting N q k hk Attr)) (x : Attr → Bool)
-    (f : Circuit Attr) (sk : SecretKey (R := Negacyclic (ZMod q) N) (k := k))
+    (f : SLP Attr × Wire Attr) (sk : SecretKey (R := Negacyclic (ZMod q) N) (k := k))
     (r : EncCoins (ringSetting N q k hk Attr)) (Bχ K : ℕ)
     (he' : cnorm r.e' ≤ Bχ) (he₀ : rnorm r.e₀ ≤ Bχ) (heΨ : ∀ i, rnorm (r.eΨ i) ≤ Bχ)
     (hej : ∀ j, rnorm (r.ej j) ≤ Bχ)
@@ -65,9 +65,9 @@ theorem cnorm_noise_le (mpk : MPK (ringSetting N q k hk Attr)) (x : Attr → Boo
     exact Nat.mul_le_mul_left _ (slp_enc_noise (ringSetting N q k hk Attr).Γ₁ hΓ₁ mpk.Bj _ hψ r.ej Bχ hej _ _)
   -- The Ring-GSW error.
   have hG : rnorm (evalErr (ringSetting N q k hk Attr).Γ Ψ (fun i => bitR (R := Negacyclic (ZMod q) N) (x i))
-      (fun i => -r.eΨ i) f) ≤ errBound (Fintype.card (Col k) * N) Bχ f :=
+      (fun i => -r.eΨ i) (f.1.circuit f.2)) ≤ errBound (Fintype.card (Col k) * N) Bχ (f.1.circuit f.2) :=
     rnorm_evalErr_le (ringSetting N q k hk Attr).Γ hΓ _ _ (fun i => bitR_bit _) _ Bχ
-      (fun i => by rw [rnorm_neg]; exact heΨ i) f
+      (fun i => by rw [rnorm_neg]; exact heΨ i) (f.1.circuit f.2)
   -- The whole noise.
   simp only [noise, noiseBound]
   rw [add_assoc]
@@ -76,19 +76,19 @@ theorem cnorm_noise_le (mpk : MPK (ringSetting N q k hk Attr)) (x : Attr → Boo
   have h1 := rnorm_mul_le r.e₀ sk.k₁ K hk₁
   have h2 := rnorm_mul_le (∑ b, slpEnc (ringSetting N q k hk Attr).Γ₁ mpk.Bj (bitsOf (ringSetting N q k hk Attr) Ψ) r.ej ((ringSetting N q k hk Attr).fhat f).1 (((ringSetting N q k hk Attr).fhat f).2 b) *
       (ringSetting N q k hk Attr).Γ₁.ginv ((ringSetting N q k hk Attr).rowBits.V b) - evalErr (ringSetting N q k hk Attr).Γ Ψ (fun i => bitR (R := Negacyclic (ZMod q) N) (x i))
-        (fun i => -r.eΨ i) f) sk.k₂ K hk₂
+        (fun i => -r.eΨ i) (f.1.circuit f.2)) sk.k₂ K hk₂
   have hsub := rnorm_sub_le (∑ b, slpEnc (ringSetting N q k hk Attr).Γ₁ mpk.Bj (bitsOf (ringSetting N q k hk Attr) Ψ) r.ej ((ringSetting N q k hk Attr).fhat f).1 (((ringSetting N q k hk Attr).fhat f).2 b) *
       (ringSetting N q k hk Attr).Γ₁.ginv ((ringSetting N q k hk Attr).rowBits.V b)) (evalErr (ringSetting N q k hk Attr).Γ Ψ (fun i => bitR (R := Negacyclic (ZMod q) N) (x i))
-        (fun i => -r.eΨ i) f)
+        (fun i => -r.eΨ i) (f.1.circuit f.2))
   refine (cnorm_le_rnorm _ 0).trans ((rnorm_add_le _ _).trans ?_)
   calc rnorm (r.e₀ * sk.k₁) + rnorm ((∑ b, slpEnc (ringSetting N q k hk Attr).Γ₁ mpk.Bj (bitsOf (ringSetting N q k hk Attr) Ψ) r.ej ((ringSetting N q k hk Attr).fhat f).1 (((ringSetting N q k hk Attr).fhat f).2 b) *
         (ringSetting N q k hk Attr).Γ₁.ginv ((ringSetting N q k hk Attr).rowBits.V b) - evalErr (ringSetting N q k hk Attr).Γ Ψ (fun i => bitR (R := Negacyclic (ZMod q) N) (x i))
-          (fun i => -r.eΨ i) f) * sk.k₂)
+          (fun i => -r.eΨ i) (f.1.circuit f.2)) * sk.k₂)
       ≤ (Fintype.card (Col k) * N) * rnorm r.e₀ * K + (Fintype.card (Col k) * N) * (rnorm (∑ b, slpEnc (ringSetting N q k hk Attr).Γ₁ mpk.Bj (bitsOf (ringSetting N q k hk Attr) Ψ) r.ej ((ringSetting N q k hk Attr).fhat f).1 (((ringSetting N q k hk Attr).fhat f).2 b) *
         (ringSetting N q k hk Attr).Γ₁.ginv ((ringSetting N q k hk Attr).rowBits.V b)) + rnorm (evalErr (ringSetting N q k hk Attr).Γ Ψ
-          (fun i => bitR (R := Negacyclic (ZMod q) N) (x i)) (fun i => -r.eΨ i) f)) * K :=
+          (fun i => bitR (R := Negacyclic (ZMod q) N) (x i)) (fun i => -r.eΨ i) (f.1.circuit f.2))) * K :=
         Nat.add_le_add h1 (h2.trans (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hsub)))
-    _ ≤ (Fintype.card (Col k) * N) * Bχ * K + (Fintype.card (Col k) * N) * (∑ b, (Fintype.card (Col k) * N) * slpBound (Fintype.card (Col k) * N) Bχ ((ringSetting N q k hk Attr).fhat f).1 (((ringSetting N q k hk Attr).fhat f).2 b) + errBound (Fintype.card (Col k) * N) Bχ f) * K := by
+    _ ≤ (Fintype.card (Col k) * N) * Bχ * K + (Fintype.card (Col k) * N) * (∑ b, (Fintype.card (Col k) * N) * slpBound (Fintype.card (Col k) * N) Bχ ((ringSetting N q k hk Attr).fhat f).1 (((ringSetting N q k hk Attr).fhat f).2 b) + errBound (Fintype.card (Col k) * N) Bχ (f.1.circuit f.2)) * K := by
         exact Nat.add_le_add (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ he₀))
           (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.add_le_add hB hG)))
 
@@ -96,8 +96,8 @@ omit [Fintype Attr] in
 /-- **Correctness from bounds.** If the errors of `Enc` have coefficients at most `Bχ`, the key
 coefficients at most `K`, `f(x) = 0`, and `4 · noiseBound + 2 < q`, decryption returns `M`. -/
 theorem decrypt_correct_of_bounds (hN : 0 < N) (mpk : MPK (ringSetting N q k hk Attr))
-    (x : Attr → Bool) (M : Bool) (r : EncCoins (ringSetting N q k hk Attr)) (f : Circuit Attr)
-    (sk : SecretKey) (hsk : ValidKey mpk f sk) (hfx : f.evalBool x = false) (Bχ K : ℕ)
+    (x : Attr → Bool) (M : Bool) (r : EncCoins (ringSetting N q k hk Attr)) (f : SLP Attr × Wire Attr)
+    (sk : SecretKey) (hsk : ValidKey mpk f sk) (hfx : SLP.evalBool x f.1 f.2 = false) (Bχ K : ℕ)
     (he' : cnorm r.e' ≤ Bχ) (he₀ : rnorm r.e₀ ≤ Bχ) (heΨ : ∀ i, rnorm (r.eΨ i) ≤ Bχ)
     (hej : ∀ j, rnorm (r.ej j) ≤ Bχ)
     (hk₁ : ∀ c d, cnorm (sk.k₁ c d) ≤ K) (hk₂ : ∀ c d, cnorm (sk.k₂ c d) ≤ K)
@@ -168,10 +168,10 @@ theorem encCoinsLaw_bounded {χ : PMF (ZMod q)} {Bχ : ℕ} (hχ : ∀ e ∈ χ.
 coefficients at most `K`, `f(x) = 0` and `4 · noiseBound + 2 < q`, every ciphertext decrypts to
 `M`. -/
 theorem scheme_correct_bounded (hN : 0 < N) (mpk : MPK (ringSetting N q k hk Attr))
-    (f : Circuit Attr) (sk : SecretKey) (hsk : ValidKey mpk f sk) (K : ℕ)
+    (f : SLP Attr × Wire Attr) (sk : SecretKey) (hsk : ValidKey mpk f sk) (K : ℕ)
     (hk₁ : ∀ c d, cnorm (sk.k₁ c d) ≤ K) (hk₂ : ∀ c d, cnorm (sk.k₂ c d) ≤ K)
     {χ : PMF (ZMod q)} {Bχ : ℕ} (hχ : ∀ e ∈ χ.support, zabs e ≤ Bχ)
-    (hq : 4 * noiseBound (N := N) hk Bχ K f + 2 < q) (x : Attr → Bool) (hfx : f.evalBool x = false)
+    (hq : 4 * noiseBound (N := N) hk Bχ K f + 2 < q) (x : Attr → Bool) (hfx : SLP.evalBool x f.1 f.2 = false)
     (M : Bool) (r : EncCoins (ringSetting N q k hk Attr)) (hr : r ∈ (encCoinsLaw hk Attr χ).support) :
     decodeBit hN (decryptRaw mpk f sk (encrypt mpk x M r)) = M := by
   obtain ⟨he', he₀, heΨ, hej⟩ := encCoinsLaw_bounded hk hχ hr
@@ -183,7 +183,7 @@ omit [DecidableEq Attr] [Fintype Attr] in
 /-- **Gaussian keys are short.** Past smoothing, a key from `gaussKeySampler τ` has coefficients at
 most `K ≥ τ √m` except with probability `3 · 2^{−m}`, `m = 2 · |W| · N`. -/
 theorem gaussKey_short (τ : ℝ) (hτ : 0 < τ) (mpk : MPK (ringSetting N q k hk Attr))
-    (f : Circuit Attr) (hex : ∃ sk : SecretKey, ValidKey mpk f sk)
+    (f : SLP Attr × Wire Attr) (hex : ∃ sk : SecretKey, ValidKey mpk f sk)
     (hB : dualMassE (rowRotFin (keyRow mpk.B (keyMatrix mpk f))) τ ≤ 1 / 2) (K : ℕ)
     (hK : τ * Real.sqrt (Fintype.card ((Fin 2 × Col k) × Fin N)) ≤ K) :
     (keyGenLaw (gaussKeySampler τ hτ) mpk f).toOuterMeasure
@@ -206,12 +206,12 @@ theorem gaussKey_short (τ : ℝ) (hτ : 0 < τ) (mpk : MPK (ringSetting N q k h
 `4 · noiseBound + 2 < q` for `K ≥ τ √m`, the probability over `KeyGen` that some ciphertext of `M`
 fails to decrypt is at most `3 · 2^{−m}`. -/
 theorem decryption_error_le (hN : 0 < N) (τ : ℝ) (hτ : 0 < τ)
-    (mpk : MPK (ringSetting N q k hk Attr)) (f : Circuit Attr)
+    (mpk : MPK (ringSetting N q k hk Attr)) (f : SLP Attr × Wire Attr)
     (hex : ∃ sk : SecretKey, ValidKey mpk f sk)
     (hB : dualMassE (rowRotFin (keyRow mpk.B (keyMatrix mpk f))) τ ≤ 1 / 2) (K : ℕ)
     (hK : τ * Real.sqrt (Fintype.card ((Fin 2 × Col k) × Fin N)) ≤ K)
     {χ : PMF (ZMod q)} {Bχ : ℕ} (hχ : ∀ e ∈ χ.support, zabs e ≤ Bχ)
-    (hq : 4 * noiseBound (N := N) hk Bχ K f + 2 < q) (x : Attr → Bool) (hfx : f.evalBool x = false)
+    (hq : 4 * noiseBound (N := N) hk Bχ K f + 2 < q) (x : Attr → Bool) (hfx : SLP.evalBool x f.1 f.2 = false)
     (M : Bool) :
     (keyGenLaw (gaussKeySampler τ hτ) mpk f).toOuterMeasure
         {sk | ∃ r ∈ (encCoinsLaw hk Attr χ).support,

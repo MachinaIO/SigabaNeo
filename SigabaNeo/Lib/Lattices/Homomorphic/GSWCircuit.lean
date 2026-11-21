@@ -398,4 +398,133 @@ theorem fhatProgram_spec {A : Type*} (hk : q < 2 ^ k) (x : A × BI N k → Bool)
     simpa [addNand, bv, evalBool, valueOf, wireVal] using this
   exact (compileGSW_spec hk x Ψ hx f [⟨.one, .one⟩] (by simp [Valid]) h0).2.2 a c b j
 
+/-! ### Compiling a straight-line program -/
+
+/-- The wires of the ciphertext on a wire of the source program, from the wires of its gates
+computed so far (`reps`); a gate not yet computed reads the ciphertext of `1`, as in `SLP.run`. -/
+noncomputable def repOf {A : Type*} (z : Wire (A × BI N k)) (hk : q < 2 ^ k)
+    (reps : List (BI N k → Wire (A × BI N k))) : Wire A → BI N k → Wire (A × BI N k)
+  | .input i => fun b => .input (i, b)
+  | .one => constRep z k (gswBin (N := N) hk).G
+  | .gate m => reps.getD m (constRep z k (gswBin (N := N) hk).G)
+
+/-- One gate of the source program: its NAND block. -/
+noncomputable def compileStep {A : Type*} (z : Wire (A × BI N k)) (hk : q < 2 ^ k)
+    (st : SLP (A × BI N k) × List (BI N k → Wire (A × BI N k))) (g : Gate A) :
+    SLP (A × BI N k) × List (BI N k → Wire (A × BI N k)) :=
+  let r := nandBlock z q k hk (repOf z hk st.2 g.a) (repOf z hk st.2 g.b) st.1
+  (r.1, st.2 ++ [r.2])
+
+/-- **Compile a straight-line program** gate by gate (each gate once) after `prog`: the program
+and the wires of the ciphertext on `w`. -/
+noncomputable def compileSLP {A : Type*} (z : Wire (A × BI N k)) (hk : q < 2 ^ k) (p : SLP A)
+    (w : Wire A) (prog : SLP (A × BI N k)) : SLP (A × BI N k) × (BI N k → Wire (A × BI N k)) :=
+  let st := p.foldl (compileStep z hk) (prog, [])
+  (st.1, repOf z hk st.2 w)
+
+section CompileSLP
+
+variable {A : Type*} (hk : q < 2 ^ k) (x : A × BI N k → Bool)
+  (Ψ : A → Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N))
+
+/-- The Ring-GSW NAND. -/
+noncomputable abbrev gswStep (hk : q < 2 ^ k) (a b : Matrix (Fin 2) (Fin 2 × Fin k)
+    (Negacyclic (ZMod q) N)) : Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N) :=
+  (gswBin hk).G - a * (gswBin hk).ginv b
+
+/-- The wires `reps` represent the ciphertexts `vals` of the gates computed so far. -/
+def RepsInv (prog : SLP (A × BI N k)) (reps : List (BI N k → Wire (A × BI N k)))
+    (vals : List (Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N))) : Prop :=
+  reps.length = vals.length ∧ ∀ m (h : m < reps.length) (h' : m < vals.length),
+    Rep x prog reps[m] vals[m]
+
+omit [NeZero q] in
+theorem RepsInv.ext {prog prog' : SLP (A × BI N k)} (he : Ext prog prog')
+    {reps : List (BI N k → Wire (A × BI N k))}
+    {vals : List (Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N))}
+    (h : RepsInv x prog reps vals) : RepsInv x prog' reps vals :=
+  ⟨h.1, fun m hm hm' => (h.2 m hm hm').ext x he⟩
+
+theorem repOf_spec (hx : ∀ i a c b j, x (i, a, c, b, j) = ((Ψ i a c).coeffs j).val.testBit b)
+    {prog : SLP (A × BI N k)} {z : Wire (A × BI N k)} (hz : Valid prog z)
+    (hz0 : bv x prog z = false) {reps : List (BI N k → Wire (A × BI N k))}
+    {vals : List (Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N))}
+    (h : RepsInv x prog reps vals) (w : Wire A) :
+    Rep x prog (repOf z hk reps w) (SLP.wireVal Ψ (gswBin hk).G vals w) := by
+  cases w with
+  | input i => exact ⟨fun _ => trivial, fun a c b j => hx i a c b j⟩
+  | one => exact constRep_spec x hk hz hz0 _
+  | gate m =>
+    simp only [repOf, SLP.wireVal]
+    by_cases hm : m < reps.length
+    · rw [List.getD_eq_getElem _ _ hm, List.getD_eq_getElem _ _ (h.1 ▸ hm)]
+      exact h.2 m hm (h.1 ▸ hm)
+    · rw [List.getD_eq_default _ _ (Nat.le_of_not_lt hm),
+        List.getD_eq_default _ _ (h.1 ▸ Nat.le_of_not_lt hm)]
+      exact constRep_spec x hk hz hz0 _
+
+theorem foldl_compileStep_spec
+    (hx : ∀ i a c b j, x (i, a, c, b, j) = ((Ψ i a c).coeffs j).val.testBit b)
+    {z : Wire (A × BI N k)} :
+    ∀ (p : SLP A) (prog : SLP (A × BI N k)) (reps : List (BI N k → Wire (A × BI N k)))
+      (vals : List (Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N))),
+      Valid prog z → bv x prog z = false → RepsInv x prog reps vals →
+      Ext prog (p.foldl (compileStep z hk) (prog, reps)).1 ∧
+        RepsInv x (p.foldl (compileStep z hk) (prog, reps)).1
+          (p.foldl (compileStep z hk) (prog, reps)).2 (SLP.run Ψ (gswBin hk).G (gswStep hk) p vals)
+  | [], prog, reps, vals, _, _, h => ⟨Ext.refl prog, h⟩
+  | g :: p, prog, reps, vals, hz, hz0, h => by
+    have ha := repOf_spec hk x Ψ hx hz hz0 h g.a
+    have hb := repOf_spec hk x Ψ hx hz hz0 h g.b
+    obtain ⟨e₁, r₁⟩ := nandBlock_spec x hk hz hz0 ha hb
+    have hz₁ := hz.ext e₁
+    have hz0₁ : bv x (nandBlock z q k hk (repOf z hk reps g.a) (repOf z hk reps g.b) prog).1 z =
+        false := by rw [bv_ext x e₁ hz]; exact hz0
+    have h₁ : RepsInv x (nandBlock z q k hk (repOf z hk reps g.a) (repOf z hk reps g.b) prog).1
+        (reps ++ [(nandBlock z q k hk (repOf z hk reps g.a) (repOf z hk reps g.b) prog).2])
+        (vals ++ [gswStep hk (SLP.wireVal Ψ (gswBin hk).G vals g.a)
+          (SLP.wireVal Ψ (gswBin hk).G vals g.b)]) := by
+      refine ⟨by simp [h.1], fun m hm hm' => ?_⟩
+      by_cases hlt : m < reps.length
+      · rw [List.getElem_append_left hlt, List.getElem_append_left (h.1 ▸ hlt)]
+        exact (h.2 m hlt (h.1 ▸ hlt)).ext x e₁
+      · have hm1 : m = reps.length := by simp at hm; omega
+        subst hm1
+        rw [List.getElem_append_right (Nat.le_refl _), List.getElem_append_right (h.1 ▸ Nat.le_refl _)]
+        simp only [Nat.sub_self, h.1, List.getElem_singleton]
+        exact r₁
+    obtain ⟨e₂, r₂⟩ := foldl_compileStep_spec hx p _ _ _ hz₁ hz0₁ h₁
+    exact ⟨e₁.trans e₂, r₂⟩
+
+/-- **The compiled program represents the Ring-GSW evaluation along the source program.** -/
+theorem compileSLP_spec
+    (hx : ∀ i a c b j, x (i, a, c, b, j) = ((Ψ i a c).coeffs j).val.testBit b)
+    {z : Wire (A × BI N k)} (p : SLP A) (w : Wire A) (prog : SLP (A × BI N k))
+    (hz : Valid prog z) (hz0 : bv x prog z = false) :
+    Ext prog (compileSLP z hk p w prog).1 ∧
+      Rep x (compileSLP z hk p w prog).1 (compileSLP z hk p w prog).2
+        (SLP.valueOf Ψ (gswBin hk).G (gswStep hk) p w) := by
+  obtain ⟨e, r⟩ := foldl_compileStep_spec hk x Ψ hx p prog [] [] hz hz0 ⟨rfl, fun _ h => absurd h (by simp)⟩
+  exact ⟨e, repOf_spec hk x Ψ hx (hz.ext e) (by rw [bv_ext x e hz]; exact hz0) r w⟩
+
+end CompileSLP
+
+/-- The program of `f̂` for a wire `w` of a straight-line program: a gate computing `0`, then the
+compiled evaluation. -/
+noncomputable def fhatSLP {A : Type*} (hk : q < 2 ^ k) (p : SLP A) (w : Wire A) :
+    SLP (A × BI N k) × (BI N k → Wire (A × BI N k)) :=
+  compileSLP (.gate 0) hk p w [⟨.one, .one⟩]
+
+/-- **`f̂` of a straight-line program computes the bits of its Ring-GSW evaluation.** -/
+theorem fhatSLP_spec {A : Type*} (hk : q < 2 ^ k) (x : A × BI N k → Bool)
+    (Ψ : A → Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N))
+    (hx : ∀ i a c b j, x (i, a, c, b, j) = ((Ψ i a c).coeffs j).val.testBit b) (p : SLP A)
+    (w : Wire A) (a : Fin 2) (c : Fin 2 × Fin k) (b : Fin k) (j : Fin N) :
+    bv x (fhatSLP (N := N) hk p w).1 ((fhatSLP (N := N) hk p w).2 (a, c, b, j)) =
+      ((SLP.valueOf Ψ (gswBin hk).G (gswStep hk) p w a c).coeffs j).val.testBit b := by
+  have h0 : bv x [⟨.one, .one⟩] (Wire.gate 0 : Wire (A × BI N k)) = false := by
+    have := bv_addNand x ([] : SLP (A × BI N k)) .one .one trivial trivial
+    simpa [addNand, bv, evalBool, valueOf, wireVal] using this
+  exact (compileSLP_spec hk x Ψ hx p w [⟨.one, .one⟩] (by simp [Valid]) h0).2.2 a c b j
+
 end SigabaNeo.Lattices

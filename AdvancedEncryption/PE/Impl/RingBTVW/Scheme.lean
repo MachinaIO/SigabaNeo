@@ -1,5 +1,6 @@
 import SigabaNeo.Lib.Lattices.Homomorphic
 import SigabaNeo.Lib.Lattices.Decode
+import SigabaNeo.Lib.Lattices.Homomorphic.SLPCircuit
 
 /-!
 # The ring variant of the BTVW17 §4.2 predicate encryption
@@ -38,9 +39,14 @@ when the constant coefficient of the noise is below `q/4` (`decrypt_correct`, `s
 **Security** (BTVW17 Theorem 4.2): under Ring-LWE alone, with no statistical step
 (`PE.Impl.RingBTVW.Security.attributeHiding`).
 
+**Predicates.** A setting has its own predicates (`Setting.Pred`), each with a circuit
+(`Setting.circ`) that gives its meaning and its Ring-GSW evaluation. Over `R_q` a predicate is a
+wire of a straight-line program, and its circuit is the unfolding `SLP.circuit`, used only in the
+analysis: `f̂` is compiled from the program gate by gate.
+
 **Constructed.** Over `R_q` (`ringSetting`): the gadget digits and the bit decompositions; the
-polynomial-size program `f̂` of the Ring-GSW evaluation (`fhatProgram`: modular arithmetic on the
-bits of the coefficients, proved correct by `ringSetting_fhatCorrect`); a key
+polynomial-size program `f̂` of the Ring-GSW evaluation (`fhatSLP`: one NAND block of modular
+arithmetic on the bits of the coefficients per gate, proved correct by `ringSetting_fhatCorrect`); a key
 samplers (`gaussKeySampler`: the discrete Gaussian on the coset of the keys; `canonicalKeySampler`);
 the gadget trapdoor `B = [A₀ | g − A₀ T]`, whose exact preimages
 show that valid keys exist for such `B` (`trapdoorKey_valid`, `keyGenLaw_valid`); the laws of the
@@ -72,9 +78,13 @@ structure Setting (R : Type*) [CommRing R] (k : ℕ) where
   ctBits : MatrixBits R (Fin 2) (Col k)
   /-- The bits of a row. -/
   rowBits : MatrixBits R (Fin 1) (Col k)
+  /-- The predicates. -/
+  Pred : Type
+  /-- The circuit of a predicate, which gives its meaning and its homomorphic evaluation. -/
+  circ : Pred → Circuit Attr
   /-- `f̂`: a program on the bits of the attribute ciphertexts, and its output wire for each bit
   `b` of the top row of `FHE.Eval(f, Ψ)`. -/
-  fhat : Circuit Attr → SLP (Attr × ctBits.Index) × (rowBits.Index → Wire (Attr × ctBits.Index))
+  fhat : Pred → SLP (Attr × ctBits.Index) × (rowBits.Index → Wire (Attr × ctBits.Index))
   /-- `⌊q/2⌋`. -/
   half : R
 
@@ -98,9 +108,9 @@ def bitsOf (Ψ : S.Attr → Matrix (Fin 2) (Col k) R) : S.Attr × S.ctBits.Index
 
 /-- `f̂` computes the bits of the top row of the Ring-GSW evaluation. -/
 def Setting.FhatCorrect : Prop :=
-  ∀ (f : Circuit S.Attr) (Ψ : S.Attr → Matrix (Fin 2) (Col k) R) (b : S.rowBits.Index),
+  ∀ (f : S.Pred) (Ψ : S.Attr → Matrix (Fin 2) (Col k) R) (b : S.rowBits.Index),
     SLP.eval (bitsOf S Ψ) (S.fhat f).1 ((S.fhat f).2 b) =
-      S.rowBits.bits (topRow (evalMat S.Γ Ψ f)) b
+      S.rowBits.bits (topRow (evalMat S.Γ Ψ (S.circ f))) b
 
 /-- The master public key. -/
 structure MPK where
@@ -165,22 +175,22 @@ def encrypt (mpk : MPK S) (x : S.Attr → Bool) (M : Bool) (r : EncCoins S) : Ci
     κ := r.s * mpk.p + r.e' + (if M then S.half else 0) }
 
 /-- `B_f̂ = ∑_b EvalF(f̂_b, B) · G̲⁻¹(V_b)`. -/
-def keyMatrix (mpk : MPK S) (f : Circuit S.Attr) : Matrix (Fin 1) (Col k) R :=
+def keyMatrix (mpk : MPK S) (f : S.Pred) : Matrix (Fin 1) (Col k) R :=
   ∑ b, slpPK S.Γ₁ mpk.Bj (S.fhat f).1 ((S.fhat f).2 b) * S.Γ₁.ginv (S.rowBits.V b)
 
 /-- **KeyGen** produces a key with `[B | B_f̂] sk = p` (sampled with the trapdoor of `B`). -/
-def ValidKey (mpk : MPK S) (f : Circuit S.Attr) (sk : SecretKey (R := R) (k := k)) : Prop :=
+def ValidKey (mpk : MPK S) (f : S.Pred) (sk : SecretKey (R := R) (k := k)) : Prop :=
   mpk.B * sk.k₁ + keyMatrix mpk f * sk.k₂ = scalar mpk.p
 
 /-- `c_f̂ = ∑_b EvalFX(f̂_b, ψ, c) · G̲⁻¹(V_b) + Ψ̄_f`. -/
-def evalCiphertext (mpk : MPK S) (f : Circuit S.Attr) (ct : Ciphertext S) :
+def evalCiphertext (mpk : MPK S) (f : S.Pred) (ct : Ciphertext S) :
     Matrix (Fin 1) (Col k) R :=
   ∑ b, slpEnc S.Γ₁ mpk.Bj (bitsOf S ct.Ψ) ct.cj (S.fhat f).1 ((S.fhat f).2 b) *
       S.Γ₁.ginv (S.rowBits.V b) +
-    botRow (evalMat S.Γ ct.Ψ f)
+    botRow (evalMat S.Γ ct.Ψ (S.circ f))
 
 /-- **Dec**, before rounding: `κ − [c₀ | c_f̂] sk`. -/
-def decryptRaw (mpk : MPK S) (f : Circuit S.Attr) (sk : SecretKey (R := R) (k := k))
+def decryptRaw (mpk : MPK S) (f : S.Pred) (sk : SecretKey (R := R) (k := k))
     (ct : Ciphertext S) : R :=
   ct.κ - (ct.c₀ * sk.k₁ + evalCiphertext mpk f ct * sk.k₂) 0 0
 
@@ -188,12 +198,12 @@ def decryptRaw (mpk : MPK S) (f : Circuit S.Attr) (sk : SecretKey (R := R) (k :=
 def gswSecret (s : R) : Matrix (Fin 1) (Fin 2) R := Matrix.of fun _ a => if a = 0 then s else -1
 
 /-- The noise of decryption: `e' − [e₀ | E_BGG − E_GSW] sk`. -/
-def noise (mpk : MPK S) (x : S.Attr → Bool) (f : Circuit S.Attr) (sk : SecretKey (R := R) (k := k))
+def noise (mpk : MPK S) (x : S.Attr → Bool) (f : S.Pred) (sk : SecretKey (R := R) (k := k))
     (r : EncCoins S) : R :=
   let Ψ := fun i => stackKey (r.a i) (r.eΨ i) r.s + bitR (R := R) (x i) • S.Γ.G
   let eBgg := ∑ b, slpEnc S.Γ₁ mpk.Bj (bitsOf S Ψ) r.ej (S.fhat f).1 ((S.fhat f).2 b) *
     S.Γ₁.ginv (S.rowBits.V b)
-  let eGsw := evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) f
+  let eGsw := evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) (S.circ f)
   r.e' - (r.e₀ * sk.k₁ + (eBgg - eGsw) * sk.k₂) 0 0
 
 /-! ### Setup and KeyGen with the gadget trapdoor -/
@@ -208,13 +218,13 @@ def setup (S : Setting R k) (A₀ : Fin k → R) (T : MSK k R)
 
 /-- An exact key from the trapdoor: `k₁ = [T; I] g⁻¹(p − B_f̂ k₂)`. It shows that keys exist
 (`trapdoorKey_valid`); it reveals `T`, so it is not the key generation of the scheme (`keyGenLaw`). -/
-def trapdoorKey (mpk : MPK S) (T : MSK k R) (f : Circuit S.Attr) (k₂ : Matrix (Col k) (Fin 1) R) :
+def trapdoorKey (mpk : MPK S) (T : MSK k R) (f : S.Pred) (k₂ : Matrix (Col k) (Fin 1) R) :
     SecretKey (R := R) (k := k) :=
   { k₁ := gTrapdoorSolve S.D T (mpk.p - (keyMatrix mpk f * k₂) 0 0), k₂ := k₂ }
 
 /-- Keys solved with the trapdoor are valid. -/
 theorem trapdoorKey_valid (A₀ : Fin k → R) (T : MSK k R)
-    (Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R) (p : R) (f : Circuit S.Attr)
+    (Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R) (p : R) (f : S.Pred)
     (k₂ : Matrix (Col k) (Fin 1) R) :
     ValidKey (setup S A₀ T Bj p).1 f (trapdoorKey (setup S A₀ T Bj p).1 T f k₂) := by
   simp only [ValidKey, setup, trapdoorKey]
@@ -235,13 +245,13 @@ structure KeySampler (R : Type*) [CommRing R] (k : ℕ) where
     ∀ sk ∈ (law B Bf p).support, B * sk.k₁ + Bf * sk.k₂ = scalar p
 
 /-- **KeyGen**: the key sampler at `(B, B_f̂, p)`. -/
-noncomputable def keyGenLaw (ks : KeySampler R k) (mpk : MPK S) (f : Circuit S.Attr) :
+noncomputable def keyGenLaw (ks : KeySampler R k) (mpk : MPK S) (f : S.Pred) :
     PMF (SecretKey (R := R) (k := k)) :=
   ks.law mpk.B (keyMatrix mpk f) mpk.p
 
 /-- Every key that `KeyGen` outputs after `Setup` is valid. -/
 theorem keyGenLaw_valid (ks : KeySampler R k) (A₀ : Fin k → R) (T : MSK k R)
-    (Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R) (p : R) (f : Circuit S.Attr) :
+    (Bj : S.Attr × S.ctBits.Index → Matrix (Fin 1) (Col k) R) (p : R) (f : S.Pred) :
     ∀ sk ∈ (keyGenLaw ks (setup S A₀ T Bj p).1 f).support, ValidKey (setup S A₀ T Bj p).1 f sk :=
   ks.valid _ _ _ ⟨_, trapdoorKey_valid A₀ T Bj p f 0⟩
 
@@ -280,8 +290,8 @@ theorem gswSecret_mul (s : R) (Ψ : Matrix (Fin 2) (Col k) R) :
 /-- **Correctness, exactly.** If `f(x) = 0`, `[B | B_f̂] sk = p` and `f̂` computes the Ring-GSW
 evaluation, then `κ − κ' = M ⌊q/2⌋ + noise`. -/
 theorem decryptRaw_eq (hfhat : S.FhatCorrect) (mpk : MPK S) (x : S.Attr → Bool) (M : Bool)
-    (r : EncCoins S) (f : Circuit S.Attr) (sk : SecretKey (R := R) (k := k))
-    (hsk : ValidKey mpk f sk) (hfx : f.eval (fun i => bitR (R := R) (x i)) = 0) :
+    (r : EncCoins S) (f : S.Pred) (sk : SecretKey (R := R) (k := k))
+    (hsk : ValidKey mpk f sk) (hfx : (S.circ f).eval (fun i => bitR (R := R) (x i)) = 0) :
     decryptRaw mpk f sk (encrypt mpk x M r) =
       (if M then S.half else 0) + noise mpk x f sk r := by
   set Ψ := fun i => stackKey (r.a i) (r.eΨ i) r.s + bitR (R := R) (x i) • S.Γ.G with hΨ
@@ -291,19 +301,19 @@ theorem decryptRaw_eq (hfhat : S.FhatCorrect) (mpk : MPK S) (x : S.Attr → Bool
     intro i
     rw [hΨ, Matrix.mul_add, gswSecret_mul_stackKey, Matrix.mul_smul]
     abel
-  have hgsw := gsw_invariant S.Γ (gswSecret r.s) Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) hinv f
+  have hgsw := gsw_invariant S.Γ (gswSecret r.s) Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) hinv (S.circ f)
   rw [hfx, zero_smul, zero_add] at hgsw
   -- The BGG+ evaluation of every bit of the top row of `Ψ_f`.
   have hbgg : ∀ b, slpEnc S.Γ₁ mpk.Bj (bitsOf S Ψ) (encrypt mpk x M r).cj (S.fhat f).1
       ((S.fhat f).2 b) =
       scalar r.s * (slpPK S.Γ₁ mpk.Bj (S.fhat f).1 ((S.fhat f).2 b) -
-          S.rowBits.bits (topRow (evalMat S.Γ Ψ f)) b • S.Γ₁.G) +
+          S.rowBits.bits (topRow (evalMat S.Γ Ψ (S.circ f))) b • S.Γ₁.G) +
         slpEnc S.Γ₁ mpk.Bj (bitsOf S Ψ) r.ej (S.fhat f).1 ((S.fhat f).2 b) := by
     intro b
     rw [← hfhat f Ψ b]
     exact slp_enc_key_relation S.Γ₁ (scalar r.s) mpk.Bj (bitsOf S Ψ) _ r.ej (fun j => rfl) _ _
   have hmat := matrix_key_relation_bits S.Γ₁ S.rowBits (scalar r.s)
-    (fun b => slpPK S.Γ₁ mpk.Bj (S.fhat f).1 ((S.fhat f).2 b)) (topRow (evalMat S.Γ Ψ f))
+    (fun b => slpPK S.Γ₁ mpk.Bj (S.fhat f).1 ((S.fhat f).2 b)) (topRow (evalMat S.Γ Ψ (S.circ f)))
     (fun b => slpEnc S.Γ₁ mpk.Bj (bitsOf S Ψ) (encrypt mpk x M r).cj (S.fhat f).1 ((S.fhat f).2 b))
     (fun b => slpEnc S.Γ₁ mpk.Bj (bitsOf S Ψ) r.ej (S.fhat f).1 ((S.fhat f).2 b)) hbgg
   -- `c_f̂ = s B_f̂ − t Ψ_f + E_BGG = s B_f̂ + E_BGG − E_GSW`.
@@ -311,13 +321,13 @@ theorem decryptRaw_eq (hfhat : S.FhatCorrect) (mpk : MPK S) (x : S.Attr → Bool
       scalar r.s * keyMatrix mpk f +
         (∑ b, slpEnc S.Γ₁ mpk.Bj (bitsOf S Ψ) r.ej (S.fhat f).1 ((S.fhat f).2 b) *
           S.Γ₁.ginv (S.rowBits.V b) -
-          evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) f) := by
-    have ht := gswSecret_mul r.s (evalMat S.Γ Ψ f)
+          evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) (S.circ f)) := by
+    have ht := gswSecret_mul r.s (evalMat S.Γ Ψ (S.circ f))
     rw [hgsw] at ht
     simp only [evalCiphertext, encrypt, keyMatrix] at hmat ⊢
     rw [hmat, Matrix.mul_sub]
-    rw [show botRow (evalMat S.Γ Ψ f) = scalar r.s * topRow (evalMat S.Γ Ψ f) -
-        evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) f by rw [ht]; abel]
+    rw [show botRow (evalMat S.Γ Ψ (S.circ f)) = scalar r.s * topRow (evalMat S.Γ Ψ (S.circ f)) -
+        evalErr S.Γ Ψ (fun i => bitR (R := R) (x i)) (fun i => -r.eΨ i) (S.circ f) by rw [ht]; abel]
     abel
   -- `κ' = s p + [e₀ | E_BGG − E_GSW] sk`.
   have hsk' := congrArg (fun m => (scalar r.s * m) 0 0) hsk
@@ -405,19 +415,22 @@ theorem coeffBits_isBoolean (hk : q ≤ 2 ^ k) (r : Type) [Fintype r] [Decidable
   simp only [coeffBits, bitR, coeffBool]
   split_ifs with h <;> simp [h]
 
-/-- The setting over `R_q`: binary digits (`q < 2^k`), the bits of the coefficients, and the
-polynomial-size program `f̂` of the Ring-GSW evaluation (`fhatProgram`). -/
+/-- The setting over `R_q`: binary digits (`q < 2^k`), the bits of the coefficients, predicates
+given as a wire of a straight-line program (`SLP.circuit` gives their circuit), and the program
+`f̂` of the Ring-GSW evaluation compiled gate by gate (`fhatSLP`). -/
 noncomputable def ringSetting (N q k : ℕ) [NeZero q] (hk : q < 2 ^ k) (Attr : Type) :
     Setting (Negacyclic (ZMod q) N) k where
   D := binaryDigits N q k hk.le
   Attr := Attr
   ctBits := coeffBits N q k hk.le (Fin 2) (Col k)
   rowBits := coeffBits N q k hk.le (Fin 1) (Col k)
-  fhat f := ((fhatProgram (N := N) hk f).1,
-    fun b => (fhatProgram (N := N) hk f).2 (0, b.2.1, b.2.2.1, b.2.2.2))
+  Pred := SLP Attr × Wire Attr
+  circ f := f.1.circuit f.2
+  fhat f := ((fhatSLP (N := N) hk f.1 f.2).1,
+    fun b => (fhatSLP (N := N) hk f.1 f.2).2 (0, b.2.1, b.2.2.1, b.2.2.2))
   half := algebraMap (ZMod q) _ (encodeBit q true)
 
-/-- **`f̂` computes the Ring-GSW evaluation** over `R_q` (`fhatProgram_spec`). -/
+/-- **`f̂` computes the Ring-GSW evaluation** over `R_q` (`fhatSLP_spec`). -/
 theorem ringSetting_fhatCorrect (hk : q < 2 ^ k) (Attr : Type) :
     (ringSetting N q k hk Attr).FhatCorrect := by
   intro f Ψ b
@@ -427,11 +440,16 @@ theorem ringSetting_fhatCorrect (hk : q < 2 ^ k) (Attr : Type) :
     exact coeffBits_isBoolean hk.le (Fin 2) (Ψ j.1) j.2
   rw [hbits, SLP.eval_bits]
   erw [coeffBits_isBoolean hk.le (Fin 1)]
-  have h := fhatProgram_spec (N := N) hk (fun j => coeffBool (Ψ j.1) j.2) Ψ
-    (fun i a c b j => rfl) f 0 b.2.1 b.2.2.1 b.2.2.2
+  have h := fhatSLP_spec (N := N) hk (fun j => coeffBool (Ψ j.1) j.2) Ψ
+    (fun i a c b j => rfl) f.1 f.2 0 b.2.1 b.2.2.1 b.2.2.2
+  have hc : evalMat (ringSetting N q k hk Attr).Γ Ψ ((ringSetting N q k hk Attr).circ f) =
+      SLP.valueOf Ψ (gswBin (N := N) hk).G (gswStep hk) f.1 f.2 :=
+    SLP.evalMat_circuit _ Ψ f.1 f.2
   have h' : SLP.evalBool (fun j => coeffBool (Ψ j.1) j.2) ((ringSetting N q k hk Attr).fhat f).1
       (((ringSetting N q k hk Attr).fhat f).2 b) =
-      coeffBool (topRow (evalMat (ringSetting N q k hk Attr).Γ Ψ f)) b := h
+      coeffBool (topRow (evalMat (ringSetting N q k hk Attr).Γ Ψ
+        ((ringSetting N q k hk Attr).circ f))) b := by
+    rw [hc]; exact h
   simp only [bitR, h']
 
 /-- **Correctness over `R_q`** (BTVW17 Theorem 4.1). If `f(x) = 0`, the key is valid, `f̂`
@@ -439,13 +457,16 @@ computes the Ring-GSW evaluation and the constant coefficient `ν₀` of the noi
 `4|ν₀| + 2 < q`, decryption returns `M`. -/
 theorem decrypt_correct {k : ℕ} (hk : q < 2 ^ k) {Attr : Type} (hN : 0 < N)
     (mpk : MPK (ringSetting N q k hk Attr)) (x : Attr → Bool) (M : Bool)
-    (r : EncCoins (ringSetting N q k hk Attr)) (f : Circuit Attr) (sk : SecretKey)
-    (hsk : ValidKey mpk f sk) (hfx : f.evalBool x = false)
+    (r : EncCoins (ringSetting N q k hk Attr)) (f : SLP Attr × Wire Attr) (sk : SecretKey)
+    (hsk : ValidKey mpk f sk) (hfx : SLP.evalBool x f.1 f.2 = false)
     (hν : 4 * |((noise mpk x f sk r).coeffs ⟨0, hN⟩).valMinAbs| + 2 < q) :
     decodeBit hN (decryptRaw mpk f sk (encrypt mpk x M r)) = M := by
-  have hfx' : f.eval (fun i => bitR (R := Negacyclic (ZMod q) N) (x i)) = 0 := by
-    have := Circuit.eval_bits (R := Negacyclic (ZMod q) N) x f
-    simpa [bitR, hfx] using this
+  have hfx' : ((ringSetting N q k hk Attr).circ f).eval
+      (fun i => bitR (R := Negacyclic (ZMod q) N) (x i)) = 0 := by
+    have := Circuit.eval_bits (R := Negacyclic (ZMod q) N) x (f.1.circuit f.2)
+    rw [SLP.evalBool_circuit, hfx] at this
+    simp only [bitR]
+    exact this.trans (by simp)
   rw [decryptRaw_eq (ringSetting_fhatCorrect hk Attr) mpk x M r f sk hsk hfx']
   have hM : (if M then (ringSetting N q k hk Attr).half else 0) =
       algebraMap (ZMod q) (Negacyclic (ZMod q) N) (encodeBit q M) := by
@@ -459,9 +480,9 @@ coins of `Enc`: if `f(x) = 0` and the constant coefficient `ν₀` of the noise 
 `Dec(sk, Enc(mpk, x, M)) = M`. -/
 theorem scheme_correct {k : ℕ} (hk : q < 2 ^ k) {Attr : Type} (hN : 0 < N)
     (ks : KeySampler (Negacyclic (ZMod q) N) k) (mpk : MPK (ringSetting N q k hk Attr))
-    (f : Circuit Attr) (hex : ∃ sk : SecretKey, ValidKey mpk f sk) (sk : SecretKey)
+    (f : SLP Attr × Wire Attr) (hex : ∃ sk : SecretKey, ValidKey mpk f sk) (sk : SecretKey)
     (hsk : sk ∈ (keyGenLaw ks mpk f).support) (x : Attr → Bool) (M : Bool)
-    (r : EncCoins (ringSetting N q k hk Attr)) (hfx : f.evalBool x = false)
+    (r : EncCoins (ringSetting N q k hk Attr)) (hfx : SLP.evalBool x f.1 f.2 = false)
     (hν : 4 * |((noise mpk x f sk r).coeffs ⟨0, hN⟩).valMinAbs| + 2 < q) :
     decodeBit hN (decryptRaw mpk f sk (encrypt mpk x M r)) = M :=
   decrypt_correct hk hN mpk x M r f sk (ks.valid _ _ _ hex sk hsk) hfx hν

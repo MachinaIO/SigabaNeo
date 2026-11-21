@@ -2,6 +2,7 @@ import SigabaNeo.Trusted.Machine
 import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Sequential
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
+import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 
 /-!
 # Machines from deterministic Turing machines and polynomial-time certificates
@@ -14,6 +15,11 @@ it ignores the coin. Its output law is the point mass on the output after `time`
 From a polynomial-time certificate of cslib-frontier (`ComputableInPolyTime f encIn encOut`), with
 a clock at least the time bound on an input, the machine outputs exactly the encoded value of `f`
 (`Machine.exists_of_computable`).
+
+A function that is constant outside finitely many inputs has a deterministic machine that computes
+it on every input (`Machine.exists_of_almostConst`): cslib's machine reads a bounded prefix of the
+input against a table, so its clock is a constant. Its description grows with the table, so this is
+meant for algorithms whose cost is not counted (as `Eval` of predicate encryption).
 -/
 
 namespace SigabaNeo
@@ -51,24 +57,39 @@ theorem Machine.run_ofTM {k : ℕ} {S : Type} [Finite S] (tm : MultiTapeTM k Boo
   rw [hinit, MultiTapeTM.runFrom_relabel]
   rfl
 
+/-- Machines from deterministic Turing machines ignore the coin. -/
+theorem Machine.deterministic_ofTM {k : ℕ} {S : Type} [Finite S] (tm : MultiTapeTM k Bool S)
+    (time : ℕ) : (Machine.ofTM tm time).Deterministic :=
+  fun _ _ _ _ => rfl
+
 /-- **Machines from polynomial-time certificates**: a machine computing `f` within `t` steps,
 with the clock `time ≥ t`, outputs exactly the encoded value of `f`. -/
 theorem Machine.exists_of_computable {α β : Type*} {f : α → β} {encIn : α ↪ List Bool}
-    {encOut : β ↪ List Bool} {t s : ℕ → ℕ}
-    (h : ComputableInTimeAndSpaceOfLength f encIn encOut t s) :
+    {encOut : β ↪ List Bool} {t s : α → ℕ}
+    (h : ComputableInTimeAndSpace f encIn encOut t s) :
     ∃ (k : ℕ) (S : Type) (_ : Finite S) (tm : MultiTapeTM k Bool S),
-      ∀ (time : ℕ) (a : α), t (encIn a).length ≤ time →
+      ∀ (time : ℕ) (a : α), t a ≤ time →
         (Machine.ofTM tm time).run (encIn a) = PMF.pure (encOut (f a)) := by
   obtain ⟨k, S, hS, tm, htm⟩ := h
   refine ⟨k, S, hS, tm, fun time a ht => ?_⟩
   rw [Machine.run_ofTM]
   congr 1
   obtain ⟨⟨u, hu, hout⟩, hrun, -⟩ := htm a
-  have hhalt : (tm.runFrom (tm.initCfg (encIn a)) (t (encIn a).length)).Halted :=
+  have hhalt : (tm.runFrom (tm.initCfg (encIn a)) (t a)).Halted :=
     MultiTapeTM.runsInTime_iff_halted.mp hrun
   rw [MultiTapeTM.runFrom_eq_of_halt _ _ ht hhalt]
-  rcases le_total u (t (encIn a).length) with hut | htu
+  rcases le_total u (t a) with hut | htu
   · rw [MultiTapeTM.runFrom_eq_of_halt _ _ hut hu]; exact hout
   · rw [← MultiTapeTM.runFrom_eq_of_halt _ _ htu hhalt]; exact hout
+
+/-- **Almost constant functions**: a function constant outside finitely many inputs is computed
+on every input by a deterministic machine. -/
+theorem Machine.exists_of_almostConst {α β : Type*} {f : α → β} {encIn : α ↪ List Bool}
+    {encOut : β ↪ List Bool} (h : ∃ b : β, {a : α | f a ≠ b}.Finite) :
+    ∃ M : Machine, M.Deterministic ∧ ∀ a, M.run (encIn a) = PMF.pure (encOut (f a)) := by
+  obtain ⟨c, hc⟩ := computableInTimeAndSpace_of_exists_finite_ne (encIn := encIn)
+    (encOut := encOut) h
+  obtain ⟨k, S, hS, tm, htm⟩ := Machine.exists_of_computable hc
+  exact ⟨Machine.ofTM tm c, Machine.deterministic_ofTM tm c, fun a => htm c a le_rfl⟩
 
 end SigabaNeo
