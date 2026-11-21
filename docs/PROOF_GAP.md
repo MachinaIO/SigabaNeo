@@ -617,7 +617,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   adds two finite-rank facts. At Haar rank 1000, λ1 ∈ [0.99540, 1.00601]·GH with probability ≥ 99%. After projecting off the
   global shortest vector, the rank-999 quotient minimum is within 2% of its own GH with probability > 99.499%. No checked source
   gives a 99% bound for the final block of finite-width BKZ, because window selection is not global selection.
-* **Frontier after Parts 1–107 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 108 (audited).** [first_tour](research/wall1_first_tour.md): an exact law for the first BKZ pass on the q-ary basis
+  (qI first, no lookahead, lexicographic ties). Each unread graph column has perpendicular height 1. Given the history, its
+  displacement is uniform on a finite subgroup H of the retained torus, updated by H' = Q_*H. This gives an exact finite
+  recursion. A simultaneous whole-tour 99% guarantee is impossible above 0.2036 (b = 406) / 0.1826 (b = 506), because of the
+  cubic initial window. The deterministic floor is 2.76·10⁻³⁷. Terminal-only thresholds are open (BG).
+* **Frontier after Parts 1–108 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
