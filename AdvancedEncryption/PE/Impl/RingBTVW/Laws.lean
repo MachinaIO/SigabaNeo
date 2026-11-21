@@ -49,7 +49,7 @@ instance : Inhabited (Negacyclic (ZMod q) N) := ⟨0⟩
 /-- A matrix with independent entries. -/
 noncomputable def matLaw {α : Type} [Inhabited α] {r c : Type} [Fintype r] [Fintype c]
     (d : PMF α) : PMF (Matrix r c α) :=
-  (sampleFun (ι := r × c) d).map fun g a b => g (a, b)
+  (sampleFun (ι := r × c) d).map fun g => Matrix.of fun a b => g (a, b)
 
 variable {k : ℕ} (hk : q ≤ 2 ^ k) (Attr : Type) [Fintype Attr] [DecidableEq Attr]
 

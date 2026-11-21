@@ -3,6 +3,7 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Data.Matrix.Mul
 import Cslib.Probability.PMF
 
+import Mathlib.Data.List.GetD
 /-!
 # Integer lattices and independent draws
 
@@ -76,6 +77,34 @@ noncomputable def sampleMat {α : Type} [Inhabited α] (d : PMF α) (r c : ℕ) 
 /-- A function on a finite type with independent values, each drawn from `d`. -/
 noncomputable def sampleFun {ι α : Type} [Fintype ι] [Inhabited α] (d : PMF α) : PMF (ι → α) :=
   (sampleList d (Fintype.card ι)).map fun l i => l.getD (Fintype.equivFin ι i).val default
+
+/-- Every element of a list of independent draws is in the support of the law. -/
+theorem mem_support_of_mem_sampleList {α : Type} (d : PMF α) :
+    ∀ (n : ℕ) {l : List α}, l ∈ (sampleList d n).support → ∀ a ∈ l, a ∈ d.support
+  | 0, l, hl, a, ha => by
+    simp only [sampleList, PMF.support_pure, Set.mem_singleton_iff] at hl
+    subst hl; simp at ha
+  | n + 1, l, hl, a, ha => by
+    simp only [sampleList, PMF.support_bind, PMF.support_map, Set.mem_iUnion, Set.mem_image] at hl
+    obtain ⟨b, hb, l', hl', rfl⟩ := hl
+    rcases List.mem_cons.mp ha with rfl | ha'
+    · exact hb
+    · exact mem_support_of_mem_sampleList d n hl' a ha'
+
+/-- Every value of a function with independent values is in the support of the law, or the
+default. -/
+theorem sampleFun_support {ι α : Type} [Fintype ι] [Inhabited α] (d : PMF α) {f : ι → α}
+    (hf : f ∈ (sampleFun d).support) (i : ι) : f i ∈ d.support ∨ f i = default := by
+  simp only [sampleFun, PMF.support_map, Set.mem_image] at hf
+  obtain ⟨l, hl, rfl⟩ := hf
+  by_cases h : (Fintype.equivFin ι i).val < l.length
+  · left
+    show l.getD _ default ∈ d.support
+    rw [List.getD_eq_getElem _ _ h]
+    exact mem_support_of_mem_sampleList d _ hl _ (List.getElem_mem h)
+  · right
+    show l.getD _ default = default
+    rw [List.getD_eq_default _ _ (Nat.le_of_not_lt h)]
 
 /-- An optional list of independent draws: `none` as soon as one draw is unavailable. -/
 noncomputable def sampleOptList {α : Type} : List (Option (PMF α)) → PMF (Option (List α))

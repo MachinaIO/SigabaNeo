@@ -1,4 +1,4 @@
-import PE.Impl.RingBTVW.Scheme
+import PE.Impl.RingBTVW.Laws
 
 /-!
 # The noise of decryption
@@ -12,12 +12,14 @@ with `WN = |W| · N = 2kN`:
 
 where `E(g) = errBound WN Bχ g` grows by `WN` at each NAND on the left (`rnorm_evalErr_le`).
 Decryption is then correct whenever `4 · noiseBound + 2 < q` (`decrypt_correct_of_bounds`): the
-noise is no longer a hypothesis but a function of the parameters and the circuits.
+noise is no longer a hypothesis but a function of the parameters and the circuits. With an error
+law bounded by `Bχ` (a truncated Gaussian), every coin of `Enc` meets the bound
+(`encCoinsLaw_bounded`), so every ciphertext decrypts (`scheme_correct_bounded`).
 -/
 
 namespace AdvancedEncryption.RingBTVW
 
-open SigabaNeo.Lattices Cslib
+open SigabaNeo.Lattices Cslib Cslib.Probability
 
 variable {N q k : ℕ} [NeZero q] (hk : q ≤ 2 ^ k) {Attr : Type} [Fintype Attr]
 
@@ -103,5 +105,71 @@ theorem decrypt_correct_of_bounds (hN : 0 < N) (mpk : MPK (ringSetting N q k hk 
     rw [Int.abs_eq_natAbs]; exact_mod_cast h
   have hq' : (4 * noiseBound (N := N) hk Bχ K f + 2 : ℤ) < q := by exact_mod_cast hq
   linarith
+
+/-! ### Bounded error laws -/
+
+omit [Fintype Attr] [NeZero q] in
+/-- A ring element with coefficients from a law bounded by `B` has norm at most `B`. -/
+theorem polyLaw_bounded {χ : PMF (ZMod q)} {B : ℕ} (hχ : ∀ e ∈ χ.support, zabs e ≤ B)
+    {a : Negacyclic (ZMod q) N} (ha : a ∈ (polyLaw χ).support) : cnorm a ≤ B := by
+  rw [polyLaw, PMF.mem_support_map_iff] at ha
+  obtain ⟨c, hc, rfl⟩ := ha
+  rw [cnorm_le_iff]; intro j
+  rcases sampleFun_support χ hc j with h | h
+  · exact hχ _ h
+  · simp only [h]
+    exact (le_of_eq zabs_zero).trans (Nat.zero_le _)
+
+omit [Fintype Attr] [NeZero q] in
+/-- A row with entries from a law bounded by `B` has norm at most `B`. -/
+theorem matLaw_bounded {d : PMF (Negacyclic (ZMod q) N)} {B : ℕ}
+    (hd : ∀ a ∈ d.support, cnorm a ≤ B) {e : Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)}
+    (he : e ∈ (matLaw d).support) : rnorm e ≤ B := by
+  rw [matLaw, PMF.mem_support_map_iff] at he
+  obtain ⟨g, hg, rfl⟩ := he
+  rw [rnorm_le_iff]; intro c
+  rw [Matrix.of_apply]
+  rcases sampleFun_support d hg (0, c) with h | h
+  · exact hd _ h
+  · rw [h]; exact (le_of_eq cnorm_zero).trans (Nat.zero_le _)
+
+omit [Fintype Attr] [NeZero q] in
+/-- Rows of independent bounded rows are bounded. -/
+theorem sampleFun_matLaw_bounded {ι : Type} [Fintype ι] {d : PMF (Negacyclic (ZMod q) N)} {B : ℕ}
+    (hd : ∀ a ∈ d.support, cnorm a ≤ B)
+    {F : ι → Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)}
+    (hF : F ∈ (sampleFun (matLaw d)).support) (i : ι) : rnorm (F i) ≤ B := by
+  rcases sampleFun_support _ hF i with h | h
+  · exact matLaw_bounded hd h
+  · rw [h]
+    rw [rnorm_le_iff]; intro c
+    exact (le_of_eq cnorm_zero).trans (Nat.zero_le _)
+
+variable [DecidableEq Attr]
+
+/-- **The errors of `Enc` are bounded** when the error law is bounded by `Bχ` (a truncated
+discrete Gaussian, as the samplers of mxx record their cutoffs). -/
+theorem encCoinsLaw_bounded {χ : PMF (ZMod q)} {Bχ : ℕ} (hχ : ∀ e ∈ χ.support, zabs e ≤ Bχ)
+    {r : EncCoins (ringSetting N q k hk Attr)} (hr : r ∈ (encCoinsLaw hk Attr χ).support) :
+    cnorm r.e' ≤ Bχ ∧ rnorm r.e₀ ≤ Bχ ∧ (∀ i, rnorm (r.eΨ i) ≤ Bχ) ∧ (∀ j, rnorm (r.ej j) ≤ Bχ) := by
+  have hp : ∀ a ∈ (polyLaw (N := N) χ).support, cnorm a ≤ Bχ := fun a ha => polyLaw_bounded hχ ha
+  simp only [encCoinsLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
+    PMF.mem_support_pure_iff] at hr
+  obtain ⟨s, -, a, -, eΨ, heΨ, e₀, he₀, ej, hej, e', he', rfl⟩ := hr
+  exact ⟨hp _ he', matLaw_bounded hp he₀, sampleFun_matLaw_bounded hp heΨ,
+    sampleFun_matLaw_bounded hp hej⟩
+
+/-- **Correctness for every coin of `Enc`**: with an error law bounded by `Bχ`, a valid key with
+coefficients at most `K`, `f(x) = 0` and `4 · noiseBound + 2 < q`, every ciphertext decrypts to
+`M`. -/
+theorem scheme_correct_bounded (hN : 0 < N) (mpk : MPK (ringSetting N q k hk Attr))
+    (f : Circuit Attr) (sk : SecretKey) (hsk : ValidKey mpk f sk) (K : ℕ)
+    (hk₁ : ∀ c d, cnorm (sk.k₁ c d) ≤ K) (hk₂ : ∀ c d, cnorm (sk.k₂ c d) ≤ K)
+    {χ : PMF (ZMod q)} {Bχ : ℕ} (hχ : ∀ e ∈ χ.support, zabs e ≤ Bχ)
+    (hq : 4 * noiseBound (N := N) hk Bχ K f + 2 < q) (x : Attr → Bool) (hfx : f.evalBool x = false)
+    (M : Bool) (r : EncCoins (ringSetting N q k hk Attr)) (hr : r ∈ (encCoinsLaw hk Attr χ).support) :
+    decodeBit hN (decryptRaw mpk f sk (encrypt mpk x M r)) = M := by
+  obtain ⟨he', he₀, heΨ, hej⟩ := encCoinsLaw_bounded hk hχ hr
+  exact decrypt_correct_of_bounds hk hN mpk x M r f sk hsk hfx Bχ K he' he₀ heΨ hej hk₁ hk₂ hq
 
 end AdvancedEncryption.RingBTVW
