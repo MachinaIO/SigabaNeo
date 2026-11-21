@@ -108,6 +108,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   ratio bound gives no block-size saving, because the projected planted length is only bounded by `‖u‖`.
   *Superseded for the full-dimension SVP size by Part 39:* an exact integer-point first-moment certificate lowers the
   plain-LWE 512 dimension from 701 to 662 (1 − 2^-64) or 647 (99%).
+  *In Lean* (`Attacks/Primal/RatioPlanted*.lean`): `reduced_finds_plant` composes the Part 7 ratio lemma with the q-ary
+  competitor count — outside an explicitly counted exceptional set of designs, if ‖v‖ ≤ R·e^{−p(D,β)} every fully BKZ-β reduced
+  basis of the embedding lattice has first vector ±v; `competitor_design_bound` gives the count for radii J < 4‖v‖² (beyond
+  that, 2v is always a competitor: `cutoff_counterexample`). Only a toy instance is certified (q = 4051, D = 3, β = 2: ≥ 4011 of
+  4051 designs); at the Kyber shapes the certified β is d (above).
 * **Part 8 (audited; [research/wall1_planted_flags.md](research/wall1_planted_flags.md)).** The flag criterion for
   terminal-block recovery must include the case `π_W(u) = a·v`, `a ≥ 2` (a shorter vector on the planted line's image);
   the corrected necessary-and-sufficient criterion is `a = 1` plus "every other line in `Q_W` is longer". Counterexamples:
