@@ -598,3 +598,11 @@ exceeds the exact CBD entropy by 0.0062 / 0.0165 bits per coefficient.
 Union over candidate scores instead of `q^m`, a Banaszczyk-type tail and an explicit Hoeffding `N` lower the modeled cost at
 the fixed Table 1 parameters by ≈ 0.50 / 1.67 / 0.02 bits (matched key coverage); the BKZ term (237.45 / 345.24 / 478.33)
 is the floor. The dual gap to the estimator (≈ 88 bits for Kyber512) is essentially the BKZ/sieve part, i.e. walls 1–2.
+
+## Dual attacks: exact counting (audited, minor caveats; [research/dual_exact_count.md](research/dual_exact_count.md))
+
+Exact first moment, variance and Paley–Zygmund bound for the number of dual vectors in a ball (line indicators are pairwise
+independent), and exact mean/variance of the cosine score from the CBD(3) Fourier transform cos⁶(πw/q) — list size alone does
+not certify advantage. The headline 'no informative dual vector at 511 samples × 512 secret coordinates (Pr < 9.03·10⁻⁸)' is
+the elementary rank fact that a uniform 511×512 matrix has injective transpose mod q (audit): the pure dual needs m > n,
+guessing, or the augmented/normal-form dual of MATZOV and Pouly–Shen. No improved certified dual cost was obtained.
