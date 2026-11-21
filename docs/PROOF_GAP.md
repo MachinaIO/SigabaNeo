@@ -382,7 +382,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   completable prefixes below 2^{-1023} at relative radii c = 0.00354 / 0.00850 / 0.01413 (β = 406/506/647, rank 1023), versus a
   divergent count for all primitive prefixes; but E B ∝ c^{kb}, so the radius sits at a steep break-even and essentially recovers
   Part 65. The open ingredient is unchanged: the joint acceptance probability of the overlapping windows' shortest-vector tests.
-* **Frontier after Parts 1–67 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 68 (audited, minor caveats).** [covering_fraction](research/wall1_covering_fraction.md): for every column
+  history, one Gram–Schmidt box gives a candidate lift for all crossing starts at once, yielding a profile-only lower bound on the
+  forbidden fraction; an m = 2 correction (via the doubled torus point) is strictly positive on some profiles; the Babai
+  half-diagonal exclusion adds no new constraint (it follows from adjacent windows). The exact column product certifies only
+  0.00553 / 0.01338 / 0.03098 / 0.08202 (β = 406/506/647/800), weaker than Part 65. Summary of Parts 50–68: every
+  'for all reduced bases' certificate at rank 1023 stays ≈ 60× below 0.85·GSA, while experiments (Part 64) suggest the true
+  all-bases floor is ≈ 0.85·typical — the gap is methodological (joint acceptance of overlapping windows).
+* **Frontier after Parts 1–68 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
