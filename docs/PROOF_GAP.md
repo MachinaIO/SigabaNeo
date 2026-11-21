@@ -155,6 +155,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   full Gram–Schmidt profile does not determine the next block's law, with uniform random tie-breaking: dimension 3 (revisits,
   same profile and current block, 4/5 vs 0; dimension-minimal) and dimension 5 (one forward sweep, 1/3 vs 2/5). Open: the
   process observed through successive scalar profiles only.
+* **Wall 1 as Lean statements (local Prove2Me server, [P2M_LOCAL.md](P2M_LOCAL.md)).** `Wall1SlideTerminalRecovery`
+  (probability over uniform `A`, fixed CBD-support `(e,s)` in a norm shell, basis = output of the verified slide loop on the
+  canonical q-ary rows, tolerance 1/10) and `Wall1GSATerminalRecovery` (parameterized by an explicit GSA-type inequality; concrete
+  instance: 99% recovery at m = 511, n = 512, q = 3329, β = 512) are registered with SKETCH_ACCEPTED decompositions
+  (`Research/Wall1/SelectedSlide.lean`): each reduces by a union bound to two open selected-prefix estimates (same-line: the plant
+  does not project to zero and no shorter vector lies on its projected line; off-line: no competing line is as short). Also
+  registered: `Wall1FixedCBD2Projection` (open; fixed-projector concentration), `wall1_terminal_primitive_iff` (proved),
+  `wall1_prefix_ratio` (open).
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
