@@ -94,6 +94,41 @@ noncomputable def reduction5 (x : S.Attr → Bool) (M : Bool) (inst : Pub Wd R k
   pure (⟨B₀, trapRowU a z, Bj, p⟩,
     ⟨Ψ, c₀, c₁, fun j => c₀ * wMat w j + e j, u₀ * p + inst.2.2.2.2 + (if M then S.half else 0)⟩)
 
+omit [Fintype R] [DecidableEq R] in
+/-- The uniform law on a product, component by component. -/
+theorem uniform_prod_bind {α β γ : Type} [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
+    (g : α × β → PMF γ) :
+    (PMF.uniformOfFintype (α × β)).bind g =
+      (PMF.uniformOfFintype α).bind fun a => (PMF.uniformOfFintype β).bind fun b => g (a, b) := by
+  rw [← Cslib.Probability.PMF.uniformOfFintype_prod]
+  simp only [PMF.bind_bind, PMF.bind_map]
+  rfl
+
+omit [Fintype R] [DecidableEq R] in
+/-- Independent coordinates over a sum: the two blocks independently. -/
+theorem pi_sum {α β γ : Type} [Fintype α] [Fintype β] [Finite γ] (μ : PMF γ) :
+    Cslib.Probability.PMF.pi (fun _ : α ⊕ β => μ) =
+      (Cslib.Probability.PMF.pi fun _ : α => μ).bind fun f =>
+        (Cslib.Probability.PMF.pi fun _ : β => μ).map fun g => Sum.elim f g := by
+  classical
+  ext h
+  rw [PMF.bind_apply, tsum_eq_single (fun a => h (.inl a))]
+  · rw [PMF.map_apply, tsum_eq_single (fun b => h (.inr b))]
+    · have : h = Sum.elim (fun a => h (.inl a)) (fun b => h (.inr b)) := by
+        funext x; rcases x <;> rfl
+      split_ifs
+      simp only [Cslib.Probability.PMF.pi_apply, Fintype.prod_sum_type]
+    · intro g hg
+      split_ifs with he
+      · exact absurd (funext fun b => by rw [he]; rfl) hg
+      · rfl
+  · intro f hf
+    rw [PMF.map_apply]
+    refine mul_eq_zero_of_right _ (tsum_eq_zero_iff.mpr fun g => ?_)
+    split_ifs with he
+    · exact absurd (funext fun a => by rw [he]; rfl) hf
+    · rfl
+
 /-- The trapdoor part after hybrid 3. -/
 noncomputable def lawB₁u : PMF (Matrix (Fin 1) (TrapCol k) R) := do
   let a ← PMF.uniformOfFintype (Matrix (Fin 1) (Col k) R)
@@ -173,5 +208,141 @@ theorem real5_eq (χ : PMF R) (x : S.Attr → Bool) (M : Bool) :
           simp [coinsOf, trapRowU, trapRowU', RingBTVW.scalar, Matrix.mul_apply] <;> ring)
       | (funext j; simp only [floodCj, coinsOf, hs])
       | (simp only [coinsOf]; ring)
+
+omit [DecidableEq R] [Nonempty Wd] [Fintype S.Attr] [DecidableEq S.Attr]
+  [DecidableEq S.ctBits.Index] in
+/-- A uniform `2 × Wd` matrix is two independent uniform rows. -/
+theorem uniform_two_rows_bind {γ : Type} (g : Matrix (Fin 2) Wd R → PMF γ) :
+    (PMF.uniformOfFintype (Matrix (Fin 2) Wd R)).bind g =
+      (PMF.uniformOfFintype (Matrix (Fin 1) Wd R)).bind fun B₀ =>
+        (PMF.uniformOfFintype (Matrix (Fin 1) Wd R)).bind fun c₀ => g (gswPK B₀ c₀) := by
+  let e : Matrix (Fin 1) Wd R × Matrix (Fin 1) Wd R ≃ Matrix (Fin 2) Wd R :=
+    { toFun := fun bc => gswPK bc.1 bc.2
+      invFun := fun A => (Matrix.of fun _ c => A 0 c, Matrix.of fun _ c => A 1 c)
+      left_inv := fun bc => by
+        ext i c <;> fin_cases i <;> simp [gswPK]
+      right_inv := fun A => by
+        ext i c; fin_cases i <;> simp [gswPK] }
+  rw [← bind_uniform_equiv e g, uniform_prod_bind]
+  rfl
+
+omit [DecidableEq R] [Fintype Wd] [DecidableEq Wd] [Nonempty Wd] [Fintype S.Attr]
+  [DecidableEq S.Attr] [DecidableEq S.ctBits.Index] in
+/-- A uniform row of `B₁`'s width is a uniform `u₀` and two uniform rows. -/
+theorem uniform_trapRow_bind {γ : Type} (g : Matrix (Fin 1) (TrapCol k) R → PMF γ) :
+    (PMF.uniformOfFintype (Matrix (Fin 1) (TrapCol k) R)).bind g =
+      (PMF.uniformOfFintype R).bind fun u₀ =>
+        (PMF.uniformOfFintype (Matrix (Fin 1) (Col k) R)).bind fun ca =>
+          (PMF.uniformOfFintype (Matrix (Fin 1) (Col k) R)).bind fun cz =>
+            g (trapRowU' u₀ ca cz) := by
+  let e : R × Matrix (Fin 1) (Col k) R × Matrix (Fin 1) (Col k) R ≃
+      Matrix (Fin 1) (TrapCol k) R :=
+    { toFun := fun v => trapRowU' v.1 v.2.1 v.2.2
+      invFun := fun c => (c 0 (.inl 0), Matrix.of fun _ x => c 0 (.inr (.inl x)),
+        Matrix.of fun _ x => c 0 (.inr (.inr x)))
+      left_inv := fun v => by
+        obtain ⟨u, a, b⟩ := v
+        refine Prod.ext rfl (Prod.ext ?_ ?_) <;> ext i c <;> fin_cases i <;> rfl
+      right_inv := fun c => by
+        ext i x; fin_cases i
+        rcases x with x | x | x
+        · fin_cases x; rfl
+        · rfl
+        · rfl }
+  rw [← bind_uniform_equiv e g, uniform_prod_bind]
+  simp only [uniform_prod_bind]
+  rfl
+
+/-- Binary matrices `Rᵢ` from their columns. -/
+def rMat (r : S.Attr × Col k → (Wd → Bool)) (i : S.Attr) : Matrix Wd (Col k) R :=
+  Matrix.of fun a c => bitVal (r (i, c) a)
+
+/-- The law of the binary matrices `Rᵢ`. -/
+noncomputable def lawRmBin : PMF (S.Attr → Matrix Wd (Col k) R) :=
+  (Cslib.Probability.PMF.pi fun _ : S.Attr × Col k => PMF.uniformOfFintype (Wd → Bool)).map rMat
+
+/-- **The uniform side of hybrid 5**: on a uniform instance, the reduction gives `h5View`. -/
+theorem unif5_eq (x : S.Attr → Bool) (M : Bool) :
+    nfUnif.bind (reduction5 (S := S) (Wd := Wd) lawRmBin lawE x M) =
+      h5View (Wd := Wd) lawB₁u lawE x M := by
+  unfold nfUnif reduction5 h5View viewOf lawB₁u lawRmBin
+  simp only [Cslib.Probability.PMF.monad_bind_eq_bind, Cslib.Probability.PMF.monad_pure_eq_pure,
+    PMF.bind_bind, PMF.pure_bind, uniform_prod_bind, PMF.bind_map]
+  rw [uniform_two_rows_bind]
+  simp only [Cslib.Probability.PMF.pi_map, PMF.bind_map, pi_sum, PMF.bind_bind,
+    uniform_trapRow_bind, Function.comp_def]
+  conv_rhs => enter [2, B0, 2, c0]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, w]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, w, 2, a]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, w, 2, a, 2, z]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, w, 2, a, 2, z, 2, u]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, w, 2, a, 2, z, 2, u, 2, ca]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, w, 2, a, 2, z, 2, u, 2, ca, 2, cz]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, w, 2, a, 2, z, 2, u, 2, ca, 2, cz, 2, p]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, a]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, a, 2, z]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, a, 2, z, 2, u]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, a, 2, z, 2, u, 2, ca]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, a, 2, z, 2, u, 2, ca, 2, cz]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, c0, 2, a, 2, z, 2, u, 2, ca, 2, cz, 2, p]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, u, 2, c0, 2, ca]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, u, 2, c0]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, u]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, p, 2, u]; rw [← bind_uniform_equiv (Equiv.addLeft (RingBTVW.scalar u * B0))]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, p, 2, u, 2, c0]; rw [← bind_uniform_equiv (Equiv.addLeft (RingBTVW.scalar u * a))]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, p, 2, u, 2, c0, 2, ca]; rw [← bind_uniform_equiv (Equiv.addLeft (RingBTVW.scalar u * z))]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, p, 2, u, 2, c0, 2, ca, 2, cz]; rw [← bind_uniform_equiv (Equiv.addLeft (u * p))]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, p]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, p, 2, c0]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, p, 2, c0, 2, ca]; rw [PMF.bind_comm]
+  conv_rhs => enter [2, B0, 2, a, 2, z, 2, p, 2, c0, 2, ca, 2, cz]; rw [PMF.bind_comm]
+  refine congrArg (PMF.bind _) (funext fun B₀ => ?_)
+  refine congrArg (PMF.bind _) (funext fun a => ?_)
+  refine congrArg (PMF.bind _) (funext fun z => ?_)
+  refine congrArg (PMF.bind _) (funext fun p => ?_)
+  refine congrArg (PMF.bind _) (funext fun v0 => ?_)
+  refine congrArg (PMF.bind _) (funext fun va => ?_)
+  refine congrArg (PMF.bind _) (funext fun vz => ?_)
+  refine congrArg (PMF.bind _) (funext fun vp => ?_)
+  refine congrArg (PMF.bind _) (funext fun u₀ => ?_)
+  refine congrArg (PMF.bind _) (funext fun w => ?_)
+  refine congrArg (PMF.bind _) (funext fun hr => ?_)
+  refine congrArg (PMF.bind _) (funext fun e => ?_)
+  simp only [Equiv.coe_addLeft]
+  set c₀ := RingBTVW.scalar u₀ * B₀ + v0
+  have hA0 : (Matrix.of fun _ c => gswPK B₀ c₀ 0 c : Matrix (Fin 1) Wd R) = B₀ := by
+    ext i c; fin_cases i; simp [gswPK]
+  have hA1 : (Matrix.of fun _ c => gswPK B₀ c₀ 1 c : Matrix (Fin 1) Wd R) = c₀ := by
+    ext i c; fin_cases i; simp [gswPK]
+  have hR : ∀ i, (colMat fun c => binaryHash (gswPK B₀ c₀) ((hr ⊕ᵥ w) (Sum.inl (i, c)))) =
+      gswPK B₀ c₀ * rMat hr i := by
+    intro i; ext r c
+    simp only [colMat, binaryHash, rMat, Matrix.mulVec, dotProduct, Matrix.mul_apply, bitVal,
+      Matrix.of_apply, Sum.elim_inl, mul_ite, mul_one, mul_zero]
+    exact Finset.sum_congr rfl fun t _ => by by_cases h : hr (i, c) t <;> simp [h]
+  have hT : ∀ j, topRow (colMat fun c => binaryHash (gswPK B₀ c₀) ((hr ⊕ᵥ w) (Sum.inr (j, c)))) =
+      B₀ * wMat w j := by
+    intro j; ext r c; fin_cases r
+    simp [topRow, colMat, binaryHash, wMat, Matrix.mulVec, dotProduct, Matrix.mul_apply, gswPK,
+      bitVal, mul_ite]
+    exact Finset.sum_congr rfl fun t _ => by by_cases h : w (j, c) t <;> simp [h]
+  have hB : ∀ j, botRow (colMat fun c => binaryHash (gswPK B₀ c₀) ((hr ⊕ᵥ w) (Sum.inr (j, c)))) =
+      c₀ * wMat w j := by
+    intro j; ext r c; fin_cases r
+    simp [botRow, colMat, binaryHash, wMat, Matrix.mulVec, dotProduct, Matrix.mul_apply, gswPK,
+      bitVal, mul_ite]
+    exact Finset.sum_congr rfl fun t _ => by by_cases h : w (j, c) t <;> simp [h]
+  have hc₁ : (Matrix.of fun _ c => match c with
+      | Sum.inl _ => u₀
+      | Sum.inr (Sum.inl c) => (RingBTVW.scalar u₀ * a + va) 0 c
+      | Sum.inr (Sum.inr c) => (RingBTVW.scalar u₀ * z + vz) 0 c : Matrix (Fin 1) (TrapCol k) R) =
+      trapRowU' u₀ (RingBTVW.scalar u₀ * a + va) (RingBTVW.scalar u₀ * z + vz) := by
+    ext i c; rcases c with c | c | c <;> rfl
+  simp only [hA0, hA1, hR, hT, hB, hc₁]
 
 end AdvancedEncryption.DualUse

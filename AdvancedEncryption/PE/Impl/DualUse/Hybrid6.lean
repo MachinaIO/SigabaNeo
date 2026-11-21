@@ -21,7 +21,7 @@ variable {R : Type} [CommRing R] [Fintype R] [DecidableEq R] {k : ℕ} {S : Sett
   [Fintype S.Attr] [DecidableEq S.Attr] [DecidableEq S.ctBits.Index]
 
 /-- The hashed columns: those of every `Rᵢ` and every `W_j`. -/
-abbrev HC (S : Setting R k) := (S.Attr ⊕ (S.Attr × S.ctBits.Index)) × Col k
+abbrev HC (S : Setting R k) := (S.Attr × Col k) ⊕ ((S.Attr × S.ctBits.Index) × Col k)
 
 /-- A matrix from its columns. -/
 def colMat {r : Type} (h : Col k → (r → R)) : Matrix r (Col k) R := Matrix.of fun a c => h c a
@@ -38,9 +38,9 @@ noncomputable def viewOf (x : S.Attr → Bool) (M : Bool) (A : Matrix (Fin 2) Wd
   let κ₀ ← PMF.uniformOfFintype R
   let e ← lawE
   let Ψ : S.Attr → Matrix (Fin 2) (Col k) R :=
-    fun i => colMat (fun c => h (.inl i, c)) + bitR (R := R) (x i) • S.Γ.G
-  let Bj := fun j => topRow (colMat (fun c => h (.inr j, c))) + bitsOf S Ψ j • S.Γ₁.G
-  let cj := fun j => botRow (colMat (fun c => h (.inr j, c))) + e j
+    fun i => colMat (fun c => h (.inl (i, c))) + bitR (R := R) (x i) • S.Γ.G
+  let Bj := fun j => topRow (colMat (fun c => h (.inr (j, c)))) + bitsOf S Ψ j • S.Γ₁.G
+  let cj := fun j => botRow (colMat (fun c => h (.inr (j, c)))) + e j
   pure (⟨Matrix.of fun _ c => A 0 c, B₁, Bj, p⟩,
     ⟨Ψ, Matrix.of fun _ c => A 1 c, c₁, cj, κ₀ + (if M then S.half else 0)⟩)
 
@@ -74,45 +74,45 @@ noncomputable def rawOf (A : Matrix (Fin 2) Wd R) (h : HC S → (Fin 2 → R)) (
   let c₁ ← PMF.uniformOfFintype (Matrix (Fin 1) Wt R)
   let p ← PMF.uniformOfFintype R
   let e ← lawE
-  pure (⟨Matrix.of fun _ c => A 0 c, B₁, fun j => topRow (colMat (fun c => h (.inr j, c))), p⟩,
-    ⟨fun i => colMat (fun c => h (.inl i, c)), Matrix.of fun _ c => A 1 c, c₁,
-      fun j => botRow (colMat (fun c => h (.inr j, c))) + e j, κ⟩)
+  pure (⟨Matrix.of fun _ c => A 0 c, B₁, fun j => topRow (colMat (fun c => h (.inr (j, c)))), p⟩,
+    ⟨fun i => colMat (fun c => h (.inl (i, c))), Matrix.of fun _ c => A 1 c, c₁,
+      fun j => botRow (colMat (fun c => h (.inr (j, c)))) + e j, κ⟩)
 
 /-- The shift of the columns by the challenge: `xᵢ G` on `Rᵢ`'s, `ψ_j G̲` on the top of `W_j`'s,
 where `ψ` are the bits of the shifted `Ψ`. -/
 def shiftCols (x : S.Attr → Bool) (h : HC S → (Fin 2 → R)) : HC S → (Fin 2 → R)
-  | (.inl i, c) => fun a => h (.inl i, c) a + (bitR (R := R) (x i) • S.Γ.G) a c
-  | (.inr j, c) => fun a => h (.inr j, c) a +
-      if a = 0 then (bitsOf S (fun i => colMat (fun c => h (.inl i, c)) +
+  | .inl (i, c) => fun a => h (.inl (i, c)) a + (bitR (R := R) (x i) • S.Γ.G) a c
+  | .inr (j, c) => fun a => h (.inr (j, c)) a +
+      if a = 0 then (bitsOf S (fun i => colMat (fun c => h (.inl (i, c))) +
         bitR (R := R) (x i) • S.Γ.G) j • S.Γ₁.G) 0 c else 0
 
 /-- The shift is a bijection. -/
 def shiftEquiv (x : S.Attr → Bool) : (HC S → (Fin 2 → R)) ≃ (HC S → (Fin 2 → R)) where
   toFun := shiftCols x
   invFun h'
-    | (.inl i, c) => fun a => h' (.inl i, c) a - (bitR (R := R) (x i) • S.Γ.G) a c
-    | (.inr j, c) => fun a => h' (.inr j, c) a -
-        if a = 0 then (bitsOf S (fun i => colMat (fun c => h' (.inl i, c))) j • S.Γ₁.G) 0 c
+    | .inl (i, c) => fun a => h' (.inl (i, c)) a - (bitR (R := R) (x i) • S.Γ.G) a c
+    | .inr (j, c) => fun a => h' (.inr (j, c)) a -
+        if a = 0 then (bitsOf S (fun i => colMat (fun c => h' (.inl (i, c)))) j • S.Γ₁.G) 0 c
         else 0
   left_inv h := by
-    funext ⟨b, c⟩ a
-    rcases b with i | j
+    funext b a
+    rcases b with ⟨i, c⟩ | ⟨j, c⟩
     · simp [shiftCols]
-    · have : (fun i => colMat (fun c => shiftCols x h (.inl i, c))) =
-          fun i => colMat (fun c => h (.inl i, c)) + bitR (R := R) (x i) • S.Γ.G := by
+    · have : (fun i => colMat (fun c => shiftCols x h (.inl (i, c)))) =
+          fun i => colMat (fun c => h (.inl (i, c))) + bitR (R := R) (x i) • S.Γ.G := by
         funext i; ext a c; simp [shiftCols, colMat]
       simp only [this]
       simp [shiftCols]
   right_inv h' := by
-    funext ⟨b, c⟩ a
-    rcases b with i | j
+    funext b a
+    rcases b with ⟨i, c⟩ | ⟨j, c⟩
     · simp [shiftCols]
     · have : (fun i => colMat (fun c => (fun hc : HC S => match hc with
-            | (.inl i, c) => fun a => h' (.inl i, c) a - (bitR (R := R) (x i) • S.Γ.G) a c
-            | (.inr j, c) => fun a => h' (.inr j, c) a -
-                if a = 0 then (bitsOf S (fun i => colMat (fun c => h' (.inl i, c))) j •
-                  S.Γ₁.G) 0 c else 0) (.inl i, c)) + bitR (R := R) (x i) • S.Γ.G) =
-          fun i => colMat (fun c => h' (.inl i, c)) := by
+            | .inl (i, c) => fun a => h' (.inl (i, c)) a - (bitR (R := R) (x i) • S.Γ.G) a c
+            | .inr (j, c) => fun a => h' (.inr (j, c)) a -
+                if a = 0 then (bitsOf S (fun i => colMat (fun c => h' (.inl (i, c)))) j •
+                  S.Γ₁.G) 0 c else 0) (.inl (i, c))) + bitR (R := R) (x i) • S.Γ.G) =
+          fun i => colMat (fun c => h' (.inl (i, c))) := by
         funext i; ext a c; simp [colMat]
       simp only [shiftCols, this]
       simp
