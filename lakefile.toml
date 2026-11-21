@@ -21,4 +21,5 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.AlmostConst", "SigabaNeo.Lib.Machines.FiniteAlg",
   "SigabaNeo.Lib.Lattices", "SigabaNeo.Lib.Encode.Enum", "SigabaNeo.Lib.Encode.Ring", "SigabaNeo.Lib.Crypto.QuadLoss",
   "SigabaNeo.Lib.Machines.Inline.OfPTMOps", "SigabaNeo.Lib.Machines.Inline.Routine",
-  "SigabaNeo.Lib.Machines.Inline.Defs", "SigabaNeo.Lib.Machines.Inline.Steps"]
+  "SigabaNeo.Lib.Machines.Inline.Defs", "SigabaNeo.Lib.Machines.Inline.Steps",
+  "SigabaNeo.Lib.Machines.Inline.Phases"]
