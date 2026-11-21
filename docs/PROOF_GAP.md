@@ -465,7 +465,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   by 0.34 nat); [hole_filling2](research/wall1_hole_filling2.md) (Part 81: with the rigorous Cohn–Elkies cap (Table 3, exact
   rational arithmetic + Sturm), a rank-33 tail window of every Part 77 box exceeds the packing cap by > 0.127 nat, so those
   boxes are excluded outright — Part 77 used Blichfeldt at small d).
-* **Frontier after Parts 1–81 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 82 (audited, minor caveats).** [small_d_caps](research/wall1_small_d_caps.md): rigorous small-dimensional packing caps
+  (three-point bounds d = 4–16, Cohn–Elkies LP d = 17–72, Leech/E8 optima, exact Hermite for lattice windows) plus LCZ give the
+  best certified all-bases radii: g_{1023−β} ≥ 0.00654 / 0.01697 / 0.04256 / 0.15090 and g/R_T ≥ 0.00385 / 0.00917 / 0.01517 /
+  0.03498 (β = 406/506/647/800, 99% per width). The relaxed bad mass relocates again (W2 kills the first replacement boxes; a
+  second relocation evades every hard exclusion) and the residual stays ≥ 2.18·10⁵ nats. **Pattern:** each stronger
+  deterministic exclusion kills specific boxes but the relaxed mass relocates with an essentially unchanged residual; closing
+  wall 1 needs a genuinely new estimate (conditioned deep-window coverage), not more caps.
+* **Frontier after Parts 1–82 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
