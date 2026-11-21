@@ -442,7 +442,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   nats at ρ = 0.25 / 0.5 / 0.85·GSA. Probabilistic suppression on the relocated boxes is capped (≤ 6 per shallow column, ≤ j/2
   per deep column); closing wall 1 this way needs exact (deterministic) coverage of the fresh column's torus on deep windows,
   e.g. further packing certificates at the relocated boxes' widths.
-* **Frontier after Parts 1–75 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 76 (audited).** [jw_slide](research/wall1_jw_slide.md): reversing and reciprocating GS lengths preserves the
+  Joux–Węgrzycki decline inequality and swaps its endpoint bounds, giving a simultaneous lower envelope for the same slide output
+  (the repo's slide predicate itself is not closed under dual reversal: 3-dim counterexample). For the rank-1023 null lattice
+  (P > 0.996) the envelope gives g_{1023−β} ≥ 1.5·10⁻³¹ / 0.158 / 1.1·10⁻⁵⁴ / 1.2·10⁻³¹ at β = 406/506/647/800 — weaker than direct
+  propagation; no width certified.
+* **Frontier after Parts 1–76 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
