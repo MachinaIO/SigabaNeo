@@ -9,7 +9,7 @@ import Cslib.Probability.PMF
 * `embed m`: `Z^m` inside `R^m`, coordinatewise; `toInt` reads integer coordinates back.
 * `kernel B`: the integer kernel `{x ∈ Z^m : B·x = 0 (mod q)}` of `B ∈ Z_q^{n×m}`, and
   `perp B = Λ^⊥(B) ⊂ R^m`, a discrete subgroup (so cslib-frontier's discrete Gaussians apply).
-* `sampleList d n`, `sampleMat d r c`, `sampleOptList ds`: independent draws.
+* `sampleList d n`, `sampleMat d r c`, `sampleFun d`, `sampleOptList ds`: independent draws.
 -/
 
 namespace SigabaNeo.Lattices
@@ -72,6 +72,10 @@ noncomputable def sampleList {α : Type} (d : PMF α) : ℕ → PMF (List α)
 noncomputable def sampleMat {α : Type} [Inhabited α] (d : PMF α) (r c : ℕ) :
     PMF (Matrix (Fin r) (Fin c) α) :=
   (sampleList d (r * c)).map fun l i j => l.getD (i.val * c + j.val) default
+
+/-- A function on a finite type with independent values, each drawn from `d`. -/
+noncomputable def sampleFun {ι α : Type} [Fintype ι] [Inhabited α] (d : PMF α) : PMF (ι → α) :=
+  (sampleList d (Fintype.card ι)).map fun l i => l.getD (Fintype.equivFin ι i).val default
 
 /-- An optional list of independent draws: `none` as soon as one draw is unavailable. -/
 noncomputable def sampleOptList {α : Type} : List (Option (PMF α)) → PMF (Option (List α))

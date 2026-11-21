@@ -11,6 +11,8 @@ import SigabaNeo.Lib.Lattices.RingLWE
 import SigabaNeo.Lib.Lattices.ModuleLWE
 import SigabaNeo.Lib.Lattices.Trapdoor
 import SigabaNeo.Lib.Lattices.Trapdoor.Family
+import SigabaNeo.Lib.Lattices.Homomorphic
+import SigabaNeo.Lib.Lattices.Decode
 
 /-!
 # Lattice library
@@ -36,4 +38,9 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Trapdoor`: the ideal preimage distribution and trapdoor samplers (`Trapdoor.Exists`);
   `Trapdoor/Family`: a sampler for one parameter family (`Trapdoor.Family.exists_sampler`).
 * `Prob`, `Stat`: expectations and statistical distance.
+* `Homomorphic/` (entry point `Homomorphic.lean`): gadget matrices over a ring and the binary digits
+  of `ℤ_q[X]/(X^N + 1)` (cslib-frontier's `Cslib.Negacyclic`), NAND circuits, and their homomorphic evaluation on BGG+ encodings and
+  Ring-GSW ciphertexts (the key relation and the Ring-GSW invariant).
+* `Decode`: threshold decoding of a bit `M · ⌊q/2⌋ + e` in `ℤ_q` and in `ℤ_q[X]/(X^N + 1)`, exact when
+  `4|e| + 2 < q`.
 -/
