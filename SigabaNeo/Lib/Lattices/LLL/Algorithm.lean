@@ -130,10 +130,8 @@ noncomputable def gramDet {m : ℕ} (A : Matrix (Fin m) (Fin d) ℤ) : ℤ :=
 
 noncomputable def potential (B : Rows n d) : ℤ := ∏ k, gramDet (prefixRows B k)
 
-theorem potential_one_le (B : Rows n d) (h : LinearIndependent ℤ B) : 1 ≤ potential B := by
-  suffices 0 < potential B by omega
-  apply Finset.prod_pos
-  intro k _
+theorem gramDet_prefix_pos (B : Rows n d) (h : LinearIndependent ℤ B) (k : Fin n) :
+    0 < gramDet (prefixRows B k) := by
   let A := prefixRows B k
   have hi : LinearIndependent ℤ A.row :=
     h.comp _ (Fin.castLE_injective k.isLt)
@@ -146,6 +144,12 @@ theorem potential_one_le (B : Rows n d) (h : LinearIndependent ℤ B) : 1 ≤ po
     have hn : A.vecMul x ≠ 0 := fun hz ↦ hx ((Matrix.vecMul_injective_iff.mpr hi)
       (hz.trans (Matrix.zero_vecMul A).symm))
     simpa using Matrix.dotProduct_star_self_pos_iff.mpr hn
+
+theorem potential_one_le (B : Rows n d) (h : LinearIndependent ℤ B) : 1 ≤ potential B := by
+  suffices 0 < potential B by omega
+  apply Finset.prod_pos
+  intro k _
+  exact gramDet_prefix_pos B h k
 
 theorem potential_shear (B : Rows n d) (i j : Fin n) (h : j < i) (z : ℤ) :
     potential (shear B i j z) = potential B := by
