@@ -121,4 +121,30 @@ generation: the generation, `EvalF` on every gate, and the key-matrix sum. -/
 def keyMatrixSteps (N K k g genSteps : ℕ) : ℕ :=
   genSteps + slpPKSteps N K k g + keySumSteps N K k
 
+/-! ### The blocks `B_j` in the public key's word -/
+
+/-- The length of the word of one row `B_j`. -/
+abbrev rowLen (N K k : ℕ) : ℕ :=
+  (Enum.list (α := Fin 1)).length * ((Enum.list (α := Col k)).length * (N * K))
+
+/-- **The word of `B_j` is a block of the public key's word**: skip `B₀` and `B₁`, keep the family
+of the `B_j`, and take the block of the `i`-th index of its enumeration. -/
+theorem pkEnc_Bj (hk : 2 ^ K < 2 ^ k) (c : DualUse.Conf N K k) (m : DualUse.PK hk c) (i : ℕ)
+    (hi : i < (Enum.list (α := (DualUse.Sdw (N := N) hk).Attr ×
+      (DualUse.Sdw (N := N) hk).ctBits.Index)).length) :
+    (((((DualUse.pkEnc hk c).enc m).drop
+        ((Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin c.d)).length * (N * K)))).drop
+        ((Enum.list (α := Fin 1)).length * ((Enum.list (α := DualUse.TrapCol k)).length * (N * K))) |>.take
+        ((Enum.list (α := (DualUse.Sdw (N := N) hk).Attr ×
+          (DualUse.Sdw (N := N) hk).ctBits.Index)).length * rowLen N K k)).drop
+        (i * rowLen N K k)).take (rowLen N K k) =
+      rowW N K k (m.Bj (Enum.list (α := (DualUse.Sdw (N := N) hk).Attr ×
+        (DualUse.Sdw (N := N) hk).ctBits.Index))[i]) := by
+  have he : (DualUse.pkEnc hk c).enc m = ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod
+      ((DualUse.matEnc (Fin 1) (DualUse.TrapCol k)).prod
+      ((FixedEnc.fun (α := (DualUse.Sdw (N := N) hk).Attr × (DualUse.Sdw (N := N) hk).ctBits.Index)
+        (DualUse.matEnc (Fin 1) (Col k))).prod (ringEnc N K)))).enc (m.B₀, m.B₁, m.Bj, m.p) := rfl
+  rw [he]
+  rw [FixedEnc.prod_drop, FixedEnc.prod_drop, FixedEnc.prod_take, FixedEnc.fun_block, matEnc_row]
+
 end AdvancedEncryption.DualUse.Algo

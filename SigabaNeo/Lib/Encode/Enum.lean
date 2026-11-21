@@ -109,6 +109,47 @@ def «fun» {α β : Type} [Enum α] {n : ℕ} (e : FixedEnc β n) :
     exact List.map_inj_left.mp this a (Enum.complete a)
   length f := by rw [length_encList]; simp
 
+/-! ### Reading blocks back -/
+
+theorem prod_enc {β γ : Type} {n m : ℕ} (e : FixedEnc β n) (f : FixedEnc γ m) (p : β × γ) :
+    (e.prod f).enc p = e.enc p.1 ++ f.enc p.2 := rfl
+
+/-- The first field of a product is its first `n` bits. -/
+theorem prod_take {β γ : Type} {n m : ℕ} (e : FixedEnc β n) (f : FixedEnc γ m) (p : β × γ) :
+    ((e.prod f).enc p).take n = e.enc p.1 := by
+  rw [prod_enc, List.take_append_of_le_length (le_of_eq (e.length _).symm),
+    List.take_of_length_le (le_of_eq (e.length _))]
+
+/-- The second field of a product is what follows the first `n` bits. -/
+theorem prod_drop {β γ : Type} {n m : ℕ} (e : FixedEnc β n) (f : FixedEnc γ m) (p : β × γ) :
+    ((e.prod f).enc p).drop n = f.enc p.2 := by
+  rw [prod_enc, List.drop_append_of_le_length (le_of_eq (e.length _).symm),
+    List.drop_of_length_le (le_of_eq (e.length _)), List.nil_append]
+
+/-- **The block of the `i`-th value** in a concatenation of fixed-length encodings. -/
+theorem encList_block {β : Type} {n : ℕ} (e : FixedEnc β n) :
+    ∀ (l : List β) (i : ℕ) (hi : i < l.length), ((e.encList l).drop (i * n)).take n = e.enc l[i]
+  | [], _, hi => absurd hi (Nat.not_lt_zero _)
+  | b :: l, 0, _ => by
+    simp only [encList, List.flatMap_cons, zero_mul, List.drop_zero, List.getElem_cons_zero]
+    rw [List.take_append_of_le_length (le_of_eq (e.length _).symm),
+      List.take_of_length_le (le_of_eq (e.length _))]
+  | b :: l, i + 1, hi => by
+    have ih := encList_block e l i (by simpa using hi)
+    simp only [encList, List.flatMap_cons, List.getElem_cons_succ] at ih ⊢
+    rw [show (i + 1) * n = n + i * n by ring, ← List.drop_drop,
+      List.drop_append_of_le_length (le_of_eq (e.length _).symm),
+      List.drop_of_length_le (le_of_eq (e.length _)), List.nil_append]
+    exact ih
+
+/-- **The block of the value at the `i`-th element** of the enumeration. -/
+theorem fun_block {α β : Type} [Enum α] {n : ℕ} (e : FixedEnc β n) (f : α → β) (i : ℕ)
+    (hi : i < (Enum.list (α := α)).length) :
+    (((FixedEnc.fun e).enc f).drop (i * n)).take n = e.enc (f (Enum.list (α := α))[i]) := by
+  have := encList_block e ((Enum.list (α := α)).map f) i (by simpa using hi)
+  rw [List.getElem_map] at this
+  exact this
+
 end FixedEnc
 
 end SigabaNeo.Encode
