@@ -38,6 +38,7 @@ own. Its proofs are checked by Lean when the core is built.
 | `LeftoverHash` | the leftover hash lemma for binary inputs hashed by a uniform matrix over any finite commutative ring (`ℤ_q`, `ℤ_q[X]/(X^N + 1)`, also `q = 2^K`): `isTwoUniversal_binaryHash` (two-universal: distinct binary inputs differ by the unit `±1`), `closeTo_binaryHash` (`(A, A·x)` is within `√(|R|^r · 2^{−m}) / 2` of `(A, u)`), from cslib-frontier's general `IsTwoUniversal.leftover_hash` |
 | `BoxSampler` | one try of preimage sampling by box rejection (Lyubashevsky–Wichs, uniform boxes): `boxSample_some` (every target output has probability `1/|Big|`), `boxSample_eq` (the law does not depend on the trapdoor), `PMF.ext_option` |
 | `Flood` | noise flooding over `ℤ_q[X]/(X^N + 1)`: `floodLaw` (independent coefficients uniform in `{0, …, W−1}`), `closeTo_floodLaw_add` (adding `δ` costs `∑ |δᵢⱼ| / W`); in `Stat`, `dist_shift_pi` for any finite index set |
+| `RingLWEInst` | the registry's Ring-LWE (Module-LWE of rank 1) as laws over `ℤ_q[X]/(X^N + 1)`: `ringReal` (`(aᵢ, aᵢ σ + eᵢ)`), `ringLWE_realLaw_eq`, `ringLWE_idealLaw_eq` (through `encodeRing`); `sampleMat_eq_pi`, `pi_comp_equiv`, `pi_curry` |
 | `Decode` | `encodeBit`, `decodeZMod`, `decodeBit`: threshold decoding of `M · ⌊q/2⌋ + e` in `ℤ_q` and at the constant coefficient of `ℤ_q[X]/(X^N + 1)`, exact when `4|e| + 2 < q` |
 
 ## Trapdoors and preimage sampling
