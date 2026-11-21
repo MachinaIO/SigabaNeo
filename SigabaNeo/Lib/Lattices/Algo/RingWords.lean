@@ -1,5 +1,6 @@
 import SigabaNeo.Lib.Lattices.Algo.Words
 import Mathlib.Tactic.Linarith
+import SigabaNeo.Lib.Lattices.Homomorphic.BinaryDigits
 
 /-!
 # Negacyclic arithmetic on bit words
@@ -230,6 +231,154 @@ theorem mulRW_enc (N K : ℕ) (a b : Negacyclic (ZMod (2 ^ K)) N) :
   · intro i _; exact length_coefLoop _ _ _ _ _ _
   · intro i hi
     rw [dec_coefLoop a b hi N le_rfl, coeffs_mul_eq_sum a b i hi]
+
+
+/-! ### Every word of `N` blocks is an encoding -/
+
+theorem block_take {K i n : ℕ} (w : List Bool) (hi : i < n) :
+    block K i (w.take (n * K)) = block K i w := by
+  have hle : i * K + K ≤ n * K := by
+    have := Nat.mul_le_mul_right K (show i + 1 ≤ n by omega); rw [Nat.add_mul] at this; simpa
+  simp only [block, List.drop_take, List.take_take]
+  congr 1; omega
+
+/-- A word of `n` blocks is the loop writing its blocks. -/
+theorem concatN_block {n K : ℕ} : ∀ {w : List Bool}, w.length = n * K →
+    concatN n (fun i => block K i w) = w := by
+  induction n with
+  | zero => intro w hw; simp at hw; simp [concatN, hw]
+  | succ n ih =>
+    intro w hw
+    have hnK : n * K ≤ (n + 1) * K := Nat.mul_le_mul_right K (Nat.le_succ n)
+    have ht : (w.take (n * K)).length = n * K := by
+      rw [List.length_take, hw]; omega
+    rw [concatN, concatN_congr (g := fun i => block K i (w.take (n * K)))
+      (fun i hi => (block_take w hi).symm), ih ht]
+    have hd : (w.drop (n * K)).length = K := by
+      rw [List.length_drop, hw, Nat.succ_mul]; omega
+    simp only [block]
+    rw [List.take_of_length_le (l := w.drop (n * K)) (by omega), List.take_append_drop]
+
+/-- The ring element of a word: the residues of its blocks. -/
+def decR (N K : ℕ) (w : List Bool) : Negacyclic (ZMod (2 ^ K)) N :=
+  Negacyclic.ofCoeffs fun i => dec K (block K i w)
+
+theorem decR_enc {N K : ℕ} (a : Negacyclic (ZMod (2 ^ K)) N) :
+    decR N K ((ringEnc N K).enc a) = a := by
+  ext i
+  simp only [decR, Negacyclic.coeffs_ofCoeffs, dec_block_ringEnc, coefOf, i.isLt,
+    dite_true]
+
+theorem enc_decR {N K : ℕ} {w : List Bool} (hw : w.length = N * K) :
+    (ringEnc N K).enc (decR N K w) = w := by
+  conv_rhs => rw [← concatN_block hw]
+  symm
+  apply eq_ringEnc
+  · intro i hi; exact length_block hw hi
+  · intro i _; rfl
+
+/-- On words of the right length, `addRW`, `subRW` and `mulRW` are the ring operations. -/
+theorem decR_mulRW {N K : ℕ} {x y : List Bool} (hx : x.length = N * K) (hy : y.length = N * K) :
+    decR N K (mulRW N K x y) = decR N K x * decR N K y := by
+  rw [← enc_decR hx, ← enc_decR hy, mulRW_enc, decR_enc, decR_enc, decR_enc]
+
+theorem decR_addRW {N K : ℕ} {x y : List Bool} (hx : x.length = N * K) (hy : y.length = N * K) :
+    decR N K (addRW N K x y) = decR N K x + decR N K y := by
+  rw [← enc_decR hx, ← enc_decR hy, addRW_enc, decR_enc, decR_enc, decR_enc]
+
+theorem length_addRW (N K : ℕ) {x : List Bool} (hx : x.length = N * K) (y : List Bool) :
+    (addRW N K x y).length = N * K :=
+  length_concatN fun i hi => by rw [length_addW, length_block hx hi]
+
+theorem length_subRW (N K : ℕ) {x : List Bool} (hx : x.length = N * K) (y : List Bool) :
+    (subRW N K x y).length = N * K :=
+  length_concatN fun i hi => by rw [length_subW, length_block hx hi]
+
+theorem length_mulRW (N K : ℕ) (x y : List Bool) : (mulRW N K x y).length = N * K :=
+  length_concatN fun _ _ => length_coefLoop _ _ _ _ _ _
+
+/-! ### Constants -/
+
+/-- The word of the bit `b` as a residue: `b` then `K - 1` zeros. -/
+def bitW : ℕ → Bool → List Bool
+  | 0, _ => []
+  | K + 1, b => b :: zeroW K
+
+theorem enc_bit (K : ℕ) (b : Bool) :
+    (zmodEnc K).enc (if b then 1 else 0) = bitW K b := by
+  rw [zmodEnc_enc]
+  cases K with
+  | zero => rfl
+  | succ K =>
+    cases b
+    · simp only [Bool.false_eq_true, ↓reduceIte, ZMod.val_zero, bitW]
+      apply eq_of_val_eq (by simp) (by rw [val_toBits]; simp [val_zeroW])
+    · have h1 : ((1 : ZMod (2 ^ (K + 1)))).val = 1 :=
+        ZMod.val_one'' (by have := Nat.one_lt_two_pow (n := K + 1) (by omega); omega)
+      simp only [↓reduceIte, h1, bitW]
+      apply eq_of_val_eq (by simp) (by
+        rw [val_toBits, val_cons, val_zeroW, Nat.mod_eq_of_lt (Nat.one_lt_two_pow (by omega))]
+        rfl)
+
+/-- The word of `(2^i mod 2^K)`. -/
+def powW (K i : ℕ) : List Bool := toBits K (2 ^ i)
+
+theorem enc_pow (K i : ℕ) : (zmodEnc K).enc (2 ^ i) = powW K i := by
+  rw [zmodEnc_enc, powW]
+  have : ((2 : ZMod (2 ^ K)) ^ i) = ((2 ^ i : ℕ) : ZMod (2 ^ K)) := by push_cast; rfl
+  rw [this, ZMod.val_natCast, toBits_mod]
+
+/-- The word of the ring element `0`. -/
+theorem enc_zeroR (N K : ℕ) : (ringEnc N K).enc (0 : Negacyclic (ZMod (2 ^ K)) N) = zeroW (N * K) := by
+  apply eq_of_val_eq (by simp [(ringEnc N K).length]) ?_
+  have h : decR N K (zeroW (N * K)) = 0 := by
+    ext i
+    simp only [decR, Negacyclic.coeffs_ofCoeffs, Negacyclic.coeffs_zero, Pi.zero_apply, dec, block,
+      zeroW, List.drop_replicate, List.take_replicate]
+    rw [show List.replicate (min K (N * K - i * K)) false = zeroW _ from rfl, val_zeroW]; simp
+  rw [← h, enc_decR (by simp)]
+
+/-- The word of a constant `algebraMap r` with `r` given by its word `v`: `v` then zero blocks. -/
+def constW (N K : ℕ) (v : List Bool) : List Bool :=
+  concatN N (fun t => if t = 0 then v else zeroW K)
+
+theorem enc_algebraMap (N K : ℕ) (r : ZMod (2 ^ K)) :
+    (ringEnc N K).enc (algebraMap (ZMod (2 ^ K)) (Negacyclic (ZMod (2 ^ K)) N) r) =
+      constW N K ((zmodEnc K).enc r) := by
+  symm
+  apply eq_ringEnc
+  · intro t _; split_ifs <;> simp [(zmodEnc K).length]
+  · intro t ht
+    rw [Negacyclic.coeffs_algebraMap]
+    split_ifs <;> first | exact dec_enc K r | simp_all [dec, val_zeroW]
+
+/-- The word of the monomial `v X^j` (`v` the word of a residue). -/
+def monoW (N K j : ℕ) (v : List Bool) : List Bool :=
+  concatN N (fun t => if t = j then v else zeroW K)
+
+/-- The binary digit `i` of the coefficients of a ring word. -/
+def digitRW (N K i : ℕ) (w : List Bool) : List Bool :=
+  concatN N (fun t => bitW K ((block K t w).getD i false))
+
+theorem getD_enc (K : ℕ) (x : ZMod (2 ^ K)) (i : ℕ) :
+    ((zmodEnc K).enc x).getD i false = x.val.testBit i := by
+  by_cases hi : i < K
+  · rw [List.getD_eq_getElem _ _ (by simp [(zmodEnc K).length, hi])]
+    simp [zmodEnc]
+  · rw [List.getD_eq_default _ _ (by simp [(zmodEnc K).length]; omega)]
+    exact (Nat.testBit_lt_two_pow ((ZMod.val_lt x).trans_le
+      (Nat.pow_le_pow_right (by norm_num) (by omega)))).symm
+
+theorem length_bitW (K : ℕ) (b : Bool) : (bitW K b).length = K := by
+  cases K <;> simp [bitW]
+
+/-- **Binary digits on words.** -/
+theorem digitRW_enc (N K i : ℕ) (a : Negacyclic (ZMod (2 ^ K)) N) :
+    digitRW N K i ((ringEnc N K).enc a) = (ringEnc N K).enc (SigabaNeo.Lattices.binaryDigit a i) := by
+  apply eq_ringEnc
+  · intro t _; exact length_bitW K _
+  · intro t ht
+    rw [block_ringEnc a ht, getD_enc, ← enc_bit, dec_enc, SigabaNeo.Lattices.coeffs_binaryDigit]
 
 /-! ### Step counts -/
 

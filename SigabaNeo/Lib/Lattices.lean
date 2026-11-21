@@ -22,6 +22,7 @@ import SigabaNeo.Lib.Lattices.CoinMaps
 import SigabaNeo.Lib.Lattices.BitLaw
 import SigabaNeo.Lib.Lattices.Algo.Words
 import SigabaNeo.Lib.Lattices.Algo.RingWords
+import SigabaNeo.Lib.Lattices.Algo.MatWords
 
 /-!
 # Lattice library
@@ -65,5 +66,6 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   `4|e| + 2 < q`.
 * `Algo/`: bit-level algorithms, first-order loops over words proven equal to the mathematical
   definitions, with step counts — `Words` (fixed-width arithmetic mod `2^K` on `zmodEnc` words),
-  `RingWords` (negacyclic addition and schoolbook multiplication on `ringEnc` words).
+  `RingWords` (negacyclic addition and schoolbook multiplication on `ringEnc` words), `MatWords`
+  (matrix sums and products, the binary gadget `G̲` and `G̲⁻¹`, the BGG+ NAND `G̲ − A G̲⁻¹(B)`).
 -/
