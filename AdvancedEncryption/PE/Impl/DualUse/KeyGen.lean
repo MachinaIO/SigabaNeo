@@ -1,0 +1,123 @@
+import PE.Impl.DualUse.Scheme
+import SigabaNeo.Lib.Lattices.BoxSampler
+
+/-!
+# Key generation by box rejection, real and simulated
+
+A key for `f` solves `B₀ k₀ + B₁ k₁ + B_f̂ k₂ = p`. It is drawn by one try of box rejection
+(`SigabaNeo.Lattices.boxSample`) with the decomposition `z = k₂` attached to the columns of `B_f̂`
+and `(k₀, k₁)` in a small box:
+
+* **real** (`realTrap`): `B₁ T = G̲` gives the trapdoor `T · G̲⁻¹(B_f̂ − G̲)` of
+  `[B₁ | B_f̂] = [B₁ | B₁ T G̲⁻¹(B_f̂ − G̲) + G̲]`;
+* **simulated** (`simTrap`, BTVW17 `KeyGen*`): when `B_f̂ = B₀ W + G̲` (`keyMatrix_sim` with
+  `f(x) = 1`), `W` is a trapdoor of `[B₀ | B_f̂]`.
+
+Both have the same public map, so the two laws are equal (`keyLaw_real_eq_sim`): the simulation of
+keys is exact. Every key output is valid (`valid_of_mem_support`).
+-/
+
+namespace AdvancedEncryption.DualUse
+
+open SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW
+
+variable {R : Type*} [CommRing R] {k : ℕ} {S : Setting R k} {Wd : Type*} [Fintype Wd]
+  [DecidableEq R]
+
+/-- The short part of a key: against `B₀` and `B₁`. -/
+abbrev KeyShort (Wd : Type*) (R : Type*) (k : ℕ) := (Wd → R) × (Col k → R)
+
+/-- The public map on the short part: `(k₀, k₁) ↦ B₀ k₀ + B₁ k₁`. -/
+def shortMap (mpk : MPK S Wd) : KeyShort Wd R k →+ R where
+  toFun x := ∑ c, mpk.B₀ 0 c * x.1 c + ∑ c, mpk.B₁ 0 c * x.2 c
+  map_zero' := by simp
+  map_add' x y := by
+    simp only [Prod.fst_add, Prod.snd_add, Pi.add_apply, mul_add, Finset.sum_add_distrib]
+    ring
+
+/-- The gadget part: `z ↦ G̲ z`. -/
+def gadgetMap (z : Col k → R) : R := ∑ c, S.Γ₁.G 0 c * z c
+
+/-- The real trapdoor: `z ↦ (0, T · G̲⁻¹(B_f̂ − G̲) · z)`. -/
+def realTrap (Tm : Matrix (Col k) (Col k) R) (Bf : Matrix (Fin 1) (Col k) R) (z : Col k → R) :
+    KeyShort Wd R k :=
+  (0, (Tm * S.Γ₁.ginv (Bf - S.Γ₁.G)) *ᵥ z)
+
+/-- The simulated trapdoor: `z ↦ (W z, 0)`. -/
+def simTrap (W : Matrix Wd (Col k) R) (z : Col k → R) : KeyShort Wd R k := (W *ᵥ z, 0)
+
+omit [DecidableEq R] in
+theorem shortMap_realTrap (mpk : MPK S Wd) (Tm : Matrix (Col k) (Col k) R)
+    (hT : mpk.B₁ * Tm = S.Γ₁.G) (Bf : Matrix (Fin 1) (Col k) R) (z : Col k → R) :
+    shortMap mpk (realTrap (Wd := Wd) (S := S) Tm Bf z) = ((Bf - S.Γ₁.G) *ᵥ z) 0 := by
+  have h : mpk.B₁ * (Tm * S.Γ₁.ginv (Bf - S.Γ₁.G)) = Bf - S.Γ₁.G := by
+    rw [← Matrix.mul_assoc, hT, S.Γ₁.mul_ginv]
+  have h2 := congrArg (fun M => (M *ᵥ z) 0) h
+  simp only [Matrix.mulVec, dotProduct, Matrix.mul_apply] at h2
+  simp only [shortMap, realTrap, AddMonoidHom.coe_mk, ZeroHom.coe_mk, Pi.zero_apply, mul_zero,
+    Finset.sum_const_zero, zero_add, Matrix.mulVec, dotProduct, Matrix.mul_apply]
+  rw [← h2]
+  simp only [Finset.mul_sum, Finset.sum_mul, mul_assoc]
+  rw [Finset.sum_comm]
+
+omit [DecidableEq R] in
+theorem shortMap_simTrap (mpk : MPK S Wd) (W : Matrix Wd (Col k) R) (Bf : Matrix (Fin 1) (Col k) R)
+    (hBf : Bf = mpk.B₀ * W + S.Γ₁.G) (z : Col k → R) :
+    shortMap mpk (simTrap (k := k) W z) = ((Bf - S.Γ₁.G) *ᵥ z) 0 := by
+  rw [hBf, add_sub_cancel_right]
+  simp only [shortMap, simTrap, AddMonoidHom.coe_mk, ZeroHom.coe_mk, Pi.zero_apply, mul_zero,
+    Finset.sum_const_zero, add_zero, Matrix.mulVec, dotProduct, Matrix.mul_apply,
+    Finset.mul_sum, Finset.sum_mul, mul_assoc]
+  rw [Finset.sum_comm]
+
+/-- The key of an output: `(k₀, k₁)` and `k₂ = z`, or the zero key on abort. -/
+def keyOfOutput : Option (KeyShort Wd R k × (Col k → R)) → SecretKey Wd (R := R) (k := k)
+  | some (x, z) => ⟨Matrix.of fun c _ => x.1 c, Matrix.of fun c _ => x.2 c, Matrix.of fun c _ => z c⟩
+  | none => ⟨0, 0, 0⟩
+
+variable (Big Small : Finset (KeyShort Wd R k)) (hBig : Big.Nonempty) (dec : R → (Col k → R))
+
+/-- The law of a key with the trapdoor `T`, for the public row `B_f̂`. -/
+noncomputable def keyLaw (mpk : MPK S Wd) (T : (Col k → R) → KeyShort Wd R k) :
+    PMF (Option (KeyShort Wd R k × (Col k → R))) :=
+  boxSample Big hBig Small (shortMap mpk) dec T mpk.p
+
+/-- **Exact simulation of keys** (BTVW17 `KeyGen*`): when `B_f̂ = B₀ W + G̲`, the key law with the
+real trapdoor equals the one with `W`, provided the big box covers both. -/
+theorem keyLaw_real_eq_sim (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd)
+    (Tm : Matrix (Col k) (Col k) R) (hT : mpk.B₁ * Tm = S.Γ₁.G) (W : Matrix Wd (Col k) R)
+    (Bf : Matrix (Fin 1) (Col k) R) (hBf : Bf = mpk.B₀ * W + S.Γ₁.G)
+    (hcov : ∀ x ∈ Small, ∀ y, x + realTrap (Wd := Wd) (S := S) Tm Bf (dec y) ∈ Big)
+    (hcov' : ∀ x ∈ Small, ∀ y, x + simTrap (k := k) W (dec y) ∈ Big) :
+    keyLaw Big Small hBig dec mpk (realTrap (S := S) Tm Bf) = keyLaw Big Small hBig dec mpk (simTrap W) :=
+  boxSample_eq Big hBig Small (shortMap mpk) (gadgetMap (S := S)) dec hdec _ _ mpk.p hcov hcov'
+    fun z => by rw [shortMap_realTrap mpk Tm hT, shortMap_simTrap mpk W Bf hBf]
+
+omit [DecidableEq R] in
+theorem gadgetMap_eq (z : Col k → R) : gadgetMap (S := S) z = (S.Γ₁.G *ᵥ z) 0 := rfl
+
+/-- **Keys are valid**: every key output with a trapdoor `T` of `B_f̂` (that is,
+`B₀ T₀ z + B₁ T₁ z + G̲ z = B_f̂ z`) satisfies `B₀ k₀ + B₁ k₁ + B_f̂ k₂ = p`, unless the try aborts. -/
+theorem valid_of_mem_support (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd)
+    (T : (Col k → R) → KeyShort Wd R k) (Bf : Matrix (Fin 1) (Col k) R)
+    (hT : ∀ z, shortMap mpk (T z) + gadgetMap (S := S) z = (Bf *ᵥ z) 0)
+    (hcov : ∀ x ∈ Small, ∀ y, x + T (dec y) ∈ Big)
+    (o : Option (KeyShort Wd R k × (Col k → R))) (ho : o ∈ (keyLaw Big Small hBig dec mpk T).support)
+    (x : KeyShort Wd R k × (Col k → R)) (hox : o = some x) :
+    mpk.B₀ * (keyOfOutput o).k₀ + mpk.B₁ * (keyOfOutput o).k₁ + Bf * (keyOfOutput o).k₂ =
+      scalar mpk.p := by
+  subst hox
+  have hpos := (PMF.mem_support_iff _ _).mp ho
+  rw [keyLaw, boxSample_some Big hBig Small (shortMap mpk) (gadgetMap (S := S)) dec hdec T mpk.p
+    hcov] at hpos
+  split_ifs at hpos with ht
+  · obtain ⟨-, -, hu⟩ := ht
+    have hu' : shortMap mpk x.1 + (Bf *ᵥ x.2) 0 = mpk.p := by
+      rw [← hT]; simpa only [add_assoc] using hu
+    ext a b
+    fin_cases a; fin_cases b
+    simp only [shortMap, AddMonoidHom.coe_mk, ZeroHom.coe_mk] at hu'
+    simp [keyOfOutput, Matrix.mul_apply, RingBTVW.scalar, Matrix.mulVec, dotProduct, ← hu']
+  · exact absurd rfl hpos
+
+end AdvancedEncryption.DualUse
