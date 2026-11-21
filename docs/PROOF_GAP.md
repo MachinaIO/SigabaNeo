@@ -504,7 +504,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   terminal head is the true quotient minimum and whose dual annihilator passes an SVP test; on Haar lattices of rank 1023 this
   gives g_{1023−β} ≥ 0.58986 (β = 647) and 1.01835 (β = 800) at 99% — the predicate is never empty. Scope: only the terminal block is
   controlled (the first k columns are unreduced).
-* **Frontier after Parts 1–87 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 88 (audited, minor caveats).** [li_walter](research/wall1_li_walter.md): the provably terminating generalized slide
+  reduction (ALNS20 / Li–Walter; no MW stabilization assumption) at rank 1023 has exactly two blocks for β = 406, 506; its output's
+  twin tests force a small terminal head to give a small rank-(k+1) prefix determinant, so on Haar lattices w.p. ≥ 99% the
+  terminal minimum is ≥ 0.12531 (β = 406) and ≥ 0.36189 (β = 506) with 1% slack (0.12657 / 0.36551 at exact twin quality) —
+  34% / 45% of 0.85·GSA, now for a terminating algorithm.
+* **Frontier after Parts 1–88 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
