@@ -25,6 +25,7 @@ import SigabaNeo.Lib.Lattices.Algo.RingWords
 import SigabaNeo.Lib.Lattices.Algo.MatWords
 import SigabaNeo.Lib.Lattices.Algo.SLPWords
 import SigabaNeo.Lib.Lattices.Algo.FhatLoop
+import SigabaNeo.Lib.Lattices.Algo.Coins
 
 /-!
 # Lattice library
@@ -71,5 +72,6 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   `RingWords` (negacyclic addition and schoolbook multiplication on `ringEnc` words), `MatWords`
   (matrix sums and products, the binary gadget `G̲` and `G̲⁻¹`, the BGG+ NAND `G̲ − A G̲⁻¹(B)`),
   `SLPWords` (`EvalF` of programs and the key-matrix sum on words), `FhatLoop` (the compiler of `f̂`
-  with explicit orders and gadget coefficients, equal to `fhatSLP` at the chosen orders).
+  with explicit orders and gadget coefficients, equal to `fhatSLP` at the chosen orders), `Coins`
+  (one try of box rejection as a function of a fixed number of fair coins).
 -/
