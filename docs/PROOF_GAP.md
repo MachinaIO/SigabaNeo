@@ -448,3 +448,11 @@ modular collisions up to sign; for non-uniform input distinct, non-antipodal dua
 correlated (variance `N²`); sign flips and uniform subset selection do not remove correlations. Conditional guarantee:
 mean gap `g` and variance sum `≤ g²/16` give advantage `≥ 3/4` for the midpoint test. Open: establishing these for
 actual BKZ+sieve lists, and bridging fresh-input tests with Pouly–Shen's fixed-input Theorem 6.
+
+## Dual attacks: MATZOV modulus switching and FFT (audited; [research/matzov_rigorous.md](research/matzov_rigorous.md))
+
+Conditional extension of Pouly–Shen Theorem 6: with exact independent DGS draws, FFT over the rounded residues is exact and
+recovery holds if the population gap exceeds `2(B + ε + d)` (rounding, numerical, sampling errors); guesses equal mod `p`
+are indistinguishable, so lifts need separate handling. Not certified at the estimator's parameters. Estimator heuristics
+listed (including an `Nf` bits/nats mix and the GJ21 independence heuristic in `fft_solver`); the estimator's secret entropy
+exceeds the exact CBD entropy by 0.0062 / 0.0165 bits per coefficient.
