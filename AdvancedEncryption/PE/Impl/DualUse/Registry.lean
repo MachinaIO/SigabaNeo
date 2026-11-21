@@ -138,4 +138,58 @@ theorem nfUnif_eq :
   conv_rhs => rw [← PMF.bind_pure (PMF.uniformOfFintype (Pub Wd (Negacyclic (ZMod q) N) k ×
     Pub Wd (Negacyclic (ZMod q) N) k)), uniform_prod_bind]
 
+omit [NeZero q] in
+/-- A uniform row is a uniform function. -/
+theorem uniform_row_bind {ι γ R : Type} [Fintype ι] [DecidableEq ι] [Fintype R] [Ring R]
+    (g : Matrix (Fin 1) ι R → PMF γ) :
+    (PMF.uniformOfFintype (Matrix (Fin 1) ι R)).bind g =
+      (PMF.uniformOfFintype (ι → R)).bind fun f => g (rowOf f) := by
+  let e : (ι → R) ≃ Matrix (Fin 1) ι R :=
+    { toFun := rowOf
+      invFun := fun M c => M 0 c
+      left_inv := fun f => rfl
+      right_inv := fun M => by ext i c; fin_cases i; rfl }
+  exact (bind_uniform_equiv e g).symm
+
+/-- The instance of hybrid 3 from a ring-level pair. -/
+def split3 (v : (Col k → Negacyclic (ZMod q) N) × (Col k → Negacyclic (ZMod q) N)) :
+    Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N) × Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N) :=
+  (rowOf v.1, rowOf v.2)
+
+/-- **Hybrid 3's real instances are the registry's** (secret `t` from the error law). -/
+theorem inst3Real_eq (χc : PMF (ZMod q)) :
+    inst3Real (k := k) (polyOf (N := N) χc) = (ringRealOn (Col k) χc χc).map split3 := by
+  unfold inst3Real ringRealOn rowLaw
+  simp only [Cslib.Probability.PMF.monad_bind_eq_bind, Cslib.Probability.PMF.monad_pure_eq_pure,
+    PMF.map_bind, PMF.bind_map, uniform_row_bind]
+  rw [PMF.bind_comm]
+  refine congrArg (PMF.bind _) (funext fun σ => ?_)
+  refine congrArg (PMF.bind _) (funext fun A => ?_)
+  refine congrArg (PMF.bind _) (funext fun e => ?_)
+  simp only [Function.comp_apply, PMF.pure_map, split3]
+  congr 2
+  ext i c; fin_cases i
+  simp [rowOf, RingBTVW.scalar, Matrix.mul_apply, mul_comm]
+
+/-- (Instance search does not find this product by itself.) -/
+instance fintypePair3 :
+    Fintype ((Col k → Negacyclic (ZMod q) N) × (Col k → Negacyclic (ZMod q) N)) :=
+  instFintypeProd _ _
+
+/-- **Hybrid 3's uniform instances are the registry's.** -/
+theorem inst3Unif_eq :
+    inst3Unif (k := k) (R := Negacyclic (ZMod q) N) =
+      (PMF.uniformOfFintype ((Col k → Negacyclic (ZMod q) N) ×
+        (Col k → Negacyclic (ZMod q) N))).map split3 := by
+  let e : ((Col k → Negacyclic (ZMod q) N) × (Col k → Negacyclic (ZMod q) N)) ≃
+      (Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N) × Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)) :=
+    { toFun := split3
+      invFun := fun M => (fun c => M.1 0 c, fun c => M.2 0 c)
+      left_inv := fun v => rfl
+      right_inv := fun M => by
+        refine Prod.ext ?_ ?_ <;> (ext i c; fin_cases i; rfl) }
+  rw [show (split3 : _ → Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N) × _) = e from rfl,
+    Cslib.Probability.PMF.uniformOfFintype_map_equiv]
+  rfl
+
 end AdvancedEncryption.DualUse
