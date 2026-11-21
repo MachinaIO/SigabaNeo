@@ -509,7 +509,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   twin tests force a small terminal head to give a small rank-(k+1) prefix determinant, so on Haar lattices w.p. ≥ 99% the
   terminal minimum is ≥ 0.12531 (β = 406) and ≥ 0.36189 (β = 506) with 1% slack (0.12657 / 0.36551 at exact twin quality) —
   34% / 45% of 0.85·GSA, now for a terminating algorithm.
-* **Frontier after Parts 1–88 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 89 (audited, minor caveats).** [twin_qary](research/wall1_twin_qary.md): Part 88 transferred to the actual q-ary
+  lattice L_0 of (511, 512, 3329) with no Haar or GSA input — an exact q-ary first moment of primitive rank-(k+1) sublattices below
+  the twin cap (rigorous graph-chart height count with explicit constants; every modular-rank deficiency stratum included) is
+  < 0.01, so w.p. ≥ 99% every output of the terminating generalized slide reduction (1% twin slack, exact terminal SVP) has
+  terminal projected minimum ≥ 2.964 (β = 406) and ≥ 6.837 (β = 506) in physical units (normalized 0.0516 / 0.1190; 41% / 33% of
+  the Haar values). Caveats of Part 88 (Hermite value in η, LLL pre-pass) apply. Not yet sufficient for the planted lifting.
+* **Frontier after Parts 1–89 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
