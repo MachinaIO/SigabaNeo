@@ -36,7 +36,7 @@ theorem abs_sub_le_of_closeTo {α : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h 
     linarith
 
 /-- The input of the distinguisher from the observable part of a run. -/
-def viewObs (o : List Bool × Option Date × Option Bool × Bool) : List Bool :=
+def viewObs (o : List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool) : List Bool :=
   encodeTuple [encOpt dateUniverse.encAttr o.2.1, encOpt dateUniverse.encMsg o.2.2.1, o.1]
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
@@ -46,7 +46,7 @@ noncomputable abbrev G (A : Machine 3) (V : Date → PMF (PK hk c × CT hk c)) :
   gameV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A V
 
 /-- The distinguisher on observable runs. -/
-noncomputable def Dc (D : Machine) (o : List Bool × Option Date × Option Bool × Bool) :
+noncomputable def Dc (D : Machine) (o : List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool) :
     PMF (List Bool) := D.run (viewObs o)
 
 theorem real_view_bind (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
@@ -103,11 +103,11 @@ theorem advantage_le (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) =
   exact abs_sub_le_of_closeTo h hfin [true]
 
 /-- The distinguisher that rejects runs whose flag is up. -/
-noncomputable def DcStar (D : Machine) (o : List Bool × Option Date × Option Bool × Bool) :
+noncomputable def DcStar (D : Machine) (o : List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool) :
     PMF (List Bool) := if o.2.2.2 then PMF.pure [false] else Dc D o
 
 /-- With an admissible adversary, rejecting the runs with the flag up changes nothing. -/
-theorem bind_star {μ : PMF (List Bool × Option Date × Option Bool × Bool)} (D : Machine)
+theorem bind_star {μ : PMF (List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool)} (D : Machine)
     (h : ∀ o ∈ μ.support, o.2.2.2 = false) : μ.bind (DcStar D) = μ.bind (Dc D) :=
   PMF.bind_congr_on_support _ _ _ fun o ho => by simp [DcStar, h o ho]
 

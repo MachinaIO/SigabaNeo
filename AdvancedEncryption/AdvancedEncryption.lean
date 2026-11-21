@@ -32,6 +32,7 @@ import PE.Impl.DualUse.IdealViews
 import PE.Impl.DualUse.RealBridge
 import PE.Impl.DualUse.IdealBridge
 import PE.Impl.DualUse.AHMath
+import PE.Impl.DualUse.AHAssembly
 import PE.Impl.DualUse.GameChain
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
