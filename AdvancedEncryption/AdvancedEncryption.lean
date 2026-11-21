@@ -37,6 +37,7 @@ import PE.Impl.DualUse.Params.SimTrapNorm
 import PE.Impl.DualUse.Params.Sizes
 import PE.Impl.DualUse.Params.Conf
 import PE.Impl.DualUse.Params.Stat
+import PE.Impl.DualUse.Params.Advantage
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad
