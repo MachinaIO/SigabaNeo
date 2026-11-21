@@ -576,7 +576,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   whole ambient dual. For every A the height-2 ambient weighted count exceeds 10^257. Prefixes engineered for the cosine weight
   alone reach > 10^101 inside H*, but they do not pass the reduction tests. Open: the heat-weighted count inside H* for prefixes
   that do pass the width-506 tests. Part 92's minimum event is sharpened to > 99.5888%.
-* **Frontier after Parts 1–100 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 101 (audited, minor caveats).** [qary_rogers](research/wall1_qary_rogers.md): an exact mixed modular counting
+  identity over uniform A gives a weighted count of short ambient dual vectors. One Markov event then bounds every
+  annihilator's determinant. At horizontal width 506, the certified head minimum rises from 7.4188 to 8.1466 physical
+  (8.1588 = 0.14197 normalized with the sharpened universal twin cap), with design probability ≥ 0.990001. A width curve covers
+  450–647. The necessary height-zero floor sharpens to 27.4810 (Cantelli). The remaining factor is ≈ 3.4.
+* **Frontier after Parts 1–101 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
