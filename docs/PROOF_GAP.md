@@ -628,8 +628,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * `primitiveBallPairs_hit_upper`;
   * `independentBallPairs_mean`: the Haar mean of independent ordered pairs is t².
 
-  Open in Lean: the Möbius step that identifies the primitive ordered-pair moment, which is needed for the lower tail of
-  Part 107 (i).
+  HaarMinimumLower.lean is also built and axiom-clean. It closes the lower tail:
+  * `primitiveIndependentPairs_mean` = vol²/ζ(n)², via divisibility π-systems;
+  * `primitiveBallPairs_secondMoment`: E[M²] = m + m²;
+  * `primitiveBallPairs_hit_lower`: Pr[M>0] ≥ m/(1+m).
+
+  Together with `primitiveBallPairs_hit_upper`, this gives the two-sided Haar λ1 window of Part 107 (i) in Lean.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
