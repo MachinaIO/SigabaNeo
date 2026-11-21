@@ -340,7 +340,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   row rank over Q the shifts are jointly Haar, so Pr_μ[no vector shorter than g_0] ≤ Π_v (1 − p_v) = e^{−E'} (Monte Carlo checked
   at d = 4). Factorial-moment bounds alone cannot force exponential void decay (explicit mixture counterexample). Whether E'
   captures a fixed fraction of E[N] on the bad-mass profiles is open (in progress); radii unchanged (0.005832301 … 0.139941828).
-* **Frontier after Parts 1–60 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 61 (audited).** [poisson_exponent](research/wall1_poisson_exponent.md): a degree-3 Delsarte LP (spherical-code)
+  bound gives block inequalities sharper than Blichfeldt at large ranks (by 3.6–6.6 nats at d ≈ 406–799), valid for every μ;
+  they exclude the Part 50 relaxed-mass witness boxes and the Part 59 modal slabs entirely (zero SVP weight). Yet the certified
+  radii move only to 0.005933/0.015621/0.039603/0.140798 at β = 406/506/647/800: the bad mass relocates. The A5 exponent is
+  > 227 on the witness boxes (moot there). Hypothesis under test: typical lattices genuinely have BKZ-reduced bases with short
+  terminal GS, capping all 'for every reduced basis' methods.
+* **Frontier after Parts 1–61 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
