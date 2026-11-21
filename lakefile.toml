@@ -17,5 +17,5 @@ name = "SigabaNeo"
 roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Trusted.Assumption",
   "SigabaNeo.Trusted.Primitive", "SigabaNeo.Trusted.Submission", "SigabaNeo.Lib.Machines.FromPolyTime", "SigabaNeo.Lib.Machines.Gates",
   "SigabaNeo.Lib.Machines.GatesSLP", "SigabaNeo.Lib.Machines.FromPTM", "SigabaNeo.Lib.Machines.LengthGuard",
-  "SigabaNeo.Lib.Machines.Guarded",
+  "SigabaNeo.Lib.Machines.Guarded", "SigabaNeo.Lib.Machines.Randomized",
   "SigabaNeo.Lib.Lattices"]
