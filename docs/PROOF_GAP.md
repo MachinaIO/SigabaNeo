@@ -85,6 +85,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   not justify a union bound over fixed prefixes, because of selection bias: fixed-index failure `1/N`,
   yet a selecting run fails with probability 1. Lean: `AvgBKZ.diagonalSelectionCounts`,
   `AvgBKZ.diagonalWeightHalf`.
+* **Part 4 (obstruction, audited; [research/wall1_new.md](research/wall1_new.md)).** In the iid
+  plain-LWE embedding with `m = n = 512`, `q = 3329`, with probability `> 1 − 2^{−275}` every
+  coordinate projection of dimension 2–400 (coordinates may be chosen after seeing `A, b`) is the full
+  grid `Z^k`, which has no unique shortest pair. Coordinate-block routes (random orders, progressive
+  deletion, best-of-many projections) and block-internal potentials therefore cannot work; adaptive
+  BKZ prefix spans are not covered.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
