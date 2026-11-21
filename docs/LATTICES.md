@@ -32,6 +32,7 @@ own. Its proofs are checked by Lean when the core is built.
 | `Homomorphic/SLP`, `Homomorphic/SLPEval` | straight-line programs of NAND gates (`SLP`, `valueOf`, `valueOf_invariant`, `valueOf_map`); their homomorphic evaluation: `slpPK`, `slpEnc`, `slp_enc_key_relation`, `slp_gsw_invariant`, `slp_enc_noise` |
 | `Homomorphic/Depth` | the depth of a program (`SLP.depth`); the noise bound is at most `(WN + 1)^depth · E` (`slpBound_le_depth`) |
 | `Homomorphic/NoiseGadgets` | the noise bound through the Boolean gadgets: `nb_xorW_le`, `nb_fullAdd` (the carry grows additively), `nb_rippleAdd`, `nb_andL`, `nb_muxL`, `nb_modAdd`, `nb_modSub` (factor `modFactor WN w`) |
+| `Homomorphic/GSWNoise` | the noise of evaluating `f̂` homomorphically: a NAND block multiplies by `gswFactor WN N k = modFactor^(treeHeight+1) · (WN+1)` (`nb_nandBlock`); `nb_fhatSLP`: within `gswFactor^n · E` for `n` gates |
 | `Homomorphic/SLPCircuit` | `SLP.circuit`: the circuit of a wire (the unfolding, for the analysis), with `evalBool_circuit`, `eval_circuit`, `evalMat_circuit` |
 | `Homomorphic/BoolBuild`, `Homomorphic/BoolArith` | building Boolean programs (`Ext`, `addNand`, logic gates) and arithmetic on wires: `rippleAdd`, `constL`, `muxL`, `andL`, `modAdd`, `modSub`, with their values |
 | `Homomorphic/BoolCompare` | comparisons of wires with constants, most significant bit first (`geConst`, `leConst`, `msbVal`), and Boolean combinations of them compiled into programs (`BExp`, `compile`, `compile_spec`) |
