@@ -352,7 +352,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   in terminal length, yet Pr[some reduced basis ≤ 0.9·GSA] ≤ 39.3%. Exhaustive q = 47 rank-3 graph lattices (2209): 625 admit a
   basis ≤ 0.9·GSA, 48 have several terminal values, 24 have a BKZ basis strictly below every HKZ choice (independently
   brute-forced). Medium-rank experiments are in progress.
-* **Frontier after Parts 1–62 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 63 (audited).** [profile_rigidity](research/wall1_profile_rigidity.md): two-sided profile rigidity of all BKZ-β
+  bases is false — full HKZ bases are BKZ-β reduced for every β and (Laarhoven Prop. 3) lie ≈ ((1−a+a log a)/2)·N log N below the
+  GSA prefix at k = N−β (a = β/N); deterministic Blichfeldt bounds at rank 1023 force errors ≥ 167.7 / 86.2 / 7.1 at
+  β = 406/506/647 for every covolume-1 lattice. The one-sided statement 'every BKZ-β basis has g_{N−β} ≥ c·GSA' remains open (it
+  depends on a difference of adjacent prefix errors); the unrestricted short-vector deficit has infinite supremum on every
+  lattice, so any moment argument must use the crossing windows (in progress).
+* **Frontier after Parts 1–63 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
