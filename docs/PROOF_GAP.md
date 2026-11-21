@@ -497,7 +497,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   the bound applies to bases satisfying Definition 1. Survey: [literature3](research/wall1_literature3.md) (Kelmer's
   mean-square theorem over random triangular coefficients matches the open void lemma's setting; Li–Walter generalized slide
   reduces widths 406/506 at rank 1023 to two blocks).
-* **Frontier after Parts 1–86 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 87 (audited, minor caveats).** [selfdual_extend](research/wall1_selfdual_extend.md): under MW Definition 1 no width in
+  300..512 reaches 0.85·G_β (best 0.38627 at 512; relative bounds g/R_T = 0.0939 / 0.1972 / 0.2047 at 406/506/512). A new
+  terminal-block reducer variant (provably terminating; each continuing step lowers the rank-k prefix covolume by a fixed factor,
+  with a uniform LLL-based lower bound, so polynomially many rank-≤β SVP calls in the oracle model) always outputs a basis whose
+  terminal head is the true quotient minimum and whose dual annihilator passes an SVP test; on Haar lattices of rank 1023 this
+  gives g_{1023−β} ≥ 0.58986 (β = 647) and 1.01835 (β = 800) at 99% — the predicate is never empty. Scope: only the terminal block is
+  controlled (the first k columns are unreduced).
+* **Frontier after Parts 1–87 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
