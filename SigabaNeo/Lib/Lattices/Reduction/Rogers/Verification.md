@@ -25,8 +25,11 @@ and the positive-definite support appear in `SphericalGramFormula`.
    every n ≥ 3. `sphere_axial_direction` proves independence in an orthogonal
    frame by normalizing ambient ball integrals. Reflection moves the first draw
    to the frame pole. Applying the joint coordinate law twice and the transverse
-   fixed-pole law gives `angularDisintegration`, including n = 3. The finite-index
-   matrix formulation and transport to the archive's `ClassicalGramFormula` remain open.
+   fixed-pole law gives `angularDisintegration`, including n = 3. For arbitrary sample size,
+   `gram_angular_recursion` now gives a recursive sampling law for the entire off-diagonal
+   tuple. The frame coordinates consist of independent axial cosines and transverse directions.
+   The Schur determinant, affine fiber Jacobian, and Gamma-product recursion are verified
+   separately. Combining these into the finite-index positive-definite density identity and transport to the archive's `ClassicalGramFormula` remain open.
 2. `sl_commutator_eq_top` proves perfectness for n ≥ 2 by diagonal and
    transvection induction. Conjugation by a two-coordinate diagonal matrix
    with entries 2 and 1/2 scales the transvection parameter by four. Each
@@ -37,7 +40,10 @@ and the positive-definite support appear in `SphericalGramFormula`.
    Discreteness gives quotient charts. Each fiber contributes the representative in
    the first chart meeting it in a countable cover. `arithmetic_domain_mass_le`
    bounds its mass by the mass of any set whose integer translates cover the group.
-   A covering set of finite Haar mass in general dimension remains to be established.
+   `siegel_diagonal_integral` evaluates the weighted integral over the logarithmic
+   simple-root orthant for every positive weight vector. Identifying this coordinate
+   measure with the diagonal factor of Haar measure and constructing
+   a covering set of finite Haar mass in general dimension remain to be established.
 3. `tupleWorkload_measurable` proves quotient measurability for every finite tuple length
    by reindexing each representative's sum over nonzero integer vectors.
    `siegel_of_measurable_unfolding` uses this and domain positivity. Its
@@ -475,6 +481,72 @@ theorem arithmetic_domain_mass_le {n : ℕ} {D S : Set (SL n)}
     groupHaar n D ≤ groupHaar n S
 ~~~
 
+~~~lean
+theorem tuple_angular_integral {m s : ℕ} (hm : 0 < m)
+    (e : Ambient (m+1) ≃ₗᵢ[ℝ] WithLp 2 (ℝ × Ambient m))
+    (F : (Fin s → ℝ) × (OffDiagonal s → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    let ρ := (uniform (m+1)).map (fun x : Sphere (m+1) ↦ (e x).fst)
+    (∫⁻ z : Fin s → Sphere (m+1), F (fun i ↦ (e (z i)).fst,
+      fun ij ↦ inner ℝ (z ij.val.1 : Ambient (m+1)) (z ij.val.2))
+      ∂Measure.pi (fun _ ↦ uniform (m+1))) =
+    ∫⁻ w : Fin s → ℝ × Ambient m, F (fun i ↦ (w i).1,
+      fun ij ↦ angularThird (w ij.val.1).1 (w ij.val.2).1
+        (inner ℝ (w ij.val.1).2 (w ij.val.2).2))
+      ∂Measure.pi (fun _ ↦ ρ.prod ((uniform m).map Subtype.val))
+~~~
+
+~~~lean
+theorem randomPole_gram_integral {n s : ℕ} (hn : 0 < n) (p : Sphere n)
+    (F : (Fin s → ℝ) × (OffDiagonal s → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    let test := fun (u : Sphere n) (z : Fin s → Sphere n) ↦
+      F (fun i ↦ inner ℝ (u : Ambient n) (z i),
+        fun ij ↦ inner ℝ (z ij.val.1 : Ambient n) (z ij.val.2))
+    (∫⁻ y, test y.1 y.2 ∂(uniform n).prod (Measure.pi fun _ ↦ uniform n)) =
+      ∫⁻ z, test p z ∂Measure.pi (fun _ ↦ uniform n)
+~~~
+
+~~~lean
+theorem gram_angular_recursion {m s : ℕ} (hm : 0 < m)
+    (F : (Fin s → ℝ) × (OffDiagonal s → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    (∫⁻ y : Sphere (m+1) × (Fin s → Sphere (m+1)),
+      F (fun i ↦ inner ℝ (y.1 : Ambient (m+1)) (y.2 i),
+        fun ij ↦ inner ℝ (y.2 ij.val.1 : Ambient (m+1)) (y.2 ij.val.2))
+      ∂(uniform (m+1)).prod (Measure.pi fun _ ↦ uniform (m+1))) =
+    ∫⁻ w : Fin s → ℝ × Ambient m, F (fun i ↦ (w i).1,
+      fun ij ↦ angularThird (w ij.val.1).1 (w ij.val.2).1
+        (inner ℝ (w ij.val.1).2 (w ij.val.2).2))
+      ∂Measure.pi (fun _ ↦ (volume.withDensity (weight (((m:ℝ)+1-3)/2))).prod
+        ((uniform m).map Subtype.val))
+~~~
+
+~~~lean
+theorem angular_block_det {s : ℕ} (B : Matrix Unit (Fin s) ℝ)
+    (r : Fin s → ℝ) (H : Matrix (Fin s) (Fin s) ℝ) :
+    (Matrix.fromBlocks 1 B B.transpose
+      (B.transpose * B + Matrix.diagonal r * H * Matrix.diagonal r)).det =
+      (∏ i, r i)^2 * H.det
+~~~
+
+~~~lean
+theorem angular_fiber_volume {s : ℕ} (a r : Fin s → ℝ) (hr : ∀ i, 0 < r i) :
+    Measure.map (fun x : OffDiagonal s → ℝ ↦ fun ij ↦
+      a ij.val.1 * a ij.val.2 + (r ij.val.1 * r ij.val.2) * x ij) volume =
+      ENNReal.ofReal (∏ ij : OffDiagonal s, r ij.val.1 * r ij.val.2)⁻¹ • volume
+~~~
+
+~~~lean
+theorem gramConstant_recursion (m k : ℕ) (hm : 0 < m) :
+    gramConstant (m+1) (k+2) =
+      normalizer (((m:ℝ)+1-3)/2)^(k+1) * gramConstant m (k+1)
+~~~
+
+~~~lean
+theorem siegel_diagonal_integral {d : ℕ} (w : Fin d → ℝ) (hw : ∀ i, 0 < w i) (c : ℝ) :
+    (∫⁻ t : Fin d → ℝ, ENNReal.ofReal (∏ i, Real.exp (-w i * t i))
+      ∂Measure.pi (fun _ ↦ volume.restrict (Set.Ioi c))) =
+      ENNReal.ofReal (∏ i, Real.exp (-w i * c) / w i)
+~~~
+
 ## Lean axiom audit
 
 ```text
@@ -537,4 +609,11 @@ theorem arithmetic_domain_mass_le {n : ℕ} {D S : Set (SL n)}
 'SigabaNeo.Rogers.Gram.triple_law' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.arithmetic_domain' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.arithmetic_domain_mass_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.tuple_angular_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.randomPole_gram_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.gram_angular_recursion' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.angular_block_det' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.angular_fiber_volume' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.gramConstant_recursion' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.siegel_diagonal_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```

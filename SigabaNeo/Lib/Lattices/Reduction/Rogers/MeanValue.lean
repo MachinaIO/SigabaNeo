@@ -401,6 +401,20 @@ theorem arithmetic_domain_mass_le {n : ℕ} {D S : Set (SL n)}
   obtain ⟨g, hg⟩ := hS x
   exact mem_iUnion.mpr ⟨g, hg, hx⟩
 
+/-- The diagonal integral in logarithmic simple-root coordinates, for positive weights.
+For SL(n) the weight on the k-th simple root is k(n-k), with 1 ≤ k < n. -/
+theorem siegel_diagonal_integral {d : ℕ} (w : Fin d → ℝ) (hw : ∀ i, 0 < w i) (c : ℝ) :
+    (∫⁻ t : Fin d → ℝ, ENNReal.ofReal (∏ i, Real.exp (-w i * t i))
+      ∂Measure.pi (fun _ ↦ volume.restrict (Set.Ioi c))) =
+      ENNReal.ofReal (∏ i, Real.exp (-w i * c) / w i) := by
+  have hi (i : Fin d) := integrableOn_exp_mul_Ioi (neg_lt_zero.mpr (hw i)) c
+  rw [← ofReal_integral_eq_lintegral_ofReal (Integrable.fintype_prod_dep hi)
+    (Filter.Eventually.of_forall fun _ ↦ Finset.prod_nonneg fun _ _ ↦ (Real.exp_pos _).le),
+    integral_fintype_prod_eq_prod (fun (i : Fin d) (t : ℝ) ↦ Real.exp (-w i * t))]
+  simp_rw [integral_exp_mul_Ioi (neg_lt_zero.mpr (hw _))]
+  simp
+
+#print axioms siegel_diagonal_integral
 #print axioms arithmetic_domain_mass_le
 
 theorem domainProbability_invariant {n : ℕ} (μ : Measure (SL n))

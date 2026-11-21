@@ -1219,6 +1219,134 @@ theorem triple_law {n : ℕ} (hn : 3 ≤ n) : TripleLaw n :=
 
 abbrev OffDiagonal (s : ℕ) := {ij : Fin s × Fin s // ij.1 < ij.2}
 
+/-- All pole cosines and off-diagonal Gram entries of a finite sample in a split frame. -/
+theorem tuple_angular_integral {m s : ℕ} (hm : 0 < m)
+    (e : Ambient (m+1) ≃ₗᵢ[ℝ] WithLp 2 (ℝ × Ambient m))
+    (F : (Fin s → ℝ) × (OffDiagonal s → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    let ρ := (uniform (m+1)).map (fun x : Sphere (m+1) ↦ (e x).fst)
+    (∫⁻ z : Fin s → Sphere (m+1), F (fun i ↦ (e (z i)).fst,
+      fun ij ↦ inner ℝ (z ij.val.1 : Ambient (m+1)) (z ij.val.2))
+      ∂Measure.pi (fun _ ↦ uniform (m+1))) =
+    ∫⁻ w : Fin s → ℝ × Ambient m, F (fun i ↦ (w i).1,
+      fun ij ↦ angularThird (w ij.val.1).1 (w ij.val.2).1
+        (inner ℝ (w ij.val.1).2 (w ij.val.2).2))
+      ∂Measure.pi (fun _ ↦ ρ.prod ((uniform m).map Subtype.val)) := by
+  intro ρ
+  let := uniform_probability hm
+  let := uniform_probability (n := m+1) (by omega)
+  let : IsFiniteMeasure ρ := by dsimp [ρ]; infer_instance
+  have hc : Measurable (splitCoord e) := by unfold splitCoord; fun_prop
+  have hp : MeasurePreserving (splitCoord e) (uniform (m+1))
+      (ρ.prod ((uniform m).map Subtype.val)) := ⟨hc, splitCoord_law m hm e⟩
+  have h := measurePreserving_pi (fun _ : Fin s ↦ uniform (m+1))
+    (fun _ ↦ ρ.prod ((uniform m).map Subtype.val)) (fun _ ↦ hp)
+  let K := fun w : Fin s → ℝ × Ambient m ↦ F (fun i ↦ (w i).1,
+    fun ij ↦ angularThird (w ij.val.1).1 (w ij.val.2).1
+      (inner ℝ (w ij.val.1).2 (w ij.val.2).2))
+  have hK : Measurable K := by dsimp [K, angularThird]; fun_prop
+  change _ = ∫⁻ w, K w ∂_
+  rw [← h.lintegral_comp hK]
+  apply lintegral_congr
+  intro z
+  simp only [K, splitCoord_inner e]
+  rfl
+
+/-- The random first direction can be integrated out for a Gram test of any order. -/
+theorem randomPole_gram_integral {n s : ℕ} (hn : 0 < n) (p : Sphere n)
+    (F : (Fin s → ℝ) × (OffDiagonal s → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    let test := fun (u : Sphere n) (z : Fin s → Sphere n) ↦
+      F (fun i ↦ inner ℝ (u : Ambient n) (z i),
+        fun ij ↦ inner ℝ (z ij.val.1 : Ambient n) (z ij.val.2))
+    (∫⁻ y, test y.1 y.2 ∂(uniform n).prod (Measure.pi fun _ ↦ uniform n)) =
+      ∫⁻ z, test p z ∂Measure.pi (fun _ ↦ uniform n) := by
+  intro test
+  let := uniform_probability hn
+  rw [lintegral_prod _ (by dsimp [test]; fun_prop : Measurable _).aemeasurable]
+  have fixed (u : Sphere n) : (∫⁻ z, test u z ∂Measure.pi (fun _ ↦ uniform n)) =
+      ∫⁻ z, test p z ∂Measure.pi (fun _ ↦ uniform n) := by
+    let e := (ℝ ∙ ((u : Ambient n) - p))ᗮ.reflection
+    have he : e u = p := Submodule.reflection_sub
+      ((mem_sphere_zero_iff_norm.mp u.property).trans
+        (mem_sphere_zero_iff_norm.mp p.property).symm)
+    have hp := measurePreserving_pi (fun _ : Fin s ↦ uniform n) (fun _ ↦ uniform n)
+      (fun _ ↦ uniform_rotate e)
+    rw [← hp.lintegral_comp (f := test p) (by dsimp [test]; fun_prop)]
+    apply lintegral_congr
+    intro z
+    simp only [test, rotate, ← he, e.inner_map_map]
+  simp_rw [fixed]
+  simp
+
+#print axioms randomPole_gram_integral
+
+/-- Recursive sampling law for all pairwise inner products, including the random pole. -/
+theorem gram_angular_recursion {m s : ℕ} (hm : 0 < m)
+    (F : (Fin s → ℝ) × (OffDiagonal s → ℝ) → ℝ≥0∞) (hF : Measurable F) :
+    (∫⁻ y : Sphere (m+1) × (Fin s → Sphere (m+1)),
+      F (fun i ↦ inner ℝ (y.1 : Ambient (m+1)) (y.2 i),
+        fun ij ↦ inner ℝ (y.2 ij.val.1 : Ambient (m+1)) (y.2 ij.val.2))
+      ∂(uniform (m+1)).prod (Measure.pi fun _ ↦ uniform (m+1))) =
+    ∫⁻ w : Fin s → ℝ × Ambient m, F (fun i ↦ (w i).1,
+      fun ij ↦ angularThird (w ij.val.1).1 (w ij.val.2).1
+        (inner ℝ (w ij.val.1).2 (w ij.val.2).2))
+      ∂Measure.pi (fun _ ↦ (volume.withDensity (weight (((m:ℝ)+1-3)/2))).prod
+        ((uniform m).map Subtype.val)) := by
+  let E := WithLp 2 (ℝ × Ambient m)
+  have hd : Module.finrank ℝ E = m+1 := by
+    rw [(WithLp.linearEquiv 2 ℝ (ℝ × Ambient m)).finrank_eq, Module.finrank_prod]
+    simp [Nat.add_comm]
+  let e := ((stdOrthonormalBasis ℝ E).reindex (finCongr hd)).repr.symm
+  let axis : E := WithLp.toLp 2 (1,0)
+  let p : Sphere (m+1) := ⟨e.symm axis, mem_sphere_zero_iff_norm.mpr (by
+    rw [e.symm.norm_map, WithLp.norm_toLp_fst]; norm_num)⟩
+  have axial (x : Sphere (m+1)) : inner ℝ (p : Ambient (m+1)) x = (e x).fst := by
+    change inner ℝ (e.symm axis) x = _
+    rw [← e.inner_map_map, e.apply_symm_apply, WithLp.prod_inner_apply]
+    simp [axis]
+  have hρ := pole_law_of_pos m hm p
+  simp_rw [axial] at hρ
+  calc
+    _ = _ := randomPole_gram_integral (by omega) p F hF
+    _ = _ := by
+      simp only [axial]
+      simpa only [hρ] using tuple_angular_integral hm e F hF
+
+#print axioms gram_angular_recursion
+
+/-- Schur determinant for adjoining a pole with axial row B and transverse scales r. -/
+theorem angular_block_det {s : ℕ} (B : Matrix Unit (Fin s) ℝ)
+    (r : Fin s → ℝ) (H : Matrix (Fin s) (Fin s) ℝ) :
+    (Matrix.fromBlocks 1 B B.transpose
+      (B.transpose * B + Matrix.diagonal r * H * Matrix.diagonal r)).det =
+      (∏ i, r i)^2 * H.det := by
+  rw [Matrix.det_fromBlocks_one₁₁, add_sub_cancel_left]
+  simp only [Matrix.det_mul, Matrix.det_diagonal]
+  ring
+
+#print axioms tuple_angular_integral
+#print axioms angular_block_det
+
+/-- Jacobian of the affine change from transverse to ambient off-diagonal entries. -/
+theorem angular_fiber_volume {s : ℕ} (a r : Fin s → ℝ) (hr : ∀ i, 0 < r i) :
+    Measure.map (fun x : OffDiagonal s → ℝ ↦ fun ij ↦
+      a ij.val.1 * a ij.val.2 + (r ij.val.1 * r ij.val.2) * x ij) volume =
+      ENNReal.ofReal (∏ ij : OffDiagonal s, r ij.val.1 * r ij.val.2)⁻¹ • volume := by
+  classical
+  let d := fun ij : OffDiagonal s ↦ r ij.val.1 * r ij.val.2
+  let b := fun ij : OffDiagonal s ↦ a ij.val.1 * a ij.val.2
+  let L := (Matrix.diagonal d).toLin'
+  have hd : 0 < ∏ ij, d ij := Finset.prod_pos fun ij _ ↦ mul_pos (hr _) (hr _)
+  have he : (fun x : OffDiagonal s → ℝ ↦ fun ij ↦
+      a ij.val.1 * a ij.val.2 + (r ij.val.1 * r ij.val.2) * x ij) = (b + ·) ∘ L := by
+    funext x ij
+    simp [L, b, d, Matrix.toLin'_apply, Matrix.mulVec_diagonal]
+  rw [he, ← Measure.map_map (measurable_const_add _) L.continuous_of_finiteDimensional.measurable,
+    Real.map_matrix_volume_pi_eq_smul_volume_pi (by simpa using hd.ne'),
+    Matrix.det_diagonal, abs_of_pos (inv_pos.mpr hd), Measure.map_smul, map_add_left_eq_self]
+  exact (measurable_const_add b).aemeasurable
+
+#print axioms angular_fiber_volume
+
 def correlation {s : ℕ} (x : OffDiagonal s → ℝ) : Matrix (Fin s) (Fin s) ℝ :=
   fun i j ↦ if h : i < j then x ⟨(i,j),h⟩ else if h : j < i then x ⟨(j,i),h⟩ else 1
 
@@ -1227,6 +1355,36 @@ The exponent s(s-1)/4 on π is the sum of the exponents j/2 below. -/
 def gramConstant (n s : ℕ) : ℝ :=
   ∏ j ∈ Finset.range (s-1), Real.Gamma ((n:ℝ)/2) /
     (Real.pi ^ (((j:ℝ)+1)/2) * Real.Gamma (((n:ℝ)-(j+1))/2))
+
+/-- Normalizer recursion for peeling one pole and passing to its orthogonal complement. -/
+theorem gramConstant_recursion (m k : ℕ) (hm : 0 < m) :
+    gramConstant (m+1) (k+2) =
+      normalizer (((m:ℝ)+1-3)/2)^(k+1) * gramConstant m (k+1) := by
+  let c := normalizer (((m:ℝ)+1-3)/2)
+  have hpos : 0 < (m:ℝ) := by exact_mod_cast hm
+  have hc : c = Real.Gamma (((m:ℝ)+1)/2) / (Real.pi^(1/2:ℝ) * Real.Gamma ((m:ℝ)/2)) := by
+    dsimp [c]
+    rw [normalizer_gamma (by linarith), ← Real.sqrt_eq_rpow]
+    congr 2 <;> congr 1 <;> ring
+  let f := fun (n j : ℕ) ↦ Real.Gamma ((n:ℝ)/2) /
+    (Real.pi ^ (((j:ℝ)+1)/2) * Real.Gamma (((n:ℝ)-(j+1))/2))
+  have h0 : f (m+1) 0 = c := by simp [f, hc]
+  have hs (j : ℕ) : f (m+1) (j+1) = c * f m j := by
+    dsimp [f]
+    push_cast
+    rw [hc, show ((j:ℝ)+1+1)/2 = 1/2 + (j+1)/2 by ring,
+      Real.rpow_add Real.pi_pos, show (m:ℝ)+1-(j+1+1) = m-(j+1) by ring]
+    have hn := (Real.Gamma_pos_of_pos (half_pos hpos)).ne'
+    simp only [div_eq_mul_inv, mul_inv_rev]
+    field_simp [hn]
+  change (∏ j ∈ Finset.range (k+1), f (m+1) j) =
+    c^(k+1) * ∏ j ∈ Finset.range k, f m j
+  rw [Finset.prod_range_succ', h0]
+  simp_rw [hs]
+  rw [Finset.prod_mul_distrib]
+  simp [pow_succ, mul_assoc, mul_comm]
+
+#print axioms gramConstant_recursion
 
 open Classical in
 def SphericalGramFormula (n s : ℕ) : Prop :=
