@@ -153,7 +153,22 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
 
   Open for T1 in Lean: the S5 initialization sampler and its error transfer, the Chernoff estimates
   at the prescribed parameters, and the asymptotic `(4/3)^{n+o(n)}`.
-* In progress: the `q`-ary sieving statistics (T4).
+* **`q`-ary sieving statistics (T4; new; [research/qary_sieving.md](research/qary_sieving.md)).**
+  * **Paper proof (new).** For `Λ_q^⊥(A)` with lattice dimension `m`, `n = ⌊√m⌋` parity checks and a
+    prime `q ∈ [e^{m^8}, 2⌈e^{m^8}⌉]`, the hypotheses S1, S2 and S3′ hold simultaneously with
+    probability `1 − e^{−Ω(m)}` over `A`.
+    * The proof moves the centered marked moments, up to order `O(log m)`, onto the Euclidean
+      diagram sums with additive error `≤ e^{−m²}`. It then reuses the continuum diagram bounds of
+      [Laa26] Prop 5.1 audited in g1_audit.md.
+    * Lemma Q1 takes the place of Rogers' formula, so **no Haar measure and no Rogers formula
+      are needed**. The remaining classical inputs are the spherical Gram density and the
+      audited (not formalized) continuum diagram bounds.
+    * With the algorithmic layer, this gives exact SVP on these lattices in time `(4/3)^{m+o(m)}`,
+      or `(3/2)^{m/2+o(m)}` with Hypothesis P. The exponent is in the lattice dimension `m`.
+  * Lean (`SigabaNeo.QAry`): `shortMeanValue`, `markedTail`. Axioms `propext`, `Classical.choice`,
+    `Quot.sound`. The integration estimate and the sieve corollaries are paper proofs.
+  * **The regime is far from LWE.** It needs `n ≈ √m` and a doubly exponential `q`. Polynomial
+    moduli, cryptographic shapes (`m ≈ 2n`), the planted LWE vector and the bit model are open.
 * **Re-randomization for (C) (new; [research/rerandomization.md](research/rerandomization.md)).**
   Replace a block `B` by a uniformly random index-`p` sublattice. A tuple whose residues span
   dimension `r` survives with probability `(p^{d−r} − 1)/(p^d − 1)`, which gives exact moments of
