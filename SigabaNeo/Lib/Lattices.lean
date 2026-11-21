@@ -23,6 +23,8 @@ import SigabaNeo.Lib.Lattices.BitLaw
 import SigabaNeo.Lib.Lattices.Algo.Words
 import SigabaNeo.Lib.Lattices.Algo.RingWords
 import SigabaNeo.Lib.Lattices.Algo.MatWords
+import SigabaNeo.Lib.Lattices.Algo.SLPWords
+import SigabaNeo.Lib.Lattices.Algo.FhatLoop
 
 /-!
 # Lattice library
@@ -67,5 +69,7 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Algo/`: bit-level algorithms, first-order loops over words proven equal to the mathematical
   definitions, with step counts — `Words` (fixed-width arithmetic mod `2^K` on `zmodEnc` words),
   `RingWords` (negacyclic addition and schoolbook multiplication on `ringEnc` words), `MatWords`
-  (matrix sums and products, the binary gadget `G̲` and `G̲⁻¹`, the BGG+ NAND `G̲ − A G̲⁻¹(B)`).
+  (matrix sums and products, the binary gadget `G̲` and `G̲⁻¹`, the BGG+ NAND `G̲ − A G̲⁻¹(B)`),
+  `SLPWords` (`EvalF` of programs and the key-matrix sum on words), `FhatLoop` (the compiler of `f̂`
+  with explicit orders and gadget coefficients, equal to `fhatSLP` at the chosen orders).
 -/
