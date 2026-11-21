@@ -112,6 +112,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   a fully reduced plain planted lattice with `a = 2` (outside the uSVP regime), and a reduced generic lattice where the
   unique shortest vector keeps its full length in the complement yet the terminal minimum is shorter. The probability of
   these events for random planted instances is open.
+* **Part 9 (audited negative result; [research/wall1_planted_prob.md](research/wall1_planted_prob.md)).** At `β = 406` for the
+  Kyber512 plain-LWE shapes (`m = 188, 511, 512`), for every `A` and every planting with coordinates `≤ 3`, some primitive prefix
+  below the Part 6 cutoff violates the corrected criterion (witness `2b_k + u`, `a = 2`). So no all-prefix statement certifies
+  `β = 406`; the failure probability for the prefix BKZ actually selects is open. For a fixed `W ⊂ L0`, `a = 1` and
+  `‖π_W u‖²` concentrates (proved).
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
@@ -134,6 +139,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   does not occur. A zero-plant example shows that unrestricted `q` can force a superpolynomial
   reciprocal dual minimum. Lean: `Wall2.incidenceTail` (finite incidence inequality); the
   applications are on paper.
+* **Simultaneous statistics fail (audited; [research/wall2_simultaneous.md](research/wall2_simultaneous.md)).** For Haar
+  lattices at `n = 700`, `b ∈ {100, 200, 400}`, the expected number of terminal prefixes below the GSA cutoff violating S1
+  exceeds `2^{141599}` (mostly from the prefix count itself); interior blocks admit S1-violating continuations when the
+  continuation determinant is unrestricted. A first-moment, all-blocks argument cannot certify the sieve on BKZ blocks.
 * Open: blocks chosen adaptively by BKZ (this reduces to wall 1).
 
 ## A route around walls 1 and 2: the full-dimension sieve
