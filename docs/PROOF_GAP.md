@@ -622,6 +622,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   displacement is uniform on a finite subgroup H of the retained torus, updated by H' = Q_*H. This gives an exact finite
   recursion. A simultaneous whole-tour 99% guarantee is impossible above 0.2036 (b = 406) / 0.1826 (b = 506), because of the
   cubic initial window. The deterministic floor is 2.76·10⁻³⁷. Terminal-only thresholds are open (BG).
+* **Lean (Nov 2026).** SigabaNeo/Lib/Lattices/Research/Wall1/HaarMinimumTails.lean is built and axiom-clean:
+  * `count_hit_bounds`: m/(1+m) ≤ P(M>0) ≤ m, given E[M(M−1)] ≤ m²;
+  * `primitiveBallPairs_mean`: the Haar mean of primitive sign pairs in a ball is t/(2ζ(n));
+  * `primitiveBallPairs_hit_upper`;
+  * `independentBallPairs_mean`: the Haar mean of independent ordered pairs is t².
+
+  Open in Lean: the Möbius step that identifies the primitive ordered-pair moment, which is needed for the lower tail of
+  Part 107 (i).
 * **Frontier after Parts 1–108 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
