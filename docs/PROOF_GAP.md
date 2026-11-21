@@ -692,7 +692,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   steps of the first pass freeze prescribed axes. The rest of the pass then couples exactly to a fresh uniform 400×105 graph, so
   a 99% terminal guarantee needs suffix failure ≤ 0.00977696. A random typical cap cannot rescue Part 115: it would need SVP
   lengths averaging < 0.154 × own GH. Symmetrization, entropy, a plane sieve and multiscale were triaged as not closing the gap.
-* **Frontier after Parts 1–117 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 118 (audited, minor caveats).** [lit_projections](research/wall1_lit_projections.md): a second literature survey,
+  focused on projections and sections of random lattices: Schmidt, Kim flags, Horesh–Karasik, Aka–Einsiedler–Shapira,
+  Aka–Musso–Wieser, EMSS and its effective versions, COU, Benoist–Oh, Strömbergsson, Alam–Ghosh–Han, Laarhoven, Ducas–Loyer.
+  None bounds an adaptively selected projected minimum. For a prescribed rational projection the finite-field law is exact. The
+  open obligation is exactly the selection-weighted sum p_suffix ≤ 0.00977696 left by Part 117.
+* **Frontier after Parts 1–118 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
