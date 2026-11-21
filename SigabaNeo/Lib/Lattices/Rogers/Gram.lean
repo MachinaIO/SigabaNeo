@@ -200,6 +200,168 @@ theorem cone_Ici_eq {n : ℕ} (pole : Sphere n) (t : ℝ) :
 def capSlice (d t : ℝ) : ℝ :=
   t / d * (1-t^2)^((d-1)/2) + ∫ u in t..1, (1-u^2)^((d-1)/2)
 
+/-- Transverse volume of the section of the solid cap at an interior axial coordinate. -/
+theorem capSection_volume (m : ℕ) {t u : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1)
+    (hu : u ∈ Ioo (0 : ℝ) 1) :
+    volume {w : Ambient m | u^2 + ‖w‖^2 < 1 ∧ t * Real.sqrt (u^2 + ‖w‖^2) ≤ u} =
+      ENNReal.ofReal (min (u * (Real.sqrt (1-t^2) / t)) (Real.sqrt (1-u^2))) ^ m *
+        volume (Metric.ball (0 : Ambient m) 1) := by
+  let a := u * (Real.sqrt (1-t^2) / t)
+  let b := Real.sqrt (1-u^2)
+  have hpos {x : ℝ} (h : x ∈ Ioo (0 : ℝ) 1) : 0 < 1-x^2 :=
+    interval_pos ⟨by linarith [h.1], h.2⟩
+  have ha : 0 < a := mul_pos hu.1 (div_pos (Real.sqrt_pos.2 (hpos ht)) ht.1)
+  have hb : 0 < b := Real.sqrt_pos.2 (hpos hu)
+  have hs : b^2 = 1-u^2 := Real.sq_sqrt (hpos hu).le
+  have hc : (t*a)^2 = u^2*(1-t^2) := by
+    dsimp [a]
+    field_simp [ht.1.ne']
+    nlinarith only [congrArg (u^2 * ·) (Real.sq_sqrt (hpos ht).le)]
+  have cone (w : Ambient m) :
+      t * Real.sqrt (u^2 + ‖w‖^2) ≤ u ↔ ‖w‖ ≤ a := by
+    have hmul : t * ‖w‖ ≤ t * a ↔ ‖w‖ ≤ a := by exact mul_le_mul_iff_right₀ ht.1
+    rw [← hmul, ← sq_le_sq₀ (mul_nonneg ht.1.le (Real.sqrt_nonneg _)) hu.1.le,
+      ← sq_le_sq₀ (mul_nonneg ht.1.le (norm_nonneg _)) (mul_nonneg ht.1.le ha.le),
+      mul_pow, Real.sq_sqrt (by positivity)]
+    constructor <;> intro h <;> nlinarith only [hc, h]
+  have ball (w : Ambient m) : u^2 + ‖w‖^2 < 1 ↔ ‖w‖ < b := by
+    rw [← sq_lt_sq₀ (norm_nonneg _) hb.le]
+    constructor <;> intro h <;> linarith only [hs, h]
+  have hr := lt_min ha hb
+  have upper := (volume : Measure (Ambient m)).addHaar_closedBall 0 hr.le
+  have lower := (volume : Measure (Ambient m)).addHaar_ball_of_pos 0 hr
+  change volume _ = ENNReal.ofReal (min a b) ^ m * _
+  apply le_antisymm
+  · calc
+      _ ≤ volume (Metric.closedBall (0 : Ambient m) (min a b)) := by
+        apply measure_mono
+        intro w hw
+        rw [Metric.mem_closedBall, dist_zero_right]
+        exact le_min ((cone w).mp hw.2) ((ball w).mp hw.1).le
+      _ = _ := by simpa [finrank_euclideanSpace_fin, ENNReal.ofReal_pow hr.le] using upper
+  · rw [finrank_euclideanSpace_fin, ENNReal.ofReal_pow hr.le] at lower
+    rw [← lower]
+    apply measure_mono
+    intro w hw
+    rw [Metric.mem_ball, dist_zero_right, lt_min_iff] at hw
+    exact ⟨(ball w).mpr hw.2, (cone w).mpr hw.1.le⟩
+
+/-- Integrating the smaller of the cone and ball radii in transverse dimension m. -/
+theorem capRadius_integral (m : ℕ) {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    (∫ u in (0 : ℝ)..1,
+      min (u * (Real.sqrt (1-t^2) / t)) (Real.sqrt (1-u^2)) ^ m) =
+      capSlice (m+1) t := by
+  let k := Real.sqrt (1-t^2) / t
+  have ht0 := ht.1
+  have ht1 := ht.2
+  have hk : 0 ≤ k := div_nonneg (Real.sqrt_nonneg _) ht0.le
+  have cross : t * k = Real.sqrt (1-t^2) := by dsimp [k]; field_simp
+  have radius (u : ℝ) (hu : 0 ≤ u) (hu1 : u ≤ 1) :
+      Real.sqrt (1-u^2) ^ m = (1-u^2)^((m : ℝ)/2) := by
+    rw [Real.sqrt_eq_rpow, ← Real.rpow_mul_natCast (by nlinarith : 0 ≤ 1-u^2)]
+    congr 1
+    ring
+  have hc : Continuous (fun u : ℝ ↦ min (u*k) (Real.sqrt (1-u^2)) ^ m) := by fun_prop
+  change (∫ u in (0:ℝ)..1, min (u*k) (Real.sqrt (1-u^2)) ^ m) = _
+  rw [← intervalIntegral.integral_add_adjacent_intervals (hc.intervalIntegrable 0 t)
+    (hc.intervalIntegrable t 1)]
+  have left : (∫ u in (0:ℝ)..t, min (u*k) (Real.sqrt (1-u^2)) ^ m) =
+      ∫ u in (0:ℝ)..t, u^m * k^m := by
+    apply intervalIntegral.integral_congr
+    intro u hu
+    rw [uIcc_of_le ht0.le] at hu
+    dsimp only
+    rw [min_eq_left, mul_pow]
+    exact (mul_le_mul_of_nonneg_right hu.2 hk).trans (cross.le.trans
+      (Real.sqrt_le_sqrt (by nlinarith [sq_nonneg (t-u), mul_nonneg hu.1 (sub_nonneg.mpr hu.2)])))
+  have right : (∫ u in t..1, min (u*k) (Real.sqrt (1-u^2)) ^ m) =
+      ∫ u in t..1, (1-u^2)^((m : ℝ)/2) := by
+    apply intervalIntegral.integral_congr
+    intro u hu
+    rw [uIcc_of_le ht1.le] at hu
+    dsimp only
+    rw [min_eq_right, radius u (ht0.le.trans hu.1) hu.2]
+    exact (Real.sqrt_le_sqrt (by nlinarith [sq_nonneg (u-t), mul_nonneg ht0.le (sub_nonneg.mpr hu.1)] : 1-u^2 ≤ 1-t^2)).trans
+      (cross.ge.trans (mul_le_mul_of_nonneg_right hu.1 hk))
+  rw [left, right, intervalIntegral.integral_mul_const, integral_pow]
+  simp only [capSlice, add_sub_cancel_right, zero_pow (Nat.succ_ne_zero m), sub_zero]
+  congr 1
+  rw [pow_succ, ← radius t ht0.le ht1.le, ← cross, mul_pow]
+  ring
+
+/-- The positive solid cap volume in axial and transverse product coordinates. -/
+theorem axialCap_volume (m : ℕ) {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    volume {z : ℝ × Ambient m | z.1 ∈ Ioo (0 : ℝ) 1 ∧
+      z.1^2 + ‖z.2‖^2 < 1 ∧ t * Real.sqrt (z.1^2 + ‖z.2‖^2) ≤ z.1} =
+      ENNReal.ofReal (capSlice (m+1) t) * volume (Metric.ball (0 : Ambient m) 1) := by
+  let r := fun u : ℝ ↦ min (u * (Real.sqrt (1-t^2) / t)) (Real.sqrt (1-u^2))
+  have hc : Continuous (fun u ↦ r u ^ m) := by dsimp [r]; fun_prop
+  have hr (u : ℝ) (hu : 0 ≤ u) : 0 ≤ r u :=
+    le_min (mul_nonneg hu (div_nonneg (Real.sqrt_nonneg _) ht.1.le)) (Real.sqrt_nonneg _)
+  let V := volume (Metric.ball (0 : Ambient m) 1)
+  rw [Measure.volume_eq_prod, Measure.prod_apply (by measurability)]
+  have eq (u : ℝ) :
+      volume ((Prod.mk u) ⁻¹' {z : ℝ × Ambient m | z.1 ∈ Ioo (0 : ℝ) 1 ∧
+        z.1^2 + ‖z.2‖^2 < 1 ∧ t * Real.sqrt (z.1^2 + ‖z.2‖^2) ≤ z.1}) =
+      (Ioo (0 : ℝ) 1).indicator (fun x ↦ ENNReal.ofReal (r x ^ m) * V) u := by
+    by_cases hu : u ∈ Ioo (0 : ℝ) 1
+    · simpa [preimage_ofPred_eq, hu, hu.1, hu.2, r, V, ENNReal.ofReal_pow (hr u hu.1.le)] using
+        capSection_volume m ht hu
+    · have h : ¬ (0 < u ∧ u < 1) := hu
+      simp [preimage_ofPred_eq, hu, h]
+  simp_rw [eq]
+  rw [lintegral_indicator measurableSet_Ioo, Measure.restrict_congr_set Ioo_ae_eq_Ioc,
+    lintegral_mul_const' _ _ measure_ball_lt_top.ne,
+    ← ofReal_integral_eq_lintegral_ofReal, ← intervalIntegral.integral_of_le zero_le_one]
+  · rw [← capRadius_integral m ht]
+  · exact (hc.intervalIntegrable 0 1).1
+  · filter_upwards [ae_restrict_mem (μ := volume) measurableSet_Ioc] with u hu
+    exact pow_nonneg (hr u hu.1.le) m
+
+/-- Ambient solid cap volume for any pole and an interior positive threshold. -/
+theorem cone_positive_volume (m : ℕ) (pole : Sphere (m+1)) {t : ℝ}
+    (ht : t ∈ Ioo (0 : ℝ) 1) :
+    volume (cone pole (Ici t)) =
+      ENNReal.ofReal (capSlice (m+1) t) * volume (Metric.ball (0 : Ambient m) 1) := by
+  let F := Ambient m
+  let E := WithLp 2 (ℝ × F)
+  have hd : Module.finrank ℝ E = m+1 := by
+    rw [(WithLp.linearEquiv 2 ℝ (ℝ × F)).finrank_eq, Module.finrank_prod]
+    simp [F, Nat.add_comm]
+  let e := ((stdOrthonormalBasis ℝ E).reindex (finCongr hd)).repr
+  let axis : E := WithLp.toLp 2 (1,0)
+  let y : Sphere (m+1) := ⟨e axis, mem_sphere_zero_iff_norm.mpr (by
+    rw [e.norm_map, WithLp.norm_toLp_fst]; norm_num)⟩
+  let S := {z : ℝ × F | z.1 ∈ Ioo (0 : ℝ) 1 ∧
+    z.1^2 + ‖z.2‖^2 < 1 ∧ t * Real.sqrt (z.1^2 + ‖z.2‖^2) ≤ z.1}
+  have sets : e ⁻¹' cone y (Ici t) = WithLp.ofLp ⁻¹' S := by
+    rw [cone_Ici_eq]
+    ext z
+    have hs := WithLp.prod_norm_sq_eq_of_L2 z
+    simp only [Real.norm_eq_abs, sq_abs] at hs
+    have hroot : Real.sqrt (z.fst^2 + ‖z.snd‖^2) = ‖z‖ := by
+      rw [← hs, Real.sqrt_sq (norm_nonneg _)]
+    have hi : inner ℝ axis z = z.fst := by
+      change inner ℝ (WithLp.toLp 2 ((1 : ℝ), (0 : F))) z = _
+      rw [WithLp.prod_inner_apply]
+      simp
+    change (0 < ‖e z‖ ∧ ‖e z‖ < 1 ∧ t * ‖e z‖ ≤ inner ℝ (e axis) (e z)) ↔
+      z.fst ∈ Ioo (0 : ℝ) 1 ∧ z.fst^2 + ‖z.snd‖^2 < 1 ∧
+        t * Real.sqrt (z.fst^2 + ‖z.snd‖^2) ≤ z.fst
+    rw [e.inner_map_map, e.norm_map, hi, hroot, ← hs]
+    constructor
+    · rintro ⟨hz, hz1, h⟩
+      exact ⟨⟨(mul_pos ht.1 hz).trans_le h, by nlinarith [sq_nonneg ‖z.snd‖]⟩,
+        by nlinarith, h⟩
+    · rintro ⟨hu, h, hc⟩
+      exact ⟨by nlinarith [hu.1, norm_nonneg z, sq_nonneg ‖z.snd‖],
+        by nlinarith [norm_nonneg z], hc⟩
+  rw [cone_volume_eq pole y, ← e.measurePreserving.measure_preimage_emb
+    e.toMeasurableEquiv.measurableEmbedding, sets,
+    (WithLp.volume_preserving_ofLp ℝ F).measure_preimage_emb
+      (MeasurableEquiv.toLp 2 (ℝ × F)).symm.measurableEmbedding]
+  exact axialCap_volume m ht
+
 theorem capSlice_derivative {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Ioo (0 : ℝ) 1) :
     HasDerivAt (capSlice d) (-((d-1)/d) * (1-t^2)^((d-3)/2)) t := by
   let q := (d-1)/2
@@ -218,6 +380,64 @@ theorem capSlice_derivative {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Ioo (0 : ℝ)
   field_simp [show d ≠ 0 by linarith]
   dsimp [q]
   ring
+
+/-- The sliced cap is the tail integral of the unnormalized axial density. -/
+theorem capSlice_tail {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
+    capSlice d t = ((d-1)/d) * ∫ u in t..1, (1-u^2)^((d-3)/2) := by
+  have cont (q : ℝ) (hq : 0 ≤ q) : Continuous (fun u : ℝ ↦ (1-u^2)^q) :=
+    (continuous_const.sub (continuous_id.pow 2)).rpow_const fun _ ↦ Or.inr hq
+  have hc := cont ((d-1)/2) (by linarith)
+  have hcont : Continuous (capSlice d) := by
+    unfold capSlice
+    apply Continuous.add ((continuous_id.div_const d).mul hc)
+    simp_rw [intervalIntegral.integral_symm (a := (1:ℝ))]
+    exact
+      (intervalIntegral.continuous_primitive (μ := volume) hc.intervalIntegrable 1).neg
+  have h := intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le ht.2 hcont.continuousOn
+    (fun x hx ↦ capSlice_derivative hd ⟨ht.1.trans_lt hx.1, hx.2⟩)
+    ((continuous_const.mul (cont ((d-3)/2) (by linarith))).intervalIntegrable t 1)
+  rw [intervalIntegral.integral_const_mul] at h
+  have he : capSlice d 1 = 0 := by
+    simp [capSlice, Real.zero_rpow (by linarith : (d-1)/2 ≠ 0)]
+  rw [he] at h
+  linarith
+
+/-- The normalized candidate cap mass, including the hemisphere and the empty endpoint. -/
+theorem capSlice_normalized {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
+    (volume.withDensity (weight ((d-3)/2))) (Ici t) =
+      ENNReal.ofReal (normalizer ((d-3)/2) * (d/(d-1)) * capSlice d t) := by
+  let p := (d-3)/2
+  have hp : 0 ≤ p := by dsimp [p]; linarith
+  have hn : 0 ≤ normalizer p := by
+    unfold normalizer
+    exact inv_nonneg.mpr (by positivity [beta_pos (by linarith : 0 < p+1) (by linarith : 0 < p+1)])
+  let f := fun u : ℝ ↦ normalizer p * (1-u^2)^p
+  have hc : Continuous f := continuous_const.mul
+    ((continuous_const.sub (continuous_id.pow 2)).rpow_const fun _ ↦ Or.inr hp)
+  have hi := (intervalIntegrable_iff_integrableOn_Ioc_of_le ht.2).mp
+    (hc.intervalIntegrable (μ := volume) t 1)
+  have hnn : 0 ≤ᵐ[volume.restrict (Ioc t 1)] f := by
+    filter_upwards [ae_restrict_mem (μ := volume) measurableSet_Ioc] with u hu
+    exact mul_nonneg hn (Real.rpow_nonneg (by nlinarith [ht.1.trans hu.1.le, hu.2] : 0 ≤ 1-u^2) _)
+  have hs : Ioo (-1 : ℝ) 1 ∩ Ioi t = Ioo t 1 := by
+    ext u
+    constructor
+    · exact fun h ↦ ⟨h.2, h.1.2⟩
+    · exact fun h ↦ ⟨⟨by linarith [h.1, ht.1], h.2⟩, h.1⟩
+  rw [withDensity_apply _ measurableSet_Ici, ← restrict_Ioi_eq_restrict_Ici]
+  have hw : weight p = (Ioo (-1 : ℝ) 1).indicator (fun u ↦ ENNReal.ofReal (f u)) := by
+    funext u
+    by_cases hu : u ∈ Ioo (-1 : ℝ) 1 <;> simp [weight, hu, f]
+  change (∫⁻ u in Ioi t, weight p u) = _
+  rw [hw]
+  rw [lintegral_indicator measurableSet_Ioo, Measure.restrict_restrict measurableSet_Ioo, hs,
+    Measure.restrict_congr_set Ioo_ae_eq_Ioc, ← ofReal_integral_eq_lintegral_ofReal hi hnn,
+    ← intervalIntegral.integral_of_le ht.2, capSlice_tail hd ht]
+  unfold f
+  rw [intervalIntegral.integral_const_mul]
+  congr 1
+  dsimp [p]
+  field_simp [show d ≠ 0 by linarith, show d-1 ≠ 0 by linarith]
 
 theorem pairLaw_of_capVolumes {n : ℕ} (hn : 3 ≤ n) (pole : Sphere n)
     (h : ∀ t : ℝ, ((volume : Measure (Ambient n)).toSphere univ)⁻¹ *
@@ -395,5 +615,12 @@ def SphericalGramFormula (n s : ℕ) : Prop :=
     (Measure.pi fun _ ↦ uniform n) = volume.withDensity (fun x ↦
       if (correlation x).PosDef then
         ENNReal.ofReal (gramConstant n s * (correlation x).det ^ (((n:ℝ)-s-1)/2)) else 0)
+
+#print axioms capSection_volume
+#print axioms capRadius_integral
+#print axioms axialCap_volume
+#print axioms cone_positive_volume
+#print axioms capSlice_tail
+#print axioms capSlice_normalized
 
 end SigabaNeo.Rogers.Gram

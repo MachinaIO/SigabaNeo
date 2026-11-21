@@ -24,8 +24,12 @@ and the positive-definite support appear in `SphericalGramFormula`.
 1. For pairs, the Lean obligation is the single-pole cap volume in
    `pairLaw_of_capVolumes` for all real thresholds. Rotation invariance,
    reduction to half-lines, the geometric cap description, and the derivative
-   of the proposed slice integral are proved for dimensions n ≥ 3. The
-   slicing calculation and its normalization below still need Lean proofs.
+   of the proposed slice integral are proved for dimensions n ≥ 3. For every pole and 0 < t < 1, `cone_positive_volume` proves the ambient
+   cap volume by transverse slicing and Fubini. For 0 ≤ t ≤ 1,
+   `capSlice_normalized` identifies the candidate measure's tail including
+   its beta normalizer. To deduce the probability law, the remaining work is
+   to equate the transverse-ball factor after sphere normalization with the
+   candidate constant, and handle reflection, endpoint atoms, and exterior thresholds.
    For triples, the sole hypothesis of `tripleLaw_of_angularDisintegration`
    is `AngularDisintegration n`. It identifies the two axial cosines and the
    relative transverse cosine with independent scalar variables of exponents
@@ -253,6 +257,46 @@ theorem siegel_of_domain_unfolding {n : ℕ} (μ : Measure (SL n)) (D : Set (SL 
       ∫⁻ x, f x
 ~~~
 
+~~~lean
+theorem capSection_volume (m : ℕ) {t u : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1)
+    (hu : u ∈ Ioo (0 : ℝ) 1) :
+    volume {w : Ambient m | u^2 + ‖w‖^2 < 1 ∧ t * Real.sqrt (u^2 + ‖w‖^2) ≤ u} =
+      ENNReal.ofReal (min (u * (Real.sqrt (1-t^2) / t)) (Real.sqrt (1-u^2))) ^ m *
+        volume (Metric.ball (0 : Ambient m) 1)
+~~~
+
+~~~lean
+theorem capRadius_integral (m : ℕ) {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    (∫ u in (0 : ℝ)..1,
+      min (u * (Real.sqrt (1-t^2) / t)) (Real.sqrt (1-u^2)) ^ m) =
+      capSlice (m+1) t
+~~~
+
+~~~lean
+theorem axialCap_volume (m : ℕ) {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    volume {z : ℝ × Ambient m | z.1 ∈ Ioo (0 : ℝ) 1 ∧
+      z.1^2 + ‖z.2‖^2 < 1 ∧ t * Real.sqrt (z.1^2 + ‖z.2‖^2) ≤ z.1} =
+      ENNReal.ofReal (capSlice (m+1) t) * volume (Metric.ball (0 : Ambient m) 1)
+~~~
+
+~~~lean
+theorem cone_positive_volume (m : ℕ) (pole : Sphere (m+1)) {t : ℝ}
+    (ht : t ∈ Ioo (0 : ℝ) 1) :
+    volume (cone pole (Ici t)) =
+      ENNReal.ofReal (capSlice (m+1) t) * volume (Metric.ball (0 : Ambient m) 1)
+~~~
+
+~~~lean
+theorem capSlice_tail {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
+    capSlice d t = ((d-1)/d) * ∫ u in t..1, (1-u^2)^((d-3)/2)
+~~~
+
+~~~lean
+theorem capSlice_normalized {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
+    (volume.withDensity (weight ((d-3)/2))) (Ici t) =
+      ENNReal.ofReal (normalizer ((d-3)/2) * (d/(d-1)) * capSlice d t)
+~~~
+
 ## Lean axiom audit
 
 ```text
@@ -282,4 +326,10 @@ theorem siegel_of_domain_unfolding {n : ℕ} (μ : Measure (SL n)) (D : Set (SL 
 'SigabaNeo.Rogers.domainProbability_probability' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.domainProbability_invariant' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.siegel_of_domain_unfolding' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.capSection_volume' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.capRadius_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.axialCap_volume' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.cone_positive_volume' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.capSlice_tail' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.capSlice_normalized' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
