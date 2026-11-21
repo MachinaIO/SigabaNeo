@@ -3,6 +3,7 @@ import Mathlib.Data.Matrix.Mul
 import CslibFrontier.Probability.StatisticalDistance.CloseTo
 import CslibFrontier.Probability.StatisticalDistance.Event
 import Cslib.Probability.StatisticalDistance
+import CslibFrontier.Probability.StatisticalDistance.Product
 
 /-!
 # The leftover hash lemma for lattices
@@ -16,6 +17,8 @@ finite commutative ring `R`, for instance `ℤ_q` or `ℤ_q[X]/(X^N + 1)`:
   polynomials need not be units, but `±1` always are.
 * `closeTo_binaryHash`: **the LHL**: `(A, A · x)` with uniform `A ∈ R^{r×m}` and uniform
   `x ∈ {0,1}^m` is within `√(|R|^r · 2^{−m}) / 2` of `(A, u)` with uniform `u ∈ R^r`.
+* `dist_binaryHash_pi`: the same for `n` independent inputs hashed by one public `A`: within
+  `n · √(|R|^r · 2^{−m}) / 2`.
 * `closeTo_of_dist`: statistical distance (cslib's `dist`) gives `CloseTo`.
 
 The general statements, for any two-universal family, with min-entropy sources and with side
@@ -143,5 +146,31 @@ theorem closeTo_binaryHash {R : Type} [CommRing R] [Fintype R] [DecidableEq R]
   refine (isTwoUniversal_binaryHash (R := R) (rr := rr) (mm := mm)).leftover_hash_of_mass_le _
     fun x => ?_
   simp [PMF.uniformOfFintype_apply, Fintype.card_bool]
+
+/-- **The leftover hash lemma for independent inputs**: `(A, (A · xᵢ)ᵢ)` for uniform `A` and
+independent uniform binary `xᵢ`, `i ∈ I`, is within `|I| · √(|R|^r · 2^{−m}) / 2` of `(A, (uᵢ)ᵢ)` with
+independent uniform `uᵢ`. -/
+theorem dist_binaryHash_pi {R : Type} [CommRing R] [Fintype R] [DecidableEq R]
+    {rr mm I : Type} [Fintype rr] [Fintype mm] [Fintype I] [DecidableEq rr] [DecidableEq mm]
+    [DecidableEq I] [Nonempty mm] :
+    dist ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A =>
+        (Cslib.Probability.PMF.pi fun _ : I =>
+          (PMF.uniformOfFintype (mm → Bool)).map (binaryHash A)).map (A, ·))
+      ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A =>
+        (Cslib.Probability.PMF.pi fun _ : I => PMF.uniformOfFintype (rr → R)).map (A, ·)) ≤
+      Fintype.card I * (Real.sqrt (Fintype.card (rr → R) * (2 ^ Fintype.card mm : ℝ)⁻¹) / 2) := by
+  refine (Cslib.Probability.PMF.dist_bind_pair_pi_le_sum _ _ _).trans ?_
+  rw [← nsmul_eq_mul, ← Finset.card_univ, ← Finset.sum_const]
+  refine Finset.sum_le_sum fun i _ => ?_
+  have h := (isTwoUniversal_binaryHash (R := R) (rr := rr) (mm := mm)).leftover_hash_of_mass_le
+    (PMF.uniformOfFintype (mm → Bool)) (mass := (2 ^ Fintype.card mm : ℝ)⁻¹)
+    (fun x => by simp [PMF.uniformOfFintype_apply, Fintype.card_bool])
+  refine le_of_eq_of_le ?_ h
+  congr 1
+  unfold seededHash
+  congr 1
+  funext A
+  rw [PMF.map_comp]
+  rfl
 
 end SigabaNeo.Lattices
