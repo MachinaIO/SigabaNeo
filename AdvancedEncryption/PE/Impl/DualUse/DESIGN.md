@@ -64,3 +64,20 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
   predicates, `GoodTrap` coverage).
 The laws of the coins (binary `Rᵢ`, boxes) and the probability of a correct decryption; hybrid 3 (the trapdoor part of `B` pseudorandom; from `trapRow` to `lawB₁u`), and the game (key oracle from `idealKeyLaw`); then the
 machines (`SigabaNeo.Lib.Machines.Randomized`, `Guarded`) and the machine-level propositions.
+
+## Relation to mxx's PE (`codes/mxx`, branch `claude/dsl-simplification-arbitrary-compute-e010f1`)
+
+* **Attribute ciphertexts.** mxx's `crates/pe` encrypts `x_t` as `[a_t; −s̄ a_t + e_t] + X^(Bz x_t) G`
+  with a fresh uniform `a_t` (`encryption`). `PE/Impl/RingBTVW` follows it; its security proof is
+  exact but samples keys from their ideal law. This directory returns to the paper's
+  `Ψᵢ = [B₀; c₀] Rᵢ + xᵢ G`, which gives the simulation trapdoor `W_f` and an efficient reduction.
+* **Trapdoor.** mxx uses the statistical TrapGen `[ā | g − ā T]` (regularity by the leftover hash
+  lemma, `budget`). Here `B₁ = [1 | a | G̲ − (t a + e)]` is pseudorandom under Ring-LWE (hybrid 3),
+  and the leftover hash lemma is used for binary integer matrices only (`LeftoverHash`).
+* **Predicates and noise.** mxx evaluates branching programs with exponent lookups, not a Ring-GSW
+  circuit `f̂`; its date class (`PeClass::date()`) uses `n = 2^15` and `log₂ Q ≈ 355` with a
+  worst-case phase error below `Q / 4` (`crates/pe/lean/average-w256-n32768-crt15x24-compact`).
+  The noise of `f̂` here grows with the depth of the bit-level Ring-GSW evaluation, so concrete
+  parameters for the date windows need a much larger modulus; they are not fixed yet.
+* **Gadget algebra.** The NAND step of `Lib/Lattices/Homomorphic` follows mxx's
+  `BggMultiplication` (`crates/khe/lean`).
