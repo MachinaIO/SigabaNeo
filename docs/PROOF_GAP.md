@@ -697,7 +697,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Aka–Musso–Wieser, EMSS and its effective versions, COU, Benoist–Oh, Strömbergsson, Alam–Ghosh–Han, Laarhoven, Ducas–Loyer.
   None bounds an adaptively selected projected minimum. For a prescribed rational projection the finite-field law is exact. The
   open obligation is exactly the selection-weighted sum p_suffix ≤ 0.00977696 left by Part 117.
-* **Frontier after Parts 1–118 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 119 (audited, minor caveats; empirical).** [experiments](research/wall1_experiments.md): an exact implementation of
+  Part 108's first pass, run 10,240 times at small parameters. Empirically, at n = 8, q = 17, the 1st percentile of the terminal
+  ratio is 1.139 at width 4, 0.926 at width 10, and 0.930–0.940 at widths up to 20. Short final selections accompany low ratios,
+  and subgroup deficiency does not predict them. Proved: for fixed n, q, the terminal ratio → V_d^{1/d}·q^{n/d} → 0 as the width
+  grows, because the cubic structure persists. A sufficient condition via short planes through the final selected line is
+  given. Its expected-count estimate is open.
+* **Frontier after Parts 1–119 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
