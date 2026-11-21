@@ -91,6 +91,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   grid `Z^k`, which has no unique shortest pair. Coordinate-block routes (random orders, progressive
   deletion, best-of-many projections) and block-internal potentials therefore cannot work; adaptive
   BKZ prefix spans are not covered.
+* **Part 5 (partial result, audited; [research/wall1_sublattice.md](research/wall1_sublattice.md)).**
+  For Haar-random unimodular lattices, a simultaneous lower bound on `λ₁` of the projection onto the
+  complement of **every** primitive prefix of covolume `≤ X` (Kim's flag mean-value theorem + Markov), so it
+  holds for prefixes chosen adaptively by BKZ — immune to selection bias. Missing: a bound on the selected
+  prefix's covolume, and the polynomial-`q` q-ary ensemble; at the GSA values the bound becomes vacuous as
+  `n` grows.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
