@@ -581,7 +581,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   annihilator's determinant. At horizontal width 506, the certified head minimum rises from 7.4188 to 8.1466 physical
   (8.1588 = 0.14197 normalized with the sharpened universal twin cap), with design probability ≥ 0.990001. A width curve covers
   450–647. The necessary height-zero floor sharpens to 27.4810 (Cantelli). The remaining factor is ≈ 3.4.
-* **Frontier after Parts 1–101 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 102 (audited).** [voronoi_height1](research/wall1_voronoi_height1.md): two sufficient conditions keep height-one
+  failure below 0.0025 at ranks 505 and 506. The first is λ1(H) ≥ 24.66 together with a full GS floor of 9 (failure < 0.00176).
+  The second is λ1(H) ≥ 61.3 alone (failure < 0.00207). The height-zero floor alone is not enough: a fixed lattice with minimum
+  above 25 and arbitrarily large covolume has CBD height-one failure > 70%. For the actual q-ary quotient, height one remains
+  open.
+* **Frontier after Parts 1–102 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
