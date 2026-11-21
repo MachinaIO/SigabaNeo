@@ -296,7 +296,20 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   μ_2(L_0) > 193000 (failure < 0.000838) combined with propagation lifts the width-1000 radius 79.04 → 80.21, crossing still
   1000; quadratic target never; punctured shapes never. Babai lifting is certified at 99% from width ≈ 915 (audit), so lifting
   is not the bottleneck — the terminal minimum is.
-* **Frontier after Parts 1–49 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Parts 50–53 (audited; plant-free routes, Nov 2026).** All on the residual statement of Part 47 (lower quantiles of the GS
+  profile of BKZ/slide on the plant-free lattice):
+  [volume_method](research/wall1_volume_method.md) (Part 50: Pr[∃ basis in U] ≤ Haar(U)/covol with the exact Iwasawa density;
+  with only Part 6 profile inequalities the certified Haar terminal radii are 0.005–0.08 (covolume 1) at β = 406–800, versus
+  linear targets 0.86–1.21 — the relaxation discards the coefficient-dependent SVP tests);
+  [random_block_reducer](research/wall1_random_block_reducer.md) (Part 51: exact TV identity ½E|1 − C/EC| for random-block
+  selection; the eligible-block scale has no slack at rank 1023; no width certified);
+  [hecke_transfer](research/wall1_hecke_transfer.md) (Part 52: graph q-ary lattices → Haar as q → ∞ (N, m fixed); the event
+  'some BKZ basis has terminal GS < ρ' has Haar-null boundary, so it transfers asymptotically; at q = 3329 the Sobolev order
+  > 523264 makes every explicit transfer vacuous);
+  [avg_prefix](research/wall1_avg_prefix.md) (Part 53: on Haar lattices at proportional prefix rank the Rankin numerator over the
+  largest BKZ prefix determinant is exp(−Ω(n log n)) — the Rankin route cannot work in the bulk even with average-case
+  denominators; with the exact GSA denominator as hypothesis it would first pass at width 1018).
+* **Frontier after Parts 1–53 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
