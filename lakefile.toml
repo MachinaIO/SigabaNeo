@@ -23,4 +23,4 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Inline.OfPTMOps", "SigabaNeo.Lib.Machines.Inline.Routine",
   "SigabaNeo.Lib.Machines.Inline.Defs", "SigabaNeo.Lib.Machines.Inline.Steps",
   "SigabaNeo.Lib.Machines.Inline.Phases", "SigabaNeo.Lib.Machines.Inline.Handler",
-  "SigabaNeo.Lib.Machines.Inline.Sim"]
+  "SigabaNeo.Lib.Machines.Inline.Sim", "SigabaNeo.Lib.Machines.Inline.Main"]

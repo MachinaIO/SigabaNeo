@@ -82,7 +82,7 @@ theorem lawR_embH_one (c : Config (m + 3) Bool (H o).State Empty []) (hc : c.tap
   cases hH : (H o).machine.tr h none c.tapes.workTapeSymbols (fun e => e.elim) bit with
   | query e _ => exact e.elim
   | step a sy mv =>
-    simp only [stepR, law_zero, PMF.pure_map]
+    simp only [stepR, stepLaw, law_zero, PMF.pure_map]
     congr 2
     rw [embH, step_mkR]
     have hF : (fun t => wr (withH o F c.tapes.workTapes t) (withHP o P c.tapes.workTapePos t)

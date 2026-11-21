@@ -89,18 +89,23 @@ theorem law_halted (n : ℕ) (cfg : Config k Bool S O input) (s : σ)
   simp [MultiTapePTM.runOracleConfigFrom, MultiTapePTM.runConfigFrom,
     MultiTapeMachine.runConfigFrom_halted _ _ _ _ _ h]
 
+/-- The law after executing the instruction `act` from `cfg`, then `n` more steps. -/
+noncomputable def stepLaw (n : ℕ) (cfg : Config k Bool S O input) (s : σ)
+    (act : MultiTapeMachine.Action k Bool S O) : PMF (Config k Bool S O input × σ) :=
+  match act with
+  | .step action symbol move =>
+    ProbOracleComp.runWith oracle (M.runOracleConfigFrom n (cfg.step action symbol move)) s
+  | .query op next =>
+    (oracle (op, (cfg.channels op).queryBuffer) s).bind fun r =>
+      ProbOracleComp.runWith oracle (M.runOracleConfigFrom n (cfg.receive op next r.1)) r.2
+
 /-- One live step of a fair-coin machine: a fair bit selects the instruction. -/
 theorem law_succ_live (n : ℕ) (cfg : Config k Bool S O input) (s : σ) {q : S}
     (hq : cfg.tapes.state = some q) :
     ProbOracleComp.runWith oracle (M.runOracleConfigFrom (n + 1) cfg) s =
       (ProbComp.eval (ProbComp.uniform Bool)).bind fun bit =>
-        match M.tr q cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit with
-        | .step action symbol move =>
-          ProbOracleComp.runWith oracle (M.runOracleConfigFrom n (cfg.step action symbol move)) s
-        | .query op next =>
-          (oracle (op, (cfg.channels op).queryBuffer) s).bind fun r =>
-            ProbOracleComp.runWith oracle (M.runOracleConfigFrom n (cfg.receive op next r.1))
-              r.2 := by
+        stepLaw M oracle n cfg s
+          (M.tr q cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit) := by
   dsimp only [MultiTapePTM.runOracleConfigFrom, MultiTapePTM.runConfigFrom]
   rw [MultiTapeMachine.runConfigFrom]
   simp only [hq, bind_map_left, ProbOracleComp.runWith_bind,
@@ -109,7 +114,8 @@ theorem law_succ_live (n : ℕ) (cfg : Config k Bool S O input) (s : σ) {q : S}
   cases M.tr q cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit with
   | step action symbol move => rfl
   | query op next =>
-    simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query]
+    simp only [stepLaw, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query]
+    rfl
 
 /-- One coin-independent ordinary step. -/
 theorem law_succ_det (n : ℕ) (cfg : Config k Bool S O input) (s : σ) {q : S}
