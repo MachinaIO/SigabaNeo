@@ -282,4 +282,52 @@ theorem attributeHiding_rlwe (err : SecretDist)
 
 end Registry
 
+
+/-! ### Any distinguisher on the instances is one on the registry's words -/
+
+section Words
+
+/-- The instances of hybrid 3 and of the ideal side. -/
+abbrev Inst3 (N q k : ℕ) :=
+  Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N) × Matrix (Fin 1) (Col k) (Negacyclic (ZMod q) N)
+
+/-- **Real words of hybrid 3**: a distinguisher `g` on the instances, run on the decoded word,
+accepts on the registry's real law as on `inst3Real`. -/
+theorem real3_word (err : SecretDist) (g : Inst3 N q k → PMF Bool) :
+    (ModuleLWE.realLaw (params3 N q k err).toModule).bind
+        (wordDist (Fintype.equivFin (Col k) : Col k ≃ Fin (params3 N q k err).m) (g ∘ split3)) =
+      (inst3Real (polyOf (N := N) (ModuleLWE.coeffLaw q err))).bind g := by
+  rw [inst3Real_eq, PMF.bind_map]
+  exact realLaw_bind_wordDist (params3 N q k err) (Fintype.equivFin (Col k)) _
+
+/-- **Uniform words of hybrid 3.** -/
+theorem unif3_word (err : SecretDist) (g : Inst3 N q k → PMF Bool) :
+    (ModuleLWE.idealLaw (params3 N q k err).toModule).bind
+        (wordDist (Fintype.equivFin (Col k) : Col k ≃ Fin (params3 N q k err).m) (g ∘ split3)) =
+      inst3Unif.bind g := by
+  rw [inst3Unif_eq, PMF.bind_map]
+  exact idealLaw_bind_wordDist (params3 N q k err) (Fintype.equivFin (Col k)) _
+
+/-- **Real words of hybrid 5** (normal form). -/
+theorem real5_word (err : SecretDist)
+    (g : Pub Wd (Negacyclic (ZMod q) N) k × Pub Wd (Negacyclic (ZMod q) N) k → PMF Bool) :
+    (ModuleLWE.realLaw (params5 N q k Wd err).toModule).bind
+        (wordDist (Fintype.equivFin (Idx5 Wd k) : Idx5 Wd k ≃ Fin (params5 N q k Wd err).m)
+          (g ∘ split5)) =
+      (nfReal (Wd := Wd) (k := k) (polyOf (N := N) (ModuleLWE.coeffLaw q err))).bind g := by
+  rw [nfReal_eq, PMF.bind_map]
+  exact realLaw_bind_wordDist (params5 N q k Wd err) (Fintype.equivFin (Idx5 Wd k)) _
+
+/-- **Uniform words of hybrid 5.** -/
+theorem unif5_word (err : SecretDist)
+    (g : Pub Wd (Negacyclic (ZMod q) N) k × Pub Wd (Negacyclic (ZMod q) N) k → PMF Bool) :
+    (ModuleLWE.idealLaw (params5 N q k Wd err).toModule).bind
+        (wordDist (Fintype.equivFin (Idx5 Wd k) : Idx5 Wd k ≃ Fin (params5 N q k Wd err).m)
+          (g ∘ split5)) =
+      nfUnif.bind g := by
+  rw [nfUnif_eq, PMF.bind_map]
+  exact idealLaw_bind_wordDist (params5 N q k Wd err) (Fintype.equivFin (Idx5 Wd k)) _
+
+end Words
+
 end AdvancedEncryption.DualUse
