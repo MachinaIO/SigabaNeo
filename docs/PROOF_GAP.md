@@ -567,7 +567,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   caps at every rank 400–511, each at least 0.727 nats below Part 86 (γ_406 ≤ 45.6963, γ_506 ≤ 56.2142). The Part 88
   exact-twin radius rises only to 0.126915 / 0.366057 (34.38% / 44.84% of 0.85·GSA), or 0.125656 / 0.362426 with 1% slack.
   Sharper Hermite caps therefore do not close the gap.
-* **Frontier after Parts 1–98 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 99 (audited).** [theta_heights](research/wall1_theta_heights.md): for heights k = 2..31, the CBD-weighted dual sum
+  F_k is < 3 + A_k. Here A_k is a finite weighted count of nonintegral dual vectors of physical length < 10. Exact aliases
+  (< 1.014·10⁻¹³) and the tail (< 10⁻⁵⁰⁷) are harmless. Each nonintegral residue has weight < 0.587 (Part 92 event). The
+  ceilings A_k ≤ 10⁴⁸ / 10⁴⁹ (rank 505 / 506) would give higher-height failure < 0.004 / 0.0021. Still open: multiplicity
+  control of A_k, height one, and λ1(H) > 24.66.
+* **Frontier after Parts 1–99 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
