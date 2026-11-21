@@ -117,6 +117,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   below the Part 6 cutoff violates the corrected criterion (witness `2b_k + u`, `a = 2`). So no all-prefix statement certifies
   `β = 406`; the failure probability for the prefix BKZ actually selects is open. For a fixed `W ⊂ L0`, `a = 1` and
   `‖π_W u‖²` concentrates (proved).
+* **Part 10 (audited negative result; [research/wall1_selected.md](research/wall1_selected.md)).** Rotation equivariance gives
+  an exact beta law for the projection of an *external* direction onto the complement of the selected prefix, but not for a
+  short vector of the same lattice; choosing the prefix from the `u`-independent lattice `L0` gives exactly equal quotient
+  covolumes, yet an explicit example has a projected horizontal vector shorter than the unique ambient shortest plant. Symmetry
+  and independence alone cannot certify `β = 406`; what remains is the probability of a competing vector in the quotient that
+  the actual algorithm selects.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
