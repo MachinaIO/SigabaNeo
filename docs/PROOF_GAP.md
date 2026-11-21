@@ -346,7 +346,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   radii move only to 0.005933/0.015621/0.039603/0.140798 at β = 406/506/647/800: the bad mass relocates. The A5 exponent is
   > 227 on the witness boxes (moot there). Hypothesis under test: typical lattices genuinely have BKZ-reduced bases with short
   terminal GS, capping all 'for every reduced basis' methods.
-* **Frontier after Parts 1–61 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 62 (audited).** [bad_reduced_bases](research/wall1_bad_reduced_bases.md): hypothesis 'typical lattices have
+  BKZ-reduced bases with short terminal GS' is open at rank 1023. At full width the minimum over reduced bases is λ_1, and
+  λ_1/GSA → 1 on Haar lattices (Pr[≤ c·GSA] ≤ c^N/2). At rank 3, width 2: an open set admits two reduced bases differing by 10%
+  in terminal length, yet Pr[some reduced basis ≤ 0.9·GSA] ≤ 39.3%. Exhaustive q = 47 rank-3 graph lattices (2209): 625 admit a
+  basis ≤ 0.9·GSA, 48 have several terminal values, 24 have a BKZ basis strictly below every HKZ choice (independently
+  brute-forced). Medium-rank experiments are in progress.
+* **Frontier after Parts 1–62 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
