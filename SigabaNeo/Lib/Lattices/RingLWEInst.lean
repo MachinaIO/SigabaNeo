@@ -143,6 +143,37 @@ theorem uniform_pair_eq (m : ℕ) :
         ext i j; fin_cases j; rfl }
   exact (Cslib.Probability.PMF.uniformOfFintype_map_equiv e).symm
 
+/-- Real pairs indexed by any finite type. -/
+noncomputable def ringRealOn (ι : Type) [Fintype ι] [DecidableEq ι] (χs χe : PMF (ZMod q)) :
+    PMF ((ι → Negacyclic (ZMod q) N) × (ι → Negacyclic (ZMod q) N)) := do
+  let σ ← polyOf (N := N) χs
+  let A ← PMF.uniformOfFintype (ι → Negacyclic (ZMod q) N)
+  let e ← PMF.pi fun _ : ι => polyOf (N := N) χe
+  pure (A, fun i => A i * σ + e i)
+
+/-- **Reindexing real pairs.** -/
+theorem ringReal_reindex {ι : Type} [Fintype ι] [DecidableEq ι] (m : ℕ) (e : ι ≃ Fin m)
+    (χs χe : PMF (ZMod q)) :
+    (ringReal (N := N) m χs χe).map (fun v => (v.1 ∘ e, v.2 ∘ e)) = ringRealOn ι χs χe := by
+  unfold ringReal ringRealOn
+  simp only [Cslib.Probability.PMF.monad_bind_eq_bind, Cslib.Probability.PMF.monad_pure_eq_pure,
+    PMF.map_bind, PMF.pure_map]
+  congr 1; funext σ
+  rw [← Cslib.Probability.PMF.uniformOfFintype_map_equiv
+    (Equiv.arrowCongr e.symm (Equiv.refl (Negacyclic (ZMod q) N))), PMF.bind_map]
+  congr 1; funext A
+  rw [← pi_comp_equiv (polyOf (N := N) χe) e]
+  simp only [Function.comp_apply, PMF.bind_map]
+  rfl
+
+/-- Uniform pairs reindexed are uniform. -/
+theorem uniform_reindex {ι : Type} [Fintype ι] [DecidableEq ι] (m : ℕ) (e : ι ≃ Fin m) :
+    (PMF.uniformOfFintype ((Fin m → Negacyclic (ZMod q) N) × (Fin m → Negacyclic (ZMod q) N))).map
+        (fun v => (v.1 ∘ e, v.2 ∘ e)) =
+      PMF.uniformOfFintype ((ι → Negacyclic (ZMod q) N) × (ι → Negacyclic (ZMod q) N)) :=
+  Cslib.Probability.PMF.uniformOfFintype_map_equiv
+    ((Equiv.arrowCongr e.symm (Equiv.refl _)).prodCongr (Equiv.arrowCongr e.symm (Equiv.refl _)))
+
 /-- **The registry's real Ring-LWE law** is that of the encoded ring-level pairs. -/
 theorem ringLWE_realLaw_eq (p : RingLWE.Params) :
     haveI : NeZero p.q := ⟨p.q_pos.ne'⟩
