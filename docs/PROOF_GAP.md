@@ -447,7 +447,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   (the repo's slide predicate itself is not closed under dual reversal: 3-dim counterexample). For the rank-1023 null lattice
   (P > 0.996) the envelope gives g_{1023−β} ≥ 1.5·10⁻³¹ / 0.158 / 1.1·10⁻⁵⁴ / 1.2·10⁻³¹ at β = 406/506/647/800 — weaker than direct
   propagation; no width certified.
-* **Frontier after Parts 1–76 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 77 (audited).** [lcz_all_widths](research/wall1_lcz_all_widths.md): Levenshtein/Cohn–Zhao block caps at every
+  width (strictly better than Part 65 for d = 72..1023; exact-rational LP checks) give the best certified all-bases radii so far:
+  g_{1023−β} ≥ 0.00625 / 0.01622 / 0.04068 / 0.14425 and g/R_T ≥ 0.00368 / 0.00876 / 0.01450 / 0.03344 (β = 406/506/647/800, 99%
+  per width). Even with width-3 acceptance and truncated V7, the relaxed residual is ≥ 2.19·10⁵ nats (β = 800, 0.25·GSA) up to
+  8.1·10⁵ (β = 406). **Status:** the best LP packing bounds and all audited probabilistic suppressions are exhausted; closing wall 1
+  needs a new estimate — coverage of the fresh column's torus conditioned on prefix survival in deep windows.
+* **Frontier after Parts 1–77 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
