@@ -112,7 +112,19 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   the `q`-ary Lemmas Q1, Q2 with a study of Lemma Q3, and a new re-randomization argument for (C).
   For `q`-ary lattices, Lemma Q1 replaces Rogers' formula by elementary linear algebra over
   `F_q`, so that route can avoid the Haar-measure prerequisites entirely.
-* Open: (C) has no known approach. BKZ's projected blocks are not Haar-random, and no analogue of
+* **Re-randomization for (C) (new; [research/rerandomization.md](research/rerandomization.md)).**
+  Replace a block `B` by a uniformly random index-`p` sublattice. A tuple whose residues span
+  dimension `r` survives with probability `(p^{d−r} − 1)/(p^d − 1)`, which gives exact moments of
+  every order for **every** input lattice.
+  * Proved in Lean: `Rerand.meanValue` (the finite-support weighted identity, any arity) and
+    `Rerand.nonzeroKernelCount`. Axioms: `propext`, `Classical.choice`, `Quot.sound`.
+  * Paper proof only (not in Lean): **negative result**. For every `d ≥ 2` and prime `p` there are
+    determinant-one lattices with HKZ-reduced bases, `diag(η, η⁻¹, 1, …)ℤ^d` with `η → 0`, for
+    which every index-`p` sublattice violates the shell-count hypothesis S1. So
+    re-randomization alone does not give the sieve's static hypotheses for arbitrary blocks.
+    The obstruction is to S1, not to solvability: such blocks have `λ₁` far below the Gaussian
+    heuristic. Treating "skewed" blocks separately is a possible next step.
+* Open: (C) has no proof. BKZ's projected blocks are not Haar-random, and no analogue of
   Rogers' formula is known for them. So even a verified [DL26] would make sieving a theorem for
   random lattices, not for the sieve calls inside BKZ on LWE lattices.
 
