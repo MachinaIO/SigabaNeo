@@ -20,6 +20,7 @@ axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 | `BKZ.blockLattice_covolume`, `BKZ.basis_covolume` | the covolume of a projected block, and of the lattice, is the product of the Gram–Schmidt lengths |
 | `BKZ.hermite_ball_linear`, `BKZ.gamma_half_nat_bound` | `γ_k ≤ (k+4)/π` for every `k ≥ 1` (from `Γ(k/2+1) ≤ ((k+4)/4)^{k/2}`) |
 | `BKZ.reduced_first_norm_bound_covolume_ball` | for a BKZ-β-reduced basis, `‖b_0‖ ≤ ((β+4)/π)^{(n−1)/(2(β−1)) + 1/2} covol(L)^{1/n}` |
+| `BKZ.reduced_approx_factor` | Schnorr's approximation factor: for a BKZ-β-reduced basis and every nonzero `v ∈ L`, `‖b_0‖ ≤ ((β+4)/π)^{(n−1)/(β−1)} ‖v‖` |
 | `BKZ.hermite_ball` | Minkowski with the ball volume: some nonzero lattice vector has `‖v‖ ≤ 2 (covol / V_k)^{1/k}`, `V_k = π^{k/2}/Γ(k/2+1)` |
 
 **Open in stage 1:**
@@ -28,11 +29,9 @@ axioms: `propext`, `Classical.choice`, `Quot.sound` only):
   are not proved. Only the fully reduced case is.
 * `γ_β ≤ 1 + β/4` and Blichfeldt's bound are not proved in Lean. `γ_k ≤ k` and
   `γ_k ≤ (k+4)/π` are.
-* The approximation-factor bound `‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1` used below (Schnorr) is not
-  formalized.
 
-**What it gives the primal attack.** A worst-case approximation-factor bound for BKZ-β,
-`‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1`, recovers the target when that factor times `‖(e, s, 1)‖` is below
+**What it gives the primal attack.** The worst-case approximation-factor bound for BKZ-β,
+`‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1` (proved in Lean with `γ_β ≤ (β+4)/π`: `reduced_approx_factor`), recovers the target when that factor times `‖(e, s, 1)‖` is below
 `λ_2`. Here `λ_2` still comes from the Gaussian heuristic, the stage-2 target. The table gives the
 smallest `β` (optimised over the number of samples) and its cost in the estimator's `RC.MATZOV`
 model. The GSA column is the estimator's primal uSVP.

@@ -50,7 +50,7 @@ theorem blockMatrix_projected (h : i + k ≤ n) (p q : Fin k) :
   simp [blockMatrix, inner_sub_right, g, x] at hz ⊢
   rw [hz, sub_zero]
 
-private theorem inner_diag (j : Fin n) :
+theorem inner_diag (j : Fin n) :
     ⟪gramSchmidt ℝ b j, b j⟫_ℝ = ‖gramSchmidt ℝ b j‖ ^ 2 := by
   conv_lhs => rhs; rw [gramSchmidt_def'' ℝ b j]
   rw [inner_add_right, inner_sum, real_inner_self_eq_norm_sq]
@@ -80,6 +80,14 @@ def blockBasis (hb : LinearIndependent ℝ b) (h : i + k ≤ n) :
         rw [blockMatrix_det]
         exact Finset.prod_ne_zero_iff.mpr fun j _ ↦ norm_ne_zero_iff.mpr
           (gramSchmidt_ne_zero _ hb))))) (by simp)
+
+theorem blockBasis_apply_coord (hb : LinearIndependent ℝ b) (h : i + k ≤ n) (p q : Fin k) :
+    blockBasis b hb h q p =
+      ⟪gramSchmidt ℝ b (blockIndex h p), b (blockIndex h q)⟫_ℝ /
+        ‖gramSchmidt ℝ b (blockIndex h p)‖ := by
+  unfold blockBasis
+  rw [coe_basisOfLinearIndependentOfCardEqFinrank']
+  rfl
 
 abbrev blockLattice (hb : LinearIndependent ℝ b) (h : i + k ≤ n) :=
   Submodule.span ℤ (Set.range (blockBasis b hb h))
