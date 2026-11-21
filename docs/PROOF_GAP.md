@@ -406,7 +406,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   at ρ = 0.25–0.85·GSA (e.g. [829271, 842097] at β = 406, 0.85·GSA; [230166, 253386] at β = 800, 0.25·GSA), explicit lower boxes
   verified row by row; the exponential relaxation (≤ 1022 nats) and the exact width-3 acceptance (333–490 nats on the boxes)
   are far too weak. Suppression of this size can only come from the width-β shortest-vector tests.
-* **Frontier after Parts 1–71 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 72 (audited, minor caveats).** [mu_moments](research/wall1_mu_moments.md): exact factorial moments of the short
+  count N for the fixed-profile μ-random block (unfolding each coefficient row over cosets of the suffix lattice; distinct last
+  indices factor). The estimate E[(N)_k] ≈ E^k fails (at w = 406, excess 0.0002, E ≈ 6.92·10⁶, the log ratio at k = 20000 exceeds
+  162944, from rare near-diagonal coefficient sets with ≥ 2^49 short pairs); Bonferroni parity and Chen–Stein (complete
+  dependency graph) and positive association (Harris fails) are ruled out as shortcuts. On every Part 71 box one window has
+  log E > 131–247, so a void bound as weak as Pr[N = 0] ≤ exp(−10^{-49}·E) would eliminate the box: **the remaining core of
+  wall 1 is a dense-packing large-deviation bound for the μ-random block** (in progress).
+* **Frontier after Parts 1–72 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
