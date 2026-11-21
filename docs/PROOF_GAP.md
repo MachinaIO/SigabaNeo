@@ -526,7 +526,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Haar measure; counting each P once recovers Part 90 (0.12656786 / 0.36551260). Selecting the extension of globally least
   determinant does help strictly, but only by a relative e^-584 (β = 406) / e^-734 (β = 506), and the full one-hyperplane exchange
   test can improve Part 88's radius by at most e^-170. Canonical selection is therefore not where the 2–3× gap comes from.
-* **Frontier after Parts 1–91 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 92 (audited, minor caveats).** [qary_gap](research/wall1_qary_gap.md): on the actual q-ary L_0 of (511, 512, 3329),
+  any sufficiently small passing extension forces a short vector in the ambient dual qL_A^*. A single width-independent event
+  (λ1 > T, probability > 99%, thin margin) then gives normalized terminal radius 0.05852472 at β = 406 and 0.12909231 at β = 506,
+  jointly and for every twin-passing basis (46.70% / 35.67% of Haar; Part 89 had 0.05157150 / 0.11896865). The deepest defect is
+  exactly the stratum where the extension's saturation contains the graph code; an explicit twin-passing basis realizes terminal
+  minimum 1.
+* **Part 93 (audited, minor caveats).** [combined_reducer](research/wall1_combined_reducer.md): a width curve over 342–900 for the
+  certified terminal fraction of 0.85·G. The best values are 45.32% at β = 511 (two-block slide) and 45.44% at β = 512 (terminal
+  variant; Part 87's MW certificate gives 0.38627 there). For widths ≥ 512, a combined primal+dual reducer (one extra SVP call)
+  exists and terminates but admits exactly the same extensions, so it gives no gain at 647/800. Narrow widths are unresolved.
+* **Frontier after Parts 1–93 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
