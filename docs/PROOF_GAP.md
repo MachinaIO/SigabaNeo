@@ -263,11 +263,17 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
       and residue rank `u`, with the factor `q^{−(t−u)m}`;
     * `centeredPartitionSum` proves the exact singleton cancellation.
 
+    Added (`QAry/MainRowSpaces.lean`):
+    * `rationalRowSpaceCount`: at most `(2B+1)^{kd}` rational row spaces of rank `d`;
+    * `rationalRowPivots`: an injective coordinate projection on each such space;
+    * `rationalRankStratumCount`, `modularRankStratumCount`: stratum counts, including pivots
+      that lose rank mod `q`;
+    * `freeingPivotError`: the error from dropping rational independence.
+
     Open in Lean, to reach `e^{−cm}` and the exact-SVP corollary:
-    * counting rational row spaces before projection;
-    * identifying the partition contribution inside `rankMoment`;
-    * bounding the error from dropping rational independence;
-    * the continuum non-partition bounds at the T4b radii.
+    * identifying the partition arrays inside `rankMoment` and applying `centeredPartitionSum`;
+    * summing the error over patterns;
+    * the enlarged-window continuum estimates at the T4b radii.
   * **Still far from Kyber and LWE.** `q = 3329` is polynomial and far below `exp(log^6 m)`. LWE
     lattices contain a planted short vector. BKZ runs the sieve on projected blocks, which is
     assumption (C), refuted for worst-case blocks above. The bit model is open.

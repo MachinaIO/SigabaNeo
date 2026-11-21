@@ -2,6 +2,7 @@ module
 
 public import SigabaNeo.Lib.Lattices.QAry.RankDefect
 public import SigabaNeo.Lib.Lattices.QAry.MainCounting
+public import SigabaNeo.Lib.Lattices.QAry.MainRowSpaces
 public import SigabaNeo.Lib.Lattices.Sieve.Core
 
 /-! # Finite marked kernel moments
