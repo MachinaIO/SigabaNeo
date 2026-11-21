@@ -137,6 +137,20 @@ theorem dist_shift_vec (N k : ℕ) [NeZero N] (c : Fin k → ℤ) :
   exact (PMF.dist_pi_le_sum _ _).trans
     (Finset.sum_le_sum fun j _ => dist_shift_zmod (Q := Q) N (c j))
 
+/-- **Noise flooding**: independent uniform coordinates `t < N` indexed by any finite type, each
+shifted by `c i` and reduced mod `Q`, are within `∑ |c i| / N` of the unshifted ones. -/
+theorem dist_shift_pi {ι : Type} [Fintype ι] [DecidableEq ι] (N : ℕ) [NeZero N] (c : ι → ℤ) :
+    dist ((PMF.uniformOfFintype (ι → Fin N)).map
+        fun T j => ((T j : ℕ) : ZMod Q) - (c j : ZMod Q))
+      ((PMF.uniformOfFintype (ι → Fin N)).map fun T j => ((T j : ℕ) : ZMod Q)) ≤
+      ∑ j, ((c j).natAbs : ℝ) / N := by
+  rw [← PMF.pi_uniformOfFintype,
+    ← PMF.pi_map (fun _ => PMF.uniformOfFintype (Fin N)) (fun j (t : Fin N) =>
+      ((t : ℕ) : ZMod Q) - (c j : ZMod Q)),
+    ← PMF.pi_map (fun _ => PMF.uniformOfFintype (Fin N)) (fun _ (t : Fin N) => ((t : ℕ) : ZMod Q))]
+  exact (PMF.dist_pi_le_sum _ _).trans
+    (Finset.sum_le_sum fun j _ => dist_shift_zmod (Q := Q) N (c j))
+
 end
 
 /-! ### Matrices and products -/

@@ -15,6 +15,7 @@ import SigabaNeo.Lib.Lattices.Homomorphic
 import SigabaNeo.Lib.Lattices.Decode
 import SigabaNeo.Lib.Lattices.LeftoverHash
 import SigabaNeo.Lib.Lattices.BoxSampler
+import SigabaNeo.Lib.Lattices.Flood
 
 /-!
 # Lattice library
@@ -47,6 +48,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   and binary inputs (`isTwoUniversal_binaryHash`, `closeTo_binaryHash`).
 * `BoxSampler`: one try of preimage sampling by box rejection (Lyubashevsky–Wichs); its law does
   not depend on the trapdoor (`boxSample_eq`).
+* `Flood`: noise flooding over `ℤ_q[X]/(X^N + 1)`: wide uniform errors hide a fixed shift
+  (`closeTo_floodLaw_add`).
 * `Decode`: threshold decoding of a bit `M · ⌊q/2⌋ + e` in `ℤ_q` and in `ℤ_q[X]/(X^N + 1)`, exact when
   `4|e| + 2 < q`.
 -/
