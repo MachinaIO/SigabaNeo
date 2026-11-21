@@ -139,8 +139,21 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   Conclusion: the shell-based provable sieve is inherently average-case. It cannot certify the
   sieve calls on arbitrary (worst-case) BKZ blocks. A growing, input-dependent re-randomization
   index remains unexplored.
-* In progress: a Lean formalization of the algorithmic layer (S1–S5 as hypotheses), and the `q`-ary
-  sieving statistics (T4).
+* **The algorithmic layer in Lean (`SigabaNeo.Lattices.Sieve`).** The finite-shell sieve, for a
+  fixed lattice given as finite shells, with the static hypotheses explicit. Axioms `propext`,
+  `Classical.choice`, `Quot.sound` in all 17 checks:
+
+  | Theorem | Statement |
+  | --- | --- |
+  | `exactCancellation`, `acceptance` | Lemma A: every target difference gets weight `b_min/(a_max |U|)`. The acceptance rate is exactly `(1+θ_T)/(12(1+θ_U))`, at least `99/1212` under S1. This corrects the note's `1/12`: the constant changes, the argument does not |
+  | `bankFailure`, `mergeSurvival` | Lemma B: concentration gives a bad-bank bound; one merge survives with probability `≥ (1−δ)(1−ε)` |
+  | `shellTree_uniform`, `survival_recurrence` | Theorem D: from i.i.d. uniform leaves, all output lists at a level have equal mass; the survival recurrence |
+  | `terminalFailure_count`, `latticeScan_shortest` | Lemma F: under terminal coverage, S3′ and S4, every minimizer of the filtered scan is a shortest nonzero vector |
+  | `scanBudget_le` | the exhaustive-scan comparison budget `≤ m·2^m·(2B²) + B²` |
+
+  Open for T1 in Lean: the S5 initialization sampler and its error transfer, the Chernoff estimates
+  at the prescribed parameters, and the asymptotic `(4/3)^{n+o(n)}`.
+* In progress: the `q`-ary sieving statistics (T4).
 * **Re-randomization for (C) (new; [research/rerandomization.md](research/rerandomization.md)).**
   Replace a block `B` by a uniformly random index-`p` sublattice. A tuple whose residues span
   dimension `r` survives with probability `(p^{d−r} − 1)/(p^d − 1)`, which gives exact moments of
