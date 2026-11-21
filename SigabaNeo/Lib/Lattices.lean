@@ -5,6 +5,7 @@ import SigabaNeo.Lib.Lattices.Gadget
 import SigabaNeo.Lib.Lattices.Gaussian.Facts
 import SigabaNeo.Lib.Lattices.Stat
 import SigabaNeo.Lib.Lattices.Hardness
+import SigabaNeo.Lib.Lattices.BKZ
 import SigabaNeo.Lib.Lattices.LWE
 import SigabaNeo.Lib.Lattices.RingLWE
 import SigabaNeo.Lib.Lattices.ModuleLWE
@@ -23,7 +24,10 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Gadget`: the gadget matrix and binary decomposition.
 * `LWE`, `RingLWE`, `ModuleLWE`: the assumptions, concrete (`SigabaNeo.Assumption`: parameters,
   problem, security function) and asymptotic (cslib-frontier).
-* `Hardness`: the security function of the concrete assumptions (`docs/LWE_HARDNESS.md`).
+* `BKZ`: a GSA-free bound on the first vector of a BKZ-reduced basis (`docs/PROOF_GAP.md`).
+* `Estimator/`: the lattice estimator's attack cost models; `estimatorBits` is the `H` of the
+  concrete assumptions (`docs/LWE_ESTIMATOR.md`).
+* `Hardness`: an earlier conservative bound, kept as a cross-check (`docs/LWE_HARDNESS.md`).
 * `Trapdoor`: the ideal preimage distribution and trapdoor samplers (`Trapdoor.Exists`);
   `Trapdoor/Family`: a sampler for one parameter family (`Trapdoor.Family.exists_sampler`).
 * `Prob`, `Stat`: expectations and statistical distance.

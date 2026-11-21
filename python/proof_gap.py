@@ -10,6 +10,7 @@ import math
 from lwemodel import fx, reduction
 
 GAMMA = {
+    "b (proved in Lean: hermite_cube)": lambda b: math.log(b),
     "1+b/4 (Minkowski)": lambda b: math.log(1 + b / 4),
     "Blichfeldt": lambda b: math.log(2 / math.pi) + 2 / b * math.lgamma(2 + b / 2),
     "heuristic b/(2 pi e)": lambda b: math.log(b / (2 * math.pi * math.e)),

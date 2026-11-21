@@ -8,26 +8,41 @@ open.
 
 ## Stage 1: BKZ output quality without the GSA
 
-**Proof.** In progress: the Hanrot–Pujol–Stehlé / Gama–Nguyen analysis. It covers the
-Gram–Schmidt profile of a BKZ-β-reduced basis from Hermite's inequality in each block, and an
-explicit bound on the Hermite constant `γ_β` from Minkowski's theorem. Lean files:
-`SigabaNeo/Lib/Lattices/BKZ*.lean`.
+**Proved in Lean** (`SigabaNeo/Lib/Lattices/BKZ.lean`, `BKZ/Profile.lean`, `BKZ/Hermite.lean`;
+axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 
-**What it gives the primal attack.** A proven worst-case bound for BKZ-β is an approximation factor
-`‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1` (Schnorr; HPS for the version with polynomially many tours). The
-attack then recovers the target when that factor times `‖(e, s, 1)‖` is below `λ_2`. Here `λ_2` is
-still taken from the Gaussian heuristic, which is the stage-2 target. The table gives the smallest
-`β` (optimised over the number of samples) and its cost in the same `RC.MATZOV` model as the
-estimator. The GSA row is the estimator's primal uSVP.
+| Theorem | Statement |
+| --- | --- |
+| `BKZ.first_log_bound` | a Gram–Schmidt log-profile in which each block of size `k_i = min(β, n−i)` satisfies Hermite's inequality with constant `c` has Hermite factor `r_0 − S_n/n ≤ c (n−1)/(β−1) + c`, that is `Γ_β^{(n−1)/(2(β−1)) + 1/2}` with `c = ½ log Γ_β`, `Γ_β = max_{k≤β} γ_k` |
+| `BKZ.hermite_cube` | Minkowski: every full-rank lattice in `ℝ^k` has a nonzero vector with `‖v‖² ≤ k · covol^{2/k}`, so `γ_k ≤ k` |
+| `BKZ.projected_profile`, `BKZ.first_norm_bound` | for a fully BKZ-β-reduced basis, `‖b_1‖ ≤ β^{(n−1)/(2(β−1)) + 1/2} det(L)^{1/n}` |
 
-| Kyber | GSA (estimator) | proven factor, `γ_β ≤ 1 + β/4` | proven factor, Blichfeldt bound on `γ_β` | factor with `γ_β` at its heuristic value `β/(2πe)` |
-| --- | --- | --- | --- | --- |
-| 512 | β = 406, 143.8 bits | β = 2763, 797.2 bits | β = 2384, 690.1 bits | β = 2016, 586.3 bits |
-| 768 | β = 624, 204.9 bits | β = 4041, 1159.0 bits | β = 3521, 1011.6 bits | β = 3024, 871.0 bits |
-| 1024 | β = 874, 275.1 bits | β = 5645, 1614.0 bits | β = 4957, 1418.7 bits | β = 4304, 1233.5 bits |
+**Open in stage 1:**
 
-A proven Hermite-factor bound (`‖b_1‖ ≤ 2 γ_β^{(d−1)/(2(β−1)) + 3/2} det^{1/d}`) does not recover
-the target at any `β < 6000` for these instances. It does not use the shortness of the target.
+* The projected block lattices, their covolumes and the "first vector is shortest" condition are
+  hypotheses supplied by the caller. Building them from a basis with Mathlib's `gramSchmidt` is
+  not proved.
+* The HPS theorem for polynomially many tours (`2 Γ_β^{(n−1)/(2(β−1)) + 3/2}`) and its tour count
+  are not proved. Only the fully reduced case is.
+* Sharper Hermite constant bounds (`γ_β ≤ 1 + β/4`, Blichfeldt) are not proved in Lean. Only
+  `γ_k ≤ k` is.
+* The approximation-factor bound `‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1` used below (Schnorr) is not
+  formalized.
+
+**What it gives the primal attack.** A worst-case approximation-factor bound for BKZ-β,
+`‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1`, recovers the target when that factor times `‖(e, s, 1)‖` is below
+`λ_2`. Here `λ_2` still comes from the Gaussian heuristic, the stage-2 target. The table gives the
+smallest `β` (optimised over the number of samples) and its cost in the estimator's `RC.MATZOV`
+model. The GSA column is the estimator's primal uSVP.
+
+| Kyber | GSA (estimator) | `γ_β ≤ β` (proved) | `γ_β ≤ 1 + β/4` | Blichfeldt | `γ_β` at its heuristic value `β/(2πe)` |
+| --- | --- | --- | --- | --- | --- |
+| 512 | β = 406, 143.8 bits | β = 3440, 988.7 bits | β = 2763, 797.2 bits | β = 2384, 690.1 bits | β = 2016, 586.3 bits |
+| 768 | β = 624, 204.9 bits | β = 4971, 1422.7 bits | β = 4041, 1159.0 bits | β = 3521, 1011.6 bits | β = 3024, 871.0 bits |
+| 1024 | β = 874, 275.1 bits | β = 6876, 1963.8 bits | β = 5645, 1614.0 bits | β = 4957, 1418.7 bits | β = 4304, 1233.5 bits |
+
+The Hermite-factor bound that is proved (`first_norm_bound`) does not by itself recover the target
+at any `β < 6000` for these instances. It does not use the shortness of the target.
 
 **What this measures.** Even with `γ_β` at its heuristic value, the worst-case analysis costs about
 440 bits more for Kyber512. The gap is the difference between the worst-case shape of a reduced
