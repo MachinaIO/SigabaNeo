@@ -170,6 +170,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   terminal success probability exactly 5/q (proved ≤ 11/q); every ambient-unique instance puts ±p in the FIRST row. **Consequence:**
   'terminal recovery' undercounts success (early recovery), so the Lean core statements registered with terminal-only success can
   be false; they are being re-registered with success = '±u is an output basis vector or the terminal criterion holds'.
+* **Parts 22–29 (audited; ten parallel routes, Nov 2026).** All ten routes ended in obstructions or partial results:
+  [isotropic](research/wall1_isotropic.md) (isotropic smoothing does not give covolume-only conditioning),
+  [profile_only](research/wall1_profile_only.md) (observed profiles are not Markov: 12/17 vs 0),
+  [exchangeable](research/wall1_exchangeable.md) (input randomization does not survive reduction),
+  [second_moment](research/wall1_second_moment.md) (sharp moment bound allowing adaptivity; reruns fail),
+  [embedding_factor](research/wall1_embedding_factor.md) (success set in τ² is an open interval; divisibility unaffected),
+  [haar_marked](research/wall1_haar_marked.md) (short marks are recovered early, so terminal recovery → 0),
+  [stability](research/wall1_stability.md) (stability radius explicit; averaging loss too large),
+  [literature](research/wall1_literature.md) (closest: Laarhoven 2610.15265 Prop. 3, prefix covolumes of quasi-HKZ bases of Haar
+  lattices; nothing bounds the selected terminal block), plus reachable and small_exact (Parts 20–21).
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
