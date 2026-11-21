@@ -382,8 +382,13 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   `0 < Haar(D) < ∞` whose normalized pushforward to `SL_n(ℝ)/SL_n(ℤ)` is an `SL_n(ℝ)`-invariant
   probability measure with `E[Σ_{v ∈ L∖0} f(v)] = ∫ f` for every measurable `f ≥ 0`. Independent audit:
   faithful (genuine nonzero Haar measure, correct action, each nonzero vector counted once; a
-  Minkowski–Hlawka corollary was derived from it). Orders 2 and 3 of Rogers' formula (needed for the
-  full [Laa26] constant) remain open.
+  Minkowski–Hlawka corollary was derived from it). **Order 2 is now proved**: `rogers_order_two`
+  (`Reduction/Rogers/RogersOrder2.lean`): for `n ≥ 3` and admissible `F`, the mean of `Σ_{v,w ∈ L∖0} F(v,w)`
+  (ordered pairs, diagonal included) equals Rogers' diagram sum `∫∫F + Σ_{Q ≥ 1, b ≠ 0, gcd(b,Q)=1} Q^{-n} ∫F(x, (b/Q)x) dx`
+  (independent pairs via shear invariance and Haar uniqueness; dependent pairs via order-1 Siegel on lines). Independent
+  audit: faithful (equals the classical ζ(n)^{-1}·Σ_{a ≥ 1, b ≠ 0} a^{-n} form; `Admissible` = bounded, bounded support,
+  zero on zero coordinates — the general case follows by monotone convergence). Order 3 (needed for the full [Laa26]
+  constant) remains open.
 * **`q`-ary lattices (the LWE side).** Here Lemma Q1 replaces Rogers' formula by linear algebra over
   `F_q`. Proved in Lean (`SigabaNeo.QAry`; axioms `propext`, `Classical.choice`, `Quot.sound`):
 
