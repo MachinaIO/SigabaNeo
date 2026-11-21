@@ -62,6 +62,8 @@ git submodule update --init && cd python && python3 p2m_server.py workspace ../p
 
 | Path | Contents |
 | --- | --- |
+| `docs/ASSUMPTIONS.md`, `docs/PRIMITIVES.md` | the forms of assumptions and of primitives (`SigabaNeo/Trusted/`) |
+| `AdvancedEncryption/` | a Lake project defining primitives in that form: predicate encryption |
 | `docs/PROVE2ME.md` | how Prove2Me's crypto statements model efficiency (survey); the environment question |
 | `docs/PLATFORM.md` | the server |
 | `docs/M0.md` | pins, and findings about cslib-frontier |

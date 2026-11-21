@@ -1,7 +1,7 @@
 import SigabaNeo.Lib.Lattices.Gaussian
 import SigabaNeo.Lib.Lattices.Hardness
 import SigabaNeo.Lib.Lattices.Estimator.Model
-import SigabaNeo.Lib.Assumption
+import SigabaNeo.Trusted.Assumption
 import CslibFrontier.Crypto.Computational.LWE.Module
 
 /-!
@@ -11,7 +11,7 @@ Module-LWE over `R_q = Z_q[X]/(X^N + 1)` with an `m × rank` module matrix. The 
 `(A, A·s + e)` for a uniform `A`, a secret `s` and an error `e`; the random sample is a uniform
 pair. Pairs are encoded with cslib-frontier's `ModuleLWE.encodeSample`.
 
-## Concrete assumptions (`SigabaNeo.Assumption`)
+## Concrete assumptions (`SigabaNeo.Trusted.Assumption`)
 
 * `ModuleLWE.Params`: the ring degree `N`, the rank, the number of samples `m`, the modulus `q`,
   and the laws of the error's and the secret's coefficients (`SecretDist`: uniform, `D_{Z,s}` with

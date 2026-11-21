@@ -14,4 +14,6 @@ rev = "d25e68fd262c7aef49179602e784804fb790ced6"
 [[lean_lib]]
 name = "SigabaNeo"
 # `SigabaNeo.Assemble` and `SigabaNeo.Platform` are untrusted helpers of the tooling (python/).
-roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Lib.Lattices"]
+roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Trusted.Assumption",
+  "SigabaNeo.Trusted.Primitive", "SigabaNeo.Trusted.Submission",
+  "SigabaNeo.Lib.Lattices"]

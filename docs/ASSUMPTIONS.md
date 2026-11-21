@@ -1,4 +1,4 @@
-# Assumptions with a security function (`SigabaNeo/Lib/Assumption.lean`)
+# Assumptions with a security function (`SigabaNeo/Trusted/Assumption.lean`)
 
 This is the form of assumptions in Section 3.3 of the Sigaba Neo concept. An assumption is a
 parameter type, the problem given to the attacker at each parameter, and a security function `H`.
@@ -16,17 +16,22 @@ def Assumption.Holds  (a : Assumption) : Prop := ∀ p, a.HardAt p (a.H p)
 
 ## Attackers and their cost
 
-An `Attacker` is an explicit fair-coin multi-tape Turing machine over `Bool`. It is
-cslib-frontier's `Turing.MultiTapePTM tapes Bool (Fin states)` with no oracle, run for `time`
-steps on the encoded instance. Its cost is
+An attacker is a `Machine` (`SigabaNeo/Trusted/Machine.lean`), the same machine model as the
+algorithms of primitives ([PRIMITIVES.md](PRIMITIVES.md)). `Machine ops` is cslib-frontier's
+fair-coin `Turing.MultiTapePTM tapes Bool (Fin states) (Fin ops)`, run for `time` steps; an attacker
+on an assumption has no oracle (`Machine = Machine 0`) and runs on the encoded instance. Its cost is
 
 ```
-cost = time + descLen,   descLen = 6 · states · 3^tapes · (4 + 4·tapes + size(states))
+cost = time + descLen
+descLen = 6 · states · 3^tapes · 3^ops · (4 + 4·tapes + 4·ops + size(ops) + size(states))
 ```
+
+which for `ops = 0` is `6 · states · 3^tapes · (4 + 4·tapes + size(states))`.
 
 `descLen` is the length of the canonical fixed-width encoding of the transition table. The table has
 one entry per state, per symbol under the input head (3 values), per symbols under the work heads
-(3^tapes) and per coin value (2). Each entry holds the head moves, the writes, the output symbol and
+(3^tapes), per symbols under the answer heads (3^ops) and per coin value (2). Each entry holds the
+head moves, the writes, the output symbol, the query symbols, the channel submitted (if any) and
 the next state. Counting the description excludes the attackers with a hard-wired table that exist
 non-constructively at fixed parameters (Bernstein–Lange, De–Trevisan–Tulsiani). A table must be
 stored in the control states, so it is paid for in `descLen`.
@@ -50,6 +55,25 @@ stored in the control states, so it is paid for in `descLen`.
 
 `Attack.not_hardAt` justifies the update rule: once an attack at `c` is proven, `H p` may be
 lowered to `c` and no true claim is lost.
+
+## The registry and premises
+
+The strength of an assumption changes; its problem does not. The harness therefore keeps the two
+apart:
+
+* `Registry`: the admitted assumptions by name (`Name`), with the parameter set and the problem of
+  each. `Registry.of as` registers `Assumption`s.
+* `R.Strength`: the current strengths, `(n : R.Name) → R.Params n → ℕ`, owned by the harness.
+  `Registry.initial as` takes each assumption's own `H`. They only go down.
+* `R.Holds H n`: assumption `n` has `H n p` bits at every `p`.
+* `Premise R`: a submission's premise `(n, p₀, k)`, naming a registered assumption.
+  `Premise.Valid H`: `k ≤ H n p₀`.
+
+| Theorem | Statement |
+| --- | --- |
+| `Registry.Holds.mono` | `R.Holds H n → H' n ≤ H n → R.Holds H' n`: lowering a strength keeps every true claim |
+| `Registry.holds_initial` | `(as n).Holds → (of as).Holds (initial as) n` |
+| `Premise.hardAt` | `d.Valid H → R.Holds H d.n → R.HardAt d.n d.p d.k` |
 
 ## Lattice assumptions
 

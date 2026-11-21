@@ -6,7 +6,7 @@ import SigabaNeo.Lib.Lattices.ModuleLWE
 Ring-LWE over `R_q = Z_q[X]/(X^N + 1)` with `m` samples: Module-LWE of rank `1`. The real sample
 is `(a_i, a_i·s + e_i)_{i<m}` for uniform `a_i ∈ R_q`.
 
-## Concrete assumptions (`SigabaNeo.Assumption`)
+## Concrete assumptions (`SigabaNeo.Trusted.Assumption`)
 
 * `RingLWE.Params`: `N` (a power of two, or the claim is `0`), `m`, `q`, the error law and the
   secret law.

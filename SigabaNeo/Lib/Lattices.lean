@@ -22,8 +22,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   `Gaussian/*`: their sums, smoothing, tails and point masses.
 * `Encoding`: matrices over `Z_q` as numbers and bit strings.
 * `Gadget`: the gadget matrix and binary decomposition.
-* `LWE`, `RingLWE`, `ModuleLWE`: the assumptions, concrete (`SigabaNeo.Assumption`: parameters,
-  problem, security function) and asymptotic (cslib-frontier).
+* `LWE`, `RingLWE`, `ModuleLWE`: the assumptions, concrete (`SigabaNeo.Trusted.Assumption`:
+  parameters, problem, security function) and asymptotic (cslib-frontier).
 * `Reduction/`: lattice reduction and SVP tools shared by the attacks — `LLL`, `BKZ` (GSA-free bound on the first
   vector of a BKZ-reduced basis, `docs/PROOF_GAP.md`), `Hermite2`, `AvgBKZ`, `Slide`, `Sieve`, `SieveWide`,
   `QArySieve`, `Search`, `Rogers`.

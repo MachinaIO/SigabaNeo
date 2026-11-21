@@ -1,0 +1,15 @@
+name = "AdvancedEncryption"
+version = "0.1.0"
+defaultTargets = ["AdvancedEncryption"]
+# Share the core's packages (cslib-frontier, Mathlib) instead of fetching a second copy: build the
+# core first (`lake build` at the repository root), then this project.
+packagesDir = "../.lake/packages"
+
+# The core: the form of primitives (`SigabaNeo.Trusted.Primitive`) and of assumptions
+# (`SigabaNeo.Trusted.Assumption`). Its pins (cslib-frontier, hence Mathlib and the toolchain) are used.
+[[require]]
+name = "SigabaNeo"
+path = ".."
+
+[[lean_lib]]
+name = "AdvancedEncryption"

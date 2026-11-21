@@ -17,7 +17,10 @@ The submitter trusts the following and nothing else:
 - its own claim directory;
 - Lean;
 - the core's pinned packages (cslib-frontier, Mathlib);
-- `SigabaNeo/Trusted/Check.lean`, about 150 lines.
+- `SigabaNeo/Trusted/Check.lean`, about 150 lines;
+- when a claim uses them, the definitions in `SigabaNeo/Trusted/` that give it meaning: the machine
+  model (`Machine.lean`), assumptions and `HardAt` (`Assumption.lean`), primitives
+  (`Primitive.lean`) and the `Spec` template (`Submission.lean`). They are read once, like the claim's own definitions.
 
 `sigaba_neo.py` cannot make a false claim pass. It only has to run the check with this checkout's
 core and show the check's report, which states the claim directory it read and what was
@@ -170,6 +173,11 @@ See [PLATFORM.md](PLATFORM.md).
 | Path | Party | Contents |
 | --- | --- | --- |
 | `SigabaNeo/Trusted/Check.lean` | submitter (trusted) | `#sigaba_neo_check` |
+| `SigabaNeo/Trusted/Machine.lean` | all (trusted) | the machine model of algorithms and attackers |
+| `SigabaNeo/Trusted/Assumption.lean` | all (trusted) | assumptions with a security function ([ASSUMPTIONS.md](ASSUMPTIONS.md)) |
+| `SigabaNeo/Trusted/Primitive.lean` | all (trusted) | primitives ([PRIMITIVES.md](PRIMITIVES.md)) |
+| `SigabaNeo/Trusted/Submission.lean` | all (trusted) | submissions and `Spec` ([PRIMITIVES.md](PRIMITIVES.md)) |
+| `AdvancedEncryption/` | all | a Lake project of primitives in this form: predicate encryption |
 | `SigabaNeo/Lib/Lattices/` | all | the lattice library: discrete Gaussians, gadget, LWE/RingLWE/ModuleLWE, trapdoor sampling ([LATTICES.md](LATTICES.md)) |
 | `SigabaNeo/Assemble.lean` | submitter | `p2m_apply%` (cannot make a false claim pass) |
 | `python/sigaba_neo.py` | submitter | `submit`, `check` (runs the check and shows its report) |

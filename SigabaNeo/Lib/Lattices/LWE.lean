@@ -8,7 +8,7 @@ LWE with `m` samples, secret dimension `n` and modulus `q`: Module-LWE at ring d
 (`Z_q[X]/(X + 1) = Z_q`). A pair is `(A, b)` with `A ∈ Z_q^{m×n}` and `b = A·s + e`, each entry a
 degree-`1` polynomial (`Fin 1 → Z_q`), as cslib-frontier stores it.
 
-## Concrete assumptions (`SigabaNeo.Assumption`)
+## Concrete assumptions (`SigabaNeo.Trusted.Assumption`)
 
 * `LWE.Params`: `n`, `m`, `q`, the error law and the secret law.
 * `LWE.decision`, `LWE.search`: the Module-LWE assumptions at ring degree `1`
