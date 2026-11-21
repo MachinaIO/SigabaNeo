@@ -21,24 +21,23 @@ and the positive-definite support appear in `SphericalGramFormula`.
 
 ## Open obligations
 
-1. `pair_law` proves the local pair law for every n ≥ 3. For triples,
-   `axial_pair_law` gives the independent axial coordinates for each fixed pole.
-   `transverse_inner` expresses the third inner product in terms of the two
-   axial coordinates and the normalized transverse directions, including zero residuals.
-   `ball_axial_direction` factors axial and transverse tests for Lebesgue measure
-   in split unit-ball coordinates. `transverse_slice_cosine` identifies the
-   radially weighted transverse cosine law, including transverse dimension two.
-   To prove `AngularDisintegration n`, transport the ball factorization to a
-   sphere sample at each pole, then apply the resulting product law to two draws.
-   The Jacobian and subsequent integration against nonnegative measurable tests are proved.
-   The general-s law and transport to the archive remain open.
+1. `pair_law` and `triple_law` prove the local pair and triple Gram densities for
+   every n ≥ 3. `sphere_axial_direction` proves independence in an orthogonal
+   frame by normalizing ambient ball integrals. Reflection moves the first draw
+   to the frame pole. Applying the joint coordinate law twice and the transverse
+   fixed-pole law gives `angularDisintegration`, including n = 3. The finite-index
+   matrix formulation and transport to the archive's `ClassicalGramFormula` remain open.
 2. `sl_commutator_eq_top` proves perfectness for n ≥ 2 by diagonal and
    transvection induction. Conjugation by a two-coordinate diagonal matrix
    with entries 2 and 1/2 scales the transvection parameter by four. Each
    two-coordinate determinant-one diagonal is a product of six transvections.
    `groupHaar_rightInvariant` gives right invariance in every dimension. For a nonzero right-invariant measure
    `domain_mass_ne_zero` proves positivity on every arithmetic fundamental domain.
-   Constructing such a domain of finite mass remains open.
+   `arithmetic_domain` constructs a Borel fundamental domain in every dimension.
+   Discreteness gives quotient charts. Each fiber contributes the representative in
+   the first chart meeting it in a countable cover. `arithmetic_domain_mass_le`
+   bounds its mass by the mass of any set whose integer translates cover the group.
+   A covering set of finite Haar mass in general dimension remains to be established.
 3. `tupleWorkload_measurable` proves quotient measurability for every finite tuple length
    by reindexing each representative's sum over nonzero integer vectors.
    `siegel_of_measurable_unfolding` uses this and domain positivity. Its
@@ -423,6 +422,59 @@ theorem domain_lintegral_tupleWorkload {n k : ℕ} (μ : Measure (SL n)) (D : Se
         ∫⁻ g in D, F (fun i ↦ WithLp.toLp 2 (g • fun j ↦ ((z i).val j : ℝ))) ∂μ
 ~~~
 
+~~~lean
+theorem ball_normalized_integral (n : ℕ) (hn : 0 < n)
+    (F : Ambient n → ℝ≥0∞) (hF : Measurable F) :
+    (∫⁻ v in Metric.ball (0 : Ambient n) 1, F (‖v‖⁻¹ • v)) =
+      volume (Metric.ball (0 : Ambient n) 1) * ∫⁻ v : Sphere n, F v ∂uniform n
+~~~
+
+~~~lean
+theorem sphere_axial_direction (m : ℕ) (hm : 0 < m)
+    (e : Ambient (m+1) ≃ₗᵢ[ℝ] WithLp 2 (ℝ × Ambient m))
+    (A : ℝ → ℝ≥0∞) (hA : Measurable A) (F : Ambient m → ℝ≥0∞) (hF : Measurable F) :
+    let dir := fun w : Ambient m ↦ ‖w‖⁻¹ • w
+    (∫⁻ x : Sphere (m+1), A (e x).fst * F (dir (e x).snd) ∂uniform (m+1)) =
+      (∫⁻ x : Sphere (m+1), A (e x).fst ∂uniform (m+1)) *
+        ∫⁻ v : Sphere m, F v ∂uniform m
+~~~
+
+~~~lean
+theorem uniform_rotate {n : ℕ} (e : Ambient n ≃ₗᵢ[ℝ] Ambient n) :
+    MeasurePreserving (rotate e) (uniform n) (uniform n)
+~~~
+
+~~~lean
+theorem fixedPole_gram_integral {n : ℕ} (x p : Sphere n)
+    (F : ℝ × ℝ × ℝ → ℝ≥0∞) (hF : Measurable F) :
+    let test := fun (u : Sphere n) (z : Sphere n × Sphere n) ↦
+      F (inner ℝ (u : Ambient n) z.1, inner ℝ (u : Ambient n) z.2,
+        inner ℝ (z.1 : Ambient n) z.2)
+    ∫⁻ z, test x z ∂(uniform n).prod (uniform n) =
+      ∫⁻ z, test p z ∂(uniform n).prod (uniform n)
+~~~
+
+~~~lean
+theorem angularDisintegration {n : ℕ} (hn : 3 ≤ n) : AngularDisintegration n
+~~~
+
+~~~lean
+theorem triple_law {n : ℕ} (hn : 3 ≤ n) : TripleLaw n
+~~~
+
+~~~lean
+theorem arithmetic_domain (n : ℕ) :
+    ∃ D : Set (SL n), MeasurableSet D ∧
+      IsFundamentalDomain (integerGroup n).op D (groupHaar n) ∧ groupHaar n D ≠ 0
+~~~
+
+~~~lean
+theorem arithmetic_domain_mass_le {n : ℕ} {D S : Set (SL n)}
+    (hD : IsFundamentalDomain (integerGroup n).op D (groupHaar n))
+    (hS : ∀ x : SL n, ∃ g : (integerGroup n).op, x ∈ g • S) :
+    groupHaar n D ≤ groupHaar n S
+~~~
+
 ## Lean axiom audit
 
 ```text
@@ -477,4 +529,12 @@ theorem domain_lintegral_tupleWorkload {n k : ℕ} (μ : Measure (SL n)) (D : Se
 'SigabaNeo.Rogers.Gram.ball_axial_direction' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.Gram.transverse_slice_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.Gram.transverse_slice_cosine' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.ball_normalized_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.sphere_axial_direction' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.uniform_rotate' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.fixedPole_gram_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.angularDisintegration' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.triple_law' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.arithmetic_domain' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.arithmetic_domain_mass_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```

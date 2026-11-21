@@ -312,6 +312,97 @@ theorem domain_mass_ne_zero {n : ℕ} (μ : Measure (SL n)) [μ.IsMulRightInvari
   have : Countable (integerGroup n).op := (integerGroup n).equivOp.surjective.countable
   exact hD.measure_ne_zero hμ
 
+open Set in
+/-- A Borel arithmetic transversal, obtained by taking the first quotient chart
+meeting each fiber in a countable cover. -/
+theorem arithmetic_domain (n : ℕ) :
+    ∃ D : Set (SL n), MeasurableSet D ∧
+      IsFundamentalDomain (integerGroup n).op D (groupHaar n) ∧ groupHaar n D ≠ 0 := by
+  classical
+  let q : SL n → LatticeSpace n := QuotientGroup.mk
+  have he : Topology.IsClosedEmbedding (Int.castRingHom ℝ) := Int.isClosedEmbedding_coe_real
+  have hd : IsDiscrete (integerGroup n : Set (SL n)) :=
+    he.specialLinearGroup_map.isInducing.isDiscrete_range
+  have hq := (integerGroup n).isQuotientCoveringMap hd
+  choose c hc heq using hq.isCoveringMap.isLocalHomeomorph
+  obtain ⟨T, hT, hcov⟩ := TopologicalSpace.countable_cover_nhds
+    (fun x ↦ (c x).open_source.mem_nhds (hc x))
+  have covers (x : SL n) : ∃ t ∈ T, x ∈ (c t).source := by
+    obtain ⟨i, hi, hx⟩ := mem_iUnion₂.mp (hcov.ge (mem_univ x))
+    exact ⟨i, hi, hx⟩
+  have : Nonempty T := let ⟨t, ht, _⟩ := covers 1; ⟨⟨t, ht⟩⟩
+  have := hT.to_subtype
+  obtain ⟨a, ha⟩ := exists_surjective_nat T
+  let U := fun i ↦ (c (a i)).source
+  let V := fun i ↦ (c (a i)).target
+  have lift (i : ℕ) {y} (hy : y ∈ V i) : ∃ x ∈ U i, q x = y := by
+    refine ⟨_, (c (a i)).map_target hy, ?_⟩
+    exact (congrFun (heq (a i)) _).trans ((c (a i)).right_inv hy)
+  have someChart (x : SL n) : ∃ i, q x ∈ V i := by
+    obtain ⟨t, ht, hx⟩ := covers x
+    obtain ⟨i, hi⟩ := ha ⟨t, ht⟩
+    refine ⟨i, ?_⟩
+    simpa only [V, hi, q, heq t] using (c t).map_source hx
+  let D := ⋃ i : ℕ, U i \ ⋃ j < i, q ⁻¹' V j
+  have hD : MeasurableSet D := MeasurableSet.iUnion fun i ↦
+    (c (a i)).open_source.measurableSet.diff (MeasurableSet.iUnion fun j ↦
+      MeasurableSet.iUnion fun _ ↦
+        ((c (a j)).open_target.preimage hq.continuous).measurableSet)
+  have FD : IsFundamentalDomain (integerGroup n).op D (groupHaar n) := by
+    apply IsFundamentalDomain.mk' hD.nullMeasurableSet
+    intro x
+    let i := Nat.find (someChart x)
+    obtain ⟨y, hy, hyq⟩ := lift i (Nat.find_spec (someChart x))
+    obtain ⟨g, hg⟩ := hq.apply_eq_iff_mem_orbit.mp hyq
+    change g • x = y at hg
+    refine ⟨g, ?_, ?_⟩
+    · change g • x ∈ D
+      rw [hg]
+      exact mem_iUnion.mpr ⟨i, hy, by
+        simpa only [mem_iUnion, mem_preimage, hyq, not_exists] using
+          (fun j (hj : j < i) ↦ Nat.find_min (someChart x) hj)⟩
+    · intro k hk
+      obtain ⟨j, hj, hprev⟩ := mem_iUnion.mp hk
+      have hkq : q (k • x) = q x := hq.map_smul k
+      have hjq : q x ∈ V j := by
+        rw [← hkq]
+        simpa only [q, heq (a j)] using (c (a j)).map_source hj
+      have hij : i ≤ j := Nat.find_min' _ hjq
+      have hji : j ≤ i := le_of_not_gt fun hij' ↦ hprev
+        (mem_iUnion₂.mpr ⟨i, hij', by simpa only [mem_preimage, hkq] using Nat.find_spec (someChart x)⟩)
+      have hidx := le_antisymm hij hji
+      have hxy : k • x = g • x := by
+        rw [hg]
+        apply (c (a i)).injOn (hidx.symm ▸ hj) hy
+        simpa only [← heq (a i)] using hkq.trans hyq.symm
+      exact hq.isCancelSMul.right_cancel' _ _ _ hxy
+  let := groupHaar_rightInvariant n
+  exact ⟨D, hD, FD, domain_mass_ne_zero (groupHaar n) (NeZero.ne (Measure.haar : Measure (SL n))) FD⟩
+
+#print axioms arithmetic_domain
+
+open Set in
+open scoped Pointwise in
+/-- Every arithmetic fundamental domain has mass at most that of any set whose
+integer translates cover the group, allowing overlaps in a Siegel set. -/
+theorem arithmetic_domain_mass_le {n : ℕ} {D S : Set (SL n)}
+    (hD : IsFundamentalDomain (integerGroup n).op D (groupHaar n))
+    (hS : ∀ x : SL n, ∃ g : (integerGroup n).op, x ∈ g • S) :
+    groupHaar n D ≤ groupHaar n S := by
+  let φ := Matrix.SpecialLinearGroup.map (Int.castRingHom ℝ) (n := Fin n)
+  have : Countable (Matrix.SpecialLinearGroup (Fin n) ℤ) := Subtype.val_injective.countable
+  have : Countable (integerGroup n) := φ.rangeRestrict_surjective.countable
+  have : Countable (integerGroup n).op := (integerGroup n).equivOp.surjective.countable
+  let := groupHaar_rightInvariant n
+  rw [hD.measure_eq_tsum S]
+  refine (measure_mono (t := ⋃ g : (integerGroup n).op, g • S ∩ D) ?_).trans
+    (measure_iUnion_le _)
+  intro x hx
+  obtain ⟨g, hg⟩ := hS x
+  exact mem_iUnion.mpr ⟨g, hg, hx⟩
+
+#print axioms arithmetic_domain_mass_le
+
 theorem domainProbability_invariant {n : ℕ} (μ : Measure (SL n))
     [μ.IsMulLeftInvariant] [μ.IsMulRightInvariant] {D : Set (SL n)}
     (hD : IsFundamentalDomain (integerGroup n).op D μ) :

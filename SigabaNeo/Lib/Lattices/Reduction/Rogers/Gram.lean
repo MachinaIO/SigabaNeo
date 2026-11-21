@@ -870,6 +870,320 @@ def AngularDisintegration (n : ℕ) : Prop :=
       ∫⁻ a, ∫⁻ b, weight (p+1/2) a * weight (p+1/2) b *
         ∫⁻ t, weight p t * F (a,b,angularThird a b t)
 
+/-- The unit ball gives the uniform sphere law after radial normalization. -/
+theorem ball_normalized_integral (n : ℕ) (hn : 0 < n)
+    (F : Ambient n → ℝ≥0∞) (hF : Measurable F) :
+    (∫⁻ v in Metric.ball (0 : Ambient n) 1, F (‖v‖⁻¹ • v)) =
+      volume (Metric.ball (0 : Ambient n) 1) * ∫⁻ v : Sphere n, F v ∂uniform n := by
+  let : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+  let R := fun r : Ioi (0 : ℝ) ↦ if (r : ℝ) < 1 then (1 : ℝ≥0∞) else 0
+  have hR : Measurable R := Measurable.ite (measurableSet_lt measurable_subtype_coe
+    measurable_const) measurable_const measurable_const
+  have h := transverse_slice_integral n hn R hR (fun v ↦ F v) (hF.comp measurable_subtype_coe)
+  let B := Metric.ball (0 : Ambient n) 1
+  have h₁ (v : ({0}ᶜ : Set (Ambient n))) :
+      R ((homeomorphUnitSphereProd _ v).2) * F ((homeomorphUnitSphereProd _ v).1 : Ambient n) =
+      B.indicator (fun z ↦ F (‖z‖⁻¹ • z)) v.val := by
+    by_cases hv : ‖v.val‖ < 1 <;> simp [B, R, indicator, Metric.mem_ball, dist_zero_right, hv]
+  have h₂ (v : ({0}ᶜ : Set (Ambient n))) :
+      R ((homeomorphUnitSphereProd _ v).2) = B.indicator (fun _ ↦ (1 : ℝ≥0∞)) v.val := by
+    by_cases hv : ‖v.val‖ < 1 <;> simp [B, R, indicator, Metric.mem_ball, dist_zero_right, hv]
+  dsimp only at h
+  simp_rw [h₁, h₂] at h
+  rw [lintegral_subtype_comap (measurableSet_singleton _).compl, restrict_compl_singleton,
+    lintegral_subtype_comap (measurableSet_singleton _).compl, restrict_compl_singleton,
+    lintegral_indicator Metric.isOpen_ball.measurableSet, lintegral_indicator Metric.isOpen_ball.measurableSet] at h
+  simpa [B] using h
+
+/-- Split the uniform sphere in an orthogonal frame into its first coordinate
+and its normalized transverse vector. -/
+theorem sphere_axial_direction (m : ℕ) (hm : 0 < m)
+    (e : Ambient (m+1) ≃ₗᵢ[ℝ] WithLp 2 (ℝ × Ambient m))
+    (A : ℝ → ℝ≥0∞) (hA : Measurable A) (F : Ambient m → ℝ≥0∞) (hF : Measurable F) :
+    let dir := fun w : Ambient m ↦ ‖w‖⁻¹ • w
+    (∫⁻ x : Sphere (m+1), A (e x).fst * F (dir (e x).snd) ∂uniform (m+1)) =
+      (∫⁻ x : Sphere (m+1), A (e x).fst ∂uniform (m+1)) *
+        ∫⁻ v : Sphere m, F v ∂uniform m := by
+  intro dir
+  let B := Metric.ball (0 : Ambient (m+1)) 1
+  let M := volume B
+  have hM : M ≠ 0 := Metric.isOpen_ball.measure_ne_zero volume (Metric.nonempty_ball.mpr one_pos)
+  have hMf : M ≠ ⊤ := measure_ball_lt_top.ne
+  let W := fun u r : ℝ ↦ if u^2 + r^2 < 1 then A (u / Real.sqrt (u^2 + r^2)) else 0
+  have splitTest (G : Ambient m → ℝ≥0∞) (hG : Measurable G) :
+      M * (∫⁻ x : Sphere (m+1), A (e x).fst * G (dir (e x).snd) ∂uniform (m+1)) =
+        ∫⁻ u : ℝ, ∫⁻ w : Ambient m, W u ‖w‖ * G (dir w) := by
+    let H := fun x : Ambient (m+1) ↦ A (e x).fst * G (dir (e x).snd)
+    have hH : Measurable H := by dsimp [H, dir]; fun_prop
+    have h := ball_normalized_integral (m+1) (by omega) H hH
+    rw [← h, ← lintegral_indicator Metric.isOpen_ball.measurableSet]
+    have hf := e.symm.measurePreserving.comp (WithLp.volume_preserving_toLp ℝ (Ambient m))
+    have hh := hf.lintegral_comp (f := B.indicator fun x ↦ H (‖x‖⁻¹ • x))
+      ((hH.comp (by fun_prop)).indicator Metric.isOpen_ball.measurableSet)
+    rw [← hh, ← lintegral_prod (fun z : ℝ × Ambient m ↦ W z.1 ‖z.2‖ * G (dir z.2))]
+    · apply lintegral_congr
+      rintro ⟨u,w⟩
+      let z := WithLp.toLp 2 (u,w)
+      have hs : ‖z‖ ^ 2 = u^2 + ‖w‖^2 := by simpa [z] using WithLp.prod_norm_sq_eq_of_L2 z
+      have hr : Real.sqrt (u^2 + ‖w‖^2) = ‖z‖ := by rw [← hs, Real.sqrt_sq (norm_nonneg _)]
+      have hb : e.symm z ∈ B ↔ u^2 + ‖w‖^2 < 1 := by
+        simp only [B, Metric.mem_ball, dist_zero_right, e.symm.norm_map, ← hs]
+        constructor <;> intro hh <;> nlinarith [norm_nonneg z]
+      change B.indicator _ (e.symm z) = _
+      by_cases hin : u^2 + ‖w‖^2 < 1
+      · rw [indicator_of_mem (hb.mpr hin)]
+        simp only [H, e.map_smul, e.apply_symm_apply, e.symm.norm_map, W, ite_eq_left hin, hr]
+        change A (‖z‖⁻¹ * u) * G (dir (‖z‖⁻¹ • w)) = _
+        rw [div_eq_inv_mul]
+        by_cases hz : ‖z‖ = 0
+        · have hw : w = 0 := norm_eq_zero.mp (by nlinarith [sq_nonneg u, norm_nonneg w])
+          simp [hw, dir]
+        · simp [dir, norm_smul, smul_smul, hz]
+      · simp [indicator_of_notMem (fun h ↦ hin (hb.mp h)), W, hin]
+    · apply Measurable.aemeasurable
+      apply Measurable.mul
+      · exact Measurable.ite (measurableSet_lt (by fun_prop) measurable_const)
+          (hA.comp (by fun_prop)) measurable_const
+      · dsimp [dir]; fun_prop
+  have full := ball_axial_direction m hm A hA (fun v ↦ F v) (hF.comp measurable_subtype_coe)
+  let : Nonempty (Fin m) := ⟨⟨0, hm⟩⟩
+  dsimp only at full
+  simp only [homeomorphUnitSphereProd_apply_snd_coe, homeomorphUnitSphereProd_apply_fst_coe] at full
+  have pull (K : Ambient m → ℝ≥0∞) :
+      (∫⁻ w : ({0}ᶜ : Set (Ambient m)), K w ∂volume.comap Subtype.val) = ∫⁻ w, K w := by
+    rw [lintegral_subtype_comap (measurableSet_singleton _).compl, restrict_compl_singleton]
+  change (∫⁻ u : ℝ, ∫⁻ w : ({0}ᶜ : Set (Ambient m)), W u ‖w.val‖ * F (dir w.val)
+    ∂volume.comap Subtype.val) = _ at full
+  change _ = (∫⁻ u : ℝ, ∫⁻ w : ({0}ᶜ : Set (Ambient m)), W u ‖w.val‖
+    ∂volume.comap Subtype.val) * _ at full
+  have hf₁ (u : ℝ) := pull (fun w ↦ W u ‖w‖ * F (dir w))
+  have hf₂ (u : ℝ) := pull (fun w ↦ W u ‖w‖)
+  simp_rw [hf₁, hf₂] at full
+  have one := splitTest (fun _ ↦ 1) measurable_const
+  simp only [mul_one] at one
+  apply (ENNReal.mul_right_inj hM hMf).mp
+  rw [← mul_assoc, splitTest F hF, one]
+  exact full
+
+#print axioms ball_normalized_integral
+#print axioms sphere_axial_direction
+
+/-- Action of an ambient orthogonal transformation on the unit sphere. -/
+def rotate {n : ℕ} (e : Ambient n ≃ₗᵢ[ℝ] Ambient n) (x : Sphere n) : Sphere n :=
+  ⟨e x, mem_sphere_zero_iff_norm.mpr (by simp [mem_sphere_zero_iff_norm.mp x.property])⟩
+
+open scoped Pointwise in
+theorem uniform_rotate {n : ℕ} (e : Ambient n ≃ₗᵢ[ℝ] Ambient n) :
+    MeasurePreserving (rotate e) (uniform n) (uniform n) := by
+  have hm : Measurable (rotate e) :=
+    (e.continuous.comp continuous_subtype_val).subtype_mk _ |>.measurable
+  refine ⟨hm, Measure.ext fun s hs ↦ ?_⟩
+  rw [Measure.map_apply hm hs, uniform, Measure.smul_apply, Measure.smul_apply,
+    Measure.toSphere_apply' _ (hm hs), Measure.toSphere_apply' _ hs]
+  congr 2
+  let C := fun s : Set (Sphere n) ↦ Ioo (0 : ℝ) 1 • (Subtype.val '' s)
+  have he : C (rotate e ⁻¹' s) = e ⁻¹' C s := by
+    ext z
+    constructor
+    · rintro ⟨r, hr, _, ⟨w, hw, rfl⟩, rfl⟩
+      exact ⟨r, hr, _, ⟨rotate e w, hw, rfl⟩, (e.map_smul r w).symm⟩
+    · rintro ⟨r, hr, _, ⟨w, hw, rfl⟩, hz⟩
+      refine ⟨r, hr, _, ⟨rotate e.symm w, ?_, rfl⟩, e.injective ?_⟩
+      · simpa [rotate, Set.mem_preimage] using hw
+      · simpa [rotate] using hz
+  change volume (C _) = volume (C s)
+  rw [he]
+  exact e.measurePreserving.measure_preimage_emb e.toHomeomorph.measurableEmbedding _
+
+/-- For two independent sphere draws the full Gram test has the same integral at any pole. -/
+theorem fixedPole_gram_integral {n : ℕ} (x p : Sphere n)
+    (F : ℝ × ℝ × ℝ → ℝ≥0∞) (hF : Measurable F) :
+    let test := fun (u : Sphere n) (z : Sphere n × Sphere n) ↦
+      F (inner ℝ (u : Ambient n) z.1, inner ℝ (u : Ambient n) z.2,
+        inner ℝ (z.1 : Ambient n) z.2)
+    ∫⁻ z, test x z ∂(uniform n).prod (uniform n) =
+      ∫⁻ z, test p z ∂(uniform n).prod (uniform n) := by
+  intro test
+  have : 0 < n := by
+    by_contra! h
+    obtain rfl : n = 0 := by omega
+    have hz : (x : Ambient 0) = 0 := Subsingleton.elim _ _
+    simpa only [hz, norm_zero, zero_ne_one] using mem_sphere_zero_iff_norm.mp x.property
+  let := uniform_probability this
+  let e := (ℝ ∙ ((x : Ambient n) - p))ᗮ.reflection
+  have he : e x = p := Submodule.reflection_sub
+    ((mem_sphere_zero_iff_norm.mp x.property).trans (mem_sphere_zero_iff_norm.mp p.property).symm)
+  have h := ((uniform_rotate e).prod (uniform_rotate e)).lintegral_comp (f := test p)
+    (by dsimp [test]; fun_prop)
+  rw [← h]
+  apply lintegral_congr
+  intro z
+  simp only [test, Prod.map, rotate, ← he, e.inner_map_map]
+
+#print axioms uniform_rotate
+#print axioms fixedPole_gram_integral
+
+private def splitCoord {m : ℕ} (e : Ambient (m+1) ≃ₗᵢ[ℝ] WithLp 2 (ℝ × Ambient m))
+    (x : Sphere (m+1)) : ℝ × Ambient m := ((e x).fst, ‖(e x).snd‖⁻¹ • (e x).snd)
+
+private theorem splitCoord_law (m : ℕ) (hm : 0 < m)
+    (e : Ambient (m+1) ≃ₗᵢ[ℝ] WithLp 2 (ℝ × Ambient m)) :
+    let μ := uniform (m+1)
+    let a := fun x : Sphere (m+1) ↦ (e x).fst
+    μ.map (splitCoord e) = (μ.map a).prod ((uniform m).map Subtype.val) := by
+  intro μ a
+  let := uniform_probability hm
+  let := uniform_probability (n := m+1) (by omega)
+  have : IsProbabilityMeasure μ := uniform_probability (by omega)
+  have ha : Measurable a := by dsimp [a]; fun_prop
+  have hc : Measurable (splitCoord e) := by unfold splitCoord; fun_prop
+  apply Measure.ext_prod
+  intro s t hs ht
+  rw [Measure.prod_prod, Measure.map_apply ha hs, Measure.map_apply measurable_subtype_coe ht,
+    Measure.map_apply hc (hs.prod ht), ← lintegral_indicator_one (hc (hs.prod ht)),
+    ← lintegral_indicator_one (ha hs), ← lintegral_indicator_one (measurable_subtype_coe ht)]
+  convert sphere_axial_direction m hm e (s.indicator (fun _ ↦ 1)) (measurable_const.indicator hs)
+    (t.indicator (fun _ ↦ 1)) (measurable_const.indicator ht) using 1
+  · apply lintegral_congr
+    intro x
+    have heq : x ∈ splitCoord e ⁻¹' (s ×ˢ t) ↔
+        (e x).fst ∈ s ∧ ‖(e x).snd‖⁻¹ • (e x).snd ∈ t := Iff.rfl
+    by_cases h : (e x).fst ∈ s
+    · by_cases k : ‖(e x).snd‖⁻¹ • (e x).snd ∈ t
+      · simp [indicator, heq.mpr ⟨h,k⟩, h, k]
+      · have hn := mt heq.mp (fun hk ↦ k hk.2)
+        simp [indicator, hn, h, k]
+    · have hn := mt heq.mp (fun hk ↦ h hk.1)
+      simp [indicator, hn, h]
+  · rfl
+
+private theorem splitCoord_inner {m : ℕ} (e : Ambient (m+1) ≃ₗᵢ[ℝ] WithLp 2 (ℝ × Ambient m))
+    (x y : Sphere (m+1)) :
+    inner ℝ (x : Ambient (m+1)) y = angularThird (splitCoord e x).1 (splitCoord e y).1
+      (inner ℝ (splitCoord e x).2 (splitCoord e y).2) := by
+  have normSq (z : Sphere (m+1)) : 1 - (e z).fst ^ 2 = ‖(e z).snd‖ ^ 2 := by
+    have h := WithLp.prod_norm_sq_eq_of_L2 (e z)
+    rw [e.norm_map, mem_sphere_zero_iff_norm.mp z.property] at h
+    simpa [Real.norm_eq_abs, sq_abs] using (by linarith : 1 - ‖(e z).fst‖^2 = ‖(e z).snd‖^2)
+  simp only [splitCoord, angularThird, normSq, Real.sqrt_mul (sq_nonneg _),
+    Real.sqrt_sq (norm_nonneg _), real_inner_smul_left, real_inner_smul_right]
+  rw [← e.inner_map_map, WithLp.prod_inner_apply]
+  change inner ℝ (e x).fst (e y).fst + inner ℝ (e x).snd (e y).snd = _
+  rw [Real.inner_apply]
+  by_cases hx : (e x).snd = 0
+  · simp [hx, mul_comm]
+  by_cases hy : (e y).snd = 0
+  · simp [hy, mul_comm]
+  field_simp [norm_ne_zero_iff.mpr hx, norm_ne_zero_iff.mpr hy]
+
+private theorem splitCoord_test {m : ℕ} (hm : 0 < m)
+    (e : Ambient (m+1) ≃ₗᵢ[ℝ] WithLp 2 (ℝ × Ambient m))
+    (G : ℝ × Ambient m → ℝ≥0∞) (hG : Measurable G) :
+    let a := fun x : Sphere (m+1) ↦ (e x).fst
+    (∫⁻ x, G (splitCoord e x) ∂uniform (m+1)) =
+      ∫⁻ b, ∫⁻ v : Sphere m, G (b,v.val) ∂uniform m ∂(uniform (m+1)).map a := by
+  intro a
+  let := uniform_probability hm
+  have hc : Measurable (splitCoord e) := by unfold splitCoord; fun_prop
+  rw [← lintegral_map hG hc, splitCoord_law m hm e, lintegral_prod _ hG.aemeasurable]
+  apply lintegral_congr
+  intro b
+  exact lintegral_map (hG.comp (measurable_const.prodMk measurable_id)) measurable_subtype_coe
+
+set_option maxHeartbeats 1800000 in
+/-- Three independent sphere draws have the successive axial and transverse cosine laws. -/
+theorem angularDisintegration {n : ℕ} (hn : 3 ≤ n) : AngularDisintegration n := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m+2 := ⟨n-2, by omega⟩
+  -- The orthogonal complement of the pole has ambient dimension m+1.
+  let d := m+1
+  change AngularDisintegration (d+1)
+  have hm : 1 ≤ m := by omega
+  let E := WithLp 2 (ℝ × Ambient d)
+  have hd : Module.finrank ℝ E = d+1 := by
+    rw [(WithLp.linearEquiv 2 ℝ (ℝ × Ambient d)).finrank_eq, Module.finrank_prod]
+    simp [Nat.add_comm]
+  let e := ((stdOrthonormalBasis ℝ E).reindex (finCongr hd)).repr.symm
+  let axis : E := WithLp.toLp 2 (1,0)
+  let pole : Sphere (d+1) := ⟨e.symm axis, mem_sphere_zero_iff_norm.mpr (by
+    rw [e.symm.norm_map, WithLp.norm_toLp_fst]; norm_num)⟩
+  have axial (x : Sphere (d+1)) : inner ℝ (pole : Ambient (d+1)) x = (e x).fst := by
+    change inner ℝ (e.symm axis) x = _
+    rw [← e.inner_map_map, e.apply_symm_apply, WithLp.prod_inner_apply]
+    simp [axis]
+  let μ := uniform (d+1)
+  let σ := uniform d
+  let a := fun x : Sphere (d+1) ↦ (e x).fst
+  let ρ := μ.map a
+  let p := (((d+1 : ℕ) : ℝ)-4)/2
+  have law : ρ = volume.withDensity (weight (p+1/2)) := by
+    have h := pole_law_of_pos d (by omega) pole
+    simp_rw [axial] at h
+    convert h using 3
+    dsimp [p]
+    push_cast
+    ring
+  have tlaw (v : Sphere d) := pole_law_of_pos m hm v
+  let : IsProbabilityMeasure μ := uniform_probability (by omega)
+  let : IsProbabilityMeasure σ := uniform_probability (by omega)
+
+  intro F hF
+  let T := fun (z w : ℝ × Ambient d) ↦
+    F (z.1, w.1, angularThird z.1 w.1 (inner ℝ z.2 w.2))
+  have hT : Measurable (Function.uncurry T) := by dsimp [T, angularThird, Function.uncurry]; fun_prop
+  let K := fun z : ℝ × Ambient d ↦ ∫⁻ y, T z (splitCoord e y) ∂μ
+  have hK : Measurable K := by
+    apply Measurable.lintegral_prod_right' (f := fun z ↦ T z.1 (splitCoord e z.2))
+    exact hT.comp (measurable_fst.prodMk ((show Measurable (splitCoord e) by
+      unfold splitCoord; fun_prop).comp measurable_snd))
+  let test := fun (u : Sphere (d+1)) (z : Sphere (d+1) × Sphere (d+1)) ↦
+    F (inner ℝ (u : Ambient (d+1)) z.1, inner ℝ (u : Ambient (d+1)) z.2,
+      inner ℝ (z.1 : Ambient (d+1)) z.2)
+  change (∫⁻ z, test z.1 z.2 ∂μ.prod (μ.prod μ)) = _
+  rw [lintegral_prod _ (by dsimp [test]; fun_prop : Measurable _).aemeasurable]
+  have fixed (u : Sphere (d+1)) := fixedPole_gram_integral u pole F hF
+  change ∀ u, (∫⁻ z, test u z ∂μ.prod μ) = ∫⁻ z, test pole z ∂μ.prod μ at fixed
+  simp_rw [fixed]
+  rw [lintegral_const, measure_univ, mul_one,
+    lintegral_prod _ (by dsimp [test]; fun_prop : Measurable _).aemeasurable]
+  simp only [test, axial]
+  simp only [splitCoord_inner e]
+  change (∫⁻ x, K (splitCoord e x) ∂μ) = _
+  rw [splitCoord_test (by omega) e K hK]
+  let J := fun a b t : ℝ ↦ F (a,b,angularThird a b t)
+  have hw (q : ℝ) : Measurable (weight q) := by
+    unfold weight; exact Measurable.ite measurableSet_Ioo (by fun_prop) measurable_const
+  have transLaw (b c : ℝ) (v : Sphere d) :
+      (∫⁻ w : Sphere d, T (b,v.val) (c,w.val) ∂σ) =
+        ∫⁻ t, weight p t * J b c t := by
+    have hJ : Measurable (J b c) := by dsimp [J, angularThird]; fun_prop
+    have h := tlaw v
+    have expEq : ((m:ℝ)+1-3)/2 = p := by dsimp [p,d]; push_cast; ring
+    rw [expEq] at h
+    change (∫⁻ w : Sphere d, J b c (inner ℝ (v : Ambient d) w) ∂uniform d) = _
+    have hf : Measurable (fun w : Sphere d ↦ inner ℝ (v : Ambient d) (w : Ambient d)) := by fun_prop
+    rw [← lintegral_map hJ hf, h, lintegral_withDensity_eq_lintegral_mul _ (hw _) hJ]
+    rfl
+  have hKv (b : ℝ) (v : Sphere d) :
+      K (b,v.val) = ∫⁻ c, ∫⁻ t, weight p t * J b c t ∂volume ∂ρ := by
+    dsimp only [K]
+    rw [splitCoord_test (by omega) e (T (b,v.val)) (hT.comp (measurable_const.prodMk measurable_id))]
+    apply lintegral_congr
+    intro c
+    exact transLaw b c v
+  simp_rw [hKv, lintegral_const]
+  change (∫⁻ b, (∫⁻ c, ∫⁻ t, weight p t * J b c t ∂volume ∂ρ) * σ univ ∂ρ) = _
+  simp only [measure_univ, mul_one, law]
+  rw [lintegral_withDensity_eq_lintegral_mul _ (hw _) (by dsimp [J, angularThird]; fun_prop)]
+  apply lintegral_congr
+  intro b
+  simp only [Pi.mul_apply]
+  rw [lintegral_withDensity_eq_lintegral_mul _ (hw _) (by dsimp [J, angularThird]; fun_prop),
+    ← lintegral_const_mul]
+  · apply lintegral_congr
+    intro c
+    exact (mul_assoc _ _ _).symm
+  · dsimp [J, angularThird]; fun_prop
+
 theorem tripleLaw_of_angularDisintegration {n : ℕ} (hn : 3 ≤ n)
     (h : AngularDisintegration n) : TripleLaw n := by
   apply Measure.ext
@@ -896,6 +1210,12 @@ theorem tripleLaw_of_angularDisintegration {n : ℕ} (hn : 3 ≤ n)
   apply lintegral_congr
   intro b
   exact (triple_fiber_test n hn a b (fun c ↦ F (a,b,c)) (by fun_prop)).symm
+
+theorem triple_law {n : ℕ} (hn : 3 ≤ n) : TripleLaw n :=
+  tripleLaw_of_angularDisintegration hn (angularDisintegration hn)
+
+#print axioms angularDisintegration
+#print axioms triple_law
 
 abbrev OffDiagonal (s : ℕ) := {ij : Fin s × Fin s // ij.1 < ij.2}
 
