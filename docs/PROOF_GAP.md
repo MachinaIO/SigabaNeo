@@ -302,10 +302,15 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
     `h ≈ ln n`;
   * the endpoint bound excludes `α = 1`, which the SVP route does not use.
 
-  Not verified: proofs of Rogers' formula and of the Gram density, and their instantiation for the
-  Haar measure. [Laa26]'s Lean development assumes both (`ClassicalRogersFormula`,
-  `ClassicalGramFormula`). For Haar-random lattices the result is therefore conditional on two
-  classical theorems not formalized here.
+  [Laa26]'s Lean development assumes `ClassicalRogersFormula` and `ClassicalGramFormula`.
+  **`ClassicalGramFormula` is now proved** for Lebesgue measure on every finite-dimensional real
+  inner product space (`SigabaNeo.Rogers.Gram.classicalGramFormula_volume`,
+  `Reduction/Rogers/ClassicalGram.lean`, from the spherical Gram law for every `s`,
+  `spherical_gram_formula_all`; axioms `propext`, `Classical.choice`, `Quot.sound`). The archive
+  statement was transcribed locally (`GramDensity.lean`); the archive itself was not rebuilt.
+  `ClassicalRogersFormula` (Rogers' formula for Haar measure) remains open: Haar right invariance,
+  a positive-mass arithmetic domain and the finite type-A diagonal integral are proved; the Siegel-set
+  covering in general rank, the Haar bound on it, and the unfolding with the covolume factor remain.
 * **`q`-ary lattices (the LWE side).** Here Lemma Q1 replaces Rogers' formula by linear algebra over
   `F_q`. Proved in Lean (`SigabaNeo.QAry`; axioms `propext`, `Classical.choice`, `Quot.sound`):
 
