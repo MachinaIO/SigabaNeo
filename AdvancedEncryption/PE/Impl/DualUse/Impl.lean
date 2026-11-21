@@ -105,6 +105,60 @@ noncomputable def impl : Impl PE.sig where
       | exact (Classical.choose_spec (exists_decMachine hk c)).1
       | exact winEvalMachine_deterministic _
 
+/-! ### The laws of the algorithms -/
+
+theorem decodeTuple_one_nil : decodeTuple 1 (encodeTuple []) = [[]] := by
+  unfold decodeTuple
+  rw [dif_neg]
+  · rfl
+  · rintro ⟨xs, hl, he⟩
+    match xs, hl with
+    | [y], _ =>
+      have := congrArg List.length he
+      simp [encodeTuple, Turing.MultiTapeTM.length_frame] at this
+
+/-- `Setup` outputs the encodings of `(mpk, msk)`. -/
+theorem impl_setup : PE.setup (U := dateUniverse) params (impl hk c) =
+    (setupM hk c).map fun v => ((pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2) := by
+  unfold PE.setup
+  rw [run_of_machine (impl hk c) .setup (paramsWord dateUniverse params) [] (setupM hk c)
+    (fun v => [(pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2]) (fun _ => rfl)
+    (Classical.choose_spec (exists_setupMachine hk c)), PMF.map_comp]
+  rfl
+
+/-- The answer of `KeyGen` on every predicate word. -/
+noncomputable def KGreal (msk : SKey hk c) (C : List Bool) : PMF (List Bool) :=
+  if C.length ≤ c.L then (keyM hk c msk C).map (skEnc hk c).enc else PMF.pure []
+
+/-- `KeyGen` answers `KGreal`. -/
+theorem impl_keyGen (msk : SKey hk c) (C : List Bool) :
+    keyGen (U := dateUniverse) params (impl hk c) ((mskEnc hk c).enc msk) C = KGreal hk c msk C := by
+  unfold keyGen KGreal
+  split_ifs with hC
+  · rw [run_of_machine (impl hk c) .keyGen (paramsWord dateUniverse params)
+      [(mskEnc hk c).enc msk, C] (keyM hk c msk C) (fun sk => [(skEnc hk c).enc sk])
+      (fun _ => rfl) ((Classical.choose_spec (exists_keyMachine hk c)).1 msk C hC), PMF.map_comp]
+    rfl
+  · unfold Impl.run
+    have h := (Classical.choose_spec (exists_keyMachine hk c)).2 msk C hC
+    change (PMF.map _ (PMF.map _ ((keyMachine hk c).run _))) = _
+    rw [show (keyMachine hk c).run (encodeTuple [paramsWord dateUniverse params,
+      (mskEnc hk c).enc msk, C]) = PMF.pure (encodeTuple []) from h, PMF.pure_map, PMF.pure_map]
+    have : (sig Alg.keyGen).outputs.length = 1 := rfl
+    rw [this, decodeTuple_one_nil]
+    rfl
+
+/-- `Enc` outputs the encoding of the ciphertext. -/
+theorem impl_enc (mpk : PK hk c) (x : Date) (b : Bool) :
+    enc (U := dateUniverse) params (impl hk c) ((pkEnc hk c).enc mpk) x b =
+      (encM hk c mpk x b).map (ctEnc hk c).enc := by
+  unfold enc
+  rw [run_of_machine (impl hk c) .enc (paramsWord dateUniverse params)
+    [(pkEnc hk c).enc mpk, dateUniverse.encAttr x, dateUniverse.encMsg b] (encM hk c mpk x b)
+    (fun ct => [(ctEnc hk c).enc ct]) (fun _ => rfl)
+    (Classical.choose_spec (exists_encMachine hk c) mpk x b), PMF.map_comp]
+  rfl
+
 /-! ### Correctness -/
 
 /-- **Correctness from the scheme**: the implementation is correct if the scheme decrypts
