@@ -1,5 +1,11 @@
 # Provable sieving on random lattices: literature, a checked proof skeleton, and the remaining gap
 
+> **Correction (2026-11-21, [t4_audit.md](t4_audit.md)).** Hypothesis P in §3.9 is
+> self-contradictory as written (at cosine 0.45, P1 and P2 conflict). Every `2^{0.2925n}` /
+> `(3/2)^{n/2}` time claim below that rests on P (Theorem J, T0's time bound) is unverified. The
+> `2^{0.415n}` route (T1) is unaffected. The acceptance-rate constant is `99/1212` under S1, not
+> `1/12` (Lean `Sieve.acceptance`). The prefactor in G1 is `e^{O(h² log n)}` (g1_audit.md).
+
 Research note, 2026-11-21. This is the pen-and-paper step: no Lean or Python code is touched.
 
 **Question.** Is there an algorithm that finds a shortest nonzero vector of a random lattice in time

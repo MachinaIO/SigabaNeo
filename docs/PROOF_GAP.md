@@ -178,10 +178,24 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   * At fixed moment order, polynomial primes already suffice for the rank bound. The full sieve
     theorem still uses the quasi-polynomial prime.
   * Result: exact SVP on random `q`-ary lattices of these shapes in `(4/3)^{m+o(m)}` time w.h.p.,
-    or `(3/2)^{m/2+o(m)}` under Hypothesis P, in the real-RAM model.
+    in the real-RAM model. The `(3/2)^{m/2+o(m)}` variant rested on Hypothesis P, which the audit
+    found self-contradictory (below).
   * Lean: `QAry.meanValue_le_add_defect`, the finite mean-value transfer inequality with a
     rank-defect term. Axioms `propext`, `Classical.choice`, `Quot.sound`. The geometric counting
     bound and the corollaries are paper proofs.
+  * **Audit ([research/t4_audit.md](research/t4_audit.md); independent, adversarial).**
+    * T4 and T4b **hold** at the stated sieve radii, including `m = 2n`, given the classical Gram
+      density and the Euclidean diagram estimates of the G1 audit. The exhaustive real-RAM bound
+      `(4/3)^{m+o(m)}` follows.
+    * Two overclaims fail. A transfer "at every positive radius" fails on the event `A = 0`.
+      **Hypothesis P** (§3.9 of the note, behind every `(3/2)^{m/2}` / `2^{0.2925·}` time claim)
+      **is self-contradictory as written**: at cosine `0.45`, P1 demands reporting with
+      probability → 1 while P2 makes candidacy exponentially unlikely. The `0.2925` time bounds
+      of the notes are therefore **unverified**. A repair restricted to the actual query angles
+      is sketched there, but the existence of a product-code structure meeting it is unverified.
+    * Priority: Kim–Kwon–Lee–Lee (ePrint 2026/2711) already prove exact SVP for random `q`-ary
+      kernels in a different density regime. What may be new here is narrower: the
+      shrinking-shell statistics at these radii. Even that is not confirmed.
   * **Still far from Kyber and LWE.** `q = 3329` is polynomial and far below `exp(log^6 m)`. LWE
     lattices contain a planted short vector. BKZ runs the sieve on projected blocks, which is
     assumption (C), refuted for worst-case blocks above. The bit model is open.
