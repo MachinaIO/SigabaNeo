@@ -13,7 +13,7 @@ import SigabaNeo.Lib.Lattices.Trapdoor
 import SigabaNeo.Lib.Lattices.Trapdoor.Family
 import SigabaNeo.Lib.Lattices.Homomorphic
 import SigabaNeo.Lib.Lattices.Decode
-import SigabaNeo.Lib.Lattices.BinaryHash
+import SigabaNeo.Lib.Lattices.LeftoverHash
 import SigabaNeo.Lib.Lattices.BoxSampler
 
 /-!
@@ -43,8 +43,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Homomorphic/` (entry point `Homomorphic.lean`): gadget matrices over a ring and the binary digits
   of `ℤ_q[X]/(X^N + 1)` (cslib-frontier's `Cslib.Negacyclic`), NAND circuits, and their homomorphic evaluation on BGG+ encodings and
   Ring-GSW ciphertexts (the key relation and the Ring-GSW invariant).
-* `BinaryHash`: `x ↦ A · x` for a uniform matrix over any finite ring and binary inputs is
-  two-universal (`isTwoUniversal_binaryHash`), for cslib's leftover hash lemma.
+* `LeftoverHash`: the leftover hash lemma for `x ↦ A · x` with a uniform matrix over any finite ring
+  and binary inputs (`isTwoUniversal_binaryHash`, `closeTo_binaryHash`).
 * `BoxSampler`: one try of preimage sampling by box rejection (Lyubashevsky–Wichs); its law does
   not depend on the trapdoor (`boxSample_eq`).
 * `Decode`: threshold decoding of a bit `M · ⌊q/2⌋ + e` in `ℤ_q` and in `ℤ_q[X]/(X^N + 1)`, exact when

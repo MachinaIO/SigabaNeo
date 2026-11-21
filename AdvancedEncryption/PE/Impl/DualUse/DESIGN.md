@@ -34,8 +34,9 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
 ## Done
 
 * `SigabaNeo.Lattices.slp_sim_relation`, `RingBTVW.keyMatrix_sim` (hybrid 2's algebra).
-* `SigabaNeo.Lattices.isTwoUniversal_binaryHash` (hybrids 1, 6 with cslib's
-  `IsTwoUniversal.leftover_hash`).
+* `SigabaNeo.Lattices.isTwoUniversal_binaryHash`, `closeTo_binaryHash` (hybrids 1, 6; Lib
+  `Lattices/LeftoverHash`).
+* `DualUse.decryptRaw_eq` (correctness, exactly).
 * `SigabaNeo.Lattices.boxSample_eq` (hybrid 2's exactness).
 
 ## To do

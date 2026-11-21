@@ -5,14 +5,24 @@ import CslibFrontier.Probability.StatisticalDistance.Event
 import Cslib.Probability.StatisticalDistance
 
 /-!
-# Binary inputs hashed by a uniform matrix
+# The leftover hash lemma for lattices
 
-Over any finite commutative ring `R`, the family `x ↦ A · x` with a uniform matrix
-`A ∈ R^{r × m}` and inputs `x ∈ {0,1}^m` is two-universal (`isTwoUniversal_binaryHash`): two
-distinct inputs differ by `±1` at some coordinate `j`, a unit, so for each value of the other
-columns exactly one column `j` makes them collide. No structure of `R` is needed (for instance
-`R = ℤ_{2^K}[X]/(X^N + 1)`, where small polynomials need not be units). With cslib's leftover hash
-lemma this is the statistical step of the simulated setup of BTVW17 §4.2.
+The leftover hash lemma (LHL) for the hash `x ↦ A · x` of binary inputs by a uniform matrix, over any
+finite commutative ring `R`, for instance `ℤ_q` or `ℤ_q[X]/(X^N + 1)`:
+
+* `isTwoUniversal_binaryHash`: the family is two-universal. Two distinct inputs `x, x' ∈ {0,1}^m`
+  differ by `±1` at some coordinate `j`, a unit, so for each value of the other columns exactly one
+  column `j` makes them collide. No structure of `R` is needed: for `R = ℤ_{2^K}[X]/(X^N + 1)` small
+  polynomials need not be units, but `±1` always are.
+* `closeTo_binaryHash`: **the LHL**: `(A, A · x)` with uniform `A ∈ R^{r×m}` and uniform
+  `x ∈ {0,1}^m` is within `√(|R|^r · 2^{−m}) / 2` of `(A, u)` with uniform `u ∈ R^r`.
+* `closeTo_of_dist`: statistical distance (cslib's `dist`) gives `CloseTo`.
+
+The general statements, for any two-universal family, with min-entropy sources and with side
+information, are cslib-frontier's (`Cslib.Probability.IsTwoUniversal.leftover_hash`,
+`leftover_hash_of_isSource`, `leftover_hash_conditional_of_isSource`); this module instantiates them
+for lattices. It is the statistical step of the simulated setup of BTVW17 §4.2
+(`AdvancedEncryption/PE/Impl/DualUse`).
 -/
 
 namespace SigabaNeo.Lattices
