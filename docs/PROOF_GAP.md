@@ -515,7 +515,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   < 0.01, so w.p. ≥ 99% every output of the terminating generalized slide reduction (1% twin slack, exact terminal SVP) has
   terminal projected minimum ≥ 2.964 (β = 406) and ≥ 6.837 (β = 506) in physical units (normalized 0.0516 / 0.1190; 41% / 33% of
   the Haar values). Caveats of Part 88 (Hermite value in η, LLL pre-pass) apply. Not yet sufficient for the planted lifting.
-* **Frontier after Parts 1–89 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 90 (audited, minor caveats).** [selfdual_sharpen](research/wall1_selfdual_sharpen.md): Markov on the count of distinct
+  primitive extensions admitting a passing basis cannot beat Part 88's radius by more than 4·10⁻¹² (relative; a second-moment
+  lower bound on that specific count — other first-moment objects, e.g. canonical selections or weighted counts, are not ruled
+  out). Multi-block twin chains are worse (27.6% of 0.85·G at β = 341, 18.6% at β = 255); within two blocks the fraction rises to
+  45.3% at β = 511. The residual 2–3× gap comes from the worst-case Hermite factors in the twin tests.
+* **Frontier after Parts 1–90 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
