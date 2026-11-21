@@ -34,6 +34,7 @@ import PE.Impl.DualUse.IdealBridge
 import PE.Impl.DualUse.AHMath
 import PE.Impl.DualUse.GameChain
 import PE.Impl.DualUse.Params.SimTrapNorm
+import PE.Impl.DualUse.Params.Sizes
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad
