@@ -8,6 +8,9 @@ A reduction whose machines cost at most `C · a²`, where `a` is the cost of the
 most a statistical term `s` (with `4 · 2^λ · s² ≤ 1`) plus three advantages `dᵢ` of the
 reductions, each with `2^k dᵢ² ≤ C a²`, then `2^λ g² ≤ a` (`quad_loss`). When `a ≥ 2^λ` this is
 trivial; otherwise the quadratic cost loses only a factor `a < 2^λ`.
+
+A reduction whose machines cost at most `C · a` loses no factor in `λ`: with `2^k ≥ 36 · 2^λ · C`
+and each `2^k dᵢ² ≤ C a`, again `2^λ g² ≤ a` (`lin_loss`).
 -/
 
 namespace SigabaNeo
@@ -47,5 +50,33 @@ theorem quad_loss (P Q C a s d₁ d₂ d₃ g : ℝ) (hP : 0 < P) (hQ : 64 * P ^
       rw [this, div_le_iff₀ (by positivity)]
       nlinarith
     nlinarith
+
+/-- **The linear loss.** -/
+theorem lin_loss (P Q C a s d₁ d₂ d₃ g : ℝ) (hP : 0 < P) (hQ : 36 * P * C ≤ Q)
+    (hC : 0 < C) (ha : 1 ≤ a) (hs : 4 * P * s ^ 2 ≤ 1) (hs0 : 0 ≤ s)
+    (h₁ : Q * d₁ ^ 2 ≤ C * a) (h₂ : Q * d₂ ^ 2 ≤ C * a) (h₃ : Q * d₃ ^ 2 ≤ C * a)
+    (hg : |g| ≤ s + |d₁| + |d₂| + |d₃|) : P * g ^ 2 ≤ a := by
+  have hQ0 : 0 < Q := lt_of_lt_of_le (by positivity) hQ
+  -- `P dᵢ² ≤ a / 36`
+  have hd : ∀ d : ℝ, Q * d ^ 2 ≤ C * a → P * d ^ 2 ≤ a / 36 := by
+    intro d hd
+    have h1 : 36 * P * C * d ^ 2 ≤ Q * d ^ 2 := by nlinarith [sq_nonneg d]
+    have h2 : 36 * P * C * d ^ 2 ≤ C * a := h1.trans hd
+    have h3 : C * (36 * P * d ^ 2) ≤ C * a := by linarith
+    have := le_of_mul_le_mul_left h3 hC
+    linarith
+  have e₁ := hd d₁ h₁
+  have e₂ := hd d₂ h₂
+  have e₃ := hd d₃ h₃
+  have hg0 : 0 ≤ |g| := abs_nonneg g
+  have hsq : g ^ 2 ≤ (s + |d₁| + |d₂| + |d₃|) ^ 2 := by
+    rw [← sq_abs]; exact pow_le_pow_left₀ hg0 hg 2
+  have hb : (s + |d₁| + |d₂| + |d₃|) ^ 2 ≤ 2 * s ^ 2 + 6 * (d₁ ^ 2 + d₂ ^ 2 + d₃ ^ 2) := by
+    have a1 := sq_abs d₁; have a2 := sq_abs d₂; have a3 := sq_abs d₃
+    nlinarith [sq_nonneg (s - |d₁| - |d₂| - |d₃|), sq_nonneg (|d₁| - |d₂|), sq_nonneg (|d₂| - |d₃|),
+      sq_nonneg (|d₁| - |d₃|)]
+  have : P * g ^ 2 ≤ P * (2 * s ^ 2 + 6 * (d₁ ^ 2 + d₂ ^ 2 + d₃ ^ 2)) :=
+    mul_le_mul_of_nonneg_left (hsq.trans hb) hP.le
+  nlinarith
 
 end SigabaNeo

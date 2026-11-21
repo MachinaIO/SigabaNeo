@@ -89,13 +89,13 @@ theorem advantage_le_acc (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec 
   ring
 
 /-- A reduction for one step: a machine accepting a real and a uniform instance word with the
-probabilities of the experiment-as-distinguisher, at a cost quadratic in the adversary's. -/
+probabilities of the experiment-as-distinguisher, at a cost linear in the adversary's. -/
 def Reduces (r u : ℝ) (real ideal : PMF (List Bool)) (C : ℝ) (a : ℕ) : Prop :=
-  ∃ R : Machine, R.acceptProb real = r ∧ R.acceptProb ideal = u ∧ (R.cost : ℝ) ≤ C * (a : ℝ) ^ 2
+  ∃ R : Machine, R.acceptProb real = r ∧ R.acceptProb ideal = u ∧ (R.cost : ℝ) ≤ C * (a : ℝ)
 
 /-- **Attribute hiding from three reductions.** If each Ring-LWE step has a reduction of cost at
-most `C · (cost A + cost D)²` and the three decision problems have `k` bits with
-`2^k ≥ 64 · 2^(2λ) · C`, and the statistical terms are below `2^{-λ/2}/2`, the implementation has
+most `C · (cost A + cost D)` and the three decision problems have `k` bits with
+`2^k ≥ 36 · 2^λ · C`, and the statistical terms are below `2^{-λ/2}/2`, the implementation has
 weak attribute hiding with `λ = params.secBits` bits. -/
 theorem attributeHiding_of_reductions
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u) (hcov : RealCovered hk c)
@@ -105,7 +105,7 @@ theorem attributeHiding_of_reductions
     (hS : statTerm c hk ε ≠ ⊤)
     (hstat : 4 * (2 : ℝ) ^ params.secBits * (statTerm c hk ε).toReal ^ 2 ≤ 1)
     (w3r w3u w5r w5u wIr wIu : PMF (List Bool)) (kb : ℕ) (C : ℝ) (hC : 0 < C)
-    (hk64 : 64 * ((2 : ℝ) ^ params.secBits) ^ 2 * C ≤ (2 : ℝ) ^ kb)
+    (hk36 : 36 * (2 : ℝ) ^ params.secBits * C ≤ (2 : ℝ) ^ kb)
     (hard3 : (Problem.decision w3r w3u).HardAt kb) (hard5 : (Problem.decision w5r w5u).HardAt kb)
     (hardI : (Problem.decision wIr wIu).HardAt kb)
     (hred : ∀ (A : Machine 3) (D : Machine),
@@ -127,23 +127,15 @@ theorem attributeHiding_of_reductions
       ((PE.ideal dateUniverse params (impl hk c) (simMachine hk c) A).map view)).gain D = g ^ 2 := rfl
   rw [hgain]
   have hd : ∀ (R : Machine) (real ideal : PMF (List Bool)), (Problem.decision real ideal).HardAt kb →
-      (R.cost : ℝ) ≤ C * ((A.cost + D.cost : ℕ) : ℝ) ^ 2 →
-      (2 : ℝ) ^ kb * (R.acceptProb real - R.acceptProb ideal) ^ 2 ≤ C * ((A.cost + D.cost : ℕ) : ℝ) ^ 2 :=
+      (R.cost : ℝ) ≤ C * ((A.cost + D.cost : ℕ) : ℝ) →
+      (2 : ℝ) ^ kb * (R.acceptProb real - R.acceptProb ideal) ^ 2 ≤ C * ((A.cost + D.cost : ℕ) : ℝ) :=
     fun R real ideal h hc => (h R).trans hc
   have ha : (1 : ℝ) ≤ ((A.cost + D.cost : ℕ) : ℝ) := by
     have := A.one_le_cost; exact_mod_cast (by omega : 1 ≤ A.cost + D.cost)
-  have hg1 : g ^ 2 ≤ 1 := by
-    have h1 := Machine.acceptProb_nonneg D ((PE.real dateUniverse params (impl hk c) A).map view)
-    have h2 := Machine.acceptProb_le_one D ((PE.real dateUniverse params (impl hk c) A).map view)
-    have h3 := Machine.acceptProb_nonneg D
-      ((PE.ideal dateUniverse params (impl hk c) (simMachine hk c) A).map view)
-    have h4 := Machine.acceptProb_le_one D
-      ((PE.ideal dateUniverse params (impl hk c) (simMachine hk c) A).map view)
-    nlinarith
-  have := quad_loss ((2 : ℝ) ^ params.secBits) ((2 : ℝ) ^ kb) C ((A.cost + D.cost : ℕ) : ℝ)
-    (statTerm c hk ε).toReal _ _ _ g (by positivity) hk64 hC ha hstat ENNReal.toReal_nonneg
+  have := lin_loss ((2 : ℝ) ^ params.secBits) ((2 : ℝ) ^ kb) C ((A.cost + D.cost : ℕ) : ℝ)
+    (statTerm c hk ε).toReal _ _ _ g (by positivity) hk36 hC ha hstat ENNReal.toReal_nonneg
     (hd R3 w3r w3u hard3 c3) (hd R5 w5r w5u hard5 c5) (hd RI wIr wIu hardI cI)
-    (by linarith [hadv]) hg1
+    (by linarith [hadv])
   exact_mod_cast this
 
 end AdvancedEncryption.DualUse
