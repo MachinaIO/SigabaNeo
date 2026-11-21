@@ -235,9 +235,16 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
     | `rankReplacement` | modular minus rational raw sums equals a sum over discrepant rank pairs with exact multiplicities |
     | `innerBallProbability` | for `1 ≤ R < q`, `P[Λ_q^⊥(A) meets the nonzero integer ball of radius R] ≤ #B/q^n` |
 
-    Open in Lean: estimating that finite sum at the T4b radii, which needs the rank-defect
-    multiplicities, cancellation of the partition terms and the continuum non-partition bounds,
-    to reach `e^{−cm}`; and the exact-SVP corollary.
+    Added (`QAry/MainCounting.lean`):
+    * `projectedRankStratum` counts projected integer arrays with entries `≤ B`, rational rank `t`
+      and residue rank `u`, with the factor `q^{−(t−u)m}`;
+    * `centeredPartitionSum` proves the exact singleton cancellation.
+
+    Open in Lean, to reach `e^{−cm}` and the exact-SVP corollary:
+    * counting rational row spaces before projection;
+    * identifying the partition contribution inside `rankMoment`;
+    * bounding the error from dropping rational independence;
+    * the continuum non-partition bounds at the T4b radii.
   * **Still far from Kyber and LWE.** `q = 3329` is polynomial and far below `exp(log^6 m)`. LWE
     lattices contain a planted short vector. BKZ runs the sieve on projected blocks, which is
     assumption (C), refuted for worst-case blocks above. The bit model is open.
