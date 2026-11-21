@@ -396,7 +396,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   0.017–0.032); at r = 0.90 one triple already has zero acceptance. Width-3 tests bite only at slopes ≲ 0.92, while GSA slopes at
   β ≈ 406 are ≈ 0.99, so closing the rank-1023 gap needs the asymptotics of width-β joint acceptance (or the algorithm's
   trajectory).
-* **Frontier after Parts 1–69 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 70 (audited).** [window_asymptotics](research/wall1_window_asymptotics.md): a width-w geometric block with excess
+  ε over the balanced ratio has E = (1+o(1))·e^{w(w−1)ε/2}/2 short pairs (6.92·10⁶ at w = 406, ε = 0.0002); a Q-independent suffix
+  family scores E' ≤ min(E, w − 1), so across disjoint windows the exponential relaxation supplies ≤ N − h ≤ 1022 nats
+  (≤ 511 with horizontal caps), whereas the exact product has no dimension-only cap. The 34000-nat figure was the relaxed mass
+  of boxes later excluded by Part 61; the bad mass on the surviving domain is being computed.
+* **Frontier after Parts 1–70 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
