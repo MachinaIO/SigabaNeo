@@ -192,6 +192,55 @@ theorem groupHaar_two_rightInvariant : (groupHaar 2).IsMulRightInvariant :=
   groupHaar_rightInvariant_of_perfect
     (Matrix.SL2.commutator_eq_top (a := (2:ℝ)) (by norm_num) (by norm_num))
 
+section
+open Matrix Matrix.SpecialLinearGroup
+open scoped commutatorElement
+private theorem trans_mem {n : ℕ} {i j : Fin n} (h : i ≠ j) (a : ℝ) :
+    SpecialLinearGroup.transvection h a ∈ commutator (SL n) := by
+  let d := diag2n h (2 : ℝ) (by norm_num)
+  let t := SpecialLinearGroup.transvection h (a/3)
+  have he : ⁅d,t⁆ = SpecialLinearGroup.transvection h a := by
+    rw [commutatorElement_def, mul_inv_eq_iff_eq_mul, mul_inv_eq_iff_eq_mul]
+    dsimp only [t]
+    rw [← transvection_add]
+    apply Subtype.ext
+    ext k l
+    simp only [d, coe_mul, diag2n_coe, transvection_coe, mul_add, add_mul,
+      Matrix.add_apply, diagonal_mul, mul_diagonal, Matrix.one_apply, single_apply]
+    split_ifs <;> grind
+  rw [← he]
+  exact Subgroup.commutator_mem_commutator (Subgroup.mem_top _) (Subgroup.mem_top _)
+
+theorem sl_commutator_eq_top {n : ℕ} (hn : 2 ≤ n) : commutator (SL n) = ⊤ := by
+  have : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.mpr hn
+  apply top_unique
+  intro g _
+  refine diagonal_transvection_induction' (fun x ↦ x ∈ commutator (SL n)) g ?_
+    (fun _ _ ↦ trans_mem) (fun _ _ ↦ mul_mem)
+  intro i j h c hc
+  let T := SpecialLinearGroup.transvection h (F := ℝ)
+  let S := SpecialLinearGroup.transvection h.symm (F := ℝ)
+  have he : diag2n h c hc = T c * S (-c⁻¹) * T c * T (-1) * S 1 * T (-1) := by
+    apply Subtype.ext
+    simp only [T, S, coe_mul, transvection_coe, mul_add, add_mul, mul_one, one_mul,
+      single_mul_single_same, single_mul_single_of_ne _ _ _ _ h,
+      single_mul_single_of_ne _ _ _ _ h.symm, add_zero]
+    ext k l
+    simp only [diag2n_coe, diagonal_apply, Matrix.add_apply, Matrix.one_apply, single_apply]
+    split_ifs <;> grind
+  rw [he]
+  repeat' apply mul_mem
+  all_goals exact trans_mem _ _
+
+theorem groupHaar_rightInvariant (n : ℕ) : (groupHaar n).IsMulRightInvariant := by
+  apply groupHaar_rightInvariant_of_perfect
+  by_cases hn : 2 ≤ n
+  · exact sl_commutator_eq_top hn
+  · have : Subsingleton (Fin n) := Fin.subsingleton_iff_le_one.mpr (by omega)
+    exact Subsingleton.elim _ _
+
+end
+
 private def latticeVector {n : ℕ} (g : SL n) (z : Fin n → ℤ) : E n :=
   WithLp.toLp 2 (g • (fun i ↦ (z i : ℝ)))
 
@@ -202,33 +251,32 @@ private theorem latticeVector_injective {n : ℕ} (g : SL n) : Function.Injectiv
   funext i
   exact_mod_cast congrFun he i
 
-theorem tupleWorkload_measurable {n k : ℕ} {F : (Fin k → E n) → ℝ≥0∞} (hF : Measurable F) :
-    Measurable (tupleWorkload F) := by
+private abbrev NonzeroVector (n : ℕ) := {z : Fin n → ℤ // z ≠ 0}
+
+private theorem tupleWorkload_mk {n k : ℕ} (F : (Fin k → E n) → ℝ≥0∞) (g : SL n) :
+    tupleWorkload F (QuotientGroup.mk g) =
+      ∑' z : Fin k → NonzeroVector n, F (fun i ↦ latticeVector g (z i)) := by
   classical
-  apply QuotientGroup.measurable_from_quotient.mpr
-  let Z := {z : Fin n → ℤ // z ≠ 0}
   have hz (g : SL n) : latticeVector g 0 = 0 := by
     simp [latticeVector, Matrix.SpecialLinearGroup.smul_def]
     exact Matrix.mulVec_zero _
-  have eqn (g : SL n) : tupleWorkload F (QuotientGroup.mk g) =
-      ∑' z : Fin k → Z, F (fun i ↦ latticeVector g (z i)) := by
-    let e : Z → {x : E n // x ∈ points (QuotientGroup.mk g) ∧ x ≠ 0} := fun z ↦
-      ⟨latticeVector g z, by rw [points_mk]; exact ⟨z, rfl⟩,
-        fun h ↦ z.property (latticeVector_injective g (h.trans (hz g).symm))⟩
-    have he : Function.Bijective e := by
-      constructor
-      · intro z w h
-        exact Subtype.ext (latticeVector_injective g (congrArg Subtype.val h))
-      · intro ⟨x, hx, hx'⟩
-        rw [points_mk] at hx
-        obtain ⟨z, rfl⟩ := hx
-        exact ⟨⟨z, fun h ↦ hx' (h ▸ hz g)⟩, rfl⟩
-    let E := Equiv.piCongrRight (fun _ : Fin k ↦ Equiv.ofBijective e he)
-    exact (E.tsum_eq (fun z ↦ F (fun i ↦ (z i).val))).symm
-  change Measurable (fun g : SL n ↦ tupleWorkload F (QuotientGroup.mk g))
-  simp_rw [eqn]
-  apply Measurable.tsum
-  intro z
+  let e : NonzeroVector n → {x : E n // x ∈ points (QuotientGroup.mk g) ∧ x ≠ 0} := fun z ↦
+    ⟨latticeVector g z, by rw [points_mk]; exact ⟨z, rfl⟩,
+      fun h ↦ z.property (latticeVector_injective g (h.trans (hz g).symm))⟩
+  have he : Function.Bijective e := by
+    constructor
+    · intro z w h
+      exact Subtype.ext (latticeVector_injective g (congrArg Subtype.val h))
+    · intro ⟨x, hx, hx'⟩
+      rw [points_mk] at hx
+      obtain ⟨z, rfl⟩ := hx
+      exact ⟨⟨z, fun h ↦ hx' (h ▸ hz g)⟩, rfl⟩
+  let E := Equiv.piCongrRight (fun _ : Fin k ↦ Equiv.ofBijective e he)
+  exact (E.tsum_eq (fun z ↦ F (fun i ↦ (z i).val))).symm
+
+private theorem measurable_tuple_term {n k : ℕ} {F : (Fin k → E n) → ℝ≥0∞}
+    (hF : Measurable F) (z : Fin k → NonzeroVector n) :
+    Measurable (fun g : SL n ↦ F (fun i ↦ latticeVector g (z i))) := by
   apply hF.comp
   apply Measurable.of_eval
   intro i
@@ -237,6 +285,22 @@ theorem tupleWorkload_measurable {n k : ℕ} {F : (Fin k → E n) → ℝ≥0∞
   apply (PiLp.continuous_toLp 2 _).comp
   unfold Matrix.mulVec dotProduct
   fun_prop
+
+theorem tupleWorkload_measurable {n k : ℕ} {F : (Fin k → E n) → ℝ≥0∞} (hF : Measurable F) :
+    Measurable (tupleWorkload F) := by
+  apply QuotientGroup.measurable_from_quotient.mpr
+  change Measurable (fun g : SL n ↦ tupleWorkload F (QuotientGroup.mk g))
+  simp_rw [tupleWorkload_mk]
+  exact Measurable.tsum (measurable_tuple_term hF)
+
+/-- Expand the domain integral into orbital integrals indexed by integer tuples. -/
+theorem domain_lintegral_tupleWorkload {n k : ℕ} (μ : Measure (SL n)) (D : Set (SL n))
+    {F : (Fin k → E n) → ℝ≥0∞} (hF : Measurable F) :
+    (∫⁻ g in D, tupleWorkload F (QuotientGroup.mk g) ∂μ) =
+      ∑' z : Fin k → {v : Fin n → ℤ // v ≠ 0},
+        ∫⁻ g in D, F (fun i ↦ WithLp.toLp 2 (g • fun j ↦ ((z i).val j : ℝ))) ∂μ := by
+  simp_rw [tupleWorkload_mk]
+  exact lintegral_tsum (fun z ↦ (measurable_tuple_term hF z).aemeasurable)
 
 theorem domain_mass_ne_zero {n : ℕ} (μ : Measure (SL n)) [μ.IsMulRightInvariant]
     (hμ : μ ≠ 0) {D : Set (SL n)} (hD : IsFundamentalDomain (integerGroup n).op D μ) :
@@ -287,10 +351,13 @@ theorem siegel_of_measurable_unfolding {n : ℕ} (μ : Measure (SL n)) [μ.IsMul
   siegel_of_domain_unfolding μ D (domain_mass_ne_zero μ hμ hD) hfin f
     (tupleWorkload_measurable (hf.comp (measurable_pi_apply 0))) hu
 
+#print axioms domain_lintegral_tupleWorkload
 #print axioms tupleWorkload_measurable
 #print axioms domain_mass_ne_zero
 #print axioms siegel_of_measurable_unfolding
 #print axioms groupHaar_rightInvariant_of_perfect
+#print axioms sl_commutator_eq_top
+#print axioms groupHaar_rightInvariant
 #print axioms groupHaar_two_rightInvariant
 
 end SigabaNeo.Rogers

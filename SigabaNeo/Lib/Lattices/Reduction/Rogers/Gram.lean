@@ -362,7 +362,22 @@ theorem cone_positive_volume (m : ℕ) (pole : Sphere (m+1)) {t : ℝ}
       (MeasurableEquiv.toLp 2 (ℝ × F)).symm.measurableEmbedding]
   exact axialCap_volume m ht
 
-theorem capSlice_derivative {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Ioo (0 : ℝ) 1) :
+private theorem capPower_integrable {p t : ℝ} (hp : -1 < p) (ht : t ∈ Icc (0 : ℝ) 1) :
+    IntervalIntegrable (fun u : ℝ ↦ (1-u^2)^p) volume t 1 := by
+  have h₁ : IntervalIntegrable (fun u : ℝ ↦ (1-u)^p) volume t 1 := by
+    simpa using (intervalIntegral.intervalIntegrable_rpow' (a := 1-t) (b := 0) hp).comp_sub_left 1
+  have h₂ : ContinuousOn (fun u : ℝ ↦ (1+u)^p) (uIcc t 1) := by
+    apply (continuous_const.add continuous_id).continuousOn.rpow_const
+    intro u hu
+    rw [uIcc_of_le ht.2] at hu
+    exact Or.inl (by change 1 + u ≠ 0; linarith [hu.1, ht.1])
+  apply (h₁.mul_continuousOn h₂).congr
+  intro u hu
+  rw [uIoc_of_le ht.2] at hu
+  dsimp
+  rw [show 1-u^2 = (1-u)*(1+u) by ring, Real.mul_rpow (by linarith [hu.2]) (by linarith [ht.1, hu.1])]
+
+theorem capSlice_derivative_of_two_le {d t : ℝ} (hd : 2 ≤ d) (ht : t ∈ Ioo (0 : ℝ) 1) :
     HasDerivAt (capSlice d) (-((d-1)/d) * (1-t^2)^((d-3)/2)) t := by
   let q := (d-1)/2
   have hq : 0 ≤ q := by dsimp [q]; linarith
@@ -382,7 +397,7 @@ theorem capSlice_derivative {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Ioo (0 : ℝ)
   ring
 
 /-- The sliced cap is the tail integral of the unnormalized axial density. -/
-theorem capSlice_tail {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
+theorem capSlice_tail_of_two_le {d t : ℝ} (hd : 2 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
     capSlice d t = ((d-1)/d) * ∫ u in t..1, (1-u^2)^((d-3)/2) := by
   have cont (q : ℝ) (hq : 0 ≤ q) : Continuous (fun u : ℝ ↦ (1-u^2)^q) :=
     (continuous_const.sub (continuous_id.pow 2)).rpow_const fun _ ↦ Or.inr hq
@@ -394,8 +409,8 @@ theorem capSlice_tail {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
     exact
       (intervalIntegral.continuous_primitive (μ := volume) hc.intervalIntegrable 1).neg
   have h := intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le ht.2 hcont.continuousOn
-    (fun x hx ↦ capSlice_derivative hd ⟨ht.1.trans_lt hx.1, hx.2⟩)
-    ((continuous_const.mul (cont ((d-3)/2) (by linarith))).intervalIntegrable t 1)
+    (fun x hx ↦ capSlice_derivative_of_two_le hd ⟨ht.1.trans_lt hx.1, hx.2⟩)
+    ((capPower_integrable (p := (d-3)/2) (by linarith) ht).const_mul _)
   rw [intervalIntegral.integral_const_mul] at h
   have he : capSlice d 1 = 0 := by
     simp [capSlice, Real.zero_rpow (by linarith : (d-1)/2 ≠ 0)]
@@ -403,19 +418,17 @@ theorem capSlice_tail {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
   linarith
 
 /-- The normalized candidate cap mass, including the hemisphere and the empty endpoint. -/
-theorem capSlice_normalized {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
+theorem capSlice_normalized_of_two_le {d t : ℝ} (hd : 2 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
     (volume.withDensity (weight ((d-3)/2))) (Ici t) =
       ENNReal.ofReal (normalizer ((d-3)/2) * (d/(d-1)) * capSlice d t) := by
   let p := (d-3)/2
-  have hp : 0 ≤ p := by dsimp [p]; linarith
+  have hp : -1 < p := by dsimp [p]; linarith
   have hn : 0 ≤ normalizer p := by
     unfold normalizer
     exact inv_nonneg.mpr (by positivity [beta_pos (by linarith : 0 < p+1) (by linarith : 0 < p+1)])
   let f := fun u : ℝ ↦ normalizer p * (1-u^2)^p
-  have hc : Continuous f := continuous_const.mul
-    ((continuous_const.sub (continuous_id.pow 2)).rpow_const fun _ ↦ Or.inr hp)
   have hi := (intervalIntegrable_iff_integrableOn_Ioc_of_le ht.2).mp
-    (hc.intervalIntegrable (μ := volume) t 1)
+    ((capPower_integrable hp ht).const_mul (normalizer p))
   have hnn : 0 ≤ᵐ[volume.restrict (Ioc t 1)] f := by
     filter_upwards [ae_restrict_mem (μ := volume) measurableSet_Ioc] with u hu
     exact mul_nonneg hn (Real.rpow_nonneg (by nlinarith [ht.1.trans hu.1.le, hu.2] : 0 ≤ 1-u^2) _)
@@ -432,12 +445,24 @@ theorem capSlice_normalized {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ)
   rw [hw]
   rw [lintegral_indicator measurableSet_Ioo, Measure.restrict_restrict measurableSet_Ioo, hs,
     Measure.restrict_congr_set Ioo_ae_eq_Ioc, ← ofReal_integral_eq_lintegral_ofReal hi hnn,
-    ← intervalIntegral.integral_of_le ht.2, capSlice_tail hd ht]
-  unfold f
+    ← intervalIntegral.integral_of_le ht.2, capSlice_tail_of_two_le hd ht]
   rw [intervalIntegral.integral_const_mul]
   congr 1
   dsimp [p]
   field_simp [show d ≠ 0 by linarith, show d-1 ≠ 0 by linarith]
+
+theorem capSlice_derivative {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Ioo (0 : ℝ) 1) :
+    HasDerivAt (capSlice d) (-((d-1)/d) * (1-t^2)^((d-3)/2)) t :=
+  capSlice_derivative_of_two_le (by linarith) ht
+
+theorem capSlice_tail {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
+    capSlice d t = ((d-1)/d) * ∫ u in t..1, (1-u^2)^((d-3)/2) :=
+  capSlice_tail_of_two_le (by linarith) ht
+
+theorem capSlice_normalized {d t : ℝ} (hd : 3 ≤ d) (ht : t ∈ Icc (0 : ℝ) 1) :
+    (volume.withDensity (weight ((d-3)/2))) (Ici t) =
+      ENNReal.ofReal (normalizer ((d-3)/2) * (d/(d-1)) * capSlice d t) :=
+  capSlice_normalized_of_two_le (by linarith) ht
 
 theorem pairLaw_of_capVolumes {n : ℕ} (hn : 3 ≤ n) (pole : Sphere n)
     (h : ∀ t : ℝ, ((volume : Measure (Ambient n)).toSphere univ)⁻¹ *
@@ -470,12 +495,12 @@ theorem normalizer_gamma {p : ℝ} (hp : -1 < p) :
   rw [show (2*(p+1)+1)/2 = p+1+1/2 by ring, mul_assoc, h]
   linear_combination -(Real.Gamma (2*(p+1)) * Real.sqrt Real.pi) * he
 
-theorem transverse_ball_volume (m : ℕ) (hm : 2 ≤ m) :
+theorem transverse_ball_volume_of_pos (m : ℕ) (hm : 1 ≤ m) :
     volume (Metric.ball (0 : Ambient m) 1) =
       ENNReal.ofReal (normalizer (((m:ℝ)+1-3)/2) * ((m+1)/m)) *
         volume (Metric.ball (0 : Ambient (m+1)) 1) := by
   have : NeZero m := ⟨by omega⟩
-  have hm' : (2:ℝ) ≤ m := by exact_mod_cast hm
+  have hm' : (1:ℝ) ≤ m := by exact_mod_cast hm
   rw [EuclideanSpace.volume_ball, EuclideanSpace.volume_ball]
   simp only [Fintype.card_fin, ENNReal.ofReal_one, one_pow, one_mul, Nat.cast_add, Nat.cast_one]
   rw [normalizer_gamma (by linarith), ← ENNReal.ofReal_mul (by positivity [Real.Gamma_pos_of_pos (by linarith : 0 < ((m:ℝ)+1-3)/2+1+1/2), Real.Gamma_pos_of_pos (by linarith : 0 < ((m:ℝ)+1-3)/2+1)])]
@@ -486,11 +511,11 @@ theorem transverse_ball_volume (m : ℕ) (hm : 2 ≤ m) :
   field_simp [Real.Gamma_pos_of_pos (by positivity : 0 < (m:ℝ)/2),
     Real.Gamma_pos_of_pos (by positivity : 0 < ((m:ℝ)+1)/2)]
 
-theorem normalized_positive_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
+theorem normalized_positive_cap_of_pos (m : ℕ) (hm : 1 ≤ m) (pole : Sphere (m+1))
     {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
     (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) (Ici t) =
       (volume.withDensity (weight (((m:ℝ)+1-3)/2))) (Ici t) := by
-  have hd : (2:ℝ) ≤ m := by exact_mod_cast hm
+  have hd : (1:ℝ) ≤ m := by exact_mod_cast hm
   have hm0 : (m:ℝ) > 0 := by linarith
   have hf : Measurable (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) := by fun_prop
   rw [Measure.map_apply hf measurableSet_Ici, uniform, Measure.smul_apply,
@@ -498,8 +523,8 @@ theorem normalized_positive_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
   simp only [finrank_euclideanSpace_fin, smul_eq_mul]
   change (_ * volume (Metric.ball (0 : Ambient (m+1)) 1))⁻¹ *
     (_ * volume (cone pole (Ici t))) = _
-  rw [cone_positive_volume m pole ht, transverse_ball_volume m hm,
-    capSlice_normalized (by linarith) ⟨ht.1.le, ht.2.le⟩, add_sub_cancel_right]
+  rw [cone_positive_volume m pole ht, transverse_ball_volume_of_pos m hm,
+    capSlice_normalized_of_two_le (by linarith) ⟨ht.1.le, ht.2.le⟩, add_sub_cancel_right]
   let B := volume (Metric.ball (0 : Ambient (m+1)) 1)
   let d : ℝ≥0∞ := ↑(m+1 : ℕ)
   have hB : B ≠ 0 := (Metric.measure_ball_pos volume _ zero_lt_one).ne'
@@ -514,7 +539,7 @@ theorem normalized_positive_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
   rw [normalizer_gamma (by linarith)]
   positivity [Real.Gamma_pos_of_pos (by linarith : 0 < ((m:ℝ)+1-3)/2+1+1/2)]
 
-private theorem positive_open_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
+private theorem positive_open_cap (m : ℕ) (hm : 1 ≤ m) (pole : Sphere (m+1))
     {t : ℝ} (ht : 0 ≤ t) :
     (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) (Ioi t) =
       (volume.withDensity (weight (((m:ℝ)+1-3)/2))) (Ioi t) := by
@@ -527,7 +552,7 @@ private theorem positive_open_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
         ((hl.eventually_lt_const hx).exists.imp fun i hi ↦ hi.le)⟩
     have mono : Monotone (fun i ↦ Ici (u i)) := fun _ _ hij ↦ Ici_subset_Ici.mpr (hu.antitone hij)
     rw [← hs, mono.measure_iUnion, mono.measure_iUnion]
-    exact iSup_congr fun i ↦ normalized_positive_cap m hm pole ⟨ht.trans_lt (hm' i).1, (hm' i).2⟩
+    exact iSup_congr fun i ↦ normalized_positive_cap_of_pos m hm pole ⟨ht.trans_lt (hm' i).1, (hm' i).2⟩
   · have hf : Measurable (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) := by fun_prop
     rw [Measure.map_apply hf measurableSet_Ioi, withDensity_apply _ measurableSet_Ioi]
     have hs : (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) ⁻¹' Ioi t = ∅ := by
@@ -543,7 +568,7 @@ private theorem positive_open_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
     intro x hx
     simp [weight, show x ∉ Ioo (-1 : ℝ) 1 from fun hh ↦ h ((show t < x from hx).trans hh.2)]
 
-theorem pole_law (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1)) :
+theorem pole_law_of_pos (m : ℕ) (hm : 1 ≤ m) (pole : Sphere (m+1)) :
     (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) =
       volume.withDensity (weight (((m:ℝ)+1-3)/2)) := by
   let p := (((m:ℝ)+1-3)/2)
@@ -553,7 +578,7 @@ theorem pole_law (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1)) :
   let μ (q) := (uniform (m+1)).map (f q)
   have := uniform_probability (n := m+1) (by omega)
   have hprob (q : Sphere (m+1)) : IsProbabilityMeasure (μ q) := ⟨by simp [μ, Measure.map_apply (hf q)]⟩
-  have hd : (2:ℝ) ≤ m := by exact_mod_cast hm
+  have hd : (1:ℝ) ≤ m := by exact_mod_cast hm
   have : IsProbabilityMeasure ν := ⟨by
     change volume.withDensity (weight p) univ = 1
     rw [withDensity_apply _ MeasurableSet.univ, setLIntegral_univ, weight_integral]
@@ -591,6 +616,87 @@ theorem pole_law (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1)) :
       measure_compl measurableSet_Iio (measure_ne_top _ _), he, hn]
     simp only [measure_univ]
     rw [show μ q (Ioi (-t)) = ν (Ioi (-t)) from positive_open_cap m hm q (by linarith)]
+
+theorem transverse_ball_volume (m : ℕ) (hm : 2 ≤ m) :
+    volume (Metric.ball (0 : Ambient m) 1) =
+      ENNReal.ofReal (normalizer (((m:ℝ)+1-3)/2) * ((m+1)/m)) *
+        volume (Metric.ball (0 : Ambient (m+1)) 1) :=
+  transverse_ball_volume_of_pos m (by omega)
+
+theorem normalized_positive_cap (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1))
+    {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) (Ici t) =
+      (volume.withDensity (weight (((m:ℝ)+1-3)/2))) (Ici t) :=
+  normalized_positive_cap_of_pos m (by omega) pole ht
+
+theorem pole_law (m : ℕ) (hm : 2 ≤ m) (pole : Sphere (m+1)) :
+    (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) =
+      volume.withDensity (weight (((m:ℝ)+1-3)/2)) :=
+  pole_law_of_pos m (by omega) pole
+
+/-- In each transverse slice, radial weighting leaves the direction uniform. -/
+theorem transverse_slice_integral (m : ℕ) (hm : 0 < m)
+    (R : Ioi (0 : ℝ) → ℝ≥0∞) (hR : Measurable R)
+    (F : Sphere m → ℝ≥0∞) (hF : Measurable F) :
+    let e := homeomorphUnitSphereProd (Ambient m)
+    (∫⁻ w, R (e w).2 * F (e w).1 ∂(volume : Measure (Ambient m)).comap Subtype.val) =
+      (∫⁻ w, R (e w).2 ∂(volume : Measure (Ambient m)).comap Subtype.val) *
+        ∫⁻ v, F v ∂uniform m := by
+  let σ := (volume : Measure (Ambient m)).toSphere
+  have h := (volume : Measure (Ambient m)).measurePreserving_homeomorphUnitSphereProd
+  have h₁ := h.lintegral_comp (f := fun z : Sphere m × Ioi (0 : ℝ) ↦ R z.2 * F z.1)
+    ((hR.comp measurable_snd).mul (hF.comp measurable_fst))
+  have h₂ := h.lintegral_comp (f := fun z : Sphere m × Ioi (0 : ℝ) ↦ R z.2) (hR.comp measurable_snd)
+  dsimp only
+  rw [h₁, h₂, lintegral_prod (fun z : Sphere m × Ioi (0 : ℝ) ↦ R z.2 * F z.1)
+      ((hR.comp measurable_snd).mul (hF.comp measurable_fst)).aemeasurable,
+    lintegral_prod (fun z : Sphere m × Ioi (0 : ℝ) ↦ R z.2) (hR.comp measurable_snd).aemeasurable]
+  simp_rw [lintegral_mul_const _ hR, lintegral_const_mul _ hF]
+  rw [lintegral_const, uniform, lintegral_smul_measure]
+  have : Nonempty (Fin m) := ⟨⟨0, hm⟩⟩
+  have hσ : σ univ ≠ 0 := Measure.measure_univ_ne_zero.mpr (Measure.toSphere_ne_zero _)
+  change _ = ((_ * σ univ) * ((σ univ)⁻¹ * _))
+  rw [mul_assoc, ← mul_assoc (σ univ), ENNReal.mul_inv_cancel hσ (measure_ne_top _ _), one_mul]
+
+/-- In solid-ball coordinates the normalized axial coordinate and transverse direction
+factor for arbitrary measurable nonnegative tests. -/
+theorem ball_axial_direction (m : ℕ) (hm : 0 < m)
+    (A : ℝ → ℝ≥0∞) (hA : Measurable A) (F : Sphere m → ℝ≥0∞) (hF : Measurable F) :
+    let e := homeomorphUnitSphereProd (Ambient m)
+    let W := fun u r : ℝ ↦ if u^2 + r^2 < 1 then A (u / Real.sqrt (u^2 + r^2)) else 0
+    let ν := (volume : Measure (Ambient m)).comap Subtype.val
+    (∫⁻ u : ℝ, ∫⁻ w, W u (e w).2 * F (e w).1 ∂ν) =
+      (∫⁻ u : ℝ, ∫⁻ w, W u (e w).2 ∂ν) * ∫⁻ v, F v ∂uniform m := by
+  intro e W ν
+  have hW : Measurable (fun z : ℝ × Ioi (0 : ℝ) ↦ W z.1 z.2) := by
+    dsimp [W]
+    apply Measurable.ite (measurableSet_lt (by fun_prop) measurable_const)
+      (hA.comp (by fun_prop)) measurable_const
+  have hs (u : ℝ) := transverse_slice_integral m hm _ (hW.comp
+    (measurable_const.prodMk measurable_id : Measurable (fun r : Ioi (0 : ℝ) ↦ (u,r)))) F hF
+  change ∀ u : ℝ, (∫⁻ w, W u (e w).2 * F (e w).1 ∂ν) = (∫⁻ w, W u (e w).2 ∂ν) * ∫⁻ v, F v ∂uniform m at hs
+  simp_rw [hs]
+  apply lintegral_mul_const
+  have hmape := (volume : Measure (Ambient m)).measurePreserving_homeomorphUnitSphereProd
+  have : SigmaFinite ν := SigmaFinite.of_map ν e.measurable.aemeasurable (by
+    rw [show ν.map e = _ from hmape.map_eq]
+    infer_instance)
+  apply Measurable.lintegral_prod_right' (f := fun z ↦ W z.1 (e z.2).2)
+  exact hW.comp (measurable_fst.prodMk
+    ((measurable_snd.comp e.continuous.measurable).comp measurable_snd))
+
+/-- Cosine law in a radially weighted transverse slice, for a fixed transverse pole. -/
+theorem transverse_slice_cosine (m : ℕ) (hm : 1 ≤ m) (pole : Sphere (m+1))
+    (R : Ioi (0 : ℝ) → ℝ≥0∞) (hR : Measurable R) (G : ℝ → ℝ≥0∞) (hG : Measurable G) :
+    let e := homeomorphUnitSphereProd (Ambient (m+1))
+    (∫⁻ w, R (e w).2 * G (inner ℝ (pole : Ambient (m+1)) ((e w).1 : Ambient (m+1)))
+      ∂(volume : Measure (Ambient (m+1))).comap Subtype.val) =
+      (∫⁻ w, R (e w).2 ∂(volume : Measure (Ambient (m+1))).comap Subtype.val) *
+        ∫⁻ t, G t ∂volume.withDensity (weight (((m:ℝ)+1-3)/2)) := by
+  let f := fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) (y : Ambient (m+1))
+  have hf : Measurable f := by dsimp [f]; fun_prop
+  rw [← pole_law_of_pos m hm pole, lintegral_map hG hf]
+  exact transverse_slice_integral (m+1) (by omega) R hR (G ∘ f) (hG.comp hf)
 
 theorem pair_law {n : ℕ} (hn : 3 ≤ n) : PairLaw n := by
   obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : n ≠ 0)
@@ -822,6 +928,10 @@ def SphericalGramFormula (n s : ℕ) : Prop :=
 #print axioms normalized_positive_cap
 #print axioms pole_law
 #print axioms pair_law
+#print axioms pole_law_of_pos
+#print axioms ball_axial_direction
+#print axioms transverse_slice_integral
+#print axioms transverse_slice_cosine
 #print axioms axial_pair_law
 #print axioms transverse_inner
 

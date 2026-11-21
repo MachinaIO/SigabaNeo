@@ -25,18 +25,27 @@ and the positive-definite support appear in `SphericalGramFormula`.
    `axial_pair_law` gives the independent axial coordinates for each fixed pole.
    `transverse_inner` expresses the third inner product in terms of the two
    axial coordinates and the normalized transverse directions, including zero residuals.
-   `AngularDisintegration n` still requires the joint sampling law of those directions.
+   `ball_axial_direction` factors axial and transverse tests for Lebesgue measure
+   in split unit-ball coordinates. `transverse_slice_cosine` identifies the
+   radially weighted transverse cosine law, including transverse dimension two.
+   To prove `AngularDisintegration n`, transport the ball factorization to a
+   sphere sample at each pole, then apply the resulting product law to two draws.
    The Jacobian and subsequent integration against nonnegative measurable tests are proved.
    The general-s law and transport to the archive remain open.
-2. `groupHaar_two_rightInvariant` proves right invariance in dimension two.
-   In general `groupHaar_rightInvariant_of_perfect` reduces it to perfectness
-   of the real special linear group. For a nonzero right-invariant measure
+2. `sl_commutator_eq_top` proves perfectness for n ≥ 2 by diagonal and
+   transvection induction. Conjugation by a two-coordinate diagonal matrix
+   with entries 2 and 1/2 scales the transvection parameter by four. Each
+   two-coordinate determinant-one diagonal is a product of six transvections.
+   `groupHaar_rightInvariant` gives right invariance in every dimension. For a nonzero right-invariant measure
    `domain_mass_ne_zero` proves positivity on every arithmetic fundamental domain.
    Constructing such a domain of finite mass remains open.
 3. `tupleWorkload_measurable` proves quotient measurability for every finite tuple length
    by reindexing each representative's sum over nonzero integer vectors.
    `siegel_of_measurable_unfolding` uses this and domain positivity. Its
-   unnormalized integral identity still requires arithmetic unfolding. The local
+   unnormalized integral identity still requires arithmetic unfolding.
+   `domain_lintegral_tupleWorkload` interchanges the integral and the sum
+   over nonzero integer tuples. Evaluating those integrals and recovering the
+   covolume factor remain open. The local
    conclusion concerns nonnegative tests. Signed tests additionally require
    integrability and passage to positive and negative parts. For
    higher orders one needs the integral tuple-orbit decomposition, orbit
@@ -362,6 +371,58 @@ theorem groupHaar_rightInvariant_of_perfect {n : ℕ} (h : commutator (SL n) = �
 theorem groupHaar_two_rightInvariant : (groupHaar 2).IsMulRightInvariant
 ~~~
 
+~~~lean
+theorem pole_law_of_pos (m : ℕ) (hm : 1 ≤ m) (pole : Sphere (m+1)) :
+    (uniform (m+1)).map (fun y : Sphere (m+1) ↦ inner ℝ (pole : Ambient (m+1)) y) =
+      volume.withDensity (weight (((m:ℝ)+1-3)/2))
+~~~
+
+~~~lean
+theorem transverse_slice_integral (m : ℕ) (hm : 0 < m)
+    (R : Ioi (0 : ℝ) → ℝ≥0∞) (hR : Measurable R)
+    (F : Sphere m → ℝ≥0∞) (hF : Measurable F) :
+    let e := homeomorphUnitSphereProd (Ambient m)
+    (∫⁻ w, R (e w).2 * F (e w).1 ∂(volume : Measure (Ambient m)).comap Subtype.val) =
+      (∫⁻ w, R (e w).2 ∂(volume : Measure (Ambient m)).comap Subtype.val) *
+        ∫⁻ v, F v ∂uniform m
+~~~
+
+~~~lean
+theorem ball_axial_direction (m : ℕ) (hm : 0 < m)
+    (A : ℝ → ℝ≥0∞) (hA : Measurable A) (F : Sphere m → ℝ≥0∞) (hF : Measurable F) :
+    let e := homeomorphUnitSphereProd (Ambient m)
+    let W := fun u r : ℝ ↦ if u^2 + r^2 < 1 then A (u / Real.sqrt (u^2 + r^2)) else 0
+    let ν := (volume : Measure (Ambient m)).comap Subtype.val
+    (∫⁻ u : ℝ, ∫⁻ w, W u (e w).2 * F (e w).1 ∂ν) =
+      (∫⁻ u : ℝ, ∫⁻ w, W u (e w).2 ∂ν) * ∫⁻ v, F v ∂uniform m
+~~~
+
+~~~lean
+theorem transverse_slice_cosine (m : ℕ) (hm : 1 ≤ m) (pole : Sphere (m+1))
+    (R : Ioi (0 : ℝ) → ℝ≥0∞) (hR : Measurable R) (G : ℝ → ℝ≥0∞) (hG : Measurable G) :
+    let e := homeomorphUnitSphereProd (Ambient (m+1))
+    (∫⁻ w, R (e w).2 * G (inner ℝ (pole : Ambient (m+1)) ((e w).1 : Ambient (m+1)))
+      ∂(volume : Measure (Ambient (m+1))).comap Subtype.val) =
+      (∫⁻ w, R (e w).2 ∂(volume : Measure (Ambient (m+1))).comap Subtype.val) *
+        ∫⁻ t, G t ∂volume.withDensity (weight (((m:ℝ)+1-3)/2))
+~~~
+
+~~~lean
+theorem sl_commutator_eq_top {n : ℕ} (hn : 2 ≤ n) : commutator (SL n) = ⊤
+~~~
+
+~~~lean
+theorem groupHaar_rightInvariant (n : ℕ) : (groupHaar n).IsMulRightInvariant
+~~~
+
+~~~lean
+theorem domain_lintegral_tupleWorkload {n k : ℕ} (μ : Measure (SL n)) (D : Set (SL n))
+    {F : (Fin k → E n) → ℝ≥0∞} (hF : Measurable F) :
+    (∫⁻ g in D, tupleWorkload F (QuotientGroup.mk g) ∂μ) =
+      ∑' z : Fin k → {v : Fin n → ℤ // v ≠ 0},
+        ∫⁻ g in D, F (fun i ↦ WithLp.toLp 2 (g • fun j ↦ ((z i).val j : ℝ))) ∂μ
+~~~
+
 ## Lean axiom audit
 
 ```text
@@ -409,4 +470,11 @@ theorem groupHaar_two_rightInvariant : (groupHaar 2).IsMulRightInvariant
 'SigabaNeo.Rogers.siegel_of_measurable_unfolding' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.groupHaar_rightInvariant_of_perfect' depends on axioms: [propext, Classical.choice, Quot.sound]
 'SigabaNeo.Rogers.groupHaar_two_rightInvariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.domain_lintegral_tupleWorkload' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.sl_commutator_eq_top' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.groupHaar_rightInvariant' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.pole_law_of_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.ball_axial_direction' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.transverse_slice_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+'SigabaNeo.Rogers.Gram.transverse_slice_cosine' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
