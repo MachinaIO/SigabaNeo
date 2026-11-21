@@ -387,8 +387,12 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   (ordered pairs, diagonal included) equals Rogers' diagram sum `∫∫F + Σ_{Q ≥ 1, b ≠ 0, gcd(b,Q)=1} Q^{-n} ∫F(x, (b/Q)x) dx`
   (independent pairs via shear invariance and Haar uniqueness; dependent pairs via order-1 Siegel on lines). Independent
   audit: faithful (equals the classical ζ(n)^{-1}·Σ_{a ≥ 1, b ≠ 0} a^{-n} form; `Admissible` = bounded, bounded support,
-  zero on zero coordinates — the general case follows by monotone convergence). Order 3 (needed for the full [Laa26]
-  constant) remains open.
+  zero on zero coordinates — the general case follows by monotone convergence). **Order 3 is now proved**:
+  `rogers_order_three` (`Reduction/Rogers/RogersOrder3.lean`; `n ≥ 4`; rank split, rank-1 for all k, rank-2 via reduced-diagram
+  reindexing and the order-2 frame measure, full rank via Cramer shears + Haar uniqueness + lattice-point counting calibration).
+  Independent audit: faithful (the congruence coefficient |row image|^{-n} equals Rogers' Π (gcd(ε_i,q)/q)^n; checked on 9000
+  rank-2 diagrams and 3000 random matrices). So orders 1–3, the ones the sieve analysis uses, are all proved. Still open for
+  discharging [Laa26]'s hypothesis literally: the structure `ClassicalRogersFormula` asks for every order k < n (in progress).
 * **`q`-ary lattices (the LWE side).** Here Lemma Q1 replaces Rogers' formula by linear algebra over
   `F_q`. Proved in Lean (`SigabaNeo.QAry`; axioms `propext`, `Classical.choice`, `Quot.sound`):
 
