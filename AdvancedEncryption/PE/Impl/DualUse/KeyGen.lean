@@ -120,4 +120,32 @@ theorem valid_of_mem_support (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk
     simp [keyOfOutput, Matrix.mul_apply, RingBTVW.scalar, Matrix.mulVec, dotProduct, ← hu']
   · exact absurd rfl hpos
 
+/-- A trapdoor of the public row `B_f̂` covered by the boxes. -/
+def GoodTrap (dec : R → (Col k → R)) (mpk : MPK S Wd)
+    (Bf : Matrix (Fin 1) (Col k) R) (T : (Col k → R) → KeyShort Wd R k) : Prop :=
+  (∀ z, shortMap mpk (T z) + gadgetMap (S := S) z = (Bf *ᵥ z) 0) ∧
+    ∀ x ∈ Small, ∀ y, x + T (dec y) ∈ Big
+
+open Classical in
+/-- **The ideal key law** of the public row `B_f̂`: the law of one try with any covered trapdoor
+(and an abort if there is none). It depends on public data only. -/
+noncomputable def idealKeyLaw (mpk : MPK S Wd) (Bf : Matrix (Fin 1) (Col k) R) :
+    PMF (Option (KeyShort Wd R k × (Col k → R))) :=
+  if h : ∃ T, GoodTrap Big Small dec mpk Bf T then keyLaw Big Small hBig dec mpk h.choose
+  else PMF.pure none
+
+/-- **Every covered trapdoor gives the ideal key law.** -/
+theorem keyLaw_eq_ideal (hdec : ∀ u, gadgetMap (S := S) (dec u) = u) (mpk : MPK S Wd)
+    (Bf : Matrix (Fin 1) (Col k) R) (T : (Col k → R) → KeyShort Wd R k)
+    (hT : GoodTrap Big Small dec mpk Bf T) :
+    keyLaw Big Small hBig dec mpk T = idealKeyLaw Big Small hBig dec mpk Bf := by
+  have h : ∃ T, GoodTrap Big Small dec mpk Bf T := ⟨T, hT⟩
+  rw [idealKeyLaw, dite_eq_left_of_eq_true (eq_true h)]
+  have hc := h.choose_spec
+  exact boxSample_eq Big hBig Small (shortMap mpk) (gadgetMap (S := S)) dec hdec _ _ mpk.p hT.2
+    hc.2 fun z => by
+      have h1 := hT.1 z
+      have h2 := hc.1 z
+      exact add_right_cancel (h1.trans h2.symm)
+
 end AdvancedEncryption.DualUse
