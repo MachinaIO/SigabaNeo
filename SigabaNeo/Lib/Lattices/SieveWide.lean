@@ -34,6 +34,16 @@ theorem totalAcceptance {G : Type*} [AddCommGroup G] [DecidableEq G]
       Finset.sum_congr rfl fun _ hd ↦ exactCancellation good hlo hd
     _ = _ := by simp
 
+/-- Enlarging the mover cap and lowering the representation floor both cost a factor c. -/
+theorem windowAcceptance {G : Type*} [AddCommGroup G] [DecidableEq G]
+    {M : ℕ} {U T : Finset G} {C : Fin M → G} {A lo hi c : ℝ}
+    (hc : 0 < c) (hl : 0 < lo) (good : GoodBank U T C (c*A) (lo/c) (c*hi)) :
+    ∑ d ∈ T, outputWeight U T C (c*A) (lo/c) (c*hi) d =
+      (T.card * (lo / (A * U.card))) / c^2 := by
+  rw [totalAcceptance good (div_pos hl hc)]
+  ring_nf
+
+#print axioms windowAcceptance
 #print axioms squaredWidth
 #print axioms consecutiveLabels
 #print axioms totalAcceptance
