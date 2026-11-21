@@ -15,6 +15,7 @@ import SigabaNeo.Lib.Lattices.Homomorphic
 import SigabaNeo.Lib.Lattices.Decode
 import SigabaNeo.Lib.Lattices.LeftoverHash
 import SigabaNeo.Lib.Lattices.BoxSampler
+import SigabaNeo.Lib.Lattices.Boxes
 import SigabaNeo.Lib.Lattices.Flood
 import SigabaNeo.Lib.Lattices.RingLWEInst
 import SigabaNeo.Lib.Lattices.CoinMaps
