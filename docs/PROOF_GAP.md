@@ -720,7 +720,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   rectangular counterexample with equal determinant and subgroup gives different next values. Horizontal witnesses can need one
   more old direction per step (rank 408 over the width-506 suffix), and fixed-depth hierarchies fail on the general state space.
   Small exact runs (evidence only) show depth ≤ 1 in 1,280 designated planes.
-* **Frontier after Parts 1–121 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 122 (audited).** [depth_truncation](research/wall1_depth_truncation.md): the depth of horizontal chains has a
+  block-start product bound ∏(1 − p_j), but it must be averaged: a reachable width-506 past has depth exactly 103 with a bad
+  terminal plane. Truncating at depth K leaves old kernels of rank ≤ K+2, and their number under the late-state law is
+  uncontrolled even at depth 0. Diagnosis of Parts 105–122: every route needs short-sublattice statistics of the old retained
+  lattice, which is the law being sought.
+* **Frontier after Parts 1–122 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
