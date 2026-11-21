@@ -85,6 +85,8 @@ theorem bv_ext (x : ι → Bool) {p p' : SLP ι} (h : Ext p p') {w : Wire ι} (h
     bv x p' w = bv x p w :=
   valueOf_ext _ _ _ h hw
 
+theorem bv_one (x : ι → Bool) (p : SLP ι) : bv x p .one = true := rfl
+
 /-- Append one NAND gate; its output wire. -/
 def addNand (p : SLP ι) (a b : Wire ι) : SLP ι × Wire ι := (p ++ [⟨a, b⟩], .gate p.length)
 
@@ -107,8 +109,8 @@ theorem bv_addNand (x : ι → Bool) (p : SLP ι) (a b : Wire ι) (_ha : Valid p
 
 /-! ### Logic gates -/
 
-/-- `¬a`. -/
-def notW (p : SLP ι) (a : Wire ι) : SLP ι × Wire ι := addNand p a a
+/-- `¬a`, as `NAND(1, a)`: the constant on the left keeps the noise of `a` unmultiplied. -/
+def notW (p : SLP ι) (a : Wire ι) : SLP ι × Wire ι := addNand p .one a
 
 /-- `a ∧ b`. -/
 def andW (p : SLP ι) (a b : Wire ι) : SLP ι × Wire ι :=
@@ -155,8 +157,8 @@ theorem Spec1.addNand {x : ι → Bool} {p : SLP ι} {r : SLP ι × Wire ι} {v 
 
 theorem notW_spec (x : ι → Bool) (p : SLP ι) (a : Wire ι) (ha : Valid p a) :
     Spec1 x p (notW p a) (!bv x p a) := by
-  have := addNand_spec x p a a ha ha
-  simpa [notW] using this
+  have := addNand_spec x p .one a trivial ha
+  simpa [notW, bv_one] using this
 
 theorem andW_spec (x : ι → Bool) (p : SLP ι) (a b : Wire ι) (ha : Valid p a) (hb : Valid p b) :
     Spec1 x p (andW p a b) (bv x p a && bv x p b) := by

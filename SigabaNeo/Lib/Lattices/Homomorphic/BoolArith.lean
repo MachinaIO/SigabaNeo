@@ -84,14 +84,17 @@ structure SpecN (p : SLP ι) (r : SLP ι × List (Wire ι)) (len val : ℕ) : Pr
 
 /-! ### Adders -/
 
-/-- A full adder: the sum bit and the carry. -/
+/-- A full adder: the sum bit and the carry. The carry is
+`NAND(NAND(a, b), NAND(a ∨ b, c))`, with the incoming carry `c` only on the right of a gate, so its
+noise is added, not multiplied (`slpBound`). -/
 def fullAdd (p : SLP ι) (a b c : Wire ι) : SLP ι × Wire ι × Wire ι :=
   let (p₁, t) := xorW p a b
   let (p₂, s) := xorW p₁ t c
-  let (p₃, u) := andW p₂ a b
-  let (p₄, v) := andW p₃ c t
-  let (p₅, k) := orW p₄ u v
-  (p₅, s, k)
+  let (p₃, n₁) := addNand p₂ a b
+  let (p₄, o) := orW p₃ a b
+  let (p₅, n₂) := addNand p₄ o c
+  let (p₆, k) := addNand p₅ n₁ n₂
+  (p₆, s, k)
 
 theorem fullAdd_spec (p : SLP ι) (a b c : Wire ι) (ha : Valid p a) (hb : Valid p b)
     (hc : Valid p c) :
@@ -102,17 +105,18 @@ theorem fullAdd_spec (p : SLP ι) (a b c : Wire ι) (ha : Valid p a) (hb : Valid
   have h1 := xorW_spec x p a b ha hb
   have h2 := xorW_spec x _ _ c h1.valid (hc.ext h1.ext)
   have e12 := h1.ext.trans h2.ext
-  have h3 := andW_spec x _ a b (ha.ext e12) (hb.ext e12)
+  have h3 := addNand_spec x _ a b (ha.ext e12) (hb.ext e12)
   have e13 := e12.trans h3.ext
-  have h4 := andW_spec x _ c _ (hc.ext e13) (h1.valid.ext (h2.ext.trans h3.ext))
-  have h5 := orW_spec x _ _ _ (h3.valid.ext h4.ext) h4.valid
-  have e := e13.trans (h4.ext.trans h5.ext)
-  refine ⟨e, h2.valid.ext (h3.ext.trans (h4.ext.trans h5.ext)), h5.valid, ?_⟩
+  have h4 := orW_spec x _ a b (ha.ext e13) (hb.ext e13)
+  have e14 := e13.trans h4.ext
+  have h5 := addNand_spec x _ _ c h4.valid (hc.ext e14)
+  have h6 := addNand_spec x _ _ _ (h3.valid.ext (h4.ext.trans h5.ext)) h5.valid
+  have e36 := h3.ext.trans (h4.ext.trans (h5.ext.trans h6.ext))
+  refine ⟨e14.trans (h5.ext.trans h6.ext), h2.valid.ext e36, h6.valid, ?_⟩
   simp only [fullAdd]
-  rw [bv_ext x (h3.ext.trans (h4.ext.trans h5.ext)) h2.valid, h2.value, h5.value,
-    bv_ext x h4.ext h3.valid, h3.value, h4.value, bv_ext x (h2.ext.trans h3.ext) h1.valid,
-    h1.value, bv_ext x e12 ha, bv_ext x e12 hb, bv_ext x e13 hc,
-    bv_ext x h1.ext hc]
+  rw [bv_ext x e36 h2.valid, h2.value, h6.value, bv_ext x (h4.ext.trans h5.ext) h3.valid,
+    h3.value, h5.value, h4.value, h1.value, bv_ext x h1.ext hc, bv_ext x e12 ha, bv_ext x e12 hb,
+    bv_ext x e13 ha, bv_ext x e13 hb, bv_ext x e14 hc]
   cases bv x p a <;> cases bv x p b <;> cases bv x p c <;> rfl
 
 /-- The sum of two numbers of the same length and a carry, one bit longer. -/
