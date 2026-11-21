@@ -138,6 +138,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   couples disjoint sample batches even with a fixed secret (two-sample example: 1/3 versus 1/2 or 0 after one observed bit);
   with errors fixed in advance the design coefficients stay independent. Open: whether a fresh batch represents the original
   projected block and keeps the planted line.
+* **Part 16 (audited; [research/wall1_information.md](research/wall1_information.md)).** Uniform random tie-breaking does not
+  restore covolume-only conditioning: a 4-dimensional binary kernel gives 2/5 vs 4/9 for two histories with the same terminal area.
+  Transcript-length (entropy) bounds limit total leakage but a few bits can encode the next minimum itself; a concentration proof
+  needs an information bound on that specific observable.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
