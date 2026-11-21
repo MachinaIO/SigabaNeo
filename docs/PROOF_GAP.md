@@ -429,6 +429,14 @@ Research note: [research/provable_sieving.md](research/provable_sieving.md). Sta
   paper for separations in `[R/2, 3R/2]`, shell width `≍ 1/n`, `m ≥ n` and `R/m^{3/2} → ∞`
   ([research/qary.md](research/qary.md)). The general range and the higher-moment integrands are
   open, and the paper part is not in Lean. Modular coincidences at `m = 2n` are quantified there.
+* **Planted q-ary sieve (audited; negative; [research/planted_qary_sieve.md](research/planted_qary_sieve.md)).** The
+  Doulgerakis–Laarhoven prescribed shell schedule (stated for Haar-random unimodular lattices), applied after rescaling to
+  the Part 39 planted q-ary lattices L ⊆ Z^D, has a terminal squared-norm shell containing no integer for every
+  D = 647..662 (e.g. [1956.928, 1956.947] at 647; nearest integer ≥ 0.0528 away), so the last merge aborts for every
+  design and plant: no proven sieve cost for the Part 39 SVP call. Also: exact planted tuple identity (order ≤ 3), a
+  modular-deficit example, and the observation that DL26's S4 chain (1 + 1/ℓ)R* < R_cat fails at ℓ = 7. Wider shells
+  remove the integrality obstruction but their acceptance and plant coverage are unproved (irrational embedding height:
+  in progress).
 * **Reverse Minkowski dichotomy for (C) (new; negative;
   [research/reverse_minkowski_blocks.md](research/reverse_minkowski_blocks.md)).** The idea was
   that every block either has a dense sublattice (recurse into it) or is semistable, in which case
