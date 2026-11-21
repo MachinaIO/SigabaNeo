@@ -456,3 +456,9 @@ recovery holds if the population gap exceeds `2(B + ε + d)` (rounding, numerica
 are indistinguishable, so lifts need separate handling. Not certified at the estimator's parameters. Estimator heuristics
 listed (including an `Nf` bits/nats mix and the GJ21 independence heuristic in `fft_solver`); the estimator's secret entropy
 exceeds the exact CBD entropy by 0.0062 / 0.0165 bits per coefficient.
+
+## Dual attacks: tightening Pouly–Shen (audited; [research/pouly_shen_tight.md](research/pouly_shen_tight.md))
+
+Union over candidate scores instead of `q^m`, a Banaszczyk-type tail and an explicit Hoeffding `N` lower the modeled cost at
+the fixed Table 1 parameters by ≈ 0.50 / 1.67 / 0.02 bits (matched key coverage); the BKZ term (237.45 / 345.24 / 478.33)
+is the floor. The dual gap to the estimator (≈ 88 bits for Kyber512) is essentially the BKZ/sieve part, i.e. walls 1–2.
