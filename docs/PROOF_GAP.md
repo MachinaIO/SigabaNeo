@@ -18,15 +18,16 @@ axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 | `BKZ.projected_profile`, `BKZ.first_norm_bound` | the same bound from caller-supplied projected block data |
 | `BKZ.reduced_first_norm_bound_covolume` | for a BKZ-β-reduced basis `b` of `L` (built with Mathlib's `gramSchmidt`; every projected block's first vector is shortest), `‖b_0‖ ≤ β^{(n−1)/(2(β−1)) + 1/2} covol(L)^{1/n}` |
 | `BKZ.blockLattice_covolume`, `BKZ.basis_covolume` | the covolume of a projected block, and of the lattice, is the product of the Gram–Schmidt lengths |
+| `BKZ.hermite_ball_linear`, `BKZ.gamma_half_nat_bound` | `γ_k ≤ (k+4)/π` for every `k ≥ 1` (from `Γ(k/2+1) ≤ ((k+4)/4)^{k/2}`) |
+| `BKZ.reduced_first_norm_bound_covolume_ball` | for a BKZ-β-reduced basis, `‖b_0‖ ≤ ((β+4)/π)^{(n−1)/(2(β−1)) + 1/2} covol(L)^{1/n}` |
 | `BKZ.hermite_ball` | Minkowski with the ball volume: some nonzero lattice vector has `‖v‖ ≤ 2 (covol / V_k)^{1/k}`, `V_k = π^{k/2}/Γ(k/2+1)` |
 
 **Open in stage 1:**
 
 * The HPS theorem for polynomially many tours (`2 Γ_β^{(n−1)/(2(β−1)) + 3/2}`) and its tour count
   are not proved. Only the fully reduced case is.
-* Sharper Hermite constant bounds (`γ_β ≤ 1 + β/4`, Blichfeldt) are not proved in Lean. `γ_k ≤ k`
-  and the ball-volume form of Minkowski (`hermite_ball`) are; deriving `1 + k/4` from the latter
-  is open.
+* `γ_β ≤ 1 + β/4` and Blichfeldt's bound are not proved in Lean. `γ_k ≤ k` and
+  `γ_k ≤ (k+4)/π` are.
 * The approximation-factor bound `‖b_1‖ ≤ γ_β^{(d−1)/(β−1)} λ_1` used below (Schnorr) is not
   formalized.
 
@@ -36,11 +37,11 @@ axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 smallest `β` (optimised over the number of samples) and its cost in the estimator's `RC.MATZOV`
 model. The GSA column is the estimator's primal uSVP.
 
-| Kyber | GSA (estimator) | `γ_β ≤ β` (proved) | `γ_β ≤ 1 + β/4` | Blichfeldt | `γ_β` at its heuristic value `β/(2πe)` |
-| --- | --- | --- | --- | --- | --- |
-| 512 | β = 406, 143.8 bits | β = 3440, 988.7 bits | β = 2763, 797.2 bits | β = 2384, 690.1 bits | β = 2016, 586.3 bits |
-| 768 | β = 624, 204.9 bits | β = 4971, 1422.7 bits | β = 4041, 1159.0 bits | β = 3521, 1011.6 bits | β = 3024, 871.0 bits |
-| 1024 | β = 874, 275.1 bits | β = 6876, 1963.8 bits | β = 5645, 1614.0 bits | β = 4957, 1418.7 bits | β = 4304, 1233.5 bits |
+| Kyber | GSA (estimator) | `γ_β ≤ β` (proved) | `γ_β ≤ (β+4)/π` (proved) | `γ_β ≤ 1 + β/4` | Blichfeldt | `γ_β` at its heuristic value `β/(2πe)` |
+| --- | --- | --- | --- | --- | --- | --- |
+| 512 | β = 406, 143.8 bits | β = 3440, 988.7 bits | β = 2883, 831.1 bits | β = 2763, 797.2 bits | β = 2384, 690.1 bits | β = 2016, 586.3 bits |
+| 768 | β = 624, 204.9 bits | β = 4971, 1422.7 bits | β = 4205, 1205.4 bits | β = 4041, 1159.0 bits | β = 3521, 1011.6 bits | β = 3024, 871.0 bits |
+| 1024 | β = 874, 275.1 bits | β = 6876, 1963.8 bits | β = 5862, 1675.7 bits | β = 5645, 1614.0 bits | β = 4957, 1418.7 bits | β = 4304, 1233.5 bits |
 
 The Hermite-factor bound that is proved (`first_norm_bound`) does not by itself recover the target
 at any `β < 6000` for these instances. It does not use the shortness of the target.

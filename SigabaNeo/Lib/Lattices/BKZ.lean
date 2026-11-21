@@ -8,7 +8,7 @@ public import SigabaNeo.Lib.Lattices.BKZ.Geometry
 
 Minkowski's cube bound and a logPrefix-sum comparison bound the first vector given projected
 block data. For a reduced basis the data are constructed in GSO coordinates. The final
-estimate uses the cube constant. A shortest-vector approximation factor remains open. See Hanrot–Pujol–Stehlé (2011) for finite-tour analysis.
+estimates use the cube and Euclidean ball constants. A shortest-vector approximation factor remains open. See Hanrot–Pujol–Stehlé (2011) for finite-tour analysis.
 -/
 
 public section
@@ -48,23 +48,30 @@ theorem projected_profile {r : ℕ → ℝ} {n β : ℕ} (hb : 2 ≤ β)
   norm_num at hx
   nlinarith [mul_le_mul_of_nonneg_left hl hk'.le]
 
+private theorem profile_first_norm_bound {E : Type*} [NormedAddCommGroup E] {v : E} {D : ℝ}
+    {r : ℕ → ℝ} {n β : ℕ} (hb : 2 ≤ β) (hn : β ≤ n)
+    {C : ℝ} (hC : 1 ≤ C) (profile : BlockProfile r n β (Real.log C / 2))
+    (hv : ‖v‖ = Real.exp (r 0)) (hd : D = Real.exp (logPrefix r n)) :
+    ‖v‖ ≤ C ^ (((n:ℝ)-1)/(2*((β:ℝ)-1))+1/2) * D ^ (1/(n:ℝ)) := by
+  have h := first_log_bound hb hn (div_nonneg (Real.log_nonneg hC) (by norm_num))
+    profile
+  rw [hv, hd, Real.rpow_def_of_pos (by linarith : (0:ℝ) < C), ← Real.exp_mul,
+    ← Real.exp_add, Real.exp_le_exp]
+  linarith only [show r 0 - logPrefix r n / n ≤
+      Real.log C * (((n:ℝ)-1)/(2*((β:ℝ)-1))+1/2) by
+        convert h using 1
+        simp only [div_eq_mul_inv, mul_inv_rev]
+        ring,
+    show logPrefix r n * (1/(n:ℝ)) = logPrefix r n / n by ring]
+
 /-- First-vector estimate when the caller identifies log lengths, determinant and blocks. -/
 theorem first_norm_bound {E : Type*} [NormedAddCommGroup E] {v : E} {D : ℝ}
     {r : ℕ → ℝ} {n β : ℕ} (hb : 2 ≤ β) (hn : β ≤ n)
     (blocks : ∀ i < n, ProjectedBlock r i (min β (n-i)))
     (hv : ‖v‖ = Real.exp (r 0)) (hd : D = Real.exp (logPrefix r n)) :
     ‖v‖ ≤ (β:ℝ) ^ (((n:ℝ)-1)/(2*((β:ℝ)-1))+1/2) * D ^ (1/(n:ℝ)) := by
-  have hβ : (1:ℝ) ≤ β := by exact_mod_cast (show 1 ≤ β by omega)
-  have h := first_log_bound hb hn (div_nonneg (Real.log_nonneg hβ) (by norm_num))
-    (projected_profile hb blocks)
-  rw [hv, hd, Real.rpow_def_of_pos (by linarith : (0:ℝ) < β), ← Real.exp_mul,
-    ← Real.exp_add, Real.exp_le_exp]
-  linarith only [show r 0 - logPrefix r n / n ≤
-      Real.log β * (((n:ℝ)-1)/(2*((β:ℝ)-1))+1/2) by
-        convert h using 1
-        simp only [div_eq_mul_inv, mul_inv_rev]
-        ring,
-    show logPrefix r n * (1/(n:ℝ)) = logPrefix r n / n by ring]
+  apply profile_first_norm_bound hb hn _ (projected_profile hb blocks) hv hd
+  exact_mod_cast (show 1 ≤ β by omega)
 
 noncomputable section
 
@@ -105,13 +112,14 @@ def reducedProjectedBlock (hr : Reduced b hb β) (i : ℕ) (hi : i < n) :
     have hp := norm_pos_iff.mpr (gramSchmidt_ne_zero (⟨i,hi⟩ : Fin n) hb)
     simpa [basisLog, hi, two_mul, Real.exp_add, Real.exp_log hp, sq] using hr ⟨i,hi⟩ v hv
 
-/-- First-vector estimate with the determinant expressed as the product of GSO lengths. -/
-theorem reduced_first_norm_bound (hr : Reduced b hb β) (hβ : 2 ≤ β) (hn : β ≤ n) :
-    ‖b ⟨0, by omega⟩‖ ≤ (β:ℝ) ^ (((n:ℝ)-1)/(2*((β:ℝ)-1))+1/2) *
+include hb in
+private theorem basis_profile_bound {C : ℝ} (hC : 1 ≤ C)
+    (profile : BlockProfile (basisLog b) n β (Real.log C / 2)) (hβ : 2 ≤ β) (hn : β ≤ n) :
+    ‖b ⟨0, by omega⟩‖ ≤ C ^ (((n:ℝ)-1)/(2*((β:ℝ)-1))+1/2) *
       (∏ j, ‖gramSchmidt ℝ b j‖) ^ (1/(n:ℝ)) := by
   have hn' : 0 < n := by omega
   let : NeZero n := ⟨hn'.ne'⟩
-  apply first_norm_bound hβ hn (reducedProjectedBlock b hb hr)
+  apply profile_first_norm_bound hβ hn hC profile
   · rw [basisLog, dite_eq_left hn', Real.exp_log (norm_pos_iff.mpr (gramSchmidt_ne_zero _ hb))]
     rw [gramSchmidt_def]
     have h : Finset.Iio (⟨0, hn'⟩ : Fin n) = ∅ :=
@@ -123,6 +131,13 @@ theorem reduced_first_norm_bound (hr : Reduced b hb β) (hβ : 2 ≤ β) (hn : �
     intro j _
     simp [basisLog, j.isLt, Real.exp_log (norm_pos_iff.mpr (gramSchmidt_ne_zero j hb))]
 
+/-- First-vector estimate with the determinant expressed as the product of GSO lengths. -/
+theorem reduced_first_norm_bound (hr : Reduced b hb β) (hβ : 2 ≤ β) (hn : β ≤ n) :
+    ‖b ⟨0, by omega⟩‖ ≤ (β:ℝ) ^ (((n:ℝ)-1)/(2*((β:ℝ)-1))+1/2) *
+      (∏ j, ‖gramSchmidt ℝ b j‖) ^ (1/(n:ℝ)) := by
+  apply basis_profile_bound b hb _ (projected_profile hβ (reducedProjectedBlock b hb hr)) hβ hn
+  exact_mod_cast (show 1 ≤ β by omega)
+
 /-- First-vector estimate directly in terms of ambient lattice covolume. -/
 theorem reduced_first_norm_bound_covolume
     (a : Module.Basis (Fin n) ℝ (EuclideanSpace ℝ (Fin n)))
@@ -131,6 +146,40 @@ theorem reduced_first_norm_bound_covolume
       ZLattice.covolume (Submodule.span ℤ (Set.range a)) ^ (1/(n:ℝ)) := by
   rw [basis_covolume]
   exact reduced_first_norm_bound a a.linearIndependent hr hβ hn
+
+/-- Covolume estimate using the elementary linear upper bound on the ball constant. -/
+theorem reduced_first_norm_bound_covolume_ball
+    (a : Module.Basis (Fin n) ℝ (EuclideanSpace ℝ (Fin n)))
+    (hr : Reduced a a.linearIndependent β) (hβ : 2 ≤ β) (hn : β ≤ n) :
+    ‖a ⟨0, by omega⟩‖ ≤ (((β:ℝ)+4)/Real.pi) ^ (((n:ℝ)-1)/(2*((β:ℝ)-1))+1/2) *
+      ZLattice.covolume (Submodule.span ℤ (Set.range a)) ^ (1/(n:ℝ)) := by
+  rw [basis_covolume]
+  apply basis_profile_bound a a.linearIndependent _ _ hβ hn
+  · apply (le_div_iff₀ Real.pi_pos).2
+    linarith [Real.pi_lt_four, Nat.cast_nonneg (α := ℝ) β]
+  intro i hi
+  let k := min β (n-i)
+  have hk : 0 < k := by dsimp [k]; omega
+  let : NeZero k := ⟨hk.ne'⟩
+  let B := reducedProjectedBlock a a.linearIndependent hr i hi
+  let _ := B.discrete
+  let _ := B.full
+  obtain ⟨v,hv,h⟩ := hermite_linear_coords B.lattice
+  have hp := ZLattice.covolume_pos B.lattice MeasureTheory.volume
+  have hk' : (0:ℝ) < k := by exact_mod_cast hk
+  have hkb : (k:ℝ) ≤ β := by exact_mod_cast min_le_left β (n-i)
+  have hx := Real.log_le_log (Real.exp_pos _) ((B.shortest v hv).trans h)
+  change Real.log (Real.exp _) ≤ Real.log (((k:ℝ)+4)/Real.pi * _^(2/(k:ℝ))) at hx
+  rw [Real.log_exp, Real.log_mul (by positivity) (Real.rpow_pos_of_pos hp _).ne',
+    Real.log_rpow hp, B.logCovol] at hx
+  have hl := Real.log_le_log (by positivity : 0 < ((k:ℝ)+4)/Real.pi)
+    (div_le_div_of_nonneg_right (add_le_add_left hkb 4) Real.pi_pos.le)
+  change (k:ℝ)*basisLog a i ≤ k*(Real.log (((β:ℝ)+4)/Real.pi)/2) +
+    logPrefix (basisLog a) (i+k) - logPrefix (basisLog a) i
+  change 2*basisLog a i ≤ Real.log (((k:ℝ)+4)/Real.pi) +
+    2/(k:ℝ)*(logPrefix (basisLog a) (i+k) - logPrefix (basisLog a) i) at hx
+  field_simp at hx
+  nlinarith [mul_le_mul_of_nonneg_left hl hk'.le]
 
 end
 
