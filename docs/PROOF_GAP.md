@@ -279,7 +279,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   short; the full HKZ profile has an exact recursive joint density (estimator acceptance 2^{-n(n−1)/2}, infeasible at scale);
   primitive Palm-plant capture probability is explicit. Laarhoven 2610.15265 Prop. 3 (checked) controls prefix covolumes only
   to o(n log n). Checked numerically in d = 2, 3. Does not give a finite-width slide/BKZ law or transfer to planted q-ary lattices.
-* **Frontier after Parts 1–46 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 47 (audited, minor caveats).** [decoupled](research/wall1_decoupled.md): L = L_0 ⊕ Zu with L_0 (the height-0 part)
+  depending on A only. Reducer: BKZ/slide on L_0, then one SVP on T = π_{W⊥}L. Given A and coins the plant keeps its product CBD
+  law, so the adaptivity of Parts 30–46 disappears for this reducer: exact mean ‖πu‖² = 1 + (β−1)η/2 with explicit McDiarmid
+  concentration; λ_1(π L_0) > ‖πu‖² suffices at every height (essentially sharp; λ_1 > 2‖πu‖ fails at height 2); lifting
+  succeeds by Babai on the prefix with failure ≤ Σ_i 2exp(−g_i²/(4η)) given A. **Wall 1 thus reduces, for this close variant
+  of the primal attack, to a plant-free statement: lower quantiles of the Gram–Schmidt profile of BKZ/slide on the uniform
+  q-ary lattice L_0.**
+* **Part 48 (audited, minor caveats).** [null_terminal](research/wall1_null_terminal.md): worst-case propagation
+  λ_1(T) ≥ λ_1(L_0)·e^{−P_k} with a Gaussian count λ_1(L_0) > 443.07 (99%) certifies λ_1(T) > 79.04 > sqrt(6β) only at
+  β = 1000 for the rank-1023 null lattice of (511, 512, 3329) (slide: only the trivial 1023; punctured ranks: none); GSA would
+  cross at β = 506. Haar analogues and a dual-minimum prefix bound are proved. So the plant-free statement is as hard as wall 1
+  itself: the core difficulty is the average-case BKZ profile, not plant-induced selection bias.
+* **Frontier after Parts 1–48 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
