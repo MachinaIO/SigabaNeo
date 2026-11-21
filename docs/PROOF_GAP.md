@@ -291,7 +291,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   β = 1000 for the rank-1023 null lattice of (511, 512, 3329) (slide: only the trivial 1023; punctured ranks: none); GSA would
   cross at β = 506. Haar analogues and a dual-minimum prefix bound are proved. So the plant-free statement is as hard as wall 1
   itself: the core difficulty is the average-case BKZ profile, not plant-induced selection bias.
-* **Frontier after Parts 1–48 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 49 (audited, minor caveats).** [rankin_route](research/wall1_rankin_route.md): λ_1(T) ≥ μ_{k+1}(L_0)/covol(W) (and the
+  identical dual form) with Part 6 cutoffs certifies λ_1(T) > 88.98 only at width 1020 (rank 1023); a modular-rank-aware count
+  μ_2(L_0) > 193000 (failure < 0.000838) combined with propagation lifts the width-1000 radius 79.04 → 80.21, crossing still
+  1000; quadratic target never; punctured shapes never. Babai lifting is certified at 99% from width ≈ 915 (audit), so lifting
+  is not the bottleneck — the terminal minimum is.
+* **Frontier after Parts 1–49 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
