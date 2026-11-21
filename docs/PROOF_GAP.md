@@ -73,6 +73,38 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * the projection bound for the planted vector;
   * the resulting provable block size and cost for Kyber.
 
+## A route around walls 1 and 2: the full-dimension sieve
+
+Walls 1 and 2 only arise because the estimator's attacks call a sieve inside BKZ. Running the
+average-case provable sieve on the planted LWE embedding lattice itself, with no BKZ, needs neither.
+Choose the number of samples `m` to minimise the dimension `d = m + n + 1` subject to two
+conditions:
+* the stage-2 bound gives `λ₂ > R = 1.05·‖(e, s, 1)‖` except with probability `≤ 2^{−64}`;
+* `R √(1 + B²) < q`.
+
+Then the planted vector is the unique shortest vector and the sieve finds it (`python/full_dim_sieve.py`):
+
+| Kyber (plain-LWE shape, `q = 3329`) | `d` | sieve `2^{0.2925 d}` (with P′) | T1 `2^{0.415 d}` | estimator | BKZ route, proved `γ ≤ (β+4)/π` |
+| --- | --- | --- | --- | --- | --- |
+| 512 | 688 | **201** | 286 | 143.8 | 831.1 |
+| 768 | 1004 | **294** | 417 | 204.9 | 1205.4 |
+| 1024 | 1336 | **391** | 554 | 275.1 | 1675.7 |
+
+For Kyber512 the gap to the estimator drops from about 690 bits (BKZ route) to about 57 bits. What
+this route still needs:
+1. **Static statistics S1, S2, S3′ for the planted embedding lattice at polynomial `q = 3329`**,
+   with ratio `m/d ≈ 0.25`. T4b covers quasi-polynomial `q` and no planted vector: open, in
+   progress.
+2. Stage 2 (below): audit and Lean in progress.
+3. The sieve: T1 is in Lean given the static hypotheses; `0.2925` uses P′ (paper) and the audited
+   GFH theorem.
+4. S5 initialization (`IdealUniformLeaves`). It is easier for `q`-ary lattices, since
+   `qZ^d ⊂ Λ`.
+5. The bit model.
+
+This does not replace walls 1 and 2: the estimator's cheaper BKZ-based attacks still have no
+proof. It is the cheapest attack whose cost proof is within reach.
+
 ## Stage 2: the uSVP success condition with a planted vector (in progress)
 
 * **`λ₂` lower bound, polynomial `q` (new; [research/usvp_planted.md](research/usvp_planted.md);
