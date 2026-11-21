@@ -441,6 +441,35 @@ theorem runWith_shared {α : Type}
   refine congrArg (PMF.bind _) (funext fun i => ?_)
   exact runWith_oracleI sp F program {} i
 
+/-- `obs` forgets the representation of the secret. -/
+theorem obs_mapSec {α : Type} (r : α × GState U Sig') :
+    obs (r.1, mapSec f r.2) = obs r := rfl
+
+/-- **An instance in the law of the secret**: when the secret of every attribute is drawn from
+`F x i` for one instance `i ← inst`, the observable experiment is the average over the instance
+of the experiments with the instance fixed. -/
+theorem runWith_bind_setup {α : Type}
+    (program : ProbOracleComp (fun _ : Fin 3 × List Bool => List Bool) α) :
+    (ProbOracleComp.runWith (oracle { sp with setup := fun x => inst.bind (F x) }) program
+        ({} : GState U Sig)).map obs =
+      inst.bind fun i =>
+        (ProbOracleComp.runWith (oracle { sp with setup := fun x => F x i }) program {}).map obs := by
+  have h1 := runWith_comap { sp with setup := fun x => inst.bind (F x) } (Prod.snd : Inst × Sig → Sig)
+    program (fun x => inst.bind fun i => (F x i).map (i, ·)) (fun x => by
+      simp only [PMF.map_bind, PMF.map_comp]
+      exact congrArg (PMF.bind inst) (funext fun i => PMF.map_id _))
+  have h2 : ∀ i, (ProbOracleComp.runWith (oracle (atInst sp F i)) program
+      ({} : GState U (Inst × Sig))).map (fun r => (r.1, mapSec Prod.snd r.2)) =
+      ProbOracleComp.runWith (oracle { sp with setup := fun x => F x i }) program {} := fun i =>
+    runWith_comap { sp with setup := fun x => F x i } (Prod.snd : Inst × Sig → Sig) program
+      (fun x => (F x i).map (i, ·)) (fun x => by rw [PMF.map_comp]; exact PMF.map_id _)
+  rw [← h1, PMF.map_comp]
+  change (ProbOracleComp.runWith (oracle (shared sp inst F)) program {}).map obs = _
+  rw [runWith_shared, PMF.map_bind]
+  refine congrArg (PMF.bind inst) (funext fun i => ?_)
+  rw [← h2 i, PMF.map_comp]
+  rfl
+
 end Represent
 
 end AdvancedEncryption.PE.Generic
