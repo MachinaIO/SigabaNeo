@@ -520,7 +520,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   lower bound on that specific count — other first-moment objects, e.g. canonical selections or weighted counts, are not ruled
   out). Multi-block twin chains are worse (27.6% of 0.85·G at β = 341, 18.6% at β = 255); within two blocks the fraction rises to
   45.3% at β = 511. The residual 2–3× gap comes from the worst-case Hermite factors in the twin tests.
-* **Frontier after Parts 1–90 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 91 (audited).** [twin_typical](research/wall1_twin_typical.md), [twin_weighted](research/wall1_twin_weighted.md):
+  two further first-moment objects fail. Counting pairs B ⊂ P (first b-window inside the passing extension) gives an infinite
+  mean for every cutoff: each passing P carries infinitely many primitive B with λ_1(B) fixed and det B → ∞, on a set of positive
+  Haar measure; counting each P once recovers Part 90 (0.12656786 / 0.36551260). Selecting the extension of globally least
+  determinant does help strictly, but only by a relative e^-584 (β = 406) / e^-734 (β = 506), and the full one-hyperplane exchange
+  test can improve Part 88's radius by at most e^-170. Canonical selection is therefore not where the 2–3× gap comes from.
+* **Frontier after Parts 1–91 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
