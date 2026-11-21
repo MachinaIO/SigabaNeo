@@ -401,7 +401,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   family scores E' ≤ min(E, w − 1), so across disjoint windows the exponential relaxation supplies ≤ N − h ≤ 1022 nats
   (≤ 511 with horizontal caps), whereas the exact product has no dimension-only cap. The 34000-nat figure was the relaxed mass
   of boxes later excluded by Part 61; the bad mass on the surviving domain is being computed.
-* **Frontier after Parts 1–70 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 71 (audited).** [surviving_mass](research/wall1_surviving_mass.md): after all Part 65 deterministic block
+  inequalities, the relaxed bad Haar intensity (first moment of relaxed basis counts, rank 1023) is still ≥ 2.3·10⁵–8.3·10⁵ nats
+  at ρ = 0.25–0.85·GSA (e.g. [829271, 842097] at β = 406, 0.85·GSA; [230166, 253386] at β = 800, 0.25·GSA), explicit lower boxes
+  verified row by row; the exponential relaxation (≤ 1022 nats) and the exact width-3 acceptance (333–490 nats on the boxes)
+  are far too weak. Suppression of this size can only come from the width-β shortest-vector tests.
+* **Frontier after Parts 1–71 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
