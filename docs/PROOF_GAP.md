@@ -217,6 +217,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   made rigorous and tightens Part 7's 701 → 662 at matched confidence. Heuristic sieve cost 2^{0.2925·647} ≈ 2^189 — the proven
   cost is only Micciancio–Voulgaris 2^{2D}. General fixed rational planes: exact first moment via finite-field ranks; a fixed
   rank-one plane fails with certainty. Says nothing about adaptive BKZ prefixes (β ≈ 400–512).
+  **Formalized in Lean** (`Attacks/Primal/SampleDeletion*.lean`; axioms `propext`, `Classical.choice`, `Quot.sound`;
+  numeric checks by `decide +kernel`, no `native_decide`): `competitor_probability_662` — over iid CBD(3) `(e', s)` and uniform
+  `A' ∈ Z_3329^{149×512}`, Pr[∃ z ∉ {0, ±v}, ‖z‖² ≤ ‖v‖²] < 2^-64 — plus `failure_647` (< 1/100) and `exact_svp_recovery`
+  (an exact SVP output is ±v and yields s). Independent audit: faithful (true probability, genuine uniform and CBD laws,
+  ties counted).
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ);
   * the projection bound for the planted vector;
