@@ -261,6 +261,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   basis below 2138 / 2131 < q at β = 646 / 647, so no q-prefix persists (k = 0) for every A; at β = 406 / 512 at most 105 / 22
   q-heads can persist, leaving ≈ 513 / 490 adaptive directions before the terminal block. While the coordinate prefix
   survives, the quotient is exactly the Part 39 punctured lattice — the Z-shape route re-derives Part 39 and gives no β < 647.
+* **Part 45 (audited, minor caveats).** [randomized_reducer](research/wall1_randomized_reducer.md): a reducer that picks a
+  uniformly random (1+ε)-near-shortest primitive vector per block keeps the Part 6 profile with c_d + log(1+ε); a randomized
+  equal-width slide terminates surely (integer prefix-covolume potential decreases on dual updates) with the slide Hermite
+  bound. But candidate counts do not control selection bias: in a rank-r example the mark is chosen w.p. 1/r while one
+  excluding congruence shifts the selection law by TV 1 − 1/r. At β = 406, 99% terminal uniqueness needs I((A,U);P) > 670.82
+  bits; at 512 an A- and plant-independent plane succeeds w.p. < 9.03·10⁻⁸; at 647 (Part 39 deletion) the terminal shell is a
+  single line w.p. ≥ 0.99516648 for ε < 8.598·10⁻⁵. The randomized reducer's failure probability on the full input is not bounded.
 * **Frontier after Parts 1–43 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
