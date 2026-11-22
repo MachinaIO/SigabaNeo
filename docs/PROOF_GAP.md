@@ -941,7 +941,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
         ≤ ∏δᵢ + reductionError + ℓ;
       * `restartReduction_lwe`: the LWE plant marginal is discharged;
       * `restartReduction_single`: the k = 1 analogue of `conditionalReduction`.
-    * The Babai-lift bound ℓ (Part 47) is still a hypothesis. There is no lift lemma in the repo yet.
+    * BabaiLift.lean / RestartLift.lean (axiom-clean) remove the lift hypothesis.
+      * `babai_lift`: nearest-plane on a prefix returns u from every lift u + Σcᵢbᵢ when |⟨u,b*ᵢ⟩| < ‖b*ᵢ‖²/2.
+      * `tail_two_sided`: the CBD(3) two-sided tail is 2·exp(−T/12).
+      * `liftFail_le_floor`: under the prefix floor gᵢ, ℓ = Σ 2·exp(−gᵢ²/12), the audited Part 47 constant at η = 3.
+      * `restartReduction_lwe_babai`: failure ≤ ∏δᵢ + reductionError + Σ 2·exp(−gᵢ²/12), with no remaining hypothesis
+        except δᵢ.
+    * Assumed from Part 47, not proved: the reducer's prefix spans W ∩ L, and success recovers the secret. CBD(3) only.
 * **Part 135 (audited, minor caveats; the corrections are in the note's Audit section).**
   [plant_symmetry](research/wall1_plant_symmetry.md): what averaging over the plant can and cannot do.
   * A lattice containing the plant determines it: a second admissible solution exists with probability < 2^−3107.2. So
