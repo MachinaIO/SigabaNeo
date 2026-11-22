@@ -5,9 +5,9 @@ import PE.Impl.DualUse.Params.Sizes
 # A configuration covering real and simulated keys
 
 The configuration `confP` over `R = ℤ_{2^K}[X]/(X^N + 1)` with the sizes of `Params/Sizes.lean`
-(`K = 2^25`, `N = 2^31`, `|Wd| = 2^58`): errors from the centered binomial law of width `16`,
-flooding below `2^512`, big box of `B = 14602560` bits per coefficient, small box of radius
-`S = 2^{B−1} − 1 − τ` and inner box of radius `2^{B−1} − 1 − 2τ`, with `τ = 2^{14602326}`.
+(`K = 2^25`, `N = 2^33`, `|Wd| = 2^60`): errors from the centered binomial law of width `16`,
+flooding below `2^512`, big box of `B = 15554316` bits per coefficient, small box of radius
+`S = 2^{B−1} − 1 − τ` and inner box of radius `2^{B−1} − 1 − 2τ`, with `τ = 2^{15554082}`.
 
 * **Both trapdoors are covered**: the real trapdoor of every key of `Setup`
   (`goodTrap_real`) and the simulated trapdoor `W_f` of the reductions, for binary `Rᵢ`, `W_j`
@@ -135,13 +135,13 @@ theorem shift_shortP (v : PK hkp confP × SKey hkp confP) (hv : v ∈ (setupM hk
   show cnorm ((0 : Fin dp → Rg Np Kp) i) ≤ τp
   simp [cnorm_zero]
 
-theorem card_coef_leP : Fintype.card (Coef dp (TrapCol kp) Np) ≤ 2 ^ 90 := by
+theorem card_coef_leP : Fintype.card (Coef dp (TrapCol kp) Np) ≤ 2 ^ 94 := by
   rw [card_coefP, dp_def]
   have := kp_le
-  have h : 2 ^ 58 + (1 + (2 * kp + 2 * kp)) ≤ 2 ^ 59 := by omega
-  calc (2 ^ 58 + (1 + (2 * kp + 2 * kp))) * Np ≤ 2 ^ 59 * 2 ^ 31 :=
+  have h : 2 ^ 60 + (1 + (2 * kp + 2 * kp)) ≤ 2 ^ 61 := by omega
+  calc (2 ^ 60 + (1 + (2 * kp + 2 * kp))) * Np ≤ 2 ^ 61 * 2 ^ 33 :=
         Nat.mul_le_mul h Np_le
-    _ = 2 ^ 90 := by rw [← pow_add]
+    _ = 2 ^ 94 := by rw [← pow_add]
 
 theorem four_τ_le : 4 * τp + 1 ≤ 2 ^ (Eτ + 3) := by
   unfold τp
