@@ -170,4 +170,107 @@ theorem uniform_prod_eq {β γ : Type} [Fintype β] [Nonempty β] [Fintype γ] [
       (PMF.uniformOfFintype β).bind fun b => (PMF.uniformOfFintype γ).map fun c => (b, c) := by
   rw [← PMF.uniformOfFintype_prod]
 
+
+/-! ### Concatenation of independent words -/
+
+/-- Two independent words, concatenated. -/
+noncomputable def cat (μ ν : PMF (List Bool)) : PMF (List Bool) := μ.bind fun u => ν.map (u ++ ·)
+
+theorem cat_assoc (μ ν ρ : PMF (List Bool)) : cat (cat μ ν) ρ = cat μ (cat ν ρ) := by
+  unfold cat
+  rw [PMF.bind_bind]
+  congr 1
+  funext u
+  rw [PMF.bind_map, PMF.map_bind]
+  congr 1
+  funext v
+  simp only [Function.comp_apply, PMF.map_comp]
+  congr 1
+  funext w
+  simp
+
+theorem cat_pure_left (u : List Bool) (ν : PMF (List Bool)) : cat (PMF.pure u) ν = ν.map (u ++ ·) :=
+  PMF.pure_bind _ _
+
+theorem cat_pure_nil (ν : PMF (List Bool)) : cat (PMF.pure []) ν = ν := by
+  rw [cat_pure_left]
+  simp only [List.nil_append]
+  rw [show (fun x : List Bool => x) = id from rfl, PMF.map_id]
+
+theorem cat_pure_nil_right (μ : PMF (List Bool)) : cat μ (PMF.pure []) = μ := by
+  unfold cat
+  simp only [PMF.pure_map, List.append_nil]
+  exact PMF.bind_pure μ
+
+theorem catPow_succ_cat (μ : PMF (List Bool)) (n : ℕ) : catPow μ (n + 1) = cat (catPow μ n) μ := rfl
+
+theorem catPow_one (μ : PMF (List Bool)) : catPow μ 1 = μ := by
+  rw [catPow_succ_cat, catPow_zero, cat_pure_nil]
+
+theorem catPow_add (μ : PMF (List Bool)) (a : ℕ) : ∀ b,
+    catPow μ (a + b) = cat (catPow μ a) (catPow μ b)
+  | 0 => by rw [Nat.add_zero, catPow_zero, cat_pure_nil_right]
+  | b + 1 => by rw [← Nat.add_assoc, catPow_succ_cat, catPow_add μ a b, cat_assoc, ← catPow_succ_cat]
+
+theorem catPow_mul (μ : PMF (List Bool)) (a : ℕ) : ∀ b, catPow (catPow μ a) b = catPow μ (b * a)
+  | 0 => by simp
+  | b + 1 => by rw [catPow_succ_cat, catPow_mul μ a b, Nat.succ_mul, catPow_add]
+
+/-- The encoding of a pair drawn independently. -/
+theorem prod_enc_bind' {β γ : Type} {n m : ℕ} (e : FixedEnc β n) (f : FixedEnc γ m) (μ : PMF β)
+    (ν : PMF γ) :
+    (μ.bind fun b => ν.map fun c => (b, c)).map (e.prod f).enc = cat (μ.map e.enc) (ν.map f.enc) :=
+  prod_enc_bind e f μ ν
+
+/-! ### Uniform laws of the encodings -/
+
+/-- **Uniform residues** are uniform words of `K` bits. -/
+theorem unif_zmod (K : ℕ) :
+    (PMF.uniformOfFintype (ZMod (2 ^ K))).map (zmodEnc K).enc = BitString.uniformList K := by
+  have : NeZero (2 ^ K) := ⟨by positivity⟩
+  exact uniform_map_enc (zmodEnc K) (ZMod.card _)
+
+/-- The word of a ring element is the concatenation of its coefficients' words. -/
+theorem ringEnc_flatMap' (N K : ℕ) (r : Negacyclic (ZMod (2 ^ K)) N) :
+    (ringEnc N K).enc r = ((List.finRange N).map r.coeffs).flatMap (zmodEnc K).enc := by
+  unfold ringEnc
+  simp only
+  have h : ∀ {n m : ℕ} (hnm : n = m) (h : FixedEnc (Negacyclic (ZMod (2 ^ K)) N) n =
+      FixedEnc (Negacyclic (ZMod (2 ^ K)) N) m) (e : FixedEnc _ n), (h.mp e).enc = e.enc := by
+    intro n m hnm h e; subst hnm; rfl
+  rw [h (by simp [Enum.list])]
+  rfl
+
+/-- **A ring element with independent coefficients.** -/
+theorem ofCoeffs_pi_ringEnc (N K : ℕ) (χ : PMF (ZMod (2 ^ K))) :
+    ((PMF.pi fun _ : Fin N => χ).map Negacyclic.ofCoeffs).map (ringEnc N K).enc =
+      catPow (χ.map (zmodEnc K).enc) N := by
+  have : NeZero (2 ^ K) := ⟨by positivity⟩
+  rw [PMF.map_comp]
+  have h := pi_map_flatMap (α := Fin N) χ (zmodEnc K).enc
+  simp only [Enum.list, List.length_finRange] at h
+  rw [← h]
+  congr 1
+  funext T
+  simp only [Function.comp_apply, ringEnc_flatMap']
+
+/-- **Uniform ring elements** are uniform words of `N · K` bits. -/
+theorem unif_ring (N K : ℕ) :
+    (PMF.uniformOfFintype (Negacyclic (ZMod (2 ^ K)) N)).map (ringEnc N K).enc =
+      BitString.uniformList (N * K) := by
+  have : NeZero (2 ^ K) := ⟨by positivity⟩
+  have hu : PMF.uniformOfFintype (Negacyclic (ZMod (2 ^ K)) N) =
+      (PMF.uniformOfFintype (Fin N → ZMod (2 ^ K))).map Negacyclic.ofCoeffs := by
+    rw [show (Negacyclic.ofCoeffs : (Fin N → ZMod (2 ^ K)) → _) =
+      (Negacyclic.coeffsEquiv (R := ZMod (2 ^ K)) (n := N)).symm from rfl,
+      PMF.uniformOfFintype_map_equiv]
+  rw [hu, ← PMF.pi_uniformOfFintype, ofCoeffs_pi_ringEnc, unif_zmod, catPow_uniformList]
+
+/-- **Uniform functions** with uniform encoded values. -/
+theorem unif_fun {α β : Type} [Enum α] [Fintype α] [DecidableEq α] [Fintype β] [Nonempty β]
+    {n : ℕ} (e : FixedEnc β n) (h : (PMF.uniformOfFintype β).map e.enc = BitString.uniformList n) :
+    (PMF.uniformOfFintype (α → β)).map (FixedEnc.fun (α := α) e).enc =
+      BitString.uniformList ((Enum.list (α := α)).length * n) := by
+  rw [← PMF.pi_uniformOfFintype, fun_enc_pi, h, catPow_uniformList]
+
 end SigabaNeo.Encode
