@@ -324,6 +324,176 @@ theorem run_ballP_map {u : Fin 23 → Fin k} (hu : Function.Injective u) {n K : 
 theorem noGrow_ballP : ballP.NoGrow := rfl
 theorem wf_ballP : ballP.WF := wf_of_wfB (by decide)
 
+/-! ### The binary decomposition -/
+
+def dcD : Fin 28 → Fin 37 := ![8, 7, 1, 2, 3, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+  27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
+def dcS : Fin 28 → Fin 37 := ![13, 7, 1, 2, 3, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+  27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
+def dcM : Fin 5 → Fin 37 := ![8, 0, 10, 11, 5]
+def dcZ : Fin 5 → Fin 37 := ![12, 0, 10, 11, 5]
+theorem dcD_inj : Function.Injective dcD := by decide
+theorem dcS_inj : Function.Injective dcS := by decide
+theorem dcM_inj : Function.Injective dcM := by decide
+theorem dcZ_inj : Function.Injective dcZ := by decide
+
+theorem clean_dc {u : Fin 28 → Fin 37} (hu : ∀ i : Fin 28, 5 ≤ i.val → 14 ≤ (u i).val)
+    (t : Store 37) (h : ∀ j : Fin 37, 14 ≤ j.val → t j = []) :
+    ∀ i : Fin 28, 5 ≤ i.val → t (u i) = [] := fun i hi => h _ (hu i hi)
+
+theorem run_dcD {K N : ℕ} {x : List Bool} (t : Store 37) (h : ∀ j : Fin 37, 14 ≤ j.val → t j = [])
+    (hK : (t 2).length = K) (hN : (t 3).length = N) (h7 : t 7 = x) (hx : x.length = N * K)
+    (hy : (t 1).length = N * K) :
+    run (map dcD (bzip dig0B)) t =
+      Function.update t 8 (concatN N (fun i => bitW K (hd (block K i x)))) := by
+  subst h7
+  exact run_bzip_map dcD_inj (blockSpec_dig0 K) (fun x _ _ _ => length_bitW K _) t
+    (clean_dc (by decide) t h) hK hN hx hy
+
+theorem run_dcS {K N : ℕ} {x : List Bool} (t : Store 37) (h : ∀ j : Fin 37, 14 ≤ j.val → t j = [])
+    (hK : (t 2).length = K) (hN : (t 3).length = N) (h7 : t 7 = x) (hx : x.length = N * K)
+    (hy : (t 1).length = N * K) :
+    run (map dcS (bzip shrB)) t =
+      Function.update t 13 (concatN N (fun i => (block K i x ++ [false]).tail)) := by
+  subst h7
+  exact run_bzip_map dcS_inj (blockSpec_shr K) (fun x _ hx _ => by simp [hx]) t
+    (clean_dc (by decide) t h) hK hN hx hy
+
+theorem run_dcM (t : Store 37) (h10 : t 10 = []) (h11 : t 11 = []) :
+    run (map dcM mvP) t = Function.update (Function.update t 8 ((t 8).drop (t 5).length)) 0
+      ((t 0 ++ takeD (t 5).length (t 8)).drop (t 5).length) := run_mvP_map dcM_inj t h10 h11
+theorem run_dcZ (t : Store 37) (h10 : t 10 = []) (h11 : t 11 = []) :
+    run (map dcZ mvP) t = Function.update (Function.update t 12 ((t 12).drop (t 5).length)) 0
+      ((t 0 ++ takeD (t 5).length (t 12)).drop (t 5).length) := run_mvP_map dcZ_inj t h10 h11
+
+/-- The ring word after `m` block-wise shifts. -/
+def curW (N K m : ℕ) (u : List Bool) : List Bool := concatN N (fun t => shrN m (block K t u))
+
+theorem length_curW {N K : ℕ} {u : List Bool} (hu : u.length = N * K) (m : ℕ) :
+    (curW N K m u).length = N * K :=
+  length_concatN fun t ht => by rw [length_shrN, length_block hu ht]
+
+theorem dig_curW {N K : ℕ} {u : List Bool} (hu : u.length = N * K) (m : ℕ) :
+    concatN N (fun i => bitW K (hd (block K i (curW N K m u)))) = digitRW N K m u := by
+  rw [digitRW]
+  apply concatN_congr
+  intro t ht
+  rw [curW, block_concatN (fun j hj => by rw [length_shrN, length_block hu hj])]
+  simp only [ht, ↓reduceIte, hd_shrN]
+
+/-- One digit. Tapes `7` the shifted word, `8` the digit, `9` the counter, `10` `11` `12` `13`
+`14 … 36` scratch. -/
+def decBody1 : Prog 37 :=
+  map dcD (bzip dig0B) ⨾ map dcM mvP ⨾ map dcS (bzip shrB) ⨾ cp 7 13 ⨾ clr 13 ⨾ clr 8
+
+/-- One zero entry. -/
+def decBody2 : Prog 37 := map dcZ mvP
+
+/-- **The binary decomposition** `decW N K k u`. -/
+def decP : Prog 37 := cp 0 6 ⨾ cp 7 1 ⨾ forN 9 4 decBody1 ⨾ forN 9 4 decBody2 ⨾ clr 7
+
+theorem run_decBody1 {K N : ℕ} (s : Store 37) (hs : ∀ i : Fin 37, 7 ≤ i.val → s i = [])
+    (hK : (s 2).length = K) (hN : (s 3).length = N) (hNK : (s 5).length = N * K)
+    (hu : (s 1).length = N * K) (a : ℕ × List Bool) (w : List Bool) :
+    run decBody1 (Function.update (Function.update (Function.update s 7 (curW N K a.1 (s 1))) 0 a.2) 9 w) =
+      Function.update (Function.update (Function.update s 7 (curW N K (a.1 + 1) (s 1))) 0
+        ((a.2 ++ digitRW N K a.1 (s 1)).drop (N * K))) 9 w := by
+  obtain ⟨m, ov⟩ := a
+  have hl := length_curW hu m
+  simp only [decBody1, run_seq, run_copy, run_clear]
+  rw [run_dcD (K := K) (N := N) (x := curW N K m (s 1)) _
+    (by intro j hj; fin_cases j <;> simp at hj ⊢ <;> exact hs _ (by decide))
+    (by simp [hK]) (by simp [hN]) (by simp) hl (by simp [hu])]
+  rw [dig_curW hu]
+  rw [run_dcM _ (by simp [hs]) (by simp [hs])]
+  rw [run_dcS (K := K) (N := N) (x := curW N K m (s 1)) _
+    (by intro j hj; fin_cases j <;> simp at hj ⊢ <;> exact hs _ (by decide))
+    (by simp [hK]) (by simp [hN]) (by simp) hl (by simp [hu])]
+  have hsh : concatN N (fun i => (block K i (curW N K m (s 1)) ++ [false]).tail) =
+      curW N K (m + 1) (s 1) := shr_pass hu m
+  have htd : takeD (N * K) (digitRW N K m (s 1)) = digitRW N K m (s 1) :=
+    takeD_of_length' (length_digitRW N K m _)
+  funext t
+  fin_cases t <;> simp [hs, hNK, hsh, htd, length_digitRW]
+
+theorem run_decBody2 {K N : ℕ} (s : Store 37) (hs : ∀ i : Fin 37, 7 ≤ i.val → s i = [])
+    (hNK : (s 5).length = N * K) (c : List Bool) (a : ℕ × List Bool) (w : List Bool) :
+    run decBody2 (Function.update (Function.update (Function.update s 7 c) 0 a.2) 9 w) =
+      Function.update (Function.update (Function.update s 7 c) 0
+        ((a.2 ++ zeroW (N * K)).drop (N * K))) 9 w := by
+  simp only [decBody2]
+  rw [run_dcZ _ (by simp [hs]) (by simp [hs])]
+  funext t
+  fin_cases t <;> simp [hs, hNK, takeD_nil, zeroW]
+
+theorem decW_eq_concatN (N K k : ℕ) (u : List Bool) :
+    decW N K k u = concatN k (fun i => digitRW N K i u) ++ concatN k (fun _ => zeroW (N * K)) := by
+  rw [decW, Nat.one_mul, Nat.two_mul, concatN_add]
+  congr 1
+  · apply concatN_congr
+    intro p hp
+    rw [if_pos (Nat.div_eq_of_lt hp), Nat.mod_eq_of_lt hp]
+  · apply concatN_congr
+    intro i hi
+    have : (k + i) / k = 1 := by
+      rw [Nat.add_comm, Nat.add_div_right _ (by omega), Nat.div_eq_of_lt hi]
+    rw [if_neg (by omega)]
+
+theorem run_decP {K N k' : ℕ} (s : Store 37) (hs : ∀ i : Fin 37, 7 ≤ i.val → s i = [])
+    (hu : (s 1).length = N * K) (hK : (s 2).length = K) (hN : (s 3).length = N)
+    (hk : (s 4).length = k') (hNK : (s 5).length = N * K) (hO : (s 6).length = 2 * k' * (N * K)) :
+    run decP s = Function.update s 0 (decW N K k' (s 1)) := by
+  let G : ℕ × List Bool → Store 37 := fun a =>
+    Function.update (Function.update s 7 (curW N K a.1 (s 1))) 0 a.2
+  have hc0 : curW N K 0 (s 1) = s 1 := by
+    rw [curW, ← concatN_block hu]; apply concatN_congr; intro t _; simp [shrN, concatN_block hu]
+  have hloop1 := run_forN 9 4 decBody1 G
+    (fun a : ℕ × List Bool => (a.1 + 1, (a.2 ++ digitRW N K a.1 (s 1)).drop (N * K)))
+    (fun a w => run_decBody1 s hs hK hN hNK hu a w) (0, s 6)
+    (Function.update (Function.update s 0 (s 6)) 7 (s 1)) (by
+      funext t; simp only [G, hc0]; fin_cases t <;> simp)
+  let G2 : ℕ × List Bool → Store 37 := fun a =>
+    Function.update (Function.update s 7 (curW N K k' (s 1))) 0 a.2
+  have hloop2 := fun ov => run_forN 9 4 decBody2 G2
+    (fun a : ℕ × List Bool => (a.1 + 1, (a.2 ++ zeroW (N * K)).drop (N * K)))
+    (fun a w => run_decBody2 s hs hNK _ a w) (0, ov)
+    (Function.update (G2 (0, ov)) 9 []) (by funext t; simp only [G2]; fin_cases t <;> simp)
+  have h1 : Function.update s 0 (s 6) 1 = s 1 := by simp
+  simp only [decP, run_seq, run_copy, run_clear]
+  rw [h1, hloop1]
+  have h4 : Function.update (Function.update s 0 (s 6)) 7 (s 1) 4 = s 4 := by simp
+  rw [h4, hk, pushNat_iter (N * K) (fun m => digitRW N K m (s 1)) (fun _ => length_digitRW _ _ _ _)]
+  simp only [Nat.zero_add]
+  have e2 : Function.update (G (k', (s 6 ++ concatN k' (fun i => digitRW N K i (s 1))).drop
+      (k' * (N * K)))) 9 [] = Function.update (G2 (0, (s 6 ++ concatN k'
+        (fun i => digitRW N K i (s 1))).drop (k' * (N * K)))) 9 [] := rfl
+  rw [e2, hloop2]
+  have h4' : ∀ ov, Function.update (G2 (0, ov)) 9 [] 4 = s 4 := by intro ov; simp [G2]
+  rw [h4', hk, pushNat_iter (N * K) (fun _ => zeroW (N * K)) (fun _ => by simp [zeroW])]
+  have hD : (concatN k' (fun i => digitRW N K i (s 1))).length = k' * (N * K) :=
+    length_concatN fun i _ => length_digitRW _ _ _ _
+  have hZ : (concatN k' (fun _ : ℕ => zeroW (N * K))).length = k' * (N * K) :=
+    length_concatN fun i _ => by simp [zeroW]
+  have hfin := drop_append_drop (s 6) (concatN k' (fun i => digitRW N K i (s 1)))
+    (concatN k' (fun _ => zeroW (N * K)))
+  rw [hD, hZ] at hfin
+  have hO' : (s 6).length = k' * (N * K) + k' * (N * K) := by rw [hO]; ring
+  simp only [Nat.zero_add] at hfin ⊢
+  rw [hfin, drop_append_of_length hO', ← decW_eq_concatN]
+  funext t
+  simp only [G2]
+  fin_cases t <;> simp [hs]
+
+theorem run_decP_map {u : Fin 37 → Fin k} (hu : Function.Injective u) {K N k' : ℕ} (s : Store k)
+    (hs : ∀ i : Fin 37, 7 ≤ i.val → s (u i) = []) (hw : (s (u 1)).length = N * K)
+    (hK : (s (u 2)).length = K) (hN : (s (u 3)).length = N) (hk : (s (u 4)).length = k')
+    (hNK : (s (u 5)).length = N * K) (hO : (s (u 6)).length = 2 * k' * (N * K)) :
+    run (map u decP) s = Function.update s (u 0) (decW N K k' (s (u 1))) :=
+  run_map_eq_update hu _ s 0 _ (run_decP _ hs hw hK hN hk hNK hO)
+
+theorem noGrow_decP : decP.NoGrow := rfl
+theorem wf_decP : decP.WF := wf_of_wfB (by decide)
+
 end Prog
 
 end SigabaNeo.Tape
