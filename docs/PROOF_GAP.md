@@ -1174,6 +1174,27 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
+* **Frontier after Parts 1–144 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+  * **Success (in Lean).**
+    * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
+    * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
+      exact SVP oracle (`two_block_success`, Parts 131/132).
+  * **Cost (on paper, audited).** An explicit ADRS/ASD18 exact-SVP algorithm costs ≤ 2^794.98 word operations at the
+    recorded instance (Parts 140–141). Part 141's sampler lemmas are partly in Lean.
+  * **BKZ route (in Lean, modulo δᵢ).**
+    * The chain from (A, b) through a reducer's ordered basis, the plant-blind restart over k disjoint row blocks, the
+      final-block test, uniqueness, the Babai lift and decoding to the secret is formalized (`restartAttack_lwe`).
+    * Its bound is failure ≤ ∏δᵢ + reductionError + Σ 2·exp(−g²/12).
+    * **δᵢ, the rejection probability of the reducer's output, is the only open quantity.**
+  * **What δᵢ needs (Parts 134–144).**
+    * Necessary: Pr[λ1(H) ≤ 16.86] ≤ 1/99 at β = 506.
+    * Sufficient: λ1 ≥ 35.11.
+    * Routes reduced or blocked:
+      * plant averaging, change of measure, potentials and restarts all reduce to the selected window's lower tail;
+      * Haar-only per-step hypotheses fail above ratio 0.18–0.20;
+      * history-uniform horizontal bounds are impossible.
+    * Remaining: history-averaged bounds on the horizontal and positive-height charges, and on the late-state upper tail of
+      λ1/GH.
 * Open, and the core of wall 1:
   * the law of the adaptively reduced prefix (after BKZ) — the only remaining route;
   * the projection bound for the planted vector under that law;
