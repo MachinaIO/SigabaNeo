@@ -1553,6 +1553,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * The toys confirm this: all 2,654 positive-height winners in 17³ designs are recovered.
   * **Remaining.** The projection Jacobian fixes the covolume change, but the branch weight N(S) is the penultimate law
     itself. The weighted prefix sum over gated outputs (and p_a) is still the core.
+* **Part 177 (audited, minor caveats).** [aliasing](research/wall1_aliasing.md): the width-506 final-block certificate and
+  CBD aliasing.
+  * **Profile data alone cannot certify.** A genuine null-lattice block (prescribed 518-vector prefix, recorded determinant,
+    all 505 terminal GS lengths within 0.75% of GSA) has height-zero failure > 99.60305%.
+  * **With a verified minimum, almost everything is tiny.** Take λ1(H) ≥ 54.82, which is 0.99759×GH (54.95253) and so a
+    plausible shortest-vector scale. Then:
+    * the norm cap costs < 0.000478351;
+    * height-one failure on the cap is < 6.44·10⁻¹⁴;
+    * all nonzero exact aliases are < 2.23·10⁻¹³⁸.
+  * **Remaining.** The nonintegral dual-class contribution at heights 2–30, which is checkable from finite residue data of
+    the actual block. How often width-506 BKZ meets the minimum floor is a separate question (the 0.954-ratio issue).
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1562,7 +1573,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–176 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–177 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
