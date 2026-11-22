@@ -185,6 +185,47 @@ theorem law_coinsAt {r t c b : Fin k} (hrt : r ≠ t) (hrc : r ≠ c) (hrb : r �
 theorem wf_coinsAt (r t c b : Fin k) (hc : c ≠ r) (hc' : c ≠ b) : (coinsAt r t c b).WF := by
   simp [coinsAt, forN, WF, Preserves, push, sin, Prim.writes, hc, hc', Ne.symm hc', Ne.symm hc]
 
+/-! ### Bounds of the coin loop -/
+
+theorem lenBound_coinBodyAt (r b : Fin k) :
+    lenBound (coin b ⨾ push r b ⨾ clr b) = fun L => L + 1 := by
+  funext L
+  simp [lenBound, push, sin, Prim.grow]
+
+theorem timeBound_coinBodyAt (r b : Fin k) (L : ℕ) :
+    timeBound (coin b ⨾ push r b ⨾ clr b) L = 6 * L + 15 := by
+  simp [timeBound, lenBound, push, sin, Prim.grow, Prim.pad]
+  omega
+
+theorem iterate_succ_eq (L : ℕ) : ∀ j, (fun L : ℕ => L + 1)^[j] L = L + j
+  | 0 => rfl
+  | j + 1 => by rw [Function.iterate_succ_apply', iterate_succ_eq L j]; rfl
+
+theorem lenBound_coinsAt_le (r t c b : Fin k) (L : ℕ) : lenBound (coinsAt r t c b) L ≤ 2 * L := by
+  have e : lenBound (coinsAt r t c b) L = iterMax (lenBound (coin b ⨾ push r b ⨾ clr b)) L := rfl
+  rw [e, lenBound_coinBodyAt, iterMax]
+  apply Finset.sup_le
+  intro j hj
+  rw [iterate_succ_eq]
+  simp at hj
+  omega
+
+theorem timeBound_coinsAt_le (r t c b : Fin k) (L : ℕ) :
+    timeBound (coinsAt r t c b) L ≤ 23 * (L + 1) ^ 2 := by
+  have hsup : (Finset.range L).sup (fun j => roundTime (timeBound (coin b ⨾ push r b ⨾ clr b))
+      ((lenBound (coin b ⨾ push r b ⨾ clr b))^[j] L)) ≤ 16 * L + 18 := by
+    apply Finset.sup_le
+    intro j hj
+    rw [lenBound_coinBodyAt, iterate_succ_eq, roundTime, timeBound_coinBodyAt]
+    simp at hj
+    omega
+  have e : timeBound (coinsAt r t c b) L = (2 * L + 3) + ((2 * L + 3) +
+      (L * ((Finset.range L).sup (fun j => roundTime (timeBound (coin b ⨾ push r b ⨾ clr b))
+        ((lenBound (coin b ⨾ push r b ⨾ clr b))^[j] L)) + 1) + 2)) := rfl
+  rw [e]
+  have h2 := Nat.mul_le_mul_left L (Nat.add_le_add_right hsup 1)
+  nlinarith
+
 theorem wf_coinsP : coinsP.WF :=
   wf_of_wfB (by decide)
 
