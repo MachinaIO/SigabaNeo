@@ -221,4 +221,95 @@ theorem ph_runG (N K k d Ms fuel : ℕ) (L L' : List ℕ) (T : ℕ) (hL : L.leng
 
 end WB2
 
+/-! ### The preparation of the predicate's run, the key sum, the cleanup -/
+
+namespace WB2
+
+open SigabaNeo.Tape.ValVM SigabaNeo.Tape.Prog SigabaNeo.Tape.Prog.KST
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ)
+
+/-- The bounds after `prepG`, step by step. -/
+def vG (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
+  let v1 := Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0
+  let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  let v3 := Prog.lenBoundT (clr (mw 12)) v2
+  let v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
+  let v5 := tmplB tX0 (tmpl31 N K k c.d) v4
+  let v6 := tmOut c M31 v5
+  let v7 := Prog.lenBoundT (copiesP 1) v6
+  let v8 := tmplB tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
+    (offPsi hk c + 10 * lenPsi N K k)) v7
+  Prog.lenBoundT (clr tX0) v8
+
+/-- The steps of `prepG`. -/
+def tG (β0 : Fin 256 → ℕ) (M31 : ℕ) : ℕ :=
+  let v1 := Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0
+  let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  let v3 := Prog.lenBoundT (clr (mw 12)) v2
+  let v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
+  let v5 := tmplB tX0 (tmpl31 N K k c.d) v4
+  let v6 := tmOut c M31 v5
+  let v7 := Prog.lenBoundT (copiesP 1) v6
+  let v8 := tmplB tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
+    (offPsi hk c + 10 * lenPsi N K k)) v7
+  Prog.timeBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0 + (cntT W v1 +
+    (Prog.timeBoundT (clr (mw 12)) v2 + (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 +
+    (tmplTT tX0 (tmpl31 N K k c.d) v4 + ((2 * M31 + 3) * simTmplSweeps N K k +
+    (Prog.timeBoundT (copiesP 1) v6 + (tmplTT tX0 (stepG N K k c.d ++ wordsG N K k c.d W
+      (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) v7 +
+    Prog.timeBoundT (clr tX0) v8)))))))
+
+/-- **The phase of `prepG`.** -/
+theorem ph_prepG (β0 : Fin 256 → ℕ) (M31 : ℕ)
+    (hin : (fun j => tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
+      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
+        (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)
+        (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0))))) (tm31 j)) ≤
+      Sym.bnd (tmVars M31 N K k (lenA N K k c.d)) σTmF)
+    (htop : ∀ j, tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
+      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
+        (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)
+        (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0))))) (tm31 j) ≤ M31) :
+    Ph (prepG hk c W) β0 (tG hk c W β0 M31) (vG hk c W β0 M31) := by
+  have k31 : ∀ x ∈ tmpl31 N K k c.d, x.1 ≠ tX0 := ne_of_keys (keys_tmpl31 N K k c.d) (by decide)
+  have kG : ∀ x ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
+      (offPsi hk c + 10 * lenPsi N K k), x.1 ≠ tX0 :=
+    ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)
+  exact (ph_prog _ β0).seq <| (ph_cnt W _).seq <| (ph_prog _ _).seq <| (ph_prog _ _).seq <|
+    (ph_tmplP tX0 _ _ k31).seq <| (ph_tm c M31 _ hin htop).seq <| (ph_prog _ _).seq <|
+    (ph_tmplP tX0 _ _ kG).seq (ph_prog _ _)
+
+/-- **The phase of the key sum's preparation.** -/
+theorem ph_keyPrep (N K k d : ℕ) (β : Fin 256 → ℕ) :
+    Ph (keyPrep N K k d) β
+      (Prog.timeBoundT (clrsP keyClr) β + (tmplTT tX0 (keyT N K k d) (Prog.lenBoundT (clrsP keyClr) β) +
+        (1 + 1) * (2 * (supB (tmplB tX0 (keyT N K k d) (Prog.lenBoundT (clrsP keyClr) β)) + 1 + 1) + 3)))
+      (Function.update (tmplB tX0 (keyT N K k d) (Prog.lenBoundT (clrsP keyClr) β)) (ms 87)
+        (tmplB tX0 (keyT N K k d) (Prog.lenBoundT (clrsP keyClr) β) (ms 87) + 1)) :=
+  (ph_prog _ β).seq <| (ph_tmplP tX0 _ _ (ne_of_keys (keys_keyT N K k d) (by decide))).seq
+    (ph_putW _ _ _)
+
+/-- **The phase of the framed `simKeyP`.** -/
+theorem ph_simKey (β : Fin 256 → ℕ) (M N K m k W V off Lst Lpos Lst₂ W' V' off' : ℕ)
+    (hin : (fun j => β (oK2 j)) ≤ ℓSK M N K m k W V off Lst Lpos Lst₂ W' V' off')
+    (hM : ∀ j, β (oK2 j) ≤ M) :
+    Ph (.frame (ValVM.mkE oK2 oK2_inj) (.prog simKeyP)) β
+      ((2 * M + 3) * simKeySweeps N K m k W V off W' V' off')
+      (embedF (ValVM.mkE oK2 oK2_inj) β fun j => if j = 0 then m * (2 * k) * (N * K) else M) := by
+  refine ph_frame _ fun ℓ hℓ => ?_
+  obtain ⟨h0, h1, h2⟩ := boundsT_simKeyP M N K m k W V off Lst Lpos Lst₂ W' V' off'
+    (hℓ.trans hin) (fun t => (hℓ t).trans (hM t))
+  refine ⟨h2, fun t => ?_⟩
+  by_cases ht : t = 0
+  · subst ht; simp only [if_true]; exact h0
+  · simp only [if_neg ht]; exact h1 t
+
+/-- **The phase of the final cleanup.** -/
+theorem ph_finClr (β : Fin 256 → ℕ) :
+    Ph (.prog (clrsP finClr)) β (Prog.timeBoundT (clrsP finClr) β)
+      (Prog.lenBoundT (clrsP finClr) β) := ph_prog _ β
+
+end WB2
+
 end AdvancedEncryption.DualUse.Prog
