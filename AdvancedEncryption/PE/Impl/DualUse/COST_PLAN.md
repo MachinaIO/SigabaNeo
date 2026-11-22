@@ -215,3 +215,13 @@ Remaining (in order):
   count to `W` bits after `countP` (identity, `|gs| + 10 ≤ W`), making the runs' cost independent of
   the gate list's bound; then `time_keyP` with a per-tape hypothesis on the block at
   `io2 Lsd (frontL c.L W) 0`, the size bound, `hP` for the windows at `W = 512`.
+* **Done** (later): `capP` (`Lib/Machines/Prog/CountP.lean`) caps the gate count at `W` after
+  `countP`, so the runs are charged `≤ W + 1023` gate rounds whatever the gate list's bound;
+  `time_wfB2_conf` now holds for gate lists of up to `2^64` bits: **`≤ 2^549` steps**
+  (run of `f̂` `≤ 2^545`, predicate `≤ 2^480`, `simKeyP` `≤ 2^548`).
+  `KeyPTime2.lean`: **`time_keyP2`**, `time_keyP` with the block bounded at the per-tape bounds of
+  its call `io2 Lsd (frontL c.L W) 0` (`ub_winB2`, `ub_branchB2`); **`time_keyP_wfB2`**
+  (`WfB2Conf.lean`): the key component with `wfB2` at the sizes of `confP`, block time `2^549`.
+* Remaining hypotheses of the instance at `confP`: `treeHeight Np kp ≤ 64`, the stream offsets
+  and `|sdEnc|` `≤ 2^234`, `frontL c.L 512 ≤ 2^64`; the windows' `parse C ≠ []`,
+  `|parse C| + 10 ≤ 512`, `BndG 512` for `wfSpec_wfB2`; the size bound.
