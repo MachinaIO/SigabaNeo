@@ -88,3 +88,25 @@ Remaining (in order):
 5. Assembly `wfB2`, `wfSpec_wfB2`, its certificate (`xcheck` by `decide +kernel`, symbolic in
    `N, K, k, d, C_step`), `time_keyP` with per-tape hypotheses for the `W_f` block, size bound,
    numerics at `confP`.
+
+### WS-T1 continued (2026-11-23): decisions for the remaining steps
+
+* **128 word tapes** (`ValVM`, 264 tapes): `coefC` writes 40 of the first 61 words and keeps only
+  `45, 61, 62, 63` free; the block level needs ~40 more words.
+* **No `xcheck` certificate of machine code**: `xabs` on `compileA cert coefC` did not finish in
+  5 minutes even as compiled `#eval` (nested `fixIter` over 5 loop levels, `pSubst` of the step's
+  polynomial at each `gate`), so `decide +kernel` is out of reach. Replacement: the machine never
+  lengthens a word (shift registers, templates), so a **static bound** `B : Fin 128 → ℕ` with
+  `B s ≤ B d` for every `cp d s` and `V ≤ B d` for every `gate d` bounds every word during the
+  whole run; the cost is then a structural recursion `costC B c` (a loop `rep c b` costs
+  `B c · (costC B b + sweep)`), proven `≥ timeBoundT (compileA c)` once for all codes, and
+  evaluated at `confP` by `norm_num`.
+* **Forward references** (`repV`: `bs.getD m const`): the bundles are kept in a rotated shift
+  register `R_t = const^(W−10−t) ++ [const, in₀ … in₉, r₀ … r_{t−1}]` (`W + 1` slots, `W` the unary
+  width of the gate word, `BndG W gs`); an operand `j ≤ W` is read from `R_t ++ R_t` at slot
+  `(W − 10 − t) + j`, which is `r_m` for `j = 11 + m < 11 + t` and `const` otherwise. No
+  topological property of the gate list is needed.
+* The predicate's Ring-GSW simulation reuses the same gate loop with slots of one value and the
+  block `gate` (a second instance of the machine, step `simStepP ginvGswP`).
+* Program sizes: every template comes from `natP` (doubling, `O(log n)` states), every input from
+  loops of the machine over the word `sdEnc sd` (no unrolled `itemsP` over `Enum.list`).
