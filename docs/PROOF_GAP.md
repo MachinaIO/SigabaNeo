@@ -1014,6 +1014,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Remaining.**
     * Gaps A and B are lower tails of the per-design acceptance.
     * Gap R (window statistics within a constant factor of Haar, Conjecture R) closes only the necessary-side statement.
+  * **Lean.** MonteCarloCertificate / CertifiedFirstAcceptance / SharedDesignExhaustion (axiom-clean, 34 declarations)
+    formalize the abstract results:
+    * Thm 1: plant independence of the plant-blind transcript, so Pr[fail | selected = d] = Pr_X[fail(d, X)];
+    * Chernoff-type completeness and false-acceptance bounds, and failure ≤ Pr[exhaustion] + θ_b + B·T;
+    * the exact identity e_T = E_A[(1−α)^T], its monotonicity, e_T ≤ δ + ε′, and the quantile, reciprocal and Jensen
+      bounds;
+    * Prop 7: Paley–Zygmund at the design level.
+    The numerical binomial tails are not evaluated.
+
 * **Part 137 (audited, minor caveats; the corrections are in the note's Audit section).**
   [joint_blocks](research/wall1_joint_blocks.md): joint estimates for blocks chosen independently of A, list decoding, and
   the ceiling of these methods.
