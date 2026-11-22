@@ -1633,6 +1633,89 @@ theorem predOut_eq (C : List Bool) (hN : 0 < N) (hK : 0 < K) :
 
 end IdG
 
+section IdK
+
+variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (sd : SimData hk c)
+
+/-- The positions of the output coefficients in the bundle. -/
+def posB (N k : ℕ) (c i j : ℕ) : ℕ := (c * k + i) * N + j
+
+theorem posW_posB (N k : ℕ) :
+    Prog.posW (nPos N k) N k (posB N k) = concatN (nPos N k) (unaryW (nPos N k)) := by
+  rw [Prog.posW, nPos, Algo.concatN_mul (2 * k * k) N, Algo.concatN_mul (2 * k) k]
+  rfl
+
+/-- **`simKeyP` on the bundle of `f̂`, the positions and the predicate's output wire writes
+`W_f`.** -/
+theorem run_simKeyP_B2 (C : List Bool) (hN : 0 < N) (hK : 0 < K) (r : Store 94)
+    (ht : Prog.KTmpl N K (K + 1) c.d (nPos N (K + 1)) (VT N K (K + 1) c.d) (lenA N K (K + 1) 1)
+      (r ∘ Prog.oKs))
+    (hb : ∀ t : Fin 94, 18 ≤ t.val → t.val < 86 → r t = []) (hb' : ∀ t : Fin 94, 91 ≤ t.val → r t = [])
+    (h1 : r 1 = ValVM.bw (fhatV (oneT N K c.d) (ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d))
+        (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1))
+        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 (parse C)).1 (predOf 10 (parse C)).2))
+    (h2 : r 2 = concatN (nPos N (K + 1)) (unaryW (nPos N (K + 1))))
+    (h86 : r 86 = SLP.valueOf (fun i : Fin 10 =>
+        ((List.finRange 10).map fun i => ValVM.jw (colsW N K (K + 1) 2 (sd.Ψ i))
+          (colsW N K (K + 1) c.d (sd.Rm i))
+          ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val [])
+      (oneG N K (K + 1) c.d) (ValVM.fV (VG N K (K + 1) c.d) (fG N K (K + 1) c.d))
+      (predOf 10 (parse C)).1 (predOf 10 (parse C)).2)
+    (h87 : r 87 = [false]) (h88 : (r 88).length = 1)
+    (h89 : (r 89).length = VG N K (K + 1) c.d) (h90 : (r 90).length = lenA N K (K + 1) 2) :
+    run Prog.simKeyP r = Function.update r 0 (colsW N K (K + 1) c.d (simW sd C)) := by
+  rw [Prog.run_simKeyP r ht hb hb' (posB N (K + 1)) (fun c hc i hi j hj => by
+      simp only [posB, nPos]
+      have : c * (K + 1) + i + 1 ≤ 2 * (K + 1) * (K + 1) := by nlinarith
+      nlinarith) (by rw [h2, posW_posB]) h88 h89 h90, ← simKeyStoreW_sd sd C, simKeyStoreW]
+  congr 2
+  · apply Prog.keySumMW_congr
+    intro c' hc i hi j hj
+    have hh : c' < 2 * (K + 1) ∧ i < K + 1 ∧ j < N := ⟨hc, hi, hj⟩
+    rw [dite_eq_left_of_eq_true (eq_true hh), h1, ValVM.bw]
+    have hpos : posB N (K + 1) c' i j = ValVM.biIx ((0, colE (K + 1) ⟨c', hc⟩, ⟨i, hi⟩, ⟨j, hj⟩) :
+        BI N (K + 1)) := by rw [biIx_out]; rfl
+    have hl : posB N (K + 1) c' i j < ((Enum.list (α := BI N (K + 1))).map
+        (fhatV (oneT N K c.d) (ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d))
+        (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1))
+        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 (parse C)).1
+        (predOf 10 (parse C)).2)).length := by
+      rw [List.length_map, hpos]; exact ValVM.biIx_lt _
+    rw [Prog.readW_flatten _ (fun x hx => by
+        simp only [List.mem_map] at hx
+        obtain ⟨b, -, rfl⟩ := hx
+        rw [fhatOut_eq hk c sd C hN hK b]
+        have hl' := wireIx_lt_store (length_insTW sd) (fun j => enumIx_lt (α := JT N K (K + 1) hk) j)
+          (fun j => (insTW sd).getD (ixT N K (K + 1) hk j) []) (simOneW N K (K + 1) c.d
+            (gadW N K (K + 1))) (fT N K c.d) (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1
+          ((fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).2 b)
+        exact store_len (length_mem_insTW sd) (length_insTW sd)
+          (fun j => enumIx_lt (α := JT N K (K + 1) hk) j) (by
+            rw [simOneW, length_jointW, length_gadW, length_zeroW, length_oneW]; simp [lenA])
+          (fT N K c.d) (fun a b _ _ => length_simStepJW (d := c.d) (by rw [length_gadW, lenA]; ring) _ a b)
+          (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1 _
+          (List.getD_eq_getElem _ _ hl' ▸ List.getElem_mem hl')) hl (by simp [VT]),
+      List.getElem_map]
+    simp only [hpos, ValVM.getElem_biIx]
+    rw [fhatOut_eq hk c sd C hN hK]
+    rfl
+  · rw [h86, h87, show takeD 1 [false] = [false] from rfl, predOut_eq hk c sd C hN hK]
+    simp only [Prog.readW, List.count_singleton]
+    simp only [Bool.false_eq_true, beq_self_eq_true, if_false, Nat.mul_zero, List.drop_zero,
+      Bool.beq_eq_decide_eq, decide_false, Bool.false_eq_true, ite_false]
+    have hl' := wireIx_lt_store (length_insGW sd) (fun i : Fin 10 => i.isLt)
+      (fun i : Fin 10 => (insGW sd).getD i.val []) (simOneW N K (K + 1) c.d (gswGadW N K (K + 1)))
+      (fG N K (K + 1) c.d) (predOf 10 (parse C)).1 (predOf 10 (parse C)).2
+    have hv := store_len (length_mem_insGW sd) (length_insGW sd) (fun i : Fin 10 => i.isLt) (by
+        rw [simOneW, length_jointW, length_gswGadW'', length_zeroW, length_oneW])
+      (fG N K (K + 1) c.d)
+      (fun a b _ _ => length_simStepJW (d := c.d) length_gswGadW'' _ a b)
+      (predOf 10 (parse C)).1 _ (List.getElem_mem hl')
+    rw [storeG, List.getD_eq_getElem _ _ hl', takeD_eq_take (by rw [List.length_drop, hv]; simp only [VG, lenA]; omega)]
+    rfl
+
+end IdK
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
