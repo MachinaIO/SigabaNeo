@@ -30,4 +30,4 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Inline.Prep", "SigabaNeo.Lib.Machines.Inline.Oracle",
   "SigabaNeo.Lib.Machines.Compose.Law", "SigabaNeo.Lib.Machines.Compose.Steps",
   "SigabaNeo.Lib.Machines.Compose.Plumbing", "SigabaNeo.Lib.Machines.Compose.Clocked",
-  "SigabaNeo.Lib.Machines.Compose.AndThen"]
+  "SigabaNeo.Lib.Machines.Compose.AndThen", "SigabaNeo.Lib.Machines.Compose.Cost"]
