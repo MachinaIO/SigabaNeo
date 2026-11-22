@@ -376,7 +376,7 @@ theorem ne_of_val {a b : Fin K} (h : a.val ≠ b.val) : a ≠ b := fun e => h (c
 macro "enc_ext" : tactic => `(tactic| (
   funext i
   rcases tape_cases i with h|h|h|h|h|h|h|⟨_, h⟩|⟨_, h⟩|⟨_, h⟩|⟨_, h⟩ <;>
-    subst h <;> simp [Function.update_apply] <;> (try split_ifs) <;> simp_all))
+    subst h <;> simp [Function.update_apply] <;> (try split_ifs) <;> (try simp_all)))
 
 section Upd
 
