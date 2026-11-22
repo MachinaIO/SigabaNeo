@@ -13,6 +13,8 @@ bounds, the key sum by `boundsT_simKeyP`.
 
 namespace AdvancedEncryption.DualUse.Prog
 
+set_option maxRecDepth 100000
+
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
 
 /-! ### Templates and literals -/
@@ -309,6 +311,42 @@ theorem ph_simKey (β : Fin 256 → ℕ) (M N K m k W V off Lst Lpos Lst₂ W' V
 theorem ph_finClr (β : Fin 256 → ℕ) :
     Ph (.prog (clrsP finClr)) β (Prog.timeBoundT (clrsP finClr) β)
       (Prog.lenBoundT (clrsP finClr) β) := ph_prog _ β
+
+end WB2
+
+/-! ### The body and the block -/
+
+namespace WB2
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ)
+
+/-- **The phase of the body**, from the phases of its parts and the bounds between them. -/
+theorem ph_wfBody_aux {X1 X2 X3 X4 X5 X6 X7 : XProg 256}
+    {β0 β1 β2 β3 β4 β5 β6 β7 : Fin 256 → ℕ} {T1 T2 T3 T4 T5 T6 T7 : ℕ}
+    (h1 : Ph X1 β0 T1 β1) (h2 : Ph X2 β1 T2 β2) (h3 : Ph X3 β2 T3 β3) (h4 : Ph X4 β3 T4 β4)
+    (h5 : Ph X5 β4 T5 β5) (h6 : Ph X6 β5 T6 β6) (h7 : Ph X7 β6 T7 β7) :
+    Ph (.seq X1 (.seq X2 (.seq X3 (.seq X4 (.seq X5 (.seq X6 X7)))))) β0
+      (T1 + (T2 + (T3 + (T4 + (T5 + (T6 + T7)))))) β7 :=
+  h1.seq (h2.seq (h3.seq (h4.seq (h5.seq (h6.seq h7)))))
+
+theorem ph_wfBody {β0 β1 β1' β2 β3 β3' β4 β5 β6 β7 : Fin 256 → ℕ} {T1 T2 T3 T4 T5 T6 T7 : ℕ}
+    (h1 : Ph (prepT hk c W) β0 T1 β1) (g1 : β1 ≤ β1') (h2 : Ph runT β1' T2 β2)
+    (h3 : Ph (prepG hk c W) β2 T3 β3) (g3 : β3 ≤ β3') (h4 : Ph runG β3' T4 β4)
+    (h5 : Ph (keyPrep N K k c.d) β4 T5 β5)
+    (h6 : Ph (.frame (ValVM.mkE oK2 oK2_inj) (.prog SigabaNeo.Tape.Prog.simKeyP)) β5 T6 β6)
+    (h7 : Ph (.prog (clrsP finClr)) β6 T7 β7) :
+    Ph (wfBody hk c W) β0 (T1 + (T2 + (T3 + (T4 + (T5 + (T6 + T7)))))) β7 := by
+  have h2' : Ph runT β1 T2 β2 := fun ℓ hℓ => h2 ℓ (hℓ.trans g1)
+  have h4' : Ph runG β3 T4 β4 := fun ℓ hℓ => h4 ℓ (hℓ.trans g3)
+  unfold wfBody
+  exact ph_wfBody_aux h1 h2' h3 h4' h5 h6 h7
+
+/-- **The phase of the block**, from the phase of its body on the input in the machine's
+coordinates. -/
+theorem ph_wfB2 {β : Fin 256 → ℕ} {T : ℕ} {β' : Fin 256 → ℕ}
+    (h : Ph (wfBody hk c W) (fun j => β (eW j)) T β') :
+    Ph (wfB2 hk c W) β T (embedF eW β β') := by
+  rw [wfB2]; exact ph_frame eW h
 
 end WB2
 
