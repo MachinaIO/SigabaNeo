@@ -1257,6 +1257,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * F_rem has an exact discrete cylinder count, checked plane by plane on 645 toy case–draw pairs.
   * **Remaining (sufficient).** h_long + F_rem ≤ 0.0097738000. F_rem needs its average over selected histories with
     R/8 < s < 2R/√3.
+* **Part 151 (audited, SOUND).** [penultimate_tail](research/wall1_penultimate_tail.md): the penultimate-minimum lower tail
+  Pr(B) of Part 149 (width-506 restart).
+  * The sharpened Part 147 first-moment bound crosses 0.009 at physical radius 1.19806583 and reaches 1 at 1.20927112.
+    The required cutoff exceeds 30.5692 on every history, so first moments alone fall short by ≈ 25× in radius.
+    ≥ 96.3% of the majorant comes from the latest used column supplying the first direction of a long flag.
+  * At the required cutoff, the three cases involving the 406th selection sum to < 2.400·10⁻⁹.
+  * **Remaining (sufficient, exhaustive split).** Bound by 0.0089999976 in total:
+    * a horizontal winner whose short vector and plane witness are both inherited;
+    * a vertical winner with length in [0.954, 1.097193]·(window GH).
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1266,7 +1275,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–150 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–151 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
