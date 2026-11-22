@@ -178,7 +178,7 @@ theorem tstep_iter (N K l : ℕ) (sa sb : List Bool) : ∀ t,
   | t + 1 => by
     rw [Function.iterate_succ_apply', tstep_iter N K l sa sb t, tstep, List.drop_drop,
       List.drop_drop, sumLoop]
-    congr 2 <;> ring
+    congr 2 <;> ring_nf
 
 /-- The abstract entry: (column stream, output register). -/
 def jstep (N K n l : ℕ) (sai : List Bool) : List Bool × List Bool → List Bool × List Bool :=
