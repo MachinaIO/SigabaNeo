@@ -104,4 +104,5 @@ import PE.Impl.DualUse.Prog.WfPred
 import PE.Impl.DualUse.Prog.WfIns
 import PE.Impl.DualUse.Prog.WfB
 import PE.Impl.DualUse.Prog.WfTime
+import PE.Impl.DualUse.Prog.FhatGen
 import PE.Impl.DualUse.Prog.C0
