@@ -671,6 +671,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   CBDPaleyZygmund.lean (`paley_zygmund`, `projection_second_moment_le`, `projection_tail_lower`) proves
   Pr[XᵀQX > 6d/5] ≥ d/(25(d+2)). This is the Paley–Zygmund step behind Part 97's height-zero necessity. All three are accepted
   on Prove2Me.
+  CoprimeMark.lean contains eight theorems:
+  * fiber normalization |jH|·|H[j]| = |H|, with every fiber a coset of H[j] (Part 120);
+  * for a coprime height (q·H = 0, gcd(j, q) = 1), multiplication by j is bijective with explicit inverse a, and
+    Pr[j·U = x] = 1/|H| (Part 127).
+
+  All eight are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
