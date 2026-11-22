@@ -295,4 +295,70 @@ theorem lawM_copy {S : Type} (N : ℕ) :
 
 end Copy
 
+/-! ### The output -/
+
+section Out
+
+theorem outM_tr (q : OStep) inp work ans bit :
+    (outM (kA := kA) (ops := ops) (m := m)).tr q inp work ans bit = stepR (outAct q work) :=
+  rfl
+
+theorem wr_noop (F : Tape kA ops m → ℤ → Option Bool) (P : Tape kA ops m → ℤ) :
+    (fun t => wr (F t) (P t) (noop t).1) = F ∧ (fun t => P t + ((noop (kA := kA) (ops := ops)
+      (m := m) t).2 : ℤ)) = P := by
+  constructor <;> funext t <;> simp [noop]
+
+variable (ip : Fin (x.length + 2)) (F : Tape kA ops m → ℤ → Option Bool) (P : Tape kA ops m → ℤ)
+  (u : List Bool) (hF : F .st = tapeOfList u)
+include hF
+
+/-- The loop of the output phase: each bit of `u` from `j` on, twice. -/
+theorem lawM_outLoop (N : ℕ) : ∀ k j (o : List Bool), j + k = u.length →
+    lawM (outM (kA := kA) (ops := ops) (m := m)) (N + 2 * k + 1)
+      (mkR (some .loop) ip F (Function.update P .st j) o) =
+      PMF.pure (mkR none ip F (Function.update P .st u.length) (o ++ dbl (u.drop j)), ()) := by
+  intro k
+  induction k with
+  | zero =>
+    intro j o hj
+    obtain rfl : j = u.length := by omega
+    have hst : F .st (Function.update P .st (u.length : ℤ) .st) = none := by
+      simp [hF]
+    rw [Nat.mul_zero, Nat.add_zero, lawM_det (F := F) (P := Function.update P .st (u.length : ℤ))
+      _ N _ _ _ 0 (noop (kA := kA) (ops := ops) (m := m)) none none (fun bit => by
+      rw [outM_tr]; simp only [outAct, kind_idx, hst]), (wr_noop F _).1, (wr_noop F _).2,
+      lawM_halted' _ _ _ rfl]
+    simp
+  | succ k ih =>
+    intro j o hj
+    have hj' : j < u.length := by omega
+    have hst : F .st (Function.update P .st (j : ℤ) .st) = some u[j] := by simp [hF]
+    rw [show N + 2 * (k + 1) + 1 = ((N + 2 * k + 1) + 1) + 1 by ring,
+      lawM_det _ _ _ _ _ _ _ 0 noop (some u[j]) (some (.dup u[j])) (fun bit => by
+        rw [outM_tr]; simp only [outAct, kind_idx, hst]), (wr_noop F _).1, (wr_noop F _).2,
+      lawM_det _ _ _ _ _ _ _ 0 (mv1 .st none 1) (some u[j]) (some .loop) (fun bit => rfl),
+      wr_mv1, pos_mv1, wr_none, Function.update_eq_self, Function.update_idem]
+    simp only [moveInputPos_zero, Function.update_self, SignType.coe_one]
+    have := ih (j + 1) (o ++ (some u[j]).toList ++ (some u[j]).toList) (by omega)
+    push_cast at this
+    rw [this, List.drop_eq_getElem_cons hj', dbl_cons]
+    simp only [Option.toList_some, List.append_assoc, List.cons_append, List.nil_append]
+
+/-- **The output phase**: from `u` on `st` (the head at its start), it appends
+`false :: true :: dbl u`, within `2 |u| + 3` steps. -/
+theorem lawM_out (N : ℕ) (o : List Bool) (hP : P .st = 0) :
+    lawM (outM (kA := kA) (ops := ops) (m := m)) (2 * u.length + 3 + N) (mkR (some .s0) ip F P o) =
+      PMF.pure (mkR none ip F (Function.update P .st u.length) (pairOut o u), ()) := by
+  rw [show 2 * u.length + 3 + N = ((N + 2 * u.length + 1) + 1) + 1 by ring,
+    lawM_det _ _ _ _ _ _ _ 0 noop (some false) (some .s1) (fun bit => rfl), (wr_noop F _).1,
+    (wr_noop F _).2,
+    lawM_det _ _ _ _ _ _ _ 0 noop (some true) (some .loop) (fun bit => rfl), (wr_noop F _).1,
+    (wr_noop F _).2, moveInputPos_zero, moveInputPos_zero]
+  have hP' : P = Function.update P .st ((0 : ℕ) : ℤ) := by
+    rw [Function.update_eq_self_iff.mpr (by simp [hP])]
+  rw [hP', lawM_outLoop ip F _ u hF N u.length 0 _ (by omega), Function.update_idem]
+  simp [pairOut]
+
+end Out
+
 end SigabaNeo.Inline
