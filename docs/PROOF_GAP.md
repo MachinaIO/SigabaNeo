@@ -1019,6 +1019,30 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * The densest Q passes with ρ ≈ 0.28 [heur].
   * **Verdicts.** Re-randomized BKZ, DBKZ and random sub-designs remain subject to Parts 106, 111 and 112. Self-dual BKZ is
     limited to Parts 86–87. Prefixes independent of A stay at 646/647.
+* **Part 139 (audited, minor caveats; Prop 7 corrected; see the note's Audit section).** [lyapunov](research/wall1_lyapunov.md):
+  potential-function / supermartingale routes.
+  * **Theorem 3 (barrier).** Take any per-step hypotheses made only of pathwise facts and statements about non-atomic
+    (Haar) inputs. They cannot bound δ below 1 for ratio events at ratio above 1/G_r: 0.2036 at β = 406, 0.1826 at β = 506.
+    The witness is a zero-draw kernel. It agrees with the true kernel outside a finite set of reachable states and
+    freezes the cube for the whole pass. The barrier blocks ratio-type events, not the physical event of the Lean
+    reduction.
+  * **Theorems 1–2.** Supermartingale arguments (Azuma, Freedman, optional stopping, Margulis) are dominated by δ itself.
+    A potential built on a statistic π is only as strong as the worst reachable history with the same π.
+  * **Theorem 4 (exact one-step geometry).**
+    * A winner with vertical index k ≥ 1 gives a retained lattice ≅ A_v(Λ + Zλ/k).
+    * The Rankin recursion holds.
+    * The dual minimum satisfies λ1(Λ'*) ≥ min(λ1(Λ*), 1).
+    * All were checked in ranks 2–3.
+  * **Theorem 5.** There is an exact Fourier second-moment identity for the window minimum. Conditionally on the cap
+    s ≤ κ·G_b·D^{1/b} (κ = 1.05), Part 114's terminal floor rises from 28.81 to 34.10, and the ratio target drops from 0.954
+    to 0.805.
+  * **Remaining.**
+    * (C1) dual cusp escape.
+    * (C2) the ratio at 0.805, via Conjecture E or a Freedman good set.
+    * DS (winner direction spread). Per the audit, M ≤ 2 is not enough at small s, and s ≥ s_min must be charged as an
+      exit.
+    * Horizontal steps still face the Part 120/126 obstruction.
+  * **Prop 7 (corrected).** The Rankin skeleton gives only ≈ 10^{-1412}·GH, not a Part 109/110-type floor.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
