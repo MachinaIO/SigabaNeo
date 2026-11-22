@@ -192,6 +192,44 @@ theorem iter_posBody {N k : ℕ} (hk : 0 < k) (hN : 0 < N) (thr : ℕ) (R : List
     congr 3
     rw [← hidx, pAt_idx R hi1 hj1]
 
+/-- Emit two positions of the list `19` as one gate. -/
+def pairE : Code := .seq (.lpop 55 19) (.seq (.lpop 56 19) (.nand 57 55 56))
+
+theorem iter_pairE : ∀ (x : ℕ) (σ : St) (L : List ℕ), σ.ls 19 = L → 2 * x ≤ L.length →
+    (∀ v ∈ L, v < min (E.n + 1 + σ.t) E.M) →
+    ((exec E pairE)^[x] σ).out = σ.out ++ ((L.take (2 * x)).map (uw E.W)).flatten ∧
+    ((exec E pairE)^[x] σ).t = σ.t + x ∧ ((exec E pairE)^[x] σ).ls 19 = L.drop (2 * x) ∧
+    ((exec E pairE)^[x] σ).src = σ.src ∧
+    (∀ r : SR, r ≠ 55 → r ≠ 56 → r ≠ 57 → ((exec E pairE)^[x] σ).sc r = σ.sc r) ∧
+    (∀ l : LR, l ≠ 19 → ((exec E pairE)^[x] σ).ls l = σ.ls l)
+  | 0, σ, L, hL, _, _ => by simp [hL]
+  | x + 1, σ, L, hL, hlen, hv => by
+    obtain ⟨a, b, L', rfl⟩ : ∃ a b L', L = a :: b :: L' := by
+      match L, hlen with
+      | a :: b :: L', _ => exact ⟨a, b, L', rfl⟩
+    rw [Function.iterate_succ_apply]
+    have ha := hv a (by simp)
+    have hb := hv b (by simp)
+    set τ := exec E pairE σ
+    have hτ : τ.out = σ.out ++ uw E.W a ++ uw E.W b ∧ τ.t = σ.t + 1 ∧ τ.ls 19 = L' ∧
+        τ.src = σ.src ∧ (∀ r : SR, r ≠ 55 → r ≠ 56 → r ≠ 57 → τ.sc r = σ.sc r) ∧
+        (∀ l : LR, l ≠ 19 → τ.ls l = σ.ls l) := by
+      have fa : fixv E σ.t a = a := by unfold fixv; simp only [show ¬ min (E.n + 1 + σ.t) E.M ≤ a by omega, ↓reduceIte]
+      have fb : fixv E σ.t b = b := by unfold fixv; simp only [show ¬ min (E.n + 1 + σ.t) E.M ≤ b by omega, ↓reduceIte]
+      simp only [τ, pairE, exec, hL, Function.update_apply, List.headD_cons, List.tail_cons,
+        show (56 : SR) ≠ 55 by decide, show (55 : SR) ≠ 56 by decide]
+      refine ⟨by simp [fa, fb], trivial, by simp, trivial, fun r h1 h2 h3 => by simp [h1, h2, h3],
+        fun l h => by simp [h]⟩
+    obtain ⟨o1, t1, l1, s1, f1, g1⟩ := hτ
+    obtain ⟨o2, t2, l2, s2, f2, g2⟩ := iter_pairE x τ L' l1 (by simp at hlen; omega)
+      (fun v hv' => by
+        have := hv v (by simp [hv'])
+        rw [t1]; omega)
+    refine ⟨?_, by rw [t2, t1]; ring, by rw [l2]; simp [Nat.mul_succ], by rw [s2, s1],
+      fun r h1 h2 h3 => by rw [f2 r h1 h2 h3, f1 r h1 h2 h3], fun l h => by rw [g2 l h, g1 l h]⟩
+    rw [o2, o1, show 2 * (x + 1) = 2 * x + 2 by ring]
+    simp [List.append_assoc]
+
 end FhatGen
 
 end SigabaNeo.Lattices
