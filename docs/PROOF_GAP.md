@@ -737,7 +737,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * the Haar calibration Pr_{X_m}[λ1 < c] ≤ c^m·V_m/(2ζ(m));
   * the product law for n = 2.
 
-  Still open for n ≥ 3: K_x-a.e. invariance, i.e. a measure argument that transfers the bound to K_x.
+  Closed by the six files below; there is no remaining open obligation for Part 105.
+  TransverseCocycle / TransverseShapeInvariance / TransverseUniqueness / TransverseKernelLaw / TransverseProduct /
+  TransverseMinimumBound give:
+  * K_x-a.e. SL_{n−1}-invariance, and the identification of K_x with Haar on X_{n−1} for a.e. x (all n ≥ 3);
+  * the exact joint law dx/ζ(n) ⊗ Haar_{X_{n−1}} of (marked primitive vector, normalized transverse lattice);
+  * `part105`: E_Haar[#{oriented primitive v : |v| ≤ ℓ, λ1(normalized π_{v⊥}L) < c}] ≤
+    (V_n ℓ^n/ζ(n)) · (c^m V_m/(2ζ(m))), where m = n − 1 ≥ 2, on any finite-mass fundamental domain.
+  All of these are axiom-clean (propext, Classical.choice, Quot.sound).
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
