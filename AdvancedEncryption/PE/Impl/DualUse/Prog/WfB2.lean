@@ -1775,6 +1775,44 @@ theorem law_keyF (S : Store 256) (v : List Bool)
   rw [this, embedF_comp]
   rfl
 
+/-! ### The law of the body -/
+
+section Final
+
+variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ) (gs : GateList)
+  (sd : SimData hk c)
+
+/-- The store after the run of `f̂`. -/
+def T3 : Store 256 :=
+  ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) gs) (VT N K (K + 1) c.d) (w3 hk c W gs sd)
+
+/-- The store after the predicate's run. -/
+def S4 : Store 256 :=
+  ValVM.enc (s3 hk c W (T3 hk c W gs sd)) (VG N K (K + 1) c.d) (w6 hk c W (T3 hk c W gs sd))
+
+theorem T3_word (x : Fin 120) (hx : x ∉ wr fhatFullC) :
+    T3 hk c W gs sd (mw x) = w1 hk c W ((sdEnc hk c).enc sd) gs x := by
+  rw [T3, ValVM.enc_tWd, w3_frame hk c W gs sd x hx]
+
+theorem T3_facts (hW : 0 < W) (hb : BndG W gs) :
+    T3 hk c W gs sd (mw GSC) = gsW W gs ∧ T3 hk c W gs sd (mw SDW) = (sdEnc hk c).enc sd ∧
+      T3 hk c W gs sd (mw OB) = [true] ∧
+      (∀ j : Fin 132, j.val ∉ wrG → T3 hk c W gs sd (ms j) = []) ∧
+      T3 hk c W gs sd tX0 = [] ∧ T3 hk c W gs sd tX1 = [] ∧ T3 hk c W gs sd tX2 = [] := by
+  have hG : GSC ∉ wr fhatFullC := by decide +kernel
+  have hS : SDW ∉ wr fhatFullC := by decide +kernel
+  have hO : OB ∉ wr fhatFullC := by decide +kernel
+  refine ⟨?_, ?_, ?_, fun j hj => ?_, by simp [T3], by simp [T3], by simp [T3]⟩
+  · rw [T3_word hk c W gs sd _ hG, w1_GSC hk c W gs hW hb]
+  · rw [T3_word hk c W gs sd _ hS, w1_SDW]
+  · rw [T3_word hk c W gs sd _ hO, w1]; exact S1_OB hk c W _ gs
+  · rw [T3, ValVM.enc_tS]
+    have sub : ∀ i ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 86, 87, 88,
+        89], i ∈ wrG := by decide
+    exact s1_blank hk c W _ gs j (fun i hi e => hj (by rw [e]; exact sub i hi))
+
+end Final
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
