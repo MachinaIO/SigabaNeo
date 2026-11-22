@@ -202,7 +202,13 @@ def f1 (t : Fin 256) : Fin 1 → Fin 256 := fun _ => t
 theorem f1_inj (t : Fin 256) : Function.Injective (f1 t) := fun x y _ => Subsingleton.elim x y
 
 /-- Operand in: `step i := TV`, `X0 := a`, move `V` bits of `X0` into `step i`, clear `X0`. -/
-def inP : Prog 6 := cp 0 1 ⨾ cp 3 2 ⨾ map ![3, 0, 4, 5, 1] mvP ⨾ clr 3
+def inP : Prog 6 := cp 0 1 ⨾ cp 3 2 ⨾ map ![3, 0, 4, 5, 1] mvP ⨾ clr 3 ⨾ clr 4 ⨾ clr 5
+
+/-- `mvP`, its scratch cleared. -/
+def mvPc : Prog 5 := mvP ⨾ clr 2 ⨾ clr 3
+
+/-- `dropP`, its scratch cleared. -/
+def dropPc : Prog 3 := dropP ⨾ clr 1
 
 /-- Result out: `d := step 0`, clear the step's tapes `0 1 2`. -/
 def outP : Prog 4 := cp 3 0 ⨾ clr 0 ⨾ clr 1 ⨾ clr 2
@@ -218,14 +224,14 @@ def compileA {H : List ℕ → Prop} {P : Prog 132} (cert : StepCert H P) : Code
     .seq (.fcall eS (.prog P) cert.σS cert.σS' cert.cS cert.θ cert.hS)
       (.frame (mkE (fOut d) (fOut_inj d)) (.leafA outP))
   | .mvV d s => if h : d = s then .frame (mkE (f1 tX0) (f1_inj _)) (.leafA (nop 0)) else
-      .frame (mkE (fMv d s tTV) (fMv_inj h (Or.inl (by decide)))) (.leafA mvP)
+      .frame (mkE (fMv d s tTV) (fMv_inj h (Or.inl (by decide)))) (.leafA mvPc)
   | .mv d s c => if h : d = s ∨ d = c ∨ s = c then .frame (mkE (f1 tX0) (f1_inj _)) (.leafA (nop 0))
       else .frame (mkE (fMv d s (tWd c)) (fMv_inj_wd h))
-        (.leafA mvP)
+        (.leafA mvPc)
   | .cp d s => if h : d = s then .frame (mkE (f1 tX0) (f1_inj _)) (.leafA (nop 0)) else
       .frame (mkE (fCp d s) (fCp_inj h)) (.leafA (Prog.cp 0 1))
   | .drop t c => if h : t = c then .frame (mkE (f1 tX0) (f1_inj _)) (.leafA (nop 0)) else
-      .frame (mkE (fDr t c) (fDr_inj h)) (.leafA dropP)
+      .frame (mkE (fDr t c) (fDr_inj h)) (.leafA dropPc)
   | .clr t => .frame (mkE (f1 (tWd t)) (f1_inj _)) (.leafA (Prog.clr 0))
   | .tl t => .frame (mkE (f1 (tWd t)) (f1_inj _)) (.leafA (Prog.tl 0))
   | .rep c body => .loopA (tWd c) (compileA cert body)
@@ -350,7 +356,31 @@ theorem run_inP (t : Store 6) (h3 : t 3 = []) (h4 : t 4 = []) (h5 : t 5 = []) :
   simp only [inP, run_seq, run_copy, run_clear]
   rw [run_mvP_map inv_in _ (by simp [h4]) (by simp [h5])]
   funext i
-  fin_cases i <;> simp [h3]
+  fin_cases i <;> simp [h3, h4, h5]
+
+theorem run_clr_blank {n : ℕ} {u : Fin n → Fin k} (hu : Function.Injective u) (j : Fin n)
+    (s : Store k) (h : s (u j) = []) : run (map u (Prog.clr j)) s = s := by
+  rw [run_map_eq_update hu _ s j [] (run_clear j _), ← h, Function.update_eq_self]
+
+theorem run_mvPc_map {u : Fin 5 → Fin k} (hu : Function.Injective u) (s : Store k)
+    (h2 : s (u 2) = []) (h3 : s (u 3) = []) :
+    run (map u mvPc) s = Function.update (Function.update s (u 0) ((s (u 0)).drop (s (u 4)).length))
+      (u 1) ((s (u 1) ++ takeD (s (u 4)).length (s (u 0))).drop (s (u 4)).length) := by
+  show run (map u mvP ⨾ (map u (Prog.clr 2) ⨾ map u (Prog.clr 3))) s = _
+  have n20 : u 2 ≠ u 0 := fun e => absurd (hu e) (by decide)
+  have n21 : u 2 ≠ u 1 := fun e => absurd (hu e) (by decide)
+  have n30 : u 3 ≠ u 0 := fun e => absurd (hu e) (by decide)
+  have n31 : u 3 ≠ u 1 := fun e => absurd (hu e) (by decide)
+  rw [run_seq, run_seq, run_mvP_map hu s h2 h3, run_clr_blank hu 2 _ (by
+    rw [Function.update_of_ne n21, Function.update_of_ne n20, h2]), run_clr_blank hu 3 _ (by
+    rw [Function.update_of_ne n31, Function.update_of_ne n30, h3])]
+
+theorem run_dropPc_map {u : Fin 3 → Fin k} (hu : Function.Injective u) (s : Store k)
+    (h1 : s (u 1) = []) :
+    run (map u dropPc) s = Function.update s (u 0) ((s (u 0)).drop (s (u 2)).length) := by
+  show run (map u dropP ⨾ map u (Prog.clr 1)) s = _
+  have n10 : u 1 ≠ u 0 := fun e => absurd (hu e) (by decide)
+  rw [run_seq, run_dropP_map hu s h1, run_clr_blank hu 1 _ (by rw [Function.update_of_ne n10, h1])]
 
 theorem run_outP (t : Store 4) :
     run outP t = Function.update (Function.update (Function.update (Function.update t 3 (t 0))
@@ -449,10 +479,10 @@ theorem run_gate (hP : VStep P V f Pre) {s₀ : Store 132} (hpre : Pre s₀) (h0
 
 theorem run_mvF {d s : Fin 120} {c' : Fin 256} (h : Function.Injective (fMv d s c')) (s₀ : Store 132)
     (w : St) (hc : enc s₀ V w c' = (w' : List Bool)) :
-    run (map (fMv d s c') mvP) (enc s₀ V w) =
+    run (map (fMv d s c') mvPc) (enc s₀ V w) =
       enc s₀ V (Function.update (Function.update w s ((w s).drop w'.length)) d
         (shiftIn w'.length (w d) (w s))) := by
-  rw [run_mvP_map h _ (by rw [fMv_2]; simp) (by rw [fMv_3]; simp)]
+  rw [run_mvPc_map h _ (by rw [fMv_2]; simp) (by rw [fMv_3]; simp)]
   simp only [fMv_0, fMv_1, fMv_4, enc_tWd, hc, update_tWd]
   rfl
 
@@ -467,8 +497,8 @@ theorem run_flat_compileA (hP : VStep P V f Pre) {s₀ : Store 132} (hpre : Pre 
         dite_eq_left_of_eq_true (eq_true h) .., run_nopF]
       simp [exec, h]
     · rw [show compileA cert (.mvV d s) = .frame (mkE (fMv d s tTV) (fMv_inj h (Or.inl (by decide))))
-        (.leafA mvP) from dite_eq_right_of_eq_false (eq_false h) ..]
-      show run (map (fMv d s tTV) mvP) _ = _
+        (.leafA mvPc) from dite_eq_right_of_eq_false (eq_false h) ..]
+      show run (map (fMv d s tTV) mvPc) _ = _
       rw [run_mvF (fMv_inj h (Or.inl (by decide))) s₀ w enc_tTV]
       simp [exec, h]
   | .mv d s c, w => by
@@ -477,7 +507,7 @@ theorem run_flat_compileA (hP : VStep P V f Pre) {s₀ : Store 132} (hpre : Pre 
         dite_eq_left_of_eq_true (eq_true h) .., run_nopF]
       simp [exec, h]
     · simp only [compileA, dite_eq_right_of_eq_false (eq_false h) ..]
-      show run (map (fMv d s (tWd c)) mvP) _ = _
+      show run (map (fMv d s (tWd c)) mvPc) _ = _
       rw [run_mvF (fMv_inj_wd h) s₀ w (enc_tWd c)]
       simp [exec, h]
   | .cp d s, w => by
@@ -495,10 +525,10 @@ theorem run_flat_compileA (hP : VStep P V f Pre) {s₀ : Store 132} (hpre : Pre 
     · rw [show compileA cert (.drop t c) = .frame (mkE (f1 tX0) (f1_inj _)) (.leafA (nop 0)) from
         dite_eq_left_of_eq_true (eq_true h) .., run_nopF]
       simp [exec, h]
-    · rw [show compileA cert (.drop t c) = .frame (mkE (fDr t c) (fDr_inj h)) (.leafA dropP)
+    · rw [show compileA cert (.drop t c) = .frame (mkE (fDr t c) (fDr_inj h)) (.leafA dropPc)
         from dite_eq_right_of_eq_false (eq_false h) ..]
-      show run (map (fDr t c) dropP) _ = _
-      rw [run_dropP_map (fDr_inj h) _ (by rw [fDr_1]; simp)]
+      show run (map (fDr t c) dropPc) _ = _
+      rw [run_dropPc_map (fDr_inj h) _ (by rw [fDr_1]; simp)]
       simp [fDr_0, fDr_2, update_tWd, exec, h]
   | .clr t, w => by
     show run (map (f1 (tWd t)) (Prog.clr 0)) _ = _
@@ -544,11 +574,11 @@ theorem noGrow_flat_compileA (hP : VStep P V f Pre) :
   | .mvV d s => by
     unfold compileA; split_ifs
     · show (map _ (nop 0)).noGrowB = true; rw [noGrowB_map]; rfl
-    · show (map _ mvP).noGrowB = true; rw [noGrowB_map]; rfl
+    · show (map _ mvPc).noGrowB = true; rw [noGrowB_map]; rfl
   | .mv d s c => by
     unfold compileA; split_ifs
     · show (map _ (nop 0)).noGrowB = true; rw [noGrowB_map]; rfl
-    · show (map _ mvP).noGrowB = true; rw [noGrowB_map]; rfl
+    · show (map _ mvPc).noGrowB = true; rw [noGrowB_map]; rfl
   | .cp d s => by
     unfold compileA; split_ifs
     · show (map _ (nop 0)).noGrowB = true; rw [noGrowB_map]; rfl
@@ -556,7 +586,7 @@ theorem noGrow_flat_compileA (hP : VStep P V f Pre) :
   | .drop t c => by
     unfold compileA; split_ifs
     · show (map _ (nop 0)).noGrowB = true; rw [noGrowB_map]; rfl
-    · show (map _ dropP).noGrowB = true; rw [noGrowB_map]; rfl
+    · show (map _ dropPc).noGrowB = true; rw [noGrowB_map]; rfl
   | .clr t => by show (map _ (Prog.clr 0)).noGrowB = true; rw [noGrowB_map]; rfl
   | .tl t => by show (map _ (Prog.tl 0)).noGrowB = true; rw [noGrowB_map]; rfl
   | .rep c body => noGrow_flat_compileA hP body
