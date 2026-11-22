@@ -790,8 +790,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   The audit found that multiple blocks DO close with disjoint sample blocks. Conditional on s, Part 39 blocks on disjoint rows
   are independent, so k blocks fail together with probability ≤ E_s[f(‖s‖²)^k]. Two width-646 exact SVP calls (133 rows each,
   with candidate verification on the 245 unused rows) succeed with probability > 99.409%. **New rigorous frontier: maximum
-  oracle dimension 646 (two calls), improving 647 (one call).** Optimizing the block count and size is in progress.
-* **Frontier after Parts 1–131 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+  oracle dimension 646 (two calls), improving 647 (one call).**
+* **Part 132.** [multiblock](research/wall1_multiblock.md): a check of the arguments behind Part 131's multi-block statement.
+  * Fixed disjoint row sets are conditionally independent given the secret, also for unequal sizes.
+  * Disjoint secret-coordinate deletions on shared rows do not give that independence.
+  * The (7/q)^v verification bound applies only to candidates with a wrong residue mod q, so integer recovery needs decoding to
+    the CBD-support representative.
+
+  No further parameter optimization is recorded.
+* **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
