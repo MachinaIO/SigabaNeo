@@ -49,7 +49,7 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Inline.InitMain", "SigabaNeo.Lib.Machines.Inline.InitCost",
   "SigabaNeo.Lib.Machines.Inline.PerQuery", "SigabaNeo.Lib.Machines.Inline.InitPerQuery",
   "SigabaNeo.Lib.Machines.Inline.InitStructCost",
-  "SigabaNeo.Lib.Machines.Compose.LinCost", "SigabaNeo.Lib.Machines.Prog.Macros",
+  "SigabaNeo.Lib.Machines.Compose.LinCost", "SigabaNeo.Lib.Machines.Prog.Macros", "SigabaNeo.Lib.Machines.Prog.RegVMSim",
   "SigabaNeo.Lib.Machines.Inline.Regions",
   "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.FrameParse", "SigabaNeo.Lib.Machines.Prog.FrameSize",
   "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.SampleTime"]

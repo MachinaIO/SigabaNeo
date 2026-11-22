@@ -50,6 +50,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.BoxProgs
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimTmpl
 import SigabaNeo.Lib.Lattices.ProgAlgo.KeySum
 import SigabaNeo.Lib.Lattices.ProgAlgo.KeySumT
+import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenBlock
 
 /-!
 # Lattice library
