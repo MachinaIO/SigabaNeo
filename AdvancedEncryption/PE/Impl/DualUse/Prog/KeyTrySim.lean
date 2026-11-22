@@ -134,6 +134,19 @@ theorem clean_upd {t : Store 90} {i : Fin 90} {v : List Bool} (hi : i.val < 41)
   rw [Function.update_of_ne (by rintro rfl; omega)]
   exact ht j hj
 
+theorem clean_upd' {m : ℕ} {t : Store 90} {i : Fin 90} {v : List Bool} (hi : i.val < m)
+    (ht : ∀ j : Fin 90, m ≤ j.val → t j = []) : ∀ j : Fin 90, m ≤ j.val → Function.update t i v j = [] := by
+  intro j hj
+  rw [Function.update_of_ne (by rintro rfl; omega)]
+  exact ht j hj
+
+theorem agree_upd {s0 t : Store 90} {i : Fin 90} {v : List Bool} (hi : 26 ≤ i.val ∧ i.val ≤ 40)
+    (ht : ∀ j : Fin 90, (j.val < 26 ∨ 40 < j.val) → t j = s0 j) :
+    ∀ j : Fin 90, (j.val < 26 ∨ 40 < j.val) → Function.update t i v j = s0 j := by
+  intro j hj
+  rw [Function.update_of_ne (by rintro rfl; omega)]
+  exact ht j hj
+
 /-! ### Phase 1: the blocks of the public key, the big-box element -/
 
 /-- `27 := B₀`, `28 := B₁`, `29 := p_pub` (from the public key `1`), `30 := emb(coins)`. -/
@@ -411,5 +424,72 @@ theorem run_ph4 {N K k d P : ℕ} (s0 t : Store 90)
   rw [c1, q2, q3, q4, q5, run_clrWork, hout]
   funext j
   fin_cases j <;> simp [hU4, hU3, hU2, hU1, hag, hbl]
+
+/-! ### One try -/
+
+theorem length_decW (N K k : ℕ) (u : List Bool) : (decW N K k u).length = 2 * k * (N * K) := by
+  rw [decW, length_concatN (K := N * K), Nat.one_mul]
+  intro p _
+  split_ifs
+  · exact length_digitRW N K _ u
+  · simp [zeroW]
+
+/-- **One try of key generation with the simulated trapdoor**, as a tape program. -/
+def keyTrySimP : Prog 90 := ph1 ⨾ ph2 ⨾ ph3 ⨾ ph4
+
+/-- **`keyTrySimP` computes `keyTrySimW`**: tape `0` receives
+`keyTrySimW N K k d B sW pk W_f l` (`sW` on `4`, `pk` on `1`, `W_f` on `2`, the coins on `3`), every
+other tape is unchanged. -/
+theorem run_keyTrySimP {N K k d B P : ℕ} (hK0 : 0 < K) (s : Store 90)
+    (hs : ∀ j : Fin 90, 26 ≤ j.val → s j = [])
+    (hpk : (s 1).length = P) (hsz : d * (N * K) + nT k * (N * K) ≤ P)
+    (hwf : (s 2).length = d * (2 * k) * (N * K)) (hS : (s 4).length = K)
+    (hc : s 5 = powW K (B - 1)) (hK : (s 6).length = K) (hN : (s 7).length = N)
+    (hNK : (s 8).length = N * K) (hB : (s 9).length = B) (hn : (s 10).length = (d + nT k) * N)
+    (hnK : (s 11).length = (d + nT k) * N * K) (hk : (s 12).length = k)
+    (h13 : (s 13).length = 2 * k) (h14 : (s 14).length = 1) (h15 : (s 15).length = 1)
+    (h16 : (s 16).length = d) (h17 : (s 17).length = nT k) (h18 : (s 18).length = d * (N * K))
+    (h19 : (s 19).length = nT k * (N * K)) (h20 : (s 20).length = 2 * k * (N * K))
+    (h21 : (s 21).length = d * N) (h22 : (s 22).length = P - N * K) (h23 : (s 23).length = P)
+    (h24 : (s 24).length = P + (d + nT k) * N * K + 2 * k * (N * K)) :
+    run keyTrySimP s = Function.update s 0 (keyTrySimW N K k d B (s 4) (s 1) (s 2) (s 3)) := by
+  have hNKP : N * K ≤ P := by
+    have : N * K ≤ nT k * (N * K) := Nat.le_mul_of_pos_left _ (by simp [nT])
+    omega
+  have hl0 : ((s 1).take (d * (N * K))).length = d * (N * K) := by
+    rw [List.length_take, hpk]; omega
+  have hl1 : (((s 1).drop (d * (N * K))).take (nT k * (N * K))).length = nT k * (N * K) := by
+    rw [List.length_take, List.length_drop, hpk]; omega
+  have hl2 : ((s 1).drop ((s 1).length - N * K)).length = N * K := by
+    rw [List.length_drop, hpk]; omega
+  have hl3 : (embW ((d + nT k) * N) B K (s 3)).length = (d + nT k) * N * K := length_embW _ _ _ _
+  have hsplit : (d + nT k) * N * K = d * (N * K) + nT k * (N * K) := by ring
+  have hp0 : ((embW ((d + nT k) * N) B K (s 3)).take (d * (N * K))).length = d * (N * K) := by
+    rw [List.length_take, hl3]; omega
+  have hp1 : ((embW ((d + nT k) * N) B K (s 3)).drop (d * (N * K))).length = nT k * (N * K) := by
+    rw [List.length_drop, hl3]; omega
+  simp only [keyTrySimP, run_seq]
+  rw [run_ph1 (N := N) (K := K) (k := k) (d := d) (B := B) (P := P) s hs hpk hsz hc hK hB hn hnK
+    h18 h19 h22]
+  rw [run_ph2 (N := N) (K := K) (k := k) (d := d) _ (by (repeat' (apply clean_upd' (by decide))); exact fun j hj => hs j (by omega)) (by simp [hs])
+    (by simp [hK]) (by simp [hN]) (by simp [hNK]) (by simp [hk]) (by simp [h14]) (by simp [h15])
+    (by simp [h16]) (by simp [h17]) (by simp [h18]) (by simp [h20]) (by simp [hl0]) (by simp [hl1])
+    (by simp [hl2]) (by simp [hl3])]
+  rw [run_ph3 (N := N) (K := K) (k := k) (d := d) hK0 _
+    (by (repeat' (apply clean_upd' (by decide))); exact fun j hj => hs j (by omega))
+    (by simp [hwf]) (by simp [hS]) (by simp [hK]) (by simp [hN]) (by simp [hNK]) (by simp [hn])
+    (by simp [hnK]) (by simp [h13]) (by simp [h14]) (by simp [h15]) (by simp [h16]) (by simp [h18])
+    (by simp [h19]) (by simp [h21]) (by simp [hp1]) (by simp [hp0]) (by simp [length_decW])]
+  have hX : ∀ a b T : List Bool, a.length = d * (N * K) → b.length = nT k * (N * K) →
+      (matSubW N K d a T ++ b).length = (d + nT k) * N * K := by
+    intro a b T ha hb
+    rw [List.length_append, matSubW_eq_subRW, length_subRW _ _ (by rw [ha]; ring), hb]; ring
+  rw [run_ph4 (N := N) (K := K) (k := k) (d := d) (P := P) s _
+    (by (repeat' (apply agree_upd (by decide))); exact fun j _ => rfl) (fun j hj => hs j hj) _
+    (Function.update_self _ _ _)
+    (by simp [hpk]) (by simp [hnK]) (by simp [h20]) (by simp [h23]) (by simp [h24])
+    (by simp only [Function.update_self, Function.update_of_ne (show (39 : Fin 90) ≠ 40 by decide)]
+        exact hX _ _ _ (by simp [hp0]) (by simp [hp1])) (by simp [length_decW])]
+  congr 1
 
 end AdvancedEncryption.DualUse.ProgKey
