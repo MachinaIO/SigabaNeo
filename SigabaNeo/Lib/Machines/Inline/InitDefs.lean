@@ -22,6 +22,10 @@ It is the sequence (`MultiTapePTM.seq`) of four phases on the tapes of `Inline.m
 
 `E` bounds the length of the encoded states (and so of the input `x`, the initial state), which
 bounds the phases 2 and 4 for the clock of the machine.
+
+The laws are in `Inline.InitMain` (`Machine.law_inlineOracleInit`, `Machine.run_inlineOracleInit`),
+the bounds in `Inline.InitCost` (`Machine.time_inlineOracleInit_le`,
+`Machine.cost_inlineOracleInit_le`).
 -/
 
 namespace SigabaNeo.Inline
