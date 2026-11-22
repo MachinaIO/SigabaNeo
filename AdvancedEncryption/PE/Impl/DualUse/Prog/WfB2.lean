@@ -1576,6 +1576,63 @@ theorem fhatOut_eq (C : List Bool) (hN : 0 < N) (hK : 0 < K) (b : BI N (K + 1)) 
 
 end IdT
 
+section IdG
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (sd : SimData hk c)
+
+theorem xs_eq (i : Fin 10) :
+    (((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false = DateWindow.bitsOf sd.x i := by
+  rw [← getD_sd_posX hk c sd i, List.getD_eq_getElem?_getD, List.getElem?_drop,
+    ← List.getD_eq_getElem?_getD, posX, oXG]
+  simp only [Nat.add_assoc]
+
+theorem getD_finRange_map {β : Type*} (g : Fin 10 → List β) (i : Fin 10) :
+    ((List.finRange 10).map g).getD i.val [] = g i := by
+  rw [List.getD_eq_getElem _ _ (by simp), List.getElem_map, List.getElem_finRange]
+  rfl
+
+theorem jw_eq (hN : 0 < N) (hK : 0 < K) (i : Fin 10) :
+    ValVM.jw (colsW N K k 2 (sd.Ψ i)) (colsW N K k c.d (sd.Rm i))
+      ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1 =
+      (insGW sd).getD i.val [] := by
+  rw [insGW, getD_finRange_map, xs_eq]
+  simp only [ValVM.jw, jointW, constW_bitW _ hN hK, Nat.mul_one]
+
+/-- **The predicate's output wire of the machine's run is read from the simulation's store.** -/
+theorem predOut_eq (C : List Bool) (hN : 0 < N) (hK : 0 < K) :
+    SLP.valueOf (fun i : Fin 10 =>
+        ((List.finRange 10).map fun i => ValVM.jw (colsW N K k 2 (sd.Ψ i))
+          (colsW N K k c.d (sd.Rm i))
+          ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val [])
+      (oneG N K k c.d) (ValVM.fV (VG N K k c.d) (fG N K k c.d)) (predOf 10 (parse C)).1
+      (predOf 10 (parse C)).2 =
+    (storeG N K k c.d (parse C) (insGW sd) (fun i => i.val)).getD
+      (wireIx (fun i : Fin 10 => i.val) 10 (predOf 10 (parse C)).1.length (predOf 10 (parse C)).2) [] := by
+  have hi : (fun i : Fin 10 =>
+        ((List.finRange 10).map fun i => ValVM.jw (colsW N K k 2 (sd.Ψ i))
+          (colsW N K k c.d (sd.Rm i))
+          ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val []) =
+      fun i : Fin 10 => (insGW sd).getD i.val [] := by
+    funext i
+    rw [getD_finRange_map]
+    exact jw_eq hk c sd hN hK _
+  have hin : ∀ i : Fin 10, ((insGW sd).getD i.val []).length = VG N K k c.d := fun i => by
+    rw [List.getD_eq_getElem _ _ (by rw [length_insGW]; exact i.isLt)]
+    exact length_mem_insGW sd _ (List.getElem_mem _)
+  have h1 : (oneG N K k c.d).length = VG N K k c.d := by
+    rw [oneG, List.length_append, List.length_append, length_gswGadW'', length_zeroW, length_oneW]
+  rw [hi, ValVM.valueOf_fV (vstepG N K k c.d).len _ _ hin h1]
+  obtain ⟨h, e⟩ := getElem_wireIx (fun i : Fin 10 => i.val) (insGW sd) (length_insGW sd)
+    (fun i => i.isLt) (simOneW N K k c.d (gswGadW N K k))
+    (SLP.values (fun i : Fin 10 => (insGW sd).getD i.val []) (simOneW N K k c.d (gswGadW N K k))
+      (fG N K k c.d) (predOf 10 (parse C)).1) (predOf 10 (parse C)).2
+  rw [← SLP.length_values (fun i : Fin 10 => (insGW sd).getD i.val [])
+    (simOneW N K k c.d (gswGadW N K k)) (fG N K k c.d) (predOf 10 (parse C)).1, storeG,
+    List.getD_eq_getElem _ _ h, e]
+  rfl
+
+end IdG
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
