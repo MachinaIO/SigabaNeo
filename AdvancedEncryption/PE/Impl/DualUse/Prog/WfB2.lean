@@ -218,6 +218,7 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 def prepT (W : ℕ) : XProg 256 :=
   .seq (.prog (cp (mw GSC) (mw GS))) <|
   .seq (.frame (ValVM.mkE cm13 cm13_inj) (.prog (convP W))) <|
+  .seq (.prog (clr (mw 12))) <|
   .seq (.prog (cp (mw GS) (mw GSC))) <|
   .seq (tmplP ValVM.tX0 (tmpl31 N K k c.d)) <|
   .seq (.frame (ValVM.mkE tm31 tm31_inj) (.prog simTmplP)) <|
@@ -230,6 +231,7 @@ def prepT (W : ℕ) : XProg 256 :=
 def prepG (W : ℕ) : XProg 256 :=
   .seq (.prog (clrsP lowW ⨾ cp (mw GS) (mw GSC))) <|
   .seq (.frame (ValVM.mkE cm13 cm13_inj) (.prog (convP W))) <|
+  .seq (.prog (clr (mw 12))) <|
   .seq (.prog (cp (mw GS) (mw GSC))) <|
   .seq (tmplP ValVM.tX0 (tmpl31 N K k c.d)) <|
   .seq (.frame (ValVM.mkE tm31 tm31_inj) (.prog simTmplP)) <|
@@ -306,8 +308,9 @@ variable (W : ℕ) (a : List Bool) (gs : GateList)
 /-- The input, in the machine's coordinates. -/
 def S0 : Store 256 := fun t => if t = mw SDW then a else if t = mw GS then gsW W gs else []
 
-def X2 : Store 256 :=
-  run (Prog.map cm13 (convP W)) (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS)))
+def X2 : Store 256 := Function.update
+  (run (Prog.map cm13 (convP W)) (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS))))
+  (mw 12) []
 
 def X4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (X2 W a gs) (mw GS) (X2 W a gs (mw GSC)))
 
@@ -339,7 +342,8 @@ theorem keys_T (N K k d W oB oW oP : ℕ) :
         mw INSW, mw TSl, mw TST, mw TD2, mw TW, mw TPAD, mw TW9, mw TINS, mw 61, mw 62, mw 63] := rfl
 
 theorem X2_tX0 : X2 W a gs tX0 = [] := by
-  rw [X2, run_map_apply_not cm13_inj _ _ _ (by decide), Function.update_of_ne (by decide)]
+  rw [X2, Function.update_of_ne (by decide), run_map_apply_not cm13_inj _ _ _ (by decide),
+    Function.update_of_ne (by decide)]
   simp (config := {decide := true}) [S0]
 
 theorem X4_tX0 : X4 c W a gs tX0 = [] := by
@@ -372,8 +376,10 @@ theorem law_prepT : (prepT hk c W).law (S0 W a gs) = PMF.pure (S1 hk c W a gs) :
     simp [coinFreeB, h1, show (copiesP 0).coinFreeB = true from rfl]
   rw [prepT, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind,
     XProg.law_seq, law_frame_map cm13_inj _ (coinFree_convP W), PMF.pure_bind,
+    XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
+      from rfl, XProg.law_prim, PMF.pure_bind,
     XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
-  simp only [run_copy]
+  simp only [run_copy, Prim.apply]
   rw [XProg.law_seq, law_tmplP _ _ _ (by
       rw [Function.update_of_ne (by decide)]; exact X2_tX0 W a gs)
       (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
@@ -410,6 +416,10 @@ theorem X2_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
     funext i
     fin_cases i <;> simp (config := {decide := true}) [cm13, S0, Function.update_apply]
   rw [X2]
+  by_cases h12 : t = mw 12
+  · subst h12; rw [Function.update_self]
+    simp (config := {decide := true}) [S0, Function.update_apply]
+  rw [Function.update_of_ne h12]
   by_cases ht : ∃ j, cm13 j = t
   · obtain ⟨j, rfl⟩ := ht
     rw [run_map_apply cm13_inj, hin, run_convP hW gs hb _ rfl]
@@ -520,6 +530,7 @@ theorem X6_eq_S0 (t : Fin 256) (h1 : t ∉ keysT)
   simp only [if_neg a8, if_neg a7, if_neg a6, if_neg a5, if_neg a4, if_neg a3]
   rw [run_map_apply_not tm31_inj _ _ _ h3, X4, tmplS_apply_of_not_mem _ _ _
     (ne_of_keys (keys_tmpl31 N K k c.d) h5), Function.update_of_ne a9, X2,
+    Function.update_of_ne (fun e => h4 12 (by rw [e]; rfl)),
     run_map_apply_not cm13_inj _ _ _ h4, Function.update_of_ne a10]
 
 theorem S1_eq_S0 (t : Fin 256) (h1 : t ∉ keysT)
@@ -988,7 +999,7 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) (gs : Gat
 
 def Z1 : Store 256 := run (clrsP lowW ⨾ cp (mw GS) (mw GSC)) T
 
-def Z2 : Store 256 := run (Prog.map cm13 (convP W)) (Z1 T)
+def Z2 : Store 256 := Function.update (run (Prog.map cm13 (convP W)) (Z1 T)) (mw 12) []
 
 def Z4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (Z2 W T) (mw GS) (Z2 W T (mw GSC)))
 
@@ -1028,6 +1039,10 @@ theorem Z2_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t :
     funext i
     fin_cases i <;> simp (config := {decide := true}) [cm13, Z1_apply, hT, lowW]
   rw [Z2]
+  by_cases h12 : t = mw 12
+  · subst h12; rw [Function.update_self]
+    simp (config := {decide := true}) [Z1_apply, lowW]
+  rw [Function.update_of_ne h12]
   by_cases ht : ∃ j, cm13 j = t
   · obtain ⟨j, rfl⟩ := ht
     rw [run_map_apply cm13_inj, hin, run_convP hW gs hb _ rfl]
@@ -1106,8 +1121,8 @@ theorem Z1_tX0 (hX : T tX0 = []) : Z1 T tX0 = [] := by
 
 theorem Z4_tX0 (hX : T tX0 = []) : Z4 c W T tX0 = [] := by
   rw [Z4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
-    Function.update_of_ne (by decide), Z2, run_map_apply_not cm13_inj _ _ _ (by decide),
-    Z1_tX0 T hX]
+    Function.update_of_ne (by decide), Z2, Function.update_of_ne (by decide),
+    run_map_apply_not cm13_inj _ _ _ (by decide), Z1_tX0 T hX]
 
 theorem Z5_tX0 (hX : T tX0 = []) : Z5 c W T tX0 = [] := by
   rw [Z5_apply]
@@ -1137,10 +1152,13 @@ theorem law_prepG (hX : T tX0 = []) : (prepG hk c W).law T = PMF.pure (S3 hk c W
     simp [coinFreeB, h1, show (copiesP 1).coinFreeB = true from rfl]
   rw [prepG, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc0, PMF.pure_bind,
     XProg.law_seq, law_frame_map cm13_inj _ (coinFree_convP W), PMF.pure_bind,
+    XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
+      from rfl, XProg.law_prim, PMF.pure_bind,
     XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
-  simp only [run_copy]
+  simp only [run_copy, Prim.apply]
   rw [XProg.law_seq, law_tmplP _ _ _ (by
-      rw [Function.update_of_ne (by decide), run_map_apply_not cm13_inj _ _ _ (by decide)]
+      rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide),
+        run_map_apply_not cm13_inj _ _ _ (by decide)]
       exact Z1_tX0 T hX)
       (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     PMF.pure_bind, XProg.law_seq,
@@ -1184,7 +1202,9 @@ theorem S3_eq_T {t : Fin 256} (h1 : t ∉ keysG)
     tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (fun hm => h3 (by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
       rcases hm with e | e | e | e | e | e | e | e <;> rw [e] <;> decide))),
-    Function.update_of_ne a7, Z2, run_map_apply_not cm13_inj _ _ _ (fun j e => by
+    Function.update_of_ne a7, Z2,
+    Function.update_of_ne (fun e => h3 (by rw [e]; decide)),
+    run_map_apply_not cm13_inj _ _ _ (fun j e => by
       rcases cm13_mem j with m | m
       · exact h3 (by rw [← e]; exact m)
       · exact a7 (by rw [← e]; exact m)), Z1_apply, if_neg a7, if_neg h3]
@@ -1995,12 +2015,12 @@ theorem wf_wfBody {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) 
     (wfBody hk c W).WF := by
   have hT : runT.WF := wf_compileA _ (stepSpec_simTop N K k 1).wf fhatFullC (by decide +kernel)
   have hG : runG.WF := wf_compileA _ (stepSpec_simGsw N K k 1).wf gswFullC (by decide +kernel)
-  refine ⟨⟨wf_of_wfB rfl, wf_convP W, wf_of_wfB rfl,
+  refine ⟨⟨wf_of_wfB rfl, wf_convP W, wf_of_wfB rfl, wf_of_wfB rfl,
     wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     wf_simTmplP, wf_copiesP 0,
     wf_tmplP _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)), wf_of_wfB rfl, wf_putW _ _,
     wf_putW _ _⟩,
-    hT, ⟨⟨wf_clrsP _, wf_of_wfB rfl⟩, wf_convP W, wf_of_wfB rfl,
+    hT, ⟨⟨wf_clrsP _, wf_of_wfB rfl⟩, wf_convP W, wf_of_wfB rfl, wf_of_wfB rfl,
     wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     wf_simTmplP, wf_copiesP 1,
     wf_tmplP _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), wf_of_wfB rfl⟩, hG,
