@@ -429,4 +429,45 @@ theorem coinsLaw_enc [NeZero c.d] (hN : 0 < N) (hK : 0 < K) :
   rw [trapRow_enc]
   simp only [rmW, List.append_assoc]
 
+/-- The number of bits of the encoded ciphertexts' fields. -/
+def nPsi : ℕ := (Enum.list (α := (Sdw (N := N) hk).Attr)).length * ((Enum.list (α := Fin 2)).length *
+  ((Enum.list (α := RingBTVW.Col k)).length * (N * K)))
+def nC0 : ℕ := (Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin c.d)).length * (N * K))
+def nC1 : ℕ := (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K))
+def nCj : ℕ := (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
+  ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K)))
+
+/-- **The uniform ciphertext**: uniform words, field by field. -/
+theorem ctLaw_enc : (ctUc hk c).map (ctEnc hk c).enc =
+    cat (BitString.uniformList (nPsi (N := N) hk)) (cat (BitString.uniformList (nC0 c))
+      (cat (BitString.uniformList (nC1 (N := N) (K := K) (k := k))) (cat (BitString.uniformList (nCj (N := N) hk))
+        (BitString.uniformList (N * K))))) := by
+  rw [nPsi, nC0, nC1, nCj, ← unif_ring N K,
+    ← unif_fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index) _
+      (unif_row (N := N) (K := K) (RingBTVW.Col k)),
+    ← unif_row (N := N) (K := K) (TrapCol k), ← unif_row (N := N) (K := K) (Fin c.d),
+    ← unif_fun (α := (Sdw (N := N) hk).Attr) _ (unif_fun (α := Fin 2) _
+      (unif_fun (α := RingBTVW.Col k) _ (unif_ring N K)))]
+  simp only [cat_map_left, PMF.map_bind, PMF.map_comp, Function.comp_def, bind_pure_eq_map]
+  unfold ctUc ctU
+  simp only [Cslib.Probability.PMF.monad_bind_eq_bind, Cslib.Probability.PMF.monad_pure_eq_pure,
+    PMF.map_bind, PMF.pure_map, bind_pure_eq_map, PMF.map_comp, Function.comp_def]
+  rfl
+
+/-- **The word of the secret of the ideal side**: `encDate x`, fair bits for `B₀`, `w`, `p`, the
+coins of `Enc` (`coinsLaw_enc`), the uniform ciphertext (`ctLaw_enc`). -/
+theorem setupI_enc [NeZero c.d] (x : Date) :
+    (setupI hk c x).map (secIEnc hk c).enc =
+      cat (PMF.pure (encDate x)) (cat (BitString.uniformList ((Enum.list (α := Fin 1)).length *
+        ((Enum.list (α := Fin c.d)).length * (N * K))))
+        (cat (BitString.uniformList ((Enum.list (α := JC (Sdw (N := N) hk))).length *
+          ((Enum.list (α := Fin c.d)).length * 1)))
+        (cat (BitString.uniformList (N * K)) (cat ((lawCoinsC hk c).map (coinsEnc hk c).enc)
+          ((ctUc hk c).map (ctEnc hk c).enc))))) := by
+  rw [← unif_row, ← wLaw_eq hk c, ← unif_ring N K, cat_pure_left]
+  simp only [cat_map_left, PMF.map_bind, PMF.map_comp, Function.comp_def]
+  rw [setupI]
+  simp only [PMF.map_bind, PMF.pure_map, bind_pure_eq_map, PMF.map_comp, Function.comp_def]
+  rfl
+
 end AdvancedEncryption.DualUse.Prog
