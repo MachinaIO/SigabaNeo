@@ -1218,6 +1218,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     applies once. Both terms are exact finite design counts, but the first-moment bound for non-horizontal wins is
     2^1316.021, so new tools are needed.
   * At width 406, the unit-minimum estimate is above budget (one term exceeds 2^457).
+* **Part 148 (audited, SOUND).** [vertical_multiplicity](research/wall1_vertical_multiplicity.md): the positive-height
+  multiplicity on non-horizontal wins (width-506 restart).
+  * Winners with |k| ≥ 363 contribute < 1.872·10⁻⁹, counting every witness plane.
+  * The full non-horizontal first moment is F_nh < 2^456.548, down from Part 147's 2^1316.021.
+  * An exact conditional count that keeps the winner test was checked on all 314 toy displacements.
+  * **Remaining.** h_long + F_< ≤ 0.0097738422, where F_< covers 1 ≤ |k| ≤ 362. Even at |k| = 1 it needs the average
+    number of old primitive lines that the selected projection shortens below the cutoff.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1227,7 +1234,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–147 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–148 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
