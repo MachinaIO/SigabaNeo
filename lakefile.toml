@@ -53,4 +53,4 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Inline.Regions",
   "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.FrameParse", "SigabaNeo.Lib.Machines.Prog.FrameSize", "SigabaNeo.Lib.Machines.Prog.MacroSize",
   "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.SampleTime",
-  "SigabaNeo.Lib.Machines.Prog.XAbs", "SigabaNeo.Lib.Machines.Prog.XFlat"]
+  "SigabaNeo.Lib.Machines.Prog.XAbs", "SigabaNeo.Lib.Machines.Prog.XFlat", "SigabaNeo.Lib.Machines.Prog.ValVM"]

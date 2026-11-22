@@ -192,6 +192,9 @@ def XSoundAt {n : ℕ} (p : XProg n) (σ σ' : Asg) (c : Poly) (ρ : List ℕ) :
 def XSound {n : ℕ} (H : List ℕ → Prop) (p : XProg n) (σ σ' : Asg) (c : Poly) : Prop :=
   ∀ ρ, H ρ → XSoundAt p σ σ' c ρ
 
+/-- A bound of the tapes `0 … n-1` of a store: the join of their polynomials. -/
+def autoT (σ : Asg) (n : ℕ) : Poly := ((List.range n).map (aGet σ)).foldl pJoin []
+
 /-! ### Framed programs with annotations -/
 
 /-- Framed programs whose leaves and loops carry a bound `T` of every tape of their level. -/
@@ -205,6 +208,10 @@ inductive XAst (H : List ℕ → Prop) : ℕ → Type
   | ifBlank {n : ℕ} (i : Fin n) (a b : XAst H n) : XAst H n
   /-- A loop, every tape at most `T` during its rounds. -/
   | loop {n : ℕ} (i : Fin n) (a : XAst H n) (T : Poly) : XAst H n
+  /-- A plain program, its level bound computed from the abstract store (`autoT`). -/
+  | leafA {n : ℕ} (p : Prog n) : XAst H n
+  /-- A loop, its level bound computed from the invariant store (`autoT`). -/
+  | loopA {n : ℕ} (i : Fin n) (a : XAst H n) : XAst H n
   /-- A placed subprogram `map v p` with a summary of `p` at the variables `θ` (`θ` heads with
   the level bound `T`). -/
   | call {n m : ℕ} (v : Fin m → Fin n) (p : Prog m) (τ τ' : Asg) (w : Poly) (θ : List Poly)
@@ -226,6 +233,8 @@ def toX {H : List ℕ → Prop} : {n : ℕ} → XAst H n → XProg n
   | _, loop i a _ => .loop i a.toX
   | _, call v p _ _ _ _ _ _ _ => .prog (map v p)
   | _, fcall e p _ _ _ _ _ => .frame e p
+  | _, leafA p => .prog p
+  | _, loopA i a => .loop i a.toX
 
 /-- The cost `2 T + 3` of one primitive or round overhead under `T`. -/
 def pSweep (T : Poly) : Poly := pAdd (pMul (pC 2) T) (pC 3)
@@ -268,6 +277,20 @@ def xabs {H : List ℕ → Prop} (fuel : ℕ) : {n : ℕ} → XAst H n → Asg �
         (List.finRange m).all fun j => pLe (aGet σ (v j).val) (pSubst θ (aGet τ j.val)) then
       some (setMany v (τ'.map (pSubst θ)) σ (List.finRange m), pMul (pSweep T) (pSubst θ w))
     else none
+  | n, leafA p, σ =>
+    let T := autoT σ n
+    if allLe σ T n && aNoTop σ then
+      match absRun fuel p σ with
+      | some (σ', w) => if aNoTop σ' && pNoTop w then some (σ', pMul (pSweep T) w) else none
+      | none => none
+    else none
+  | n, loopA i a, σ => match fixIter (xabs fuel a) fuel σ with
+    | none => none
+    | some (σi, _, cb) =>
+      let T := autoT σi n
+      if allLe σi T n then
+        some (σi, pAdd (pMul (aGet σ i.val) (pAdd cb (pAdd (pSweep T) (pC 1)))) (pC 2))
+      else none
   | _, @fcall _ _ m e _ τ τ' c θ _, σ =>
     if (List.finRange m).all fun j => pLe (aGet σ (e j).val) (pSubst θ (aGet τ j.val)) then
       some (setMany e (τ'.map (pSubst θ)) σ (List.finRange m), pSubst θ c)
@@ -458,6 +481,30 @@ theorem xabs_sound {H : List ℕ → Prop} (fuel : ℕ) : ∀ {n : ℕ} (a : XAs
       (fun j => pEval_le_of_pLe ρ (hc.2 j (List.mem_finRange j)))
     refine ⟨h1, h2.trans (le_of_eq ?_)⟩
     rw [pEval_pMul, pEval_pSweep]
+  | leafA p =>
+    intro σ σ' c h
+    simp only [xabs] at h
+    split_ifs at h with hc
+    simp only [Bool.and_eq_true] at hc
+    rcases hr : absRun fuel p σ with _ | ⟨σ₁, w⟩
+    · rw [hr] at h; simp at h
+    rw [hr] at h
+    simp only at h
+    split_ifs at h with hc'
+    simp only [Bool.and_eq_true] at hc'
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact XSound.leaf (absRun_sound fuel p hr) hc.1 hc.2 hc'.1 hc'.2
+  | loopA i a ih =>
+    intro σ σ' c h
+    rcases hf : fixIter (xabs fuel a) fuel σ with _ | ⟨σi, σb, cb⟩
+    · simp [xabs, hf] at h
+    simp only [xabs, hf] at h
+    split_ifs at h with hT
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    obtain ⟨hrun, hle, -⟩ := fixIter_spec [] _ fuel σ σi σb cb hf
+    exact XSound.loop i (ih hrun) hle (fun ρ j => (fixIter_spec ρ _ fuel σ σi σb cb hf).2.2 j) hT
   | fcall e p τ τ' c θ hS =>
     intro σ σ' c' h
     simp only [xabs] at h
