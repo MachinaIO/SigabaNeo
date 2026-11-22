@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValGsw
+import SigabaNeo.Lib.Lattices.Algo.RingWords
 
 /-!
 # The two runs of the word machine
@@ -460,6 +461,93 @@ theorem exec_gswC (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
     (by rw [E2 GCNT (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.gcnt])
     (by rw [E2 TPAD (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tpad])
   rw [G2 hne, getLast_gl_values (fV V f) one ins hinsl gs hne]
+
+/-! ### The unary positions -/
+
+/-- One position `m`: shift `unaryW W' m` (`m` trues from `TT` dropped by `F = 0^(W' − m)`, then
+`F`) into `61`; then `F := F.tail`. -/
+def posBody : Code :=
+  ofList [.cp 64 63, .drop 64 62, .cp 65 64, .mv 61 64 65, .cp 65 62, .cp 66 62, .mv 61 66 65, .tl 62]
+
+/-- **The unary positions `0, 1, …, M − 1`** (`W'` bits each, `M = |69|`) into `61`
+(`TT = true^W'` on `63` from the template `68`). -/
+def posC : Code := ofList [fillC 63 OB 29 68 68, .cp 61 67, .cp 62 68, .cp CQ 69, .rep CQ posBody]
+
+theorem exec_posBody {W' m : ℕ} (hm : m ≤ W') (w : St) (hTT : w 63 = List.replicate W' true)
+    (hF : w 62 = List.replicate (W' - m) false) :
+    exec V f posBody w 61 = (w 61 ++ unaryW W' m).drop W' ∧
+      exec V f posBody w 62 = List.replicate (W' - (m + 1)) false ∧
+      ∀ j, j ≠ 61 → j ≠ 62 → j ≠ 64 → j ≠ 65 → j ≠ 66 → exec V f posBody w j = w j := by
+  simp only [posBody, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  rw [exec_drop' (by decide)]
+  rw [exec_mv_shift (d := 61) (s := 64) (c := 65) (x := List.replicate m true) (L := []) (by decide)
+    (by simp (config := {decide := true}) [Function.update_apply, hTT, hF]; omega)
+    (by simp (config := {decide := true}) [Function.update_apply, hTT, hF, List.drop_replicate]
+        congr 1; omega)]
+  rw [exec_mv_shift (d := 61) (s := 66) (c := 65) (x := List.replicate (W' - m) false) (L := [])
+    (by decide) (by simp (config := {decide := true}) [Function.update_apply, hF])
+    (by simp (config := {decide := true}) [Function.update_apply, hF])]
+  refine ⟨?_, ?_, fun j a1 a2 a3 a4 a5 => ?_⟩
+  · simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+    rw [drop_append_drop' (by simp), List.append_assoc, List.length_replicate,
+      List.length_replicate, show m + (W' - m) = W' by omega]
+    rfl
+  · simp (config := {decide := true}) only [exec_tl', Function.update_apply, if_true, if_false]
+    rw [hF, List.tail_replicate]; congr 1
+  · simp only [exec_tl', Function.update_apply, a1, a2, a3, a4, a5, if_false]
+
+/-- **The unary positions.** -/
+theorem exec_posC {W' M : ℕ} (hM : M ≤ W') (w : St) (hob : w OB = [true]) (h29 : (w 29).length = 1)
+    (h67 : (w 67).length = M * W') (h68 : w 68 = List.replicate W' false)
+    (h69 : (w 69).length = M) :
+    exec V f posC w 61 = concatN M (unaryW W') ∧
+      ∀ j, j ≠ 61 → j ≠ 62 → j ≠ 63 → j ≠ 64 → j ≠ 65 → j ≠ 66 → j ≠ rY → j ≠ CQ →
+        exec V f posC w j = w j := by
+  rw [show posC = ofList ([fillC 63 OB 29 68 68] ++ [.cp 61 67, .cp 62 68, .cp CQ 69,
+    .rep CQ posBody]) from rfl, exec_ofList_append]
+  obtain ⟨F1, F2⟩ := exec_fillC (V := V) (f := f) (dst := 63) (src := OB) (cl := 29) (tD := 68)
+    (tC := 68) (by decide) (by decide) (by decide) (by decide) w (by rw [hob, h29]; rfl)
+    (by rw [h29, Nat.mul_one])
+  rw [h68, List.length_replicate, hob, flatten_replicate_single] at F1
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  generalize exec V f (fillC 63 OB 29 68 68) w = u at F1 F2
+  set u1 := Function.update (Function.update (Function.update u 61 (u 67)) 62
+    (Function.update u 61 (u 67) 68)) CQ (Function.update (Function.update u 61 (u 67)) 62
+    (Function.update u 61 (u 67) 68) 69) with hu1
+  have e1 : ∀ j, j ≠ 61 → j ≠ 62 → j ≠ CQ → u1 j = u j := fun j a1 a2 a3 => by
+    simp [hu1, Function.update_apply, a1, a2, a3]
+  have I := exec_rep_inv (V := V) (f := f) (c := CQ) (B := posBody)
+    (fun m w' => m ≤ M → w' 63 = List.replicate W' true ∧
+      w' 62 = List.replicate (W' - m) false ∧
+      w' 61 = (u1 61 ++ concatN m (unaryW W')).drop (m * W') ∧
+      ∀ j, j ≠ 61 → j ≠ 62 → j ≠ 64 → j ≠ 65 → j ≠ 66 → j ≠ CQ → w' j = u1 j)
+    (fun m w' ih hm => by
+      obtain ⟨a1, a2, a3, a4⟩ := ih (by omega)
+      obtain ⟨P1, P2, P3⟩ := exec_posBody (V := V) (f := f) (W' := W') (m := m) (by omega)
+        (Function.update w' CQ (w' CQ).tail) (by rw [Function.update_of_ne (by decide), a1])
+        (by rw [Function.update_of_ne (by decide), a2])
+      refine ⟨by rw [P3 63 (by decide) (by decide) (by decide) (by decide) (by decide),
+          Function.update_of_ne (by decide), a1], P2, ?_, fun j b1 b2 b3 b4 b5 b6 => ?_⟩
+      · rw [P1, Function.update_of_ne (by decide), a3, drop_append_drop' (by
+          simp only [List.length_append]
+          rw [show (concatN m (unaryW W')).length = m * W' from
+            length_concatN fun i hi => length_unaryW (by omega)]; omega),
+          List.append_assoc, concatN, Nat.succ_mul]
+      · rw [P3 j b1 b2 b3 b4 b5, Function.update_of_ne b6, a4 j b1 b2 b3 b4 b5 b6]) u1
+    (fun _ => ⟨by rw [e1 63 (by decide) (by decide) (by decide), F1],
+      by simp (config := {decide := true}) [hu1, Function.update_apply,
+        F2 68 (by decide) (by decide) (by decide), h68],
+      by simp [concatN], fun _ _ _ _ _ _ _ => rfl⟩)
+  have hn : (u1 CQ).length = M := by
+    simp (config := {decide := true}) [hu1, Function.update_apply,
+      F2 69 (by decide) (by decide) (by decide), h69]
+  rw [hn] at I
+  obtain ⟨-, -, I3, I4⟩ := I le_rfl
+  refine ⟨?_, fun j b1 b2 b3 b4 b5 b6 b7 b8 => ?_⟩
+  · rw [I3, show u1 61 = w 67 by simp (config := {decide := true}) [hu1, Function.update_apply,
+      F2 67 (by decide) (by decide) (by decide)],
+      List.drop_left' (by rw [h67])]
+  · rw [I4 j b1 b2 b4 b5 b6 b8, e1 j b1 b2 b8, F2 j b3 b7 b8]
 
 end ValVM
 
