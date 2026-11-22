@@ -885,6 +885,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     the CBD-support representative.
 
   No further parameter optimization is recorded.
+
+  **Lean (Nov 2026).** MultiBlockProduct.lean, MultiBlock.lean and MultiBlockVerify.lean are axiom-clean (no sorry,
+  axiom or native_decide):
+  * `failure_eq_expect`: Part 39's failure equals E_s[f_r(s)], where f_r(s) is the conditional failure given the secret.
+  * `condFailure_le` bounds f_r(s) by a function of ‖s‖² only.
+  * `multiblock_exact`: for any family of predetermined disjoint row blocks, Pr[every block fails] = E_s[∏ᵢ f_{rᵢ}(s)]
+    exactly. `multiblock_le` gives the corresponding upper bound.
+  * `expect_energy` reduces the expectation to a finite sum over ‖s‖².
+  * `verify_exact` / `verify_cbd`: a fixed wrong residue passes v reserved rows with probability exactly (7/q)^v.
+    `verify_union` / `verify_union_avg` give the list union bounds.
+
+  Not yet in Lean:
+  * the kernel check of the recorded 99.409% figure;
+  * the end-to-end composition (SVP outputs feeding the candidate list);
+  * decoding to the CBD-support representative.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
