@@ -165,6 +165,199 @@ theorem exec_cblockC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
   · rw [J2.zv, u2_ 11 (by decide) (by decide), J1.zv, w2_ 11 (by decide) (by decide) (by decide)]
   · rw [J2.hi j hj hLB hSD hSC hCJ, u2_ j hCJ hSC, J1.hi j hj hLB hSD hSC hCJ, w2_ j hCJ hCM hSC]
 
+/-! ### The loop over the columns -/
+
+abbrev DSS : Fin 64 := 51
+abbrev RAS : Fin 64 := 52
+abbrev TNV : Fin 64 := 53
+abbrev TNKV : Fin 64 := 54
+abbrev CC : Fin 64 := 55
+abbrev T2K : Fin 64 := 56
+
+/-- One column: load its `N` digits into `SD` and its reversed row into `ROW`, then the terms. -/
+def colBody : Code := ofList [.cp SD TNV, .mv SD DSS TNV, .cp ROW TNKV, .mv ROW RAS TNKV, cblockC]
+
+/-- **The columns**: `|T2K|` columns. -/
+def colC : Code := ofList [.cp CC T2K, .rep CC colBody]
+
+/-- The terms of one column, flattened. -/
+def colTerms (V K : ℕ) (f : List Bool → List Bool → List Bool) (one zv : List Bool) (m0 t1 : ℕ)
+    (ds : List (List Bool)) (rows : List (List (List Bool))) : List Bool :=
+  (List.zipWith (Fsub V K f one zv) (ds.take t1) (rows.drop m0)).flatten ++
+    (List.zipWith (Fadd V K f one zv) (ds.drop t1) (rows.take m0)).flatten
+
+/-- The invariant of the columns. -/
+structure CInv (V K : ℕ) (f : List Bool → List Bool → List Bool) (w₀ : St) (m0 t1 : ℕ)
+    (dss : List (List (List Bool))) (rss : List (List (List (List Bool)))) (c : ℕ) (w : St) :
+    Prop where
+  hdss : w DSS = ((dss.drop c).map List.flatten).flatten
+  hrss : w RAS = ((rss.drop c).map fl).flatten
+  lb : w LB = (w₀ LB ++ ((List.zipWith (colTerms V K f (w₀ 10) (w₀ 11) m0 t1) dss rss).take c).flatten).drop
+    (c * ((m0 + t1) * ((K + 1) * V)))
+  tm : Tmpl V K w
+  c30 : (w 30).length = (K + 1) * V
+  c31 : (w 31).length = V
+  one : w 10 = w₀ 10
+  zv : w 11 = w₀ 11
+  hi : ∀ j : Fin 64, 35 ≤ j.val → j ≠ ROW → j ≠ CM → j ≠ CJ → j ≠ DSS → j ≠ RAS → j ≠ CC →
+    w j = w₀ j
+
+theorem colTerms_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {K : ℕ}
+    {one zv : List Bool} (h1 : one.length = V) (hz : zv.length = V) {m0 t1 : ℕ}
+    {ds : List (List Bool)} {rows : List (List (List Bool))} (hdl : ds.length = m0 + t1)
+    (hrl : rows.length = m0 + t1) (hrv : ∀ cs ∈ rows, cs.length = K + 1 ∧ ∀ x ∈ cs, x.length = V) :
+    (colTerms V K f one zv m0 t1 ds rows).length = (m0 + t1) * ((K + 1) * V) := by
+  unfold colTerms
+  rw [List.length_append,
+    length_flatten_of (V := (K + 1) * V) (zipWith_len _ _ fun a _ b hb =>
+      (termOk_sub hf K one zv h1 hz).len a b (hrv b (List.mem_of_mem_drop hb)).1
+        (hrv b (List.mem_of_mem_drop hb)).2),
+    length_flatten_of (V := (K + 1) * V) (zipWith_len _ _ fun a _ b hb =>
+      (termOk_add hf K one zv h1 hz).len a b (hrv b (List.mem_of_mem_take hb)).1
+        (hrv b (List.mem_of_mem_take hb)).2), List.length_zipWith, List.length_zipWith]
+  simp [hdl, hrl]
+  ring
+
+theorem cinv_step (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {K : ℕ}
+    {w₀ : St} {m0 t1 : ℕ} {dss : List (List (List Bool))} {rss : List (List (List (List Bool)))}
+    (hl : dss.length = rss.length) (hdl : ∀ ds ∈ dss, ds.length = m0 + t1 ∧ ∀ x ∈ ds, x.length = V)
+    (hrl : ∀ rows ∈ rss, rows.length = m0 + t1 ∧
+      ∀ cs ∈ rows, cs.length = K + 1 ∧ ∀ x ∈ cs, x.length = V)
+    (hNV : (w₀ TNV).length = (m0 + t1) * V) (hNKV : (w₀ TNKV).length = (m0 + t1) * ((K + 1) * V))
+    (hM0 : (w₀ TM0).length = m0) (hT1 : (w₀ TT1).length = t1)
+    {c : ℕ} (hc : c < dss.length) {w : St} (h : CInv V K f w₀ m0 t1 dss rss c w) :
+    CInv V K f w₀ m0 t1 dss rss (c + 1) (exec V f colBody (Function.update w CC (w CC).tail)) := by
+  have hc' : c < rss.length := hl ▸ hc
+  obtain ⟨hdl1, hdv⟩ := hdl _ (List.getElem_mem hc)
+  obtain ⟨hrl1, hrv⟩ := hrl _ (List.getElem_mem hc')
+  set u0 := Function.update w CC (w CC).tail with hu0
+  have u0_ : ∀ j, j ≠ CC → u0 j = w j := fun j hj => by simp [u0, Function.update_of_ne hj]
+  have wTNV : u0 TNV = w₀ TNV := by
+    rw [u0_ TNV (by decide), h.hi TNV (by decide) (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide)]
+  have wTNKV : u0 TNKV = w₀ TNKV := by
+    rw [u0_ TNKV (by decide), h.hi TNKV (by decide) (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide)]
+  have hx : (dss[c]).flatten.length = (m0 + t1) * V := by rw [length_flatten_of hdv, hdl1]
+  have hyl : (fl rss[c]).length = (m0 + t1) * ((K + 1) * V) := by rw [fl_len hrv, hrl1]
+  simp only [colBody, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  set s1 := Function.update u0 SD (u0 TNV) with hs1
+  have e1 : exec V f (.mv SD DSS TNV) s1 = Function.update (Function.update s1 DSS
+      ((dss.drop (c + 1)).map List.flatten).flatten) SD dss[c].flatten := by
+    refine exec_mv_pop (by decide) (by simp [s1, Function.update_apply]) ?_ ?_
+    · simp (config := {decide := true}) only [s1, Function.update_apply, if_false]
+      rw [wTNV, hNV, hx]
+    · simp (config := {decide := true}) only [s1, Function.update_apply, if_false]
+      rw [u0_ DSS (by decide), h.hdss, List.drop_eq_getElem_cons hc, List.map_cons, List.flatten_cons]
+  rw [e1]
+  set s2 := Function.update (Function.update s1 DSS ((dss.drop (c + 1)).map List.flatten).flatten)
+    SD dss[c].flatten with hs2
+  set s3 := Function.update s2 ROW (s2 TNKV) with hs3
+  have e2 : exec V f (.mv ROW RAS TNKV) s3 = Function.update (Function.update s3 RAS
+      ((rss.drop (c + 1)).map fl).flatten) ROW (fl rss[c]) := by
+    refine exec_mv_pop (by decide) (by simp [s3, Function.update_apply]) ?_ ?_
+    · simp (config := {decide := true}) only [s3, s2, s1, Function.update_apply, if_false]
+      rw [wTNKV, hNKV, hyl]
+    · simp (config := {decide := true}) only [s3, s2, s1, Function.update_apply, if_false]
+      rw [u0_ RAS (by decide), h.hrss, List.drop_eq_getElem_cons hc', List.map_cons,
+        List.flatten_cons]
+  rw [e2]
+  set s4 := Function.update (Function.update s3 RAS ((rss.drop (c + 1)).map fl).flatten) ROW
+    (fl rss[c]) with hs4
+  have s4_ : ∀ j : Fin 64, j ≠ ROW → j ≠ RAS → j ≠ SD → j ≠ DSS → j ≠ CC → s4 j = w j :=
+    fun j h1 h2 h3 h4 h5 => by
+      simp [s4, s3, s2, s1, Function.update_of_ne h1, Function.update_of_ne h2,
+        Function.update_of_ne h3, Function.update_of_ne h4, u0_ j h5]
+  have tm4 : Tmpl V K s4 := (((((h.tm.upd CC (by decide) _).upd SD (by decide) _).upd DSS
+    (by decide) _).upd SD (by decide) _).upd ROW (by decide) _ |>.upd RAS (by decide) _).upd ROW
+    (by decide) _
+  obtain ⟨b1, b2, b3, b4, b5, b6, b7, b8⟩ := exec_cblockC hf s4 dss[c] rss[c] [] m0 t1 hdl1 hrl1 hdv
+    hrv tm4 (by rw [s4_ 30 (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h.c30)
+    (by rw [s4_ 31 (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h.c31)
+    (by simp (config := {decide := true}) [s4, s3, s2, Function.update_apply])
+    (by simp [s4]) (by rw [s4_ TM0 (by decide) (by decide) (by decide) (by decide) (by decide),
+      h.hi TM0 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+      hM0]) (by rw [s4_ TT1 (by decide) (by decide) (by decide) (by decide) (by decide),
+      h.hi TT1 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+      hT1])
+  have v10 : s4 10 = w₀ 10 := by
+    rw [s4_ 10 (by decide) (by decide) (by decide) (by decide) (by decide), h.one]
+  have v11 : s4 11 = w₀ 11 := by
+    rw [s4_ 11 (by decide) (by decide) (by decide) (by decide) (by decide), h.zv]
+  rw [v10, v11] at b1
+  refine ⟨?_, ?_, ?_, b3, b4, b5, by rw [b6, v10], by rw [b7, v11], fun j hj hR hM hJ hD hA hC => ?_⟩
+  · rw [b8 DSS (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
+    simp (config := {decide := true}) [s4, s3, s2, Function.update_apply]
+  · rw [b8 RAS (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
+    simp (config := {decide := true}) [s4, Function.update_apply]
+  · rw [b1, s4_ LB (by decide) (by decide) (by decide) (by decide) (by decide), h.lb]
+    have hz : ∀ x ∈ List.zipWith (colTerms V K f (w₀ 10) (w₀ 11) m0 t1) dss rss,
+        x.length = (m0 + t1) * ((K + 1) * V) := by
+      intro x hx
+      obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hx
+      rw [List.getElem_zipWith]
+      have hi1 : i < dss.length := by simp at hi; omega
+      have hi2 : i < rss.length := by simp at hi; omega
+      exact colTerms_len hf (by rw [← h.one]; exact h.tm.h10) (by rw [← h.zv]; exact h.tm.h11)
+        (hdl _ (List.getElem_mem hi1)).1 (hrl _ (List.getElem_mem hi2)).1
+        (hrl _ (List.getElem_mem hi2)).2
+    have htk : ((List.zipWith (colTerms V K f (w₀ 10) (w₀ 11) m0 t1) dss rss).take c).flatten.length =
+        c * ((m0 + t1) * ((K + 1) * V)) := by
+      rw [length_flatten_of (fun x hx => hz x (List.mem_of_mem_take hx)), List.length_take,
+        List.length_zipWith, ← hl, min_self, min_eq_left hc.le]
+    have htake : (List.zipWith (colTerms V K f (w₀ 10) (w₀ 11) m0 t1) dss rss).take (c + 1) =
+        (List.zipWith (colTerms V K f (w₀ 10) (w₀ 11) m0 t1) dss rss).take c ++
+          [colTerms V K f (w₀ 10) (w₀ 11) m0 t1 dss[c] rss[c]] := by
+      rw [List.take_succ, List.getElem?_zipWith, List.getElem?_eq_getElem hc,
+        List.getElem?_eq_getElem hc']
+      rfl
+    rw [drop_append_drop' (by rw [List.length_append, htk]; omega), List.append_assoc, htake,
+      List.flatten_append, List.flatten_singleton]
+    unfold colTerms
+    congr 1; ring
+  · rw [b8 j (by omega) (fun e => by subst e; simp at hj) (fun e => by subst e; simp at hj)
+      (fun e => by subst e; simp at hj) hM hJ,
+      s4_ j hR hA (fun e => by subst e; simp at hj) hD hC, h.hi j hj hR hM hJ hD hA hC]
+
+/-- **The columns**: after `|T2K| = |dss|` columns, `LB` ends with the terms of all the columns
+shifted in. -/
+theorem exec_colC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {K : ℕ}
+    (w : St) {m0 t1 : ℕ} (dss : List (List (List Bool))) (rss : List (List (List (List Bool))))
+    (hl : dss.length = rss.length) (hdl : ∀ ds ∈ dss, ds.length = m0 + t1 ∧ ∀ x ∈ ds, x.length = V)
+    (hrl : ∀ rows ∈ rss, rows.length = m0 + t1 ∧
+      ∀ cs ∈ rows, cs.length = K + 1 ∧ ∀ x ∈ cs, x.length = V)
+    (hNV : (w TNV).length = (m0 + t1) * V) (hNKV : (w TNKV).length = (m0 + t1) * ((K + 1) * V))
+    (hM0 : (w TM0).length = m0) (hT1 : (w TT1).length = t1) (h2K : (w T2K).length = dss.length)
+    (htm : Tmpl V K w) (h30 : (w 30).length = (K + 1) * V) (h31 : (w 31).length = V)
+    (hDSS : w DSS = (dss.map List.flatten).flatten) (hRAS : w RAS = (rss.map fl).flatten) :
+    CInv V K f w m0 t1 dss rss dss.length (exec V f colC w) := by
+  simp only [colC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  have h0 : CInv V K f w m0 t1 dss rss 0 (Function.update w CC (w T2K)) := by
+    refine ⟨?_, ?_, ?_, htm.upd CC (by decide) _, ?_, ?_, ?_, ?_, fun j _ _ _ _ _ _ hC => ?_⟩
+    · simp (config := {decide := true}) [Function.update_apply, hDSS]
+    · simp (config := {decide := true}) [Function.update_apply, hRAS]
+    · simp (config := {decide := true}) [Function.update_apply]
+    · simp (config := {decide := true}) [Function.update_apply, h30]
+    · simp (config := {decide := true}) [Function.update_apply, h31]
+    · simp (config := {decide := true}) [Function.update_apply]
+    · simp (config := {decide := true}) [Function.update_apply]
+    · simp [Function.update_of_ne hC]
+  have := exec_rep_inv (V := V) (f := f) (c := CC) (B := colBody)
+    (fun c w' => c ≤ dss.length → CInv V K f w m0 t1 dss rss c w')
+    (fun c w' ih hc => cinv_step hf hl hdl hrl hNV hNKV hM0 hT1 (by omega) (ih (by omega)))
+    _ (fun _ => h0)
+  have hn : (Function.update w CC (w T2K) CC).length = dss.length := by simp [h2K]
+  rw [hn] at this
+  exact this le_rfl
+
+end ValVM
+
+namespace ValVM
+
+open SigabaNeo.Lattices SigabaNeo.Lattices.SLP SigabaNeo.Lattices.Algo
+
+variable {V : ℕ} {f : List Bool → List Bool → List Bool}
+
 /-! ### The block of terms of a column as a shadow -/
 
 section Shadow
