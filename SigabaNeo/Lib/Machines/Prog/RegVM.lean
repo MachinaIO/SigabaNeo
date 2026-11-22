@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Machines.Prog.RegMacros
+import SigabaNeo.Lib.Machines.Prog.RegVMAttr
 
 /-!
 # A register machine compiled to tape programs
@@ -120,7 +121,7 @@ structure St where
 /-- `j` in unary on `W` bits. -/
 def uw (W j : ℕ) : List Bool := List.replicate j true ++ List.replicate (W - j) false
 
-@[simp] theorem length_uw {W j : ℕ} (h : j ≤ W) : (uw W j).length = W := by
+@[simp, regvm] theorem length_uw {W j : ℕ} (h : j ≤ W) : (uw W j).length = W := by
   simp [uw]; omega
 
 /-- The emitted position of a value: values not below the next gate are read as `1`. -/
@@ -186,34 +187,34 @@ section EncLemmas
 
 variable (E : Env) (σ : St) (ctr : Fin nD → List Bool)
 
-@[simp] theorem enc_OUT : enc E σ ctr tOUT = (E.pad ++ σ.out).drop σ.out.length := rfl
-@[simp] theorem enc_OC : enc E σ ctr tOC = List.replicate (E.pad.length - σ.out.length) true := rfl
-@[simp] theorem enc_CO : enc E σ ctr tCO = List.replicate (E.M - (E.n + 1 + σ.t)) true := rfl
-@[simp] theorem enc_T : enc E σ ctr tT = List.replicate E.M true := rfl
-@[simp] theorem enc_W : enc E σ ctr tW = List.replicate E.W true := rfl
-@[simp] theorem enc_N : enc E σ ctr tN = List.replicate E.n true := rfl
-@[simp] theorem enc_SRC : enc E σ ctr tSRC = senc E σ.src := rfl
+@[simp, regvm] theorem enc_OUT : enc E σ ctr tOUT = (E.pad ++ σ.out).drop σ.out.length := rfl
+@[simp, regvm] theorem enc_OC : enc E σ ctr tOC = List.replicate (E.pad.length - σ.out.length) true := rfl
+@[simp, regvm] theorem enc_CO : enc E σ ctr tCO = List.replicate (E.M - (E.n + 1 + σ.t)) true := rfl
+@[simp, regvm] theorem enc_T : enc E σ ctr tT = List.replicate E.M true := rfl
+@[simp, regvm] theorem enc_W : enc E σ ctr tW = List.replicate E.W true := rfl
+@[simp, regvm] theorem enc_N : enc E σ ctr tN = List.replicate E.n true := rfl
+@[simp, regvm] theorem enc_SRC : enc E σ ctr tSRC = senc E σ.src := rfl
 
-@[simp] theorem enc_X (i : Fin 8) : enc E σ ctr (tX i) = [] := by
+@[simp, regvm] theorem enc_X (i : Fin 8) : enc E σ ctr (tX i) = [] := by
   have := i.isLt
   unfold enc
   simp only [show ¬(7 + i.val = 0) by omega, show ¬(7 + i.val = 1) by omega, show ¬(7 + i.val = 2) by omega, show ¬(7 + i.val = 3) by omega, show ¬(7 + i.val = 4) by omega, show ¬(7 + i.val = 5) by omega, show ¬(7 + i.val = 6) by omega, show (7 + i.val < 15) by omega, ↓reduceIte, ↓reduceDIte, tX]
 
-@[simp] theorem enc_C (j : Fin nD) : enc E σ ctr (tC j) = ctr j := by
+@[simp, regvm] theorem enc_C (j : Fin nD) : enc E σ ctr (tC j) = ctr j := by
   have := j.isLt
   simp only [nD] at this
   unfold enc
   simp only [show ¬(15 + j.val = 0) by omega, show ¬(15 + j.val = 1) by omega, show ¬(15 + j.val = 2) by omega, show ¬(15 + j.val = 3) by omega, show ¬(15 + j.val = 4) by omega, show ¬(15 + j.val = 5) by omega, show ¬(15 + j.val = 6) by omega, show ¬(15 + j.val < 15) by omega, show (15 + j.val < 31) by omega, ↓reduceIte, ↓reduceDIte, tC]
   congr 1; ext; simp
 
-@[simp] theorem enc_R (r : SR) : enc E σ ctr (tR r) = List.replicate (σ.sc r) true := by
+@[simp, regvm] theorem enc_R (r : SR) : enc E σ ctr (tR r) = List.replicate (σ.sc r) true := by
   have := r.isLt
   simp only [nS] at this
   unfold enc
   simp only [show ¬(31 + r.val = 0) by omega, show ¬(31 + r.val = 1) by omega, show ¬(31 + r.val = 2) by omega, show ¬(31 + r.val = 3) by omega, show ¬(31 + r.val = 4) by omega, show ¬(31 + r.val = 5) by omega, show ¬(31 + r.val = 6) by omega, show ¬(31 + r.val < 15) by omega, show ¬(31 + r.val < 31) by omega, show (31 + r.val < 95) by omega, ↓reduceIte, ↓reduceDIte, tR]
   congr 2; ext; simp
 
-@[simp] theorem enc_L (l : LR) : enc E σ ctr (tL l) = lenc E (σ.ls l) := by
+@[simp, regvm] theorem enc_L (l : LR) : enc E σ ctr (tL l) = lenc E (σ.ls l) := by
   have := l.isLt
   simp only [nL] at this
   unfold enc
@@ -242,13 +243,13 @@ theorem tape_cases (i : Fin K) :
   · right; right; right; right; right; right; right; right; right; right
     exact ⟨⟨v - 95, by simp only [nL]; omega⟩, by simp; omega⟩
 
-@[simp] theorem tX_inj {i j : Fin 8} : tX i = tX j ↔ i = j := by
+@[simp, regvm] theorem tX_inj {i j : Fin 8} : tX i = tX j ↔ i = j := by
   simp [tX, Fin.ext_iff]
-@[simp] theorem tC_inj {i j : Fin nD} : tC i = tC j ↔ i = j := by
+@[simp, regvm] theorem tC_inj {i j : Fin nD} : tC i = tC j ↔ i = j := by
   simp [tC, Fin.ext_iff]
-@[simp] theorem tR_inj {i j : SR} : tR i = tR j ↔ i = j := by
+@[simp, regvm] theorem tR_inj {i j : SR} : tR i = tR j ↔ i = j := by
   simp [tR, Fin.ext_iff]
-@[simp] theorem tL_inj {i j : LR} : tL i = tL j ↔ i = j := by
+@[simp, regvm] theorem tL_inj {i j : LR} : tL i = tL j ↔ i = j := by
   simp [tL, Fin.ext_iff]
 
 /-- The value of a tape name. -/
@@ -259,116 +260,116 @@ theorem val_tL (i : LR) : (tL i).val = 95 + i.val := rfl
 
 /-- Tapes are distinct when their values are. -/
 theorem ne_of_val {a b : Fin K} (h : a.val ≠ b.val) : a ≠ b := fun e => h (congrArg Fin.val e)
-@[simp] theorem tOUT_ne_tOC : tOUT ≠ tOC := by decide
-@[simp] theorem tOUT_ne_tCO : tOUT ≠ tCO := by decide
-@[simp] theorem tOUT_ne_tT : tOUT ≠ tT := by decide
-@[simp] theorem tOUT_ne_tW : tOUT ≠ tW := by decide
-@[simp] theorem tOUT_ne_tN : tOUT ≠ tN := by decide
-@[simp] theorem tOUT_ne_tSRC : tOUT ≠ tSRC := by decide
-@[simp] theorem tOC_ne_tOUT : tOC ≠ tOUT := by decide
-@[simp] theorem tOC_ne_tCO : tOC ≠ tCO := by decide
-@[simp] theorem tOC_ne_tT : tOC ≠ tT := by decide
-@[simp] theorem tOC_ne_tW : tOC ≠ tW := by decide
-@[simp] theorem tOC_ne_tN : tOC ≠ tN := by decide
-@[simp] theorem tOC_ne_tSRC : tOC ≠ tSRC := by decide
-@[simp] theorem tCO_ne_tOUT : tCO ≠ tOUT := by decide
-@[simp] theorem tCO_ne_tOC : tCO ≠ tOC := by decide
-@[simp] theorem tCO_ne_tT : tCO ≠ tT := by decide
-@[simp] theorem tCO_ne_tW : tCO ≠ tW := by decide
-@[simp] theorem tCO_ne_tN : tCO ≠ tN := by decide
-@[simp] theorem tCO_ne_tSRC : tCO ≠ tSRC := by decide
-@[simp] theorem tT_ne_tOUT : tT ≠ tOUT := by decide
-@[simp] theorem tT_ne_tOC : tT ≠ tOC := by decide
-@[simp] theorem tT_ne_tCO : tT ≠ tCO := by decide
-@[simp] theorem tT_ne_tW : tT ≠ tW := by decide
-@[simp] theorem tT_ne_tN : tT ≠ tN := by decide
-@[simp] theorem tT_ne_tSRC : tT ≠ tSRC := by decide
-@[simp] theorem tW_ne_tOUT : tW ≠ tOUT := by decide
-@[simp] theorem tW_ne_tOC : tW ≠ tOC := by decide
-@[simp] theorem tW_ne_tCO : tW ≠ tCO := by decide
-@[simp] theorem tW_ne_tT : tW ≠ tT := by decide
-@[simp] theorem tW_ne_tN : tW ≠ tN := by decide
-@[simp] theorem tW_ne_tSRC : tW ≠ tSRC := by decide
-@[simp] theorem tN_ne_tOUT : tN ≠ tOUT := by decide
-@[simp] theorem tN_ne_tOC : tN ≠ tOC := by decide
-@[simp] theorem tN_ne_tCO : tN ≠ tCO := by decide
-@[simp] theorem tN_ne_tT : tN ≠ tT := by decide
-@[simp] theorem tN_ne_tW : tN ≠ tW := by decide
-@[simp] theorem tN_ne_tSRC : tN ≠ tSRC := by decide
-@[simp] theorem tSRC_ne_tOUT : tSRC ≠ tOUT := by decide
-@[simp] theorem tSRC_ne_tOC : tSRC ≠ tOC := by decide
-@[simp] theorem tSRC_ne_tCO : tSRC ≠ tCO := by decide
-@[simp] theorem tSRC_ne_tT : tSRC ≠ tT := by decide
-@[simp] theorem tSRC_ne_tW : tSRC ≠ tW := by decide
-@[simp] theorem tSRC_ne_tN : tSRC ≠ tN := by decide
-@[simp] theorem tOUT_ne_tX (i : Fin 8) : tOUT ≠ tX i := ne_of_val (by simp only [tOUT, val_tX]; omega)
-@[simp] theorem tX_ne_tOUT (i : Fin 8) : tX i ≠ tOUT := ne_of_val (by simp only [tOUT, val_tX]; omega)
-@[simp] theorem tOUT_ne_tC (j : Fin nD) : tOUT ≠ tC j := ne_of_val (by simp only [tOUT, val_tC]; omega)
-@[simp] theorem tC_ne_tOUT (j : Fin nD) : tC j ≠ tOUT := ne_of_val (by simp only [tOUT, val_tC]; omega)
-@[simp] theorem tOUT_ne_tR (r : SR) : tOUT ≠ tR r := ne_of_val (by simp only [tOUT, val_tR]; omega)
-@[simp] theorem tR_ne_tOUT (r : SR) : tR r ≠ tOUT := ne_of_val (by simp only [tOUT, val_tR]; omega)
-@[simp] theorem tOUT_ne_tL (l : LR) : tOUT ≠ tL l := ne_of_val (by simp only [tOUT, val_tL]; omega)
-@[simp] theorem tL_ne_tOUT (l : LR) : tL l ≠ tOUT := ne_of_val (by simp only [tOUT, val_tL]; omega)
-@[simp] theorem tOC_ne_tX (i : Fin 8) : tOC ≠ tX i := ne_of_val (by simp only [tOC, val_tX]; omega)
-@[simp] theorem tX_ne_tOC (i : Fin 8) : tX i ≠ tOC := ne_of_val (by simp only [tOC, val_tX]; omega)
-@[simp] theorem tOC_ne_tC (j : Fin nD) : tOC ≠ tC j := ne_of_val (by simp only [tOC, val_tC]; omega)
-@[simp] theorem tC_ne_tOC (j : Fin nD) : tC j ≠ tOC := ne_of_val (by simp only [tOC, val_tC]; omega)
-@[simp] theorem tOC_ne_tR (r : SR) : tOC ≠ tR r := ne_of_val (by simp only [tOC, val_tR]; omega)
-@[simp] theorem tR_ne_tOC (r : SR) : tR r ≠ tOC := ne_of_val (by simp only [tOC, val_tR]; omega)
-@[simp] theorem tOC_ne_tL (l : LR) : tOC ≠ tL l := ne_of_val (by simp only [tOC, val_tL]; omega)
-@[simp] theorem tL_ne_tOC (l : LR) : tL l ≠ tOC := ne_of_val (by simp only [tOC, val_tL]; omega)
-@[simp] theorem tCO_ne_tX (i : Fin 8) : tCO ≠ tX i := ne_of_val (by simp only [tCO, val_tX]; omega)
-@[simp] theorem tX_ne_tCO (i : Fin 8) : tX i ≠ tCO := ne_of_val (by simp only [tCO, val_tX]; omega)
-@[simp] theorem tCO_ne_tC (j : Fin nD) : tCO ≠ tC j := ne_of_val (by simp only [tCO, val_tC]; omega)
-@[simp] theorem tC_ne_tCO (j : Fin nD) : tC j ≠ tCO := ne_of_val (by simp only [tCO, val_tC]; omega)
-@[simp] theorem tCO_ne_tR (r : SR) : tCO ≠ tR r := ne_of_val (by simp only [tCO, val_tR]; omega)
-@[simp] theorem tR_ne_tCO (r : SR) : tR r ≠ tCO := ne_of_val (by simp only [tCO, val_tR]; omega)
-@[simp] theorem tCO_ne_tL (l : LR) : tCO ≠ tL l := ne_of_val (by simp only [tCO, val_tL]; omega)
-@[simp] theorem tL_ne_tCO (l : LR) : tL l ≠ tCO := ne_of_val (by simp only [tCO, val_tL]; omega)
-@[simp] theorem tT_ne_tX (i : Fin 8) : tT ≠ tX i := ne_of_val (by simp only [tT, val_tX]; omega)
-@[simp] theorem tX_ne_tT (i : Fin 8) : tX i ≠ tT := ne_of_val (by simp only [tT, val_tX]; omega)
-@[simp] theorem tT_ne_tC (j : Fin nD) : tT ≠ tC j := ne_of_val (by simp only [tT, val_tC]; omega)
-@[simp] theorem tC_ne_tT (j : Fin nD) : tC j ≠ tT := ne_of_val (by simp only [tT, val_tC]; omega)
-@[simp] theorem tT_ne_tR (r : SR) : tT ≠ tR r := ne_of_val (by simp only [tT, val_tR]; omega)
-@[simp] theorem tR_ne_tT (r : SR) : tR r ≠ tT := ne_of_val (by simp only [tT, val_tR]; omega)
-@[simp] theorem tT_ne_tL (l : LR) : tT ≠ tL l := ne_of_val (by simp only [tT, val_tL]; omega)
-@[simp] theorem tL_ne_tT (l : LR) : tL l ≠ tT := ne_of_val (by simp only [tT, val_tL]; omega)
-@[simp] theorem tW_ne_tX (i : Fin 8) : tW ≠ tX i := ne_of_val (by simp only [tW, val_tX]; omega)
-@[simp] theorem tX_ne_tW (i : Fin 8) : tX i ≠ tW := ne_of_val (by simp only [tW, val_tX]; omega)
-@[simp] theorem tW_ne_tC (j : Fin nD) : tW ≠ tC j := ne_of_val (by simp only [tW, val_tC]; omega)
-@[simp] theorem tC_ne_tW (j : Fin nD) : tC j ≠ tW := ne_of_val (by simp only [tW, val_tC]; omega)
-@[simp] theorem tW_ne_tR (r : SR) : tW ≠ tR r := ne_of_val (by simp only [tW, val_tR]; omega)
-@[simp] theorem tR_ne_tW (r : SR) : tR r ≠ tW := ne_of_val (by simp only [tW, val_tR]; omega)
-@[simp] theorem tW_ne_tL (l : LR) : tW ≠ tL l := ne_of_val (by simp only [tW, val_tL]; omega)
-@[simp] theorem tL_ne_tW (l : LR) : tL l ≠ tW := ne_of_val (by simp only [tW, val_tL]; omega)
-@[simp] theorem tN_ne_tX (i : Fin 8) : tN ≠ tX i := ne_of_val (by simp only [tN, val_tX]; omega)
-@[simp] theorem tX_ne_tN (i : Fin 8) : tX i ≠ tN := ne_of_val (by simp only [tN, val_tX]; omega)
-@[simp] theorem tN_ne_tC (j : Fin nD) : tN ≠ tC j := ne_of_val (by simp only [tN, val_tC]; omega)
-@[simp] theorem tC_ne_tN (j : Fin nD) : tC j ≠ tN := ne_of_val (by simp only [tN, val_tC]; omega)
-@[simp] theorem tN_ne_tR (r : SR) : tN ≠ tR r := ne_of_val (by simp only [tN, val_tR]; omega)
-@[simp] theorem tR_ne_tN (r : SR) : tR r ≠ tN := ne_of_val (by simp only [tN, val_tR]; omega)
-@[simp] theorem tN_ne_tL (l : LR) : tN ≠ tL l := ne_of_val (by simp only [tN, val_tL]; omega)
-@[simp] theorem tL_ne_tN (l : LR) : tL l ≠ tN := ne_of_val (by simp only [tN, val_tL]; omega)
-@[simp] theorem tSRC_ne_tX (i : Fin 8) : tSRC ≠ tX i := ne_of_val (by simp only [tSRC, val_tX]; omega)
-@[simp] theorem tX_ne_tSRC (i : Fin 8) : tX i ≠ tSRC := ne_of_val (by simp only [tSRC, val_tX]; omega)
-@[simp] theorem tSRC_ne_tC (j : Fin nD) : tSRC ≠ tC j := ne_of_val (by simp only [tSRC, val_tC]; omega)
-@[simp] theorem tC_ne_tSRC (j : Fin nD) : tC j ≠ tSRC := ne_of_val (by simp only [tSRC, val_tC]; omega)
-@[simp] theorem tSRC_ne_tR (r : SR) : tSRC ≠ tR r := ne_of_val (by simp only [tSRC, val_tR]; omega)
-@[simp] theorem tR_ne_tSRC (r : SR) : tR r ≠ tSRC := ne_of_val (by simp only [tSRC, val_tR]; omega)
-@[simp] theorem tSRC_ne_tL (l : LR) : tSRC ≠ tL l := ne_of_val (by simp only [tSRC, val_tL]; omega)
-@[simp] theorem tL_ne_tSRC (l : LR) : tL l ≠ tSRC := ne_of_val (by simp only [tSRC, val_tL]; omega)
-@[simp] theorem tX_ne_tC (i : Fin 8) (j : Fin nD) : tX i ≠ tC j := ne_of_val (by have := i.isLt; have := j.isLt; simp only [val_tX, val_tC, nD, nS, nL] at *; omega)
-@[simp] theorem tC_ne_tX (i : Fin 8) (j : Fin nD) : tC j ≠ tX i := ne_of_val (by have := i.isLt; have := j.isLt; simp only [val_tX, val_tC, nD, nS, nL] at *; omega)
-@[simp] theorem tX_ne_tR (i : Fin 8) (r : SR) : tX i ≠ tR r := ne_of_val (by have := i.isLt; have := r.isLt; simp only [val_tX, val_tR, nD, nS, nL] at *; omega)
-@[simp] theorem tR_ne_tX (i : Fin 8) (r : SR) : tR r ≠ tX i := ne_of_val (by have := i.isLt; have := r.isLt; simp only [val_tX, val_tR, nD, nS, nL] at *; omega)
-@[simp] theorem tX_ne_tL (i : Fin 8) (l : LR) : tX i ≠ tL l := ne_of_val (by have := i.isLt; have := l.isLt; simp only [val_tX, val_tL, nD, nS, nL] at *; omega)
-@[simp] theorem tL_ne_tX (i : Fin 8) (l : LR) : tL l ≠ tX i := ne_of_val (by have := i.isLt; have := l.isLt; simp only [val_tX, val_tL, nD, nS, nL] at *; omega)
-@[simp] theorem tC_ne_tR (j : Fin nD) (r : SR) : tC j ≠ tR r := ne_of_val (by have := j.isLt; have := r.isLt; simp only [val_tC, val_tR, nD, nS, nL] at *; omega)
-@[simp] theorem tR_ne_tC (j : Fin nD) (r : SR) : tR r ≠ tC j := ne_of_val (by have := j.isLt; have := r.isLt; simp only [val_tC, val_tR, nD, nS, nL] at *; omega)
-@[simp] theorem tC_ne_tL (j : Fin nD) (l : LR) : tC j ≠ tL l := ne_of_val (by have := j.isLt; have := l.isLt; simp only [val_tC, val_tL, nD, nS, nL] at *; omega)
-@[simp] theorem tL_ne_tC (j : Fin nD) (l : LR) : tL l ≠ tC j := ne_of_val (by have := j.isLt; have := l.isLt; simp only [val_tC, val_tL, nD, nS, nL] at *; omega)
-@[simp] theorem tR_ne_tL (r : SR) (l : LR) : tR r ≠ tL l := ne_of_val (by have := r.isLt; have := l.isLt; simp only [val_tR, val_tL, nD, nS, nL] at *; omega)
-@[simp] theorem tL_ne_tR (r : SR) (l : LR) : tL l ≠ tR r := ne_of_val (by have := r.isLt; have := l.isLt; simp only [val_tR, val_tL, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tOUT_ne_tOC : tOUT ≠ tOC := by decide
+@[simp, regvm] theorem tOUT_ne_tCO : tOUT ≠ tCO := by decide
+@[simp, regvm] theorem tOUT_ne_tT : tOUT ≠ tT := by decide
+@[simp, regvm] theorem tOUT_ne_tW : tOUT ≠ tW := by decide
+@[simp, regvm] theorem tOUT_ne_tN : tOUT ≠ tN := by decide
+@[simp, regvm] theorem tOUT_ne_tSRC : tOUT ≠ tSRC := by decide
+@[simp, regvm] theorem tOC_ne_tOUT : tOC ≠ tOUT := by decide
+@[simp, regvm] theorem tOC_ne_tCO : tOC ≠ tCO := by decide
+@[simp, regvm] theorem tOC_ne_tT : tOC ≠ tT := by decide
+@[simp, regvm] theorem tOC_ne_tW : tOC ≠ tW := by decide
+@[simp, regvm] theorem tOC_ne_tN : tOC ≠ tN := by decide
+@[simp, regvm] theorem tOC_ne_tSRC : tOC ≠ tSRC := by decide
+@[simp, regvm] theorem tCO_ne_tOUT : tCO ≠ tOUT := by decide
+@[simp, regvm] theorem tCO_ne_tOC : tCO ≠ tOC := by decide
+@[simp, regvm] theorem tCO_ne_tT : tCO ≠ tT := by decide
+@[simp, regvm] theorem tCO_ne_tW : tCO ≠ tW := by decide
+@[simp, regvm] theorem tCO_ne_tN : tCO ≠ tN := by decide
+@[simp, regvm] theorem tCO_ne_tSRC : tCO ≠ tSRC := by decide
+@[simp, regvm] theorem tT_ne_tOUT : tT ≠ tOUT := by decide
+@[simp, regvm] theorem tT_ne_tOC : tT ≠ tOC := by decide
+@[simp, regvm] theorem tT_ne_tCO : tT ≠ tCO := by decide
+@[simp, regvm] theorem tT_ne_tW : tT ≠ tW := by decide
+@[simp, regvm] theorem tT_ne_tN : tT ≠ tN := by decide
+@[simp, regvm] theorem tT_ne_tSRC : tT ≠ tSRC := by decide
+@[simp, regvm] theorem tW_ne_tOUT : tW ≠ tOUT := by decide
+@[simp, regvm] theorem tW_ne_tOC : tW ≠ tOC := by decide
+@[simp, regvm] theorem tW_ne_tCO : tW ≠ tCO := by decide
+@[simp, regvm] theorem tW_ne_tT : tW ≠ tT := by decide
+@[simp, regvm] theorem tW_ne_tN : tW ≠ tN := by decide
+@[simp, regvm] theorem tW_ne_tSRC : tW ≠ tSRC := by decide
+@[simp, regvm] theorem tN_ne_tOUT : tN ≠ tOUT := by decide
+@[simp, regvm] theorem tN_ne_tOC : tN ≠ tOC := by decide
+@[simp, regvm] theorem tN_ne_tCO : tN ≠ tCO := by decide
+@[simp, regvm] theorem tN_ne_tT : tN ≠ tT := by decide
+@[simp, regvm] theorem tN_ne_tW : tN ≠ tW := by decide
+@[simp, regvm] theorem tN_ne_tSRC : tN ≠ tSRC := by decide
+@[simp, regvm] theorem tSRC_ne_tOUT : tSRC ≠ tOUT := by decide
+@[simp, regvm] theorem tSRC_ne_tOC : tSRC ≠ tOC := by decide
+@[simp, regvm] theorem tSRC_ne_tCO : tSRC ≠ tCO := by decide
+@[simp, regvm] theorem tSRC_ne_tT : tSRC ≠ tT := by decide
+@[simp, regvm] theorem tSRC_ne_tW : tSRC ≠ tW := by decide
+@[simp, regvm] theorem tSRC_ne_tN : tSRC ≠ tN := by decide
+@[simp, regvm] theorem tOUT_ne_tX (i : Fin 8) : tOUT ≠ tX i := ne_of_val (by simp only [tOUT, val_tX]; omega)
+@[simp, regvm] theorem tX_ne_tOUT (i : Fin 8) : tX i ≠ tOUT := ne_of_val (by simp only [tOUT, val_tX]; omega)
+@[simp, regvm] theorem tOUT_ne_tC (j : Fin nD) : tOUT ≠ tC j := ne_of_val (by simp only [tOUT, val_tC]; omega)
+@[simp, regvm] theorem tC_ne_tOUT (j : Fin nD) : tC j ≠ tOUT := ne_of_val (by simp only [tOUT, val_tC]; omega)
+@[simp, regvm] theorem tOUT_ne_tR (r : SR) : tOUT ≠ tR r := ne_of_val (by simp only [tOUT, val_tR]; omega)
+@[simp, regvm] theorem tR_ne_tOUT (r : SR) : tR r ≠ tOUT := ne_of_val (by simp only [tOUT, val_tR]; omega)
+@[simp, regvm] theorem tOUT_ne_tL (l : LR) : tOUT ≠ tL l := ne_of_val (by simp only [tOUT, val_tL]; omega)
+@[simp, regvm] theorem tL_ne_tOUT (l : LR) : tL l ≠ tOUT := ne_of_val (by simp only [tOUT, val_tL]; omega)
+@[simp, regvm] theorem tOC_ne_tX (i : Fin 8) : tOC ≠ tX i := ne_of_val (by simp only [tOC, val_tX]; omega)
+@[simp, regvm] theorem tX_ne_tOC (i : Fin 8) : tX i ≠ tOC := ne_of_val (by simp only [tOC, val_tX]; omega)
+@[simp, regvm] theorem tOC_ne_tC (j : Fin nD) : tOC ≠ tC j := ne_of_val (by simp only [tOC, val_tC]; omega)
+@[simp, regvm] theorem tC_ne_tOC (j : Fin nD) : tC j ≠ tOC := ne_of_val (by simp only [tOC, val_tC]; omega)
+@[simp, regvm] theorem tOC_ne_tR (r : SR) : tOC ≠ tR r := ne_of_val (by simp only [tOC, val_tR]; omega)
+@[simp, regvm] theorem tR_ne_tOC (r : SR) : tR r ≠ tOC := ne_of_val (by simp only [tOC, val_tR]; omega)
+@[simp, regvm] theorem tOC_ne_tL (l : LR) : tOC ≠ tL l := ne_of_val (by simp only [tOC, val_tL]; omega)
+@[simp, regvm] theorem tL_ne_tOC (l : LR) : tL l ≠ tOC := ne_of_val (by simp only [tOC, val_tL]; omega)
+@[simp, regvm] theorem tCO_ne_tX (i : Fin 8) : tCO ≠ tX i := ne_of_val (by simp only [tCO, val_tX]; omega)
+@[simp, regvm] theorem tX_ne_tCO (i : Fin 8) : tX i ≠ tCO := ne_of_val (by simp only [tCO, val_tX]; omega)
+@[simp, regvm] theorem tCO_ne_tC (j : Fin nD) : tCO ≠ tC j := ne_of_val (by simp only [tCO, val_tC]; omega)
+@[simp, regvm] theorem tC_ne_tCO (j : Fin nD) : tC j ≠ tCO := ne_of_val (by simp only [tCO, val_tC]; omega)
+@[simp, regvm] theorem tCO_ne_tR (r : SR) : tCO ≠ tR r := ne_of_val (by simp only [tCO, val_tR]; omega)
+@[simp, regvm] theorem tR_ne_tCO (r : SR) : tR r ≠ tCO := ne_of_val (by simp only [tCO, val_tR]; omega)
+@[simp, regvm] theorem tCO_ne_tL (l : LR) : tCO ≠ tL l := ne_of_val (by simp only [tCO, val_tL]; omega)
+@[simp, regvm] theorem tL_ne_tCO (l : LR) : tL l ≠ tCO := ne_of_val (by simp only [tCO, val_tL]; omega)
+@[simp, regvm] theorem tT_ne_tX (i : Fin 8) : tT ≠ tX i := ne_of_val (by simp only [tT, val_tX]; omega)
+@[simp, regvm] theorem tX_ne_tT (i : Fin 8) : tX i ≠ tT := ne_of_val (by simp only [tT, val_tX]; omega)
+@[simp, regvm] theorem tT_ne_tC (j : Fin nD) : tT ≠ tC j := ne_of_val (by simp only [tT, val_tC]; omega)
+@[simp, regvm] theorem tC_ne_tT (j : Fin nD) : tC j ≠ tT := ne_of_val (by simp only [tT, val_tC]; omega)
+@[simp, regvm] theorem tT_ne_tR (r : SR) : tT ≠ tR r := ne_of_val (by simp only [tT, val_tR]; omega)
+@[simp, regvm] theorem tR_ne_tT (r : SR) : tR r ≠ tT := ne_of_val (by simp only [tT, val_tR]; omega)
+@[simp, regvm] theorem tT_ne_tL (l : LR) : tT ≠ tL l := ne_of_val (by simp only [tT, val_tL]; omega)
+@[simp, regvm] theorem tL_ne_tT (l : LR) : tL l ≠ tT := ne_of_val (by simp only [tT, val_tL]; omega)
+@[simp, regvm] theorem tW_ne_tX (i : Fin 8) : tW ≠ tX i := ne_of_val (by simp only [tW, val_tX]; omega)
+@[simp, regvm] theorem tX_ne_tW (i : Fin 8) : tX i ≠ tW := ne_of_val (by simp only [tW, val_tX]; omega)
+@[simp, regvm] theorem tW_ne_tC (j : Fin nD) : tW ≠ tC j := ne_of_val (by simp only [tW, val_tC]; omega)
+@[simp, regvm] theorem tC_ne_tW (j : Fin nD) : tC j ≠ tW := ne_of_val (by simp only [tW, val_tC]; omega)
+@[simp, regvm] theorem tW_ne_tR (r : SR) : tW ≠ tR r := ne_of_val (by simp only [tW, val_tR]; omega)
+@[simp, regvm] theorem tR_ne_tW (r : SR) : tR r ≠ tW := ne_of_val (by simp only [tW, val_tR]; omega)
+@[simp, regvm] theorem tW_ne_tL (l : LR) : tW ≠ tL l := ne_of_val (by simp only [tW, val_tL]; omega)
+@[simp, regvm] theorem tL_ne_tW (l : LR) : tL l ≠ tW := ne_of_val (by simp only [tW, val_tL]; omega)
+@[simp, regvm] theorem tN_ne_tX (i : Fin 8) : tN ≠ tX i := ne_of_val (by simp only [tN, val_tX]; omega)
+@[simp, regvm] theorem tX_ne_tN (i : Fin 8) : tX i ≠ tN := ne_of_val (by simp only [tN, val_tX]; omega)
+@[simp, regvm] theorem tN_ne_tC (j : Fin nD) : tN ≠ tC j := ne_of_val (by simp only [tN, val_tC]; omega)
+@[simp, regvm] theorem tC_ne_tN (j : Fin nD) : tC j ≠ tN := ne_of_val (by simp only [tN, val_tC]; omega)
+@[simp, regvm] theorem tN_ne_tR (r : SR) : tN ≠ tR r := ne_of_val (by simp only [tN, val_tR]; omega)
+@[simp, regvm] theorem tR_ne_tN (r : SR) : tR r ≠ tN := ne_of_val (by simp only [tN, val_tR]; omega)
+@[simp, regvm] theorem tN_ne_tL (l : LR) : tN ≠ tL l := ne_of_val (by simp only [tN, val_tL]; omega)
+@[simp, regvm] theorem tL_ne_tN (l : LR) : tL l ≠ tN := ne_of_val (by simp only [tN, val_tL]; omega)
+@[simp, regvm] theorem tSRC_ne_tX (i : Fin 8) : tSRC ≠ tX i := ne_of_val (by simp only [tSRC, val_tX]; omega)
+@[simp, regvm] theorem tX_ne_tSRC (i : Fin 8) : tX i ≠ tSRC := ne_of_val (by simp only [tSRC, val_tX]; omega)
+@[simp, regvm] theorem tSRC_ne_tC (j : Fin nD) : tSRC ≠ tC j := ne_of_val (by simp only [tSRC, val_tC]; omega)
+@[simp, regvm] theorem tC_ne_tSRC (j : Fin nD) : tC j ≠ tSRC := ne_of_val (by simp only [tSRC, val_tC]; omega)
+@[simp, regvm] theorem tSRC_ne_tR (r : SR) : tSRC ≠ tR r := ne_of_val (by simp only [tSRC, val_tR]; omega)
+@[simp, regvm] theorem tR_ne_tSRC (r : SR) : tR r ≠ tSRC := ne_of_val (by simp only [tSRC, val_tR]; omega)
+@[simp, regvm] theorem tSRC_ne_tL (l : LR) : tSRC ≠ tL l := ne_of_val (by simp only [tSRC, val_tL]; omega)
+@[simp, regvm] theorem tL_ne_tSRC (l : LR) : tL l ≠ tSRC := ne_of_val (by simp only [tSRC, val_tL]; omega)
+@[simp, regvm] theorem tX_ne_tC (i : Fin 8) (j : Fin nD) : tX i ≠ tC j := ne_of_val (by have := i.isLt; have := j.isLt; simp only [val_tX, val_tC, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tC_ne_tX (i : Fin 8) (j : Fin nD) : tC j ≠ tX i := ne_of_val (by have := i.isLt; have := j.isLt; simp only [val_tX, val_tC, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tX_ne_tR (i : Fin 8) (r : SR) : tX i ≠ tR r := ne_of_val (by have := i.isLt; have := r.isLt; simp only [val_tX, val_tR, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tR_ne_tX (i : Fin 8) (r : SR) : tR r ≠ tX i := ne_of_val (by have := i.isLt; have := r.isLt; simp only [val_tX, val_tR, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tX_ne_tL (i : Fin 8) (l : LR) : tX i ≠ tL l := ne_of_val (by have := i.isLt; have := l.isLt; simp only [val_tX, val_tL, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tL_ne_tX (i : Fin 8) (l : LR) : tL l ≠ tX i := ne_of_val (by have := i.isLt; have := l.isLt; simp only [val_tX, val_tL, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tC_ne_tR (j : Fin nD) (r : SR) : tC j ≠ tR r := ne_of_val (by have := j.isLt; have := r.isLt; simp only [val_tC, val_tR, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tR_ne_tC (j : Fin nD) (r : SR) : tR r ≠ tC j := ne_of_val (by have := j.isLt; have := r.isLt; simp only [val_tC, val_tR, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tC_ne_tL (j : Fin nD) (l : LR) : tC j ≠ tL l := ne_of_val (by have := j.isLt; have := l.isLt; simp only [val_tC, val_tL, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tL_ne_tC (j : Fin nD) (l : LR) : tL l ≠ tC j := ne_of_val (by have := j.isLt; have := l.isLt; simp only [val_tC, val_tL, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tR_ne_tL (r : SR) (l : LR) : tR r ≠ tL l := ne_of_val (by have := r.isLt; have := l.isLt; simp only [val_tR, val_tL, nD, nS, nL] at *; omega)
+@[simp, regvm] theorem tL_ne_tR (r : SR) (l : LR) : tL l ≠ tR r := ne_of_val (by have := r.isLt; have := l.isLt; simp only [val_tR, val_tL, nD, nS, nL] at *; omega)
 
 /-! ### Updating the encoding -/
 
@@ -377,6 +378,14 @@ macro "enc_ext" : tactic => `(tactic| (
   funext i
   rcases tape_cases i with h|h|h|h|h|h|h|⟨_, h⟩|⟨_, h⟩|⟨_, h⟩|⟨_, h⟩ <;>
     subst h <;> simp [Function.update_apply] <;> (try split_ifs) <;> (try simp_all)))
+
+/-- Equality of stores, tape kind by tape kind, with only the tape lemmas. -/
+macro "enc_ext0" : tactic => `(tactic| (
+  funext i
+  rcases tape_cases i with h|h|h|h|h|h|h|⟨_, h⟩|⟨_, h⟩|⟨_, h⟩|⟨_, h⟩ <;>
+    subst h <;> simp (config := { decide := true }) only [Function.update_apply, regvm, ite_true,
+      ite_false, if_true, if_false]
+    <;> (try split_ifs) <;> (try subst_vars) <;> (try rfl)))
 
 section Upd
 
@@ -387,6 +396,16 @@ theorem enc_sc (d : SR) (v : ℕ) : enc E { σ with sc := Function.update σ.sc 
 
 theorem enc_ls (l : LR) (L : List ℕ) : enc E { σ with ls := Function.update σ.ls l L } ctr =
     Function.update (enc E σ ctr) (tL l) (lenc E L) := by enc_ext
+
+theorem enc_sc_ls (d : SR) (v : ℕ) (l : LR) (L : List ℕ) :
+    enc E { σ with sc := Function.update σ.sc d v, ls := Function.update σ.ls l L } ctr =
+    Function.update (Function.update (enc E σ ctr) (tR d) (List.replicate v true)) (tL l)
+      (lenc E L) := by enc_ext
+
+theorem enc_sc_src (d : SR) (v : ℕ) (sr : List ℕ) :
+    enc E { σ with sc := Function.update σ.sc d v, src := sr } ctr =
+    Function.update (Function.update (enc E σ ctr) (tR d) (List.replicate v true)) tSRC
+      (senc E sr) := by enc_ext
 
 theorem enc_src (sr : List ℕ) : enc E { σ with src := sr } ctr =
     Function.update (enc E σ ctr) tSRC (senc E sr) := by enc_ext
