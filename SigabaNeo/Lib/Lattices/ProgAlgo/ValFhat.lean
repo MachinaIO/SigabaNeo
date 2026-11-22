@@ -124,6 +124,145 @@ theorem blockSpec_gate (hf : ∀ a b, a.length = V → b.length = V → (f a b).
   frame _ _ _ _ := trivial
   wr := by decide
 
+/-! ### The results of the gate loop are the bundles of `f̂` -/
+
+section Fhat
+
+variable {N K : ℕ} (one zv : List Bool) (inB : Fin 10 → BI N (K + 1) → List Bool)
+
+/-- The slot of the operand `j` is the word of the bundle of the wire `ofIdx 10 j`. -/
+theorem slotOf_rep (gv : OI N (K + 1) → ℕ) (bs : List (BI N (K + 1) → List Bool)) (j : ℕ) :
+    slotOf (bw (constRepVV one zv gv)) ((List.finRange 10).map fun i => bw (inB i)) (bs.map bw) j =
+      bw (repV one inB zv gv bs (ofIdx 10 j)) := by
+  unfold slotOf ofIdx
+  by_cases h0 : j = 0
+  · subst h0; simp [repV]
+  · by_cases h1 : j - 1 < 10
+    · rw [if_neg h0, dif_pos h1, repV]
+      obtain ⟨j', rfl⟩ : ∃ j', j = j' + 1 := ⟨j - 1, by omega⟩
+      rw [List.cons_append, List.getD_cons_succ, List.getD_append _ _ _ _ (by simpa using h1)]
+      simp only [List.getD_eq_getElem?_getD, List.getElem?_map]
+      rw [List.getElem?_eq_getElem (by simpa using h1)]
+      simp
+    · rw [if_neg h0, dif_neg h1, repV]
+      obtain ⟨j', rfl⟩ : ∃ j', j = j' + 11 := ⟨j - 11, by omega⟩
+      rw [show j' + 11 = (j' + 10) + 1 by omega, List.cons_append, List.getD_cons_succ,
+        List.getD_append_right _ _ _ _ (by simp), List.length_map, List.length_finRange,
+        show j' + 10 - 10 = j' by omega, show j' + 10 + 1 - 1 - 10 = j' by omega, List.getD_map]
+
+theorem constRepVV_len (h1 : one.length = V) (hz : zv.length = V) (gv : OI N (K + 1) → ℕ)
+    (b : BI N (K + 1)) : (constRepVV one zv gv b).length = V := by
+  unfold constRepVV
+  rw [List.getD_eq_getElem?_getD]
+  rcases e : (constV one zv (K + 1) (gv (b.1, b.2.1, b.2.2.2)))[b.2.2.1.val]? with _ | x
+  · simpa using h1
+  · exact constV_vals h1 hz _ _ x (List.mem_of_getElem? e)
+
+theorem repV_len (_hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    (h1 : one.length = V) (hz : zv.length = V) (hin : ∀ i b, (inB i b).length = V)
+    (gv : OI N (K + 1) → ℕ) (bs : List (BI N (K + 1) → List Bool))
+    (hbs : ∀ A ∈ bs, ∀ b, (A b).length = V) (w : Wire (Fin 10)) (b : BI N (K + 1)) :
+    (repV one inB zv gv bs w b).length = V := by
+  cases w with
+  | input i => exact hin i b
+  | one => exact constRepVV_len one zv h1 hz gv b
+  | gate m =>
+    simp only [repV]
+    rw [List.getD_eq_getElem?_getD]
+    rcases e : bs[m]? with _ | A
+    · exact constRepVV_len one zv h1 hz gv b
+    · exact hbs A (List.mem_of_getElem? e) b
+
+/-- **The results of the gate loop with `nandW`** are the words of the bundles of the NAND blocks
+of `f̂` (`compileStepV`, at the orders `enumT`, `enumO` and the coefficients `gvExp q`). -/
+theorem gl_nandW (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    (h1 : one.length = V) (hz : zv.length = V) (hin : ∀ i b, (inB i b).length = V)
+    (gs : GateList) :
+    gl (nandW V N K f one zv) (bw (N := N) (k := K + 1) (constRepVV one zv (gvExp (2 ^ K))))
+        ((List.finRange 10).map fun i => bw (inB i)) gs =
+      ((fromGates 10 gs).foldl (compileStepV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+        (gvExp (2 ^ K)) inB zv (2 ^ K)) []).map bw := by
+  have key : ∀ (gs : GateList) (bs : List (BI N (K + 1) → List Bool)),
+      (∀ A ∈ bs, ∀ b, (A b).length = V) →
+      gs.foldl (glStep (nandW V N K f one zv) (bw (N := N) (k := K + 1) (constRepVV one zv (gvExp (2 ^ K))))
+          ((List.finRange 10).map fun i => bw (inB i))) (bs.map bw) =
+        ((fromGates 10 gs).foldl (compileStepV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+          (gvExp (2 ^ K)) inB zv (2 ^ K)) bs).map bw ∧
+        ∀ A ∈ (fromGates 10 gs).foldl (compileStepV one (fV V f) (enumT N (K + 1))
+          (enumO N (K + 1)) (gvExp (2 ^ K)) inB zv (2 ^ K)) bs, ∀ b, (A b).length = V := by
+    intro gs
+    induction gs with
+    | nil => intro bs h; exact ⟨rfl, h⟩
+    | cons g gs ih =>
+      intro bs hbs
+      have hg : glStep (nandW V N K f one zv) (bw (N := N) (k := K + 1) (constRepVV one zv (gvExp (2 ^ K))))
+          ((List.finRange 10).map fun i => bw (inB i)) (bs.map bw) g =
+          (compileStepV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) inB zv
+            (2 ^ K) bs ⟨ofIdx 10 g.1, ofIdx 10 g.2⟩).map bw := by
+        rw [glStep, slotOf_rep, slotOf_rep, compileStepV, List.map_append, List.map_singleton,
+          nandW, ubw_bw (repV_len one zv inB hf h1 hz hin _ bs hbs _),
+          ubw_bw (repV_len one zv inB hf h1 hz hin _ bs hbs _)]
+      have hbs' : ∀ A ∈ compileStepV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+          (gvExp (2 ^ K)) inB zv (2 ^ K) bs ⟨ofIdx 10 g.1, ofIdx 10 g.2⟩, ∀ b, (A b).length = V := by
+        intro A hA b
+        rw [compileStepV, List.mem_append, List.mem_singleton] at hA
+        rcases hA with hA | rfl
+        · exact hbs A hA b
+        · exact nandV_len hf h1 hz _ _ (repV_len one zv inB hf h1 hz hin _ bs hbs _)
+            (repV_len one zv inB hf h1 hz hin _ bs hbs _) b
+      rw [List.foldl_cons, hg]
+      exact ih _ hbs'
+  exact (key gs [] (fun _ h => by simp at h)).1
+
+theorem length_foldl_compileStepV (gv : OI N (K + 1) → ℕ) (step : List Bool → List Bool → List Bool)
+    (ordT : List ((Fin 2 × Fin (K + 1)) × Fin N)) (ordO : List (OI N (K + 1))) (q : ℕ) :
+    ∀ (p : SLP (Fin 10)) (bs : List (BI N (K + 1) → List Bool)),
+      (p.foldl (compileStepV one step ordT ordO gv inB zv q) bs).length = bs.length + p.length
+  | [], bs => by simp
+  | g :: p, bs => by
+    rw [List.foldl_cons, length_foldl_compileStepV gv step ordT ordO q p, compileStepV]; simp; omega
+
+/-- **The last result of the gate loop is the word of `fhatV`** at the predicate's output wire. -/
+theorem getLast_gl_nandW (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    (h1 : one.length = V) (hz : zv = fV V f one one) (hin : ∀ i b, (inB i b).length = V)
+    (gs : GateList) (hne : gs ≠ []) :
+    (gl (nandW V N K f one zv) (bw (N := N) (k := K + 1) (constRepVV one zv (gvExp (2 ^ K))))
+        ((List.finRange 10).map fun i => bw (inB i)) gs).getLastD [] =
+      bw (fhatV one (fV V f) inB (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K)
+        (predOf 10 gs).1 (predOf 10 gs).2) := by
+  have hzl : zv.length = V := by rw [hz, fV]; exact hf _ _ (by simp) (by simp)
+  rw [gl_nandW one zv inB hf h1 hzl hin gs, fhatV, ← hz, predOf]
+  set bs := (fromGates 10 gs).foldl (compileStepV one (fV V f) (enumT N (K + 1))
+    (enumO N (K + 1)) (gvExp (2 ^ K)) inB zv (2 ^ K)) []
+  have hl : bs.length = gs.length := by
+    rw [length_foldl_compileStepV]; simp [fromGates]
+  have hpos : 0 < gs.length := List.length_pos_iff.mpr hne
+  rw [repV, List.getD_eq_getElem _ _ (by omega), List.getLastD_eq_getLast?, List.getLast?_map,
+    List.getLast?_eq_getElem?]
+  simp only [List.length_map, hl]
+  rw [List.getElem?_eq_getElem (by simp [hl]; omega)]
+  simp
+
+end Fhat
+
+/-! ### The step on values of `V` bits -/
+
+/-- **Shadows over the machine's step are shadows over the step**, when the inputs and `1` have
+`V` bits and the step keeps `V` bits: `valueOf … (fV V f) = valueOf … f`. -/
+theorem valueOf_fV {ι : Type*} (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    (inp : ι → List Bool) (one : List Bool) (hin : ∀ i, (inp i).length = V) (h1 : one.length = V)
+    (p : SLP ι) (w : Wire ι) :
+    valueOf inp one (fV V f) p w = valueOf inp one f p w := by
+  let α := {x : List Bool // x.length = V}
+  let st : α → α → α := fun a b => ⟨f a.1 b.1, hf _ _ a.2 b.2⟩
+  have e1 := SLP.valueOf_map (fun i => (⟨inp i, hin i⟩ : α)) ⟨one, h1⟩ st inp one (fV V f)
+    Subtype.val (fun _ => rfl) rfl (fun a b => by
+      show f a.1 b.1 = f (takeD V a.1) (takeD V b.1)
+      rw [takeD_of_length' a.2, takeD_of_length' b.2]) p w
+  have e2 := SLP.valueOf_map (fun i => (⟨inp i, hin i⟩ : α)) ⟨one, h1⟩ st inp one f
+    Subtype.val (fun _ => rfl) rfl (fun _ _ => rfl) p w
+  rw [← e1, ← e2]
+
 end ValVM
 
 end SigabaNeo.Tape
