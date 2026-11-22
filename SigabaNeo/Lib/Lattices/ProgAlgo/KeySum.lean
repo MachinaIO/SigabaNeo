@@ -186,6 +186,292 @@ theorem run_readP {W V off Lx : ℕ} (s : Store 15) (hb : ∀ t : Fin 15, 7 ≤ 
   fin_cases t <;> simp [rdA, rdD, rdM, readW, h3, h5, h6, drop_append_takeD h3,
     drop_append_takeD h6, hb 7 (by decide), hb 8 (by decide), hb 9 (by decide), hb 10 (by decide)]
 
+/-! ### Counter loops with an indexed invariant -/
+
+theorem run_loop_idx (c : Fin k) (body : Prog k) (H : ℕ → Store k) (n : ℕ)
+    (hstep : ∀ j < n, ∀ w, run body (Function.update (H j) c w) = Function.update (H (j + 1)) c w) :
+    ∀ (w : List Bool) (j : ℕ), j + w.length = n →
+      run (loop c body) (Function.update (H j) c w) = Function.update (H n) c [] := by
+  intro w
+  induction w with
+  | nil => intro j hj; simp only [List.length_nil, Nat.add_zero] at hj; subst hj; rw [run_loop, Function.update_self]; rfl
+  | cons x w ih =>
+    intro j hj
+    simp only [List.length_cons] at hj
+    have h1 : run body (tailAt c (Function.update (H j) c (x :: w))) =
+        Function.update (H (j + 1)) c w := by
+      rw [tailAt, Function.update_self, Function.update_idem]; exact hstep j (by omega) w
+    have h2 := ih (j + 1) (by omega)
+    rw [run_loop, Function.update_self] at h2
+    rw [run_loop, Function.update_self, List.length_cons, Function.iterate_succ_apply, h1, h2]
+
+/-- **The counter idiom with an indexed invariant**: the round `j < n` takes `H j` to `H (j + 1)`. -/
+theorem run_forN_idx (c t : Fin k) (body : Prog k) (H : ℕ → Store k) (n : ℕ)
+    (hstep : ∀ j < n, ∀ w, run body (Function.update (H j) c w) = Function.update (H (j + 1)) c w)
+    (s : Store k) (hs : Function.update s c (s t) = Function.update (H 0) c (s t))
+    (hn : (s t).length = n) :
+    run (forN c t body) s = Function.update (H n) c [] := by
+  rw [forN, run_seq, run_copy, hs]
+  exact run_loop_idx c body H n hstep (s t) 0 (by omega)
+
+theorem drop_concatN_append {n L c : ℕ} {f : ℕ → List Bool} (hf : ∀ i < n, (f i).length = L)
+    (R : List Bool) (hc : c < n) :
+    (concatN n f ++ R).drop (c * L) = f c ++ (concatN n f ++ R).drop ((c + 1) * L) := by
+  induction n generalizing R with
+  | zero => omega
+  | succ n ih =>
+    rw [concatN, List.append_assoc]
+    by_cases h : c < n
+    · exact ih (fun i hi => hf i (by omega)) _ h
+    · have hcn : c = n := by omega
+      subst hcn
+      have hl : (concatN c f).length = c * L := length_concatN fun i hi => hf i (by omega)
+      rw [List.drop_left' hl, Nat.succ_mul, ← List.drop_drop, List.drop_left' hl,
+        List.drop_left' (hf c (by omega))]
+
+/-! ### The key-matrix sum
+
+`keySumP : Prog 86`. Tapes: `0` the output, `1` the store, `2` the positions; templates `3` … `17`
+of lengths `K`, `N`, `N K`, `k`, `2k`, `2k`, `2k N`, `2k N K`, `2k 2k N K`, `m`, `m 2k N K`, `m 2k N`,
+`W`, `V`, `off` (`KTmpl`); then, blank before and after: `18` the stream of positions, `19` the block
+read, `20` the term, `21` `powW K i`, `22` `23` the words of lengths `c` and `2k − c`, `24` `25` of
+lengths `j` and `N − j`, `26` `27` `28` the accumulators of the three loops, `29` a register, `30`
+`31` `32` the counters, `33` … `85` scratch. -/
+
+def oRd : Fin 15 → Fin 86 := ![19, 1, 18, 15, 16, 17, 13, 33, 34, 35, 36, 37, 38, 39, 40]
+def oVt : Fin 69 → Fin 86 := ![20, 19, 21, 22, 24, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85]
+def oAj : Fin 28 → Fin 86 := ![29, 26, 20, 3, 14, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55]
+def oAi : Fin 28 → Fin 86 := ![29, 27, 26, 3, 14, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55]
+def oAc : Fin 28 → Fin 86 := ![29, 28, 27, 3, 14, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55]
+def oSh : Fin 11 → Fin 86 := ![29, 33, 21, 3, 34, 35, 36, 37, 38, 39, 40]
+def oOne : Fin 11 → Fin 86 := ![21, 33, 29, 3, 34, 35, 36, 37, 38, 39, 40]
+def oDc : Fin 3 → Fin 86 := ![22, 33, 23]
+def oDj : Fin 3 → Fin 86 := ![24, 33, 25]
+theorem oRd_inj : Function.Injective oRd := by decide
+set_option maxRecDepth 100000 in
+theorem oVt_inj : Function.Injective oVt := by decide
+theorem oAj_inj : Function.Injective oAj := by decide
+theorem oAi_inj : Function.Injective oAi := by decide
+theorem oAc_inj : Function.Injective oAc := by decide
+theorem oSh_inj : Function.Injective oSh := by decide
+theorem oOne_inj : Function.Injective oOne := by decide
+theorem oDc_inj : Function.Injective oDc := by decide
+theorem oDj_inj : Function.Injective oDj := by decide
+
+attribute [local simp] oRd oVt oAj oAi oAc oSh oOne oDc oDj
+
+
+/-- One round of the inner loop: read, the term, add; next `j`. -/
+def bodyJ : Prog 86 :=
+  map oRd readP ⨾ map oVt vtermP ⨾ map oAj addRWP ⨾ cp 26 29 ⨾ clr 29 ⨾ clr 19 ⨾ clr 20 ⨾
+    tl 25 ⨾ cp 24 4 ⨾ map oDj dropP
+
+/-- The inner loop over `j < N`, its sum on `26`. -/
+def loopJ : Prog 86 := cp 26 13 ⨾ setZero 26 ⨾ cp 25 4 ⨾ forN 32 4 bodyJ ⨾ clr 24 ⨾ clr 25
+
+/-- One round of the middle loop: the inner loop, add; next `powW K i`. -/
+def bodyI : Prog 86 :=
+  loopJ ⨾ map oAi addRWP ⨾ cp 27 29 ⨾ clr 29 ⨾ clr 26 ⨾ map oSh shlP ⨾ cp 21 29 ⨾ clr 29
+
+/-- The middle loop over `i < k`, its sum on `27`. -/
+def loopI : Prog 86 :=
+  cp 27 13 ⨾ setZero 27 ⨾ cp 29 3 ⨾ setZero 29 ⨾ map oOne (zipW oneOp true) ⨾ clr 29 ⨾
+    forN 31 6 bodyI ⨾ clr 21
+
+/-- One round of the outer loop: the middle loop, add; next `c`. -/
+def bodyC : Prog 86 :=
+  loopI ⨾ map oAc addRWP ⨾ cp 28 29 ⨾ clr 29 ⨾ clr 27 ⨾ tl 23 ⨾ cp 22 7 ⨾ map oDc dropP
+
+/-- **The key-matrix sum** `keySumMW N K k m xW`, `xW c i j` read from the store. -/
+def keySumP : Prog 86 :=
+  cp 18 2 ⨾ cp 28 13 ⨾ setZero 28 ⨾ cp 23 7 ⨾ forN 30 7 bodyC ⨾ cp 0 28 ⨾ clr 28 ⨾ clr 22 ⨾
+    clr 23 ⨾ clr 18
+
+/-- The templates of `keySumP`. -/
+structure KTmpl (N K k m W V off : ℕ) (r : Store 86) : Prop where
+  h3 : (r 3).length = K
+  h4 : (r 4).length = N
+  h5 : (r 5).length = N * K
+  h6 : (r 6).length = k
+  h7 : (r 7).length = 2 * k
+  h8 : (r 8).length = 2 * k
+  h9 : (r 9).length = 2 * k * N
+  h10 : (r 10).length = 2 * k * (N * K)
+  h11 : (r 11).length = 2 * k * (2 * k * (N * K))
+  h12 : (r 12).length = m
+  h13 : (r 13).length = m * (2 * k) * (N * K)
+  h14 : (r 14).length = m * (2 * k) * N
+  h15 : (r 15).length = W
+  h16 : (r 16).length = V
+  h17 : (r 17).length = off
+
+theorem run_oRd {W V off Lx : ℕ} (t : Store 86) (hb : ∀ x : Fin 86, 33 ≤ x.val → x.val < 41 → t x = [])
+    (h15 : (t 15).length = W) (h16 : (t 16).length = V) (h17 : (t 17).length = off)
+    (h13 : (t 13).length = Lx) :
+    run (map oRd readP) t = Function.update (Function.update t 19
+      (readW V off Lx (t 1) (takeD W (t 18)))) 18 ((t 18).drop W) := by
+  rw [run_map oRd_inj, run_readP (W := W) (V := V) (off := off) (Lx := Lx) (t ∘ oRd)
+    (fun x hx => by fin_cases x <;> simp [oRd] at hx ⊢ <;> (apply hb <;> decide)) h15 h16 h17 h13,
+    extend_update oRd_inj, extend_update oRd_inj, extend_comp_self]
+  rfl
+
+theorem run_oVt {N K k m c i j : ℕ} (t : Store 86) (hb : ∀ x : Fin 86, 33 ≤ x.val → t x = [])
+    (ht : KTmpl N K k m W V off t) (hc : c < 2 * k)
+    (h19 : (t 19).length = m * (2 * k) * (N * K)) (h21 : t 21 = powW K i)
+    (h22 : (t 22).length = c) (h24 : (t 24).length = j) :
+    run (map oVt vtermP) t = Function.update t 20
+      (matMulW N K m (2 * k) (2 * k) (t 19) (ginvW N K k (vW N K k c i j))) :=
+  run_map_eq_update oVt_inj vtermP t 0 _ (run_vtermP (t ∘ oVt)
+    (fun x hx => by fin_cases x <;> simp [oVt] at hx ⊢ <;> (apply hb; decide)) hc h19 h21 h22 h24
+    ht.h3 ht.h4 ht.h5 ht.h6 ht.h7 ht.h8 ht.h9 ht.h10 ht.h11 ht.h12 ht.h13)
+
+theorem KTmpl.upd {N K k m W V off : ℕ} {r : Store 86} (h : KTmpl N K k m W V off r) (t : Fin 86)
+    (ht : 18 ≤ t.val) (w : List Bool) : KTmpl N K k m W V off (Function.update r t w) := by
+  have e : ∀ x : Fin 86, x.val < 18 → Function.update r t w x = r x := fun x hx =>
+    Function.update_of_ne (fun h => by subst h; omega) _ _
+  exact ⟨by rw [e 3 (by decide)]; exact h.h3, by rw [e 4 (by decide)]; exact h.h4,
+    by rw [e 5 (by decide)]; exact h.h5, by rw [e 6 (by decide)]; exact h.h6,
+    by rw [e 7 (by decide)]; exact h.h7, by rw [e 8 (by decide)]; exact h.h8,
+    by rw [e 9 (by decide)]; exact h.h9, by rw [e 10 (by decide)]; exact h.h10,
+    by rw [e 11 (by decide)]; exact h.h11, by rw [e 12 (by decide)]; exact h.h12,
+    by rw [e 13 (by decide)]; exact h.h13, by rw [e 14 (by decide)]; exact h.h14,
+    by rw [e 15 (by decide)]; exact h.h15, by rw [e 16 (by decide)]; exact h.h16,
+    by rw [e 17 (by decide)]; exact h.h17⟩
+
+/-- The term of the bit `(c, i, j)`: the block read at the position, times `G̲⁻¹(V_{c,i,j})`. -/
+def termW (N K k m V off W : ℕ) (st : List Bool) (pos : ℕ → ℕ → ℕ → ℕ) (c i j : ℕ) : List Bool :=
+  matMulW N K m (2 * k) (2 * k) (readW V off (m * (2 * k) * (N * K)) st (unaryW W (pos c i j)))
+    (ginvW N K k (vW N K k c i j))
+
+theorem length_mSum (N K k m : ℕ) (f : ℕ → List Bool) :
+    ∀ t, (mSum N K k m f t).length = m * (2 * k) * (N * K)
+  | 0 => by simp [mSum]
+  | t + 1 => by rw [mSum]; exact length_matAddW (length_mSum N K k m f t) _
+
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSimpArgs false in
+/-- **The inner loop**: the sum over `j < N` on `26`; the positions consumed. -/
+theorem run_loopJ {N K k m W V off c i : ℕ} (r : Store 86) (ht : KTmpl N K k m W V off r)
+    (hb : ∀ t : Fin 86, 33 ≤ t.val → r t = []) (h19 : r 19 = []) (h20 : r 20 = [])
+    (h24 : r 24 = []) (h25 : r 25 = []) (h29 : r 29 = []) (h32 : r 32 = [])
+    (hc : c < 2 * k) (h21 : r 21 = powW K i) (h22 : (r 22).length = c) (pos : ℕ → ℕ → ℕ → ℕ)
+    (hpos : ∀ j < N, pos c i j ≤ W) (R : List Bool)
+    (h18 : r 18 = concatN N (fun j => unaryW W (pos c i j)) ++ R) :
+    run loopJ r = Function.update (Function.update r 26
+      (mSum N K k m (termW N K k m V off W (r 1) pos c i) N)) 18 R := by
+  set S := concatN N (fun j => unaryW W (pos c i j)) ++ R with hS
+  have hlu : ∀ j < N, (unaryW W (pos c i j)).length = W := fun j hj => length_unaryW (hpos j hj)
+  let H : ℕ → Store 86 := fun j => Function.update (Function.update (Function.update
+    (Function.update r 26 (mSum N K k m (termW N K k m V off W (r 1) pos c i) j)) 18
+      (S.drop (j * W))) 25 ((r 4).drop j)) 24 ((r 4).drop (N - j))
+  have hstep : ∀ j < N, ∀ w, run bodyJ (Function.update (H j) 32 w) =
+      Function.update (H (j + 1)) 32 w := by
+    intro j hj w
+    have hD := drop_concatN_append (f := fun j => unaryW W (pos c i j)) hlu R hj
+    have hT : takeD W (S.drop (j * W)) = unaryW W (pos c i j) := by
+      rw [hS, hD, takeD_eq_take (by simp [hlu j hj]), List.take_left' (hlu j hj)]
+    have hD' : (S.drop (j * W)).drop W = S.drop ((j + 1) * W) := by
+      rw [hS, hD, List.drop_left' (hlu j hj)]
+    simp only [bodyJ, run_seq, run_copy, run_clear, run_tail]
+    rw [run_oRd (W := W) (V := V) (off := off) (Lx := m * (2 * k) * (N * K)) _
+      (fun x hx hx' => by fin_cases x <;> simp [H] at hx hx' ⊢ <;> (apply hb; decide))
+      (by simp [H, ht.h15]) (by simp [H, ht.h16]) (by simp [H, ht.h17]) (by simp [H, ht.h13])]
+    rw [run_oVt (N := N) (K := K) (k := k) (m := m) (c := c) (i := i) (j := j) _
+      (fun x hx => by fin_cases x <;> simp [H] at hx ⊢ <;> (apply hb; decide))
+      ((ht.upd 26 (by decide) _ |>.upd 18 (by decide) _ |>.upd 25 (by decide) _ |>.upd 24 (by decide) _
+        |>.upd 32 (by decide) _ |>.upd 19 (by decide) _ |>.upd 18 (by decide) _)) hc
+      (by simp [H, readW]) (by simp [H, h21]) (by simp [H, h22]) (by simp [H, ht.h4]; omega)]
+    rw [run_addRWP_mat_map oAj_inj (K := K) (N := N) (L := m * (2 * k)) _
+      (fun x hx => by fin_cases x <;> simp [H] at hx ⊢ <;> (apply hb; decide))
+      (by simp [oAj, H, ht.h3]) (by simp [oAj, H, ht.h14])
+      (by simp [oAj, H, length_mSum]; ring) (by simp [oAj, H, length_matMulW]; ring)]
+    rw [run_dropP_map oDj_inj _ (by simp [oDj, H, hb 33 (by decide)])]
+    funext x
+    fin_cases x <;> simp [H, h19, h20, h29, ht.h4, hT, mSum, termW, Nat.succ_mul]
+  have hSN : S.drop (N * W) = R := by
+    rw [hS, List.drop_left' (length_concatN hlu)]
+  simp only [loopJ, run_seq, run_copy, run_setZero, run_clear]
+  rw [run_forN_idx 32 4 bodyJ H N hstep _ ?_ (by simp [ht.h4])]
+  · funext x
+    fin_cases x <;> simp [H, hSN, h24, h25, h32]
+  · funext x
+    fin_cases x <;> simp [H, h18, h24, ht.h4, ht.h13, mSum, zeroW]
+
+theorem serF_oneOp_powW (K : ℕ) (y : List Bool) :
+    serF oneOp true (List.replicate K false) y = powW K 0 := by
+  rw [serF_oneOp, powW_zero]
+  cases K with
+  | zero => rfl
+  | succ K => rw [List.replicate_succ]; simp [bitW, zeroW]
+
+theorem run_oSh {K i : ℕ} (t : Store 86) (hb : ∀ x : Fin 86, 33 ≤ x.val → x.val < 41 → t x = [])
+    (h21 : t 21 = powW K i) :
+    run (map oSh shlP) t = Function.update t 29 (powW K (i + 1)) := by
+  rw [shlP, run_zipW_map oSh_inj _ _ t (fun x hx => by
+      fin_cases x <;> simp at hx ⊢ <;> (apply hb <;> decide)) (by apply hb <;> decide)]
+  simp [h21, serF_shlOp_false, shl_powW]
+
+theorem run_oOne {K : ℕ} (t : Store 86) (hb : ∀ x : Fin 86, 33 ≤ x.val → x.val < 41 → t x = [])
+    (h29 : t 29 = List.replicate K false) :
+    run (map oOne (zipW oneOp true)) t = Function.update t 21 (powW K 0) := by
+  rw [run_zipW_map oOne_inj _ _ t (fun x hx => by
+      fin_cases x <;> simp at hx ⊢ <;> (apply hb <;> decide)) (by apply hb <;> decide)]
+  simp [h29, serF_oneOp_powW]
+
+/-- The sum over `j < N` of the terms of `(c, i)`. -/
+def sumJ (N K k m V off W : ℕ) (st : List Bool) (pos : ℕ → ℕ → ℕ → ℕ) (c i : ℕ) : List Bool :=
+  mSum N K k m (termW N K k m V off W st pos c i) N
+
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSimpArgs false in
+/-- **The middle loop**: the sum over `i < k` on `27`; the positions consumed. -/
+theorem run_loopI {N K k m W V off c : ℕ} (r : Store 86) (ht : KTmpl N K k m W V off r)
+    (hb : ∀ t : Fin 86, 33 ≤ t.val → r t = []) (h19 : r 19 = []) (h20 : r 20 = [])
+    (h21 : r 21 = []) (h24 : r 24 = []) (h25 : r 25 = []) (h26 : r 26 = []) (h29 : r 29 = [])
+    (h31 : r 31 = []) (h32 : r 32 = []) (hc : c < 2 * k) (h22 : (r 22).length = c)
+    (pos : ℕ → ℕ → ℕ → ℕ) (hpos : ∀ i < k, ∀ j < N, pos c i j ≤ W) (R : List Bool)
+    (h18 : r 18 = concatN k (fun i => concatN N (fun j => unaryW W (pos c i j))) ++ R) :
+    run loopI r = Function.update (Function.update r 27
+      (mSum N K k m (sumJ N K k m V off W (r 1) pos c) k)) 18 R := by
+  set S := concatN k (fun i => concatN N (fun j => unaryW W (pos c i j))) ++ R with hS
+  have hlu : ∀ i < k, (concatN N (fun j => unaryW W (pos c i j))).length = N * W := fun i hi =>
+    length_concatN fun j hj => length_unaryW (hpos i hi j hj)
+  let H : ℕ → Store 86 := fun i => Function.update (Function.update (Function.update r 27
+    (mSum N K k m (sumJ N K k m V off W (r 1) pos c) i)) 18 (S.drop (i * (N * W)))) 21 (powW K i)
+  have hstep : ∀ i < k, ∀ w, run bodyI (Function.update (H i) 31 w) =
+      Function.update (H (i + 1)) 31 w := by
+    intro i hi w
+    have hD := drop_concatN_append (f := fun i => concatN N (fun j => unaryW W (pos c i j))) hlu R hi
+    simp only [bodyI, run_seq, run_copy, run_clear]
+    rw [run_loopJ (N := N) (K := K) (k := k) (m := m) (W := W) (V := V) (off := off) (c := c)
+      (i := i) _ (ht.upd 27 (by decide) _ |>.upd 18 (by decide) _ |>.upd 21 (by decide) _
+        |>.upd 31 (by decide) _)
+      (fun x hx => by fin_cases x <;> simp [H] at hx ⊢ <;> (apply hb; decide))
+      (by simp [H, h19]) (by simp [H, h20]) (by simp [H, h24]) (by simp [H, h25]) (by simp [H, h29])
+      (by simp [H, h32]) hc (by simp [H]) (by simp [H, h22]) pos (hpos i hi)
+      (S.drop ((i + 1) * (N * W))) (by
+        rw [Function.update_of_ne (by decide)]
+        simp only [H, Function.update_of_ne (show (18 : Fin 86) ≠ 21 by decide), Function.update_self]
+        rw [hS, hD])]
+    rw [run_addRWP_mat_map oAi_inj (K := K) (N := N) (L := m * (2 * k)) _
+      (fun x hx => by fin_cases x <;> simp [H] at hx ⊢ <;> (apply hb; decide))
+      (by simp [H, ht.h3]) (by simp [H, ht.h14])
+      (by simp [H, length_mSum]; ring) (by simp [H, length_mSum]; ring)]
+    rw [run_oSh (K := K) (i := i) _ (fun x hx hx' => by fin_cases x <;> simp [H] at hx hx' ⊢ <;> (apply hb; decide))
+      (by simp [H])]
+    funext x
+    fin_cases x <;> simp [H, h26, h29, mSum, sumJ, Nat.succ_mul]
+  have hSk : S.drop (k * (N * W)) = R := by
+    rw [hS, List.drop_left' (length_concatN hlu)]
+  simp only [loopI, run_seq, run_copy, run_setZero, run_clear]
+  rw [run_oOne (K := K) _ (fun x hx hx' => by fin_cases x <;> simp at hx hx' ⊢ <;> (apply hb; decide))
+    (by simp [ht.h3])]
+  rw [run_forN_idx 31 6 bodyI H k hstep _ ?_ (by simp [ht.h6])]
+  · funext x
+    fin_cases x <;> simp [H, hSk, h21, h31]
+  · funext x
+    fin_cases x <;> simp [H, h18, h29, ht.h13, mSum, zeroW]
+
 end Prog
 
 end SigabaNeo.Tape
