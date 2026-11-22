@@ -37,6 +37,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.MatAdd
 import SigabaNeo.Lib.Lattices.ProgAlgo.MatMul
 import SigabaNeo.Lib.Lattices.ProgAlgo.Gadget
 import SigabaNeo.Lib.Lattices.ProgAlgo.Nand
+import SigabaNeo.Lib.Lattices.ProgAlgo.Spec
 
 /-!
 # Lattice library
@@ -88,5 +89,9 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   simulated short matrices `slpSim`/`evalSim` of `KeyGen*` on words, both binary gadgets).
 * `ProgAlgo/`: the word algorithms of `Algo/` as programs of the verified tape language
   (`SigabaNeo.Tape.Prog`, compiled to machines by `Prog.toMachine`), with their laws, length and
-  time bounds and state counts — `Blocks` (block-wise programs on ring words: `addRW`, `subRW`).
+  time bounds and state counts; interface in `ProgAlgo/Spec` (laws placed on any distinct tapes,
+  bounds `C · (L + 1) ^ d`, state counts) — `Blocks` (block-wise programs on ring words: `addRW`,
+  `subRW`), `MulAlg` (the product by Horner's rule in `X⁻¹`), `RingProgs` and `MulRW` (`mulRW`),
+  `Digits` (`digitRW`, `monoW`, `constW`), `MatAdd` (`matAddW`, `matSubW`), `MatMul` (`matMulW`),
+  `Gadget` (`ginvW`, `gadW`), `Nand` (`nandPKW`).
 -/
