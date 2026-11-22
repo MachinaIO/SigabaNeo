@@ -38,3 +38,15 @@ selection ≈ 2^765, unframed `simStepP` ≈ 2^700. Uniform bounds `tbC·(L+1)^t
 8. **Per-tape bounds for setup/pub/chal/sd and the decoder**: their uniform bounds on 2^234-bit
    states give ≥ 2^936; honest ≈ 2^470. Use `timeBoundT`/AbsBound with frames.
 Larger N is a fallback lever (time ≈ N^5, H ≈ linear in N).
+
+## KeyGen/Dec machines (WS-S2 state, 1e9a533)
+`keyMachineP`/`decMachineP` (`Prog/KeyGenP.lean`, `Prog/DecGenP.lean`, swapped in by `ImplP.lean`)
+are proven; their clocks are `timeBoundT` terms, not yet closed. To close them:
+1. `leP`/`unfrP`/`frP` occur as `prog (Prog.map u p)`; redo `ubp_*` (`FrameIO.lean`) for any
+   injective relabelling `u` (only `ubp_prim`/`ubp_prim0`/`ubp_loop` are used), or use
+   `frame e (prog p)` with a law lemma for coin-free `p`.
+2. `timeBoundT_frontP`/`timeBoundT_cutLook` need the scratch tapes at length 0; bound the
+   guard → parse → front prefix by per-tape bounds by hand (or generalise `cutLook` to `Z`).
+3. Pieces: key try `23(M+1)² + 11494·(2M+1)^8`, `putT`/`prefT`/`tmplT`, `ub_clearL`, `ubp_tailsP`;
+   `tbC`/`tbD` of `decFP`/`ballP` by `decide +kernel`; `bfX`/`cfX` through `∀ M, UB … M (T M) (L M)`.
+The `BfSpec`/`CfSpec` instances come from the generic two-level evaluator (WS-T1).
