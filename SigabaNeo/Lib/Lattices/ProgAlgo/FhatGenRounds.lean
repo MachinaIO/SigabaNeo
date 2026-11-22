@@ -306,6 +306,119 @@ theorem iter_rounds (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix
 /-- `h = |11|` rounds. -/
 def roundsC : Code := .rep 11 pairRoundC
 
+/-! ### The final sum -/
+
+/-- `16 := 16 + (next number of 12)`. -/
+def foldBody : Code :=
+  .seq (.seq (.lnil 0) (.seq (takeC 2 16 0) (.seq (.lnil 1) (takeC 2 12 1))))
+    (.seq modAddC (.seq (.lnil 16) (takeC 2 2 16)))
+
+set_option maxHeartbeats 4000000 in
+theorem iter_foldBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n)
+    {k K : ℕ} (hK : K ≤ k + 1) (hcap' : k + 3 ≤ E.C) (hkM : k + 2 ≤ E.M) :
+    ∀ (rest : List (List (Wire ι))) (P : SLP ι) (acc : List (Wire ι)) (σ : St),
+      (∀ a ∈ rest, a.length = k) → acc.length = k → CstR (E := E) k K σ → Inv E σ → ScOK E σ →
+      σ.ls 12 = flatPos (E := E) (ix := ix) rest → σ.ls 16 = acc.map (pos E ix) →
+      E.n + ((exec E foldBody)^[rest.length] (mk E ix P σ)).t ≤ E.M →
+      ∃ sc' ls', (exec E foldBody)^[rest.length] (mk E ix P σ) =
+          mk E ix (rest.foldl (fun st b => modAdd (.gate 0) (2 ^ K) k st.1 st.2 b) (P, acc)).1
+            (setSL σ sc' ls') ∧
+        ls' 16 = (rest.foldl (fun st b => modAdd (.gate 0) (2 ^ K) k st.1 st.2 b)
+          (P, acc)).2.map (pos E ix) ∧
+        (∀ r : SR, r.val < 16 ∨ 42 < r.val → sc' r = σ.sc r) ∧
+        (∀ l : LR, (8 < l.val ∧ l.val < 12) ∨ (12 < l.val ∧ l.val < 16) ∨ 16 < l.val →
+          ls' l = σ.ls l)
+  | [], P, acc, σ, _, _, _, _, _, _, h16, _ =>
+    ⟨σ.sc, σ.ls, by simp [setSL], by simp [h16], fun _ _ => rfl, fun _ _ => rfl⟩
+  | b :: rest, P, acc, σ, hL, hacc, hc, hI, hS, h12, h16, hM => by
+    have hnM' : E.n ≤ E.M := by omega
+    have hb := hL b (by simp)
+    have hr : ∀ x ∈ rest, x.length = k := fun x hx => hL x (by simp [hx])
+    simp only [List.length_cons] at hM ⊢
+    rw [Function.iterate_succ_apply] at hM ⊢
+    -- `acc` into `0`, `b` into `1`
+    obtain ⟨sc1, h1, f1⟩ := exec_takeC (E := E) (n := 2) (lA := 16) (lR := 0) (by decide)
+      (acc.map (pos E ix)) [] [] (exec E (.lnil 0) σ)
+      (inv_exec E _ σ hI) (by simp [exec, h16]) (by simp [exec])
+      (by simp [exec, hc.1.2.1, hacc]) (by simp [hacc]; omega)
+    set τ1 : St := setSL (exec E (.lnil 0) σ) sc1 (Function.update (Function.update
+      (exec E (.lnil 0) σ).ls 16 []) 0 ([] ++ acc.map (pos E ix)))
+    have h1' : exec E (takeC 2 16 0) (exec E (.lnil 0) σ) = τ1 := by rw [h1]; rfl
+    have hI1 : Inv E (exec E (.lnil 1) τ1) := by
+      have := inv_exec E (.seq (.lnil 0) (.seq (takeC 2 16 0) (.lnil 1))) σ hI
+      simp only [exec_seq] at this; rw [h1'] at this; exact this
+    obtain ⟨sc2, h2, f2⟩ := exec_takeC (E := E) (n := 2) (lA := 12) (lR := 1) (by decide)
+      (b.map (pos E ix)) (flatPos (E := E) (ix := ix) rest) [] (exec E (.lnil 1) τ1) hI1
+      (by simp [exec, τ1, setSL, h12, flatPos_cons]) (by simp [exec])
+      (by simp [exec, τ1, setSL]; rw [f1 2 (by decide)]; simp [exec, hc.1.2.1, hb])
+      (by simp [hb]; omega)
+    set τ2 : St := { exec E (.lnil 1) τ1 with sc := sc2, ls := Function.update (Function.update
+      (exec E (.lnil 1) τ1).ls 12 (flatPos (E := E) (ix := ix) rest)) 1 ([] ++ b.map (pos E ix)) }
+    have hτ2s : ∀ r : SR, r ≠ 41 → τ2.sc r = σ.sc r := fun r hr' => by
+      show sc2 r = _
+      rw [f2 r (by simpa using hr')]; show sc1 r = _; rw [f1 r (by simpa using hr')]; rfl
+    have hτ2l : ∀ l : LR, l ≠ 0 → l ≠ 1 → l ≠ 12 → l ≠ 16 → τ2.ls l = σ.ls l :=
+      fun l h0 h1 h12' h16' => by
+        simp [τ2, exec, τ1, setSL, Function.update_of_ne h0, Function.update_of_ne h1,
+          Function.update_of_ne h12', Function.update_of_ne h16']
+    have e2 : exec E foldBody (mk E ix P σ) = exec E (.seq (.lnil 16) (takeC 2 2 16))
+        (exec E modAddC (mk E ix P τ2)) := by
+      simp only [foldBody, exec_seq]
+      rw [exec_mk_noNand (.lnil 0) trivial, exec_mk_noNand (takeC 2 16 0) (by simp [NoNand, takeC]),
+        h1', exec_mk_noNand (.lnil 1) trivial, exec_mk_noNand (takeC 2 12 1)
+        (by simp [NoNand, takeC]), h2]
+    have hIS2 : Inv E τ2 ∧ ScOK E τ2 := by
+      have hi := inv_exec E (.seq (.lnil 0) (.seq (takeC 2 16 0) (.seq (.lnil 1) (takeC 2 12 1))))
+        σ hI
+      have hs := scOK_exec E hnM' hWM (.seq (.lnil 0) (.seq (takeC 2 16 0) (.seq (.lnil 1)
+        (takeC 2 12 1)))) σ hI hS
+      simp only [exec_seq] at hi hs; rw [h1', h2] at hi hs; exact ⟨hi, hs⟩
+    rw [e2] at hM ⊢
+    obtain ⟨sc3, ls3', h3, d3, f3, g3⟩ := exec_modAddC hnM hWM hix hK acc b P τ2
+      (by have := hc.1; exact ⟨⟨by rw [hτ2s 0 (by decide), this.1.1],
+        by rw [hτ2s 1 (by decide), this.1.2]⟩, by rw [hτ2s 2 (by decide), this.2.1],
+        by rw [hτ2s 3 (by decide), this.2.2.1], by rw [hτ2s 4 (by decide), this.2.2.2]⟩)
+      hIS2.1 hIS2.2 (by simp [τ2, exec, τ1, setSL]) (by simp [τ2]) hacc hb hcap' hkM
+      (le_trans (Nat.add_le_add_left (le_trans (t_le_exec E (.seq (.lnil 16) (takeC 2 2 16)) _)
+        (t_le_iter E foldBody rest.length _)) _) hM)
+    set r := modAdd (.gate 0) (2 ^ K) k P acc b
+    have hrl : r.2.length = k := length_modAdd_eq _ _ _ _ _ _ hacc hb
+    rw [h3] at hM ⊢
+    have hs3 : ∀ x : SR, x.val < 16 ∨ 42 < x.val → sc3 x = σ.sc x := fun x hx => by
+      rw [f3 x hx, hτ2s x (by rintro rfl; revert hx; decide)]
+    obtain ⟨sc4, h4, f4⟩ := exec_takeC (E := E) (n := 2) (lA := 2) (lR := 16) (by decide)
+      (r.2.map (pos E ix)) [] [] (exec E (.lnil 16) (setSL τ2 sc3 ls3'))
+      (is_exec hnM' hWM (c := .lnil 16) rfl (is_exec hnM' hWM
+        (τ' := mk E ix r.1 (setSL τ2 sc3 ls3')) h3 hIS2)).1
+      (by simp [exec, setSL, d3]) (by simp [exec])
+      (by simp [exec, setSL]; rw [hs3 2 (by decide), hc.1.2.1, hrl]) (by simp [hrl]; omega)
+    set σ5 := setSL σ sc4 (Function.update (Function.update ls3' 2 []) 16 (r.2.map (pos E ix)))
+    have h4' : exec E (takeC 2 2 16) (exec E (.lnil 16) (setSL τ2 sc3 ls3')) = σ5 := by
+      rw [h4]; simp only [σ5, setSL, exec, List.nil_append]
+      congr 1; funext l; simp only [Function.update_apply]; split_ifs <;> simp_all
+    rw [exec_mk_noNand (.seq (.lnil 16) (takeC 2 2 16)) (by simp [NoNand, takeC]), exec_seq,
+      h4'] at hM ⊢
+    have hIS5 : Inv E σ5 ∧ ScOK E σ5 :=
+      is_exec hnM' hWM (c := .seq (.lnil 16) (takeC 2 2 16)) (τ := setSL τ2 sc3 ls3') (τ' := σ5)
+        (by rw [exec_seq]; exact h4') (is_exec hnM' hWM (τ' := mk E ix r.1 (setSL τ2 sc3 ls3'))
+          h3 hIS2)
+    have hs5 : ∀ x : SR, x.val < 16 ∨ 42 < x.val → σ5.sc x = σ.sc x := fun x hx => by
+      show sc4 x = _
+      rw [f4 x (by simp only [List.mem_singleton]; rintro rfl; revert hx; decide)]
+      exact hs3 x hx
+    obtain ⟨sc', ls', h', d', f', g'⟩ := iter_foldBody hnM hWM hix hK hcap' hkM rest r.1 r.2 σ5 hr
+      hrl (cstR_of hc (fun x hx => hs5 x (by omega))) hIS5.1 hIS5.2
+      (by simp only [σ5, setSL]; rw [Function.update_of_ne (by decide),
+        Function.update_of_ne (by decide), g3 12 (by decide)]; simp [τ2])
+      (by simp [σ5, setSL]) hM
+    refine ⟨sc', ls', h', d', fun x hx => (f' x hx).trans (hs5 x hx), fun l hl => ?_⟩
+    rw [g' l hl]
+    simp only [σ5, setSL]
+    rw [Function.update_of_ne (by rintro rfl; revert hl; decide),
+      Function.update_of_ne (by rintro rfl; revert hl; decide), g3 l (by omega),
+      hτ2l l (by rintro rfl; revert hl; decide) (by rintro rfl; revert hl; decide)
+        (by rintro rfl; revert hl; decide) (by rintro rfl; revert hl; decide)]
+
 end FhatGen
 
 end SigabaNeo.Lattices
