@@ -896,10 +896,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * `verify_exact` / `verify_cbd`: a fixed wrong residue passes v reserved rows with probability exactly (7/q)^v.
     `verify_union` / `verify_union_avg` give the list union bounds.
 
-  Not yet in Lean:
-  * the kernel check of the recorded 99.409% figure;
-  * the end-to-end composition (SVP outputs feeding the candidate list);
-  * decoding to the CBD-support representative.
+  MultiBlockAttack.lean / MultiBlockInstance.lean (axiom-clean; the decide +kernel checks use only propext and
+  Quot.sound) complete this:
+  * `attack_success`: for any exact SVP oracle, the concrete attack succeeds with probability
+    ≥ 1 − E_s[∏ f_{rᵢ}(s)] − k(7/q)^v. The attack decodes to the CBD representative and verifies on reserved rows.
+    Independence from the reserved rows is derived, not assumed.
+  * `two_block_success`: **the recorded Part 131 instance is formally verified.** (511, 512, 3329), CBD(3), two blocks of
+    133 rows plus 245 reserved rows, two exact SVP calls in dimension 646: success > 99.409%. The exact value is
+    ≥ 0.9940921. The build peaks at ≈ 7.4 GB of memory.
 * **Part 133 (audited, minor caveats; corrected by the audit).** [provable_cost](research/wall1_provable_cost.md): rigorous
   cost of the exact SVP call.
   * The Doulgerakis–Laarhoven-type provable sieve is a statement about Haar-random lattices. Part 39's lattices form a
