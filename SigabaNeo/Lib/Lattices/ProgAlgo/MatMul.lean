@@ -37,13 +37,6 @@ theorem pushSeq_iter (d c : ℕ) (g : List Bool → List Bool) (hg : ∀ s, (g s
     simp only [List.drop_drop, this, concatN, Nat.succ_mul]
 
 
-theorem iterate_drop (d : ℕ) : ∀ (m : ℕ) (sv : List Bool),
-    (fun sv : List Bool => sv.drop d)^[m] sv = sv.drop (m * d)
-  | 0, sv => by simp
-  | m + 1, sv => by
-    rw [Function.iterate_succ_apply', iterate_drop d m sv, List.drop_drop, Nat.succ_mul,
-      Nat.add_comm]
-
 theorem sumLoop_congr {N K n : ℕ} {f g : ℕ → List Bool} (h : ∀ t < n, f t = g t) :
     ∀ t, t ≤ n → sumLoop N K f t = sumLoop N K g t
   | 0, _ => rfl
@@ -56,29 +49,6 @@ theorem length_sumLoop (N K : ℕ) (f : ℕ → List Bool) : ∀ t, (sumLoop N K
 namespace Prog
 
 open scoped Prog
-
-/-! ### Skipping entries -/
-
-def skv : Fin 3 → Fin 5 := ![0, 2, 4]
-theorem skv_inj : Function.Injective skv := by decide
-
-/-- Drop `|s 3| · |s 4|` bits of the stream `0` (tapes `1` `2` counters). -/
-def skipP : Prog 5 := forN 1 3 (map skv dropP)
-
-theorem run_skipP (s : Store 5) (h1 : s 1 = []) (h2 : s 2 = []) :
-    run skipP s = Function.update s 0 ((s 0).drop ((s 3).length * (s 4).length)) := by
-  have h := run_forN 1 3 (map skv dropP) (fun sv => Function.update s 0 sv)
-    (fun sv => sv.drop (s 4).length) (fun sv w => by
-      rw [run_dropP_map skv_inj _ (by simp [skv, h2])]
-      funext t; fin_cases t <;> simp [skv]) (s 0) s (by funext t; fin_cases t <;> simp)
-  rw [skipP, h, iterate_drop]
-  funext t; fin_cases t <;> simp [h1]
-
-theorem run_skipP_map {u : Fin 5 → Fin k} (hu : Function.Injective u) (s : Store k)
-    (h1 : s (u 1) = []) (h2 : s (u 2) = []) :
-    run (map u skipP) s =
-      Function.update s (u 0) ((s (u 0)).drop ((s (u 3)).length * (s (u 4)).length)) :=
-  run_map_eq_update hu _ s 0 _ (run_skipP _ h1 h2)
 
 theorem run_mulRWP_map {u : Fin 38 → Fin k} (hu : Function.Injective u) {K N : ℕ} (s : Store k)
     (hs : ∀ i : Fin 38, 5 ≤ i.val → s (u i) = []) (hK : (s (u 3)).length = K)

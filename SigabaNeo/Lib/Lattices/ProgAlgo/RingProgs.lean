@@ -108,18 +108,6 @@ def rhoC : Prog 19 :=
 then the negated first block. -/
 def rhoP : Prog 19 := rhoA ⨾ loop 8 (map rvB mvP) ⨾ rhoC
 
-def mvK (K : ℕ) : List Bool × List Bool → List Bool × List Bool
-  | (sv, ov) => (sv.drop K, (ov ++ takeD K sv).drop K)
-
-theorem mvK_iter (K : ℕ) : ∀ (m : ℕ) (sv ov : List Bool),
-    (mvK K)^[m] (sv, ov) = (sv.drop (m * K), (ov ++ takeD (m * K) sv).drop (m * K))
-  | 0, sv, ov => by simp [takeD]
-  | m + 1, sv, ov => by
-    rw [Function.iterate_succ_apply', mvK_iter K m, mvK]
-    have := drop_append_drop ov (takeD (m * K) sv) (takeD K (sv.drop (m * K)))
-    simp only [length_takeD] at this
-    rw [this, ← takeD_add, List.drop_drop, Nat.succ_mul]
-
 set_option linter.unusedSimpArgs false in
 theorem run_rhoP {K N : ℕ} (s : Store 19) (hs : ∀ i : Fin 19, 4 ≤ i.val → s i = [])
     (hK : (s 2).length = K) (hN : (s 3).length = N) :

@@ -12,6 +12,8 @@ copies a template `t` to a counter tape and loops on it (`run_forN`).
   from the stream into the register (`run_mvP`).
 * `dropP : Prog 3` (`0` stream, `1` scratch, `2` template): drop `|s 2|` bits (`run_dropP`).
 * `fillP b : Prog 3` (`0` register, `1` scratch, `2` template): shift in `|s 2|` copies of `b`.
+* `skipP : Prog 5` (`0` stream, `1` `2` scratch, `3` `4` templates): drop `|s 3| · |s 4|` bits
+  (`|s 3|` blocks of `|s 4|` bits).
 -/
 
 namespace SigabaNeo.Tape
@@ -57,6 +59,13 @@ theorem drop_append_drop (r a b : List Bool) :
     ((r ++ a).drop a.length ++ b).drop b.length = (r ++ (a ++ b)).drop (a.length + b.length) := by
   rw [← List.drop_append_of_le_length (by simp : a.length ≤ (r ++ a).length), List.drop_drop,
     List.append_assoc, Nat.add_comm]
+
+theorem iterate_drop (d : ℕ) : ∀ (m : ℕ) (sv : List Bool),
+    (fun sv : List Bool => sv.drop d)^[m] sv = sv.drop (m * d)
+  | 0, sv => by simp
+  | m + 1, sv => by
+    rw [Function.iterate_succ_apply', iterate_drop d m sv, List.drop_drop, Nat.succ_mul,
+      Nat.add_comm]
 
 namespace Prog
 
@@ -171,6 +180,43 @@ theorem run_fillP_map {u : Fin 3 → Fin k} (hu : Function.Injective u) (b : Boo
     run (map u (fillP b)) s =
       Function.update s (u 0) ((s (u 0) ++ List.replicate (s (u 2)).length b).drop (s (u 2)).length) :=
   run_map_eq_update hu _ s 0 _ (run_fillP b _ h1)
+
+def mvK (K : ℕ) : List Bool × List Bool → List Bool × List Bool
+  | (sv, ov) => (sv.drop K, (ov ++ takeD K sv).drop K)
+
+theorem mvK_iter (K : ℕ) : ∀ (m : ℕ) (sv ov : List Bool),
+    (mvK K)^[m] (sv, ov) = (sv.drop (m * K), (ov ++ takeD (m * K) sv).drop (m * K))
+  | 0, sv, ov => by simp [takeD]
+  | m + 1, sv, ov => by
+    rw [Function.iterate_succ_apply', mvK_iter K m, mvK]
+    have := drop_append_drop ov (takeD (m * K) sv) (takeD K (sv.drop (m * K)))
+    simp only [length_takeD] at this
+    rw [this, ← takeD_add, List.drop_drop, Nat.succ_mul]
+
+
+/-! ### Skipping blocks -/
+
+def skv : Fin 3 → Fin 5 := ![0, 2, 4]
+theorem skv_inj : Function.Injective skv := by decide
+
+/-- Drop `|s 3| · |s 4|` bits of the stream `0` (tapes `1` `2` counters). -/
+def skipP : Prog 5 := forN 1 3 (map skv dropP)
+
+theorem run_skipP (s : Store 5) (h1 : s 1 = []) (h2 : s 2 = []) :
+    run skipP s = Function.update s 0 ((s 0).drop ((s 3).length * (s 4).length)) := by
+  have h := run_forN 1 3 (map skv dropP) (fun sv => Function.update s 0 sv)
+    (fun sv => sv.drop (s 4).length) (fun sv w => by
+      rw [run_dropP_map skv_inj _ (by simp [skv, h2])]
+      funext t; fin_cases t <;> simp [skv]) (s 0) s (by funext t; fin_cases t <;> simp)
+  rw [skipP, h, iterate_drop]
+  funext t; fin_cases t <;> simp [h1]
+
+theorem run_skipP_map {u : Fin 5 → Fin k} (hu : Function.Injective u) (s : Store k)
+    (h1 : s (u 1) = []) (h2 : s (u 2) = []) :
+    run (map u skipP) s =
+      Function.update s (u 0) ((s (u 0)).drop ((s (u 3)).length * (s (u 4)).length)) :=
+  run_map_eq_update hu _ s 0 _ (run_skipP _ h1 h2)
+
 
 theorem noGrow_mvP : mvP.NoGrow := rfl
 theorem noGrow_dropP : dropP.NoGrow := rfl
