@@ -22,6 +22,7 @@ open AdvancedEncryption.DualUse.Prog
 open scoped ENNReal NNReal
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+variable {ms : Machines hk c}
 
 /-- The components of a reduction whose challenger is `spPack · viewI sdI` on instances `Inst`
 encoded by `ienc` behind a `true`, with the setup `setupI`. -/
@@ -78,7 +79,7 @@ theorem attributeHiding_of_comps
       (ModuleLWE.idealLaw (params3 N (2 ^ K) k err).toModule)).HardAt kb)
     (hard5 : (Problem.decision (ModuleLWE.realLaw (params5 N (2 ^ K) k (Fin c.d) err).toModule)
       (ModuleLWE.idealLaw (params5 N (2 ^ K) k (Fin c.d) err).toModule)).HardAt kb) :
-    AttributeHiding dateUniverse params (impl hk c) :=
+    AttributeHiding dateUniverse params (impl hk c ms) :=
   attributeHiding_of_reductions hdec hcov hflood hS hstat _ _ _ _ _ _ kb C hC hk64 hard3 hard5 hard3
     fun A D _ =>
       ⟨reduces3_of_comps B3.cs B3.cb B3.L B3.hpubL B3.hkeyL B3.hchalL B3.hinv B3.hIW err hχ hdec
@@ -110,7 +111,7 @@ theorem attributeHiding_of_comps_rlwe
     (hk64 : 64 * ((2 : ℝ) ^ params.secBits) ^ 2 * C ≤ (2 : ℝ) ^ kb)
     (hard3 : RingLWE.decision.HardAt (params3 N (2 ^ K) k err) kb)
     (hard5 : RingLWE.decision.HardAt (params5 N (2 ^ K) k (Fin c.d) err) kb) :
-    AttributeHiding dateUniverse params (impl hk c) :=
+    AttributeHiding dateUniverse params (impl hk c ms) :=
   attributeHiding_of_comps hdec hcov hL hscov hflood hS hstat err hχ B3 B5 BI kb C hC hC3 hC5 hCI
     hk64 hard3 hard5
 

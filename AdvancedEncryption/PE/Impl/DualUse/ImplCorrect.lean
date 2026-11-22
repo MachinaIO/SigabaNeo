@@ -19,6 +19,7 @@ open AdvancedEncryption.PE.Gates.DateWindow
 open scoped ENNReal
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+variable {ms : Machines hk c}
 
 /-- A gate list whose last gate is `false` on `x` gives a predicate that is `false` on `x`. -/
 theorem evalBool_predC {x : Date} {C : List Bool} (h : evalGates (encDate x, parse C) = false) :
@@ -102,7 +103,8 @@ theorem scheme_bound (hd : 0 < c.d)
       refine congrArg (PMF.bind _) (funext fun o => ?_)
       simp only [Function.comp_apply, encM, PMF.map_comp]
       refine congrArg (fun g => PMF.map g (coinsM hk c)) (funext fun r => ?_)
-      simp only [Function.comp_apply, decM]
+      simp only [Function.comp_apply]
+      rw [decM_win hk c _ _ _ ⟨w, rfl⟩]
       cases decodeBit c.hN (decryptRaw v.1 (predC C) (keyOfOutput o)
         (encrypt v.1 (bitsOf x) b r)) <;> cases b <;> rfl
     rw [hlaw, PMF.map_apply, tsum_bool]
@@ -135,7 +137,7 @@ theorem correct (hd : 0 < c.d)
       (∀ i a b, cnorm (r.Rm i a b) ≤ 1) ∧ ∀ j, rnorm (r.ej j) ≤ Bχ)
     (hq : ∀ w : Window, 4 * noiseBound (Wd := Fin c.d) (Wt := TrapCol k) (N := N) hk Bχ Kb
       (predC (winWord w)) + 2 < 2 ^ K) :
-    Correct dateUniverse params (impl hk c) :=
+    Correct dateUniverse params (impl hk c ms) :=
   correct_of_scheme hk c fun x w _ hev b => scheme_bound hk c hd hdec Bχ Kb Inner hIn hcov hInner
     habort hSmall hdecK hr hq x w hev b
 

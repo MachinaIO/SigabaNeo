@@ -178,8 +178,16 @@ theorem keyM_of_not (msk : SKey hk c) (C : List Bool) (hC : ¬ ∃ w : Window, w
   rw [this]
   exact PMF.map_const _ _
 
-/-- The output of `Dec`. -/
+open Classical in
+/-- The output of `Dec`: the decoded bit for the predicates of the class (window predicates), the
+dummy answer `[false]` otherwise (as `KeyGen` gives the zero key outside the class). -/
 noncomputable def decM (sk : SK hk c) (C : List Bool) (ct : CT hk c) : List Bool :=
-  [decodeBit c.hN (decryptRaw sk.1 (predC C) sk.2 ct)]
+  if ∃ w : Window, winWord w = C then [decodeBit c.hN (decryptRaw sk.1 (predC C) sk.2 ct)]
+  else [false]
+
+theorem decM_win (sk : SK hk c) (C : List Bool) (ct : CT hk c) (hC : ∃ w : Window, winWord w = C) :
+    decM hk c sk C ct = [decodeBit c.hN (decryptRaw sk.1 (predC C) sk.2 ct)] := by
+  classical
+  unfold decM; rw [if_pos hC]
 
 end AdvancedEncryption.DualUse

@@ -20,6 +20,7 @@ open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.P
 open AdvancedEncryption.PE.Gates.DateWindow
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+variable {ms : Machines hk c}
 
 open Classical in
 /-- **The ideal key oracle**: the ideal key law of `mpk` for window predicates of at most `L` bits,
@@ -109,11 +110,11 @@ variable {hk c}
 /-- **The real experiment is the experiment of the first hybrid.** -/
 theorem real_eq_gameV (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) (A : Machine 3) :
-    (PE.real dateUniverse params (impl hk c) A).map (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad)) =
+    (PE.real dateUniverse params (impl hk c ms) A).map (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad)) =
       gameV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A (V0 hk c) := by
   -- the generic challenger of the implementation
-  have b1 := Generic.game_eq_generic params (impl hk c) (pkEnc hk c).enc (mskEnc hk c).enc
-    (setupM hk c) (KGreal hk c) (CHreal hk c) (enc params (impl hk c)) (impl_setup hk c)
+  have b1 := Generic.game_eq_generic params (impl hk c ms) (pkEnc hk c).enc (mskEnc hk c).enc
+    (setupM hk c) (KGreal hk c) (CHreal hk c) (enc params (impl hk c ms)) (impl_setup hk c)
     (impl_keyGen hk c) (fun mpk x μ => impl_enc hk c mpk x μ) A
   unfold PE.real
   rw [b1]
@@ -125,7 +126,7 @@ theorem real_eq_gameV (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) 
     unfold encM
     rw [PMF.map_comp]
     rfl
-  rw [show Generic.implSpec (U := dateUniverse) params (impl hk c) (pkEnc hk c).enc (setupM hk c)
+  rw [show Generic.implSpec (U := dateUniverse) params (impl hk c ms) (pkEnc hk c).enc (setupM hk c)
       (KGreal hk c) (CHreal hk c) = realSpec hk c from rfl,
     Generic.runWith_eagerCoins (realSpec hk c) (coinsM hk c) (gReal hk c) hchal]
   set prog := A.machine.runOracle A.time (paramsWord dateUniverse params)
