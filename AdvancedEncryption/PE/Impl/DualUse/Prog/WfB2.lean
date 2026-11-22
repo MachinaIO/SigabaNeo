@@ -1447,6 +1447,77 @@ theorem w6_spec (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb :
 
 end RunG
 
+/-! ### The identification with the stores of the simulations -/
+
+theorem idxOf_product {α β : Type*} [DecidableEq α] [DecidableEq β] :
+    ∀ (l₁ : List α) (l₂ : List β) (a : α) (b : β), a ∈ l₁ → b ∈ l₂ →
+      (l₁ ×ˢ l₂).idxOf (a, b) = l₁.idxOf a * l₂.length + l₂.idxOf b
+  | [], _, _, _, ha, _ => absurd ha (by simp)
+  | x :: l₁, l₂, a, b, ha, hb => by
+    rw [List.product_cons]
+    by_cases hx : x = a
+    · subst hx
+      rw [List.idxOf_append_of_mem (by simpa using hb), List.idxOf_cons_self, Nat.zero_mul,
+        Nat.zero_add]
+      clear ha
+      induction l₂ with
+      | nil => simp at hb
+      | cons y l₂ ih =>
+        by_cases hy : y = b
+        · subst hy; simp
+        · rw [List.map_cons, List.idxOf_cons_ne _ (by simp [hy]), List.idxOf_cons_ne _ hy,
+            ih (by simpa [Ne.symm hy] using hb)]
+    · have hm : (a, b) ∉ l₂.map (x, ·) := by
+        simp only [List.mem_map, Prod.mk.injEq, not_exists, not_and]
+        intro y _ e; exact absurd e hx
+      have ha' : a ∈ l₁ := by
+        rcases List.mem_cons.mp ha with e | e
+        · exact absurd e.symm hx
+        · exact e
+      rw [List.idxOf_append_of_notMem hm, List.length_map,
+        idxOf_product l₁ l₂ a b ha' hb, List.idxOf_cons_ne _ hx, Nat.succ_mul]
+      ring
+
+theorem idxOf_finRange {n : ℕ} (x : Fin n) : (List.finRange n).idxOf x = x.val := by
+  simp
+
+/-- The index of an output coefficient in the bundle. -/
+theorem biIx_out {N k : ℕ} (c : Fin (2 * k)) (i : Fin k) (j : Fin N) :
+    ValVM.biIx ((0, colE k c, i, j) : BI N k) = (c.val * k + i.val) * N + j.val := by
+  unfold ValVM.biIx
+  show (List.finRange 2 ×ˢ ((List.finRange 2 ×ˢ List.finRange k) ×ˢ
+    (List.finRange k ×ˢ List.finRange N))).idxOf (0, colE k c, i, j) = _
+  rw [idxOf_product _ _ _ _ (List.mem_finRange _)
+    (List.mem_product.mpr ⟨List.mem_product.mpr ⟨by simp, by simp⟩,
+      List.mem_product.mpr ⟨by simp, by simp⟩⟩), idxOf_product _ _ _ _
+    (List.mem_product.mpr ⟨by simp, by simp⟩) (List.mem_product.mpr ⟨by simp, by simp⟩),
+    idxOf_product _ _ _ _ (List.mem_finRange _) (List.mem_finRange _), idxOf_product _ _ _ _
+    (List.mem_finRange _) (List.mem_finRange _)]
+  simp only [idxOf_finRange, colE_apply, List.length_product, List.length_finRange]
+  have := Nat.div_add_mod c.val k
+  simp only [Fin.val_zero, Nat.zero_mul, Nat.zero_add]
+  rw [show c.val / k * k + c.val % k = c.val by rw [Nat.mul_comm]; exact this]
+  ring
+
+theorem getD_block (K t i : ℕ) (E : List Bool) :
+    (block K t E).getD i false = ValVM.bitE K E i t := by
+  unfold block ValVM.bitE
+  by_cases h : i < K
+  · rw [if_pos h, getD_take_drop _ h, Nat.mul_comm t K]
+  · rw [if_neg h]
+    simp [List.getD_eq_getElem?_getD, List.getElem?_take, h]
+
+/-- The values of a run on `V`-bit values have `V` bits. -/
+theorem length_valueOf_fV {V : ℕ} {f : List Bool → List Bool → List Bool}
+    (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {ι : Type*}
+    (inp : ι → List Bool) (one : List Bool) (hin : ∀ i, (inp i).length = V) (h1 : one.length = V)
+    (p : SLP ι) (w : Wire ι) : (SLP.valueOf inp one (ValVM.fV V f) p w).length = V :=
+  SLP.valueOf_invariant inp one _ (fun x => x.length = V) hin h1
+    (fun a b ha hb => by
+      show (f (takeD V a) (takeD V b)).length = V
+      exact hf _ _ (by rw [takeD_of_length' ha]; exact ha)
+        (by rw [takeD_of_length' hb]; exact hb)) p w
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
