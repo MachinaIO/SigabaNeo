@@ -134,4 +134,63 @@ theorem f3_R : takeD (fencLen (rmTEnc c)) ((W3 hk c ab σ).drop (o3R hk c)) =
 
 end F3
 
+/-! ### The ideal side: `(a, b)`, then `x, B₀, w, p, (s, e₀, e₁, R, e_j, e'), ct` -/
+
+/-- The packed secret of the ideal side. -/
+abbrev WI (ab : Inst3T N K k) (σ : SecI hk c) : List Bool :=
+  ((inst3Enc (N := N) (K := K) (k := k)).prod (secIEnc hk c)).enc (ab, σ)
+
+section FI
+variable (ab : Inst3T N K k) (σ : SecI hk c)
+
+/-- **The packed secret of the ideal side, flat.** -/
+theorem WI_eq : WI hk c ab σ =
+    (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1 ++
+    ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2 ++
+    (dateEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+    ((wEnc hk c).enc σ.2.2.1 ++ ((ringEnc N K).enc σ.2.2.2.1 ++
+    ((ringEnc N K).enc σ.2.2.2.2.1.s ++
+    ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.2.2.2.1.e₀ ++
+    ((DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc σ.2.2.2.2.1.e₁ ++
+    ((rmTEnc c).enc σ.2.2.2.2.1.Rm ++ ((eEnc (N := N) hk).enc σ.2.2.2.2.1.ej ++
+    ((ringEnc N K).enc σ.2.2.2.2.1.e' ++ (ctEnc hk c).enc σ.2.2.2.2.2))))))))))) := by
+  rw [show WI hk c ab σ = ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1 ++
+    (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2) ++
+    (dateEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+    ((wEnc hk c).enc σ.2.2.1 ++ ((ringEnc N K).enc σ.2.2.2.1 ++
+    (((ringEnc N K).enc σ.2.2.2.2.1.s ++
+    ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.2.2.2.1.e₀ ++
+    ((DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc σ.2.2.2.2.1.e₁ ++
+    ((rmTEnc c).enc σ.2.2.2.2.1.Rm ++ ((eEnc (N := N) hk).enc σ.2.2.2.2.1.ej ++
+      (ringEnc N K).enc σ.2.2.2.2.1.e'))))) ++
+    (ctEnc hk c).enc σ.2.2.2.2.2))))) from rfl]
+  simp only [List.append_assoc]
+
+theorem fI_a : takeD (fC N K k) ((WI hk c ab σ).drop 0) =
+    (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1 := by
+  rw [WI_eq]; exact takeD_enc_app _ _ _
+theorem fI_b : takeD (fC N K k) ((WI hk c ab σ).drop (fC N K k + 0)) =
+    (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2 := by
+  rw [WI_eq]; simp only [drop_enc, takeD_enc_app]
+theorem fI_x : takeD (fencLen dateEnc) ((WI hk c ab σ).drop (o3x (N := N) (K := K) (k := k))) =
+    encDate σ.1 := by
+  rw [WI_eq, o3x]; simp only [drop_enc, takeD_enc_app]; rfl
+theorem fI_B : takeD (fD N K c.d) ((WI hk c ab σ).drop (o3B (N := N) (K := K) (k := k))) =
+    (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 := by
+  rw [WI_eq, o3B]; simp only [drop_enc, takeD_enc_app]
+theorem fI_w : takeD (fencLen (wEnc hk c)) ((WI hk c ab σ).drop (o3w c)) = (wEnc hk c).enc σ.2.2.1 := by
+  rw [WI_eq, o3w]; simp only [drop_enc, takeD_enc_app]
+theorem fI_p : takeD (fR N K) ((WI hk c ab σ).drop (o3p hk c)) = (ringEnc N K).enc σ.2.2.2.1 := by
+  rw [WI_eq, o3p]; simp only [drop_enc, takeD_enc_app]
+theorem fI_s : takeD (fR N K) ((WI hk c ab σ).drop (o3s hk c)) = (ringEnc N K).enc σ.2.2.2.2.1.s := by
+  rw [WI_eq, o3s]; simp only [drop_enc, takeD_enc_app]
+theorem fI_e0 : takeD (fD N K c.d) ((WI hk c ab σ).drop (o3e0 hk c)) =
+    (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.2.2.2.1.e₀ := by
+  rw [WI_eq, o3e0]; simp only [drop_enc, takeD_enc_app]
+theorem fI_R : takeD (fencLen (rmTEnc c)) ((WI hk c ab σ).drop (o3R hk c)) =
+    (rmTEnc c).enc σ.2.2.2.2.1.Rm := by
+  rw [WI_eq, o3R]; simp only [drop_enc]; exact takeD_enc_app _ _ _
+
+end FI
+
 end AdvancedEncryption.DualUse.Prog

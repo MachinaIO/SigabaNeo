@@ -192,49 +192,87 @@ theorem pk3_word (ab : Inst3T N K k) (σ : Sec3 hk c) :
   simp only [List.append_assoc]
   rfl
 
+theorem blank20_ioS (W m : List Bool) : Blank20 (ioS (R := 80) W m []) := fun t ht => by
+  simp only [ioS]; split_ifs <;> first | rfl | omega
+
 set_option maxHeartbeats 8000000 in
-/-- **The law of the public-key component of hybrid 3.** -/
-theorem law_pub3P (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : Sec3 hk c) :
-    (pub3P hk c).law (ioS (R := 80) (W3 hk c ab σ) [] []) =
-      PMF.pure (ioS (R := 80) ((pkEnc hk c).enc (view3 hk c ab σ).1) [] []) := by
-  have hS0 : Blank20 (ioS (R := 80) (W3 hk c ab σ) [] []) := fun t ht => by
-    simp only [ioS]; split_ifs <;> first | rfl | omega
-  have h0 : ioS (R := 80) (W3 hk c ab σ) [] [] 0 = W3 hk c ab σ := rfl
-  unfold pub3P pub3Body
-  rw [law_seq, law_seq, plc_getB' _ _ _ _ _ _ hS0 h0 (f3_B hk c ab σ), PMF.pure_bind]
-  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) (f3_s hk c ab σ), PMF.pure_bind]
-  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) (f3_e0 hk c ab σ), PMF.pure_bind]
-  rw [law_seq, plc_mmB' _ _ _ _ _ _ _ _ (by bl20) (by simp) (by simp) (len_ring σ.2.2.2.2.1.1) (by rw [len_row]; ring)
-    (mm_scalar c.d σ.2.2.2.2.1.1 σ.2.1), PMF.pure_bind]
+/-- **The law of the body**, on any word with the fields of the layout of hybrid 3 (tape `1`
+arbitrary): the public key on tape `15`, and `c₀`, the `Rᵢ`, `x`, `w`, the `Ψᵢ` on the tapes
+`3, 4, 5, 6, 8`. -/
+theorem law_pub3Body (hN : 0 < N) (hK : 0 < K) (W m : List Bool) (ab : Inst3T N K k)
+    (B₀ e₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (s p : Rg N K)
+    (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : Date)
+    (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
+    (ha : takeD (fC N K k) (W.drop 0) = (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1)
+    (hb : takeD (fC N K k) (W.drop (fC N K k + 0)) =
+      (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2)
+    (hx : takeD (fencLen dateEnc) (W.drop (o3x (N := N) (K := K) (k := k))) = encDate x)
+    (hB : takeD (fD N K c.d) (W.drop (o3B (N := N) (K := K) (k := k))) =
+      (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀)
+    (hw : takeD (fencLen (wEnc hk c)) (W.drop (o3w c)) = (wEnc hk c).enc w)
+    (hp : takeD (fR N K) (W.drop (o3p hk c)) = (ringEnc N K).enc p)
+    (hs : takeD (fR N K) (W.drop (o3s hk c)) = (ringEnc N K).enc s)
+    (he : takeD (fD N K c.d) (W.drop (o3e0 hk c)) =
+      (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc e₀)
+    (hR : takeD (fencLen (rmTEnc c)) (W.drop (o3R hk c)) = (rmTEnc c).enc Rm) :
+    ∃ S, (pub3Body hk c).law (ioS (R := 80) W m []) = PMF.pure S ∧ Blank20 S ∧ S 1 = m ∧
+      S 3 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc (RingBTVW.scalar s * B₀ + e₀) ∧
+      S 4 = (rmTEnc c).enc Rm ∧ S 5 = encDate x ∧ S 6 = (wEnc hk c).enc w ∧
+      S 8 = (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
+        (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x) ∧ S 19 = [] ∧
+      S 15 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀ ++
+        (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (toB₁ (Sdw (N := N) hk) ab) ++
+        bjW hk c B₀ w (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x) ++ (ringEnc N K).enc p := by
+  have hS0 := blank20_ioS W m
+  have h0 : ioS (R := 80) W m [] 0 = W := rfl
+  unfold pub3Body
+  rw [law_seq, plc_getB' _ _ _ _ _ _ hS0 h0 hB, PMF.pure_bind]
+  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) hs, PMF.pure_bind]
+  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) he, PMF.pure_bind]
+  rw [law_seq, plc_mmB' _ _ _ _ _ _ _ _ (by bl20) (by simp) (by simp) (len_ring s)
+    (by rw [len_row]; ring) (mm_scalar c.d s B₀), PMF.pure_bind]
   rw [law_seq, plc_addB' _ _ _ _ _ _ (by bl20) (by simp) (by simp) (len_row _ _) (len_row _ _)
-    (matAddW_matEnc' (len_fin 1) (len_fin c.d) (RingBTVW.scalar σ.2.2.2.2.1.1 * σ.2.1)
-      σ.2.2.2.2.1.2.1), PMF.pure_bind]
-  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) (f3_R hk c ab σ), PMF.pure_bind]
-  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) (f3_x hk c ab σ), PMF.pure_bind]
-  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) (f3_w hk c ab σ), PMF.pure_bind]
-  rw [law_seq, law_psiCore hk c _ (by bl20) σ.2.1 (c03 hk c σ) σ.2.2.2.2.1.2.2.2.1 σ.1 (by simp) (by simp [c03]) (by simp) (by simp)
-    (by simp [ioS]) (by simp [ioS]) (by simp [ioS]) (by simp [ioS]) (by simp [ioS]), PMF.pure_bind]
-  rw [law_seq, law_bjCore hk c _ (by bl20) σ.2.1 σ.2.2.1 (psi3 hk c σ) (by simp) (by simp) (by simp [psi3])
-    (by simp [ioS]) (by simp [ioS]) (by simp [ioS]) (by simp [ioS]), PMF.pure_bind]
-  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) (f3_a hk c ab σ), PMF.pure_bind]
-  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) (f3_b hk c ab σ), PMF.pure_bind]
+    (matAddW_matEnc' (len_fin 1) (len_fin c.d) (RingBTVW.scalar s * B₀) e₀), PMF.pure_bind]
+  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) hR, PMF.pure_bind]
+  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) hx, PMF.pure_bind]
+  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) hw, PMF.pure_bind]
+  rw [law_seq, law_psiCore hk c _ (by bl20) B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x (by simp) (by simp)
+    (by simp) (by simp) (by simp [ioS]) (by simp [ioS]) (by simp [ioS]) (by simp [ioS])
+    (by simp [ioS]), PMF.pure_bind]
+  rw [law_seq, law_bjCore hk c _ (by bl20) B₀ w (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x)
+    (by simp) (by simp) (by simp) (by simp [ioS]) (by simp [ioS]) (by simp [ioS]) (by simp [ioS]),
+    PMF.pure_bind]
+  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) ha, PMF.pure_bind]
+  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) hb, PMF.pure_bind]
   rw [law_seq, plc_gadB _ _ _ (by bl20), PMF.pure_bind]
   rw [law_seq, plc_subB' _ _ _ _ _ _ (by bl20) (by simp) (by simp) (length_gadW hk) (len_rowC ab.2) rfl,
     PMF.pure_bind]
   rw [law_seq, plc_oneB _ _ hN hK _ (by bl20), PMF.pure_bind]
   rw [law_seq, plc_joinB' _ _ _ _ _ _ _ _ _ (by bl20) (by simp) (by simp) (by simp) (b1_word hk ab),
     PMF.pure_bind]
-  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) (f3_p hk c ab σ), PMF.pure_bind]
-  rw [law_seq, plc_joinB' _ _ _ _ _ _ _ _ _ (by bl20) (by simp) (by simp) (by simp [bjW, psi3])
-    (join3_exact (length_enc _ σ.2.1) (length_enc _ (toB₁ (Sdw (N := N) hk) ab))
-      (length_bjW hk c σ.2.1 σ.2.2.1 (psi3 hk c σ))), PMF.pure_bind]
+  rw [law_seq, plc_getB' _ _ _ _ _ _ (by bl20) (by simp [ioS]) hp, PMF.pure_bind]
+  rw [law_seq, plc_joinB' _ _ _ _ _ _ _ _ _ (by bl20) (by simp) (by simp) (by simp [bjW])
+    (join3_exact (length_enc _ B₀) (length_enc _ (toB₁ (Sdw (N := N) hk) ab))
+      (length_bjW hk c B₀ w (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x))), PMF.pure_bind]
   rw [plc_joinB' _ _ _ _ _ _ _ _ _ (by bl20) (by simp) (by simp) (by simp [ioS])
-    (join2_exact (X := (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+    (join2_exact (X := (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀ ++
       (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (toB₁ (Sdw (N := N) hk) ab) ++
-      bjW hk c σ.2.1 σ.2.2.1 (psi3 hk c σ))
+      bjW hk c B₀ w (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x))
       (by simp only [List.length_append, length_enc, length_bjW, fD, fT] <;> omega)
-      (length_enc _ σ.2.2.2.1)), PMF.pure_bind]
-  rw [law_finP 15 _ (v := (pkEnc hk c).enc (view3 hk c ab σ).1) (by simp [pk3_word])]
+      (length_enc _ p))]
+  exact ⟨_, rfl, by bl20, by simp [ioS], by simp, by simp, by simp, by simp, by simp,
+    by simp [ioS], by simp⟩
+
+/-- **The law of the public-key component of hybrid 3.** -/
+theorem law_pub3P (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : Sec3 hk c) :
+    (pub3P hk c).law (ioS (R := 80) (W3 hk c ab σ) [] []) =
+      PMF.pure (ioS (R := 80) ((pkEnc hk c).enc (view3 hk c ab σ).1) [] []) := by
+  obtain ⟨S, hS, -, -, -, -, -, -, -, -, h15⟩ := law_pub3Body hk c hN hK (W3 hk c ab σ) [] ab σ.2.1
+    σ.2.2.2.2.1.2.1 σ.2.2.2.2.1.1 σ.2.2.2.1 σ.2.2.2.2.1.2.2.2.1 σ.1 σ.2.2.1
+    (f3_a hk c ab σ) (f3_b hk c ab σ) (f3_x hk c ab σ) (f3_B hk c ab σ) (f3_w hk c ab σ)
+    (f3_p hk c ab σ) (f3_s hk c ab σ) (f3_e0 hk c ab σ) (f3_R hk c ab σ)
+  rw [pub3P, law_seq, hS, PMF.pure_bind, law_finP 15 S (v := (pkEnc hk c).enc (view3 hk c ab σ).1)
+    (h15.trans (pk3_word hk c ab σ).symm)]
 
 /-! ### Time and length -/
 
@@ -249,5 +287,52 @@ theorem time_pub3P (a b : ℕ) :
 theorem len_pub3P (a b : ℕ) :
     lenBoundT (pub3P hk c) (io2 (R := 80) a b 0) ≤ io2 (R := 80) (max a b + sizepub3 hk c) 0 0 :=
   len_comp (ub_pub3Body hk c _ (by omega)) 15 _ fun i => (io2_le a b i).trans (by omega)
+
+/-! ### The ideal side: the same program -/
+
+/-- **The public-key component of the ideal side**: the program of hybrid 3 (the fields sit at
+the same offsets). -/
+def pubIP : XProg 82 := pub3P hk c
+
+theorem wf_pubIP : (pubIP hk c).WF := wf_pub3P hk c
+
+theorem pkI_word (ab : Inst3T N K k) (σ : SecI hk c) :
+    (pkEnc hk c).enc (viewI hk c ab σ).1 =
+      (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+        (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (toB₁ (Sdw (N := N) hk) ab) ++
+        bjW hk c σ.2.1 σ.2.2.1 (psiOf hk c σ.2.1
+          (RingBTVW.scalar σ.2.2.2.2.1.s * σ.2.1 + σ.2.2.2.2.1.e₀) σ.2.2.2.2.1.Rm σ.1) ++
+        (ringEnc N K).enc σ.2.2.2.1 := by
+  have hBj : (viewI hk c ab σ).1.Bj = fun j => σ.2.1 * wMat σ.2.2.1 j +
+      RingBTVW.bitsOf (Sdw (N := N) hk) (psiOf hk c σ.2.1
+          (RingBTVW.scalar σ.2.2.2.2.1.s * σ.2.1 + σ.2.2.2.2.1.e₀) σ.2.2.2.2.1.Rm σ.1) j •
+        (Sdw (N := N) hk).Γ₁.G := funext fun j => by
+    show bjOf σ.2.1 (bitsOf σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
+    unfold bjOf
+    rw [of_hashCols]
+    rfl
+  rw [pkEnc_enc, hBj, bjW]
+  simp only [List.append_assoc]
+  rfl
+
+/-- **The law of the public-key component of the ideal side.** -/
+theorem law_pubIP (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : SecI hk c) :
+    (pubIP hk c).law (ioS (R := 80) (WI hk c ab σ) [] []) =
+      PMF.pure (ioS (R := 80) ((pkEnc hk c).enc (viewI hk c ab σ).1) [] []) := by
+  obtain ⟨S, hS, -, -, -, -, -, -, -, -, h15⟩ := law_pub3Body hk c hN hK (WI hk c ab σ) [] ab σ.2.1
+    σ.2.2.2.2.1.e₀ σ.2.2.2.2.1.s σ.2.2.2.1 σ.2.2.2.2.1.Rm σ.1 σ.2.2.1
+    (fI_a hk c ab σ) (fI_b hk c ab σ) (fI_x hk c ab σ) (fI_B hk c ab σ) (fI_w hk c ab σ)
+    (fI_p hk c ab σ) (fI_s hk c ab σ) (fI_e0 hk c ab σ) (fI_R hk c ab σ)
+  rw [pubIP, pub3P, law_seq, hS, PMF.pure_bind, law_finP 15 S
+    (v := (pkEnc hk c).enc (viewI hk c ab σ).1) (h15.trans (pkI_word hk c ab σ).symm)]
+
+theorem time_pubIP (a b : ℕ) :
+    timeBoundT (pubIP hk c) (io2 (R := 80) a b 0) ≤
+      timepub3 hk c (max a b + sizepub3 hk c) + timeFin (max a b + sizepub3 hk c) :=
+  time_pub3P hk c a b
+
+theorem len_pubIP (a b : ℕ) :
+    lenBoundT (pubIP hk c) (io2 (R := 80) a b 0) ≤ io2 (R := 80) (max a b + sizepub3 hk c) 0 0 :=
+  len_pub3P hk c a b
 
 end AdvancedEncryption.DualUse.Prog
