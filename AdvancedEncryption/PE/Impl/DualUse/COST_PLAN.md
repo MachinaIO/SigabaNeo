@@ -122,3 +122,22 @@ Remaining (in order):
   `timeBoundT (compileA c) ≤ costC B c` by structural recursion with the static bounds `B`.
   Estimated totals at `confP`: arithmetic ≈ 2^536, block moves ≈ 2^528, transposes ≈ 2^475,
   store reads ≈ 2^488, `simKeyP` on the output bundle ≈ 2^547, setup ≈ 2^500: ≈ 2^547.2.
+* **Done, Lib** (cont.): `ValConst` (**`exec_cbC`**, the constant bundle), `ValIns`
+  (**`exec_insC`**, the inputs of `f̂` from the streams of the `B_j`, `W_j`, `ψᵢ`), `ValGsw`
+  (`gl_values`, `getLast_gl_values`, `exec_insGC`), `ValMain` (**`exec_fhatC`**: `OUTW = bw (fhatV …)`
+  from `FInit`; **`exec_gswC`**: `OUTW = valueOf …` of the predicate from `GInit`; `exec_posC`: the
+  unary positions). `compileA` clears the scratch of every instruction (`mvPc`, `dropPc`, `inP`).
+* **In progress, `PE/Impl/DualUse/Prog/WfB2.lean`**: `wfB2 hk c W = frame eW (wfBody hk c W)`,
+  the body in the machine's coordinates (`eW` swaps `0 ↔ word 88`, `1 ↔ word GS`, `2 ↔ 255`):
+  `prepT` (gate count by `convP`, `simTmplP`, `natP` templates `stepT`, `wordsT`, `OB`, `ZB`) →
+  `runT = compileA … fhatFullC` (streams, `one`, `fhatC`, output to word `45`) → `prepG` →
+  `runG = compileA … gswFullC` (… `gswC`, `posC`) → `keyPrep` (templates of `simKeyP` on the step
+  tapes) → `simKeyP` framed by `oK2` → `clrsP finClr`. Proven so far: `law_prepT`, the lookups of
+  its store (`S1_key`, `S1_eq_S0`, `S1_OB`, `S1_ZB`, `X2_apply`, `Y4_apply`, `X5_apply`).
+  Remaining for `wfSpec_wfB2`: `S1 = enc s₀ Vt w` with `SimPre`, `FInit` after `streamsT`/`oneC`;
+  law of `runT` (`law_compileA`, `stepSpec_simTop`), `prepG` (same pattern), `runG`, `keyPrep`,
+  `run_simKeyP` + the identification with `simKeyStoreW` (`valueOf_fhatSLPL`, `valueOf_fV`,
+  `getElem_wireIx`), the cleanup and the frame `eW`.
+  Then the cost: per-instruction bounds of `compileA` with static word bounds, the steps'
+  summaries (`xsound_simStepP`; the Ring-GSW step needs its own), `natP`/`simTmplP`/`simKeyP`
+  bounds, `time_keyP` with the per-tape bound of `wfB2`, the size, the numerics at `confP`.

@@ -447,6 +447,73 @@ theorem Y4_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
     have h3 : t ≠ mw 3 := fun e => ht 3 (by rw [e]; rfl)
     simp [h0, h1, h2, h3]
 
+/-! #### Lookups of `S1` -/
+
+theorem S1_key {t : Fin 256} {n : ℕ}
+    (h : (t, n) ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c))
+    (h1 : t ≠ mw OB) (h2 : t ≠ mw ZB) : S1 hk c W a gs t = List.replicate n false := by
+  rw [S1, Function.update_of_ne h2, Function.update_of_ne h1, X6]
+  exact tmplS_mem _ (nodup_T _ _ _ _ _ _ _ _) (t, n) h _
+
+theorem S1_not {t : Fin 256} (h : t ∉ [ms 3, ms 4, ms 5, ms 6, ms 7, ms 8, ms 9, ms 10, ms 11,
+    ms 12, ms 13, ms 14, ms 15, ms 16, ms 17, ms 86, ms 87, ms 88, ms 89, ValVM.tTV, mw 10, mw 11,
+    mw 12, mw 13, mw 14, mw 15, mw 16, mw 20, mw 27, mw 29, mw TNV, mw TNKV, mw T2K, mw TLB, mw TCNT,
+    mw TH, mw TN, mw TN1, mw TN1V, mw TKV, mw T2kNV, mw T2kkNV, mw TA1, mw TAd, mw TK1, mw ZNK1,
+    mw TNK, mw T4k, mw T10, mw INSW, mw TSl, mw TST, mw TD2, mw TW, mw TPAD, mw TW9, mw TINS, mw 61,
+    mw 62, mw 63]) (h1 : t ≠ mw OB) (h2 : t ≠ mw ZB) : S1 hk c W a gs t = X5 c W a gs t := by
+  rw [S1, Function.update_of_ne h2, Function.update_of_ne h1, X6,
+    tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) h)]
+
+theorem X5_apply (t : Fin 256) : X5 c W a gs t =
+    if t = mw ONEW then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 3) else
+    if t = mw ZEROW then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 2) else
+    if t = mw GADW then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 0) else
+    if t = ms 21 then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 3) else
+    if t = ms 20 then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 2) else
+    if t = ms 19 then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 0) else
+    run (Prog.map tm31 simTmplP) (X4 c W a gs) t := by
+  simp only [X5, run_seq, copiesP, run_copy]
+  simp (config := {decide := true}) only [Function.update_apply, if_false]
+
+/-- The tapes `tmplP` writes in `prepT`. -/
+abbrev keysT : List (Fin 256) := [ms 3, ms 4, ms 5, ms 6, ms 7, ms 8, ms 9, ms 10, ms 11,
+    ms 12, ms 13, ms 14, ms 15, ms 16, ms 17, ms 86, ms 87, ms 88, ms 89, ValVM.tTV, mw 10, mw 11,
+    mw 12, mw 13, mw 14, mw 15, mw 16, mw 20, mw 27, mw 29, mw TNV, mw TNKV, mw T2K, mw TLB, mw TCNT,
+    mw TH, mw TN, mw TN1, mw TN1V, mw TKV, mw T2kNV, mw T2kkNV, mw TA1, mw TAd, mw TK1, mw ZNK1,
+    mw TNK, mw T4k, mw T10, mw INSW, mw TSl, mw TST, mw TD2, mw TW, mw TPAD, mw TW9, mw TINS, mw 61,
+    mw 62, mw 63]
+
+/-- **Before the bits `OB`, `ZB`, `prepT` leaves the other tapes as they were.** -/
+theorem X6_eq_S0 (t : Fin 256) (h1 : t ∉ keysT)
+    (h2 : t ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS, mw GSC])
+    (h3 : ∀ j, tm31 j ≠ t) (h4 : ∀ j, cm13 j ≠ t)
+    (h5 : t ∉ [mw 4, mw 5, mw 6, mw 7, mw 8, mw 9, mw 10, mw 11]) :
+    X6 hk c W a gs t = S0 W a gs t := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at h2
+  obtain ⟨a3, a4, a5, a6, a7, a8, a9, a10⟩ := h2
+  rw [X6, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) h1), X5_apply]
+  simp only [if_neg a8, if_neg a7, if_neg a6, if_neg a5, if_neg a4, if_neg a3]
+  rw [run_map_apply_not tm31_inj _ _ _ h3, X4, tmplS_apply_of_not_mem _ _ _
+    (ne_of_keys (keys_tmpl31 N K k c.d) h5), Function.update_of_ne a9, X2,
+    run_map_apply_not cm13_inj _ _ _ h4, Function.update_of_ne a10]
+
+theorem S1_eq_S0 (t : Fin 256) (h1 : t ∉ keysT)
+    (h2 : t ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS, mw GSC])
+    (h3 : ∀ j, tm31 j ≠ t) (h4 : ∀ j, cm13 j ≠ t)
+    (h5 : t ∉ [mw 4, mw 5, mw 6, mw 7, mw 8, mw 9, mw 10, mw 11]) (h6 : t ≠ mw OB)
+    (h7 : t ≠ mw ZB) : S1 hk c W a gs t = S0 W a gs t := by
+  rw [S1, Function.update_of_ne h7, Function.update_of_ne h6, X6_eq_S0 hk c W a gs t h1 h2 h3 h4 h5]
+
+theorem S1_OB : S1 hk c W a gs (mw OB) = [true] := by
+  rw [S1, Function.update_of_ne (by decide), Function.update_self,
+    X6_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)]
+  rfl
+
+theorem S1_ZB : S1 hk c W a gs (mw ZB) = [false] := by
+  rw [S1, Function.update_self, Function.update_of_ne (by decide),
+    X6_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)]
+  rfl
+
 end PrepT
 
 end WB2
