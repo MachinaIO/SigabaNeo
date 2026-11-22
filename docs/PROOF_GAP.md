@@ -1284,6 +1284,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * An exact rank-4 example (order 17) shows void ∩ plane-hit can exceed the product of the probabilities: 34/289 against
     16/289.
   * **Remaining.** The selected plane-hit rate, averaged over qualifying width-506 histories.
+* **Part 154 (audited, SOUND).** [winner_exchange](research/wall1_winner_exchange.md): an exchange argument for F_rem.
+  * The full-window winner is shortest in every incident witness plane. Gauss reduction then gives a rounded lift of
+    length < √(R² + s²/4), which is the old primitive vector when the lift is horizontal.
+  * A height-one counterexample shows the old vector can otherwise be arbitrarily longer than R, even with a unique winner
+    and no alignment.
+  * **Does not close F_rem.** Every witness in Part 152's obstructing shell has a non-horizontal rounded lift: a horizontal
+    lift needs B/u < 1.165, but the shell has B/u > 3.592. What remains is the selected multiplicity of those witnesses,
+    averaged over restart histories.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1293,7 +1301,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–153 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–154 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
