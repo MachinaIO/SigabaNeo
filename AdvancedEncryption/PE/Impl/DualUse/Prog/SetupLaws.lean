@@ -342,4 +342,38 @@ theorem restLaw_enc [NeZero c.d] (hN : 0 < N) (hK : 0 < K) :
   rw [trapRow_enc]
   simp only [rmW, List.append_assoc]
 
+/-- Uniform rows. -/
+theorem unif_row (ι : Type) [Fintype ι] [DecidableEq ι] [Enum ι] :
+    (PMF.uniformOfFintype (Matrix (Fin 1) ι (Rg N K))).map (matEnc (N := N) (K := K) (Fin 1) ι).enc =
+      BitString.uniformList ((Enum.list (α := Fin 1)).length * ((Enum.list (α := ι)).length * (N * K))) :=
+  unif_fun _ (unif_fun _ (unif_ring N K))
+
+/-! ### The secret of hybrid 3 -/
+
+/-- **The word of the secret of hybrid 3**: `encDate x`, fair bits for `B₀`, `w`, `p`, the word
+of the coins `rest` (`restLaw_enc`), the flooding coefficients. -/
+theorem setup3_enc [NeZero c.d] (x : Date) :
+    (setup3 hk c x).map (sec3Enc hk c).enc =
+      cat (PMF.pure (encDate x)) (cat (BitString.uniformList ((Enum.list (α := Fin 1)).length *
+        ((Enum.list (α := Fin c.d)).length * (N * K))))
+        (cat (BitString.uniformList ((Enum.list (α := JC (Sdw (N := N) hk))).length *
+          ((Enum.list (α := Fin c.d)).length * 1)))
+        (cat (BitString.uniformList (N * K)) (cat ((lawRestC hk c).map (restEnc c).enc)
+          (catPow (μF K c.w) (Enum.list (α := JC (Sdw (N := N) hk) × Fin N)).length))))) := by
+  rw [← unif_row, ← wLaw_eq hk c, ← unif_ring N K, ← eLaw_eq hk c, cat_pure_left]
+  simp only [cat_map_left, PMF.map_bind, PMF.map_comp, Function.comp_def]
+  rw [setup3]
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun B₀ => ?_))
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun w => ?_))
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun p => ?_))
+  refine Eq.trans (PMF.map_bind _ _ _) ?_
+  refine Eq.trans ?_ (congrArg (PMF.map _) (cat_map_left _ _ _).symm)
+  refine Eq.trans ?_ (PMF.map_bind _ _ _).symm
+  refine congrArg (PMF.bind _) (funext fun r => ?_)
+  refine Eq.trans (congrArg (PMF.map _) (bind_pure_eq_map _ _)) ?_
+  refine Eq.trans (PMF.map_comp _ _ _) ?_
+  refine Eq.trans ?_ (congrArg (PMF.map _) (PMF.map_comp _ _ _).symm)
+  refine Eq.trans ?_ (PMF.map_comp _ _ _).symm
+  rfl
+
 end AdvancedEncryption.DualUse.Prog
