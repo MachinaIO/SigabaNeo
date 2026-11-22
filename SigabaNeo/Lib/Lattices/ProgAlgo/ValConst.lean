@@ -167,7 +167,7 @@ theorem exec_esC {K : ℕ} {one zv : List Bool} (a : Fin 2) (col : Fin 2 × Fin 
 theorem exec_cc2Body {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (a : Fin 2)
     (col : Fin 2 × Fin (K + 1)) (w : St) (ctx : NCtx V K N one zv w)
     (hdg : w DG = [decide (a = col.1)]) (hc2 : w C2 = List.replicate (K - col.2.val) true) :
-    exec V f cc2Body w RES = (w RES ++ (blk (constRepVV (N := N) one zv (gvExp (2 ^ K))) a
+    exec V f cc2Body w RES = (w RES ++ (blk (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a
         col).flatten).drop ((K + 1) * N * V) ∧
       NCtx V K N one zv (exec V f cc2Body w) ∧ ∀ j ∉ wr cc2Body, exec V f cc2Body w j = w j := by
   have h1 : one.length = V := by rw [← ctx.vone]; exact ctx.tm.h10
@@ -229,6 +229,147 @@ theorem exec_cc2Body {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (a : Fin 2)
   simp (config := {decide := true}) only [hu2, Function.update_apply, if_false]
   rw [hE2 RES (by decide) (by decide) (by decide)]
   congr 1; ring
+
+/-! ### The loops over `col.2`, `col.1`, `a` -/
+
+theorem cb2_step {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (a c1 : Fin 2) {w₀ : St} {r : ℕ}
+    (hr : r < K + 1) {w : St}
+    (h : NCtx V K N one zv w ∧ w DG = [decide (a = c1)] ∧ w C2 = List.replicate (K + 1 - r) true ∧
+      w RES = (w₀ RES ++ (resC2 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a c1 r).flatten).drop
+        (resC2 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a c1 r).flatten.length) :
+    let w' := exec V f cc2Body (Function.update w C2 (w C2).tail)
+    NCtx V K N one zv w' ∧ w' DG = [decide (a = c1)] ∧
+      w' C2 = List.replicate (K + 1 - (r + 1)) true ∧
+      w' RES = (w₀ RES ++ (resC2 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a c1
+        (r + 1)).flatten).drop (resC2 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a c1
+          (r + 1)).flatten.length := by
+  obtain ⟨c, hdg, hc2, hres⟩ := h
+  set P := constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))
+  have hP : ∀ b, (P b).length = V := constRepVV_len one zv
+    (by rw [← c.vone]; exact c.tm.h10) (by rw [← c.vzv]; exact c.tm.h11) _
+  set c2 : Fin (K + 1) := ⟨r, hr⟩
+  obtain ⟨R1, R2, R3⟩ := exec_cc2Body (V := V) (f := f) hN a (c1, c2)
+    (Function.update w C2 (w C2).tail) (c.upd C2 (by decide) _)
+    (by rw [Function.update_of_ne (by decide), hdg])
+    (by rw [Function.update_self, hc2, List.tail_replicate]; congr 1; show K + 1 - r - 1 = K - r
+        omega)
+  refine ⟨R2, ?_, ?_, ?_⟩
+  · rw [R3 DG (by decide), Function.update_of_ne (by decide), hdg]
+  · rw [R3 C2 (by decide), Function.update_self, hc2, List.tail_replicate]; congr 1
+  · rw [R1, Function.update_of_ne (by decide), hres]
+    have hb := blk_shape hP a (c1, c2)
+    rw [show (K + 1) * N * V = (blk P a (c1, c2)).flatten.length by
+      rw [length_flatten_of hb.1, hb.2], shift_acc]
+    have e : resC2 P a c1 (r + 1) = resC2 P a c1 r ++ blk P a (c1, c2) := by
+      simp only [resC2]
+      rw [List.take_succ, List.flatMap_append, List.getElem?_eq_getElem (by simpa using hr)]
+      have : (List.finRange (K + 1))[r]'(by simpa using hr) = c2 := Fin.ext (by simp [c2])
+      simp [this]
+    rw [e, List.flatten_append]
+
+/-- One row `col.1` of `cbC`. -/
+theorem exec_cc1Body {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (a c1 : Fin 2) (w : St)
+    (ctx : NCtx V K N one zv w) (hca : w CA = List.replicate (1 - a.val) true)
+    (hc1 : w C1 = List.replicate (1 - c1.val) true) :
+    exec V f cc1Body w RES = (w RES ++ (resC2 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a c1
+        (K + 1)).flatten).drop (resC2 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a c1
+          (K + 1)).flatten.length ∧
+      NCtx V K N one zv (exec V f cc1Body w) ∧ ∀ j ∉ wr cc1Body, exec V f cc1Body w j = w j := by
+  refine ⟨?_, ctx.exec _ (by decide), fun j hj => exec_not_mem _ _ _ hj⟩
+  simp only [cc1Body, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  rw [exec_dgC a c1 w ctx.ob ctx.zb hca hc1]
+  set w1 := Function.update (Function.update w DG [decide (a = c1)]) C2
+    (Function.update w DG [decide (a = c1)] TTk) with hw1
+  have I := exec_rep_inv (V := V) (f := f) (c := C2) (B := cc2Body)
+    (fun r w' => r ≤ K + 1 → NCtx V K N one zv w' ∧ w' DG = [decide (a = c1)] ∧
+      w' C2 = List.replicate (K + 1 - r) true ∧
+      w' RES = (w1 RES ++ (resC2 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a c1 r).flatten).drop
+        (resC2 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a c1 r).flatten.length)
+    (fun r w' ih hr => cb2_step hN a c1 (by omega) (ih (by omega))) w1
+    (fun _ => ⟨(ctx.upd DG (by decide) _).upd C2 (by decide) _,
+      by simp (config := {decide := true}) [hw1, Function.update_apply],
+      by simp (config := {decide := true}) [hw1, Function.update_apply, ctx.ttk],
+      by simp [resC2]⟩)
+  have hn : (w1 C2).length = K + 1 := by
+    simp (config := {decide := true}) [hw1, Function.update_apply, ctx.ttk]
+  rw [hn] at I
+  rw [(I le_rfl).2.2.2]
+  simp (config := {decide := true}) [hw1, Function.update_apply]
+
+/-- One row `a` of `cbC`. -/
+theorem exec_caBody {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (a : Fin 2) (w : St)
+    (ctx : NCtx V K N one zv w) (hca : w CA = List.replicate (1 - a.val) true) :
+    exec V f caBody w RES = (w RES ++ (resC1 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a
+        2).flatten).drop (resC1 (constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))) a 2).flatten.length ∧
+      NCtx V K N one zv (exec V f caBody w) ∧ ∀ j ∉ wr caBody, exec V f caBody w j = w j := by
+  refine ⟨?_, ctx.exec _ (by decide), fun j hj => exec_not_mem _ _ _ hj⟩
+  simp only [caBody, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  set P := constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))
+  set w1 := Function.update w C1 (w TT2) with hw1
+  have I := exec_rep_inv (V := V) (f := f) (c := C1) (B := cc1Body)
+    (fun r w' => r ≤ 2 → NCtx V K N one zv w' ∧ w' CA = List.replicate (1 - a.val) true ∧
+      w' C1 = List.replicate (2 - r) true ∧
+      w' RES = (w1 RES ++ (resC1 P a r).flatten).drop (resC1 P a r).flatten.length)
+    (fun r w' ih hr => by
+      obtain ⟨c, hca', hc1, hres⟩ := ih (by omega)
+      set c1 : Fin 2 := ⟨r, by omega⟩
+      obtain ⟨R1, R2, R3⟩ := exec_cc1Body (V := V) (f := f) hN a c1
+        (Function.update w' C1 (w' C1).tail) (c.upd C1 (by decide) _)
+        (by rw [Function.update_of_ne (by decide), hca'])
+        (by rw [Function.update_self, hc1, List.tail_replicate]; congr 1; show 2 - r - 1 = 1 - r
+            omega)
+      refine ⟨R2, ?_, ?_, ?_⟩
+      · rw [R3 CA (by decide), Function.update_of_ne (by decide), hca']
+      · rw [R3 C1 (by decide), Function.update_self, hc1, List.tail_replicate]; congr 1
+      · rw [R1, Function.update_of_ne (by decide), hres, shift_acc]
+        have e : resC1 P a (r + 1) = resC1 P a r ++ resC2 P a c1 (K + 1) := by
+          simp only [resC1]
+          rw [List.take_succ, List.flatMap_append, List.getElem?_eq_getElem (by simp; omega)]
+          have : (List.finRange 2)[r]'(by simp; omega) = c1 := Fin.ext (by simp [c1])
+          simp [this]
+        rw [e, List.flatten_append]) w1
+    (fun _ => ⟨ctx.upd C1 (by decide) _, by rw [hw1, Function.update_of_ne (by decide), hca],
+      by rw [hw1, Function.update_self, ctx.tt2]; rfl, by simp [resC1]⟩)
+  have hn : (w1 C1).length = 2 := by rw [hw1, Function.update_self, ctx.tt2]; rfl
+  rw [hn] at I
+  rw [(I le_rfl).2.2.2, hw1, Function.update_of_ne (by decide)]
+
+/-- **The constant bundle on the machine**: `RES` ends with the word of
+`constRepVV one zv (gvExp q)`. -/
+theorem exec_cbC {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (w : St)
+    (ctx : NCtx V K N one zv w) :
+    exec V f cbC w RES = (w RES ++ bw (constRepVV (N := N) (k := K + 1) one zv
+        (gvExp (2 ^ K)))).drop (bw (constRepVV (N := N) (k := K + 1) one zv
+          (gvExp (2 ^ K)))).length ∧
+      NCtx V K N one zv (exec V f cbC w) ∧ ∀ j ∉ wr cbC, exec V f cbC w j = w j := by
+  refine ⟨?_, ctx.exec _ (by decide), fun j hj => exec_not_mem _ _ _ hj⟩
+  simp only [cbC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  set P := constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K))
+  set w1 := Function.update w CA (w TT2) with hw1
+  have I := exec_rep_inv (V := V) (f := f) (c := CA) (B := caBody)
+    (fun r w' => r ≤ 2 → NCtx V K N one zv w' ∧ w' CA = List.replicate (2 - r) true ∧
+      w' RES = (w1 RES ++ (resA P r).flatten).drop (resA P r).flatten.length)
+    (fun r w' ih hr => by
+      obtain ⟨c, hca, hres⟩ := ih (by omega)
+      set a : Fin 2 := ⟨r, by omega⟩
+      obtain ⟨R1, R2, R3⟩ := exec_caBody (V := V) (f := f) hN a
+        (Function.update w' CA (w' CA).tail) (c.upd CA (by decide) _)
+        (by rw [Function.update_self, hca, List.tail_replicate]; congr 1; show 2 - r - 1 = 1 - r
+            omega)
+      refine ⟨R2, ?_, ?_⟩
+      · rw [R3 CA (by decide), Function.update_self, hca, List.tail_replicate]; congr 1
+      · rw [R1, Function.update_of_ne (by decide), hres, shift_acc]
+        have e : resA P (r + 1) = resA P r ++ resC1 P a 2 := by
+          simp only [resA]
+          rw [List.take_succ, List.flatMap_append, List.getElem?_eq_getElem (by simp; omega)]
+          have : (List.finRange 2)[r]'(by simp; omega) = a := Fin.ext (by simp [a])
+          simp [this]
+        rw [e, List.flatten_append]) w1
+    (fun _ => ⟨ctx.upd CA (by decide) _, by rw [hw1, Function.update_self, ctx.tt2]; rfl,
+      by simp [resA]⟩)
+  have hn : (w1 CA).length = 2 := by rw [hw1, Function.update_self, ctx.tt2]; rfl
+  rw [hn] at I
+  rw [(I le_rfl).2.2, resA_two, bw_blocks, List.flatten_flatten, hw1, Function.update_of_ne (by decide)]
 
 end ValVM
 
