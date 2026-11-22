@@ -949,4 +949,251 @@ theorem exec_modAddC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
   simp only [modAddV]
   rw [constV_add, ← hs₁, ← hs₂]
 
+/-! ### The modular subtractor -/
+
+theorem notLV_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {one : List Bool} : ∀ (as : List (List Bool)), ∀ x ∈ notLV one (fV V f) as, x.length = V
+  | [], x, hx => by simp [notLV] at hx
+  | a :: as, x, hx => by
+    simp only [notLV, List.mem_cons] at hx
+    rcases hx with rfl | hx
+    · exact hf _ _ (by simp) (by simp)
+    · exact notLV_len hf as x hx
+
+theorem length_notLV {α : Type*} (one : α) (step : α → α → α) :
+    ∀ as : List α, (notLV one step as).length = as.length
+  | [] => rfl
+  | a :: as => by simp [notLV, length_notLV one step as]
+
+/-- `S1 := notLV Y`. -/
+def msub1 : Code := ofList [.cp NA 25, .cp NB 25, .cp 0 10, .cp 1 10, zipC notG 12 14, .cp 21 NC]
+
+theorem exec_msub1 (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (ys : List (List Bool)) (hyv : ∀ x ∈ ys, x.length = V) (h10 : (w 10).length = V)
+    (hY : w 25 = ys.flatten) (hk : (w 12).length = ys.length) (hb : (w 14).length = ys.length * V) :
+    exec V f msub1 w 21 = (notLV (w 10) (fV V f) ys).flatten := by
+  rw [show msub1 = ofList ([.cp NA 25, .cp NB 25, .cp 0 10, .cp 1 10] ++ [zipC notG 12 14, .cp 21 NC])
+    from rfl, exec_ofList_append]
+  set w1 := Function.update (Function.update (Function.update (Function.update w NA (w 25)) NB
+    (w 25)) 0 (w 10)) 1 (w 10) with hw1
+  have hpre : exec V f (ofList [.cp NA 25, .cp NB 25, .cp 0 10, .cp 1 10]) w = w1 := by
+    simp (config := {decide := true}) only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp',
+      Function.update_apply, if_true, if_false, hw1]
+  rw [hpre]
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp', Function.update_self]
+  rw [(exec_zipC (V := V) (f := f) (gOk_notG hf) (tk := 12) (tb := 14)
+    (by simp (config := {decide := true}) [rippleW]) (by simp (config := {decide := true}) [rippleW])
+    ys ys w1 rfl hyv hyv (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h10]) [] []
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hY])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hY])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hk])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hb])).1, notLV_eq_zipWith]
+  simp (config := {decide := true}) [w1, Function.update_apply]
+
+/-- `NC := rippleV (X, S1)` with the carry `1`. -/
+def msub2 : Code := ofList [.cp NA 24, .cp NB 21, .cp 2 10, .cp 0 10, .cp 1 10, rippleC 12 15]
+
+theorem exec_msub2 (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (xs ys : List (List Bool)) (hl : xs.length = ys.length) (hxv : ∀ x ∈ xs, x.length = V)
+    (hyv : ∀ x ∈ ys, x.length = V) (h10 : (w 10).length = V) (hX : w 24 = xs.flatten)
+    (hS : w 21 = ys.flatten) (hk : (w 12).length = xs.length)
+    (hb : (w 15).length = (xs.length + 1) * V) :
+    exec V f msub2 w NC = (rippleV (w 10) (fV V f) xs ys (w 10)).flatten := by
+  rw [show msub2 = ofList ([.cp NA 24, .cp NB 21, .cp 2 10, .cp 0 10, .cp 1 10] ++ [rippleC 12 15])
+    from rfl, exec_ofList_append]
+  set w1 := Function.update (Function.update (Function.update (Function.update (Function.update w
+    NA (w 24)) NB (w 21)) 2 (w 10)) 0 (w 10)) 1 (w 10) with hw1
+  have hpre : exec V f (ofList [.cp NA 24, .cp NB 21, .cp 2 10, .cp 0 10, .cp 1 10]) w = w1 := by
+    simp (config := {decide := true}) only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp',
+      Function.update_apply, if_true, if_false, hw1]
+  rw [hpre]
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil]
+  rw [(exec_rippleC (V := V) (f := f) hf (tk := 12) (tb := 15)
+    (by simp (config := {decide := true}) [rippleW]) (by simp (config := {decide := true}) [rippleW])
+    xs ys w1 hl hxv hyv (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hX])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hS])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hk])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hb])).1]
+  simp (config := {decide := true}) [w1, Function.update_apply]
+
+/-- `NC := rippleV (T, C)` with `C = zv^K ++ [1]` (`T1 = 29` a template of `1` bit) and the
+carry `zv`. -/
+def msub4 : Code := ofList [.cp NC 14, const2C 11 20 10 29, .cp NB NC, .cp NA 23, .cp 2 11,
+  .cp 0 10, .cp 1 10, rippleC 12 15]
+
+theorem exec_msub4 (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (ts : List (List Bool)) (K : ℕ) (htv : ∀ x ∈ ts, x.length = V) (htl : ts.length = K + 1)
+    (h10 : (w 10).length = V) (h11 : (w 11).length = V) (hT : w 23 = ts.flatten)
+    (hm : (w 20).length = K) (h29 : (w 29).length = 1) (h14 : (w 14).length = (K + 1) * V)
+    (h12 : (w 12).length = K + 1) (h15 : (w 15).length = (K + 2) * V) :
+    exec V f msub4 w NC = (rippleV (w 10) (fV V f) ts
+      (List.replicate K (w 11) ++ [w 10]) (w 11)).flatten := by
+  simp only [msub4, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  set w1 := Function.update w NC (w 14)
+  obtain ⟨c1, c2⟩ := exec_const2C (V := V) (f := f) (s1 := 11) (t1 := 20) (s2 := 10) (t2 := 29)
+    (by decide) (by decide) (by decide) (by decide) (w := w1)
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h11])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hm, h14]; nlinarith)
+  set w2 := exec V f (const2C 11 20 10 29) w1
+  have v : ∀ j, j ≠ 3 → j ≠ NC → j ≠ CT0 → w2 j = w1 j := c2
+  have hC : w2 NC = (List.replicate K (w 11) ++ [w 10]).flatten := by
+    rw [c1]
+    simp (config := {decide := true}) only [w1, Function.update_apply, if_true, if_false]
+    rw [hm, h29, List.drop_left' (by rw [h14])]
+    simp [List.replicate_succ]
+  refine ((exec_rippleC (V := V) (f := f) hf (tk := 12) (tb := 15)
+    (by simp (config := {decide := true}) [rippleW]) (by simp (config := {decide := true}) [rippleW])
+    ts (List.replicate K (w 11) ++ [w 10]) _ (by simp [htl]) htv ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_).1).trans ?_
+  · intro x hx
+    simp only [List.mem_append, List.mem_cons, List.mem_replicate, List.not_mem_nil, or_false] at hx
+    rcases hx with ⟨_, rfl⟩ | rfl <;> assumption
+  all_goals simp (config := {decide := true}) [Function.update_apply, v, w1, h10, h11, hT, h12,
+    h15, hC, htl]
+
+/-- `Z := muxLV (R28, T, W21)`. -/
+def msub6 : Code := ofList [.cp 9 28, .cp NA 23, .cp NB 21, .cp 0 10, .cp 1 10, zipC muxG 12 14,
+  .cp 26 NC]
+
+theorem exec_msub6 (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (as bs : List (List Bool)) (hl : as.length = bs.length) (hav : ∀ x ∈ as, x.length = V)
+    (hbv : ∀ x ∈ bs, x.length = V) (h10 : (w 10).length = V) (hT : w 23 = as.flatten)
+    (hS : w 21 = bs.flatten) (hk : (w 12).length = as.length) (hb : (w 14).length = as.length * V) :
+    exec V f msub6 w 26 = (muxLV (w 10) (fV V f) (w 28) as bs).flatten := by
+  rw [show msub6 = ofList ([.cp 9 28, .cp NA 23, .cp NB 21, .cp 0 10, .cp 1 10] ++
+    [zipC muxG 12 14, .cp 26 NC]) from rfl, exec_ofList_append]
+  set w1 := Function.update (Function.update (Function.update (Function.update (Function.update w
+    9 (w 28)) NA (w 23)) NB (w 21)) 0 (w 10)) 1 (w 10) with hw1
+  have hpre : exec V f (ofList [.cp 9 28, .cp NA 23, .cp NB 21, .cp 0 10, .cp 1 10]) w = w1 := by
+    simp (config := {decide := true}) only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp',
+      Function.update_apply, if_true, if_false, hw1]
+  rw [hpre]
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp', Function.update_self]
+  rw [(exec_zipC (V := V) (f := f) (gOk_muxG hf) (tk := 12) (tb := 14)
+    (by simp (config := {decide := true}) [rippleW]) (by simp (config := {decide := true}) [rippleW])
+    as bs w1 hl hav hbv (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h10]) [] []
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hT])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hS])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hk])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hb])).1, muxLV_eq_zipWith]
+  simp (config := {decide := true}) [w1, Function.update_apply]
+
+/-- **The modular subtractor** `Z := modSub (X, Y)` modulo `2^K` on `k = K + 1` bits. -/
+def modSubC : Code := ofList [msub1, msub2, splitC 12 14 23, .cp 28 9, msub4, splitC 12 14 21, msub6]
+
+theorem constV_sub {α : Type*} (one zv : α) (K : ℕ) :
+    constV one zv (K + 1) (2 ^ K) = List.replicate K zv ++ [one] := by
+  have := constV_pow one zv K 1 1
+  rw [one_mul] at this
+  rw [this]; rfl
+
+/-- **The modular subtractor on the machine**: `Z = 26` ends with the flattened `modSubV` of the
+operands `X = 24`, `Y = 25`. -/
+theorem exec_modSubC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (K : ℕ) (xs ys : List (List Bool)) (hxl : xs.length = K + 1) (hyl : ys.length = K + 1)
+    (hxv : ∀ x ∈ xs, x.length = V) (hyv : ∀ x ∈ ys, x.length = V) (h10 : (w 10).length = V)
+    (h11 : (w 11).length = V) (hX : w 24 = xs.flatten) (hY : w 25 = ys.flatten)
+    (h12 : (w 12).length = K + 1) (h14 : (w 14).length = (K + 1) * V)
+    (h15 : (w 15).length = (K + 2) * V) (h20 : (w 20).length = K) (h29 : (w 29).length = 1) :
+    exec V f modSubC w 26 = (modSubV (w 10) (fV V f) (w 11) (2 ^ K) (K + 1) xs ys).flatten := by
+  set one := w 10
+  set zv := w 11
+  set s₁ := notLV one (fV V f) ys with hs₁
+  set s₂ := rippleV one (fV V f) xs s₁ one with hs₂
+  have l₁ : s₁.length = K + 1 := by rw [hs₁, length_notLV, hyl]
+  have l₂ : s₂.length = K + 2 := by rw [hs₂, length_rippleV _ _ _ _ _ (by rw [hxl, l₁]), hxl]
+  have v₁ : ∀ x ∈ s₁, x.length = V := notLV_len hf ys
+  have v₂ : ∀ x ∈ s₂, x.length = V := rippleV_len hf h10 xs s₁
+  set s₃ := rippleV one (fV V f) (s₂.take (K + 1)) (List.replicate K zv ++ [one]) zv with hs₃
+  have l₃ : s₃.length = K + 2 := by rw [hs₃, length_rippleV _ _ _ _ _ (by simp [l₂])]; simp [l₂]
+  have v₃ : ∀ x ∈ s₃, x.length = V := rippleV_len hf h11 _ _
+  simp only [modSubC, exec_ofList, List.foldl_cons, List.foldl_nil]
+  -- phase 1
+  have u1_21 := exec_msub1 hf w ys hyv h10 hY (by rw [h12, hyl]) (by rw [h14, hyl])
+  have u1_ : ∀ j : Fin 40, j ∉ wr msub1 → exec V f msub1 w j = w j :=
+    fun j hj => exec_not_mem msub1 w j hj
+  generalize exec V f msub1 w = u1 at u1_21 u1_ ⊢
+  -- phase 2
+  have u2_NC := exec_msub2 (V := V) (f := f) hf u1 xs s₁ (by rw [hxl, l₁]) hxv v₁
+    (by rw [u1_ 10 (by decide)]; exact h10) (by rw [u1_ 24 (by decide)]; exact hX) u1_21
+    (by rw [u1_ 12 (by decide), h12, hxl]) (by rw [u1_ 15 (by decide), h15, hxl])
+  rw [u1_ 10 (by decide)] at u2_NC
+  have u2_ : ∀ j : Fin 40, j ∉ wr msub2 → exec V f msub2 u1 j = u1 j :=
+    fun j hj => exec_not_mem msub2 u1 j hj
+  generalize exec V f msub2 u1 = u2 at u2_NC u2_ ⊢
+  -- phase 3
+  have hsplit := getD_last s₂ one (n := K + 1) l₂
+  obtain ⟨u3_23, u3_9, u3_⟩ := exec_splitC (V := V) (f := f) (tk := 12) (tb := 14) (dst := 23)
+    (by simp (config := {decide := true}) [Hi]) (by simp (config := {decide := true}) [Hi])
+    (by simp (config := {decide := true}) [Hi]) u2 (s₂.take (K + 1)) (s₂.getD (K + 1) one)
+    (fun x hx => v₂ x (List.mem_of_mem_take hx))
+    (by rw [List.getD_eq_getElem _ _ (by omega)]; exact v₂ _ (List.getElem_mem _))
+    (by rw [u2_ 10 (by decide), u1_ 10 (by decide)]; exact h10) (by rw [u2_NC, ← hsplit])
+    (by rw [u2_ 12 (by decide), u1_ 12 (by decide), h12]; simp [l₂])
+    (by rw [u2_ 14 (by decide), u1_ 14 (by decide), h14]; simp [l₂])
+  have u3_n : ∀ j : Fin 40, j ∉ wr (splitC 12 14 23) → exec V f (splitC 12 14 23) u2 j = u2 j :=
+    fun j hj => exec_not_mem _ u2 j hj
+  generalize exec V f (splitC 12 14 23) u2 = u3 at u3_23 u3_9 u3_ u3_n ⊢
+  -- save the selector
+  simp only [exec_cp']
+  set u3' := Function.update u3 28 (u3 9) with hu3'
+  have u3'_ : ∀ j, j ≠ 28 → u3' j = u3 j := fun j hj => by simp [u3', Function.update_of_ne hj]
+  -- phase 4
+  have u4_NC := exec_msub4 (V := V) (f := f) hf u3' (s₂.take (K + 1)) K
+    (fun x hx => v₂ x (List.mem_of_mem_take hx)) (by simp [l₂])
+    (by rw [u3'_ 10 (by decide), u3_n 10 (by decide), u2_ 10 (by decide), u1_ 10 (by decide)]; exact h10)
+    (by rw [u3'_ 11 (by decide), u3_n 11 (by decide), u2_ 11 (by decide), u1_ 11 (by decide)]; exact h11)
+    (by rw [u3'_ 23 (by decide)]; exact u3_23)
+    (by rw [u3'_ 20 (by decide), u3_n 20 (by decide), u2_ 20 (by decide), u1_ 20 (by decide)]; exact h20)
+    (by rw [u3'_ 29 (by decide), u3_n 29 (by decide), u2_ 29 (by decide), u1_ 29 (by decide)]; exact h29)
+    (by rw [u3'_ 14 (by decide), u3_n 14 (by decide), u2_ 14 (by decide), u1_ 14 (by decide)]; exact h14)
+    (by rw [u3'_ 12 (by decide), u3_n 12 (by decide), u2_ 12 (by decide), u1_ 12 (by decide)]; exact h12)
+    (by rw [u3'_ 15 (by decide), u3_n 15 (by decide), u2_ 15 (by decide), u1_ 15 (by decide)]; exact h15)
+  have e10 : u3' 10 = one := by
+    rw [u3'_ 10 (by decide), u3_n 10 (by decide), u2_ 10 (by decide), u1_ 10 (by decide)]
+  have e11 : u3' 11 = zv := by
+    rw [u3'_ 11 (by decide), u3_n 11 (by decide), u2_ 11 (by decide), u1_ 11 (by decide)]
+  rw [e10, e11, ← hs₃] at u4_NC
+  have u4_ : ∀ j : Fin 40, j ∉ wr msub4 → exec V f msub4 u3' j = u3' j :=
+    fun j hj => exec_not_mem msub4 u3' j hj
+  generalize exec V f msub4 u3' = u4 at u4_NC u4_ ⊢
+  -- phase 5
+  have hsplit₃ := getD_last s₃ one (n := K + 1) l₃
+  obtain ⟨u5_21, -, u5_⟩ := exec_splitC (V := V) (f := f) (tk := 12) (tb := 14) (dst := 21)
+    (by simp (config := {decide := true}) [Hi]) (by simp (config := {decide := true}) [Hi])
+    (by simp (config := {decide := true}) [Hi]) u4 (s₃.take (K + 1)) (s₃.getD (K + 1) one)
+    (fun x hx => v₃ x (List.mem_of_mem_take hx))
+    (by rw [List.getD_eq_getElem _ _ (by omega)]; exact v₃ _ (List.getElem_mem _))
+    (by rw [u4_ 10 (by decide), e10]; exact h10) (by rw [u4_NC, ← hsplit₃])
+    (by rw [u4_ 12 (by decide), u3'_ 12 (by decide), u3_n 12 (by decide), u2_ 12 (by decide),
+      u1_ 12 (by decide), h12]; simp [l₃])
+    (by rw [u4_ 14 (by decide), u3'_ 14 (by decide), u3_n 14 (by decide), u2_ 14 (by decide),
+      u1_ 14 (by decide), h14]; simp [l₃])
+  have u5_n : ∀ j : Fin 40, j ∉ wr (splitC 12 14 21) → exec V f (splitC 12 14 21) u4 j = u4 j :=
+    fun j hj => exec_not_mem _ u4 j hj
+  generalize exec V f (splitC 12 14 21) u4 = u5 at u5_21 u5_ u5_n ⊢
+  -- phase 6
+  have := exec_msub6 (V := V) (f := f) hf u5 (s₂.take (K + 1)) (s₃.take (K + 1)) (by simp [l₂, l₃])
+    (fun x hx => v₂ x (List.mem_of_mem_take hx)) (fun x hx => v₃ x (List.mem_of_mem_take hx))
+    (by rw [u5_n 10 (by decide), u4_ 10 (by decide), e10]; exact h10)
+    (by rw [u5_ 23 (by simp (config := {decide := true}) [Hi]) (by decide), u4_ 23 (by decide),
+      u3'_ 23 (by decide)]; exact u3_23) u5_21
+    (by rw [u5_n 12 (by decide), u4_ 12 (by decide), u3'_ 12 (by decide), u3_n 12 (by decide),
+      u2_ 12 (by decide), u1_ 12 (by decide), h12]; simp [l₂])
+    (by rw [u5_n 14 (by decide), u4_ 14 (by decide), u3'_ 14 (by decide), u3_n 14 (by decide),
+      u2_ 14 (by decide), u1_ 14 (by decide), h14]; simp [l₂])
+  rw [this]
+  have e28 : u5 28 = s₂.getD (K + 1) one := by
+    rw [u5_ 28 (by simp (config := {decide := true}) [Hi]) (by decide), u4_ 28 (by decide)]
+    simp [u3', u3_9]
+  rw [e28, u5_n 10 (by decide), u4_ 10 (by decide), e10]
+  congr 1
+  simp only [modSubV]
+  rw [constV_sub, ← hs₁, ← hs₂, ← hs₃]
+
 end ValVM
