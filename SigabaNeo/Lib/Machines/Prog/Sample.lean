@@ -410,6 +410,92 @@ theorem law_natP {t c : Fin k} (hct : c ≠ t) : ∀ (n : ℕ) (s : Store k), s 
         ← List.replicate_succ']
       congr 2; omega
 
+
+/-! ### Running with a counter built from nothing -/
+
+/-- Build the counter `t := replicate n false` (scratch `c`), run `body`, clear `t`. -/
+def withCount (t c : Fin k) (n : ℕ) (body : XProg k) : XProg k :=
+  seq (natP t c n) (seq body (prog (.prim (.clear t))))
+
+/-- **A counter built for the body.** -/
+theorem AppendLaw.withCount {body : XProg k} {r t c : Fin k} {P : Store k → Prop}
+    {μ : PMF (List Bool)} {n : ℕ} (hb : AppendLaw body r (fun s => P s ∧ s c = [] ∧ (s t).length = n) μ)
+    (hPt : ∀ s w, P s → P (Function.update s t w)) (hct : c ≠ t) (hrt : r ≠ t) :
+    AppendLaw (XProg.withCount t c n body) r (fun s => P s ∧ s t = [] ∧ s c = []) μ := by
+  rintro s ⟨hs, ht, hc⟩
+  have h1 := hb (Function.update s t (List.replicate n false))
+    ⟨hPt s _ hs, by rw [Function.update_of_ne hct]; exact hc, by simp⟩
+  have h2 : (XProg.withCount t c n body).law s =
+      (body.law (Function.update s t (List.replicate n false))).bind
+        (prog (.prim (.clear t))).law := by
+    rw [XProg.withCount, law_seq, law_natP hct n s hc, PMF.pure_bind, law_seq]
+  rw [h2, h1, PMF.bind_map]
+  simp only [Function.comp_def, law_prim, Prim.apply]
+  rw [show ∀ f : List Bool → Store k, (μ.bind fun x => PMF.pure (f x)) = μ.map f from
+    fun f => PMF.bind_pure_comp f μ]
+  congr 1
+  funext u
+  rw [Function.update_of_ne hrt, Function.update_comm hrt.symm, Function.update_idem]
+  exact Function.update_eq_self_iff.mpr (by rw [Function.update_of_ne hrt.symm]; exact ht.symm)
+
+/-! ### Appending a tape -/
+
+/-- Append the word of tape `a` to `r`, then blank `a` (scratch stream `S`, counter `c`). -/
+def appendTapeP (r a S c : Fin k) : XProg k :=
+  seq (prog (.prim (.copy S a)))
+    (seq (forN c a (seq (prog (.prim (.snocHead r S))) (prog (.prim (.tail S)))))
+      (seq (prog (.prim (.clear S))) (prog (.prim (.clear a)))))
+
+/-- One step of the transfer. -/
+def mvStepA : List Bool × List Bool → List Bool × List Bool
+  | (o, sv) => (o ++ sv.take 1, sv.tail)
+
+theorem mvStepA_iter : ∀ (sv o : List Bool), mvStepA^[sv.length] (o, sv) = (o ++ sv, [])
+  | [], o => by simp
+  | b :: sv, o => by
+    rw [List.length_cons, Function.iterate_succ_apply]
+    simp only [mvStepA, List.take_succ_cons, List.take_zero, List.tail_cons]
+    rw [mvStepA_iter sv (o ++ [b])]
+    simp
+
+theorem kIter_pure {σ : Type} (f : σ → σ) : ∀ (n : ℕ) (a : σ),
+    kIter (fun a => PMF.pure (f a)) n a = PMF.pure (f^[n] a)
+  | 0, a => rfl
+  | n + 1, a => by rw [kIter, kIter_pure f n a, PMF.pure_bind, Function.iterate_succ_apply']
+
+/-- **Appending a tape.** -/
+theorem law_appendTapeP {r a S c : Fin k} (hra : r ≠ a) (hrS : r ≠ S) (hrc : r ≠ c) (haS : a ≠ S)
+    (hac : a ≠ c) (hSc : S ≠ c) (s : Store k) (hS : s S = []) (hc : s c = []) :
+    (appendTapeP r a S c).law s =
+      PMF.pure (Function.update (Function.update s r (s r ++ s a)) a []) := by
+  rw [appendTapeP, law_seq, law_prim, PMF.pure_bind, forN, law_seq, law_seq, law_prim,
+    PMF.pure_bind]
+  simp only [Prim.apply]
+  let G : List Bool × List Bool → Store k := fun p =>
+    Function.update (Function.update (Function.update s S (s a)) r p.1) S p.2
+  have hstart : Function.update (Function.update s S (s a)) c
+      (Function.update s S (s a) a) = Function.update (G (s r, s a)) c (s a) := by
+    funext t
+    simp only [G, Function.update_apply]
+    by_cases h1 : t = a <;> by_cases h2 : t = S <;> by_cases h3 : t = r <;> by_cases h4 : t = c <;>
+      simp_all
+  rw [hstart, law_loop_iter c _ G (fun p => PMF.pure (mvStepA p))]
+  · rw [kIter_pure, mvStepA_iter, PMF.pure_map, PMF.pure_bind, law_seq, law_prim, PMF.pure_bind,
+      law_prim]
+    congr 1
+    funext t
+    simp only [Prim.apply, G, Function.update_apply]
+    by_cases h1 : t = a <;> by_cases h2 : t = S <;> by_cases h3 : t = r <;> by_cases h4 : t = c <;>
+      simp_all
+  · intro p w
+    rw [law_seq, law_prim, PMF.pure_bind, law_prim, PMF.pure_map]
+    congr 1
+    funext t
+    obtain ⟨o, sv⟩ := p
+    simp only [Prim.apply, G, mvStepA, Function.update_apply]
+    by_cases h1 : t = a <;> by_cases h2 : t = S <;> by_cases h3 : t = r <;> by_cases h4 : t = c <;>
+      simp_all
+
 end XProg
 
 end SigabaNeo.Tape
