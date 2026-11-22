@@ -677,6 +677,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     Pr[j·U = x] = 1/|H| (Part 127).
 
   All eight are accepted on Prove2Me.
+  ShiftedTheta.lean contains two theorems. `shiftedTheta_le` is the 1-D bound Σ_k e^{−s(k+a)²} ≤ Σ_k e^{−sk²}, via Poisson
+  summation. `latticeTheta_le` is the GS-floor bound Σ_{c∈ℤⁿ} e^{−s‖Σc_ib_i‖²} ≤ (Σ_k e^{−sg²k²})ⁿ, the key analytic step of
+  Part 102. Both are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
