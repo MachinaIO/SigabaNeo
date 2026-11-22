@@ -29,6 +29,9 @@ import SigabaNeo.Lib.Lattices.Algo.FhatLoop
 import SigabaNeo.Lib.Lattices.Algo.Coins
 import SigabaNeo.Lib.Lattices.Algo.SimWords
 import SigabaNeo.Lib.Lattices.ProgAlgo.Blocks
+import SigabaNeo.Lib.Lattices.ProgAlgo.MulAlg
+import SigabaNeo.Lib.Lattices.ProgAlgo.RingProgs
+import SigabaNeo.Lib.Lattices.ProgAlgo.MulRW
 
 /-!
 # Lattice library
