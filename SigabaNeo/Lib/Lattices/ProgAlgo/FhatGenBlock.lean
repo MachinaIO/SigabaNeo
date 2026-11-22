@@ -261,6 +261,87 @@ theorem iter_blockBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i,
       show ls1 l = _
       rw [g1 l hl]
 
+theorem bst_length {N k K : ℕ} (repA repB : BI N k → Wire ι) (P : SLP ι) :
+    ∀ i, i ≤ 4 * k * N → ∀ o ∈ (enumO N k).take i, ((bst (K := K) repA repB P i).2 o).length = k
+  | 0, _, o, ho => by simp at ho
+  | i + 1, hi, o, ho => by
+    obtain ⟨o', ho'⟩ : ∃ o', (enumO N k)[i]? = some o' :=
+      ⟨(enumO N k)[i]'(by rw [length_enumO']; omega), List.getElem?_eq_getElem _⟩
+    rw [bst_succ repA repB P i o' ho', blockStepL]
+    dsimp only
+    rw [List.take_succ, ho', Option.toList_some, List.mem_append, List.mem_singleton] at ho
+    by_cases h : o = o'
+    · subst h; simp [coefCircuitL_length]
+    · rw [Function.update_of_ne h]
+      exact bst_length repA repB P i (by omega) o (ho.resolve_right h)
+
+theorem ofFn_getD {α : Type*} {k : ℕ} (l : List α) (d : α) (h : l.length = k) :
+    List.ofFn (fun i : Fin k => l.getD i d) = l := by
+  subst h; apply List.ext_getElem (by simp)
+  intro i h1 h2; simp [List.getD_eq_getElem _ _ h2]
+
+/-- **A NAND block** (`12 = 4kN`): its output representation list into `21`. -/
+def blockC : Code :=
+  .seq (.seq (.zero 43) (.seq (.zero 44) (.seq (.zero 45) (.seq (.zero 46) (.lnil 21)))))
+    (.rep 12 blockBody)
+
+/-- The constants of a block, with `12 = 4kN`. -/
+def CstK (N k K : ℕ) (σ : St) : Prop := CstC (E := E) N k K σ ∧ σ.sc 12 = 4 * k * N
+
+theorem exec_blockC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n)
+    {N k K : ℕ} (hk : 0 < k) (hN : 0 < N) (hK : K ≤ k + 1) (repA repB : BI N k → Wire ι)
+    (P : SLP ι) (σ : St) (hc : CstK (E := E) N k K σ) (hI : Inv E σ) (hS : ScOK E σ)
+    (h10 : σ.ls 10 = repList E ix repA) (h11 : σ.ls 11 = repList E ix repB)
+    (hcap : (2 * k * N + 1) * k ≤ E.C) (hcap' : k + 3 ≤ E.C) (hcap21 : 4 * k * N * k ≤ E.C)
+    (hbig : 4 * k * N * k + 2 * N + k + 2 ≤ E.M)
+    (hM : E.n + (exec E blockC (mk E ix P σ)).t ≤ E.M) :
+    ∃ sc' ls', exec E blockC (mk E ix P σ) = mk E ix (nandBlockL (ordT₀ N k) (ordO₀ N k)
+        (gvExp (2 ^ K)) (.gate 0) (2 ^ K) repA repB P).1 (setSL σ sc' ls') ∧
+      ls' 21 = repList E ix (nandBlockL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K)
+        repA repB P).2 ∧
+      (∀ r : SR, r.val < 16 ∨ 58 < r.val → sc' r = σ.sc r) ∧
+      (∀ l : LR, l = 10 ∨ l = 11 ∨ 21 < l.val → ls' l = σ.ls l) := by
+  obtain ⟨hcc, hc12⟩ := hc
+  set σ0 := setSL σ (Function.update (Function.update (Function.update (Function.update σ.sc 43 0)
+    44 0) 45 0) 46 0) (Function.update σ.ls 21 [])
+  have e0 : exec E (.seq (.zero 43) (.seq (.zero 44) (.seq (.zero 45) (.seq (.zero 46) (.lnil 21)))))
+      (mk E ix P σ) = mk E ix P σ0 := rfl
+  have hIS0 := is_exec (by omega) hWM e0 ⟨hI, hS⟩
+  have hs0 : ∀ x : SR, x.val < 43 ∨ 46 < x.val → σ0.sc x = σ.sc x := fun x hx => by
+    simp only [σ0, setSL]
+    rw [Function.update_of_ne (by rintro rfl; revert hx; decide),
+      Function.update_of_ne (by rintro rfl; revert hx; decide),
+      Function.update_of_ne (by rintro rfl; revert hx; decide),
+      Function.update_of_ne (by rintro rfl; revert hx; decide)]
+  unfold blockC at hM ⊢
+  rw [exec_seq, e0, exec_rep, show (mk E ix P σ0).sc 12 = 4 * k * N by
+    rw [mk_sc, hs0 12 (by decide), hc12]] at hM ⊢
+  obtain ⟨⟨⟨⟨h0, h1⟩, h2, h3, h4⟩, h5, h6, h7⟩, h8, h9, h11'⟩ := hcc
+  obtain ⟨sc', ls', h, d, _, _, _, f, g⟩ := iter_blockBody hnM hWM hix hk hN hK repA repB P σ0 []
+    ⟨⟨⟨⟨by rw [hs0 0 (by decide), h0], by rw [hs0 1 (by decide), h1]⟩, by rw [hs0 2 (by decide), h2],
+      by rw [hs0 3 (by decide), h3], by rw [hs0 4 (by decide), h4]⟩, by rw [hs0 5 (by decide), h5],
+      by rw [hs0 6 (by decide), h6], by rw [hs0 7 (by decide), h7]⟩,
+      by rw [hs0 8 (by decide), h8], by rw [hs0 9 (by decide), h9], by rw [hs0 11 (by decide), h11']⟩
+    hIS0.1 hIS0.2 (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by simp [σ0, setSL])
+    (by simp [σ0, setSL]) (by simp [σ0, setSL, h10]) (by simp [σ0, setSL, h11])
+    (by simp [σ0, setSL]) hcap hcap' (by simpa using hcap21) hbig (4 * k * N) le_rfl hM
+  have hall : (enumO N k).take (4 * k * N) = enumO N k := List.take_of_length_le (by
+    rw [length_enumO'])
+  refine ⟨sc', ls', ?_, ?_, fun r hr => ?_, fun l hl => ?_⟩
+  · rw [h]; simp only [bst, hall]; rfl
+  · rw [d, List.nil_append, bList, repList]
+    simp only [hall, nandBlockL]
+    congr 1
+    apply List.map_congr_left; intro o ho
+    have hl := bst_length (K := K) repA repB P (4 * k * N) le_rfl o (by rw [hall]; exact ho)
+    simp only [bst, hall] at hl ⊢
+    rw [show ((o.1, o.2.1, o.2.2) : OI N k) = o from rfl, show ordO₀ N k = enumO N k from rfl,
+      ofFn_getD _ _ hl]
+  · rw [f r hr, hs0 r (by omega)]
+  · rw [g l hl]
+    simp [σ0, setSL, Function.update_of_ne (show l ≠ 21 by
+      rcases hl with rfl | rfl | hl <;> first | decide | (rintro rfl; revert hl; decide))]
+
 end FhatGen
 
 end SigabaNeo.Lattices
