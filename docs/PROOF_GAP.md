@@ -725,7 +725,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   terminal plane. Truncating at depth K leaves old kernels of rank ≤ K+2, and their number under the late-state law is
   uncontrolled even at depth 0. Diagnosis of Parts 105–122: every route needs short-sublattice statistics of the old retained
   lattice, which is the law being sought.
-* **Frontier after Parts 1–122 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 123 (audited, minor caveats; empirical).** [experiments2](research/wall1_experiments2.md): proportional-width exact
+  first passes (m = n − 1, b = n − 6, 8,816 runs, three primes). At q = 3329 the conservative ratio target 0.954 fails in
+  7/512 runs at n = 30 and 3/48 at n = 36. The PHYSICAL height-zero floor fails in 389/512, 187/512, 36/512 and 2/512 runs at
+  n = 10, 12, 14, 16, and in 0 runs at every n from 20 to 36 (0/48 at 36). This is empirical support for the necessary
+  condition in the proportional regime. It is not a proof, and the floor is only necessary.
+* **Frontier after Parts 1–123 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
