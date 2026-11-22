@@ -441,6 +441,18 @@ theorem fl_leavesV (K : ℕ) (one zv : List Bool) (A B : BI N (K + 1) → List B
     simp only [fl, colTerms, List.map_zipWith]
     rfl
 
+/-- The shape of the numbers: `K + 1` values of `V` bits. -/
+def NShape (V K : ℕ) (x : List (List Bool)) : Prop := x.length = K + 1 ∧ ∀ y ∈ x, y.length = V
+
+theorem termV_shape (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (K : ℕ)
+    {one zv : List Bool} (h1 : one.length = V) (hz : zv.length = V) (A B : BI N (K + 1) → List Bool)
+    (a : Fin 2) (col : Fin 2 × Fin (K + 1)) (t : Fin N) (e : (Fin 2 × Fin (K + 1)) × Fin N) :
+    NShape V K (termV one (fV V f) zv (2 ^ K) (K + 1) A B a col t (constV one zv (K + 1) 0) e) := by
+  unfold termV
+  split_ifs
+  · exact modSubV_shape hf h1 hz _ _ _ _ (constV_len _ _ _ _) (by rw [length_andLV]; simp [coefWV])
+  · exact modAddV_shape hf h1 hz _ _ _ _ (constV_len _ _ _ _) (by rw [length_andLV]; simp [coefWV])
+
 end Shadow
 
 end ValVM

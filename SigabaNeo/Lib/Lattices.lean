@@ -58,6 +58,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.ValArith
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValLeaves
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValRounds
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoef
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoefFull
 import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenTape
 
 /-!
