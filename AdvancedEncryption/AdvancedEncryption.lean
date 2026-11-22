@@ -58,6 +58,9 @@ import PE.Impl.DualUse.Prog.PsiBits
 import PE.Impl.DualUse.Algo.Gates
 import PE.Impl.DualUse.Algo.KeyWords
 import PE.Impl.DualUse.Algo.KeyTry
+import PE.Impl.DualUse.Algo.KeyTrySim
+import PE.Impl.DualUse.Prog.KeyTrySim
+import PE.Impl.DualUse.Prog.KeyTrySimLaw
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad

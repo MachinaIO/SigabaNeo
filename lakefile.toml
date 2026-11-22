@@ -36,6 +36,7 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Inline.LinCost", "SigabaNeo.Lib.Machines.Inline.ProgRoutine",
   "SigabaNeo.Lib.Machines.Prog.BoundsT", "SigabaNeo.Lib.Machines.Prog.CompileT",
   "SigabaNeo.Lib.Machines.Prog.Frame", "SigabaNeo.Lib.Machines.Prog.AbsBound",
+  "SigabaNeo.Lib.Machines.Prog.CoinLoop",
   "SigabaNeo.Lib.Machines.Inline.LinCost", "SigabaNeo.Lib.Machines.Compose.DigitPrep",
   "SigabaNeo.Lib.Machines.Compose.AndThenLin",
   "SigabaNeo.Lib.Machines.Compose.LinCost", "SigabaNeo.Lib.Machines.Compose.Shift",

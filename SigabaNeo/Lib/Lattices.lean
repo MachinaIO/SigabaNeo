@@ -46,6 +46,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.SpecT
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimSLP
 import SigabaNeo.Lib.Lattices.ProgAlgo.GateListLayout
 import SigabaNeo.Lib.Machines.Prog.Lookup
+import SigabaNeo.Lib.Lattices.ProgAlgo.BoxProgs
 
 /-!
 # Lattice library
