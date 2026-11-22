@@ -96,3 +96,5 @@ import PE.Impl.DualUse.Prog.SchemeWords
 import PE.Impl.DualUse.Prog.SchemeWords2
 import PE.Impl.DualUse.Prog.Place
 import PE.Impl.DualUse.Prog.Core
+import PE.Impl.DualUse.Prog.Fields
+import PE.Impl.DualUse.Prog.Finish
