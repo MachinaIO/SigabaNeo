@@ -22,7 +22,7 @@ a query `b` releases `q₁ * |b|` of it.
 * `Inline.lawR_embAP'`: the correctness of the simulation where each simulated step costs
   `q₀ + q₁ * ops + 2 L + 4 ops + 9` steps — the same as `Inline.lawR_embA'` with
   `Q = q₀ + q₁ * ops`, so the inlined machines with the clock for `Q = q₀ + ops * q₁` serve
-  per-query handlers (`Inline.InitPerQuery`, `Inline.OraclePerQuery`).
+  per-query handlers (`Inline.InitPerQuery`).
 -/
 
 namespace SigabaNeo
