@@ -309,4 +309,54 @@ theorem start_B (f : Config M₁.tapes Bool (Fin M₁.states) (Fin 0) x) :
 
 end AndThen
 
+theorem Compose.length_output_of_mem_law {k : ℕ} {S : Type} {x : List Bool}
+    (M : MultiTapePTM k Bool S (Fin 0)) (n : ℕ) (c r : Config k Bool S (Fin 0) x)
+    (hr : r ∈ (law M n c).support) : r.tapes.output.length ≤ c.tapes.output.length + n := by
+  have h : (r, ()) ∈ ((OracleComp.interpret uo (M.runConfigFrom coin noQ n c)).run ()).support := by
+    rw [law_eq_stateful, PMF.mem_support_map_iff]; exact ⟨r, hr, rfl⟩
+  exact MultiTapeMachine.length_output_runConfigFrom_le M (fun choices => choices <$> coin) noQ uo
+    n c r () () h
+
+/-- The last two phases, from the end of the first one. -/
+theorem AndThen.law_RB (x : List Bool) (f : Config M₁.tapes Bool (Fin M₁.states) (Fin 0) x)
+    (hf : f.tapes.output.length ≤ M₁.time) :
+    (law ((M₁.andThenR M₂).seq (M₁.andThenB M₂)) ((M₁.time + 3) + M₂.time)
+        (Sequential.start ((M₁.andThenR M₂).seq (M₁.andThenB M₂)) (aF x f))).map
+        (fun c => c.tapes.output) = M₂.run f.tapes.output := by
+  rw [start_seq, start_R, law_seq_exact _ _ _ _ _ (runs_R x f hf).1, (runs_R x f hf).2,
+    PMF.pure_bind, start_B, b0, Machine.andThenB, law_extendTapes, law_inputFromTape,
+    Machine.run_eq_law, PMF.map_comp, PMF.map_comp, PMF.map_comp]
+  rfl
+
+/-- **The output law of the composition**: `M₂` runs on the output of `M₁`, each under its own
+clock. -/
+theorem Machine.run_andThen (x : List Bool) : (M₁.andThen M₂).run x = (M₁.run x).bind M₂.run := by
+  have hinit : (M₁.andThenPTM M₂).initialConfig x =
+      Sequential.left ((M₁.andThenA M₂).seq ((M₁.andThenR M₂).seq (M₁.andThenB M₂)))
+        ((M₁.andThenP M₂).initialConfig x) :=
+    Config.ext rfl (funext fun o => o.elim0)
+  have hP : (M₁.andThenP M₂).initialConfig x =
+      (prepInit M₁.time).embed (eP M₁.tapes M₂.tapes) (fun _ _ => none) (fun _ => 0) := by
+    rw [Machine.andThenP, MultiTapeMachine.initialConfig_extendTapes, prepTM_initialConfig]
+  have hrunsP : Runs (M₁.andThenP M₂) ((M₁.andThenP M₂).initialConfig x) (M₁.time + 5) (cP x) := by
+    rw [hP]; exact runs_extendTapes _ _ _ (runs_prep _)
+  rw [Machine.andThen, Machine.run_ofPTMOps', hinit, Machine.andThenTime, Machine.andThenPTM,
+    law_seq_exact _ _ _ _ _ hrunsP.1, hrunsP.2, PMF.pure_bind, start_seq, start_A,
+    law_seq_exact _ _ _ _ _ (exact_A x), law_A, PMF.bind_map, PMF.map_comp, PMF.map_bind,
+    Machine.run_eq_law M₁, PMF.bind_map]
+  apply Probability.PMF.bind_congr_on_support
+  intro f hf
+  have hlen := Compose.length_output_of_mem_law _ _ _ _ hf
+  simp only [Function.comp_apply, PMF.map_comp]
+  rw [← AndThen.law_RB M₁ M₂ x f (by simpa [MultiTapeMachine.initialConfig] using hlen)]
+  rfl
+
+/-- **Acceptance of the composition** on an input law `μ`: that of `M₂` on the output law of
+`M₁`. -/
+theorem Machine.acceptProb_andThen (μ : PMF (List Bool)) :
+    (M₁.andThen M₂).acceptProb μ = M₂.acceptProb (μ.bind M₁.run) := by
+  unfold Machine.acceptProb
+  rw [show (M₁.andThen M₂).run = fun x => (M₁.run x).bind M₂.run from
+    funext (Machine.run_andThen M₁ M₂), PMF.bind_bind]
+
 end SigabaNeo
