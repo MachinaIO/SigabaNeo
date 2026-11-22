@@ -767,7 +767,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     membership, and Haar λ1 tails.
 
   The core probability estimate is an open problem beyond current tools.
-* **Frontier after Parts 1–128 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 129 (audited, minor caveats).** [idea_round3](research/wall1_idea_round3.md): five designs for separating
+  adaptivity from the final block's randomness: deferred columns, random deletion, split rows, dual selection, independent
+  pilot.
+  * Deferring 466–505 fresh columns provably fails height zero at 506: a subset-sum collision gives a horizontal vector of
+    length < 23.
+  * Deferring 256 columns gives an exact conditional first moment for fresh competitors (R < q). It leaves the rank-249 old
+    part's minimum and counts open.
+  * None of the five gives a 99% certificate.
+* **Frontier after Parts 1–129 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
