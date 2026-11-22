@@ -17,15 +17,23 @@ computed here by a **verified abstract interpreter** over symbolic sizes:
   store, found by iterating the body and joining (at most `fuel` times), and charged `σ i` rounds,
   the abstract bound of its counter at entry.
 
-**Soundness** (`absRun_sound`): for a program of the fragment `NoGrow` (deterministic, never
-lengthening a word) and every per-tape bound `ℓ ≤ bnd ρ σ` whose entries are all at most `M`,
+The variable `0` is the **top** size `top ρ`, a bound on every tape (`pTop` stands for it).
 
-  `lenBoundT p ℓ ≤ bnd ρ σ'`  and  `timeBoundT p ℓ ≤ (2 M + 3) · pEval ρ w`.
+**Soundness** (`absRun_sound`, `Sound`): for a program `p` and `absRun fuel p σ = some (σ', w)`,
+`p` is in the fragment `NoGrow` (deterministic, never lengthening a word), and wherever `p` is
+placed (`map u p`, `u` injective, in a store of any size) with all tapes at most `top ρ` and its
+tapes `u j` at most `bnd ρ σ j`:
 
-Here `2 M + 3` is the cost of one primitive (its column machine sweeps every tape, so it is
-charged the longest word `M`), and `w` the number of primitives executed, loops multiplied by their
-counter lengths. Checking `absRun fuel p σ = some (σ', w)` for given `σ'`, `w` is a closed
-computation (`by decide`), so the per-tape bounds of large programs are certified by evaluation.
+  `lenBoundT (map u p) ℓ (u j) ≤ bnd ρ σ' j`  and  `timeBoundT (map u p) ℓ ≤ (2·top ρ + 3) · pEval ρ w`.
+
+Here `2·top ρ + 3` is the cost of one primitive (its column machine sweeps every tape, so it is
+charged the longest word), and `w` the number of primitives executed, loops multiplied by their
+counter lengths. A certificate (`check fuel p σ claim w = true`, a closed computation checked by
+`decide +kernel`) gives the bounds on the program's own tapes (`bounds_of_check`) and framed in a
+larger store (`frame_of_check`: only the framed tapes count).
+
+Summaries compose (`Sound.seq`, `Sound.loop`, `Sound.call`, and `Ast`, programs with summarised
+subprograms), for programs too large to analyse in one piece.
 
 The interpreter is cheap: copies, clears and pops are tracked exactly per tape (strong updates),
 branches and loop rounds are joined (`pJoin`: the larger polynomial when one dominates the other
@@ -428,7 +436,7 @@ def isTop : Poly → Bool
 
 theorem pEval_of_isTop {p : Poly} (h : isTop p = true) (ρ : List ℕ) : pEval ρ p = top ρ := by
   match p, h with
-  | [([1], 1)], _ => simp [pEval, mEval, mEval_nil, top]
+  | [([1], 1)], _ => simp [pEval, mEval, top]
 
 /-- A sound summary of a program: abstract input store, abstract output store, sweeps. -/
 def Sound {n : ℕ} (p : Prog n) (σ σ' : Asg) (w : Poly) : Prop :=
@@ -802,6 +810,62 @@ theorem Sound.frame {p : Prog n} {σ σ' : Asg} {w : Poly} (h : Sound p σ σ' w
       XProg.lenBoundT (.frame e (.prog p)) ℓ ≤ embedF e ℓ (bnd ρ σ') := by
   obtain ⟨h1, h2⟩ := h.bounds ρ (ℓ := fun j => ℓ (e j)) hℓ hM
   exact ⟨h2, embedF_mono e le_rfl h1⟩
+
+/-! ### Certificates checked by evaluation -/
+
+/-- The certificate check: the abstract run succeeds, its store is below `claim` on the first
+`claim.length` tapes, and its sweeps are below `w`. -/
+def check (fuel : ℕ) (p : Prog n) (σ claim : Asg) (w : Poly) : Bool :=
+  match absRun fuel p σ with
+  | some (σ', w') => aLe (σ'.take claim.length) claim && pLe w' w
+  | none => false
+
+theorem aGet_take (σ : Asg) {L t : ℕ} (ht : t < L) : aGet (σ.take L) t = aGet σ t := by
+  simp only [aGet, List.getD_eq_getElem?_getD, List.getElem?_take, if_pos ht]
+
+theorem le_bnd_of {ρ : List ℕ} {σ : Asg} {ℓ : Fin n → ℕ}
+    (h : ∀ t : Fin n, t.val < σ.length → ℓ t ≤ pEval ρ (aGet σ t.val))
+    (hz : ∀ t : Fin n, σ.length ≤ t.val → ℓ t = 0) : ℓ ≤ bnd ρ σ := by
+  intro t
+  by_cases ht : t.val < σ.length
+  · exact h t ht
+  · rw [hz t (by omega)]; exact Nat.zero_le _
+
+/-- **The per-tape bounds from a checked certificate**: from every per-tape bound `ℓ ≤ bnd ρ σ`
+with entries at most `top ρ`, the tapes `t < claim.length` end at most `pEval ρ (aGet claim t)`,
+every tape at most `top ρ`, and the time is at most `(2 · top ρ + 3) · pEval ρ w`. -/
+theorem bounds_of_check {fuel : ℕ} {p : Prog n} {σ claim : Asg} {w : Poly}
+    (h : check fuel p σ claim w = true) (ρ : List ℕ) {ℓ : Fin n → ℕ} (hℓ : ℓ ≤ bnd ρ σ)
+    (hM : ∀ t, ℓ t ≤ top ρ) :
+    (∀ t : Fin n, t.val < claim.length → lenBoundT p ℓ t ≤ pEval ρ (aGet claim t.val)) ∧
+      (∀ t, lenBoundT p ℓ t ≤ top ρ) ∧ timeBoundT p ℓ ≤ (2 * top ρ + 3) * pEval ρ w := by
+  unfold check at h
+  rcases hr : absRun fuel p σ with _ | ⟨σ', w'⟩
+  · rw [hr] at h; simp at h
+  rw [hr] at h
+  simp only [Bool.and_eq_true] at h
+  obtain ⟨h1, h2⟩ := (absRun_sound fuel p hr).bounds ρ hℓ hM
+  refine ⟨fun t ht => (h1 t).trans ?_, lenBoundT_le_const p (noGrow_of_absRun fuel p hr) hM,
+    h2.trans (Nat.mul_le_mul_left _ (pEval_le_of_pLe ρ h.2))⟩
+  have := aLe_spec ρ h.1 t.val
+  rwa [aGet_take σ' ht] at this
+
+/-- **A checked program framed inside a larger store**: only the framed tapes count. -/
+theorem frame_of_check {fuel : ℕ} {p : Prog n} {σ claim : Asg} {w : Poly}
+    (h : check fuel p σ claim w = true) (ρ : List ℕ) {k : ℕ} (e : Fin n ↪ Fin k)
+    {ℓ : Fin k → ℕ} (hℓ : (fun j => ℓ (e j)) ≤ bnd ρ σ) (hM : ∀ j, ℓ (e j) ≤ top ρ) :
+    XProg.timeBoundT (.frame e (.prog p)) ℓ ≤ (2 * top ρ + 3) * pEval ρ w ∧
+      (∀ j : Fin n, j.val < claim.length →
+        XProg.lenBoundT (.frame e (.prog p)) ℓ (e j) ≤ pEval ρ (aGet claim j.val)) ∧
+      ∀ t, (∀ j, e j ≠ t) → XProg.lenBoundT (.frame e (.prog p)) ℓ t = ℓ t := by
+  obtain ⟨h1, -, h3⟩ := bounds_of_check h ρ hℓ hM
+  refine ⟨h3, fun j hj => ?_, fun t ht => ?_⟩
+  · show embedF e ℓ _ (e j) ≤ _
+    rw [embedF_apply_self]; exact h1 j hj
+  · show embedF e ℓ _ t = ℓ t
+    rcases embedF_cases e ℓ (lenBoundT p fun j => ℓ (e j)) t with ⟨_, h⟩ | ⟨j, hj, -⟩
+    · exact h
+    · exact absurd hj (ht j)
 
 end Sym
 
