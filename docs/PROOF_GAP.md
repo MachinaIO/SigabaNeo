@@ -1404,6 +1404,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Original-coordinate ties.** An exact check over 29,478 design–order pairs shows random order raises selected hits by
     4/3 (12 → 16). So random ordering is not a universal improvement.
   * P + p_a ≤ 0.00019770868 at width 506 remains open.
+* **Part 167 (audited, SOUND).** [new_tools](research/wall1_new_tools.md): four new tools proposed and falsified.
+  * **Falsified on both toy families** (2/4913 and 4/15625 selected hits, all winning triples identified):
+    * a multiplicative mutual-information bias bound;
+    * a positive reverse-predecessor entropy bound;
+    * decay of the final martingale increment;
+    * an exact pairwise-column representation.
+  * **Surviving identity.** In both toys, half the hits win in every column order and half win in one of three orders. So
+    the least order-invariant pointwise majorant has mean exactly 2p. Mean preservation under random reordering holds in
+    general when columns are exchangeable and ties follow processing order.
+  * No bound at width 506 follows.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1413,7 +1423,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–166 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–167 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
