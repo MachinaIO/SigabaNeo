@@ -358,4 +358,196 @@ theorem lawM_erase (c N : ℕ) : ∀ n (u : List ℕ), u.length = n →
 
 end Steps
 
+/-! ### Digits -/
+
+theorem eq_replicate_of_ofDigits_eq_zero {b : ℕ} (hb : 0 < b) :
+    ∀ l : List ℕ, Nat.ofDigits b l = 0 → l = List.replicate l.length 0
+  | [], _ => rfl
+  | a :: l, h => by
+    rw [Nat.ofDigits_cons] at h
+    have ha : a = 0 := by omega
+    have hl : Nat.ofDigits b l = 0 := by
+      rcases Nat.mul_eq_zero.mp (by omega : b * Nat.ofDigits b l = 0) with h' | h'
+      · omega
+      · exact h'
+    rw [ha, eq_replicate_of_ofDigits_eq_zero hb l hl]
+    simp [List.replicate_succ]
+
+theorem exists_decomp {b : ℕ} :
+    ∀ l : List ℕ, Nat.ofDigits b l ≠ 0 → ∃ z d rest, l = List.replicate z 0 ++ (d + 1) :: rest
+  | [], h => by simp at h
+  | a :: l, h => by
+    rcases a with _ | d
+    · rw [Nat.ofDigits_cons] at h
+      obtain ⟨z, d, rest, hl⟩ := exists_decomp l (by intro h'; rw [h'] at h; simp at h)
+      exact ⟨z + 1, d, rest, by rw [hl]; simp [List.replicate_succ]⟩
+    · exact ⟨0, d, l, by simp⟩
+
+theorem ofDigits_replicate_zero_append (b z : ℕ) (r : List ℕ) :
+    Nat.ofDigits b (List.replicate z 0 ++ r) = b ^ z * Nat.ofDigits b r := by
+  induction z with
+  | zero => simp
+  | succ z ih => rw [List.replicate_succ, List.cons_append, Nat.ofDigits_cons, ih]; ring
+
+theorem ofDigits_replicate_pred (b z : ℕ) (hb : 1 ≤ b) :
+    Nat.ofDigits b (List.replicate z (b - 1)) + 1 = b ^ z := by
+  induction z with
+  | zero => simp
+  | succ z ih =>
+    rw [List.replicate_succ, Nat.ofDigits_cons, pow_succ]
+    have : b * Nat.ofDigits b (List.replicate z (b - 1)) + b = b * b ^ z := by rw [← ih]; ring
+    calc b - 1 + b * Nat.ofDigits b (List.replicate z (b - 1)) + 1
+        = b * Nat.ofDigits b (List.replicate z (b - 1)) + b := by omega
+      _ = b ^ z * b := by rw [this]; ring
+
+/-! ### The counting loop and the whole preparation -/
+
+section Loop
+
+variable {SA : Type} (H : Fin ops → Routine (m + 3)) (M : MultiTapePTM kA Bool SA (Fin ops))
+  (T : ℕ)
+
+theorem baseB_two_le : 2 ≤ baseB kA := by
+  unfold baseB
+  calc 2 = 2 ^ 1 := rfl
+    _ ≤ 2 ^ (kA + 1) := Nat.pow_le_pow_right (by norm_num) (by omega)
+
+/-- **The counting loop**: from the counter `n` (digits `l`), the clock grows by `n` cells, within
+`4 n + 2 (number of zero digits) + 2` steps, and the simulation starts. -/
+theorem lawM_loop : ∀ n (l : List ℕ) (c : ℕ), Nat.ofDigits (baseB kA) l = n →
+    (∀ d ∈ l, d < baseB kA) → ∃ t, t ≤ 4 * n + 2 * l.count 0 + 2 ∧ ∀ N,
+      lawM (machineLin H M T) (t + N) (lCfg (x := x) H T (lSt H _ .dec) l c 0) =
+        lawM (machineLin H M T) N (finCfg H M T (c + n)) := by
+  have hB := baseB_two_le (kA := kA)
+  intro n
+  induction n with
+  | zero =>
+    intro l c hl _
+    have hrep := eq_replicate_of_ofDigits_eq_zero (by omega) l hl
+    refine ⟨2 * l.length + 2, by rw [hrep]; simp, fun N => ?_⟩
+    have h1 := lawM_decScan (x := x) H M T [] c (N + l.length + 1 + 1) l.length 0
+    simp only [List.replicate_zero, List.nil_append, List.append_nil, Nat.cast_zero,
+      Nat.zero_add, zero_add] at h1
+    rw [← hrep] at h1
+    rw [show 2 * l.length + 2 + N = N + l.length + 1 + 1 + l.length by ring, h1]
+    have h2 := lawM_decEnd (x := x) H M T (List.replicate l.length (baseB kA - 1)) c
+      (N + l.length + 1)
+    simp only [List.length_replicate] at h2
+    rw [h2, Nat.add_zero]
+    exact lawM_erase (x := x) H M T c N l.length _ (by simp)
+  | succ n ih =>
+    intro l c hl hdig
+    obtain ⟨z, d, rest, rfl⟩ := exists_decomp (b := baseB kA) l (by omega)
+    have hd : d + 1 < baseB kA := hdig _ (by simp)
+    set l' := List.replicate z (baseB kA - 1) ++ d :: rest with hl'
+    have hval : Nat.ofDigits (baseB kA) l' = n := by
+      rw [ofDigits_replicate_zero_append, Nat.ofDigits_cons] at hl
+      rw [hl', Nat.ofDigits_append, Nat.ofDigits_cons, List.length_replicate]
+      have := ofDigits_replicate_pred (baseB kA) z (by omega)
+      have e : baseB kA ^ z * (d + 1 + baseB kA * Nat.ofDigits (baseB kA) rest) =
+          baseB kA ^ z * (d + baseB kA * Nat.ofDigits (baseB kA) rest) + baseB kA ^ z := by ring
+      omega
+    have hdig' : ∀ e ∈ l', e < baseB kA := by
+      intro e he
+      simp only [hl', List.mem_append, List.mem_replicate, List.mem_cons] at he
+      rcases he with ⟨_, rfl⟩ | rfl | he
+      · omega
+      · omega
+      · exact hdig e (by simp [he])
+    obtain ⟨t', ht', hlaw⟩ := ih l' (c + 1) hval hdig'
+    refine ⟨z + 1 + (z + 1) + t', ?_, fun N => ?_⟩
+    · have hc : l'.count 0 ≤ 1 + rest.count 0 := by
+        rw [hl', List.count_append, List.count_cons]
+        rw [List.count_replicate]
+        have : (baseB kA - 1 == 0) = false := by simp; omega
+        simp only [this, Bool.false_eq_true, ite_false]
+        split_ifs <;> simp
+      have hc2 : (List.replicate z 0 ++ (d + 1) :: rest).count 0 = z + rest.count 0 := by
+        rw [List.count_append, List.count_cons, List.count_replicate]
+        simp
+      rw [hc2]
+      omega
+    · have h1 := lawM_decScan (x := x) H M T ((d + 1) :: rest) c (t' + N + z + 1 + 1) z 0
+      simp only [List.replicate_zero, List.nil_append, Nat.cast_zero, Nat.zero_add, zero_add] at h1
+      rw [show z + 1 + (z + 1) + t' + N = t' + N + z + 1 + 1 + z by ring, h1,
+        lawM_decHit H M T z d rest hd c (t' + N + z + 1),
+        lawM_back H M T l' (c + 1) (t' + N) z (by simp [hl']), hlaw]
+      congr 2
+      omega
+
+theorem take_succ_eq' (w : List ℕ) (i : ℕ) (h : i < w.length) :
+    w.take (i + 1) = w.take i ++ [w[i]] := by
+  rw [List.take_add_one, List.getElem?_eq_getElem h]; rfl
+
+/-- **The writing phase**: the digits of the clock on the tracks. -/
+theorem lawM_write (N : ℕ) : ∀ k j (hj : j + k = (clockDigits kA T).length),
+    lawM (machineLin H M T) (N + k)
+      (lCfg (x := x) H T (wSt H _ ⟨j, by omega⟩) ((clockDigits kA T).take j) 0 j) =
+      lawM (machineLin H M T) N (lCfg H T (wSt H _ ⟨(clockDigits kA T).length, by omega⟩)
+        (clockDigits kA T) 0 (clockDigits kA T).length) := by
+  intro k
+  induction k with
+  | zero =>
+    intro j hj
+    obtain rfl : j = (clockDigits kA T).length := by omega
+    simp
+  | succ k ih =>
+    intro j hj
+    have hjl : j < (clockDigits kA T).length := by omega
+    rw [show N + (k + 1) = (N + k) + 1 by omega,
+      lawM_tW H M T _ _ _ 0 _ (some (some (clockDigits kA T)[j])) 1 (none, 0)
+        (some (wSt H _ ⟨j + 1, by omega⟩)) (by
+          intro inp ans bit
+          rw [tr_wSt]
+          simp only [wAct]
+          rw [dite_eq_left hjl])]
+    have hlen : ((clockDigits kA T).take j).length = j := by simp; omega
+    have := tW_append (kA := kA) (ops := ops) (m := m) ((clockDigits kA T).take j) 0 (0 : ℤ)
+      (clockDigits kA T)[j] 1 0
+    rw [hlen] at this
+    rw [Nat.cast_zero, this, ← take_succ_eq' _ _ hjl, ← ih (j + 1) (by omega)]
+    congr 3 <;> simp
+
+theorem initialConfig_lin :
+    (machineLin H M T).initialConfig x =
+      lCfg H T (wSt H _ ⟨0, by omega⟩) ((clockDigits kA T).take 0) 0 0 := by
+  refine Config.ext ?_ rfl
+  refine Cfg.ext rfl rfl ?_ ?_ rfl
+  · funext i z
+    simp only [MultiTapeMachine.initialConfig, Cfg.init, mkR]
+    cases kind i <;> simp [lF]
+  · funext i
+    simp only [MultiTapeMachine.initialConfig, Cfg.init, mkR]
+    cases kind i <;> simp [lP]
+
+/-- **The preparation** reaches the start of the simulation, the clock holding `T` cells, within
+`4 T + 4 h + 4` steps (`h` the number of digits of `T`). -/
+theorem lawLin_prep : ∃ t, t ≤ 4 * T + 4 * (clockDigits kA T).length + 4 ∧ ∀ N,
+    lawM (machineLin H M T) (t + N) ((machineLin H M T).initialConfig x) =
+      lawM (machineLin H M T) N (finCfg H M T T) := by
+  have hB := baseB_two_le (kA := kA)
+  obtain ⟨t, ht, hlaw⟩ := lawM_loop (x := x) H M T T (clockDigits kA T) 0
+    (Nat.ofDigits_digits _ _) (fun d hd => Nat.digits_lt_base (by omega) hd)
+  have hcount := List.count_le_length (a := 0) (l := clockDigits kA T)
+  refine ⟨(clockDigits kA T).length + 1 + ((clockDigits kA T).length + 1) + t, by omega,
+    fun N => ?_⟩
+  have hw := lawM_write (x := x) H M T (t + N + (clockDigits kA T).length + 1 + 1)
+    (clockDigits kA T).length 0 (by omega)
+  rw [Nat.cast_zero] at hw
+  rw [initialConfig_lin,
+    show (clockDigits kA T).length + 1 + ((clockDigits kA T).length + 1) + t + N =
+      (t + N + (clockDigits kA T).length + 1 + 1) + (clockDigits kA T).length by ring,
+    hw,
+    lawM_tW H M T _ _ _ 0 _ none (-1) (none, 0) (some (lSt H _ .back)) (by
+      intro inp ans bit
+      rw [tr_wSt]
+      simp only [wAct]
+      rw [dite_eq_right (by simp)]), tW_none]
+  have := lawM_back (x := x) H M T (clockDigits kA T) 0 (t + N) _ le_rfl
+  rw [Nat.zero_add] at hlaw
+  rw [← hlaw, ← this]
+  congr 3 <;> simp
+
+end Loop
+
 end SigabaNeo.Inline
