@@ -660,6 +660,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   accepted on Prove2Me. The void-probability inequality and the selected-quotient law remain open in Lean.
   GramFactor.lean (`det_gram_project_tail`) proves det G(b_0,…,b_n) = ‖b_0‖²·det G(πb_1,…,πb_n), with π the projection onto
   b_0^⊥. This is the covolume factorization behind Parts 108/114. It is accepted on Prove2Me.
+  GramProduct.lean contains two theorems. `det_gram_eq_prod_norm_sq` proves det G = ∏‖b_i^*‖². `log_volume_lower_bound` is
+  Part 114's deterministic recurrence: if D_t = D_{t−1}/s_t with s_t ≤ C·D_{t−1}^{1/b}, then
+  log D_T ≥ r^T·log D_0 − log C·Σ_{i<T} r^i, where r = (b−1)/b. Both are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
