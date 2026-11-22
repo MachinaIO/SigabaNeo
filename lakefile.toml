@@ -40,4 +40,5 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Compose.AndThenLin",
   "SigabaNeo.Lib.Machines.Compose.LinCost",
   "SigabaNeo.Lib.Machines.Prog.Det", "SigabaNeo.Lib.Machines.Prog.Serial", "SigabaNeo.Lib.Machines.Prog.Stream",
-  "SigabaNeo.Lib.Machines.Prog.Words", "SigabaNeo.Lib.Machines.Prog.WordBlocks"]
+  "SigabaNeo.Lib.Machines.Prog.Words", "SigabaNeo.Lib.Machines.Prog.WordBlocks",
+  "SigabaNeo.Lib.Machines.Prog.Sample"]
