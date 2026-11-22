@@ -746,7 +746,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * a scalar physical-floor recursion drops below 27.4538 at step 34 of 407.
 
   The exact marked recursion with history-averaged incidence remains the only open route (cf. Part 122).
-* **Frontier after Parts 1–126 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 127 (audited, minor caveats).** [adjacent_methods](research/wall1_adjacent_methods.md): a survey of rigorous
+  greedy/adaptive analyses outside lattice cryptography: Vallée–Vera Gauss dynamics, Daudé–Vallée LLL, deferred decisions
+  (Achlioptas), revealment (OSSS), Wormald, stochastic approximation, packing, Grassmann walks, Poisson limits. None supplies the
+  history-averaged bound. Exact limitation: a fixed coprime-height mark determines the fresh displacement, so any gain must come
+  from excluding witnesses or earlier histories. A two-winner rank-3 survival test is proposed and is unverified.
+* **Frontier after Parts 1–127 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
