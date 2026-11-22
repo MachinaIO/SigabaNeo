@@ -273,3 +273,47 @@ theorem lawM_initM {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF 
 end Main
 
 end SigabaNeo.Inline
+
+namespace SigabaNeo
+
+open Cslib Turing MultiTapeMachine Inline
+
+variable {ops m : ℕ}
+
+/-- **The law of the inlined machine for reductions**: when the input `x` encodes an initial
+handler state `s₀` satisfying `InvS`, the output and the `st` tape of its final configuration are
+`pairOut o (enc s)` and the tape of `enc s`, for `(o, s)` drawn from `A` on the fixed word `w₀`
+against the oracle from `s₀`. -/
+theorem Machine.law_inlineOracleInit {σ : Type} (A : Machine ops) (H : Fin ops → Routine (m + 3))
+    (w₀ : List Bool) (oracle : Fin ops × List Bool → StateT σ PMF (List Bool))
+    (enc : σ → List Bool) (InvS : σ → Prop) (E Q L : ℕ) (hH : Handles A H oracle enc InvS Q L)
+    (hE : ∀ s, InvS s → (enc s).length ≤ E) (s₀ : σ) (hs₀ : InvS s₀) (x : List Bool)
+    (henc : enc s₀ = x) :
+    (lawM (initM H (Inline.fixInput A.machine w₀) A.time)
+        (inlineTimeInit A.time (clockDigits A.tapes (A.time + 1)).length Q L ops E)
+        ((initM H (Inline.fixInput A.machine w₀) A.time).initialConfig x)).map projR =
+      (A.runWith oracle w₀ s₀).map (fun r => (pairOut r.1 (enc r.2), tapeOfList (enc r.2))) := by
+  rw [lawM_initM H (Inline.fixInput A.machine w₀) A.time oracle enc InvS L Q E hH.time_le hH.runs
+    hH.inv hE s₀ hs₀ henc, ← fixCfg_initial, lawA_fixInput, PMF.map_comp]
+  unfold Machine.runWith
+  rw [MultiTapePTM.runOracle_eq_map, ProbOracleComp.runWith_map, PMF.map_comp]
+  rfl
+
+/-- **The output law of the inlined machine for reductions**: `A`'s output on `w₀` against the
+oracle from `s₀` (with `enc s₀ = x`), paired with the encoded final state. -/
+theorem Machine.run_inlineOracleInit {σ : Type} (A : Machine ops) (H : Fin ops → Routine (m + 3))
+    (w₀ : List Bool) (oracle : Fin ops × List Bool → StateT σ PMF (List Bool))
+    (enc : σ → List Bool) (InvS : σ → Prop) (E Q L : ℕ) (hH : Handles A H oracle enc InvS Q L)
+    (hE : ∀ s, InvS s → (enc s).length ≤ E) (s₀ : σ) (hs₀ : InvS s₀) (x : List Bool)
+    (henc : enc s₀ = x) :
+    (A.inlineOracleInit H w₀ E Q L).run x =
+      (A.runWith oracle w₀ s₀).map (fun r => pairOut r.1 (enc r.2)) := by
+  have h := congrArg (PMF.map Prod.fst)
+    (A.law_inlineOracleInit H w₀ oracle enc InvS E Q L hH hE s₀ hs₀ x henc)
+  rw [PMF.map_comp, PMF.map_comp] at h
+  rw [Machine.run_eq_runWith _ (fun e : Fin 0 × List Bool => e.1.elim0) x (),
+    Machine.inlineOracleInit, Machine.runWith_ofPTMOps, MultiTapePTM.runOracle_eq_map,
+    ProbOracleComp.runWith_map, PMF.map_comp]
+  exact h
+
+end SigabaNeo
