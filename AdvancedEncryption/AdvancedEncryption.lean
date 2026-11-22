@@ -4,6 +4,7 @@ import PE.DateWindow
 import PE.Impl.RingBTVW
 import PE.Impl.Gates.Eval
 import PE.Impl.Gates.DateWindow
+import PE.Impl.Gates.WindowTest
 import PE.Impl.DualUse.Scheme
 import PE.Impl.DualUse.KeyGen
 import PE.Impl.DualUse.Noise
