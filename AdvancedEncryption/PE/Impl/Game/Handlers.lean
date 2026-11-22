@@ -141,6 +141,10 @@ def testLen (n : ℕ) (succ fail : XProg (R + 8)) : XProg (R + 8) :=
   .seq (glue (lenPrep n)) (.ifBlank (gt 3) fail
     (.seq (glue (.prim (.tail 3))) (.ifBlank (gt 3) succ (.seq (glue (.prim (.clear 3))) fail))))
 
+/-- `d := b` for a query `b` of `n` bits, through `X` (the syntactic bound of `d` is `n`). -/
+def takeQ (n : ℕ) (d : Fin 8) : Prog 8 :=
+  .seq (.prim (.copy 3 0)) (.seq (Prog.moveFront n 3 d 7) (.prim (.clear 3)))
+
 variable (cd : Codes U Sig)
 
 /-- The new selected state: `S := false^(nM+3) ++ b ++ S`. -/
@@ -149,7 +153,7 @@ def buildSel : Prog 8 :=
 
 /-- The selection, for a query `b = encAttr x` and the instance word `w` on the state tape. -/
 def selCore (setupP pubP : XProg (R + 2)) : XProg (R + 8) :=
-  .seq (glue (.prim (.copy 4 0)))
+  .seq (glue (takeQ cd.nA 4))
     (.seq (comp 2 4 (by decide) setupP)
       (.seq (glue (.prim (.copy 1 2)))
         (.seq (comp 1 4 (by decide) pubP) (glue (buildSel cd)))))
@@ -201,7 +205,7 @@ def rebuildC : Prog 8 :=
 /-- The challenge on a selected state with no message, for a query `b = encMsg μ`. -/
 def chalFresh (chalP : XProg (R + 2)) : XProg (R + 8) :=
   .seq (glue (parseC cd))
-    (.seq (glue (.seq (.prim (.copy 1 2)) (.prim (.copy 6 0))))
+    (.seq (glue (.seq (.prim (.copy 1 2)) (takeQ cd.nM 6)))
       (.seq (comp 1 6 (by decide) chalP) (glue (rebuildC cd))))
 
 /-- The challenge on a selected state. -/

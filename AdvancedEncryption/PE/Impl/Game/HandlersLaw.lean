@@ -64,6 +64,17 @@ theorem law_seq_comp_pure (p q : Fin 8) (hpq : p ≠ q) (c : XProg (R + 2)) (res
   rw [law_seq_comp p q hpq c rest v (PMF.pure ()) (fun _ => o) (by rw [hc, PMF.pure_map]),
     PMF.pure_bind]
 
+theorem law_takeQ (n : ℕ) (d : Fin 8) (h3 : d ≠ 3) (h7 : d ≠ 7) (v : Store 8)
+    (hn : (v 0).length = n) (hd : v d = []) (hv7 : v 7 = []) :
+    (takeQ n d).law v = PMF.pure (Function.update (Function.update v 3 []) d (v 0)) := by
+  rw [takeQ, Prog.law_seq_pure (Prog.law_prim _ _), Prog.law_seq_pure (Prog.law_moveFront n
+    (Ne.symm h3) (by decide) h7 _ (by simp [Prim.apply, hv7])), Prog.law_prim]
+  congr 1
+  funext j
+  subst hn
+  simp only [Prim.apply, Function.update_apply]
+  by_cases hj : j = 3 <;> by_cases hjd : j = d <;> simp_all
+
 /-- **The length test.** -/
 theorem law_testLen (n : ℕ) (succ fail : XProg (R + 8)) (v : Store 8) (h3 : v 3 = []) :
     XProg.law (testLen n succ fail) (ext8 v []) =
@@ -186,9 +197,10 @@ theorem law_selCore (w : List Bool) (x : U.Attr) (hw : IW w) :
     XProg.law (selCore cd cs.setupP cs.pubP) (ext8 (vec (U.encAttr x) [] w) []) =
       (setupW w x).map fun σ =>
         ext8 (vec (U.encAttr x) (sp.pub σ) (cd.selWord false none x σ)) [] := by
-  rw [selCore, law_seq_glue (Prog.law_prim _ _)]
+  rw [selCore, law_seq_glue (law_takeQ cd.nA 4 (by decide) (by decide) _ (by simp [vec, cd.len_attr])
+    (by simp [vec]) (by simp [vec]))]
   rw [law_seq_comp 2 4 _ cs.setupP _ _ (setupW w x) (fun σ => cd.sig.enc σ) (by
-    convert cs.law_setup w x hw using 3 <;> simp [Prim.apply, vec])]
+    convert cs.law_setup w x hw using 3 <;> simp [vec])]
   rw [← PMF.bind_pure_comp]
   refine PMF.bind_congr_on_support _ _ _ fun σ hσ => ?_
   rw [law_seq_glue (Prog.law_prim _ _)]
@@ -440,7 +452,9 @@ theorem law_chalH_sel (w b : List Bool) {s : GState U Sig} {x : U.Attr} {σ : Si
       rw [chalFresh, law_seq_glue (law_parseC _ (U.encAttr x) (cd.sig.enc σ) (cd.len_attr x)
           (by simp [Prim.apply, vec, Codes.selWord, Codes.msgWord]) (by simp [Prim.apply, vec])
           (by simp [Prim.apply, vec])),
-        law_seq_glue (Prog.law_seq_pure (Prog.law_prim _ _) |>.trans (Prog.law_prim _ _)),
+        law_seq_glue (Prog.law_seq_pure (Prog.law_prim _ _) |>.trans (law_takeQ cd.nM 6
+          (by decide) (by decide) _ (by simp [Prim.apply, vec, cd.len_msg])
+          (by simp [Prim.apply, vec]) (by simp [Prim.apply, vec]))),
         law_seq_comp 1 6 _ cs.chalP _ _ (sp.chal σ μ) id (by
           convert cs.law_chal σ μ hOk using 3 <;> simp [Prim.apply, vec]),
         oracleW_chal_sel_fresh _ _ _ _ hx hσ hm, PMF.map_comp, ← PMF.bind_pure_comp]

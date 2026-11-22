@@ -76,11 +76,14 @@ theorem wf_skipG : (skipG (R := R)).WF := trivial
 theorem wf_testLen (n : ℕ) {s f : XProg (R + 8)} (hs : s.WF) (hf : f.WF) : (testLen n s f).WF :=
   ⟨⟨trivial, trivial, Prog.wf_dropN _ _⟩, hf, trivial, hs, trivial, hf⟩
 
+theorem wf_takeQ (n : ℕ) (d : Fin 8) : (takeQ n d).WF :=
+  ⟨trivial, Prog.wf_moveFront _ _ _ _, trivial⟩
+
 theorem wf_handlerProg (o : Fin 3) : (handlerProg cd cs o).WF := by
   rcases fin3_cases o with rfl | rfl | rfl
   · rw [handlerProg_sel]
     have h : (testLen cd.nA (selCore cd cs.setupP cs.pubP) skipG).WF :=
-      wf_testLen _ ⟨trivial, cs.wf_setup, trivial, cs.wf_pub, trivial,
+      wf_testLen _ ⟨wf_takeQ _ _, cs.wf_setup, trivial, cs.wf_pub, trivial,
         Prog.wf_prependN _ _ _ _ _, Prog.wf_consN _ _ _⟩ trivial
     exact ⟨h, h, trivial⟩
   · rw [handlerProg_key]
@@ -89,7 +92,7 @@ theorem wf_handlerProg (o : Fin 3) : (handlerProg cd cs o).WF := by
       trivial, Prog.wf_prependN _ _ _ _ _, Prog.wf_prependN _ _ _ _ _, trivial, trivial, trivial⟩
   · rw [handlerProg_chal]
     exact ⟨trivial, trivial, ⟨trivial, trivial⟩, ⟨trivial, trivial, trivial⟩,
-      wf_testLen _ ⟨⟨trivial, Prog.wf_dropN _ _, Prog.wf_moveFront _ _ _ _⟩, ⟨trivial, trivial⟩,
+      wf_testLen _ ⟨⟨trivial, Prog.wf_dropN _ _, Prog.wf_moveFront _ _ _ _⟩, ⟨trivial, wf_takeQ _ _⟩,
         cs.wf_chal, Prog.wf_prependN _ _ _ _ _, trivial, Prog.wf_prependN _ _ _ _ _, trivial,
         trivial, trivial, trivial⟩ ⟨trivial, trivial, trivial⟩⟩
 
