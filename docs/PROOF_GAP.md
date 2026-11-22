@@ -1428,6 +1428,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     the least order-invariant pointwise majorant has mean exactly 2p. Mean preservation under random reordering holds in
     general when columns are exchangeable and ties follow processing order.
   * No bound at width 506 follows.
+* **Part 168 (audited, SOUND).** [subset_ustat](research/wall1_subset_ustat.md): the order-invariant majorant as a
+  column-subset first moment.
+  * An exact criterion decides when a column subset supports a hit in some processing order. Hall's condition handles
+    single-slot exclusions, and inclusion–exclusion handles mixed ones.
+  * At width 506, every full-history certificate has modular input rank ≥ 118 for both the upper-band and inherited
+    events, so supports of fewer than 118 columns contribute zero.
+  * Allocating 10⁻⁴ to P needs the responsibility probability of a fixed 118-subset to be ≤ 10⁻⁴/C(511,118)
+    = 2.842·10⁻¹²³, even before larger supports. That aggregate is unevaluated, and the combinatorics overwhelm this
+    first-moment route.
+  * The toys reproduce 4/4913 and 8/15625.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1437,7 +1447,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–167 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–168 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
