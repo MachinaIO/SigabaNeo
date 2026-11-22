@@ -63,6 +63,8 @@ import PE.Impl.Game.HandlersLaw
 import PE.Impl.Game.HandlersMain
 import PE.Impl.Game.HandlersCost
 import PE.Impl.Game.HandlersDate
+import PE.Impl.Game.HandlersP
+import PE.Impl.Game.HandlersPCost
 import PE.Impl.DualUse.Prog.Layout
 import PE.Impl.DualUse.Prog.SetupLaws
 import PE.Impl.DualUse.Prog.Setup5
