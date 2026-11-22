@@ -92,6 +92,47 @@ theorem t_le_iter (c : Code) : ∀ (m : ℕ) (σ : St), σ.t ≤ ((exec E c)^[m]
   | m + 1, σ => by
     rw [Function.iterate_succ_apply]; exact (t_le_exec E c σ).trans (t_le_iter c m _)
 
+/-! ### Register values stay below the template width -/
+
+/-- Every scalar register is at most `M`. -/
+def ScOK (σ : St) : Prop := ∀ r, σ.sc r ≤ E.M
+
+theorem scOK_exec (hnM : E.n ≤ E.M) (hWM : E.W ≤ E.M) :
+    ∀ (c : Code) (σ : St), Inv E σ → ScOK E σ → ScOK E (exec E c σ)
+  | .nand d _ _, σ, _, h | .one d, σ, _, h | .zero d, σ, _, h | .mov d _, σ, _, h
+  | .inc d, σ, _, h | .add d _, σ, _, h | .sub d _, σ, _, h => fun r => by
+      by_cases hr : r = d
+      · subst hr; simp [exec]; (try omega); (try exact h _); (try (have := h r; omega))
+      · simp [exec, Function.update_of_ne hr]; exact h r
+  | .lnil _, σ, _, h | .lpush _ _, σ, _, h | .lmov _ _, σ, _, h | .skip, σ, _, h => h
+  | .lpop d l, σ, hI, h => fun r => by
+      by_cases hr : r = d
+      · subst hr; simp only [exec, Function.update_self]
+        rcases hl : σ.ls l with _ | ⟨x, L⟩
+        · simp
+        · simpa using (hI.1 l).2 x (by simp [hl])
+      · simp [exec, Function.update_of_ne hr]; exact h r
+  | .rdsrc d, σ, hI, h => fun r => by
+      by_cases hr : r = d
+      · subst hr; simp only [exec, Function.update_self]
+        rcases hl : σ.src with _ | ⟨x, L⟩
+        · simp
+        · simpa using (hI.2 x (by simp [hl])).trans hWM
+      · simp [exec, Function.update_of_ne hr]; exact h r
+  | .seq p q, σ, hI, h => scOK_exec hnM hWM q _ (inv_exec E p σ hI) (scOK_exec hnM hWM p σ hI h)
+  | .ifLt a b p q, σ, hI, h => by
+      simp only [exec]; split_ifs
+      · exact scOK_exec hnM hWM p σ hI h
+      · exact scOK_exec hnM hWM q σ hI h
+  | .rep a body, σ, hI, h => by
+      simp only [exec]
+      generalize σ.sc a = m
+      induction m generalizing σ with
+      | zero => exact h
+      | succ m ih =>
+        rw [Function.iterate_succ_apply]
+        exact ih _ (inv_exec E body σ hI) (scOK_exec hnM hWM body σ hI h)
+
 /-! ### Logic gadgets -/
 
 /-- The register of `1`. -/
