@@ -40,6 +40,9 @@ theorem law_prog (p : Prog k) (s : Store k) : (prog p).law s = p.law s := rfl
 theorem law_prog_run (p : Prog k) (hp : p.NoGrow) (s : Store k) :
     (prog p).law s = PMF.pure (p.run s) := Prog.law_eq_run p hp s
 
+theorem law_prim (p : Prim k) (s : Store k) : (prog (.prim p)).law s = PMF.pure (p.apply s) := by
+  simp [law, denote, Prog.denote]
+
 theorem law_coin (i : Fin k) (s : Store k) :
     (prog (.coin i)).law s = (PMF.uniformOfFintype Bool).map fun b => Function.update s i [b] := by
   simp [law, denote, Prog.denote]
@@ -223,6 +226,189 @@ theorem shiftLaw_coinsP {r b c t : Fin k} (hrb : r ≠ b) (hcr : c ≠ r) (hcb :
     (fun s w hs => by rwa [Function.update_of_ne hcb.symm]) lenSupp_one hcr
   rw [catPow_uniformList, Nat.mul_one] at h
   exact h
+
+
+/-! ### Append laws -/
+
+/-- The values `a`, `b` on the tapes `0`, `1`, `d` on the others (the components' layout). -/
+def ioS {R : ℕ} {α : Type} (a b d : α) : Fin (R + 2) → α :=
+  fun j => if j.val = 0 then a else if j.val = 1 then b else d
+
+/-- **`p` appends a random word from `μ` to the tape `r`** on the stores satisfying `P`, and
+changes nothing else. -/
+def AppendLaw (p : XProg k) (r : Fin k) (P : Store k → Prop) (μ : PMF (List Bool)) : Prop :=
+  ∀ s, P s → p.law s = μ.map fun u => Function.update s r (s r ++ u)
+
+/-- **Two appends in a row** append the concatenation of independent words. -/
+theorem AppendLaw.seq {p q : XProg k} {r : Fin k} {P : Store k → Prop} {μ ν : PMF (List Bool)}
+    (hp : AppendLaw p r P μ) (hq : AppendLaw q r P ν)
+    (hP : ∀ s w, P s → P (Function.update s r w)) :
+    AppendLaw (XProg.seq p q) r P (cat μ ν) := by
+  intro s hs
+  rw [law_seq, hp s hs, PMF.bind_map, cat, PMF.map_bind]
+  congr 1
+  funext u
+  simp only [Function.comp_apply]
+  rw [hq _ (hP s _ hs), PMF.map_comp]
+  congr 1
+  funext v
+  simp [List.append_assoc]
+
+/-- An append law on fewer stores, or along an equal law. -/
+theorem AppendLaw.mono {p : XProg k} {r : Fin k} {P Q : Store k → Prop} {μ ν : PMF (List Bool)}
+    (h : AppendLaw p r P μ) (hQ : ∀ s, Q s → P s) (hμ : μ = ν) : AppendLaw p r Q ν :=
+  fun s hs => hμ ▸ h s (hQ s hs)
+
+theorem kIter_append (μ : PMF (List Bool)) : ∀ (n : ℕ) (a : List Bool),
+    kIter (fun a => μ.map fun u => a ++ u) n a = (catPow μ n).map fun u => a ++ u
+  | 0, a => by simp [kIter]
+  | n + 1, a => by
+    rw [kIter, kIter_append μ n a, catPow_succ, PMF.bind_map, PMF.map_bind]
+    congr 1
+    funext u
+    simp only [Function.comp_apply, PMF.map_comp]
+    congr 1
+    funext v
+    simp [List.append_assoc]
+
+/-- **`n` rounds of an append** append `n` independent words. -/
+theorem AppendLaw.forN {body : XProg k} {r c t : Fin k} {P : Store k → Prop}
+    {μ : PMF (List Bool)} {n : ℕ} (hb : AppendLaw body r P μ)
+    (hPr : ∀ s w, P s → P (Function.update s r w)) (hPc : ∀ s w, P s → P (Function.update s c w))
+    (hcr : c ≠ r) :
+    AppendLaw (forN c t body) r (fun s => P s ∧ s c = [] ∧ (s t).length = n) (catPow μ n) := by
+  rintro s ⟨hs, hc, hn⟩
+  rw [XProg.forN, law_seq, law_prog_run (.prim (.copy c t)) rfl, PMF.pure_bind]
+  simp only [Prog.run_copy]
+  let G : List Bool → Store k := fun a => Function.update s r a
+  have hstart : Function.update s c (s t) = Function.update (G (s r)) c (s t) := by
+    simp [G]
+  rw [hstart, law_loop_iter c body G (fun a => μ.map fun u => a ++ u)]
+  · rw [kIter_append, hn, PMF.map_comp]
+    congr 1
+    funext u
+    simp only [Function.comp_apply, G]
+    rw [Function.update_eq_self_iff.mpr (by rw [Function.update_of_ne hcr]; exact hc.symm)]
+  · intro a w
+    rw [hb _ (hPc _ w (hPr s a hs)), PMF.map_comp]
+    congr 1
+    funext u
+    simp only [Function.comp_apply, G, Function.update_of_ne hcr.symm, Function.update_self]
+    rw [Function.update_comm hcr.symm, Function.update_idem]
+    exact Function.update_comm hcr _ _ _
+
+/-- A deterministic program appending a fixed word. -/
+theorem AppendLaw.pure {p : XProg k} {r : Fin k} {P : Store k → Prop} (u : List Bool)
+    (h : ∀ s, P s → p.law s = PMF.pure (Function.update s r (s r ++ u))) :
+    AppendLaw p r P (PMF.pure u) := fun s hs => by rw [h s hs, PMF.pure_map]
+
+/-! ### Appending fair bits and constant bits -/
+
+/-- Flip a coin onto tape `b` and append it to `r`. -/
+def coinAp (r b : Fin k) : XProg k :=
+  seq (prog (.coin b)) (prog (.seq (.prim (.snocHead r b)) (.prim (.clear b))))
+
+/-- **One fair bit.** -/
+theorem appendLaw_coinAp {r b : Fin k} (hrb : r ≠ b) :
+    AppendLaw (coinAp r b) r (fun s => s b = []) (BitString.uniformList 1) := by
+  intro s hs
+  rw [coinAp, law_seq, law_coin, PMF.bind_map, uniformList_one, PMF.map_comp]
+  simp only [Function.comp_def, law_prog, Prog.law, Prog.denote, ProbComp.eval_bind,
+    ProbComp.eval_pure, PMF.pure_bind]
+  rw [show ∀ f : Bool → Store k, (PMF.uniformOfFintype Bool).bind (fun x => PMF.pure (f x)) =
+    (PMF.uniformOfFintype Bool).map f from fun f => PMF.bind_pure_comp f _]
+  congr 1
+  funext x
+  simp only [Prim.apply, Function.update_self, Function.update_of_ne hrb, List.take_one,
+    List.head?_cons, Option.toList_some]
+  rw [Function.update_comm hrb, Function.update_idem,
+    (Function.update_eq_self_iff (f := s) (a := b)).mpr hs.symm]
+
+/-- Append the bit `b`. -/
+def bitAp (r : Fin k) (b : Bool) : XProg k := prog (.prim (.snoc r b))
+
+theorem appendLaw_bitAp (r : Fin k) (b : Bool) (P : Store k → Prop) :
+    AppendLaw (bitAp r b) r P (PMF.pure [b]) :=
+  AppendLaw.pure [b] fun s _ => law_prim _ s
+
+/-- **`n` fair bits** appended to `r` (`|s t| = n`). -/
+theorem appendLaw_coins {r b c t : Fin k} (hrb : r ≠ b) (hcr : c ≠ r) (hcb : c ≠ b) (n : ℕ) :
+    AppendLaw (forN c t (coinAp r b)) r (fun s => s b = [] ∧ s c = [] ∧ (s t).length = n)
+      (BitString.uniformList n) := by
+  have h := AppendLaw.forN (t := t) (n := n) (appendLaw_coinAp hrb)
+    (fun s w hs => by rwa [Function.update_of_ne hrb.symm])
+    (fun s w hs => by rwa [Function.update_of_ne hcb.symm]) hcr
+  rw [catPow_uniformList, Nat.mul_one] at h
+  exact h
+
+/-- **`n` copies of the bit `v`** appended to `r` (`|s t| = n`). -/
+theorem appendLaw_bits {r c t : Fin k} (hcr : c ≠ r) (v : Bool) (n : ℕ) (P : Store k → Prop)
+    (hPr : ∀ s w, P s → P (Function.update s r w)) (hPc : ∀ s w, P s → P (Function.update s c w)) :
+    AppendLaw (forN c t (bitAp r v)) r (fun s => P s ∧ s c = [] ∧ (s t).length = n)
+      (PMF.pure (List.replicate n v)) := by
+  have h := AppendLaw.forN (t := t) (n := n) (appendLaw_bitAp r v P) hPr hPc hcr
+  have e : ∀ m, catPow (PMF.pure [v]) m = PMF.pure (List.replicate m v) := by
+    intro m; induction m with
+    | zero => rfl
+    | succ m ih => rw [catPow_succ, ih, PMF.pure_bind, PMF.pure_map, List.replicate_succ']
+  rwa [e] at h
+
+/-! ### Counters from nothing -/
+
+/-- Double the all-`false` word on tape `t` (counter `c`). -/
+def dblP (t c : Fin k) : XProg k := forN c t (bitAp t false)
+
+/-- `t := replicate n false` (from a blank `t`), by doubling along the bits of `n`. -/
+def natP (t c : Fin k) : ℕ → XProg k
+  | 0 => prog (.prim (.clear t))
+  | n + 1 =>
+    if h : (n + 1) % 2 = 0 then seq (natP t c ((n + 1) / 2)) (dblP t c)
+    else seq (seq (natP t c ((n + 1) / 2)) (dblP t c)) (bitAp t false)
+  decreasing_by all_goals omega
+
+theorem law_dblP {t c : Fin k} (hct : c ≠ t) (s : Store k) (hc : s c = []) (m : ℕ)
+    (ht : s t = List.replicate m false) :
+    (dblP t c).law s = PMF.pure (Function.update s t (List.replicate (m + m) false)) := by
+  -- the loop body appends `false` to `t`, so tape `t` is the counter's template and register
+  rw [dblP, XProg.forN, law_seq, law_prog_run (.prim (.copy c t)) rfl, PMF.pure_bind]
+  simp only [Prog.run_copy]
+  let G : List Bool → Store k := fun a => Function.update s t a
+  have hstart : Function.update s c (s t) = Function.update (G (s t)) c (s t) := by simp [G]
+  rw [hstart, law_loop_iter c (bitAp t false) G (fun a => PMF.pure (a ++ [false]))]
+  · have hk : ∀ j a, kIter (fun a => PMF.pure (a ++ [false])) j a =
+        PMF.pure (a ++ List.replicate j false) := by
+      intro j; induction j with
+      | zero => intro a; simp [kIter]
+      | succ j ih => intro a; rw [kIter, ih, PMF.pure_bind, List.replicate_succ', List.append_assoc]
+    rw [hk, PMF.pure_map, ht, List.length_replicate, List.replicate_add]
+    simp only [G]
+    congr 1
+    exact (Function.update_eq_self_iff).mpr (by rw [Function.update_of_ne hct]; exact hc.symm)
+  · intro a w
+    rw [bitAp, law_prim, PMF.pure_map]
+    congr 1
+    simp only [G, Prim.apply, Function.update_of_ne hct.symm, Function.update_self]
+    rw [Function.update_comm hct.symm, Function.update_idem]
+    exact Function.update_comm hct _ _ _
+
+/-- **The counter `replicate n false`.** -/
+theorem law_natP {t c : Fin k} (hct : c ≠ t) : ∀ (n : ℕ) (s : Store k), s c = [] →
+    (natP t c n).law s = PMF.pure (Function.update s t (List.replicate n false))
+  | 0, s, _ => by rw [natP, law_prim]; rfl
+  | n + 1, s, hc => by
+    have ih := law_natP hct ((n + 1) / 2) s hc
+    have hc' : Function.update s t (List.replicate ((n + 1) / 2) false) c = [] := by
+      rw [Function.update_of_ne hct]; exact hc
+    rw [natP]
+    split_ifs with h
+    · rw [law_seq, ih, PMF.pure_bind, law_dblP hct _ hc' ((n + 1) / 2) (by simp), Function.update_idem]
+      congr 3; omega
+    · rw [law_seq, law_seq, ih, PMF.pure_bind, law_dblP hct _ hc' ((n + 1) / 2) (by simp),
+        Function.update_idem, PMF.pure_bind, bitAp, law_prim]
+      congr 1
+      simp only [Prim.apply, Function.update_self, Function.update_idem,
+        ← List.replicate_succ']
+      congr 2; omega
 
 end XProg
 
