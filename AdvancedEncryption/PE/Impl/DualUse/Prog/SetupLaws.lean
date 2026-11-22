@@ -124,4 +124,60 @@ theorem coefF_eq (K w : ℕ) : (PMF.uniformOfFintype (Fin (2 ^ w))).map (gF K w)
       List.drop_length, Tape.takeD_nil, hl]
     congr 2; omega
 
+/-! ### Field laws -/
+
+variable (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+
+theorem unif_bits : (PMF.uniformOfFintype Bool).map bitEnc.enc = BitString.uniformList 1 :=
+  SigabaNeo.Tape.XProg.uniformList_one.symm
+
+/-- **The binary columns `w`** are uniform words. -/
+theorem wLaw_eq :
+    (Cslib.Probability.PMF.pi fun _ : JC (Sdw (N := N) hk) =>
+      PMF.uniformOfFintype (Fin c.d → Bool)).map (wEnc hk c).enc =
+      BitString.uniformList ((Enum.list (α := JC (Sdw (N := N) hk))).length *
+        ((Enum.list (α := Fin c.d)).length * 1)) := by
+  rw [wEnc, fun_enc_pi, unif_fun bitEnc unif_bits, catPow_uniformList]
+
+theorem fun_enc_eq {α β : Type} [Enum α] {n : ℕ} (e : FixedEnc β n) (f : α → β) :
+    (FixedEnc.fun e).enc f = ((Enum.list (α := α)).map f).flatMap e.enc := rfl
+
+theorem matTEnc_enc {r s : Type} [Enum r] [Enum s] (M : Matrix r s (Rg N K)) :
+    (matTEnc (N := N) (K := K) r s).enc M = ((Enum.list (α := s)).map (fun col a => M a col)).flatMap
+      (fun row => ((Enum.list (α := r)).map row).flatMap (ringEnc N K).enc) := rfl
+
+theorem flatMap_map_product {α β γ : Type} (l₁ : List α) (l₂ : List β) (r : α × β → γ)
+    (G : γ → List Bool) :
+    ((l₁.product l₂).map r).flatMap G = l₁.flatMap (fun i => l₂.flatMap (fun c => G (r (i, c)))) := by
+  rw [List.flatMap_map, Algo.flatMap_product]
+
+/-- The word of the `Rᵢ` of binary columns `r`. -/
+theorem rmTEnc_rMat (r : (Sdw (N := N) hk).Attr × Col k → (Fin c.d → Bool)) :
+    (rmTEnc c).enc (rMat (R := Rg N K) r) =
+      ((Enum.list (α := (Sdw (N := N) hk).Attr × Col k)).map r).flatMap
+        (fun f => ((List.finRange c.d).map f).flatMap
+          (fun b => (ringEnc N K).enc (bitVal (R := Rg N K) b))) := by
+  refine Eq.trans ?_ (flatMap_map_product (List.finRange 10) (Enum.list (α := Col k)) r _).symm
+  refine Eq.trans (List.flatMap_map (f := rMat (R := Rg N K) r)
+    (g := (matTEnc (N := N) (K := K) (Fin c.d) (Col k)).enc) (l := List.finRange 10)) ?_
+  refine List.flatMap_congr fun i _ => ?_
+  refine (matTEnc_enc _).trans ?_
+  simp only [List.flatMap_map]
+  rfl
+
+/-- **The `Rᵢ`** (column-major): independent binary ring elements. -/
+theorem rmLaw_eq (hN : 0 < N) (hK : 0 < K) :
+    (lawRmBin (S := Sdw (N := N) hk) (Wd := Fin c.d) (k := k)).map (rmTEnc c).enc =
+      catPow (μB N K) ((Enum.list (α := (Sdw (N := N) hk).Attr × Col k)).length *
+        (List.finRange c.d).length) := by
+  refine (PMF.map_comp _ _ _).trans ?_
+  refine (congrArg (fun f => PMF.map f (Cslib.Probability.PMF.pi fun _ :
+    (Sdw (N := N) hk).Attr × Col k => PMF.uniformOfFintype (Fin c.d → Bool)))
+    (funext (rmTEnc_rMat hk c))).trans ?_
+  rw [pi_map_flatMap, ← catPow_mul, ← coefB_eq hN hK]
+  congr 1
+  rw [← Cslib.Probability.PMF.pi_uniformOfFintype]
+  exact pi_map_flatMap (α := Fin c.d) (PMF.uniformOfFintype Bool)
+    (fun b => (ringEnc N K).enc (bitVal (R := Rg N K) b))
+
 end AdvancedEncryption.DualUse.Prog
