@@ -277,3 +277,21 @@ With kb ≈ 2000+, the budget `64·2^256·C ≤ 2^kb` leaves room far above the 
   bounds, in particular `keyTryT M = 23 (M+1)^2 + tbC · (2M+1)^tbD` for the key try at
   `M ≈ 2^240` (plan item 8); the per-query total `≲ 2^556` needs a per-tape bound of the key try
   in the same style (`absC`/`Ph`).
+
+### Status (2026-11-23, night): the `W_f` numerics at `N = 2^34`, `d = 2^61`
+
+* `WfB2Conf.lean` re-established at the merged `confP` (`Np = 2^34`, `dp = 2^61`, `Kp = 2^25`):
+  `Nc = 2^34`, `dc = 2^61`, **`Lb = 2^240`** (the SimData components' output bound
+  `2^180 + sizeSd3/5 ≤ 2^240`; the stream offsets and `|sdEnc|` are `≤ 2^238`, `offs_conf`),
+  `M31c = 2^160` (templates `≤ 2^146`), **`Mall = 2^250`** (tapes `≤ 2^242`), `Msk = 2^233`
+  (frame of `simKeyP` `≤ 2^232`). The certificate lists `L1c`, `L1Gc` are the values of `absC` on
+  `L0c`, `L0Gc`, obtained by kernel reduction of the same terms (`Lean.Kernel.whnf` on an
+  encoding of the result as one numeral; the interpreter's `#eval` is far slower), and checked by
+  `chk_r1`/`chk_r2` (`decide +kernel`, the module ≈ 3 min).
+* Steps: run of `f̂` `≤ 2^551` (≈ `2^550.65`), predicate's run `≤ 2^485` (≈ `2^484.2`),
+  `simKeyP` `≤ 2^555` (`(2·2^233 + 3) · 2^320.6`): **`time_wfB2_conf ≤ 2^556`**.
+  `size_wfB2_conf`: still `≤ 2^25` (templates below `2^251`).
+* **`wfB2_confP`**: `WfSpec hkp confP (wfB2 hkp confP 512) 512`, at most `2^25` states, and for
+  `Lsd ≤ 2^240`, `Lg ≤ 2^64`: at most **`2^556` steps**, every tape at most **`2^250`** bits.
+  **`time_keyP_confP`**: the key component with block time `2^556` and tape bound `2^250`, for a
+  SimData output of at most `2^240` bits.
