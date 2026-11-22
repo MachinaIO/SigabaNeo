@@ -56,6 +56,51 @@ theorem exec_shiftRep {dst src sc cl ctr : Fin 120}
     ⟨by simp, fun _ _ _ _ => rfl⟩
   exact I
 
+/-! ### The run of `f̂` -/
+
+abbrev CBW : Fin 120 := 115
+abbrev TW9 : Fin 120 := 118
+abbrev TINS : Fin 120 := 119
+
+/-- `dst := src^|tC|` (`dst` from the template `tD` of `|tC| · |cl|` bits). -/
+def fillC (dst src cl tD tC : Fin 120) : Code :=
+  ofList [.cp dst tD, .cp CQ tC, .rep CQ (shiftOne dst src rY cl)]
+
+theorem exec_fillC {dst src cl tD tC : Fin 120}
+    (hd : dst ≠ src ∧ dst ≠ rY ∧ dst ≠ cl ∧ dst ≠ CQ ∧ dst ≠ tC) (hs : src ≠ rY ∧ src ≠ CQ)
+    (hc : rY ≠ cl ∧ cl ≠ CQ) (ht : tC ≠ CQ) (w : St) (hl : (w src).length = (w cl).length)
+    (hT : (w tD).length = (w tC).length * (w cl).length) :
+    exec V f (fillC dst src cl tD tC) w dst = (List.replicate (w tC).length (w src)).flatten ∧
+      ∀ j, j ≠ dst → j ≠ rY → j ≠ CQ → exec V f (fillC dst src cl tD tC) w j = w j := by
+  simp only [fillC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  set w1 := Function.update (Function.update w dst (w tD)) CQ (Function.update w dst (w tD) tC)
+    with hw1
+  have e1 : ∀ j, j ≠ dst → j ≠ CQ → w1 j = w j := fun j a1 a2 => by
+    simp [hw1, Function.update_apply, a1, a2]
+  obtain ⟨R1, R2⟩ := exec_shiftRep (V := V) (f := f) (dst := dst) (src := src) (sc := rY) (cl := cl)
+    (ctr := CQ) ⟨hd.1, hd.2.1, hd.2.2.1, hd.2.2.2.1⟩ hs ⟨hc.1, by decide, hc.2⟩ w1
+    (by rw [e1 src (Ne.symm hd.1) hs.2, e1 cl (Ne.symm hd.2.2.1) hc.2, hl])
+  have hCQ : (w1 CQ).length = (w tC).length := by
+    rw [hw1, Function.update_self, Function.update_of_ne (Ne.symm hd.2.2.2.2)]
+  rw [hCQ, e1 src (Ne.symm hd.1) hs.2, e1 cl (Ne.symm hd.2.2.1) hc.2] at R1
+  refine ⟨?_, fun j a1 a2 a3 => ?_⟩
+  · rw [R1, show w1 dst = w tD by simp [hw1, Function.update_apply, hd.2.2.2.1]]
+    rw [List.drop_left' (by rw [hT])]
+  · rw [R2 j a1 a2 a3, e1 j a1 a3]
+
+/-- `ZKV := zv^k`. -/
+def zkvC : Code := fillC ZKV 11 10 14 12
+/-- `TTk := true^k`. -/
+def ttkC : Code := fillC TTk OB 29 12 12
+/-- `TT2 := [true, true]`. -/
+def tt2C : Code := fillC TT2 OB 29 27 27
+/-- The store `C^(W − 9) ++ ins`. -/
+def stC : Code := ofList [.cp GST TST, .cp CQ TW9, .rep CQ (shiftOne GST CBW rX TSl), .mv GST INSW TINS]
+
+/-- **The run of `f̂`.** -/
+def fhatC : Code :=
+  ofList [.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC, gloopC nandC]
+
 end ValVM
 
 end SigabaNeo.Tape
