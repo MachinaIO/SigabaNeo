@@ -10,6 +10,22 @@ has a point-mass law (`law_eq_pure_of_coinFree`), and its compiled machine ignor
 
 namespace SigabaNeo.Tape
 
+namespace Prog
+
+theorem coinFreeB_mapP {n k : ℕ} {u : Fin n → Fin k} : ∀ p : Prog n,
+    (Prog.map u p).coinFreeB = p.coinFreeB
+  | .prim _ | .coin _ => rfl
+  | .seq p q | .ifBlank _ p q | .ifBit _ p q => by
+    simp only [Prog.map, coinFreeB, coinFreeB_mapP p, coinFreeB_mapP q]
+  | .loop _ b => by simp only [Prog.map, coinFreeB, coinFreeB_mapP b]
+
+/-- A relabelled coin-free program is coin-free. -/
+theorem coinFree_mapP {n k : ℕ} (u : Fin n → Fin k) {p : Prog n} (h : p.CoinFree) :
+    (Prog.map u p).CoinFree := by
+  simp only [CoinFree] at h ⊢; rw [coinFreeB_mapP]; exact h
+
+end Prog
+
 namespace XProg
 
 /-- The syntactic test: no leaf draws a coin. -/
