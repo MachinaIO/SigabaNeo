@@ -1115,6 +1115,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     Still open: identifying K with the Klein procedure's output law, and the table-sampler lemmas (Part 141 Lemmas 3–6).
   * **Rigorous cost frontier (Nov 2026).** Recovering the secret of plain LWE (511, 512, 3329), CBD(3) with probability ≥
     99.5% costs ≤ 2^795 word operations, fully explicit. The previous explicit bound was 2^1253.
+* **Part 142 (audited, minor caveats with one substantive correction to F3/DS; see the note's Audit section).**
+  [dual_cusp](research/wall1_dual_cusp.md): an attempt on (C1) and (DS) of Part 139. Neither is proved.
+  * **Theorem A.** On every history, L_H = P_E Z^N, H^⊥ = Z^N ∩ E and Λ* = M* ∩ E, and cosets are labelled by (Z/q)^400.
+    Dual vectors receive a vertical kick ≡ −⟨z,a⟩/q at each append, and θ_{H_t^⊥} ≤ θ_Z^{505+h_t}.
+  * **Theorem B.** The one-step coset representative is uniform on Voronoi-reduced representatives. The Fourier ratio has an
+    exact primal form and a Parseval form.
+  * **Theorem C.** For any reducer that keeps orthogonal projections, λ1(Λ_t*) ≥ R0(t) for all t ≤ 407 outside probability
+    10⁻³, with R0 = 0.2018 at the end. So the literal dual cusp is empty on a good set.
+  * **Proposition D / Theorem E: (C1) is not easier than the primal problem.** At the end the dual GH is ≈ 0.88 < 1, so the
+    ratio mass sits at dual norms 1–6. The inheritance bound Λ_t* ⊆ M_t* overshoots Haar by ≥ e^1628.
+  * **(DS).** Pr[|⟨ξ,σ(U)⟩| < a] ≤ 2a + 1/o(ξ) holds. Per the audit, the "covering density ≥ 113" obstruction does NOT apply
+    to the k = 1-conditioned law: there the density is ≲ (λ1/GH)^r/p1 ≈ 2.6 on Haar-like states. So DS reduces to an upper
+    bound on λ1/GH on reachable states plus a discrete/continuous transfer.
+  * **Conditional.** C1′(a) and C1′(b), both conjectures, would give failure ≤ 1.7·10⁻³ (1.9·10⁻³ with Part 117) for the
+    34.0992 floor.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
