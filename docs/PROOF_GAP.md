@@ -947,7 +947,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
       * `liftFail_le_floor`: under the prefix floor gᵢ, ℓ = Σ 2·exp(−gᵢ²/12), the audited Part 47 constant at η = 3.
       * `restartReduction_lwe_babai`: failure ≤ ∏δᵢ + reductionError + Σ 2·exp(−gᵢ²/12), with no remaining hypothesis
         except δᵢ.
-    * Assumed from Part 47, not proved: the reducer's prefix spans W ∩ L, and success recovers the secret. CBD(3) only.
+    * DecoupledDecoder.lean (axiom-clean) closes the decoder. The main results:
+      * `fiber_eq_coset`: lifts form exactly the prefix coset when L ∩ W = K.
+      * `decoupled_primitive`: for L = L0 ⊕ Zu, the plant-free condition L0 ∩ W ⊆ K suffices.
+      * `decode_eq`: the concrete plant-blind decoder (SVP on PL, orient to height 1, lift, Babai) outputs exactly (X, 1)
+        under uniqueness and lift success.
+      * `restartDecoder_lwe_choose`: Pr[recovered secret ≠ s] ≤ ∏δᵢ + reductionError + Σ 2·exp(−g²/12), with concrete
+        choice-based SVP and lift oracles.
+    * Remaining modelling hypothesis: `Compatible` (plant-free, on accepted rows only). It requires the reducer's prefix to
+      generate L0 ∩ W, the projection to act as the final-block matrix, and PL0 ⊆ H. The construction of L from (A, b) is
+      taken literally from Part 47. CBD(3) only. **The only open mathematical quantity in the Lean chain is now δᵢ.**
 * **Part 135 (audited, minor caveats; the corrections are in the note's Audit section).**
   [plant_symmetry](research/wall1_plant_symmetry.md): what averaging over the plant can and cannot do.
   * A lattice containing the plant determines it: a second admissible solution exists with probability < 2^−3107.2. So
