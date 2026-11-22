@@ -1527,6 +1527,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * the kick law t ≡ −⟨z,a⟩/q, unique dual lineage, and inheritance of short vectors;
   * θ_{H_t^⊥}(s) ≤ θ_Z(s)^{n+h_t};
   * the uniform push-forward of uniform marks to Voronoi representatives (Part 142 Thm B).
+* **Part 174 (audited, minor caveats).** [lit_dynamical](research/wall1_lit_dynamical.md): a literature survey of rigorous
+  average-case analyses of lattice reduction (Vallée et al., Akhavi–Marckert–Rouault, Kim–Venkatesh, Nguyen–Stehlé,
+  Bai–Stehlé–Wen; per the audit, BSW's limiting law is due to Chen–Södergren).
+  * The most transferable technique is the Vallée–Vera inverse-branch calculation.
+  * A planar shortest-line example was exactly reproduced: 2/11 inputs and 2/13 eligible incidences.
+  * No checked theorem bounds Part 164's weighted mass or p_a.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1536,7 +1542,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–173 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–174 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
