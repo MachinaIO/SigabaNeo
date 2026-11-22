@@ -956,6 +956,170 @@ theorem w1_GSC (hW : 0 < W) (hb : BndG W gs) (a : List Bool) :
 
 end RunT
 
+/-! ### The preparation of the predicate's run -/
+
+section PrepG
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) (gs : GateList) (T : Store 256)
+
+def Z1 : Store 256 := run (clrsP lowW ⨾ cp (mw GS) (mw GSC)) T
+
+def Z2 : Store 256 := run (Prog.map cm13 (convP W)) (Z1 T)
+
+def Z4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (Z2 W T) (mw GS) (Z2 W T (mw GSC)))
+
+def Z5 : Store 256 := run (Prog.map tm31 simTmplP ⨾ copiesP 1) (Z4 c W T)
+
+/-- The offsets of the predicate's streams. -/
+abbrev oXG : ℕ := offPsi hk c + 10 * lenPsi N K k
+
+/-- The store after `prepG`. -/
+def S3 : Store 256 :=
+  tmplS (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) (Z5 c W T)
+
+theorem keys_G (N K k d W oP oR oX : ℕ) :
+    (stepG N K k d ++ wordsG N K k d W oP oR oX).map Prod.fst =
+      [ms 3, ms 4, ms 5, ms 6, ms 7, ms 8, ms 9, ms 10, ms 11, ms 12, ms 13, ms 14, ms 15, ms 16,
+        ms 17, ms 86, ms 87, ms 88, ms 89, ms 90, ms 91, ms 93, ms 94, ValVM.tTV, mw 10, mw TA1,
+        mw TAd, mw TK1, mw ZNK1, mw 29, mw T10, mw INSW, mw TSl, mw TST, mw TD2, mw TW, mw TPAD,
+        mw TW9, mw TINS, mw 61, mw 62, mw 63, mw 73, mw 74, mw 75] := rfl
+
+theorem nodup_G (N K k d W oP oR oX : ℕ) :
+    ((stepG N K k d ++ wordsG N K k d W oP oR oX).map Prod.fst).Nodup := by
+  rw [keys_G]; decide
+
+theorem Z1_apply (t : Fin 256) :
+    Z1 T t = if t = mw GS then T (mw GSC) else if t ∈ lowW then [] else T t := by
+  rw [Z1, run_seq, run_copy, run_clrsP]
+  by_cases h : t = mw GS
+  · subst h; simp (config := {decide := true})
+  · rw [Function.update_of_ne h, if_neg h]
+
+theorem Z2_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t : Fin 256) :
+    Z2 W T t = if t = mw GS then [] else
+      if t = mw 1 then gatesW (fun i : Fin 10 => i.val) 10 W (predOf 10 gs).1 0 else
+      if t = mw GCNT then List.replicate gs.length false else
+      if t = mw 3 then unaryW W (gs.length + 10) else Z1 T t := by
+  have hin : Z1 T ∘ cm13 = fun i => if i = 0 then gsW W gs else [] := by
+    funext i
+    fin_cases i <;> simp (config := {decide := true}) [cm13, Z1_apply, hT, lowW]
+  rw [Z2]
+  by_cases ht : ∃ j, cm13 j = t
+  · obtain ⟨j, rfl⟩ := ht
+    rw [run_map_apply cm13_inj, hin, run_convP hW gs hb _ rfl]
+    fin_cases j <;> simp (config := {decide := true}) [cm13, Z1_apply, lowW]
+  · push_neg at ht
+    rw [run_map_apply_not cm13_inj _ _ _ ht]
+    have h1 : t ≠ mw GS := fun e => ht 0 (by rw [e]; rfl)
+    have h2 : t ≠ mw 1 := fun e => ht 1 (by rw [e]; rfl)
+    have h3 : t ≠ mw GCNT := fun e => ht 2 (by rw [e]; rfl)
+    have h4 : t ≠ mw 3 := fun e => ht 3 (by rw [e]; rfl)
+    simp [h1, h2, h3, h4]
+
+theorem Z4_word (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (j : ℕ) (hj : 12 ≤ j)
+    (hj' : j < 120) (h31 : j < 31) : Z4 c W T (mw ⟨j, hj'⟩) = [] := by
+  have hv : ∀ x : Fin 120, (mw ⟨j, hj'⟩ : Fin 256) = mw x → j = x.val := fun x e => by
+    have := congrArg Fin.val e; simp [ValVM.tWd] at this; omega
+  rw [Z4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> intro e <;> have := hv _ e <;> simp at this <;>
+      omega)), Function.update_of_ne (fun e => by have := hv _ e; simp at this; omega),
+    Z2_apply W gs T hW hb hT]
+  have h1 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GS := fun e => by have := hv _ e; simp at this; omega
+  have h2 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw 1 := fun e => by have := hv _ e; simp at this; omega
+  have h3 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GCNT := fun e => by have := hv _ e; simp at this; omega
+  have h4 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw 3 := fun e => by have := hv _ e; simp at this; omega
+  have h5 : (mw ⟨j, hj'⟩ : Fin 256) ∈ lowW := by
+    simp only [lowW, List.mem_append, List.mem_map, List.mem_finRange, true_and]
+    exact Or.inl ⟨⟨j, h31⟩, rfl⟩
+  simp [h1, h2, h3, h4, h5, Z1_apply]
+
+theorem Z4_key {t : Fin 256} {n : ℕ} (h : (t, n) ∈ tmpl31 N K k c.d) :
+    Z4 c W T t = List.replicate n false := by
+  rw [Z4]; exact tmplS_mem _ (nodup_31 _ _ _ _) (t, n) h _
+
+theorem Y4G_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t : Fin 256) :
+    run (Prog.map tm31 simTmplP) (Z4 c W T) t =
+      if t = mw 0 then gadW N K k else if t = mw 1 then gswGadW N K k else
+      if t = mw 2 then zeroW (lenA N K k c.d) else if t = mw 3 then oneW N K else Z4 c W T t := by
+  have hrun := run_simTmplP (N := N) (K := K) (k := k) (Lw := lenA N K k c.d)
+    (Z4 c W T ∘ tm31) (fun t ht => by
+      have := Z4_word c W gs T hW hb hT t.val ht (by omega) t.isLt
+      simpa [tm31] using this)
+    (by simp [tm31, Z4_key c W T (t := mw 4) (n := K) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c W T (t := mw 5) (n := N) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c W T (t := mw 6) (n := N * K) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c W T (t := mw 7) (n := k) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c W T (t := mw 8) (n := 2 * k * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c W T (t := mw 9) (n := 2 * (2 * k) * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c W T (t := mw 10) (n := k * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c W T (t := mw 11) (n := lenA N K k c.d) (by simp [tmpl31])])
+  by_cases ht : ∃ j, tm31 j = t
+  · obtain ⟨j, rfl⟩ := ht
+    rw [run_map_apply tm31_inj, hrun]
+    fin_cases j <;> simp (config := {decide := true}) [tm31, Function.update_apply]
+  · push_neg at ht
+    rw [run_map_apply_not tm31_inj _ _ _ ht]
+    have h0 : t ≠ mw 0 := fun e => ht 0 (by rw [e]; rfl)
+    have h1 : t ≠ mw 1 := fun e => ht 1 (by rw [e]; rfl)
+    have h2 : t ≠ mw 2 := fun e => ht 2 (by rw [e]; rfl)
+    have h3 : t ≠ mw 3 := fun e => ht 3 (by rw [e]; rfl)
+    simp [h0, h1, h2, h3]
+
+theorem Z5_apply (t : Fin 256) : Z5 c W T t =
+    if t = mw ONEW then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 3) else
+    if t = mw ZEROW then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 2) else
+    if t = mw GADW then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 1) else
+    if t = ms 21 then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 3) else
+    if t = ms 20 then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 2) else
+    if t = ms 19 then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 1) else
+    run (Prog.map tm31 simTmplP) (Z4 c W T) t := by
+  simp only [Z5, run_seq, copiesP, run_copy]
+  simp (config := {decide := true}) only [Function.update_apply, if_false]
+
+theorem Z1_tX0 (hX : T tX0 = []) : Z1 T tX0 = [] := by
+  rw [Z1_apply]; simp (config := {decide := true}) [lowW, hX]
+
+theorem Z4_tX0 (hX : T tX0 = []) : Z4 c W T tX0 = [] := by
+  rw [Z4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
+    Function.update_of_ne (by decide), Z2, run_map_apply_not cm13_inj _ _ _ (by decide),
+    Z1_tX0 T hX]
+
+theorem Z5_tX0 (hX : T tX0 = []) : Z5 c W T tX0 = [] := by
+  rw [Z5_apply]
+  simp (config := {decide := true}) only [if_false]
+  rw [run_map_apply_not tm31_inj _ _ _ (by decide), Z4_tX0 c W T hX]
+
+/-- **The law of `prepG`.** -/
+theorem law_prepG (hX : T tX0 = []) : (prepG hk c W).law T = PMF.pure (S3 hk c W T) := by
+  have hc0 : (clrsP lowW ⨾ cp (mw GS) (mw GSC)).CoinFree := by
+    have : ∀ l : List (Fin 256), (clrsP l).CoinFree := by
+      intro l; induction l with
+      | nil => rfl
+      | cons x l ih =>
+        simp only [CoinFree, clrsP] at ih ⊢; simp [coinFreeB, ih]
+    have h := this lowW
+    simp only [CoinFree] at h ⊢
+    simp [coinFreeB, h]
+  have hc1 : (Prog.map cm13 (convP W)).CoinFree := coinFree_map _ (coinFree_convP W)
+  have hc2 : (Prog.map tm31 simTmplP ⨾ copiesP 1).CoinFree := by
+    have h1 := coinFree_map tm31 (coinFree_of_noGrow _ noGrow_simTmplP)
+    simp only [CoinFree] at h1 ⊢
+    simp [coinFreeB, h1, show (copiesP 1).coinFreeB = true from rfl]
+  rw [prepG, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc0, PMF.pure_bind,
+    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc1, PMF.pure_bind,
+    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
+  simp only [run_copy]
+  rw [XProg.law_seq, law_tmplP _ _ _ (by
+      rw [Function.update_of_ne (by decide), run_map_apply_not cm13_inj _ _ _ (by decide)]
+      exact Z1_tX0 T hX)
+      (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
+    PMF.pure_bind, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc2, PMF.pure_bind,
+    law_tmplP _ _ _ (by exact Z5_tX0 c W T hX) (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide))]
+  rfl
+
+end PrepG
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
