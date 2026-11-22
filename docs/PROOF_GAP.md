@@ -976,6 +976,26 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Remaining.**
     * Gaps A and B are lower tails of the per-design acceptance.
     * Gap R (window statistics within a constant factor of Haar, Conjecture R) closes only the necessary-side statement.
+* **Part 137 (audited, minor caveats; the corrections are in the note's Audit section).**
+  [joint_blocks](research/wall1_joint_blocks.md): joint estimates for blocks chosen independently of A, list decoding, and
+  the ceiling of these methods.
+  * **Shared rows with disjoint secret deletions.**
+    * Given the plant, the covariance of candidate counts is an exact finite-field rank identity (Thm 1).
+    * A k-block circuit bound holds with no rank condition (Thm 2).
+    * Negative dependence is false: at q = 31 the two failures are positively correlated (exact computation and Monte
+      Carlo).
+    * Shared error rows give up the averaging gain (Prop 4).
+  * **List decoding.** It needs only E[#primal ball points] plus the count at heights ±1 (Thm 6). For coordinate planes
+    this expectation has an exact closed formula, averaged over A (Thm 5). Joint failure is then a norm event plus first
+    moments (Thm 7). The enumeration cost is unproven.
+  * **Ceiling.** Blocks fixed independently of A cannot push joint failure below the norm tail of the plant coordinates
+    they share.
+    * With disjoint rows, the floor is the ‖s‖² tail (3.43·10⁻¹¹ at the 646 design).
+    * With shared rows, the floor does not vanish as k grows.
+    * Paley–Zygmund lower-bounds the true single-call failure at 646 by 1.19·10⁻³.
+    * Recorded joint bounds were reproduced: 0.014905 / 0.005908 / 0.003682 for 1/2/3 blocks. At most 3 blocks fit in
+      511 rows.
+  * Conjectures A–C are open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
