@@ -1514,6 +1514,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     unique successive shortest lines and a strict plane hit in the band. Per the audit it has transcendental covolume, so it
     is not itself a restart window; the restart mass of such configurations is open.
   * **Remaining.** The joint hit mass on draw-406 dual-good designs must be ≤ 0.000197708679995408.
+  * **Lean.** RestartGraphDual / DualMinimumExit / InwardCube / DualMinimumExit408 / DualMinimumExitNumeric /
+    DualExitCertificate (axiom-clean; 408 rational enclosures kernel-checked by decide +kernel) formalize:
+    * exact dual membership with probability q^{−n};
+    * the opposite-pair first moment and the inward-cube count;
+    * the prefix union bound and the persistence of the floor;
+    * **the numeric bounds: exit < 8.147·10⁻¹⁴ over all 408 indices and < 4.592·10⁻¹⁵ at draw 406.**
+
 * **Part 173 (audited, SOUND).** [gated_theta](research/wall1_gated_theta.md): the gated average of per-mark theta ratios.
   * The step-405 dual exit at R = 0.2018 is < 1.539·10⁻¹¹, simultaneously for every next mark.
   * **Cap saturation.** Whenever Θ_{1/(2t)}(W_u*) ≤ 2^134, every gated upper-band candidate keeps capped weight exactly 1.
@@ -1564,6 +1571,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * all nonzero exact aliases are < 2.23·10⁻¹³⁸.
   * **Remaining.** The nonintegral dual-class contribution at heights 2–30, which is checkable from finite residue data of
     the actual block. How often width-506 BKZ meets the minimum floor is a separate question (the 0.954-ratio issue).
+* **Part 178 (audited, SOUND).** [transfer_operator](research/wall1_transfer_operator.md): a transfer-operator recursion on
+  framed states.
+  * In the rank-4 toy, the least majorant determined by the parent's entire theta data (primal, dual and every labelled
+    mark-coset series) has mean exactly 4× the true gated probability (8/4913 against 2/4913). Four reflected parents share
+    all theta data, and only one wins under the signed tie rule.
+  * An exact telescoping identity shows that earlier drift slack cannot cancel a terminal majorant's overestimate.
+  * The factor 4 is a toy figure. The bound at width 506 is open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1573,7 +1587,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–177 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–178 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
