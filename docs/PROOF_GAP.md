@@ -1533,6 +1533,18 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * The most transferable technique is the Vallée–Vera inverse-branch calculation.
   * A planar shortest-line example was exactly reproduced: 2/11 inputs and 2/13 eligible incidences.
   * No checked theorem bounds Part 164's weighted mass or p_a.
+* **Part 175 (audited, minor caveats).** [smoothing_uniqueness](research/wall1_smoothing_uniqueness.md): toward a final-block
+  uniqueness bound that a certificate can use.
+  * **Width 406: 99% is ruled out for GSA profiles.** The GSA head is 24.7665 at rank 405 (24.9621 at rank 406). A physical
+    head that short forces height-zero failure with probability > 2.13735% for every projection.
+  * **Width 506: open.**
+    * The higher-height zero modes are < 4.5·10⁻¹²⁵.
+    * But the CBD characteristic function is periodic (CBD is Z-valued). Aliased dual frequencies carry ∏cos⁶ factors that
+      can equal 1, and Part 172 does not control them.
+    * The minimum floor 27.484 is conditional on the 0.954 ratio.
+  * **Fixed-block bound (1).** It covers all three Part 94 failure events, ties included. It is a valid template for a
+    repaired Lean certificate: plant-norm tail + height-one bound + per-height CBD-weighted dual sum or exact coset count.
+    On the physical zero design it is ≤ 0.217382%.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1542,7 +1554,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–174 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–175 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
