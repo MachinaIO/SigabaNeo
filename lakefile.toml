@@ -35,4 +35,5 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Inline.LinPrep", "SigabaNeo.Lib.Machines.Inline.LinMain",
   "SigabaNeo.Lib.Machines.Inline.LinCost", "SigabaNeo.Lib.Machines.Inline.ProgRoutine",
   "SigabaNeo.Lib.Machines.Prog.BoundsT", "SigabaNeo.Lib.Machines.Prog.CompileT",
-  "SigabaNeo.Lib.Machines.Prog.Frame", "SigabaNeo.Lib.Machines.Inline.InitFix"]
+  "SigabaNeo.Lib.Machines.Prog.Frame", "SigabaNeo.Lib.Machines.Inline.InitFix",
+  "SigabaNeo.Lib.Machines.Inline.InitDefs"]
