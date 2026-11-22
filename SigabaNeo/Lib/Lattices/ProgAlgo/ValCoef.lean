@@ -165,6 +165,58 @@ theorem exec_cblockC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
   · rw [J2.zv, u2_ 11 (by decide) (by decide), J1.zv, w2_ 11 (by decide) (by decide) (by decide)]
   · rw [J2.hi j hj hLB hSD hSC hCJ, u2_ j hCJ hSC, J1.hi j hj hLB hSD hSC hCJ, w2_ j hCJ hCM hSC]
 
+/-! ### The block of terms of a column as a shadow -/
+
+section Shadow
+
+variable {N : ℕ}
+
+/-- The digits of the column `c'` of the bundle `B` at the output column `col`. -/
+def digitsOf (B : BI N k' → List Bool) (col : Fin 2 × Fin k') (c' : Fin 2 × Fin k') :
+    List (List Bool) :=
+  (List.finRange N).map fun j => B (c'.1, col, c'.2, j)
+
+/-- The coefficients of the row `(a, c')` of the bundle `A`, the last first. -/
+def rowRev (A : BI N k' → List Bool) (a : Fin 2) (c' : Fin 2 × Fin k') : List (List (List Bool)) :=
+  (List.finRange N).map fun m => coefWV A a c' m.rev
+
+/-- **The terms of a column are the two zips of `cblockC`.** -/
+theorem terms_column (K : ℕ) (one zv : List Bool) (A B : BI N (K + 1) → List Bool) (a : Fin 2)
+    (col : Fin 2 × Fin (K + 1)) (t : Fin N) (c' : Fin 2 × Fin (K + 1)) :
+    ((List.finRange N).map fun j => termV one (fV V f) zv (2 ^ K) (K + 1) A B a col t
+        (constV one zv (K + 1) 0) (c', j)) =
+      List.zipWith (fun d cs => (modSubV one (fV V f) zv (2 ^ K) (K + 1)
+          (List.replicate (K + 1) zv) (andLV one (fV V f) d cs))) ((digitsOf B col c').take (t + 1))
+          ((rowRev A a c').drop (N - 1 - t)) ++
+        List.zipWith (fun d cs => (modAddV one (fV V f) zv (2 ^ K) (K + 1)
+          (List.replicate (K + 1) zv) (andLV one (fV V f) d cs))) ((digitsOf B col c').drop (t + 1))
+          ((rowRev A a c').take (N - 1 - t)) := by
+  have ht := t.isLt
+  apply List.ext_getElem
+  · simp [digitsOf, rowRev]; omega
+  · intro i h1 h2
+    simp only [List.length_map, List.length_finRange] at h1
+    simp only [List.getElem_map]
+    by_cases hi : i ≤ t.val
+    · rw [List.getElem_append_left (by simp [digitsOf, rowRev]; omega), List.getElem_zipWith]
+      simp only [termV, List.getElem_finRange, Fin.cast_mk, digitsOf, rowRev, List.getElem_take,
+        List.getElem_drop, List.getElem_map]
+      rw [dif_pos (by simpa using hi)]
+      simp only [constV_zero]
+      congr 3
+      ext <;> simp [Fin.rev] <;> omega
+    · rw [List.getElem_append_right (by simp [digitsOf, rowRev]; omega), List.getElem_zipWith]
+      simp only [termV, List.getElem_finRange, Fin.cast_mk, digitsOf, rowRev, List.getElem_take,
+        List.getElem_drop, List.getElem_map, List.length_zipWith, List.length_take,
+        List.length_drop, List.length_map, List.length_finRange]
+      rw [dif_neg (by simpa using hi)]
+      simp only [constV_zero]
+      congr 3
+      · congr 1; ext <;> simp <;> omega
+      · ext <;> simp [Fin.rev] <;> omega
+
+end Shadow
+
 end ValVM
 
 end SigabaNeo.Tape
