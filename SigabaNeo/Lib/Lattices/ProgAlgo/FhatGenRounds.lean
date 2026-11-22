@@ -48,6 +48,30 @@ theorem cstR_of {k K : ℕ} {σ τ : St} (h : CstR (E := E) k K σ)
 theorem flatPos_cons (a : List (Wire ι)) (L : List (List (Wire ι))) :
     flatPos (E := E) (ix := ix) (a :: L) = a.map (pos E ix) ++ flatPos (E := E) (ix := ix) L := rfl
 
+theorem le_length_pairRound (z : Wire ι) (q k : ℕ) : ∀ (p : SLP ι) (L : List (List (Wire ι))),
+    p.length ≤ (pairRound z q k p L).1.length
+  | p, a :: b :: rest => (le_length_modAdd z q k p a b).trans (le_length_pairRound z q k _ rest)
+  | p, [] => le_rfl
+  | p, [_] => le_rfl
+
+theorem le_length_rounds (z : Wire ι) (q k : ℕ) : ∀ (h : ℕ) (p : SLP ι) (L : List (List (Wire ι))),
+    p.length ≤ (rounds z q k h p L).1.length
+  | 0, p, L => le_rfl
+  | h + 1, p, L => (le_length_pairRound z q k p L).trans (le_length_rounds z q k h _ _)
+
+theorem le_length_foldl_modAdd (z : Wire ι) (q k : ℕ) : ∀ (L : List (List (Wire ι)))
+    (st : SLP ι × List (Wire ι)),
+    st.1.length ≤ (L.foldl (fun st b => modAdd z q k st.1 st.2 b) st).1.length
+  | [], st => le_rfl
+  | b :: rest, st => (le_length_modAdd z q k st.1 st.2 b).trans (le_length_foldl_modAdd z q k rest _)
+
+theorem le_length_foldSum (z : Wire ι) (q k : ℕ) (p : SLP ι) (L : List (List (Wire ι))) :
+    p.length ≤ (foldSum z q k p L).1.length := by
+  cases L with
+  | nil => exact le_rfl
+  | cons a rest => exact le_length_foldl_modAdd z q k rest (p, a)
+
+
 set_option maxHeartbeats 4000000 in
 theorem iter_pairBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n)
     {k K : ℕ} (hK : K ≤ k + 1) :
@@ -56,7 +80,7 @@ theorem iter_pairBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       ScOK E σ → σ.ls 12 = flatPos (E := E) (ix := ix) L → σ.ls 13 = L13 →
       σ.sc 55 = L.length → σ.sc 56 = c → L13.length + L.length * k ≤ E.C → k + 3 ≤ E.C →
       k + 2 ≤ E.M → c + L.length ≤ E.M →
-      E.n + ((exec E pairBody)^[j] (mk E ix P σ)).t ≤ E.M →
+      E.n + (pairRound (.gate 0) (2 ^ K) k P L).1.length ≤ E.M →
       ∃ sc' ls', (exec E pairBody)^[j] (mk E ix P σ) =
           mk E ix (pairRound (.gate 0) (2 ^ K) k P L).1 (setSL σ sc' ls') ∧
         ls' 13 = L13 ++ flatPos (E := E) (ix := ix) (pairRound (.gate 0) (2 ^ K) k P L).2 ∧
@@ -97,6 +121,7 @@ theorem iter_pairBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
         Function.update_of_ne (by rintro rfl; revert hl; decide)]
   | j, a :: b :: rest, P, σ, L13, c, hj, hL, hc, hI, hS, h12, h13, h55, h56, hcap, hcap', hkM,
       hcM, hM => by
+    simp only [pairRound] at hM
     obtain ⟨j, rfl⟩ : ∃ j', j = j' + 1 := ⟨j - 1, by simp at hj; omega⟩
     have hnM' : E.n ≤ E.M := by omega
     have ha := hL a (by simp)
@@ -140,18 +165,17 @@ theorem iter_pairBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       have hs := scOK_exec E hnM' hWM (.seq (.lnil 0) (.seq (takeC 2 12 0) (.seq (.lnil 1)
         (takeC 2 12 1)))) σ hI hS
       simp only [exec_seq] at hi hs; rw [h1', h2] at hi hs; exact ⟨hi, hs⟩
-    rw [Function.iterate_succ_apply, e2] at hM ⊢
+    rw [Function.iterate_succ_apply, e2]
     -- the addition
     obtain ⟨sc3, ls3', h3, d3, f3, g3⟩ := exec_modAddC hnM hWM hix hK a b P τ2
       (by have := hc.1; exact ⟨⟨by rw [hτ2s 0 (by decide), this.1.1],
         by rw [hτ2s 1 (by decide), this.1.2]⟩, by rw [hτ2s 2 (by decide), this.2.1],
         by rw [hτ2s 3 (by decide), this.2.2.1], by rw [hτ2s 4 (by decide), this.2.2.2]⟩)
       hIS2.1 hIS2.2 (by simp [τ2, exec, τ1, setSL]) (by simp [τ2]) ha hb hcap' hkM
-      (le_trans (Nat.add_le_add_left (le_trans (le_trans (t_le_exec E (takeC 2 2 13) _)
-        (t_le_exec E (.seq (.sub 55 6) (.inc 56)) _)) (t_le_iter E pairBody j _)) _) hM)
+      (le_trans (Nat.add_le_add_left (le_length_pairRound _ _ _ _ _) _) hM)
     set r := modAdd (.gate 0) (2 ^ K) k P a b
     have hrl : r.2.length = k := length_modAdd_eq _ _ _ _ _ _ ha hb
-    rw [h3] at hM ⊢
+    rw [h3]
     have hs3 : ∀ x : SR, x.val < 16 ∨ 42 < x.val → sc3 x = σ.sc x := fun x hx => by
       rw [f3 x hx, hτ2s x (by rintro rfl; revert hx; decide)]
     have hl3 : ∀ l : LR, 8 < l.val → l ≠ 12 → ls3' l = σ.ls l := fun l hl h12' => by
@@ -176,7 +200,7 @@ theorem iter_pairBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
         min_eq_left (show c + 1 ≤ E.M by omega)]
       rfl
     rw [exec_mk_noNand (takeC 2 2 13) (by simp [NoNand, takeC]),
-      exec_mk_noNand (.seq (.sub 55 6) (.inc 56)) ⟨trivial, trivial⟩, h4'] at hM ⊢
+      exec_mk_noNand (.seq (.sub 55 6) (.inc 56)) ⟨trivial, trivial⟩, h4']
     have hIS5 : Inv E σ5 ∧ ScOK E σ5 := by
       have := is_exec hnM' hWM h3 hIS2
       have h := is_exec hnM' hWM (c := .seq (takeC 2 2 13) (.seq (.sub 55 6) (.inc 56)))
@@ -235,7 +259,7 @@ theorem exec_pairRoundC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i
     (hL : ∀ a ∈ L, a.length = k) (hc : CstR (E := E) k K σ) (hI : Inv E σ) (hS : ScOK E σ)
     (h12 : σ.ls 12 = flatPos (E := E) (ix := ix) L) (h54 : σ.sc 54 = L.length)
     (hcap : L.length * k ≤ E.C) (hcap' : k + 3 ≤ E.C) (hkM : k + 2 ≤ E.M) (hLM : L.length ≤ E.M)
-    (hM : E.n + (exec E pairRoundC (mk E ix P σ)).t ≤ E.M) :
+    (hM : E.n + (pairRound (.gate 0) (2 ^ K) k P L).1.length ≤ E.M) :
     ∃ sc' ls', exec E pairRoundC (mk E ix P σ) =
         mk E ix (pairRound (.gate 0) (2 ^ K) k P L).1 (setSL σ sc' ls') ∧
       ls' 12 = flatPos (E := E) (ix := ix) (pairRound (.gate 0) (2 ^ K) k P L).2 ∧
@@ -251,17 +275,16 @@ theorem exec_pairRoundC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i
   have hIS0 := is_exec hnM' hWM (c := .seq (.lnil 13) (.seq (.mov 55 54) (.zero 56))) e0 ⟨hI, hS⟩
   have hs0 : ∀ x : SR, x ≠ 55 → x ≠ 56 → σ0.sc x = σ.sc x := fun x h1 h2 => by
     simp [σ0, setSL, Function.update_of_ne h1, Function.update_of_ne h2]
-  unfold pairRoundC at hM ⊢
-  simp only [exec_seq] at hM ⊢
+  unfold pairRoundC
+  simp only [exec_seq]
   rw [e0, exec_rep, show (mk E ix P σ0).sc 54 = L.length by
-    rw [mk_sc, hs0 54 (by decide) (by decide), h54]] at hM ⊢
+    rw [mk_sc, hs0 54 (by decide) (by decide), h54]]
   obtain ⟨sc1, ls1, h1, d1, c1, f1, g1⟩ := iter_pairBody hnM hWM hix hK L.length L P σ0 [] 0
     (by omega) hL (cstR_of hc (fun x hx => hs0 x (by rintro rfl; revert hx; decide)
       (by rintro rfl; revert hx; decide))) hIS0.1 hIS0.2
     (by simp [σ0, setSL, h12]) (by simp [σ0, setSL]) (by simp [σ0, setSL])
     (by simp [σ0, setSL]) (by simpa using hcap) hcap' hkM (by omega)
-    (le_trans (Nat.add_le_add_left (by
-      exact le_trans (t_le_exec E (.lmov 12 13) _) (t_le_exec E (.mov 54 56) _)) _) hM)
+    hM
   rw [h1]
   refine ⟨Function.update sc1 54 (sc1 56), Function.update ls1 12 (ls1 13), ?_, ?_, ?_,
     fun x hx => ?_, fun l hl => ?_⟩
@@ -279,7 +302,7 @@ theorem iter_rounds (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix
       (∀ a ∈ L, a.length = k) → CstR (E := E) k K σ → Inv E σ → ScOK E σ →
       σ.ls 12 = flatPos (E := E) (ix := ix) L → σ.sc 54 = L.length →
       L.length * k ≤ E.C → L.length ≤ E.M →
-      E.n + ((exec E pairRoundC)^[h] (mk E ix P σ)).t ≤ E.M →
+      E.n + (rounds (.gate 0) (2 ^ K) k h P L).1.length ≤ E.M →
       ∃ sc' ls', (exec E pairRoundC)^[h] (mk E ix P σ) =
           mk E ix (rounds (.gate 0) (2 ^ K) k h P L).1 (setSL σ sc' ls') ∧
         ls' 12 = flatPos (E := E) (ix := ix) (rounds (.gate 0) (2 ^ K) k h P L).2 ∧
@@ -291,11 +314,12 @@ theorem iter_rounds (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix
     ⟨σ.sc, σ.ls, by simp [setSL, rounds], by simp [rounds, h12], by simp [rounds, h54],
       by simpa [rounds] using hL, fun _ _ => rfl, fun _ _ => rfl⟩
   | h + 1, L, P, σ, hL, hc, hI, hS, h12, h54, hcap, hLM, hM => by
-    rw [Function.iterate_succ_apply] at hM ⊢
+    simp only [rounds] at hM
+    rw [Function.iterate_succ_apply]
     obtain ⟨sc1, ls1, h1, d1, c1, f1, g1⟩ := exec_pairRoundC hnM hWM hix hK L P σ hL hc hI hS h12
-      h54 hcap hcap' hkM hLM (le_trans (Nat.add_le_add_left (t_le_iter E _ h _) _) hM)
+      h54 hcap hcap' hkM hLM (le_trans (Nat.add_le_add_left (le_length_rounds _ _ _ _ _ _) _) hM)
     have hIS1 := is_exec (by omega) hWM h1 ⟨hI, hS⟩
-    rw [h1] at hM ⊢
+    rw [h1]
     have hl := length_pairRound_le (k := k) (K := K) P L
     obtain ⟨sc', ls', h', d', c', l', f', g'⟩ := iter_rounds hnM hWM hix hK hcap' hkM h _ _
       (setSL σ sc1 ls1) (pairRound_lengths P L hL) (cstR_of hc (fun x hx => f1 x (by omega)))
@@ -319,7 +343,8 @@ theorem iter_foldBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
     ∀ (rest : List (List (Wire ι))) (P : SLP ι) (acc : List (Wire ι)) (σ : St),
       (∀ a ∈ rest, a.length = k) → acc.length = k → CstR (E := E) k K σ → Inv E σ → ScOK E σ →
       σ.ls 12 = flatPos (E := E) (ix := ix) rest → σ.ls 16 = acc.map (pos E ix) →
-      E.n + ((exec E foldBody)^[rest.length] (mk E ix P σ)).t ≤ E.M →
+      E.n + (rest.foldl (fun st b => modAdd (.gate 0) (2 ^ K) k st.1 st.2 b) (P, acc)).1.length ≤
+        E.M →
       ∃ sc' ls', (exec E foldBody)^[rest.length] (mk E ix P σ) =
           mk E ix (rest.foldl (fun st b => modAdd (.gate 0) (2 ^ K) k st.1 st.2 b) (P, acc)).1
             (setSL σ sc' ls') ∧
@@ -334,8 +359,9 @@ theorem iter_foldBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
     have hnM' : E.n ≤ E.M := by omega
     have hb := hL b (by simp)
     have hr : ∀ x ∈ rest, x.length = k := fun x hx => hL x (by simp [hx])
-    simp only [List.length_cons] at hM ⊢
-    rw [Function.iterate_succ_apply] at hM ⊢
+    simp only [List.foldl] at hM
+    simp only [List.length_cons]
+    rw [Function.iterate_succ_apply]
     -- `acc` into `0`, `b` into `1`
     obtain ⟨sc1, h1, f1⟩ := exec_takeC (E := E) (n := 2) (lA := 16) (lR := 0) (by decide)
       (acc.map (pos E ix)) [] [] (exec E (.lnil 0) σ)
@@ -373,17 +399,16 @@ theorem iter_foldBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       have hs := scOK_exec E hnM' hWM (.seq (.lnil 0) (.seq (takeC 2 16 0) (.seq (.lnil 1)
         (takeC 2 12 1)))) σ hI hS
       simp only [exec_seq] at hi hs; rw [h1', h2] at hi hs; exact ⟨hi, hs⟩
-    rw [e2] at hM ⊢
+    rw [e2]
     obtain ⟨sc3, ls3', h3, d3, f3, g3⟩ := exec_modAddC hnM hWM hix hK acc b P τ2
       (by have := hc.1; exact ⟨⟨by rw [hτ2s 0 (by decide), this.1.1],
         by rw [hτ2s 1 (by decide), this.1.2]⟩, by rw [hτ2s 2 (by decide), this.2.1],
         by rw [hτ2s 3 (by decide), this.2.2.1], by rw [hτ2s 4 (by decide), this.2.2.2]⟩)
       hIS2.1 hIS2.2 (by simp [τ2, exec, τ1, setSL]) (by simp [τ2]) hacc hb hcap' hkM
-      (le_trans (Nat.add_le_add_left (le_trans (t_le_exec E (.seq (.lnil 16) (takeC 2 2 16)) _)
-        (t_le_iter E foldBody rest.length _)) _) hM)
+      (le_trans (Nat.add_le_add_left (le_length_foldl_modAdd _ _ _ _ _) _) hM)
     set r := modAdd (.gate 0) (2 ^ K) k P acc b
     have hrl : r.2.length = k := length_modAdd_eq _ _ _ _ _ _ hacc hb
-    rw [h3] at hM ⊢
+    rw [h3]
     have hs3 : ∀ x : SR, x.val < 16 ∨ 42 < x.val → sc3 x = σ.sc x := fun x hx => by
       rw [f3 x hx, hτ2s x (by rintro rfl; revert hx; decide)]
     obtain ⟨sc4, h4, f4⟩ := exec_takeC (E := E) (n := 2) (lA := 2) (lR := 16) (by decide)
@@ -397,7 +422,7 @@ theorem iter_foldBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       rw [h4]; simp only [σ5, setSL, exec, List.nil_append]
       congr 1; funext l; simp only [Function.update_apply]; split_ifs <;> simp_all
     rw [exec_mk_noNand (.seq (.lnil 16) (takeC 2 2 16)) (by simp [NoNand, takeC]), exec_seq,
-      h4'] at hM ⊢
+      h4']
     have hIS5 : Inv E σ5 ∧ ScOK E σ5 :=
       is_exec hnM' hWM (c := .seq (.lnil 16) (takeC 2 2 16)) (τ := setSL τ2 sc3 ls3') (τ' := σ5)
         (by rw [exec_seq]; exact h4') (is_exec hnM' hWM (τ' := mk E ix r.1 (setSL τ2 sc3 ls3'))

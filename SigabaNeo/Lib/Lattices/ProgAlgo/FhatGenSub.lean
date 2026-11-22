@@ -25,34 +25,39 @@ def modSubC : Code :=
   .seq (rippleAddC 2 5 7 8) <| .seq (.lnil 3) <| .seq (takeC 2 8 3) <| .seq (.lnil 2)
     (muxLC 2 6 3 2)
 
+theorem le_length_modSub (z : Wire ι) (q w : ℕ) (p : SLP ι) (as bs : List (Wire ι)) :
+    p.length ≤ (modSub z q w p as bs).1.length :=
+  (le_length_notL _ _).trans ((le_length_rippleAdd _ _ _ _).trans
+    ((le_length_rippleAdd _ _ _ _).trans (le_length_muxL _ _ _ _)))
+
 theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n) {k K : ℕ}
     (as bs : List (Wire ι)) (P : SLP ι) (σ : St) (hc : Cst (E := E) k K σ)
     (hI : Inv E σ) (hS : ScOK E σ) (hA : σ.ls 0 = as.map (pos E ix))
     (hB : σ.ls 1 = bs.map (pos E ix)) (hla : as.length = k) (hlb : bs.length = k)
     (hcap : k + 3 ≤ E.C) (hkM : k + 2 ≤ E.M)
-    (hM : E.n + (exec E modSubC (mk E ix P σ)).t ≤ E.M) :
+    (hM : E.n + (modSub (.gate 0) (2 ^ K) k P as bs).1.length ≤ E.M) :
     ∃ sc' ls', exec E modSubC (mk E ix P σ) =
         mk E ix (modSub (.gate 0) (2 ^ K) k P as bs).1 (setSL σ sc' ls') ∧
       ls' 2 = (modSub (.gate 0) (2 ^ K) k P as bs).2.map (pos E ix) ∧
       (∀ r : SR, r.val < 16 ∨ 42 < r.val → sc' r = σ.sc r) ∧ (∀ l : LR, 9 < l.val → ls' l = σ.ls l) := by
   have hnM' : E.n ≤ E.M := by omega
-  simp only [modSubC, exec_seq] at hM ⊢
+  simp only [modSubC, exec_seq]
   -- 1, 2: `lnil 3`, `notL bs` into `3`
   set σ1 := setSL σ σ.sc (Function.update σ.ls 3 [])
   have e1 : exec E (.lnil 3) (mk E ix P σ) = mk E ix P σ1 := rfl
   have hIS1 := is_exec hnM' hWM (τ := mk E ix P σ) e1 ⟨hI, hS⟩
-  rw [e1] at hM ⊢
+  rw [e1]
   obtain ⟨sc2, h2, f2⟩ := exec_notLC (lA := 1) (lB := 9) (lR := 3) (n := 2) hnM' hWM hix
     (by decide) (by decide) (by decide) bs P σ1 [] hc.1 hIS1.1 hIS1.2 (by simp [σ1, setSL, hB])
     (by simp [σ1, setSL]) (by simp [σ1, setSL, hc.2.1, hlb]) (by decide) (by simp; omega)
-    (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    (le_trans (Nat.add_le_add_left ((le_length_rippleAdd _ _ _ _).trans ((le_length_rippleAdd _ _ _ _).trans (le_length_muxL _ _ _ _))) _) hM)
   set r1 := notL P bs
   have hl1 : r1.2.length = k := by rw [(length_notL P bs).2, hlb]
   set ls2 := ls3 σ1.ls 1 9 3 ([] ++ r1.2.map (pos E ix))
   have e2 : ({ σ1 with sc := sc2, ls := ls2 } : St) = setSL σ sc2 ls2 := rfl
   rw [e2] at h2
   have hIS2 := is_exec hnM' hWM h2 hIS1
-  rw [h2] at hM ⊢
+  rw [h2]
   have fr2 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → sc2 r = σ.sc r := fun r hr => by
     rw [f2 r (not_mem_of_out _ (by decide) hr)]; rfl
   -- 3, 4, 5: `lnil 4`, `mov 18 1`, `rippleAdd as r1 1` into `4`
@@ -62,7 +67,7 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     have h1 : sc2 rONE = E.n := by rw [fr2 0 (by decide)]; exact hc.1.1
     simp only [exec, mk, σ4, setSL, h1]
   have hIS4 := is_exec hnM' hWM (c := .seq (.lnil 4) (.mov 18 rONE)) e4 hIS2
-  rw [e4] at hM ⊢
+  rw [e4]
   have fr4 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → σ4.sc r = σ.sc r := fun r hr => by
     simp only [σ4, setSL]
     rw [Function.update_of_ne (fun h => by subst h; revert hr; decide)]; exact fr2 r hr
@@ -73,14 +78,14 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by simp [σ4, setSL, ls2, ls3, σ1, Function.update_apply, hA])
     (by simp [σ4, setSL, ls2, ls3, Function.update_apply]) (by simp [σ4, setSL])
     (by simp [σ4, setSL, pos]) (by rw [fr4 2 (by decide), hc.2.1, hla]) (by simp; omega)
-    (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    (le_trans (Nat.add_le_add_left ((le_length_rippleAdd _ _ _ _).trans (le_length_muxL _ _ _ _)) _) hM)
   set r2 := rippleAdd r1.1 as r1.2 .one
   have hl2 : r2.2.length = k + 1 := by rw [length_rippleAdd_eq _ _ _ _ (by omega), hla]
   set ls5 := ls3 σ4.ls 0 3 4 ([] ++ r2.2.map (pos E ix))
   have e5 : ({ σ4 with sc := sc5, ls := ls5 } : St) = setSL σ sc5 ls5 := rfl
   rw [e5] at h5
   have hIS5 := is_exec hnM' hWM h5 hIS4
-  rw [h5] at hM ⊢
+  rw [h5]
   have fr5 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → sc5 r = σ.sc r := fun r hr => by
     rw [f5 r (not_mem_of_out _ (by decide) hr)]; exact fr4 r hr
   -- 6, 7: `lnil 5`, the first `k` wires of `r2` into `5`
@@ -95,13 +100,13 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by simp [exec])
     (by simp [exec, setSL]; rw [fr5 2 (by decide), hc.2.1]; simp [hl2]) (by simp; omega)
   rw [exec_mk_noNand (.lnil 5) trivial, exec_mk_noNand (takeC 2 4 5)
-    (by simp [NoNand, takeC]), h7] at hM ⊢
+    (by simp [NoNand, takeC]), h7]
   set τ6 := exec E (.lnil 5) (setSL σ sc5 ls5)
   set ls7 := Function.update (Function.update τ6.ls 4
     ((r2.2.drop k).map (pos E ix))) 5 ([] ++ (r2.2.take k).map (pos E ix))
   have e7 : ({ out := τ6.out, t := τ6.t, sc := sc7, ls := ls7, src := τ6.src } : St) =
       setSL σ sc7 ls7 := rfl
-  rw [e7] at hM ⊢
+  rw [e7]
   have hIS7 : Inv E (mk E ix r2.1 (setSL σ sc7 ls7)) ∧ ScOK E (mk E ix r2.1 (setSL σ sc7 ls7)) :=
     is_exec hnM' hWM (c := .seq (.lnil 5) (takeC 2 4 5)) (τ := mk E ix r2.1 (setSL σ sc5 ls5))
       (by rw [exec_seq, exec_mk_noNand (.lnil 5) trivial, exec_mk_noNand (takeC 2 4 5)
@@ -122,7 +127,7 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     simp only [exec, σ9, setSL, h4, List.headD_cons, List.tail_cons]
     congr 3
   have hIS9 := is_exec hnM' hWM (c := .seq (.lpop 36 4) (.lmov 6 5)) e9 hIS7
-  rw [e9] at hM ⊢
+  rw [e9]
   have fr9 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → σ9.sc r = σ.sc r := fun r hr => by
     simp only [σ9, setSL]
     rw [Function.update_of_ne (fun h => by subst h; revert hr; decide)]; exact fr7 r hr
@@ -136,7 +141,7 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by rw [hc9.2.1]; omega) (by rw [hc9.2.1]; omega)
   have hIS10 := is_exec hnM' hWM (c := constC 2 7 (qConstBody 7)) (τ := mk E ix r2.1 σ9)
     (by rw [exec_mk_noNand _ (by simp [NoNand, constC, qConstBody]), h10]) hIS9
-  rw [exec_mk_noNand _ (by simp [NoNand, constC, qConstBody]), h10] at hM ⊢
+  rw [exec_mk_noNand _ (by simp [NoNand, constC, qConstBody]), h10]
   set KQ : List (Wire ι) := constL (.gate 0) k (2 ^ K)
   have hKQ : (List.range (σ9.sc 2)).map (fun i => if i = K then E.n else E.n + 1) =
       KQ.map (pos E ix) := by
@@ -146,11 +151,11 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     by_cases h : K = i
     · subst h; simp [pos]
     · simp [h, pos, Ne.symm h]
-  rw [hKQ] at hM ⊢ hIS10
+  rw [hKQ] at ⊢ hIS10
   set sc10 := Function.update σ9.sc 42 (σ9.sc 2)
   set ls10 := Function.update σ9.ls 7 (KQ.map (pos E ix))
   have e10 : setSL σ9 sc10 ls10 = setSL σ sc10 ls10 := rfl
-  rw [e10] at hM ⊢ hIS10
+  rw [e10] at ⊢ hIS10
   -- 11, 12: `lnil 8`, `mov 18 z`
   set σ12 := setSL σ (Function.update sc10 18 (E.n + 1)) (Function.update ls10 8 [])
   have e12 : exec E (.mov 18 rZ) (exec E (.lnil 8) (mk E ix r2.1 (setSL σ sc10 ls10))) =
@@ -159,7 +164,7 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
       simp only [sc10]; rw [Function.update_of_ne (by decide)]; exact hc9.1.2
     simp only [exec, mk, σ12, setSL, hz]
   have hIS12 := is_exec hnM' hWM (c := .seq (.lnil 8) (.mov 18 rZ)) e12 hIS10
-  rw [e12] at hM ⊢
+  rw [e12]
   have fr12 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → σ12.sc r = σ.sc r := fun r hr => by
     simp only [σ12, setSL, sc10]
     rw [Function.update_of_ne (fun h => by subst h; revert hr; decide),
@@ -175,14 +180,14 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by simp [σ12, setSL, ls10, σ9, ls7, Function.update_apply])
     (by simp [σ12, setSL, ls10, Function.update_apply]) (by simp [σ12, setSL])
     (by simp [σ12, setSL, pos]) (by rw [fr12 2 (by decide), hc.2.1]; simp; omega)
-    (by simp; omega) (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    (by simp; omega) (le_trans (Nat.add_le_add_left (le_length_muxL _ _ _ _) _) hM)
   set r3 := rippleAdd r2.1 (r2.2.take k) KQ (.gate 0)
   have hl3 : r3.2.length = k + 1 := by rw [length_rippleAdd_eq _ _ _ _ (by simp; omega)]; simp; omega
   set ls13 := ls3 σ12.ls 5 7 8 ([] ++ r3.2.map (pos E ix))
   have e13 : ({ σ12 with sc := sc13, ls := ls13 } : St) = setSL σ sc13 ls13 := rfl
   rw [e13] at h13
   have hIS13 := is_exec hnM' hWM h13 hIS12
-  rw [h13] at hM ⊢
+  rw [h13]
   have fr13 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → sc13 r = σ.sc r := fun r hr => by
     rw [f13 r (not_mem_of_out _ (by decide) hr)]; exact fr12 r hr
   -- 14, 15: `lnil 3`, the first `k` wires of `r3` into `3`
@@ -196,13 +201,13 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by simp [exec])
     (by simp [exec, setSL]; rw [fr13 2 (by decide), hc.2.1]; simp; omega) (by simp; omega)
   rw [exec_mk_noNand (.lnil 3) trivial, exec_mk_noNand (takeC 2 8 3)
-    (by simp [NoNand, takeC]), h15] at hM ⊢
+    (by simp [NoNand, takeC]), h15]
   set τ14 := exec E (.lnil 3) (setSL σ sc13 ls13)
   set ls15 := Function.update (Function.update τ14.ls 8
     ((r3.2.drop k).map (pos E ix))) 3 ([] ++ (r3.2.take k).map (pos E ix))
   have e15 : ({ out := τ14.out, t := τ14.t, sc := sc15, ls := ls15, src := τ14.src } : St) =
       setSL σ sc15 ls15 := rfl
-  rw [e15] at hM ⊢
+  rw [e15]
   have hIS15 : Inv E (mk E ix r3.1 (setSL σ sc15 ls15)) ∧ ScOK E (mk E ix r3.1 (setSL σ sc15 ls15)) :=
     is_exec hnM' hWM (c := .seq (.lnil 3) (takeC 2 8 3)) (τ := mk E ix r3.1 (setSL σ sc13 ls13))
       (by rw [exec_seq, exec_mk_noNand (.lnil 3) trivial, exec_mk_noNand (takeC 2 8 3)
@@ -213,7 +218,7 @@ theorem exec_modSubC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
   set σ16 := setSL σ sc15 (Function.update ls15 2 [])
   have e16 : exec E (.lnil 2) (mk E ix r3.1 (setSL σ sc15 ls15)) = mk E ix r3.1 σ16 := rfl
   have hIS16 := is_exec hnM' hWM e16 hIS15
-  rw [e16] at hM ⊢
+  rw [e16]
   have hc16 : Consts E σ16 := ⟨by rw [← hc.1.1]; exact fr15 0 (by decide),
     by rw [← hc.1.2]; exact fr15 1 (by decide)⟩
   obtain ⟨sc17, h17, f17⟩ := exec_muxLC (lA := 6) (lB := 3) (lR := 2) (n := 2) hnM' hWM hix

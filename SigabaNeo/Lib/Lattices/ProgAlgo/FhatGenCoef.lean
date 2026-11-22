@@ -75,7 +75,7 @@ theorem exec_foldSumC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
     (L : List (List (Wire ι))) (P : SLP ι) (σ : St) (hL : ∀ a ∈ L, a.length = k)
     (hc : CstR (E := E) k K σ) (hI : Inv E σ) (hS : ScOK E σ)
     (h12 : σ.ls 12 = flatPos (E := E) (ix := ix) L) (h54 : σ.sc 54 = L.length)
-    (hM : E.n + (exec E foldSumC (mk E ix P σ)).t ≤ E.M) :
+    (hM : E.n + (foldSum (.gate 0) (2 ^ K) k P L).1.length ≤ E.M) :
     ∃ sc' ls', exec E foldSumC (mk E ix P σ) =
         mk E ix (foldSum (.gate 0) (2 ^ K) k P L).1 (setSL σ sc' ls') ∧
       ls' 16 = (foldSum (.gate 0) (2 ^ K) k P L).2.map (pos E ix) ∧
@@ -83,10 +83,10 @@ theorem exec_foldSumC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       (∀ l : LR, (8 < l.val ∧ l.val < 12) ∨ (12 < l.val ∧ l.val < 16) ∨ 16 < l.val →
         ls' l = σ.ls l) := by
   have hnM' : E.n ≤ E.M := by omega
-  unfold foldSumC at hM ⊢
-  rw [exec_ifLt, mk_sc, hc.2.2, h54] at hM ⊢
+  unfold foldSumC
+  rw [exec_ifLt, mk_sc, hc.2.2, h54]
   rcases L with _ | ⟨a, rest⟩
-  · rw [if_neg (by simp)] at hM ⊢
+  · rw [if_neg (by simp)]
     rw [exec_mk_noNand (.seq (.lnil 16) (.rep 2 (.lpush 16 rZ))) ⟨trivial, trivial⟩]
     refine ⟨σ.sc, Function.update σ.ls 16 (List.replicate k (E.n + 1)), ?_, ?_,
       fun _ _ => rfl, fun l hl => ?_⟩
@@ -95,7 +95,7 @@ theorem exec_foldSumC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       simp [exec, setSL, foldSum, rZ, hc.1.1.2]
     · simp [foldSum, map_pos_constL_zero]
     · simp [Function.update_of_ne (show l ≠ 16 by rintro rfl; revert hl; decide)]
-  · rw [if_pos (by simp)] at hM ⊢
+  · rw [if_pos (by simp)]
     have ha := hL a (by simp)
     obtain ⟨sc1, h1, f1⟩ := exec_takeC (E := E) (n := 2) (lA := 12) (lR := 16) (by decide)
       (a.map (pos E ix)) (flatPos (E := E) (ix := ix) rest) [] (exec E (.lnil 16) σ)
@@ -115,7 +115,7 @@ theorem exec_foldSumC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       funext x; simp only [Function.update_apply]; split_ifs <;> simp_all
     have hIS1 := is_exec hnM' hWM e1 ⟨hI, hS⟩
     rw [exec_seq, exec_mk_noNand _ (by simp [NoNand, takeC]), e1, exec_rep,
-      show (mk E ix P σ1).sc 57 = rest.length by simp [σ1, setSL]] at hM ⊢
+      show (mk E ix P σ1).sc 57 = rest.length by simp [σ1, setSL]]
     have hs1' : ∀ x : SR, x ≠ 41 → x ≠ 57 → x ≠ 58 → σ1.sc x = σ.sc x := fun x h41 h57 h58 => by
       simp only [σ1, setSL]
       rw [Function.update_of_ne h57, Function.update_of_ne h58, f1 x (by simpa using h41)]; rfl
@@ -123,7 +123,8 @@ theorem exec_foldSumC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       (fun x hx => hL x (by simp [hx])) ha
       (cstR_of hc (fun x hx => hs1' x (by rintro rfl; revert hx; decide)
         (by rintro rfl; revert hx; decide) (by rintro rfl; revert hx; decide)))
-      hIS1.1 hIS1.2 (by simp [σ1, τ1, setSL]) (by simp [σ1, τ1, setSL]) hM
+      hIS1.1 hIS1.2 (by simp [σ1, τ1, setSL]) (by simp [σ1, τ1, setSL])
+      (by simpa only [foldSum] using hM)
     refine ⟨sc', ls', h', d', fun x hx => ?_, fun l hl => ?_⟩
     · rw [f' x (by omega), hs1' x (by rintro rfl; revert hx; decide)
         (by rintro rfl; revert hx; decide) (by rintro rfl; revert hx; decide)]
@@ -163,7 +164,8 @@ theorem exec_coefC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix 
     (h46 : σ.sc 46 = o.2.2.val) (h10 : σ.ls 10 = repList E ix repA)
     (h11 : σ.ls 11 = repList E ix repB) (hcap : (2 * k * N + 1) * k ≤ E.C) (hcap' : k + 3 ≤ E.C)
     (hbig : 4 * k * N * k + 2 * N + k + 2 ≤ E.M)
-    (hM : E.n + (exec E coefC (mk E ix P σ)).t ≤ E.M) :
+    (hM : E.n + (coefCircuitL (ordT₀ N k) (.gate 0) (2 ^ K) repA repB (gvExp (2 ^ K) o) o.1 o.2.1
+      o.2.2 P).1.length ≤ E.M) :
     ∃ sc' ls', exec E coefC (mk E ix P σ) = mk E ix (coefCircuitL (ordT₀ N k) (.gate 0) (2 ^ K)
         repA repB (gvExp (2 ^ K) o) o.1 o.2.1 o.2.2 P).1 (setSL σ sc' ls') ∧
       ls' 16 = (coefCircuitL (ordT₀ N k) (.gate 0) (2 ^ K) repA repB (gvExp (2 ^ K) o) o.1 o.2.1
@@ -192,9 +194,9 @@ theorem exec_coefC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix 
   have hIS1 := is_exec hnM' hWM (τ := σ) h1 ⟨hI, hS⟩
   have hs1 : ∀ x : SR, x ≠ 42 → σ1.sc x = σ.sc x := fun x hx => by
     simp [σ1, setSL, Function.update_of_ne hx]
-  unfold coefC at hM ⊢
-  simp only [exec_seq] at hM ⊢
-  rw [exec_mk_noNand _ (by simp [NoNand, constC, gvBody]), h1] at hM ⊢
+  unfold coefC
+  simp only [exec_seq]
+  rw [exec_mk_noNand _ (by simp [NoNand, constC, gvBody]), h1]
   -- 2: the terms
   obtain ⟨sc2, ls2, h2, d2, f2, g2⟩ := exec_leavesC hnM hWM hix hk hN hK repA repB a (c1, c2) t
     P σ1 (G.map (pos E ix))
@@ -205,11 +207,11 @@ theorem exec_coefC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix 
     (by rw [hs1 44 (by decide), h44]) (by rw [hs1 45 (by decide), h45])
     (by rw [hs1 46 (by decide), h46]) (by simp [σ1, setSL, h10]) (by simp [σ1, setSL, h11])
     (by simp [σ1, setSL]) (by simp [G, constL_length]; nlinarith) hcap' hbig
-    (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    (le_trans (Nat.add_le_add_left ((le_length_rounds _ _ _ _ _ _).trans (le_length_foldSum _ _ _ _ _)) _) hM)
   set R := leaves (.gate 0) (2 ^ K) k repA repB a (c1, c2) t P (enumT N k)
   have hRl := leaves_lengths (K := K) repA repB a (c1, c2) t P (enumT N k)
   have hIS2 := is_exec hnM' hWM h2 hIS1
-  rw [h2] at hM ⊢
+  rw [h2]
   have hs2 : ∀ x : SR, x.val < 16 ∨ (42 < x.val ∧ x.val < 47) ∨ 53 < x.val → sc2 x = σ.sc x :=
     fun x hx => by rw [f2 x (by omega), hs1 x (by rintro rfl; revert hx; decide)]
   -- 3: the count `2kN + 1` into `54`
@@ -218,7 +220,7 @@ theorem exec_coefC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix 
     rw [exec_mk_noNand (.mov 54 9) trivial]
     simp only [exec, σ3, setSL, hs2 9 (by decide), hc9]; rfl
   have hIS3 := is_exec hnM' hWM e3 hIS2
-  rw [e3] at hM ⊢
+  rw [e3]
   -- 4: the rounds
   set L := G :: R.2
   have hLl : ∀ x ∈ L, x.length = k := fun x hx => by
@@ -235,20 +237,23 @@ theorem exec_coefC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix 
     by rw [hs3 2 (by decide), hc2], by rw [hs3 3 (by decide), hc3], by rw [hs3 4 (by decide), hc4]⟩,
     by rw [hs3 6 (by decide), hc6], by rw [hs3 7 (by decide), hc7]⟩
   rw [roundsC, exec_rep, show (mk E ix R.1 σ3).sc 11 = treeHeight N k by
-    rw [mk_sc, hs3 11 (by decide), hc11]] at hM ⊢
+    rw [mk_sc, hs3 11 (by decide), hc11]]
   obtain ⟨sc4, ls4, h4, d4, c4, l4, f4, g4⟩ := iter_rounds hnM hWM hix hK hcap' (by nlinarith)
     (treeHeight N k) L R.1 σ3 hLl hc3 hIS3.1 hIS3.2
     (by simp only [σ3, setSL, L, flatPos_cons]; rw [d2]; rfl)
     (by simp [σ3, setSL, hLn]) (by rw [hLn]; exact hcap) (by rw [hLn]; nlinarith)
-    (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    (le_trans (Nat.add_le_add_left (le_length_foldSum _ _ _ _ _) _) hM)
   have hIS4 := is_exec hnM' hWM (τ := mk E ix R.1 σ3) (c := .rep 11 pairRoundC)
     (τ' := mk E ix (rounds (.gate 0) (2 ^ K) k (treeHeight N k) R.1 L).1 (setSL σ3 sc4 ls4))
     (by rw [exec_rep, show (mk E ix R.1 σ3).sc 11 = treeHeight N k by
       rw [mk_sc, hs3 11 (by decide), hc11]]; exact h4) hIS3
-  rw [h4] at hM ⊢
+  rw [h4]
   -- 5: the final sum
-  obtain ⟨sc5, ls5, h5, d5, f5, g5⟩ := exec_foldSumC hnM hWM hix hK hcap' (by nlinarith) _ _
-    (setSL σ3 sc4 ls4) l4 (cstR_of hc3 (fun x hx => f4 x (by omega))) hIS4.1 hIS4.2 d4 c4 hM
+  obtain ⟨sc5, ls5, h5, d5, f5, g5⟩ := exec_foldSumC hnM hWM hix hK hcap' (by nlinarith)
+    (rounds (.gate 0) (2 ^ K) k (treeHeight N k) R.1 L).2
+    (rounds (.gate 0) (2 ^ K) k (treeHeight N k) R.1 L).1
+    (setSL σ3 sc4 ls4) l4 (cstR_of hc3 (fun x hx => f4 x (by omega))) hIS4.1 hIS4.2 d4 c4
+    (by exact hM)
   rw [h5]
   refine ⟨sc5, ls5, rfl, d5, fun x hx => ?_, fun l hl => ?_⟩
   · show sc5 x = _

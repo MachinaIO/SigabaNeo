@@ -91,6 +91,19 @@ structure StepB (E : Env) (N k : ℕ) (g : ℕ) : Prop where
   hgM : g + 1 ≤ E.M
 
 set_option maxHeartbeats 4000000 in
+theorem le_length_foldl_blockStepL {N k : ℕ} {ι : Type*} (ordT : List ((Fin 2 × Fin k) × Fin N))
+    (gv : OI N k → ℕ) (z : Wire ι) (q : ℕ) (repA repB : BI N k → Wire ι) :
+    ∀ (os : List (OI N k)) (st : SLP ι × (OI N k → List (Wire ι))),
+      st.1.length ≤ (os.foldl (blockStepL ordT gv z q repA repB) st).1.length
+  | [], st => le_rfl
+  | o :: os, st => (le_length_coefCircuitL ordT z q repA repB (gv o) o.1 o.2.1 o.2.2 st.1).trans
+      (le_length_foldl_blockStepL ordT gv z q repA repB os (blockStepL ordT gv z q repA repB st o))
+
+theorem le_length_nandBlockL {N k : ℕ} {ι : Type*} (ordT : List ((Fin 2 × Fin k) × Fin N))
+    (ordO : List (OI N k)) (gv : OI N k → ℕ) (z : Wire ι) (q : ℕ) (repA repB : BI N k → Wire ι)
+    (p : SLP ι) : p.length ≤ (nandBlockL ordT ordO gv z q repA repB p).1.length :=
+  le_length_foldl_blockStepL ordT gv z q repA repB ordO (p, fun _ => [])
+
 theorem exec_compileStepC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : ℕ} (hK : K ≤ k + 1)
     (ix' : Fin 10 × BI N k → ℕ) (hix : ∀ i b, ix' (i, b) = i.val * (4 * k * N * k) + codec b)
     (hixn : ∀ j, ix' j < E.n) {g : ℕ} (hb : StepB E N k g)
@@ -98,7 +111,8 @@ theorem exec_compileStepC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : �
     (P : SLP (Fin 10 × BI N k)) (a b : ℕ) (rest : List ℕ) (σ : St)
     (hc : AllC (E := E) N k K σ) (hI : Inv E σ) (hS : ScOK E σ) (hsrc : σ.src = a :: b :: rest)
     (h59 : σ.sc 59 = reps.length) (h22 : σ.ls 22 = (reps.map (repList E ix')).flatten)
-    (hM : E.n + (exec E compileStepC (mk E ix' P σ)).t ≤ E.M) :
+    (hM : E.n + (compileStepL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K) (P, reps)
+      ⟨ofIdx 10 a, ofIdx 10 b⟩).1.length ≤ E.M) :
     ∃ sc' ls', exec E compileStepC (mk E ix' P σ) =
         mk E ix' (compileStepL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K) (P, reps)
           ⟨ofIdx 10 a, ofIdx 10 b⟩).1 (setSLS σ sc' ls' rest) ∧
@@ -158,14 +172,14 @@ theorem exec_compileStepC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : �
     rwa [hpre] at this
   have ea : exec E (.seq (.rdsrc 60) (repOfC 10)) σ = σ2 := by rw [exec_seq, e1]
   have eb : exec E (.seq (.rdsrc 60) (repOfC 11)) σ2 = σ4 := by rw [exec_seq, e3]
-  unfold compileStepC at hM ⊢
+  unfold compileStepC
   rw [exec_seq, exec_mk_noNand (.seq (.rdsrc 60) (repOfC 10)) ⟨trivial, noNand_repOfC 10⟩, ea,
-    exec_seq, exec_mk_noNand (.seq (.rdsrc 60) (repOfC 11)) ⟨trivial, noNand_repOfC 11⟩, eb] at hM ⊢
+    exec_seq, exec_mk_noNand (.seq (.rdsrc 60) (repOfC 11)) ⟨trivial, noNand_repOfC 11⟩, eb]
   -- the block
-  rw [exec_seq] at hM ⊢
+  rw [exec_seq]
   obtain ⟨sc5, ls5, h5, d5, f5, g5⟩ := exec_blockC hnM hWM hixn hb.hk hb.hN hK repA repB P σ4
     (allC_of hc (fun r hr => hs4 r (by omega))).1 hI4 hS4 h4_10 d4 hb.hcap hb.hcap' hb.hcapB hb.hbig
-    (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    hM
   set r := nandBlockL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K) repA repB P
   rw [h5]
   have hS5 := (is_exec hnM' hWM h5 ⟨hI4, hS4⟩)
@@ -245,7 +259,7 @@ theorem iter_compile (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : ℕ} (
     (hc : AllC (E := E) N k K σ) (hI : Inv E σ) (hS : ScOK E σ) (hsrc : σ.src = srcOf gs)
     (h59 : σ.sc 59 = 0) (h22 : σ.ls 22 = []) :
     ∀ j, j ≤ gs.length →
-      E.n + ((exec E compileStepC)^[j] (mk E ix' [⟨.one, .one⟩] σ)).t ≤ E.M →
+      E.n + (cst (N := N) (k := k) (K := K) gs j).1.length ≤ E.M →
       ∃ sc' ls', (exec E compileStepC)^[j] (mk E ix' [⟨.one, .one⟩] σ) =
           mk E ix' (cst (N := N) (k := k) (K := K) gs j).1 (setSLS σ sc' ls' (srcOf (gs.drop j))) ∧
         ls' 22 = ((cst (N := N) (k := k) (K := K) gs j).2.map (repList E ix')).flatten ∧
@@ -258,10 +272,12 @@ theorem iter_compile (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : ℕ} (
     exact ⟨σ.sc, σ.ls, by rw [e]; rfl, by simp [cst, h22], fun h => absurd h (by omega), h59,
       fun _ _ => rfl, by rw [e]; exact hI, by rw [e]; exact hS⟩
   | j + 1, hj, hM => by
-    rw [Function.iterate_succ_apply'] at hM ⊢
+    rw [Function.iterate_succ_apply']
+    rw [cst_succ gs j (by omega)] at hM
     obtain ⟨sc1, ls1, h1, d1, -, c1, f1, hI1, hS1⟩ := iter_compile hnM hWM hK ix' hix hixn gs hb σ hc
-      hI hS hsrc h59 h22 j (by omega) (le_trans (Nat.add_le_add_left (t_le_exec E _ _) _) hM)
-    rw [h1] at hM ⊢
+      hI hS hsrc h59 h22 j (by omega)
+      (le_trans (Nat.add_le_add_left (le_length_nandBlockL _ _ _ _ _ _ _ _) _) hM)
+    rw [h1]
     have hlen := length_cst (N := N) (k := k) (K := K) gs j (by omega)
     obtain ⟨sc2, ls2, h2, d2, e2, c2, f2⟩ := exec_compileStepC (E := E) hnM hWM hK ix' hix hixn hb
       (cst (N := N) (k := k) (K := K) gs j).2 (by omega) (cst gs j).1 gs[j].1 gs[j].2
@@ -308,7 +324,8 @@ theorem exec_fhatC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : ℕ} (hK
     (hixn : ∀ j, ix' j < E.n) (gs : GateList) (hgs : gs ≠ []) (hb : StepB E N k gs.length)
     (σ : St) (hc : AllC (E := E) N k K σ) (hI : Inv E σ) (hS : ScOK E σ)
     (hsrc : σ.src = srcOf gs) (h63 : σ.sc 63 = gs.length)
-    (hM : E.n + (exec E fhatC (mk E ix' [] σ)).t ≤ E.M) :
+    (hM : E.n + (fhatSLPL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1
+      (predOf 10 gs).2).1.length ≤ E.M) :
     ∃ sc' ls', exec E fhatC (mk E ix' [] σ) =
         mk E ix' (fhatSLPL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1
           (predOf 10 gs).2).1 (setSLS σ sc' ls' []) ∧
@@ -339,10 +356,11 @@ theorem exec_fhatC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : ℕ} (hK
     · by_cases h : r = 59
       · subst h; simp [σ2, setSL]
       · simp [σ2, setSL, Function.update_of_ne h]; exact hS r
-  unfold fhatC at hM ⊢
-  rw [exec_seq, e1, exec_seq, exec_seq, e2, exec_rep] at hM ⊢
+  unfold fhatC
+  rw [exec_seq, e1, exec_seq, exec_seq, e2, exec_rep]
   rw [show (mk E ix' [⟨.one, .one⟩] σ2).sc 63 = gs.length by
-    simp [σ2, setSL, h63]] at hM ⊢
+    simp [σ2, setSL, h63]]
+  rw [fhatSLPL_eq_cst] at hM
   obtain ⟨sc', ls', h, d, d23, _, f, hI', hS'⟩ := iter_compile hnM hWM hK ix' hix hixn gs hb σ2 hc2
     hIS2.1 hIS2.2 (by simp [σ2, setSL, hsrc]) (by simp [σ2, setSL]) (by simp [σ2, setSL])
     gs.length le_rfl hM

@@ -147,6 +147,24 @@ theorem length_bList {N k K : ℕ} (repA repB : BI N k → Wire ι) (P : SLP ι)
       List.length_map, coefCircuitL_length]
     ring
 
+theorem le_length_coefCircuitL {N k : ℕ} (ordT : List ((Fin 2 × Fin k) × Fin N)) (z : Wire ι)
+    (q : ℕ) (repA repB : BI N k → Wire ι) (Gv : ℕ) (a : Fin 2) (col : Fin 2 × Fin k) (t : Fin N)
+    (p : SLP ι) : p.length ≤ (coefCircuitL ordT z q repA repB Gv a col t p).1.length :=
+  (le_length_leaves _ _ _ _ _ _ _ _ _).trans ((le_length_rounds _ _ _ _ _ _).trans
+    (le_length_foldSum _ _ _ _ _))
+
+theorem le_length_bst_succ {N k K : ℕ} (repA repB : BI N k → Wire ι) (P : SLP ι) (i : ℕ) :
+    (bst (K := K) repA repB P i).1.length ≤ (bst (K := K) repA repB P (i + 1)).1.length := by
+  rcases h : (enumO N k)[i]? with _ | o
+  · simp only [bst, List.take_succ, h, Option.toList_none, List.append_nil]; exact le_rfl
+  · rw [bst_succ repA repB P i o h]
+    exact le_length_coefCircuitL _ _ _ _ _ _ _ _ _ _
+
+theorem le_length_bst {N k K : ℕ} (repA repB : BI N k → Wire ι) (P : SLP ι) :
+    ∀ i, P.length ≤ (bst (K := K) repA repB P i).1.length
+  | 0 => by simp [bst]
+  | i + 1 => (le_length_bst repA repB P i).trans (le_length_bst_succ repA repB P i)
+
 set_option maxHeartbeats 4000000 in
 theorem iter_blockBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n)
     {N k K : ℕ} (hk : 0 < k) (hN : 0 < N) (hK : K ≤ k + 1) (repA repB : BI N k → Wire ι)
@@ -155,7 +173,7 @@ theorem iter_blockBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i,
     (h46 : σ.sc 46 = 0) (h10 : σ.ls 10 = repList E ix repA) (h11 : σ.ls 11 = repList E ix repB)
     (h21 : σ.ls 21 = L0) (hcap : (2 * k * N + 1) * k ≤ E.C) (hcap' : k + 3 ≤ E.C)
     (hcap21 : L0.length + 4 * k * N * k ≤ E.C) (hbig : 4 * k * N * k + 2 * N + k + 2 ≤ E.M) :
-    ∀ i, i ≤ 4 * k * N → E.n + ((exec E blockBody)^[i] (mk E ix P σ)).t ≤ E.M →
+    ∀ i, i ≤ 4 * k * N → E.n + (bst (K := K) repA repB P i).1.length ≤ E.M →
       ∃ sc' ls', (exec E blockBody)^[i] (mk E ix P σ) =
           mk E ix (bst (K := K) repA repB P i).1 (setSL σ sc' ls') ∧
         ls' 21 = L0 ++ bList (E := E) (ix := ix) (K := K) repA repB P i ∧
@@ -169,12 +187,12 @@ theorem iter_blockBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i,
       fun _ _ => rfl⟩
   | i + 1, hi, hM => by
     have hnM' : E.n ≤ E.M := by omega
-    rw [Function.iterate_succ_apply'] at hM ⊢
+    rw [Function.iterate_succ_apply']
     obtain ⟨sc1, ls1, h1, d1, ⟨a, c1, c2, t, h43', h44', h45', h46', hidx, hc1, hc2, ht⟩, hI1, hS1,
       f1, g1⟩ := iter_blockBody hnM hWM hix hk hN hK repA repB P σ L0 hc hI hS h43 h44 h45 h46
         h10 h11 h21 hcap hcap' hcap21 hbig i (by omega)
-        (le_trans (Nat.add_le_add_left (t_le_exec E _ _) _) hM)
-    rw [h1] at hM ⊢
+        (le_trans (Nat.add_le_add_left (le_length_bst_succ _ _ _ _) _) hM)
+    rw [h1]
     have ha : a < 2 := by
       by_contra h
       have : 4 * k * N ≤ ((a * 2 + c1) * k + c2) * N + t := by nlinarith
@@ -182,7 +200,8 @@ theorem iter_blockBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i,
     set o : OI N k := (⟨a, ha⟩, (⟨c1, hc1⟩, ⟨c2, hc2⟩), ⟨t, ht⟩)
     have ho : (enumO N k)[i]? = some o := by rw [← hidx]; exact enumO_getElem? o
     obtain ⟨⟨⟨⟨hc0', hc1'⟩, hc2', hc3', hc4'⟩, hc5', hc6', hc7'⟩, hc8', hc9', hc11'⟩ := hc
-    rw [blockBody, exec_seq, exec_seq] at hM ⊢
+    rw [blockBody, exec_seq, exec_seq]
+    rw [bst_succ repA repB P i o ho] at hM
     -- the coefficient
     obtain ⟨sc2, ls2, h2, d2, f2, g2⟩ := exec_coefC hnM hWM hix hk hN hK repA repB o
       (bst (K := K) repA repB P i).1 (setSL σ sc1 ls1)
@@ -194,12 +213,12 @@ theorem iter_blockBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i,
         by show sc1 11 = _; rw [f1 11 (by decide), hc11']⟩
       hI1 hS1 h43' h44' h45' h46'
       (by show ls1 10 = _; rw [g1 10 (by decide), h10]) (by show ls1 11 = _; rw [g1 11 (by decide), h11])
-      hcap hcap' hbig (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+      hcap hcap' hbig hM
     set c := coefCircuitL (ordT₀ N k) (.gate 0) (2 ^ K) repA repB (gvExp (2 ^ K) o) o.1 o.2.1 o.2.2
       (bst (K := K) repA repB P i).1
     have hcl : c.2.length = k := coefCircuitL_length _ _ _ _ _ _ _
     have hIS2 := is_exec hnM' hWM h2 ⟨hI1, hS1⟩
-    rw [h2] at hM ⊢
+    rw [h2]
     have hs2 : ∀ x : SR, x.val < 16 ∨ (42 < x.val ∧ x.val < 47) ∨ 58 < x.val →
         sc2 x = sc1 x := fun x hx => f2 x hx
     -- append to `21`
@@ -215,7 +234,7 @@ theorem iter_blockBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i,
     have h3' : exec E (takeC 2 16 21) (setSL (setSL σ sc1 ls1) sc2 ls2) = σ3 := by
       rw [h3]; rfl
     rw [exec_mk_noNand (takeC 2 16 21) (by simp [NoNand, takeC]),
-      exec_mk_noNand odoO (by simp [NoNand, odoO]), h3'] at hM ⊢
+      exec_mk_noNand odoO (by simp [NoNand, odoO]), h3']
     have hs3 : ∀ x : SR, x.val < 16 ∨ (42 < x.val ∧ x.val < 47) ∨ 58 < x.val → σ3.sc x = sc1 x :=
       fun x hx => by
         show sc3 x = _
@@ -294,7 +313,8 @@ theorem exec_blockC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix
     (h10 : σ.ls 10 = repList E ix repA) (h11 : σ.ls 11 = repList E ix repB)
     (hcap : (2 * k * N + 1) * k ≤ E.C) (hcap' : k + 3 ≤ E.C) (hcap21 : 4 * k * N * k ≤ E.C)
     (hbig : 4 * k * N * k + 2 * N + k + 2 ≤ E.M)
-    (hM : E.n + (exec E blockC (mk E ix P σ)).t ≤ E.M) :
+    (hM : E.n + (nandBlockL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K) repA repB
+      P).1.length ≤ E.M) :
     ∃ sc' ls', exec E blockC (mk E ix P σ) = mk E ix (nandBlockL (ordT₀ N k) (ordO₀ N k)
         (gvExp (2 ^ K)) (.gate 0) (2 ^ K) repA repB P).1 (setSL σ sc' ls') ∧
       ls' 21 = repList E ix (nandBlockL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K)
@@ -313,9 +333,11 @@ theorem exec_blockC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix
       Function.update_of_ne (by rintro rfl; revert hx; decide),
       Function.update_of_ne (by rintro rfl; revert hx; decide),
       Function.update_of_ne (by rintro rfl; revert hx; decide)]
-  unfold blockC at hM ⊢
+  unfold blockC
   rw [exec_seq, e0, exec_rep, show (mk E ix P σ0).sc 12 = 4 * k * N by
-    rw [mk_sc, hs0 12 (by decide), hc12]] at hM ⊢
+    rw [mk_sc, hs0 12 (by decide), hc12]]
+  have hall : (enumO N k).take (4 * k * N) = enumO N k := List.take_of_length_le (by
+    rw [length_enumO'])
   obtain ⟨⟨⟨⟨h0, h1⟩, h2, h3, h4⟩, h5, h6, h7⟩, h8, h9, h11'⟩ := hcc
   obtain ⟨sc', ls', h, d, _, _, _, f, g⟩ := iter_blockBody hnM hWM hix hk hN hK repA repB P σ0 []
     ⟨⟨⟨⟨by rw [hs0 0 (by decide), h0], by rw [hs0 1 (by decide), h1]⟩, by rw [hs0 2 (by decide), h2],
@@ -324,9 +346,8 @@ theorem exec_blockC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix
       by rw [hs0 8 (by decide), h8], by rw [hs0 9 (by decide), h9], by rw [hs0 11 (by decide), h11']⟩
     hIS0.1 hIS0.2 (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by simp [σ0, setSL])
     (by simp [σ0, setSL]) (by simp [σ0, setSL, h10]) (by simp [σ0, setSL, h11])
-    (by simp [σ0, setSL]) hcap hcap' (by simpa using hcap21) hbig (4 * k * N) le_rfl hM
-  have hall : (enumO N k).take (4 * k * N) = enumO N k := List.take_of_length_le (by
-    rw [length_enumO'])
+    (by simp [σ0, setSL]) hcap hcap' (by simpa using hcap21) hbig (4 * k * N) le_rfl
+    (by simp only [bst, hall]; exact hM)
   refine ⟨sc', ls', ?_, ?_, fun r hr => ?_, fun l hl => ?_⟩
   · rw [h]; simp only [bst, hall]; rfl
   · rw [d, List.nil_append, bList, repList]
