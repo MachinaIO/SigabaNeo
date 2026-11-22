@@ -497,4 +497,47 @@ theorem vG_le (β0 : Fin 256 → ℕ) (M31 : ℕ) (lw : List (Fin 256 × ℕ))
 
 end WB2
 
+/-! ### Templates with explicit values -/
+
+namespace WB2
+
+open SigabaNeo.Tape.ValVM SigabaNeo.Lattices.Algo SigabaNeo.Lattices
+
+/-- `wordsT` with the tree height `th` explicit. -/
+def wordsTx (N K k d W th oB oW oP : ℕ) : List (Fin 256 × ℕ) :=
+  [(ValVM.tTV, VT N K k d), (mw 10, VT N K k d), (mw 11, VT N K k d), (mw 12, K + 1), (mw 13, K + 2),
+    (mw 14, (K + 1) * VT N K k d), (mw 15, (K + 2) * VT N K k d), (mw 16, (K + 3) * VT N K k d),
+    (mw 20, K), (mw 27, 2), (mw 29, 1), (mw TNV, N * VT N K k d),
+    (mw TNKV, N * ((K + 1) * VT N K k d)), (mw T2K, 2 * (K + 1)),
+    (mw TLB, (2 * (K + 1) * N + 1) * ((K + 1) * VT N K k d)), (mw TCNT, 2 * (K + 1) * N + 1),
+    (mw TH, th), (mw TN, N), (mw TN1, N - 1), (mw TN1V, (N - 1) * VT N K k d),
+    (mw TKV, K * VT N K k d), (mw T2kNV, 2 * (N * ((K + 1) * VT N K k d))),
+    (mw T2kkNV, 2 * (K + 1) * (N * ((K + 1) * VT N K k d))), (mw TA1, lenA N K k 1),
+    (mw TAd, lenA N K k d), (mw TK1, K - 1), (mw ZNK1, N * K - 1), (mw TNK, N * K),
+    (mw T4k, 2 * (2 * (K + 1))), (mw T10, 10), (mw INSW, 10 * (nBI N K * VT N K k d)),
+    (mw TSl, nBI N K * VT N K k d), (mw TST, (W + 1) * (nBI N K * VT N K k d)),
+    (mw TD2, 2 * ((W + 1) * (nBI N K * VT N K k d))), (mw TW, W),
+    (mw TPAD, (W - 10) * (nBI N K * VT N K k d)), (mw TW9, W - 9),
+    (mw TINS, 10 * (nBI N K * VT N K k d)), (mw 61, oB), (mw 62, oW), (mw 63, oP)]
+
+theorem wordsT_eq (N K k d W oB oW oP : ℕ) :
+    wordsT N K k d W oB oW oP = wordsTx N K k d W (treeHeight N (K + 1)) oB oW oP := rfl
+
+theorem TLe_wordsTx (N K k d W : ℕ) {th oB oW oP th' oB' oW' oP' : ℕ} (h0 : th ≤ th')
+    (h1 : oB ≤ oB') (h2 : oW ≤ oW') (h3 : oP ≤ oP') :
+    TLe (wordsTx N K k d W th oB oW oP) (wordsTx N K k d W th' oB' oW' oP') := by
+  simp [wordsTx, TLe, h0, h1, h2, h3]
+
+theorem TLe_le {n : ℕ} {M : ℕ} : ∀ {l l' : List (Fin n × ℕ)}, TLe l l' → (∀ x ∈ l', x.2 ≤ M) →
+    ∀ x ∈ l, x.2 ≤ M
+  | [], [], _, _, _, hx => absurd hx (by simp)
+  | x :: l, y :: l', ⟨_, h2, h3⟩, h, z, hz => by
+    rcases List.mem_cons.mp hz with rfl | hz
+    · exact h2.trans (h y (by simp))
+    · exact TLe_le h3 (fun w hw => h w (by simp [hw])) z hz
+  | [], _ :: _, h, _, _, _ => h.elim
+  | _ :: _, [], h, _, _, _ => h.elim
+
+end WB2
+
 end AdvancedEncryption.DualUse.Prog
