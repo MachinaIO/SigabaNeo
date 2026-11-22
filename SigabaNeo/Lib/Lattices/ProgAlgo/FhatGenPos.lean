@@ -92,6 +92,106 @@ theorem exec_posBody {N k : ℕ} (hk : 0 < k) (hN : 0 < N) (σ : St) (c i j : �
       hs3 r (by rintro rfl; revert hr; decide) (by rintro rfl; revert hr; decide)]
   · simp [s5, s4, s3, s2, s1, setSL, Function.update_of_ne a, Function.update_of_ne b]
 
+/-- The value at the index `x` of the loop. -/
+def pAt (n thr N k : ℕ) (R : List ℕ) (x : ℕ) : ℕ := pfix n thr N k R (x / N / k) (x / N % k) (x % N)
+
+theorem pAt_idx {n thr N k : ℕ} (R : List ℕ) {c i j : ℕ} (hi : i < k) (hj : j < N) :
+    pAt n thr N k R ((c * k + i) * N + j) = pfix n thr N k R c i j := by
+  have e1 : ((c * k + i) * N + j) / N = c * k + i := by
+    rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hj, Nat.zero_add]
+  have e2 : ((c * k + i) * N + j) % N = j := by
+    rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hj]
+  have e3 : (c * k + i) / k = c := by
+    rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hi, Nat.zero_add]
+  have e4 : (c * k + i) % k = i := by
+    rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hi]
+  simp only [pAt, e1, e2, e3, e4]
+
+/-- The registers the position loop relies on. -/
+def PQ (N k thr : ℕ) (R : List ℕ) (σ : St) : Prop :=
+  σ.sc 2 = k ∧ σ.sc 5 = N ∧ σ.sc 0 = E.n ∧ σ.sc 58 = thr ∧ σ.ls 23 = R
+
+theorem pos_bounds {N k : ℕ} (hk : 0 < k) (hN : 0 < N) :
+    2 * k ≤ 4 * k * N * k ∧ N ≤ 4 * k * N * k ∧ 2 * k * k * N ≤ 4 * k * N * k := by
+  have h1 : 1 ≤ N * k := Nat.mul_pos hN hk
+  have h2 : 1 ≤ k * k := Nat.mul_pos hk hk
+  refine ⟨?_, ?_, ?_⟩
+  · have : 2 * k * 1 ≤ 2 * k * (N * k) := Nat.mul_le_mul_left _ h1
+    have e : 4 * k * N * k = 2 * (2 * k * (N * k)) := by ring
+    omega
+  · have : N * 1 ≤ N * (k * k) := Nat.mul_le_mul_left _ h2
+    have e : 4 * k * N * k = 4 * (N * (k * k)) := by ring
+    omega
+  · have e : 4 * k * N * k = 2 * (2 * k * k * N) := by ring
+    omega
+
+set_option maxHeartbeats 2000000 in
+theorem iter_posBody {N k : ℕ} (hk : 0 < k) (hN : 0 < N) (thr : ℕ) (R : List ℕ)
+    (hR : ∀ x ∈ R, x ≤ E.M) (hnM : E.n ≤ E.M) (hbM : 4 * k * N * k + 2 ≤ E.M) :
+    ∀ (x : ℕ) (σ : St) (L0 : List ℕ) (c i j : ℕ), x ≤ 2 * k * k * N → PQ (E := E) N k thr R σ →
+      σ.sc 47 = c → σ.sc 48 = i → σ.sc 49 = j → i < k → j < N → (c * k + i) * N + j = 0 →
+      σ.ls 19 = L0 → L0.length + 2 * k * k * N ≤ E.C →
+      PQ (E := E) N k thr R ((exec E (.seq posBody odoC))^[x] σ) ∧
+        ((exec E (.seq posBody odoC))^[x] σ).ls 19 =
+          L0 ++ (List.range x).map (pAt E.n thr N k R) ∧
+        (∀ r : SR, r.val < 41 ∨ (49 < r.val ∧ r.val < 50) ∨ 53 < r.val →
+          ((exec E (.seq posBody odoC))^[x] σ).sc r = σ.sc r) ∧
+        (∀ l : LR, l ≠ 19 → l ≠ 20 → ((exec E (.seq posBody odoC))^[x] σ).ls l = σ.ls l) ∧
+        ∃ c' i' j', ((exec E (.seq posBody odoC))^[x] σ).sc 47 = c' ∧
+          ((exec E (.seq posBody odoC))^[x] σ).sc 48 = i' ∧
+          ((exec E (.seq posBody odoC))^[x] σ).sc 49 = j' ∧ i' < k ∧ j' < N ∧
+          (c' * k + i') * N + j' = x
+  | 0, σ, L0, c, i, j, _, hq, h47, h48, h49, hi, hj, h0, hL, _ =>
+    ⟨hq, by simp [hL], fun _ _ => rfl, fun _ _ _ => rfl, c, i, j, h47, h48, h49, hi, hj, h0⟩
+  | x + 1, σ, L0, c, i, j, hx, hq, h47, h48, h49, hi, hj, h0, hL, hC => by
+    obtain ⟨hq1, hl1, hf1, hg1, c1, i1, j1, d47, d48, d49, hi1, hj1, hidx⟩ :=
+      iter_posBody hk hN thr R hR hnM hbM x σ L0 c i j (by omega) hq h47 h48 h49 hi hj h0 hL hC
+    rw [Function.iterate_succ_apply']
+    set τ := (exec E (.seq posBody odoC))^[x] σ
+    have hc1 : c1 < 2 * k := by
+      by_contra h
+      have a1 : 2 * k * k ≤ c1 * k := Nat.mul_le_mul_right k (by omega)
+      have a2 : 2 * k * k * N ≤ c1 * k * N := Nat.mul_le_mul_right N a1
+      have a3 : c1 * k * N ≤ (c1 * k + i1) * N := Nat.mul_le_mul_right N (by omega)
+      omega
+    have hidx' : (c1 * N + j1) * k + i1 < 2 * k * k * N := by
+      have a1 : (c1 * N + j1) * k + i1 < (c1 * N + j1 + 1) * k := by
+        rw [Nat.add_mul (c1 * N + j1) 1 k]; omega
+      have a2 : c1 * N + j1 + 1 ≤ 2 * k * N := by
+        have : (c1 + 1) * N ≤ 2 * k * N := Nat.mul_le_mul_right N (by omega)
+        rw [Nat.add_mul] at this; omega
+      have a3 : (c1 * N + j1 + 1) * k ≤ 2 * k * N * k := Nat.mul_le_mul_right k a2
+      have : 2 * k * N * k = 2 * k * k * N := by ring
+      omega
+    have hb := pos_bounds hk hN
+    obtain ⟨sc2, ls2, e2, d2, f2, g2⟩ := exec_posBody (E := E) hk hN τ c1 i1 j1 R thr hq1.1
+      hq1.2.1 hq1.2.2.1 d47 d48 d49 hq1.2.2.2.1 hq1.2.2.2.2 (by omega) hR hnM
+      (by rw [hl1]; simp; omega)
+    obtain ⟨c2, i2, j2, e3, hidx2, hi2, hj2⟩ := exec_odoC (E := E) (setSL τ sc2 ls2) c1 i1 j1
+      (by simp [setSL]; rw [f2 2 (by decide), hq1.1]) (by simp [setSL]; rw [f2 5 (by decide), hq1.2.1])
+      (by simp [setSL]; rw [f2 47 (by decide), d47]) (by simp [setSL]; rw [f2 48 (by decide), d48])
+      (by simp [setSL]; rw [f2 49 (by decide), d49]) hi1 hj1 (by omega) (by omega)
+      (by omega)
+    rw [exec_seq, e2, e3]
+    have hs : ∀ r : SR, r.val < 41 ∨ (49 < r.val ∧ r.val < 50) ∨ 53 < r.val →
+        (setSL (setSL τ sc2 ls2) (Function.update (Function.update (Function.update
+          (setSL τ sc2 ls2).sc 47 c2) 48 i2) 49 j2) (setSL τ sc2 ls2).ls).sc r = σ.sc r :=
+      fun r hr => by
+        simp only [setSL]
+        rw [Function.update_of_ne (by rintro rfl; revert hr; decide),
+          Function.update_of_ne (by rintro rfl; revert hr; decide),
+          Function.update_of_ne (by rintro rfl; revert hr; decide), f2 r (by omega), hf1 r hr]
+    refine ⟨⟨by rw [hs 2 (by decide), hq.1], by rw [hs 5 (by decide), hq.2.1],
+        by rw [hs 0 (by decide), hq.2.2.1], by rw [hs 58 (by decide), hq.2.2.2.1],
+        by simp only [setSL]; rw [g2 23 (by decide) (by decide), hq1.2.2.2.2]⟩,
+      ?_, hs, fun l a b => by simp only [setSL]; rw [g2 l a b, hg1 l a b],
+      c2, i2, j2, by simp [setSL], by simp [setSL, Function.update_apply],
+      by simp [setSL, Function.update_apply], hi2, hj2, by omega⟩
+    simp only [setSL]
+    rw [d2, hl1, List.range_succ, List.map_append, List.map_singleton, List.append_assoc]
+    congr 3
+    rw [← hidx, pAt_idx R hi1 hj1]
+
 end FhatGen
 
 end SigabaNeo.Lattices
