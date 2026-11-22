@@ -36,6 +36,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.Digits
 import SigabaNeo.Lib.Lattices.ProgAlgo.MatAdd
 import SigabaNeo.Lib.Lattices.ProgAlgo.MatMul
 import SigabaNeo.Lib.Lattices.ProgAlgo.Gadget
+import SigabaNeo.Lib.Lattices.ProgAlgo.Nand
 
 /-!
 # Lattice library
