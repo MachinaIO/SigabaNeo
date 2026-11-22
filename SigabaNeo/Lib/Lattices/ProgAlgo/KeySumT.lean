@@ -178,6 +178,140 @@ theorem boundsT_keySumP {ℓ : Fin 86 → ℕ} (hℓ : ℓ ≤ ℓKS M N K m k W
 
 end
 
+/-! ### Per-tape bounds of `simKeyP` and `simTmplP` -/
+
+namespace KST
+
+/-- The values of the variables of `simKeyP`: those of `keySumP`, then the length `Lst₂` of the
+second store and `W'`, `V'`, `off'`. -/
+def skVars (M N K m k W V off Lst Lpos Lst₂ W' V' off' : ℕ) : List ℕ :=
+  [M, N, K, m, k, W, V, off, Lst, Lpos, Lst₂, W', V', off']
+
+def σSK : Asg := σKS ++ List.replicate 68 [] ++
+  [q 1 [0, 0, 0, 0, 0, 0, 0, 0, 0, 1], q 1 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    q 1 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], q 1 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    q 1 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]
+
+/-- The claim: the output of `m · 2k · N K` bits. -/
+def σSK' : Asg := [q 2 [1, 1, 1, 1]]
+
+/-- The sweeps of `simKeyP`. -/
+def wSK : Poly := (([], 35) :: wKS.tail) ++
+  [([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 13), ([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1], 3),
+    ([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 3), ([0, 1, 1, 1, 1], 70), ([0, 1, 0, 1, 1], 56)]
+
+set_option maxRecDepth 100000 in
+theorem check_simKeyP : check 8 simKeyP σSK σSK' wSK = true := by decide +kernel
+
+/-- The values of the variables of `simTmplP`. -/
+def tmVars (M N K k Lw : ℕ) : List ℕ := [M, N, K, k, Lw]
+
+def σTm : Asg :=
+  [pTop, pTop, pTop, pTop, q 1 [0, 1], q 1 [1], q 1 [1, 1], q 1 [0, 0, 1], q 2 [1, 1, 1],
+    q 4 [1, 1, 1], q 1 [1, 1, 1], q 1 [0, 0, 0, 1]]
+
+def σTm' : Asg :=
+  [q 2 [1, 1, 1], q 4 [1, 1, 1], q 1 [0, 0, 0, 1], q 1 [1, 1], q 1 [0, 1], q 1 [1], q 1 [1, 1],
+    q 1 [0, 0, 1], q 2 [1, 1, 1], q 4 [1, 1, 1], q 1 [1, 1, 1], q 1 [0, 0, 0, 1]]
+
+/-- The sweeps of `simTmplP`. -/
+def wTm : Poly :=
+  [([], 63), ([0, 0, 1], 22), ([0, 0, 0, 1], 34), ([0, 1, 0, 1], 9), ([0, 1, 1, 1], 36),
+    ([0, 0, 1, 1], 11), ([0, 1], 9), ([0, 1, 1], 6)]
+
+set_option maxRecDepth 100000 in
+theorem check_simTmplP : check 8 simTmplP σTm σTm' wTm = true := by decide +kernel
+
+end KST
+
+/-- The per-tape input bounds of `simKeyP`: those of `keySumP` on `0 … 85`, then the second store
+(`Lst₂` bits), its position (`W'` bits) and the templates `W'`, `V'`, `off'`; `91 … 93` blank. -/
+def ℓSK (o N K m k W V off Lst Lpos Lst₂ W' V' off' : ℕ) (t : Fin 94) : ℕ :=
+  if h : t.val < 86 then ℓKS o N K m k W V off Lst Lpos ⟨t.val, h⟩ else
+  match t.val with
+  | 86 => Lst₂ | 87 => W' | 88 => W' | 89 => V' | 90 => off' | _ => 0
+
+/-- The per-tape input bounds of `simTmplP`: the outputs at most `o`, the templates. -/
+def ℓTm (o N K k Lw : ℕ) (t : Fin 31) : ℕ :=
+  match t.val with
+  | 0 => o | 1 => o | 2 => o | 3 => o | 4 => K | 5 => N | 6 => N * K | 7 => k
+  | 8 => 2 * k * (N * K) | 9 => 2 * (2 * k) * (N * K) | 10 => k * (N * K) | 11 => Lw | _ => 0
+
+/-- The sweeps of `simKeyP`. -/
+def simKeySweeps (N K m k W V off W' V' off' : ℕ) : ℕ :=
+  keySumSweeps N K m k W V off + 24 + 13 * W' + 3 * W' * V' + 3 * off' + 70 * N * K * m * k +
+    56 * N * m * k
+
+/-- The sweeps of `simTmplP`. -/
+def simTmplSweeps (N K k : ℕ) : ℕ :=
+  63 + 22 * K + 34 * k + 9 * N * k + 36 * N * K * k + 11 * K * k + 9 * N + 6 * N * K
+
+section
+
+open KST
+
+set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
+set_option linter.unusedSimpArgs false
+
+theorem ℓSK_le (M N K m k W V off Lst Lpos Lst₂ W' V' off' : ℕ) :
+    ℓSK M N K m k W V off Lst Lpos Lst₂ W' V' off' ≤
+      bnd (skVars M N K m k W V off Lst Lpos Lst₂ W' V' off') σSK := by
+  rintro ⟨v, hv⟩
+  interval_cases v <;>
+    simp [ℓSK, ℓKS, bnd, aGet, σSK, σKS, q, pTop, pEval, mEval, skVars] <;>
+    first | omega | exact le_of_eq (by ring) | ring
+
+theorem ℓTm_le (M N K k Lw : ℕ) : ℓTm M N K k Lw ≤ bnd (tmVars M N K k Lw) σTm := by
+  rintro ⟨_ | _ | _ | _ | _ | _ | _ | _ | _ | _ | _ | _ | v, hv⟩ <;>
+    simp_all [ℓTm, bnd, aGet, σTm, q, pTop, pEval, mEval, tmVars] <;>
+    first | omega | exact le_of_eq (by ring) | ring
+
+set_option maxHeartbeats 4000000 in
+/-- **Per-tape bounds of `simKeyP`**: every tape at most `M`, the output `m · 2k · N K` bits, and
+the time at most `(2 M + 3) · simKeySweeps …`. -/
+theorem boundsT_simKeyP (M N K m k W V off Lst Lpos Lst₂ W' V' off' : ℕ) {ℓ : Fin 94 → ℕ}
+    (hℓ : ℓ ≤ ℓSK M N K m k W V off Lst Lpos Lst₂ W' V' off') (hM : ∀ t, ℓ t ≤ M) :
+    lenBoundT simKeyP ℓ 0 ≤ m * (2 * k) * (N * K) ∧ (∀ t, lenBoundT simKeyP ℓ t ≤ M) ∧
+      timeBoundT simKeyP ℓ ≤ (2 * M + 3) * simKeySweeps N K m k W V off W' V' off' := by
+  obtain ⟨h1, h2, h3⟩ := bounds_of_check check_simKeyP
+    (skVars M N K m k W V off Lst Lpos Lst₂ W' V' off')
+    (hℓ.trans (ℓSK_le M N K m k W V off Lst Lpos Lst₂ W' V' off')) hM
+  have ht : top (skVars M N K m k W V off Lst Lpos Lst₂ W' V' off') = M := rfl
+  have hw : pEval (skVars M N K m k W V off Lst Lpos Lst₂ W' V' off') wSK =
+      simKeySweeps N K m k W V off W' V' off' := by
+    simp only [wSK, wKS, simKeySweeps, keySumSweeps, pEval, mEval, skVars, List.headD, List.tail,
+      List.cons_append, List.nil_append]
+    ring
+  have ho : pEval (skVars M N K m k W V off Lst Lpos Lst₂ W' V' off') (aGet σSK' 0) =
+      m * (2 * k) * (N * K) := by
+    simp [σSK', aGet, q, pEval, mEval, skVars]; ring
+  rw [ht] at h2 h3
+  rw [hw] at h3
+  exact ⟨(h1 0 (by decide)).trans ho.le, h2, h3⟩
+
+set_option maxHeartbeats 4000000 in
+/-- **Per-tape bounds of `simTmplP`**: the outputs get `2k N K`, `2 · 2k N K`, `Lw`, `N K` bits,
+every tape at most `M`, and the time is at most `(2 M + 3) · simTmplSweeps N K k`. -/
+theorem boundsT_simTmplP (M N K k Lw : ℕ) {ℓ : Fin 31 → ℕ} (hℓ : ℓ ≤ ℓTm M N K k Lw)
+    (hM : ∀ t, ℓ t ≤ M) :
+    lenBoundT simTmplP ℓ 0 ≤ 2 * k * (N * K) ∧ lenBoundT simTmplP ℓ 1 ≤ 2 * (2 * k) * (N * K) ∧
+      lenBoundT simTmplP ℓ 2 ≤ Lw ∧ lenBoundT simTmplP ℓ 3 ≤ N * K ∧
+      (∀ t, lenBoundT simTmplP ℓ t ≤ M) ∧
+      timeBoundT simTmplP ℓ ≤ (2 * M + 3) * simTmplSweeps N K k := by
+  obtain ⟨h1, h2, h3⟩ := bounds_of_check check_simTmplP (tmVars M N K k Lw)
+    (hℓ.trans (ℓTm_le M N K k Lw)) hM
+  have ht : top (tmVars M N K k Lw) = M := rfl
+  have hw : pEval (tmVars M N K k Lw) wTm = simTmplSweeps N K k := by
+    simp only [wTm, simTmplSweeps, pEval, mEval, tmVars, List.headD, List.tail]; ring
+  rw [ht] at h2 h3
+  rw [hw] at h3
+  refine ⟨(h1 0 (by decide)).trans (le_of_eq ?_), (h1 1 (by decide)).trans (le_of_eq ?_),
+    (h1 2 (by decide)).trans (le_of_eq ?_), (h1 3 (by decide)).trans (le_of_eq ?_), h2, h3⟩
+  all_goals (simp [σTm', aGet, q, pEval, mEval, tmVars]; try ring)
+
+end
+
 end Prog
 
 end SigabaNeo.Tape
