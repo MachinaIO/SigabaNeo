@@ -168,4 +168,35 @@ theorem Machine.cost_andThen_le :
         linarith
     _ = 392 * a₁ ^ 2 * a₂ * (Nat.size a₁ + 2) := by simp only [Q]; ring
 
+/-! ### Three stages -/
+
+section Three
+
+variable (P M D : Machine)
+
+/-- The output law of three stages. -/
+theorem Machine.run_andThen_andThen (x : List Bool) :
+    (P.andThen (M.andThen D)).run x = ((P.run x).bind M.run).bind D.run := by
+  rw [Machine.run_andThen, PMF.bind_bind]
+  congr 1; funext y; rw [Machine.run_andThen]
+
+/-- Both bracketings have the same output law. -/
+theorem Machine.run_andThen_assoc (x : List Bool) :
+    (P.andThen (M.andThen D)).run x = ((P.andThen M).andThen D).run x := by
+  rw [Machine.run_andThen_andThen, Machine.run_andThen, Machine.run_andThen]
+
+/-- **Acceptance of three stages**: `D` on the output law of `M` on the output law of `P`. -/
+theorem Machine.acceptProb_andThen_andThen (μ : PMF (List Bool)) :
+    (P.andThen (M.andThen D)).acceptProb μ = D.acceptProb ((μ.bind P.run).bind M.run) := by
+  rw [Machine.acceptProb_andThen, Machine.acceptProb_andThen, PMF.bind_bind]
+
+/-- **Cost of three stages** with a fixed first stage `P`: linear in the cost of the rest, and
+`M.andThen D` costs at most `392 * M.cost ^ 2 * D.cost * (Nat.size M.cost + 2)`. -/
+theorem Machine.cost_andThen_andThen_le :
+    (P.andThen (M.andThen D)).cost ≤
+      P.andThenFactor * (392 * M.cost ^ 2 * D.cost * (Nat.size M.cost + 2)) :=
+  (Machine.cost_andThen_le_first P _).trans (Nat.mul_le_mul_left _ (Machine.cost_andThen_le M D))
+
+end Three
+
 end SigabaNeo
