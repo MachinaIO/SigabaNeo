@@ -90,6 +90,10 @@ theorem exec_not_mem : ∀ (c : Code) (w : St) (j : Fin 40), j ∉ wr c → exec
     rw [exec_not_mem q _ j h.2, exec_not_mem p _ j h.1]
   | .nop, w, j, _ => rfl
 
+theorem exec_ofList_append (l₁ l₂ : List Code) (w : St) :
+    exec V f (ofList (l₁ ++ l₂)) w = exec V f (ofList l₂) (exec V f (ofList l₁) w) := by
+  rw [exec_ofList, exec_ofList, exec_ofList, List.foldl_append]
+
 theorem wr_ofList : ∀ l : List Code, wr (ofList l) = l.flatMap wr
   | [] => rfl
   | c :: l => by simp [ofList, wr, wr_ofList l]
@@ -734,5 +738,73 @@ theorem exec_madd2 (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
     rcases hx with ⟨_, rfl⟩ | rfl | rfl <;> assumption
   all_goals simp (config := {decide := true}) [Function.update_apply, v, w1, h10, h11, hS, h13,
     h16, hC, hsl]
+
+/-- A high word (not a register of the gadgets, not a stream of the loops). -/
+def Hi (j : Fin 40) : Prop := 11 ≤ j.val ∧ j ≠ NA ∧ j ≠ NB ∧ j ≠ NC ∧ j ≠ CT0
+
+theorem Hi.ne {j : Fin 40} (h : Hi j) (c : Fin 40) (hc : c.val < 11 ∨ c = NA ∨ c = NB ∨ c = NC ∨
+    c = CT0) : j ≠ c := by
+  rintro rfl
+  rcases hc with hc | hc | hc | hc | hc
+  · exact absurd h.1 (by omega)
+  · exact h.2.1 hc
+  · exact h.2.2.1 hc
+  · exact h.2.2.2.1 hc
+  · exact h.2.2.2.2 hc
+
+theorem Hi.not_rippleW {j : Fin 40} (h : Hi j) : ¬ rippleW j := by
+  simp only [rippleW, not_or]
+  exact ⟨by have := h.1; omega, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2⟩
+
+/-- Split the `m + 1` values of `NC`: the first `m` into `dst` (counter template `tk` of `m` bits,
+buffer template `tb` of `m V` bits), the last into `R9`. -/
+def splitC (tk tb dst : Fin 40) : Code :=
+  ofList [.cp NA NC, .cp NB NC, .cp 0 10, .cp 1 10, zipC idG tk tb, .cp 9 10, .mvV 9 NA, .cp dst NC]
+
+theorem exec_splitC {tk tb dst : Fin 40} (htk : Hi tk) (htb : Hi tb) (hd : Hi dst)
+    (w : St) (vs : List (List Bool)) (v : List Bool) (hvs : ∀ x ∈ vs, x.length = V)
+    (hv : v.length = V) (h10 : (w 10).length = V) (hNC : w NC = (vs ++ [v]).flatten)
+    (hk : (w tk).length = vs.length) (hb : (w tb).length = vs.length * V) :
+    exec V f (splitC tk tb dst) w dst = vs.flatten ∧ exec V f (splitC tk tb dst) w 9 = v ∧
+      ∀ j, Hi j → j ≠ dst → exec V f (splitC tk tb dst) w j = w j := by
+  rw [show splitC tk tb dst = ofList ([.cp NA NC, .cp NB NC, .cp 0 10, .cp 1 10] ++
+    [zipC idG tk tb, .cp 9 10, .mvV 9 NA, .cp dst NC]) from rfl, exec_ofList_append]
+  set w1 := Function.update (Function.update (Function.update (Function.update w NA (w NC)) NB
+    (w NC)) 0 (w 10)) 1 (w 10) with hw1
+  have hpre : exec V f (ofList [.cp NA NC, .cp NB NC, .cp 0 10, .cp 1 10]) w = w1 := by
+    simp (config := {decide := true}) only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp',
+      Function.update_apply, if_true, if_false, hw1]
+  rw [hpre]
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  have v1 : ∀ j, Hi j → w1 j = w j := fun j hj => by
+    simp [w1, Function.update_apply, hj.ne 0 (by decide), hj.ne 1 (by decide),
+      hj.ne NA (by decide), hj.ne NB (by decide)]
+  have hA : w1 NA = vs.flatten ++ v := by
+    simp (config := {decide := true}) [w1, Function.update_apply, hNC]
+  have hB : w1 NB = vs.flatten ++ v := by
+    simp (config := {decide := true}) [w1, Function.update_apply, hNC]
+  obtain ⟨z1, zA, zB, z0, z1', z5⟩ := exec_zipC (V := V) (f := f) gOk_idG htk.not_rippleW
+    htb.not_rippleW vs vs w1 rfl hvs hvs
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h10]) v v hA hB
+    (by rw [v1 tk htk, hk]) (by rw [v1 tb htb, hb])
+  set w2 := exec V f (zipC idG tk tb) w1
+  have w2_10 : w2 10 = w 10 := by
+    rw [z5 10 (by simp (config := {decide := true}) [rippleW])]
+    simp (config := {decide := true}) [w1, Function.update_apply]
+  have zw : ∀ l : List (List Bool), List.zipWith (fun a (_ : List Bool) => a) l l = l := by
+    intro l; induction l with
+    | nil => rfl
+    | cons x xs ih => rw [List.zipWith_cons_cons, ih]
+  have z1v : w2 NC = vs.flatten := by rw [z1]; exact congrArg List.flatten (zw vs)
+  rw [exec_mvV_pop (L := []) (by decide) (by simp [Function.update_apply, w2_10, h10]) hv
+    (by simp (config := {decide := true}) [Function.update_apply, zA])]
+  refine ⟨?_, ?_, fun j hj hjd => ?_⟩
+  · simp (config := {decide := true}) only [Function.update_self, Function.update_apply, if_true,
+      if_false, z1v]
+  · rw [Function.update_of_ne (hd.ne 9 (by decide)).symm]; simp
+  · rw [Function.update_of_ne hjd, Function.update_of_ne (hj.ne 9 (by decide)),
+      Function.update_of_ne (hj.ne NA (by decide)), Function.update_of_ne (hj.ne 9 (by decide)),
+      z5 j hj.not_rippleW, v1 j hj]
 
 end ValVM
