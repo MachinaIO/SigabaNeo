@@ -1348,6 +1348,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     So the signed-unit share tends to 0; at q = 1009, (2,2,2,2) alone adds 1,006 hits to 16,106.
   * The dominant structures change with q, so extrapolating from small toys (Part 158) needs care.
     Pr(A) ≤ 10⁻³ at width 506 remains open.
+* **Part 161 (audited, minor caveats).** [band_plane_hits](research/wall1_band_plane_hits.md): the residual (b) band.
+  * The 4.038879·10⁻⁶ lower-strip charge now covers up to 0.97507453 GH.
+  * Part 159's first moment crosses the allowance at 0.984890155625… GH. The growth comes from the candidate-ball volume
+    factor w^506.
+  * A sharper radial count bounds the cumulative contribution through 0.990 GH by 0.008801064. That leaves
+    0.00019770868 for the upper band (0.990, 1.097193] GH plus residual (a).
+  * **First moments cannot reach the upper band.** On every history outside the large-GH exit, the exact expected number
+    of positive-height candidates in (1.004, 1.097) GH exceeds 74.85561, so shortest-vector selection must be used.
+  * An exact joint count keeps shorter competitors and ties. In the toys, every forced hit also satisfied the 0.97-GH void,
+    so the product of the two probabilities underestimates their intersection.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1357,7 +1367,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–160 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–161 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
