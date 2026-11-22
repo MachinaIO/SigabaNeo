@@ -540,4 +540,101 @@ theorem TLe_le {n : ℕ} {M : ℕ} : ∀ {l l' : List (Fin n × ℕ)}, TLe l l' 
 
 end WB2
 
+/-! ### The steps of the preparations -/
+
+namespace WB2
+
+open SigabaNeo.Tape.ValVM SigabaNeo.Tape.Prog SigabaNeo.Tape.Prog.KST
+
+theorem loopFree_clrsP : ∀ l : List (Fin 256), (clrsP l).LoopFree
+  | [] => trivial
+  | _ :: l => ⟨trivial, loopFree_clrsP l⟩
+
+theorem pcount_clrsP : ∀ l : List (Fin 256), pcount (clrsP l) = l.length + 1
+  | [] => rfl
+  | _ :: l => by simp [clrsP, pcount, pcount_clrsP l]; ring
+
+/-- A primitive below a uniform bound. -/
+theorem tb_prim (p : Prim 256) (β : Fin 256 → ℕ) (M : ℕ) (h : ∀ t, β t ≤ M) :
+    Prog.timeBoundT (.prim p) β ≤ 2 * M + 7 := by
+  have := timeBoundT_le_pcount (.prim p) trivial β h
+  simp only [pcount] at this
+  omega
+
+/-- The uniform term. -/
+def uT (M : ℕ) : ℕ := (2 * M + 1) * (4 * M + 12)
+
+theorem le_uT (M : ℕ) : 2 * M + 7 ≤ uT M := by simp only [uT]; nlinarith
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ)
+
+set_option maxHeartbeats 2000000 in
+/-- **The steps of `prepT`**, below a uniform bound of its intermediate tapes. -/
+theorem tT_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
+    (h2 : ∀ t, embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)
+      (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)) t ≤ M)
+    (h6 : ∀ t, tmOut c M31 (tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
+      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
+        (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)
+        (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)))))) t ≤ M)
+    (h31 : ∀ x ∈ tmpl31 N K k c.d, x.2 ≤ M)
+    (hl : ∀ x ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c), x.2 ≤ M) :
+    tT hk c W β0 M31 ≤ cntT W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0) +
+      (2 * M31 + 3) * simTmplSweeps N K k + 90 * uT (M + 6) := by
+  set v1 := Prog.lenBoundT (cp (mw GSC) (mw GS)) β0
+  set v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  set v3 := Prog.lenBoundT (clr (mw 12)) v2
+  set v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
+  set v5 := tmplB tX0 (tmpl31 N K k c.d) v4
+  set v6 := tmOut c M31 v5
+  set v7 := Prog.lenBoundT (copiesP 0) v6
+  set v8 := tmplB tX0 (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) v7
+  set v9 := Prog.lenBoundT (clr tX0) v8
+  set v10 := Function.update v9 (mw OB) (v9 (mw OB) + 1)
+  have h3 : ∀ t, v3 t ≤ M := Sym.lenBoundT_le_const (clr (mw 12)) rfl h2
+  have h4 : ∀ t, v4 t ≤ M := Sym.lenBoundT_le_const (cp (mw GS) (mw GSC)) rfl h3
+  have h7 : ∀ t, v7 t ≤ M := Sym.lenBoundT_le_const (copiesP 0) rfl h6
+  have h8 : ∀ t, v8 t ≤ M := tmplB_le tX0 M _ v7 h7 hl
+  have h9 : ∀ t, v9 t ≤ M := Sym.lenBoundT_le_const (clr tX0) rfl h8
+  have h10 : ∀ t, v10 t ≤ M + 1 := fun t => by
+    simp only [v10, Function.update_apply]; split_ifs
+    · have := h9 (mw OB); omega
+    · have := h9 t; omega
+  show Prog.timeBoundT (cp (mw GSC) (mw GS)) β0 + (cntT W v1 + (Prog.timeBoundT (clr (mw 12)) v2 +
+    (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 + (tmplTT tX0 (tmpl31 N K k c.d) v4 +
+    ((2 * M31 + 3) * simTmplSweeps N K k + (Prog.timeBoundT (copiesP 0) v6 +
+    (tmplTT tX0 (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) v7 +
+    (Prog.timeBoundT (clr tX0) v8 + ((1 + 1) * (2 * (supB v9 + 1 + 1) + 3) +
+      (1 + 1) * (2 * (supB v10 + 1 + 1) + 3)))))))))) ≤ _
+  have a : Prog.timeBoundT (cp (mw GSC) (mw GS)) β0 ≤ 2 * M + 7 := tb_prim _ β0 M h0
+  have b : Prog.timeBoundT (clr (mw 12)) v2 ≤ 2 * M + 7 := tb_prim _ v2 M h2
+  have c' : Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 ≤ 2 * M + 7 := tb_prim _ v3 M h3
+  have d := tmplTT_le tX0 M _ v4 h4 h31
+  have e := timeBoundT_le_pcount (copiesP 0) ⟨trivial, trivial, trivial, trivial, trivial, trivial⟩
+    v6 h6
+  have f := tmplTT_le tX0 M _ v7 h7 hl
+  have g : Prog.timeBoundT (clr tX0) v8 ≤ 2 * M + 7 := tb_prim _ v8 M h8
+  have s9 := supB_le_of h9
+  have s10 := supB_le_of h10
+  have l31 : (tmpl31 N K k c.d).length = 8 := rfl
+  have lT : (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)).length = 60 := rfl
+  have pc : pcount (copiesP 0) = 6 := rfl
+  rw [l31] at d
+  rw [lT] at f
+  rw [pc] at e
+  have u1 : uT M ≤ uT (M + 6) := by simp only [uT]; nlinarith
+  have u2 : 2 * M + 7 ≤ uT (M + 6) := (le_uT M).trans u1
+  have u3 : 6 * (2 * (M + 6) + 5) ≤ 6 * uT (M + 6) := by simp only [uT]; nlinarith
+  have u4 : (1 + 1) * (2 * (supB v9 + 1 + 1) + 3) ≤ uT (M + 6) := by simp only [uT]; nlinarith
+  have u5 : (1 + 1) * (2 * (supB v10 + 1 + 1) + 3) ≤ uT (M + 6) := by simp only [uT]; nlinarith
+  have hd : (8 + 1) * uT M ≤ 9 * uT (M + 6) := by nlinarith
+  have hf : (60 + 1) * uT M ≤ 61 * uT (M + 6) := by nlinarith
+  have hd' : (8 + 1) * ((2 * M + 1) * (4 * M + 12)) ≤ 9 * uT (M + 6) := hd
+  have hf' : (60 + 1) * ((2 * M + 1) * (4 * M + 12)) ≤ 61 * uT (M + 6) := hf
+  generalize (2 * M + 1) * (4 * M + 12) = P at d f hd' hf'
+  generalize uT (M + 6) = U at *
+  omega
+
+end WB2
+
 end AdvancedEncryption.DualUse.Prog
