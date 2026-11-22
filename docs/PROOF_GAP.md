@@ -1152,6 +1152,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     whole procedure" is therefore wrong by one. Part 47 and the Lean chain are consistent: J + d = N counts horizontal
     dimensions, and the decoder runs SVP on the full projected lattice.
   * The 1% quantile at ρ = 0.954 remains open.
+* **Part 144 (audited, SOUND).** [horizontal_core](research/wall1_horizontal_core.md): a direct attack on the horizontal-step
+  core (Part 120), counting over Part 108's conditional law.
+  * **Barrier 1.** At width 506 there is an explicit family of penultimate restart histories with maximal mark. On it, every
+    final draw selects an old line in an area-one old plane. The family's probability is ≈ 2^−1,909,216, far below the
+    horizontal budget 0.00488848.
+  * **Barrier 2.** In the original pass, the zero-displacement history (probability q^{−511d}) keeps the full q-torsion
+    mark. Its conditional horizontal charge is > 1 − 2^−303 at width 406 and > 1 − 2^−398 at width 506.
+  * **Barrier 3.** Part 139's discrete DS moment is infinite. On > 99.8% of width-506 restart states, exact alignment with
+    an old shortest line keeps positive probability after conditioning on |k| = 1 and s ≥ 30. Part 142's continuous bound
+    and Part 139's geometric factor are unaffected.
+  * **Consequence.** Bounds that hold uniformly over histories are impossible, even with maximal marks. The remaining
+    obligations are history-averaged: the averaged horizontal charge, the positive-height charge, and the late-state upper
+    tail of λ1/GH.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
