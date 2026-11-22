@@ -67,3 +67,4 @@ import PE.Impl.DualUse.Prog.Setup5
 import PE.Impl.DualUse.Prog.Setup3
 import PE.Impl.DualUse.Prog.SetupI
 import PE.Impl.DualUse.Prog.Chi
+import PE.Impl.DualUse.Prog.Auth
