@@ -125,6 +125,32 @@ theorem boundsT_simStepP (ρ : List ℕ) {ℓ : Fin 132 → ℕ} (hℓ : ℓ ≤
   rw [timeBoundT_toX_aStep, lenBoundT_toX_aStep] at h
   exact ⟨fun t ht => h.1 t (by simp [σSt', σSt]; omega), h.2⟩
 
+/-! ### The summary of the step in a machine
+
+In a machine (`SigabaNeo.Lib.Machines.Prog.ValVM`) the step is called repeatedly; its scratch tapes,
+blank in fact, are bounded abstractly by the top `qT` after a call. The summary is taken from
+inputs with scratch below `qT` (`σSt2`), so that calls compose. -/
+
+/-- The inputs of the step with its scratch below the top. -/
+def σSt2 : Asg := (List.range 132).map fun j =>
+  if j < 22 ∨ (86 ≤ j ∧ j < 90) then aGet σSt j else qT
+
+/-- The store after the step (all its tapes). -/
+def σStOut : Asg := ((xabs 8 aStep σSt2).map Prod.fst).getD []
+
+/-- The steps of the step, from `σSt2`. -/
+def cStep2 : Poly := ((xabs 8 aStep σSt2).map Prod.snd).getD []
+
+theorem xabs_aStep2 : xabs 8 aStep σSt2 = some (σStOut, cStep2) := by decide +kernel
+
+/-- **The summary of the step at every value of `N, K, k, d`**: inputs below `σSt2`, outputs
+below `σStOut`, at most `pEval ρ cStep2` steps. -/
+theorem xsound_simStepP : XSound (fun _ => True) (.prog (simStepP ginvTopP)) σSt2 σStOut cStep2 := by
+  intro ρ _ ℓ hℓ
+  have h := xabs_sound 8 aStep xabs_aStep2 ρ trivial ℓ hℓ
+  rw [timeBoundT_toX_aStep, lenBoundT_toX_aStep] at h
+  exact h
+
 end StepT
 
 end Prog
