@@ -59,6 +59,7 @@ def wr : Code → List (Fin 64)
   | .tl t => [t]
   | .rep c b => c :: wr b
   | .seq p q => wr p ++ wr q
+  | .ifb _ p q => wr p ++ wr q
   | .nop => []
 
 /-- **A code leaves the words it does not write.** -/
@@ -88,6 +89,12 @@ theorem exec_not_mem : ∀ (c : Code) (w : St) (j : Fin 64), j ∉ wr c → exec
     simp only [wr, List.mem_append, not_or] at h
     show exec V f q (exec V f p w) j = w j
     rw [exec_not_mem q _ j h.2, exec_not_mem p _ j h.1]
+  | .ifb t p q, w, j, h => by
+    simp only [wr, List.mem_append, not_or] at h
+    simp only [exec]
+    split_ifs
+    · exact exec_not_mem p w j h.1
+    · exact exec_not_mem q w j h.2
   | .nop, w, j, _ => rfl
 
 theorem exec_ofList_append (l₁ l₂ : List Code) (w : St) :

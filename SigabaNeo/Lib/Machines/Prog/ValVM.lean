@@ -97,6 +97,8 @@ inductive Code where
   /-- `|c|` rounds of the body, each after dropping the first bit of `c`. -/
   | rep (c : Fin 64) (body : Code)
   | seq (p q : Code)
+  /-- `p` if the first bit of `t` is `true`, else `q`. -/
+  | ifb (t : Fin 64) (p q : Code)
   | nop
 
 /-- Words. -/
@@ -120,6 +122,7 @@ def exec (V : ℕ) (f : List Bool → List Bool → List Bool) : Code → St →
   | .rep c body, w =>
     (fun w' => exec V f body (Function.update w' c (w' c).tail))^[(w c).length] w
   | .seq p q, w => exec V f q (exec V f p w)
+  | .ifb t p q, w => if hd (w t) = true then exec V f p w else exec V f q w
   | .nop, w => w
 
 /-! ### The frames of the instructions -/
@@ -227,6 +230,7 @@ def compileA {H : List ℕ → Prop} {P : Prog 132} (cert : StepCert H P) : Code
   | .tl t => .frame (mkE (f1 (tWd t)) (f1_inj _)) (.leafA (Prog.tl 0))
   | .rep c body => .loopA (tWd c) (compileA cert body)
   | .seq p q => .seq (compileA cert p) (compileA cert q)
+  | .ifb t p q => .ifBit (tWd t) (compileA cert p) (compileA cert q)
   | .nop => .frame (mkE (f1 tX0) (f1_inj _)) (.leafA (nop 0))
 
 /-! ### The encoding -/
@@ -522,6 +526,13 @@ theorem run_flat_compileA (hP : VStep P V f Pre) {s₀ : Store 132} (hpre : Pre 
     show run (XProg.flat (compileA cert p).toX ⨾ XProg.flat (compileA cert q).toX) _ = _
     rw [run_seq, run_flat_compileA hP hpre h0 h1 h2 p, run_flat_compileA hP hpre h0 h1 h2 q]
     rfl
+  | .ifb t p q, w => by
+    show run (Prog.ifBit (tWd t) (XProg.flat (compileA cert p).toX)
+      (XProg.flat (compileA cert q).toX)) _ = _
+    rw [run_ifBit, enc_tWd, exec]
+    split_ifs
+    · exact run_flat_compileA hP hpre h0 h1 h2 p w
+    · exact run_flat_compileA hP hpre h0 h1 h2 q w
   | .nop, w => run_nopF _ _
 
 theorem noGrow_flat_compileA (hP : VStep P V f Pre) :
@@ -550,6 +561,9 @@ theorem noGrow_flat_compileA (hP : VStep P V f Pre) :
   | .tl t => by show (map _ (Prog.tl 0)).noGrowB = true; rw [noGrowB_map]; rfl
   | .rep c body => noGrow_flat_compileA hP body
   | .seq p q => by
+    show (XProg.flat (compileA cert p).toX).noGrowB && (XProg.flat (compileA cert q).toX).noGrowB = true
+    rw [noGrow_flat_compileA hP p, noGrow_flat_compileA hP q]; rfl
+  | .ifb t p q => by
     show (XProg.flat (compileA cert p).toX).noGrowB && (XProg.flat (compileA cert q).toX).noGrowB = true
     rw [noGrow_flat_compileA hP p, noGrow_flat_compileA hP q]; rfl
   | .nop => by show (map _ (nop 0)).noGrowB = true; rw [noGrowB_map]; rfl
