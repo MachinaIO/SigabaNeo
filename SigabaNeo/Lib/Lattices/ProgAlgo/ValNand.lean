@@ -595,6 +595,208 @@ theorem bw_blocks {N k : ℕ} (A : BI N k → List Bool) :
   rw [List.flatten_flatten, List.map_map]
   rfl
 
+/-! ### The outputs of `(a, col)` in the order of `BI` -/
+
+theorem flatten_map_product {α β γ : Type*} (l₂ : List α) (l₃ : List β) (g : α × β → List γ) :
+    ((l₂ ×ˢ l₃).map g).flatten = (l₂.map fun b => (l₃.map fun c => g (b, c)).flatten).flatten := by
+  induction l₂ with
+  | nil => rfl
+  | cons b l₂ ih =>
+    rw [cons_product', List.map_append, List.flatten_append, ih, List.map_map, List.map_cons,
+      List.flatten_cons]
+    rfl
+
+theorem getElem_outsT (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    {one zv : List Bool} (h1 : one.length = V) (hz : zv.length = V)
+    (A B : BI N (K + 1) → List Bool) (a : Fin 2) (col : Fin 2 × Fin (K + 1)) (i : Fin (K + 1))
+    (t : Fin N) :
+    (outsT (V := V) (f := f) one zv A B a col N).getD (i.val + t.val * (K + 1)) [] =
+      (coefV one (fV V f) (enumT N (K + 1)) zv (2 ^ K) A B (gvExp (2 ^ K) (a, col, t)) a col
+        t).getD i.val one := by
+  have hu : ∀ x ∈ (List.finRange N).map (fun t' => coefV one (fV V f) (enumT N (K + 1)) zv (2 ^ K)
+      A B (gvExp (2 ^ K) (a, col, t')) a col t'), x.length = K + 1 := by
+    intro x hx
+    simp only [List.mem_map] at hx
+    obtain ⟨t', -, rfl⟩ := hx
+    exact (coefV_shape hf h1 hz A B _ a col t').1
+  have e : outsT (V := V) (f := f) one zv A B a col N = ((List.finRange N).map fun t' =>
+      coefV one (fV V f) (enumT N (K + 1)) zv (2 ^ K) A B (gvExp (2 ^ K) (a, col, t')) a col
+        t').flatten := by
+    rw [outsT, List.take_of_length_le (by simp), List.flatMap_def]
+  have hsh := (coefV_shape hf h1 hz A B (gvExp (2 ^ K) (a, col, t)) a col t).1
+  have hl : t.val * (K + 1) + i.val < (outsT (V := V) (f := f) one zv A B a col N).length := by
+    rw [e, length_flatten_unif _ hu, List.length_map, List.length_finRange]
+    have : (t.val + 1) * (K + 1) ≤ N * (K + 1) := Nat.mul_le_mul_right _ t.isLt
+    rw [Nat.succ_mul] at this; have := i.isLt; omega
+  rw [Nat.add_comm, List.getD_eq_getElem _ _ hl, List.getD_eq_getElem _ _ (by rw [hsh]; exact i.isLt)]
+  simp only [e] at hl ⊢
+  rw [getElem_flatten_unif _ hu t.val i.val (by simp) i.isLt hl]
+  simp
+
+/-- **The outputs of `(a, col)`, transposed, are the block `(a, col)` of the NAND's bundle.** -/
+theorem trL_outsT (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    {one zv : List Bool} (h1 : one.length = V) (hz : zv.length = V)
+    (A B : BI N (K + 1) → List Bool) (a : Fin 2) (col : Fin 2 × Fin (K + 1)) :
+    trL (outsT (V := V) (f := f) one zv A B a col N) (K + 1) N (K + 1) =
+      blk (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B)
+        a col := by
+  rw [trL, blk, product_def', List.map_flatMap]
+  rw [← List.map_coe_finRange_eq_range, List.flatMap_map]
+  congr 1
+  funext i
+  rw [colOf, ← List.map_coe_finRange_eq_range, List.map_map, List.map_map]
+  congr 1
+  funext t
+  simp only [Function.comp_apply]
+  rw [getElem_outsT hf h1 hz A B a col i t]
+  simp [nandV, mem_enumO]
+
+theorem dssW_eq {N K : ℕ} (B : BI N (K + 1) → List Bool) (col : Fin 2 × Fin (K + 1)) :
+    dssW B col = (blk B 0 col).flatten ++ (blk B 1 col).flatten := by
+  rw [dssW, blk, blk, flatten_map_product, flatten_map_product, List.map_map, cols,
+    flatten_map_product, show List.finRange 2 = [0, 1] from rfl]
+  simp [digitsOf, Function.comp_def]
+
+theorem nandV_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    {one zv : List Bool} (h1 : one.length = V) (hz : zv.length = V)
+    (A B : BI N (K + 1) → List Bool) (hA : ∀ b, (A b).length = V) (hB : ∀ b, (B b).length = V)
+    (b : BI N (K + 1)) :
+    (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B b).length
+      = V := by
+  unfold nandV
+  split_ifs
+  · rw [List.getD_eq_getElem?_getD]
+    rcases h : (coefV one (fV V f) (enumT N (K + 1)) zv (2 ^ K) A B
+      (gvExp (2 ^ K) (b.1, b.2.1, b.2.2.2)) b.1 b.2.1 b.2.2.2)[b.2.2.1.val]? with _ | x
+    · simpa using h1
+    · simp only [Option.getD_some]
+      exact (coefV_shape hf h1 hz A B _ _ _ _).2 x (List.mem_of_getElem? h)
+  · exact h1
+
+/-! ### One column -/
+
+theorem exec_mv_shift {d s c : Fin 128} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St} {x L : List Bool}
+    (hx : x.length = (w c).length) (hs : w s = x ++ L) :
+    exec V f (.mv d s c) w = Function.update (Function.update w s L) d ((w d ++ x).drop x.length) := by
+  simp only [exec, if_neg h, hs, shiftIn]
+  rw [List.drop_left' hx, takeD_eq_take (by simp [hx]), List.take_left' hx, hx]
+
+/-- The digits of the column. -/
+def dsC : List Code := [.cp DSSB T2kNV, .mv DSSB SB0 TNKV, .mv DSSB SB1 TNKV]
+
+/-- **One column `col`**: its digits, its constant, its `N` coefficients, transposed into `RES`. -/
+def c2Body : Code := ofList (dsC ++ [ecC, tLoopC, trC])
+
+/-- The words of a stream of blocks. -/
+def bstream (L : List (List (List Bool))) : List Bool := (L.map List.flatten).flatten
+
+theorem bstream_cons (x : List (List Bool)) (L : List (List (List Bool))) :
+    bstream (x :: L) = x.flatten ++ bstream L := rfl
+
+theorem blk_shape {N K : ℕ} {A : BI N (K + 1) → List Bool} (hA : ∀ b, (A b).length = V)
+    (a : Fin 2) (c : Fin 2 × Fin (K + 1)) :
+    UV V (blk A a c) ∧ (blk A a c).length = (K + 1) * N := by
+  refine ⟨fun x hx => ?_, by simp [blk, List.length_product]⟩
+  simp only [blk, List.mem_map] at hx
+  obtain ⟨p, -, rfl⟩ := hx
+  exact hA _
+
+theorem blk_len {N K : ℕ} {A : BI N (K + 1) → List Bool} (hA : ∀ b, (A b).length = V)
+    (a : Fin 2) (c : Fin 2 × Fin (K + 1)) : (blk A a c).flatten.length = N * ((K + 1) * V) := by
+  rw [length_flatten_of (blk_shape hA a c).1, (blk_shape hA a c).2]; ring
+
+/-- **One column**: with the streams of the blocks of `B` at `(0, col)` and `(1, col)`, `RES`
+receives the block `(a, col)` of the NAND's bundle. -/
+theorem exec_c2Body (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    {one zv : List Bool} (A B : BI N (K + 1) → List Bool)
+    (hA : ∀ b, (A b).length = V) (hB : ∀ b, (B b).length = V) (a : Fin 2)
+    (col : Fin 2 × Fin (K + 1)) (w : St) (ctx : NCtx V K N one zv w) (hras : w RASB = rasW A a)
+    (hdg : w DG = [decide (a = col.1)]) {L0 L1 : List (List (List Bool))}
+    (hs0 : w SB0 = bstream (blk B 0 col :: L0)) (hs1 : w SB1 = bstream (blk B 1 col :: L1))
+    (hc2 : w C2 = List.replicate (K - col.2.val) true) :
+    exec V f c2Body w RES = (w RES ++ (blk (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+        (gvExp (2 ^ K)) zv (2 ^ K) A B) a col).flatten).drop ((K + 1) * N * V) ∧
+      exec V f c2Body w SB0 = bstream L0 ∧ exec V f c2Body w SB1 = bstream L1 ∧
+      NCtx V K N one zv (exec V f c2Body w) ∧
+      ∀ j ∉ wr c2Body, exec V f c2Body w j = w j := by
+  have h1 : one.length = V := by rw [← ctx.vone]; exact ctx.tm.h10
+  have hz : zv.length = V := by rw [← ctx.vzv]; exact ctx.tm.h11
+  refine ⟨?_, ?_, ?_, ctx.exec _ (by decide), fun j hj => exec_not_mem _ _ _ hj⟩ <;>
+    rw [c2Body, exec_ofList_append]
+  all_goals
+    -- the digits
+    have hdD : exec V f (ofList dsC) w DSSB = dssW B col := by
+      simp only [dsC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+      rw [exec_mv_shift (d := DSSB) (s := SB0) (c := TNKV) (x := (blk B 0 col).flatten)
+        (L := bstream L0) (by decide)
+        (by simp (config := {decide := true}) [Function.update_apply, blk_len hB, ctx.nkv])
+        (by simp (config := {decide := true}) [Function.update_apply, hs0, bstream_cons])]
+      rw [exec_mv_shift (d := DSSB) (s := SB1) (c := TNKV) (x := (blk B 1 col).flatten)
+        (L := bstream L1) (by decide)
+        (by simp (config := {decide := true}) [Function.update_apply, blk_len hB, ctx.nkv])
+        (by simp (config := {decide := true}) [Function.update_apply, hs1, bstream_cons])]
+      simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+      rw [dssW_eq, drop_append_drop' (by rw [List.length_append, ctx.t2knv, blk_len hB]; omega),
+        List.append_assoc, List.drop_left' (by rw [ctx.t2knv, blk_len hB, blk_len hB]; ring)]
+    have hd0 : exec V f (ofList dsC) w SB0 = bstream L0 := by
+      simp only [dsC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+      rw [exec_mv_shift (d := DSSB) (s := SB0) (c := TNKV) (x := (blk B 0 col).flatten)
+        (L := bstream L0) (by decide)
+        (by simp (config := {decide := true}) [Function.update_apply, blk_len hB, ctx.nkv])
+        (by simp (config := {decide := true}) [Function.update_apply, hs0, bstream_cons])]
+      rw [exec_mv_shift (d := DSSB) (s := SB1) (c := TNKV) (x := (blk B 1 col).flatten)
+        (L := bstream L1) (by decide)
+        (by simp (config := {decide := true}) [Function.update_apply, blk_len hB, ctx.nkv])
+        (by simp (config := {decide := true}) [Function.update_apply, hs1, bstream_cons])]
+      simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+    have hd1 : exec V f (ofList dsC) w SB1 = bstream L1 := by
+      simp only [dsC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+      rw [exec_mv_shift (d := DSSB) (s := SB0) (c := TNKV) (x := (blk B 0 col).flatten)
+        (L := bstream L0) (by decide)
+        (by simp (config := {decide := true}) [Function.update_apply, blk_len hB, ctx.nkv])
+        (by simp (config := {decide := true}) [Function.update_apply, hs0, bstream_cons])]
+      rw [exec_mv_shift (d := DSSB) (s := SB1) (c := TNKV) (x := (blk B 1 col).flatten)
+        (L := bstream L1) (by decide)
+        (by simp (config := {decide := true}) [Function.update_apply, blk_len hB, ctx.nkv])
+        (by simp (config := {decide := true}) [Function.update_apply, hs1, bstream_cons])]
+      simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+    have hdo : ∀ j, j ≠ DSSB → j ≠ SB0 → j ≠ SB1 → exec V f (ofList dsC) w j = w j :=
+      fun j h1 h2 h3 => exec_not_mem _ _ _ (by simp [dsC, ofList, wr, h1, h2, h3])
+    generalize exec V f (ofList dsC) w = u at hdD hd0 hd1 hdo
+    have cu : NCtx V K N one zv u := ctx.of_eq fun j hj => hdo j (by revert j hj; decide)
+      (by revert j hj; decide) (by revert j hj; decide)
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil]
+    -- the constant
+    have hE := exec_ecC (V := V) (f := f) (K := K) u (by rw [cu.vone]; exact h1)
+      (by rw [cu.vzv]; exact hz) (Nat.sub_le K col.2.val)
+      (by rw [hdo C2 (by decide) (by decide) (by decide), hc2]) (by rw [cu.zkv, cu.vzv])
+    rw [cu.vone, cu.vzv, show K - (K - col.2.val) = col.2.val by have := col.2.isLt; omega] at hE
+    obtain ⟨hE1, hE2⟩ := hE
+    generalize exec V f ecC u = u2 at hE1 hE2
+    have cu2 : NCtx V K N one zv u2 := cu.of_eq fun j hj => hE2 j (by revert j hj; decide)
+      (by revert j hj; decide) (by revert j hj; decide)
+    -- the coefficients
+    obtain ⟨hT1, cT, hT3⟩ := exec_tLoopC (V := V) (f := f) hf A B hA hB a col u2 cu2
+      (by rw [hE2 DSSB (by decide) (by decide) (by decide), hdD])
+      (by rw [hE2 RASB (by decide) (by decide) (by decide),
+            hdo RASB (by decide) (by decide) (by decide), hras])
+      hE1 (by rw [hE2 DG (by decide) (by decide) (by decide),
+            hdo DG (by decide) (by decide) (by decide), hdg])
+    generalize exec V f tLoopC u2 = u3 at hT1 cT hT3
+    obtain ⟨hu3, hl3⟩ := outsT_shape (V := V) (f := f) (one := one) (zv := zv) hf h1 hz A B a col N
+    -- the transpose
+    obtain ⟨hR1, hR2⟩ := exec_trC (V := V) (f := f) hu3 (C := K + 1) (R := N) (Nat.succ_pos K)
+      (by rw [hl3, min_self]) u3 hT1 (by rw [cT.vone]; exact h1) cT.tm.h12
+      (by rw [cT.tkv]; simp) cT.tn
+  · rw [hR1, trL_outsT hf h1 hz A B a col, hT3 RES (by decide),
+      hE2 RES (by decide) (by decide) (by decide), hdo RES (by decide) (by decide) (by decide),
+      length_flatten_of (blk_shape (nandV_len hf h1 hz A B hA hB) a col).1,
+      (blk_shape (nandV_len hf h1 hz A B hA hB) a col).2]
+  · rw [hR2 SB0 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+      hT3 SB0 (by decide), hE2 SB0 (by decide) (by decide) (by decide), hd0]
+  · rw [hR2 SB1 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+      hT3 SB1 (by decide), hE2 SB1 (by decide) (by decide) (by decide), hd1]
+
 end ValVM
 
 end SigabaNeo.Tape
