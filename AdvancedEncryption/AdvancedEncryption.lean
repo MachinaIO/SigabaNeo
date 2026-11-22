@@ -67,3 +67,4 @@ import PE.Impl.DualUse.Prog.Setup5
 import PE.Impl.DualUse.Prog.Setup3
 import PE.Impl.DualUse.Prog.SetupI
 import PE.Impl.DualUse.Prog.DecodeWord
+import PE.Impl.DualUse.Prog.Decode
