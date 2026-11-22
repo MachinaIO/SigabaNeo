@@ -79,3 +79,5 @@ import PE.Impl.DualUse.Prog.Auth
 import PE.Impl.DualUse.Prog.ChalI
 import PE.Impl.DualUse.Prog.SetupTime
 import PE.Impl.DualUse.Prog.SetupTime3
+import PE.Impl.DualUse.Prog.Lift
+import PE.Impl.DualUse.Prog.ChalITime
