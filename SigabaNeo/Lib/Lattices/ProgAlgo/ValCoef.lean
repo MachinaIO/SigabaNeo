@@ -408,6 +408,39 @@ theorem terms_column (K : ℕ) (one zv : List Bool) (A B : BI N (K + 1) → List
       · congr 1; ext <;> simp <;> omega
       · ext <;> simp [Fin.rev] <;> omega
 
+theorem leavesV_eq_map {α : Type*} (one : α) (step : α → α → α) (zv : α) (q k' : ℕ)
+    (A B : BI N k' → α) (a : Fin 2) (col : Fin 2 × Fin k') (t : Fin N) :
+    ∀ es : List ((Fin 2 × Fin k') × Fin N), leavesV one step zv q k' A B a col t es =
+      es.map (termV one step zv q k' A B a col t (constV one zv k' 0))
+  | [] => rfl
+  | e :: es => by rw [leavesV, leavesV_eq_map one step zv q k' A B a col t es, List.map_cons]
+
+/-- The columns `c'` in the order of the terms. -/
+def cols (k' : ℕ) : List (Fin 2 × Fin k') := List.finRange 2 ×ˢ List.finRange k'
+
+theorem enumT_eq (k' : ℕ) : enumT N k' = (cols k').flatMap fun c' => (List.finRange N).map (c', ·) := by
+  rfl
+
+/-- **The leaves of a coefficient, flattened, are the terms of its columns.** -/
+theorem fl_leavesV (K : ℕ) (one zv : List Bool) (A B : BI N (K + 1) → List Bool) (a : Fin 2)
+    (col : Fin 2 × Fin (K + 1)) (t : Fin N) :
+    fl (leavesV one (fV V f) zv (2 ^ K) (K + 1) A B a col t (enumT N (K + 1))) =
+      (List.zipWith (colTerms V K f one zv (N - 1 - t) (t + 1))
+        ((cols (K + 1)).map (digitsOf B col)) ((cols (K + 1)).map (rowRev A a))).flatten := by
+  rw [leavesV_eq_map, enumT_eq, List.map_flatMap]
+  generalize cols (K + 1) = cs
+  induction cs with
+  | nil => rfl
+  | cons c' cs ih =>
+    rw [List.flatMap_cons, fl_append, ih, List.map_cons, List.map_cons, List.zipWith_cons_cons,
+      List.flatten_cons, List.map_map]
+    congr 1
+    have := terms_column (V := V) (f := f) K one zv A B a col t c'
+    simp only [Function.comp_def] at this ⊢
+    rw [this, fl_append]
+    simp only [fl, colTerms, List.map_zipWith]
+    rfl
+
 end Shadow
 
 end ValVM
