@@ -1107,7 +1107,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * `thetaQ_ratio_mem`: the qZ + c coset version.
     * `klein_ratio_bounds` / `klein_sd_le`: the Klein-vs-D_{L,s} ratio and SD bounds, in factorized form.
     * `tau_lt_of_ge`: τ < 2^{−6678} at s/q ≥ 38.39.
-    Still open: the Lemma 1 factorization on L_M (a Fubini step plus products of sums over Z^r).
+    KleinFactorization.lean (axiom-clean) proves Lemma 1:
+    * `hasSum_pi_prod` (a product of sums over Z^r) and the parametrization of L_M;
+    * `discGauss_eq_kleinLaw_mul`: D(y) = K(y)·g(u)/E_p[g];
+    * `sdist_kleinLaw_discGauss_le`: SD(K, D_{L_M,s}) ≤ ½(((1+τ)/(1−τ))^r − 1) for every integer M;
+    * instances at s/q ≥ 38.39: SD < 2^−6671 for r ≤ 134, and < 2^−6669 for r ≤ 512.
+    Still open: identifying K with the Klein procedure's output law, and the table-sampler lemmas (Part 141 Lemmas 3–6).
   * **Rigorous cost frontier (Nov 2026).** Recovering the secret of plain LWE (511, 512, 3329), CBD(3) with probability ≥
     99.5% costs ≤ 2^795 word operations, fully explicit. The previous explicit bound was 2^1253.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
