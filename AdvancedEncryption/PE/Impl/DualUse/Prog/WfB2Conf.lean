@@ -4,7 +4,7 @@ import PE.Impl.DualUse.Prog.WfB2Time
 # The numbers of the block-structured `W_f` block at `confP`
 
 Closed numerical checks (`decide +kernel`) at `N = 2^33`, `K = 2^25`, `k = K + 1`, `d = 2^60`,
-`W = 512`, the stream offsets and `|sdEnc|` below `2^234`, the gate list below `2^20` bits: the
+`W = 512`, the stream offsets and `|sdEnc|` below `2^234`, the gate list below `2^64` bits: the
 bounds between the phases of `wfBody` and the steps of the two runs of the machine (`absC`).
 -/
 
@@ -27,7 +27,7 @@ def Wc : ℕ := 512
 /-- A bound of `|sdEnc|` and of the stream offsets. -/
 def Lb : ℕ := 2 ^ 234
 /-- A bound of the gate list. -/
-def Lgc : ℕ := 2 ^ 20
+def Lgc : ℕ := 2 ^ 64
 def M31c : ℕ := 2 ^ 145
 /-- A bound of every tape. -/
 def Mall : ℕ := 2 ^ 240
@@ -93,13 +93,15 @@ def L1c : List ℕ :=
     191561948294926132421641788474350776872503380837138432, 8589934592, 8589934592,
     6427752560159852033206020497807343326620361240679943526940672, 33554433, 33554433, 134217732,
     748288882914913356444567965553997006106698098671616,
-    27606985387162255149739023449108101809804435888681546220650096895197184, 1048576, 2,
-    33554433, 8589934592, 8589934591, 191561948294926132421641788474350776872503380837138432,
+    27606985387162255149739023449108101809804435888681546220650096895197184,
+    18446744073709551616, 2, 33554433, 8589934592, 8589934591,
+    191561948294926132421641788474350776872503380837138432,
     748288860614167493299946912217528303029611202084864, 0,
     12855505120319704066412040995614686653240722481359887053881344,
     431359185240924448676250379980606297122160055372384079037028947197952,
     748288882914913356444567965553997006106698098671616,
-    442574524057188484341832889860102060847336216812066065091991699825098752, 1048576, 1048576,
+    442574524057188484341832889860102060847336216812066065091991699825098752,
+    18446744073709551616, 1535,
     433084621981888146470955381500528722310648695593873615353177062986743808,
     885149048114376968683665779720204121694672433624132130183983399650197504,
     442574524057188484341832889860102060847336216812066065091991699825098752, 512, 33554431,
@@ -156,13 +158,14 @@ def L1Gc : List ℕ :=
     191561948294926132421641788474350776872503380837138432, 8589934592, 8589934592,
     6427752560159852033206020497807343326620361240679943526940672, 33554433,
     19342814266755588582014976, 134217732, 748288882914913356444567965553997006106698098671616,
-    27606985387162255149739023449108101809804435888681546220650096895197184, 1048576, 2,
-    33554433, 8589934592, 8589934591, 191561948294926132421641788474350776872503380837138432,
+    27606985387162255149739023449108101809804435888681546220650096895197184,
+    18446744073709551616, 2, 33554433, 8589934592, 8589934591,
+    191561948294926132421641788474350776872503380837138432,
     748288860614167493299946912217528303029611202084864, 0,
     12855505120319704066412040995614686653240722481359887053881344,
     431359185240924448676250379980606297122160055372384079037028947197952,
     748288882914913356444567965553997006106698098671616,
-    11440282627793190610284471867799787775593545728, 1048576, 1048576,
+    11440282627793190610284471867799787775593545728, 18446744073709551616, 1535,
     11194974423298599778484999761472696809645146112,
     22880565255586381220568943735599575551187091456,
     11440282627793190610284471867799787775593545728, 512, 512, 288230376151711743,
@@ -194,15 +197,11 @@ theorem of_chkR {r : Option (List ℕ × ℕ)} {L : List ℕ} {B : ℕ} (h : chk
     exact ⟨T, by rw [h.1], h.2⟩
 
 theorem chk_hinT : (fun j => tmplB tX0 (tmpl31 Nc Kc kc dc) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-    (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-      (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)
-      (cntOut Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c))))) (tm31 j)) ≤
+    (Prog.lenBoundT (clr (mw 12)) (ccV Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)))) (tm31 j)) ≤
     Sym.bnd (tmVars M31c Nc Kc kc (lenA Nc Kc kc dc)) σTmF := by decide +kernel
 
 theorem chk_htopT : ∀ j, tmplB tX0 (tmpl31 Nc Kc kc dc) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-    (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-      (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)
-      (cntOut Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c))))) (tm31 j) ≤ M31c := by
+    (Prog.lenBoundT (clr (mw 12)) (ccV Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)))) (tm31 j) ≤ M31c := by
   decide +kernel
 
 theorem chk_g1 : vTc ≤ encB (bsT Nc Kc kc dc) (VT Nc Kc kc dc) (gB L0c) := by decide +kernel
@@ -211,18 +210,14 @@ theorem chk_V : VT Nc Kc kc dc ≤ bsT Nc Kc kc dc 1 ∧ VT Nc Kc kc dc ≤ bsT 
     (∀ t, bsT Nc Kc kc dc t ≤ Mall) ∧ VT Nc Kc kc dc ≤ Mall := by decide +kernel
 
 theorem chk_r1 : chkR (absC (bsT Nc Kc kc dc) (VT Nc Kc kc dc) (Sym.pEval [0, Nc, Kc, kc, dc] cStep2)
-    Mall 30 fhatFullC L0c) L1c (2 ^ 554) = true := by decide +kernel
+    Mall 30 fhatFullC L0c) L1c (2 ^ 545) = true := by decide +kernel
 
 theorem chk_hinG : (fun j => tmplB tX0 (tmpl31 Nc Kc kc dc) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-    (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-      (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)
-      (cntOut Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c))))) (tm31 j)) ≤
+    (Prog.lenBoundT (clr (mw 12)) (ccV Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)))) (tm31 j)) ≤
     Sym.bnd (tmVars M31c Nc Kc kc (lenA Nc Kc kc dc)) σTmF := by decide +kernel
 
 theorem chk_htopG : ∀ j, tmplB tX0 (tmpl31 Nc Kc kc dc) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-    (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-      (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)
-      (cntOut Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c))))) (tm31 j) ≤ M31c := by
+    (Prog.lenBoundT (clr (mw 12)) (ccV Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)))) (tm31 j) ≤ M31c := by
   decide +kernel
 
 theorem chk_g3 : vGc ≤ encB (bsG Nc Kc kc dc) (VG Nc Kc kc dc) (gB L0Gc) := by decide +kernel
@@ -251,30 +246,26 @@ def v6c : Fin 256 → ℕ := embedF (ValVM.mkE oK2 oK2_inj) v5c
 
 theorem chk_small :
     (∀ t, β0c t ≤ Mall) ∧
-    (∀ t, embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)
-      (cntOut Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)) t ≤ Mall) ∧
+    (∀ t, ccV Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c) t ≤ Mall) ∧
     (∀ t, tmOutN Nc Kc kc dc M31c (tmplB tX0 (tmpl31 Nc Kc kc dc) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-        (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)
-        (cntOut Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)))))) t ≤ Mall) ∧
+      (Prog.lenBoundT (clr (mw 12)) (ccV Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c))))) t ≤ Mall) ∧
     (∀ x ∈ tmpl31 Nc Kc kc dc, x.2 ≤ Mall) ∧
     (∀ x ∈ stepT Nc Kc kc dc ++ wTc, x.2 ≤ Mall) ∧
     (∀ t, β1c t ≤ Mall) ∧
-    (∀ t, embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)
-      (cntOut Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)) t ≤ Mall) ∧
+    (∀ t, ccV Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c) t ≤ Mall) ∧
     (∀ t, tmOutN Nc Kc kc dc M31c (tmplB tX0 (tmpl31 Nc Kc kc dc) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-        (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)
-        (cntOut Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)))))) t ≤ Mall) ∧
+      (Prog.lenBoundT (clr (mw 12)) (ccV Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c))))) t ≤ Mall) ∧
     (∀ x ∈ stepG Nc Kc kc dc ++ wGc, x.2 ≤ Mall) ∧
     (∀ t, β4c t ≤ Mall) ∧ (∀ x ∈ keyT Nc Kc kc dc, x.2 ≤ Mall) ∧ (∀ t, v6c t ≤ Mall) := by
   decide +kernel
 
 theorem chk_sum :
-    cntT Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c) + (2 * M31c + 3) * simTmplSweeps Nc Kc kc +
-      90 * uT (Mall + 6) + (2 ^ 554 + (cntT Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c) +
+    cntT Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c) + capT2 Wc (embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c) (cntOut Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c))) +
+      (2 * M31c + 3) * simTmplSweeps Nc Kc kc +
+      90 * uT (Mall + 6) + (2 ^ 545 + (cntT Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c) +
+      capT2 Wc (embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c) (cntOut Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c))) +
       (2 * M31c + 3) * simTmplSweeps Nc Kc kc + 120 * uT (Mall + 40) + (2 ^ 480 +
-      (120 * uT (Mall + 100) + (2 ^ 548 + 256 * (2 * (Mall + 256) + 5)))))) ≤ 2 ^ 555 := by
+      (120 * uT (Mall + 100) + (2 ^ 548 + 256 * (2 * (Mall + 256) + 5)))))) ≤ 2 ^ 549 := by
   decide +kernel
 
 /-! ### The time of the block at `confP` -/
@@ -284,14 +275,14 @@ theorem lenL0Gc : L0Gc.length = 120 := by simp [L0Gc]
 
 set_option maxHeartbeats 4000000 in
 /-- **The time of the block-structured `W_f` block at the sizes of `confP`**: from `sdEnc` of at
-most `2^234` bits on tape `0` and a gate list of at most `2^20` bits on tape `1`, at most `2^555`
+most `2^234` bits on tape `0` and a gate list of at most `2^64` bits on tape `1`, at most `2^549`
 steps, every tape below `2^240` afterwards. -/
 theorem time_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (hN : N = Nc)
     (hK : K = Kc) (hd : c.d = dc) (hth : treeHeight N (K + 1) ≤ 64)
     (hoB : offB c ≤ Lb) (hoW : offW hk c ≤ Lb) (hoP : offPsi hk c ≤ Lb) (hoR : offR hk c ≤ Lb)
     (hoX : offPsi hk c + 10 * lenPsi N K (K + 1) ≤ Lb) (Lsd Lg : ℕ) (hLsd : Lsd ≤ Lb)
     (hLg : Lg ≤ Lgc) :
-    XProg.timeBoundT (wfB2 hk c Wc) (io2 (R := 254) Lsd Lg 0) ≤ 2 ^ 555 ∧
+    XProg.timeBoundT (wfB2 hk c Wc) (io2 (R := 254) Lsd Lg 0) ≤ 2 ^ 549 ∧
       ∀ t, XProg.lenBoundT (wfB2 hk c Wc) (io2 (R := 254) Lsd Lg 0) t ≤ Mall := by
   subst hN hK
   obtain ⟨s0, s2, s6, s31, sT, s1, s2G, s6G, sG, s4, sK, s6'⟩ := chk_small
