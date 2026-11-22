@@ -280,6 +280,82 @@ theorem iter_compile (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : ℕ} (
         (setSLS σ sc1 ls1 (srcOf (gs.drop j)))) hI1 hS1
       rw [h2] at this; exact this
 
+/-- **The compiler of `f̂`**: the gate `0 = NAND(1, 1)`, then the source gates (`|63|`). -/
+def fhatC : Code := .seq (.nand 1 0 0) (.seq (.zero 59) (.seq (.lnil 22) (.rep 63 compileStepC)))
+
+theorem fhatSLPL_eq_cst {N k K : ℕ} (gs : GateList) :
+    (fhatSLPL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1
+      (predOf 10 gs).2).1 = (cst (N := N) (k := k) (K := K) gs gs.length).1 := by
+  simp [fhatSLPL, compileSLPL, cst, predOf, List.take_of_length_le, fromGates]
+
+theorem fhatSLPL_out {N k K : ℕ} (gs : GateList) (hgs : gs ≠ []) :
+    (fhatSLPL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1
+      (predOf 10 gs).2).2 = (cst (N := N) (k := k) (K := K) gs gs.length).2.getLast?.getD
+        fun _ => .one := by
+  have hl := length_cst (N := N) (k := k) (K := K) gs gs.length le_rfl
+  have hpos : 0 < gs.length := List.length_pos_of_ne_nil hgs
+  have e : (fhatSLPL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1
+      (predOf 10 gs).2).2 = repOfL (.gate 0) (gvExp (2 ^ K))
+        (cst (N := N) (k := k) (K := K) gs gs.length).2 (.gate (gs.length - 1)) := by
+    simp [fhatSLPL, compileSLPL, cst, predOf, List.take_of_length_le, fromGates]
+  rw [e, repOfL, List.getD_eq_getElem _ _ (by omega), List.getLast?_eq_getElem?,
+    List.getElem?_eq_getElem (by omega)]
+  simp [hl]
+
+set_option maxHeartbeats 4000000 in
+theorem exec_fhatC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : ℕ} (hK : K ≤ k + 1)
+    (ix' : Fin 10 × BI N k → ℕ) (hix : ∀ i b, ix' (i, b) = i.val * (4 * k * N * k) + codec b)
+    (hixn : ∀ j, ix' j < E.n) (gs : GateList) (hgs : gs ≠ []) (hb : StepB E N k gs.length)
+    (σ : St) (hc : AllC (E := E) N k K σ) (hI : Inv E σ) (hS : ScOK E σ)
+    (hsrc : σ.src = srcOf gs) (h63 : σ.sc 63 = gs.length)
+    (hM : E.n + (exec E fhatC (mk E ix' [] σ)).t ≤ E.M) :
+    ∃ sc' ls', exec E fhatC (mk E ix' [] σ) =
+        mk E ix' (fhatSLPL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1
+          (predOf 10 gs).2).1 (setSLS σ sc' ls' []) ∧
+      ls' 23 = repList E ix' (fhatSLPL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (2 ^ K)
+          (predOf 10 gs).1 (predOf 10 gs).2).2 ∧
+      (∀ r : SR, r.val < 16 → sc' r = σ.sc r) ∧
+      Inv E (setSLS σ sc' ls' []) ∧ ScOK E (setSLS σ sc' ls' []) := by
+  have hnM' : E.n ≤ E.M := by omega
+  have hM1 : E.n + 1 + ([] : SLP (Fin 10 × BI N k)).length ≤ E.M := by simpa using hnM
+  have e1 := exec_nand E ix' hixn [] σ 1 0 0 .one .one hc.1.1.1.1.1.1 hc.1.1.1.1.1.1 hM1
+  set σ1 := { σ with sc := Function.update σ.sc 1 (pos E ix' (addNand [] Wire.one Wire.one).2) }
+  have hs1 : σ1.sc = σ.sc := by
+    funext r; simp only [σ1]; by_cases h : r = 1
+    · subst h; simp [addNand, pos, hc.1.1.1.1.1.2]
+    · simp [Function.update_of_ne h]
+  set σ2 := setSL σ (Function.update σ.sc 59 0) (Function.update σ.ls 22 [])
+  have e2 : exec E (.lnil 22) (exec E (.zero 59) (mk E ix' (addNand [] Wire.one Wire.one).1 σ1)) =
+      mk E ix' [⟨.one, .one⟩] σ2 := by
+    simp only [exec_mk_noNand (.zero 59) trivial, exec_mk_noNand (.lnil 22) trivial]
+    simp only [exec, σ2, setSL, hs1, addNand]; rfl
+  have hc2 : AllC (E := E) N k K σ2 := allC_of hc (fun r hr => by
+    simp [σ2, setSL, Function.update_of_ne (show r ≠ 59 by rintro rfl; revert hr; decide)])
+  have hIS2 : Inv E σ2 ∧ ScOK E σ2 := by
+    refine ⟨⟨fun l => ?_, hI.2⟩, fun r => ?_⟩
+    · by_cases h : l = 22
+      · subst h; simp [σ2, setSL]
+      · simp [σ2, setSL, Function.update_of_ne h]; exact hI.1 l
+    · by_cases h : r = 59
+      · subst h; simp [σ2, setSL]
+      · simp [σ2, setSL, Function.update_of_ne h]; exact hS r
+  unfold fhatC at hM ⊢
+  rw [exec_seq, e1, exec_seq, exec_seq, e2, exec_rep] at hM ⊢
+  rw [show (mk E ix' [⟨.one, .one⟩] σ2).sc 63 = gs.length by
+    simp [σ2, setSL, h63]] at hM ⊢
+  obtain ⟨sc', ls', h, d, d23, _, f, hI', hS'⟩ := iter_compile hnM hWM hK ix' hix hixn gs hb σ2 hc2
+    hIS2.1 hIS2.2 (by simp [σ2, setSL, hsrc]) (by simp [σ2, setSL]) (by simp [σ2, setSL])
+    gs.length le_rfl hM
+  have hd : srcOf (gs.drop gs.length) = [] := by simp [srcOf]
+  rw [hd] at h hI' hS'
+  refine ⟨sc', ls', ?_, ?_, fun r hr => ?_, ?_, ?_⟩
+  · rw [h, fhatSLPL_eq_cst]; rfl
+  · rw [d23 (List.length_pos_of_ne_nil hgs), fhatSLPL_out gs hgs]
+  · rw [f r (Or.inl hr)]
+    simp [σ2, setSL, Function.update_of_ne (show r ≠ 59 by rintro rfl; revert hr; decide)]
+  · exact hI'
+  · exact hS'
+
 end FhatGen
 
 end SigabaNeo.Lattices
