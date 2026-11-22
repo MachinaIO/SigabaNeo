@@ -4,9 +4,7 @@ exhaustive scan of the same range, so the result is at most the estimator's."""
 
 from . import fx
 from .params import LWE
-from .reduction import log2_delta, matzov_bits
-
-MAX_BETA = 1754
+from .reduction import MAX_BETA, log2_delta, matzov_bits
 
 
 def log2_xi(p: LWE) -> int:
@@ -36,11 +34,13 @@ def solve_for_d(p: LWE, m, beta: int, x: int, log2tau: int, l2xi: int, l2q: int)
     return None
 
 
-def cost_gsa(beta: int, p: LWE, m):
+def cost_gsa(beta: int, p: LWE, m, l2q=None):
+    """`costGsaQ l2q` (`costGsa` when `l2q` is omitted: `l2q = log2 q`)."""
     x = log2_delta(beta)
     l2xi = log2_xi(p)
     log2tau = fx.log2(p.Xe.stddev)
-    l2q = fx.log2(fx.of_int(p.q))
+    if l2q is None:
+        l2q = fx.log2(fx.of_int(p.q))
     d = solve_for_d(p, m, beta, x, log2tau, l2xi, l2q)
     if d is None:
         return None
@@ -63,7 +63,8 @@ def primal_usvp(params: LWE):
     else:
         m = p.m
     max_beta = MAX_BETA if m is None else max(min(MAX_BETA, m), 45)
+    l2q = fx.log2(fx.of_int(p.q))  # computed once (`Usvp.costQ`)
     best = None
     for beta in range(40, max_beta):
-        best = fx.cost_min(best, cost_gsa(beta, p, m))
+        best = fx.cost_min(best, cost_gsa(beta, p, m, l2q))
     return best

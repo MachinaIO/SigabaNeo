@@ -14,6 +14,14 @@ progressive BKZ is the [Kyber20] rule `C · (d − β)`, and the dimensions for 
 
 namespace SigabaNeo.Lattices.Estimator
 
+/-- The largest block size the attacks scan (the estimator's `conf.max_beta`). The estimator's
+default is `1754` (`RC.ADPS16(1754, 1754) ≈ 2^512`, "for security levels of at most 512 bits"); it
+is raised here so that the scans certify large strengths: `RC.MATZOV(maxBeta, maxBeta) ≈ 2^4673`.
+This is a deviation from the default configuration (the estimator exposes `max_beta` as a config
+value), in the direction of more attacks: a larger scan can only lower a minimum.
+`python/lwemodel/reduction.py` (`MAX_BETA`) is the mirror. -/
+def maxBeta : ℕ := 16384
+
 namespace Reduction
 
 open Fx

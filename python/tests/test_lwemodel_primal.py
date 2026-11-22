@@ -36,6 +36,20 @@ class TestPrimal(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual([int(line) for line in result.stdout.splitlines()], expected)
 
+    def test_fast_profile(self):
+        # `profile` skips the blocks above the cut-off and sums the underflowed tail in one step;
+        # it must equal the block-by-block definition (`profile_slow`, `NumPrimal.profile`).
+        import random
+        from lwemodel import num_primal
+        rng = random.Random(7)
+        for _ in range(500):
+            k = rng.randrange(0, 6000)
+            step = rng.randrange(1, fx.ONE // 8)
+            first = rng.randrange(-70 * fx.ONE, 120 * fx.ONE)
+            mitm = rng.random() < 0.5
+            self.assertEqual(num_primal.profile(k, first, step, mitm),
+                             num_primal.profile_slow(k, first, step, mitm))
+
     def test_gaussian_guess_bounds_after_normalization(self):
         # For exactly n samples normalization swaps the Gaussian error into the secret.
         error = nd.gauss(fx.of_rat(32, 10))

@@ -3,6 +3,7 @@ Scan every integer block size in the estimator's interval.
 """
 from . import fx
 from .num_dual import delta, rho_bits, short_bits, logn
+from .reduction import MAX_BETA
 
 
 def cost(p):
@@ -12,7 +13,7 @@ def cost(p):
     xs = fx.log2(p.Xs.stddev)
     c = xs + logn(p.q) - fx.log2(p.Xe.stddev)
     best = None
-    for b in range(40, max(48, min(1754, p.m if p.m is not None else 1754))):
+    for b in range(40, max(48, min(MAX_BETA, p.m if p.m is not None else MAX_BETA))):
         h = delta(b)
         m = max(1, fx.ceil(fx.sqrt(fx.div(p.n*c, h))) - p.n)
         if p.m is not None:

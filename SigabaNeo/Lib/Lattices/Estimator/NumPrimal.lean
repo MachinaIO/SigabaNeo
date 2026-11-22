@@ -31,8 +31,11 @@ def repetitions (lp : Fx) : Fx :=
   else if lp < -20*ONE then log2 (ln (100*ONE)) - lp
   else log2Nat (ceil (div (-(ln (100*ONE))) (ln (ONE-exp2 lp)))).toNat
 
+/-- The block width of `profile`: about `1/16` in log-length. -/
+def strideOf (step : Fx) : ℕ := max 1 (ONE/(16*step)).toNat
+
 def profile (k : ℕ) (first step : Fx) (mitm : Bool) : Fx := Id.run do
-  let stride := max 1 (ONE/(16*step)).toNat
+  let stride := strideOf step
   let mut total := 0
   for j in [:(k+stride-1)/stride] do
     let i := j*stride

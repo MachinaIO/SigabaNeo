@@ -42,8 +42,8 @@ def repetitions(lp):
     return f.log2_nat(f.ceil(f.div(-f.ln(100*O), f.ln(O-f.exp2(lp)))))
 
 
-def profile(k, first, step, mitm):
-    """Composite midpoint quadrature of the log product, with finite-sphere correction."""
+def profile_slow(k, first, step, mitm):
+    """`NumPrimal.profile` block by block (the definition; `profile` computes the same value)."""
     if not k:
         return 0
     total = 0
@@ -72,6 +72,62 @@ def profile(k, first, step, mitm):
                     v = erf(f.div(t,f.sqrt(2*O))) + f.mul(f.mul(t,t2-3*O),phi)//(2*k)
             total += width*f.log2(max(1,min(O,v)))
         i += width
+    return total
+
+
+def _term(k, l, mitm):
+    x = f.exp2(l)
+    if mitm:
+        y = f.mul(x, f.of_rat(707106781,10**9))
+        if y >= 8 * O:
+            v = O - f.div(O, f.mul(y, f.sqrt(f.PI)))
+        elif y < O // 1024:
+            v = f.div(y, f.sqrt(f.PI))
+        else:
+            v = erf(y) - f.div(O - f.exp(-f.mul(y, y)), f.mul(y, f.sqrt(f.PI)))
+    else:
+        # x is length/sigma. Coordinate radius is half this value.
+        t = x//2
+        if f.mul(t,t) >= k*O or t >= 9*O:
+            v = O
+        else:
+            t2 = f.mul(t,t)
+            phi = f.div(f.exp(-t2//2),f.SQRT2PI)
+            v = erf(f.div(t,f.sqrt(2*O))) + f.mul(f.mul(t,t2-3*O),phi)//(2*k)
+    return f.log2(max(1,min(O,v)))
+
+
+def profile(k, first, step, mitm):
+    """Composite midpoint quadrature of the log product, with finite-sphere correction.
+
+    Computes `NumPrimal.profile` (= `profile_slow`) without visiting every block: the block
+    lengths `l` decrease, blocks with `l` above the cut-off contribute nothing, and below
+    `-50` the length underflows (`exp2 l = 0`) so every coordinate contributes the same term."""
+    if not k:
+        return 0
+    s = max(1, O//(16*step))
+    J = (k + s - 1)//s
+    L = (48 if mitm else 4)*O
+
+    def l(j):
+        return first - step*j*s - step*(min(k - j*s, s)-1)//2
+
+    def first_below(T):
+        lo, hi = 0, J
+        while lo < hi:
+            mid = (lo+hi)//2
+            if l(mid) < T:
+                hi = mid
+            else:
+                lo = mid+1
+        return lo
+    j0 = first_below(L)
+    j1 = max(j0, first_below(-50*O))
+    total = 0
+    for j in range(j0, j1):
+        total += min(k - j*s, s)*_term(k, l(j), mitm)
+    if j1 < J:
+        total += (k - j1*s)*_term(k, -50*O - 1, mitm)
     return total
 
 

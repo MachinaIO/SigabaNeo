@@ -15,6 +15,11 @@ CN_C = fx.of_rat(1610253135200765, 10 ** 14)
 DELTA_SMALL = [(2, 102190), (5, 101862), (10, 101616), (15, 101485), (20, 101420), (25, 101342),
                (28, 101331), (40, 101295)]
 
+# The largest block size the attacks scan (estimator `conf.max_beta`). The estimator's default is 1754
+# (RC.ADPS16(1754, 1754) ~ 2^512); here it is raised so that the scans certify large strength (about
+# 2^4673 under RC.MATZOV). Mirror of `Estimator.maxBeta`.
+MAX_BETA = 16384
+
 LOG2_2PIE = fx.log2(fx.mul(2 * fx.PI, fx.E))
 LOG2_PI = fx.log2(fx.PI)
 LN_4_3 = fx.ln(fx.of_rat(4, 3))

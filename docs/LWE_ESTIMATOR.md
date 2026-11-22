@@ -40,6 +40,61 @@ These cannot be proved here. The last column records the evidence for each. The 
 therefore: the cheapest attack known to the estimator, in the estimator's model. Proven attacks
 (`Assumption.Attack`) lower `H` further through the harness.
 
+## Configuration: the scan range and the all-infinite case
+
+* **`maxBeta = 16384`** (`Estimator.maxBeta`, `python/lwemodel/reduction.py: MAX_BETA`). Every
+  block-size scan (`usvp`, `dual`, `dual_hybrid`, the primal hybrids' search and the BDD
+  dimension `η`) stops below it. The estimator's default `conf.max_beta = 1754`
+  (`RC.ADPS16(1754, 1754) ≈ 2^512`, "for security levels of at most 512 bits") is a
+  configuration value; it is raised here so that large strengths can be certified
+  (`RC.MATZOV(16384, 16384) ≈ 2^4673`). This is a deviation from the default configuration, in the
+  direction of more attacks (a larger scan can only lower a minimum). The Kyber values below are
+  unchanged, bit for bit.
+* **`fallbackBits = ⌊log₂ RC.MATZOV(maxBeta, maxBeta)⌋ = 4673`** is the claim when every attack is
+  infinite (formerly an arbitrary cap of 1024). A lattice attack is infinite when no block size
+  below `maxBeta` succeeds, so a successful one needs `β ≥ maxBeta`. Exhaustive search is infinite
+  above `2^10000` (the estimator's `Cost.sanity_check`), above `fallbackBits`. Coded-BKW keeps the
+  estimator's binary64 cap `2^1024`, and Arora–GB, MITM and exhaustive search are also infinite
+  when samples are lacking: on those the fallback relies on the lattice attacks.
+
+## Large parameters
+
+At large dimensions the attacks cannot be evaluated: the hybrids search the guessing dimension
+over `[0, n)` with binomials of size `2^n`, Arora–GB iterates its Hilbert series up to degree
+`2n`, the dual hybrid scans `n/10 × n/10` guessing splits when every candidate is infinite, and
+the kernel refuses moduli such as `2^(2^25)`. `SigabaNeo/Lib/Lattices/Estimator/Bound/` proves
+lower bounds on each attack from its definition instead (`Bound.lean` lists them):
+
+| Attack | Lower bound | Argument |
+| --- | --- | --- |
+| `usvp`, `dual` | each scanned candidate | `log₂ q` passed as a number (`Usvp.costQ`, `Dual.costQ`); candidates below `β₀` evaluated by the kernel, above `β₀` the reduction cost `redLB β` (one sieve in dimension `β − d4f(β)`) |
+| `dual_hybrid` | `DualHybrid.cost_ge` | the guessing part costs `≥ k + t` bits; else the reduction cost; else `v > 10` (infinite), monotone in the dimension |
+| `bdd`, `bdd_hybrid`, `bdd_mitm_hybrid` | `PrimalHybrid.estimate_ge` | the reduction cost; or guessing cost plus miss probability `≥ z − 1` bits (a union bound on the binomial tail, `Binom.hit_mul_le`); or Babai's failure: the GSA profile falls below `2^{−55}` well before the last `maxBeta + 1` coordinates (AM–GM, uniform in the dimension), each such coordinate costing `29.9` bits (`Profile.lean`) |
+| `bkw` | infinite (`Bkw.cost_eq_none`) | the `q^b` table exceeds `2^1024` when `log₂ q ≥ 1024` |
+| `arora-gb` | `AroraGB.cost_ge`, `gb_ge` | the first `K₀` Hilbert series coefficients grow by `R` per degree, so the degree of regularity exceeds `K₀`; or the guess penalty |
+| `exhaustive_search` | infinite (`Guess.exhaustiveCost_eq_none`) | more than `2^10049` candidates |
+| `mitm` | evaluated | after `q` is removed (`Guess.mitmCostW`) |
+
+`Estimator.cbd16_estimatorBits_ge` packages them for `CBD(16)` secret and error at `q = 2^e`:
+closed numeric facts plus one check per block size `b < maxBeta + 2`, evaluated by
+`decide +kernel` in chunks (`Params/Strength/Scan*.lean`: 8 files per instance, each a sequence of
+256-block-size theorems so that the kernel's memory stays near 1.5 GB above the imports; 10–60 s
+per file, about 11 minutes of kernel time for both instances; the closed facts take about 1 s).
+All the bounds are about the attack models, like `H` itself.
+
+**Ring degree `2^34`, `q = 2^(2^25)`, `CBD(16)`** (the registry's instances of the dual-use PE,
+`AdvancedEncryption/PE/Impl/DualUse/Params/Strength.lean`): `2650 ≤ RingLWE.H` at `2^26 + 2` and
+at `2^61 + 2^27 + 5` samples. The mirror gives `usvp` 2691.95, `bdd` 2691.95 (`β ≈ 9400`), `dual`
+2691.96 and the hybrids at small `z` 2691.96, so `H ≈ 2691`; the certified bound loses about 40 bits
+because the Babai-failure argument needs `β` a little below the optimum.
+
+**The mirror at these sizes.** `python/lwemodel` evaluates `usvp` (≈ 1 min, `log₂ q` computed once),
+`bdd` (0.3 s), `dual`, `mitm`, `exhaustive_search` and `bkw` at `N = 2^34`: `profile` skips the
+blocks above its cut-off and sums the underflowed tail at once (equal to the block-by-block
+definition, `test_fast_profile`), and exhaustive search and BKW return `None` under the conditions
+of `Guess.exhaustiveCost_eq_none` and `Bkw.cost_eq_none`. Arora–GB, the primal hybrids' search over
+the guessing dimension and the dual hybrid remain infeasible there; their values are only bounded.
+
 ## Faithfulness to the estimator
 
 Each attack has a Python mirror in `python/lwemodel/` that computes the same integers as the Lean

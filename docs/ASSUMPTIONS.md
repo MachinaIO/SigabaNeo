@@ -88,3 +88,10 @@ def kyber512 : ModuleLWE.Params :=
   { N := 256, rank := 2, m := 2, q := 3329, error := .cbd 3, secret := .cbd 3 }
 #eval ModuleLWE.H kyber512
 ```
+
+At large parameters the evaluation does not finish (the hybrids and Arora–GB search over spaces of
+size `n`, and the kernel cannot hold a modulus such as `2^(2^25)`). There a premise `k ≤ H p` is
+proved from certified lower bounds on each attack instead (`Estimator.estimatorBits_ge_of`,
+`Estimator.cbd16_estimatorBits_ge`; [LWE_ESTIMATOR.md](LWE_ESTIMATOR.md#large-parameters)). For
+example `2650 ≤ RingLWE.H` at ring degree `2^34`, `q = 2^(2^25)`
+(`AdvancedEncryption/PE/Impl/DualUse/Params/Strength.lean`).

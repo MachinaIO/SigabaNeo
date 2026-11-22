@@ -5,7 +5,7 @@ guess_composition (gb.py and lwe_guess.py). A negative coefficient gives dreg. -
 namespace SigabaNeo.Lattices.Estimator.AroraGB
 open Fx NumMisc
 
-private def gb (n d m s : Nat) : Cost := Id.run do
+def gb (n d m s : Nat) : Cost := Id.run do
   let mut err := Array.replicate (min d (2*n)) (0 : Int)
   let mut sec := Array.replicate (min s (2*n)) (0 : Int)
   let mut sum : Int := 0
@@ -21,14 +21,14 @@ private def gb (n d m s : Nat) : Cost := Id.run do
     if a < 0 then return some (2 * log2Nat ((n+k).choose k))
   return none
 
-private def samples (c : Fx) : Nat :=
+def samples (c : Fx) : Nat :=
   let neglog := log2 (mul c SQRT2PI) - ONE + mul (mul c c) LOG2E / 2
   let l := ln (ofRat 99 100)
   if neglog ≥ 257*ONE then 2^31
   else if neglog > 25*ONE then (floor (mul (-l) (exp2 neglog))).toNat
   else (floor (div l (ln (ONE-exp2 (-neglog))))).toNat
 
-private def single (params : LWEParams) : Cost := Id.run do
+def single (params : LWEParams) : Cost := Id.run do
   let p := params.normalize
   let s := if p.Xs.stddev > p.Xe.stddev then 0 else match p.Xs.kind with
     | .gauss v => (2*ceil (3*v)+1).toNat
@@ -58,7 +58,7 @@ private def single (params : LWEParams) : Cost := Id.run do
     best := Cost.min best g
   return best
 
-private def penalty (p : LWEParams) (z base : Nat) : Fx := Id.run do
+def penalty (p : LWEParams) (z base : Nat) : Fx := Id.run do
   if !p.Xs.isSparse then return (z : Int)*log2Nat base
   let h := p.Xs.hammingWeight.toNat
   let mut space := 0
