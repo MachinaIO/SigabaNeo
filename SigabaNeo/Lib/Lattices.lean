@@ -38,6 +38,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.Digits
 import SigabaNeo.Lib.Lattices.ProgAlgo.MatAdd
 import SigabaNeo.Lib.Lattices.ProgAlgo.MatMul
 import SigabaNeo.Lib.Lattices.ProgAlgo.Transpose
+import SigabaNeo.Lib.Lattices.ProgAlgo.Hash
 import SigabaNeo.Lib.Lattices.ProgAlgo.Gadget
 import SigabaNeo.Lib.Lattices.ProgAlgo.Nand
 import SigabaNeo.Lib.Lattices.ProgAlgo.Spec
