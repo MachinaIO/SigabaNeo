@@ -193,3 +193,25 @@ Remaining (in order):
   templates. `XProg.Ph` (`Lib/Machines/Prog/PhaseB.lean`), `ph_tmplP`, `ph_putW`.
 * `W = 512` covers the window predicates (`length_winGates`: ≤ 375 gates); `BndG 512` and
   `parse C ≠ []` for window words remain to be shown for the instance at `confP`.
+
+### Status (2026-11-23, evening): the time of `wfB2` at `confP`
+
+* **`time_wfB2_conf`** (`Prog/WfB2Conf.lean`, axioms `propext`, `Classical.choice`, `Quot.sound`):
+  from `sdEnc` of at most `2^234` bits and a gate list of at most `2^20` bits,
+  `timeBoundT (wfB2 hk c 512) ≤ 2^555`, every tape below `2^240` afterwards, under the
+  hypotheses `N = 2^33`, `K = 2^25`, `c.d = 2^60`, `treeHeight ≤ 64`, the stream offsets
+  `≤ 2^234`. Route: `XProg.Ph` phases (`ph_prepT`, `ph_runT` = `absC_sound` + `xsound_simStepP`,
+  `ph_prepG`, `ph_runG` = `absC_sound` + `xsound_simStepG`, `ph_keyPrep`, `ph_simKey`
+  (`boundsT_simKeyP`), `ph_finClr`), glued by kernel checks on closed numerals (`chk_*`,
+  `decide +kernel`, ≈ 3 min): the run of `f̂` `≤ 2^554`, the predicate's run `≤ 2^480`,
+  `simKeyP` `≤ 2^548`, the preparations ≈ `2^490`.
+* Changes to `wfB2` for the bounds (laws re-proven): `convP` replaced by `countP` (the gate count,
+  `Lib/Machines/Prog/CountP.lean`: law and per-tape bounds); `convP`/`simTmplP` framed; clears of
+  word `12`, of the counter `tX0` of `tmplP`, of step tape `92` (blank in the Ring-GSW step), all the
+  step's tapes before `simKeyP`; `nBI` in closed form.
+* **Next**: the abstract bound of the gate count after `countP` is the length of the gate list's
+  tape (one bit per round), and the front end of `keyP` bounds that tape by `frontL c.L W` (the
+  size of its lookup table, ≈ 2^35): the gate loop would be charged ≈ 2^35 rounds. Fix: truncate the
+  count to `W` bits after `countP` (identity, `|gs| + 10 ≤ W`), making the runs' cost independent of
+  the gate list's bound; then `time_keyP` with a per-tape hypothesis on the block at
+  `io2 Lsd (frontL c.L W) 0`, the size bound, `hP` for the windows at `W = 512`.
