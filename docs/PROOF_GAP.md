@@ -713,6 +713,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   three facts: the Minkowski cap s ≤ 2V_b^{−1/b}·covol^{1/b}, covol(π_{v⊥}W) = covol(W)/‖v‖, and the recurrence. The result is
   Part 114's deterministic retained-covolume lower bound with the elementary constant, with the reducer's window-structure
   facts as explicit hypotheses. All three are accepted on Prove2Me.
+  **ConditionalReduction.lean (`conditionalReduction`) is the formal reduction of Wall 1 to one open quantity.** Take any
+  reducer R mapping a uniform design A to final-block data (Q_A, H_A) that depends only on A. If at most a δ-fraction of
+  designs have H_A failing (minimum ≥ L and GS floor ≥ g), then Pr_{A,plant}[all-heights uniqueness] ≥ (1−δ)(1−ε) ≥ 1−δ−ε,
+  with ε explicit (`reductionError`). It is accepted on Prove2Me. The open Wall 1 problem is exactly bounding δ for BKZ-β at
+  β ≈ 406–506.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
