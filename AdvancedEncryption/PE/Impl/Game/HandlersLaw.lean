@@ -357,4 +357,111 @@ theorem law_keyH_sel (w b : List Bool) {s : GState U Sig} {x : U.Attr} {σ : Sig
 
 end Key
 
+/-! ### The challenge -/
+
+section Chal
+
+variable {cd : Codes U Sig} {sp : Spec U Sig} {setupW : List Bool → U.Attr → PMF Sig}
+  {IW : List Bool → Prop} {Ok : Sig → Prop} (cs : Comps R cd sp setupW IW Ok)
+
+theorem law_restoreC (v : Store 8) (bad : Bool) (h4 : v 4 = [bad]) :
+    restoreC.law v = PMF.pure (Function.update (Function.update v 2 (false :: bad :: v 2)) 4 []) := by
+  rw [restoreC, Prog.law_seq_pure (Prog.law_prim _ _), Prog.law_seq_pure (Prog.law_prim _ _),
+    Prog.law_prim]
+  congr 1
+  funext j
+  fin_cases j <;> simp [Prim.apply, h4]
+
+theorem law_parseC (v : Store 8) (xa es : List Bool) (hxa : xa.length = cd.nA)
+    (h2 : v 2 = false :: (List.replicate cd.nM false ++ (xa ++ es))) (h5 : v 5 = []) (h7 : v 7 = []) :
+    (parseC cd).law v = PMF.pure (Function.update (Function.update v 2 es) 5 xa) := by
+  rw [parseC, Prog.law_seq_pure (Prog.law_prim _ _), Prog.law_seq_pure (Prog.law_dropN _ _ _),
+    Prog.law_moveFront _ (by decide) (by decide) (by decide) _ (by simp [Prim.apply, h7])]
+  have hr : (List.replicate cd.nM false).length = cd.nM := List.length_replicate
+  congr 1
+  funext j
+  fin_cases j <;> simp [Prim.apply, h2, h5, List.drop_left' hr, List.drop_left' hxa,
+    List.take_left' hxa]
+
+theorem law_rebuildC (v : Store 8) (bad : Bool) (b xa es : List Bool) (hb : b.length = cd.nM)
+    (hxa : xa.length = cd.nA) (h0 : v 0 = b) (h2 : v 2 = es) (h4 : v 4 = [bad])
+    (h5 : v 5 = xa) (h6 : v 6 = []) (h7 : v 7 = []) :
+    (rebuildC cd).law v = PMF.pure (Function.update (Function.update (Function.update
+      (Function.update v 2 (false :: bad :: true :: (b ++ (xa ++ es)))) 3 []) 4 []) 5 []) := by
+  rw [rebuildC, Prog.law_seq_pure (Prog.law_prependN cd.nA (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide) _ (by simp [h5, hxa]) h6 h7),
+    Prog.law_seq_pure (Prog.law_prim _ _),
+    Prog.law_seq_pure (Prog.law_prependN cd.nM (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide) _ (by simp [Prim.apply, h0, hb]) (by simp [Prim.apply, h6])
+      (by simp [Prim.apply, h7])),
+    Prog.law_seq_pure (Prog.law_prim _ _), law_restoreC _ bad (by simp [Prim.apply, h4])]
+  congr 1
+  funext j
+  fin_cases j <;> simp [Prim.apply, h0, h2, h5, h6, h7]
+
+theorem law_chalH_init (w b : List Bool) (hh : w.head? ≠ some false) :
+    XProg.law (chalH cd cs.chalP) (ext8 (vec b [] w) []) =
+      (oracleW sp setupW (challengeOp, b) (w, {})).map
+        (fun r => ext8 (vec b r.1 (cd.encState r.2)) []) := by
+  rw [oracleW_chal_init, PMF.pure_map, chalH, XProg.law_ifBit]
+  split_ifs with h1
+  · exact law_skipG _
+  · rw [XProg.law_ifBlank, ite_pos' (by simpa [vec] using eq_nil_of_head hh (by simpa [vec] using h1))]
+    exact law_skipG _
+
+theorem law_chalH_sel (w b : List Bool) {s : GState U Sig} {x : U.Attr} {σ : Sig}
+    (hx : s.attr = some x) (hσ : s.sec = some σ) (hOk : Ok σ) :
+    XProg.law (chalH cd cs.chalP) (ext8 (vec b [] (cd.encState (w, s))) []) =
+      (oracleW sp setupW (challengeOp, b) (w, s)).map
+        (fun r => ext8 (vec b r.1 (cd.encState r.2)) []) := by
+  have he : cd.encState (w, s) = cd.selWord s.bad s.msg x σ := by
+    simp [Codes.encState, hx, hσ]
+  have hes : ∀ s' : GState U Sig, s'.attr = some x → s'.sec = some σ →
+      cd.encState (w, s') = cd.selWord s'.bad s'.msg x σ := fun s' h1 h2 => by
+    simp [Codes.encState, h1, h2]
+  rw [chalH, XProg.law_ifBit, ite_neg' (by simp [vec, he, head_selWord]), XProg.law_ifBlank,
+    ite_neg' (by simp [vec, he, Codes.selWord]), he, chalSel,
+    law_seq_glue (Prog.law_seq_pure (Prog.law_prim _ _) |>.trans (Prog.law_prim _ _)),
+    XProg.law_ifBit]
+  cases hm : s.msg with
+  | some μ =>
+    rw [ite_pos' (by simp [Prim.apply, vec, Codes.selWord, Codes.msgWord]),
+      law_glue_pure (law_restoreC _ s.bad (by simp [Prim.apply, vec, Codes.selWord])),
+      oracleW_chal_sel_used _ _ _ _ hx hσ hm, PMF.pure_map, he, hm]
+    congr 2
+    funext j
+    fin_cases j <;> simp [Prim.apply, vec, Codes.selWord]
+  | none =>
+    rw [ite_neg' (by simp [Prim.apply, vec, Codes.selWord, Codes.msgWord]),
+      law_testLen _ _ _ _ (by simp [Prim.apply, vec])]
+    split_ifs with hb
+    · obtain ⟨μ, hμ⟩ := cd.full_msg b (by simpa [Prim.apply, vec] using hb)
+      subst hμ
+      rw [chalFresh, law_seq_glue (law_parseC _ (U.encAttr x) (cd.sig.enc σ) (cd.len_attr x)
+          (by simp [Prim.apply, vec, Codes.selWord, Codes.msgWord]) (by simp [Prim.apply, vec])
+          (by simp [Prim.apply, vec])),
+        law_seq_glue (Prog.law_seq_pure (Prog.law_prim _ _) |>.trans (Prog.law_prim _ _)),
+        law_seq_comp 1 6 _ cs.chalP _ _ (sp.chal σ μ) id (by
+          convert cs.law_chal σ μ hOk using 3 <;> simp [Prim.apply, vec]),
+        oracleW_chal_sel_fresh _ _ _ _ hx hσ hm, PMF.map_comp, ← PMF.bind_pure_comp]
+      congr 1
+      funext ct
+      rw [law_glue_pure (law_rebuildC _ s.bad (U.encMsg μ) (U.encAttr x) (cd.sig.enc σ)
+        (cd.len_msg μ) (cd.len_attr x) (by simp [Prim.apply, vec]) (by simp [Prim.apply, vec])
+        (by simp [Prim.apply, vec, Codes.selWord]) (by simp [Prim.apply, vec])
+        (by simp [Prim.apply, vec]) (by simp [Prim.apply, vec]))]
+      simp only [Function.comp_apply, id]
+      rw [hes { s with msg := some μ } hx hσ]
+      congr 2
+      funext j
+      fin_cases j <;> simp [Prim.apply, vec, Codes.selWord, Codes.msgWord]
+    · rw [law_glue_pure (law_restoreC _ s.bad (by simp [Prim.apply, vec, Codes.selWord])),
+        oracleW_chal_sel_none _ _ _ (cd.decode_msg_none (by simpa [Prim.apply, vec] using hb)),
+        PMF.pure_map, he, hm]
+      congr 2
+      funext j
+      fin_cases j <;> simp [Prim.apply, vec, Codes.selWord, Codes.msgWord]
+
+end Chal
+
 end AdvancedEncryption.PE.Generic
