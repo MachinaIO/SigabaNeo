@@ -225,3 +225,25 @@ Remaining (in order):
 * Remaining hypotheses of the instance at `confP`: `treeHeight Np kp ≤ 64`, the stream offsets
   and `|sdEnc|` `≤ 2^234`, `frontL c.L 512 ≤ 2^64`; the windows' `parse C ≠ []`,
   `|parse C| + 10 ≤ 512`, `BndG 512` for `wfSpec_wfB2`; the size bound.
+* **Done** (`Prog/WfB2Size.lean`): **`size_wfB2_conf`**, `XProg.size (wfB2 hk c 512) ≤ 2^25` at
+  the sizes of `confP` (`size_wfB2`: a part depending on `W` only, `fixSz 512 ≤ 10·2^20` by
+  kernel check — the run of `f̂` ≈ 97 gates × `|simStepP ginvTopP|` ≈ 2^23.1 — plus five
+  template programs, `≤ 136 · (241 · 195 + 36)` states by `size_natP_lt`,
+  `Lib/Machines/Prog/NatPSize.lean`). Total ≈ 2^24.
+* **Done** (`Prog/WfB2Inst.lean`): every hypothesis at `confP` discharged.
+  `gates_facts`/`hP_win`: a window predicate parses to `predGates` of a compiled `BExp`, nonempty,
+  `≤ 375` gates, wire indices `≤ 385` (`Lib/Machines/GatesSLPBound.lean`: compiled programs are
+  closed, `bnd_predGates`); `treeHeight_conf` (`= 60`); `offs_conf` (closed forms of the offsets
+  and of `|sdEnc|`, `≤ 2^234`); `dateBound_le` (`≤ 2^20`) and `frontL_le` (`≤ 2^64`, through
+  `lookCount_le`, `Lib/Machines/Prog/Lookup.lean`; stated for a variable `n ≤ 2^20` first,
+  since the kernel would otherwise evaluate `dateBound`).
+  **`wfB2_confP`**: `WfSpec hkp confP (wfB2 hkp confP 512) 512`, at most `2^25` states, at most
+  **`2^549` steps** (≤ the target `2^556`) with every tape below `2^240`, on SimData words of at
+  most `2^234` bits and gate lists of at most `2^64` bits. **`time_keyP_confP`**: the key
+  component with this block at `confP`; it only assumes the SimData program's time and output
+  length (`≤ 2^234`, e.g. `fixLen (sdEnc hkp confP)`, `offs_conf`). Axioms: `propext`,
+  `Classical.choice`, `Quot.sound`.
+* **Open, outside the `W_f` block**: the rest of `time_keyP_confP`'s bound still uses uniform
+  bounds, in particular `keyTryT M = 23 (M+1)^2 + tbC · (2M+1)^tbD` for the key try at
+  `M ≈ 2^240` (plan item 8); the per-query total `≲ 2^556` needs a per-tape bound of the key try
+  in the same style (`absC`/`Ph`).
