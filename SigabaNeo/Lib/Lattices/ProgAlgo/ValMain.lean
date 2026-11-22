@@ -393,6 +393,74 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
       (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tpad])
   rw [G2 hne, hcst, getLast_gl_nandW one zv (inBW bW wW ent) hf h1 rfl hin gs hne]
 
+/-! ### The run of the predicate -/
+
+/-- **The run of the predicate.** -/
+def gswC : Code := ofList [insGC, .cp CBW 10, stC, gloopC (.gate RES IA IB)]
+
+/-- **The initial words of the run of the predicate** (`M = N K`). -/
+structure GInit (V W A2 Ad M : ℕ) (one : List Bool) (gs : GateList) (pW rW : Fin 10 → List Bool)
+    (xs RB RW : List Bool) (w : St) : Prop where
+  it : ITmpl V A2 Ad M 1 w
+  vone : w 10 = one
+  t10 : (w T10).length = 10
+  bst : w BSt = ((List.finRange 10).map pW).flatten ++ RB
+  wst : w WSt = ((List.finRange 10).map rW).flatten ++ RW
+  zs : w rZ = xs
+  insw : (w INSW).length = 10 * V
+  tsl : (w TSl).length = V
+  tst : (w TST).length = (W + 1) * V
+  td2 : (w TD2).length = 2 * ((W + 1) * V)
+  tw : (w TW).length = W
+  tpad : (w TPAD).length = (W - 10) * V
+  tw9 : (w TW9).length = W - 9
+  tins : (w TINS).length = 10 * V
+  gsw : w GS = gsW W gs
+  gcnt : (w GCNT).length = gs.length
+
+/-- **The run of the predicate on the machine**: `OUTW` ends with the value of the predicate's
+output wire for the step `fV V f`. -/
+theorem exec_gswC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {W A2 Ad M : ℕ} {one : List Bool} {gs : GateList} (hgs : gs.length + 10 ≤ W)
+    (hbnd : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W) (hne : gs ≠ []) {pW rW : Fin 10 → List Bool}
+    (hp : ∀ i, (pW i).length = A2) (hr : ∀ i, (rW i).length = Ad) {xs RB RW : List Bool} (w : St)
+    (h : GInit V W A2 Ad M one gs pW rW xs RB RW w) :
+    exec V f gswC w OUTW = valueOf (fun i : Fin 10 =>
+        ((List.finRange 10).map fun i => jw (pW i) (rW i) (xs.getD i.val false) M 1).getD i.val [])
+      one (fV V f) (predOf 10 gs).1 (predOf 10 gs).2 := by
+  have h1 : one.length = V := by rw [← h.vone]; exact h.it.h10
+  set ins := (List.finRange 10).map fun i => jw (pW i) (rW i) (xs.getD i.val false) M 1 with hins
+  have hinsu : UV V ins := fun x hx => by
+    simp only [hins, List.mem_map] at hx
+    obtain ⟨i, -, rfl⟩ := hx
+    simp [jw, hp, hr, h.it.hV]; have := h.it.hNK; omega
+  have hinsl : ins.length = 10 := by simp [hins]
+  simp only [gswC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  obtain ⟨I1, I2⟩ := exec_insGC (V := V) (f := f) w h.it h.t10 pW rW hp hr xs h.bst h.wst h.zs
+  rw [List.drop_left' (by rw [h.insw])] at I1
+  generalize exec V f insGC w = w1 at I1 I2
+  have hone1 : w1 10 = one := by rw [I2 10 (by decide), h.vone]
+  obtain ⟨S1, S2⟩ := exec_stC (V := V) (f := f) (S := V) (W := W) (by omega)
+    (Function.update w1 CBW (w1 10)) (by rw [Function.update_self, hone1]) h1
+    (by rw [Function.update_of_ne (by decide), I2 TSl (by decide), h.tsl])
+    (by rw [Function.update_of_ne (by decide), I2 TST (by decide), h.tst])
+    (by rw [Function.update_of_ne (by decide), I2 TW9 (by decide), h.tw9]) hinsu hinsl
+    (by rw [Function.update_of_ne (by decide), I1])
+    (by rw [Function.update_of_ne (by decide), I2 TINS (by decide), h.tins])
+  generalize exec V f stC (Function.update w1 CBW (w1 10)) = w2 at S1 S2
+  have E2 : ∀ j, j ≠ GST → j ≠ CQ → j ≠ rX → j ≠ INSW → j ≠ CBW → j ∉ wr insGC → w2 j = w j :=
+    fun j a1 a2 a3 a4 a5 a6 => by rw [S2 j a1 a2 a3 a4, Function.update_of_ne a5, I2 j a6]
+  have hD : GData V W one ins gs w2 := ⟨h1, hinsu, hinsl, hgs, hbnd,
+    by rw [E2 TSl (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tsl],
+    by rw [E2 TST (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tst],
+    by rw [E2 TD2 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.td2],
+    by rw [E2 TW (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tw]⟩
+  obtain ⟨-, G2, -, -⟩ := exec_gloopC (V := V) (f := f) (blockSpec_gate hf) w2 hD trivial S1
+    (by rw [E2 GS (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.gsw])
+    (by rw [E2 GCNT (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.gcnt])
+    (by rw [E2 TPAD (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tpad])
+  rw [G2 hne, getLast_gl_values (fV V f) one ins hinsl gs hne]
+
 end ValVM
 
 end SigabaNeo.Tape
