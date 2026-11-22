@@ -1570,6 +1570,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * The toys confirm this: all 2,654 positive-height winners in 17³ designs are recovered.
   * **Remaining.** The projection Jacobian fixes the covolume change, but the branch weight N(S) is the penultimate law
     itself. The weighted prefix sum over gated outputs (and p_a) is still the core.
+  * **Lean.** InverseBranch.lean (axiom-clean) formalizes:
+    * `framed_injective`: for gcd(k,q) = 1, any winner in W, ties included;
+    * the recovery formulas R = M + Z(ũ − y/k), M = R ∩ K, [ũ] = [a·y];
+    * `raw_fiber_card`: N(S)·|ker φ_S|;
+    * a toy check mod 17.
+
 * **Part 177 (audited, minor caveats).** [aliasing](research/wall1_aliasing.md): the width-506 final-block certificate and
   CBD aliasing.
   * **Profile data alone cannot certify.** A genuine null-lattice block (prescribed 518-vector prefix, recorded determinant,
