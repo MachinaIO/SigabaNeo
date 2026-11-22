@@ -21,7 +21,7 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.AlmostConst", "SigabaNeo.Lib.Machines.FiniteAlg",
   "SigabaNeo.Lib.Lattices", "SigabaNeo.Lib.Encode.Enum", "SigabaNeo.Lib.Encode.Ring", "SigabaNeo.Lib.Encode.Laws", "SigabaNeo.Lib.Crypto.QuadLoss",
   "SigabaNeo.Lib.Machines.Prog.Columns", "SigabaNeo.Lib.Machines.Prog.Prims",
-  "SigabaNeo.Lib.Machines.Prog.Basic", "SigabaNeo.Lib.Machines.Prog.Compile", "SigabaNeo.Lib.Machines.Prog.FrameOut", "SigabaNeo.Lib.Machines.Prog.Moves", "SigabaNeo.Lib.Lattices.ProgAlgo.BinMul",
+  "SigabaNeo.Lib.Machines.Prog.Basic", "SigabaNeo.Lib.Machines.Prog.Compile", "SigabaNeo.Lib.Machines.Prog.FrameOut", "SigabaNeo.Lib.Machines.Prog.Moves", "SigabaNeo.Lib.Lattices.ProgAlgo.BinMul", "SigabaNeo.Lib.Lattices.ProgAlgo.CoefBits", "SigabaNeo.Lib.Lattices.ProgAlgo.BggEnc",
   "SigabaNeo.Lib.Machines.Prog.Machine", "SigabaNeo.Lib.Machines.Prog.Arith",
   "SigabaNeo.Lib.Machines.Inline.OfPTMOps", "SigabaNeo.Lib.Machines.Inline.Routine",
   "SigabaNeo.Lib.Machines.Inline.Defs", "SigabaNeo.Lib.Machines.Inline.Steps",
