@@ -294,6 +294,131 @@ theorem exec_inRepC {A : Type*} {N k : ℕ} (hk : 0 < k) (hN : 0 < N)
   intro j h1 h2
   simp [pos, hix, codec, codecN]
 
+/-! ### The representation of `1` -/
+
+/-- One output position of the constant `1`: its gadget coefficient bits. -/
+def cBody (tgt : LR) : Code := .seq (constC 2 12 (gvBody 12)) (takeC 2 12 tgt)
+
+/-- The registers the constant representation relies on. -/
+def CQ (k K N : ℕ) (σ : St) : Prop :=
+  Cst (E := E) k K σ ∧ σ.sc 5 = N ∧ σ.sc 6 = 2 ∧ σ.sc 7 = 0
+
+theorem exec_cBody (hnM : E.n + 1 ≤ E.M) {N k K : ℕ} (tgt : LR) (htgt : tgt ≠ 12) (o : OI N k)
+    (σ : St) (hkM : k ≤ E.M) (hq : CQ (E := E) k K N σ) (hd : ODig o σ)
+    (hI : Inv E σ) (hC : (σ.ls tgt).length + k ≤ E.C) :
+    CQ (E := E) k K N (exec E (cBody tgt) σ) ∧ ODig o (exec E (cBody tgt) σ) ∧
+      (exec E (cBody tgt) σ).ls tgt =
+        σ.ls tgt ++ (constL (.gate 0 : Wire ι) k (gvExp (2 ^ K) o)).map (pos E ix) ∧
+      (∀ r : SR, r ≠ 41 → r ≠ 42 → (exec E (cBody tgt) σ).sc r = σ.sc r) ∧
+      ∀ l : LR, l ≠ tgt → l ≠ 12 → (exec E (cBody tgt) σ).ls l = σ.ls l := by
+  obtain ⟨⟨⟨h0, h1⟩, h2, h3, h4⟩, h5, h6, h7⟩ := hq
+  obtain ⟨h43, h44, h45, h46⟩ := hd
+  have hQ : ∀ τ : St, OReg (E := E) k K o.1.val o.2.1.1.val o.2.1.2.val o.2.2.val τ → ∀ v ls',
+      OReg (E := E) k K o.1.val o.2.1.1.val o.2.1.2.val o.2.2.val
+        (setSL τ (Function.update τ.sc 42 v) ls') := by
+    intro τ ⟨⟨⟨a0, a1⟩, a2, a3, a4⟩, a7, a43, a44, a45, a46⟩ v ls'
+    simp only [setSL]
+    refine ⟨⟨⟨?_, ?_⟩, ?_, ?_, ?_⟩, ?_, ?_, ?_, ?_, ?_⟩ <;> dsimp only <;>
+      (rw [Function.update_of_ne (by decide)]; assumption)
+  have h1' := exec_constC (E := E) (cnt := 2) (l := 12)
+    (Q := OReg (E := E) k K o.1.val o.2.1.1.val o.2.1.2.val o.2.2.val) (by decide) hQ
+    (fun τ i hq hi hl => exec_gvBody hnM 12 τ i hq hi hl) σ
+    ⟨⟨⟨h0, h1⟩, h2, h3, h4⟩, h7, h43, h44, h45, h46⟩ (by rw [h2]; exact hkM) (by rw [h2]; omega)
+  rw [h2, ← map_pos_constL_gv (ix := ix) o] at h1'
+  set G := (constL (.gate 0 : Wire ι) k (gvExp (2 ^ K) o)).map (pos E ix)
+  have hG : G.length = k := by simp [G, constL_length]
+  set σ1 := setSL σ (Function.update σ.sc 42 k) (Function.update σ.ls 12 G)
+  have hI1 : Inv E σ1 := by
+    have := inv_exec E (constC 2 12 (gvBody 12)) σ hI; rw [h1'] at this; exact this
+  obtain ⟨sc2, h2', f2⟩ := exec_takeC (E := E) (n := 2) (lA := 12) (lR := tgt) (Ne.symm htgt)
+    G [] (σ.ls tgt) σ1 hI1 (by simp [σ1, setSL]) (by simp [σ1, setSL, htgt])
+    (by simp [σ1, setSL, h2, hG]) (by rw [hG]; exact hC)
+  have hrun : exec E (cBody tgt) σ = setSL σ sc2
+      (Function.update (Function.update σ1.ls 12 []) tgt (σ.ls tgt ++ G)) := by
+    rw [cBody, exec_seq, h1', h2']; rfl
+  have g : ∀ r : SR, r ≠ 41 → r ≠ 42 → (exec E (cBody tgt) σ).sc r = σ.sc r := fun r a b => by
+    rw [hrun]; simp only [setSL]; rw [f2 r (by simpa using a)]
+    simp [σ1, setSL, Function.update_of_ne b]
+  refine ⟨⟨⟨⟨by rw [g 0 (by decide) (by decide), h0], by rw [g 1 (by decide) (by decide), h1]⟩,
+    by rw [g 2 (by decide) (by decide), h2], by rw [g 3 (by decide) (by decide), h3],
+    by rw [g 4 (by decide) (by decide), h4]⟩, by rw [g 5 (by decide) (by decide), h5],
+    by rw [g 6 (by decide) (by decide), h6], by rw [g 7 (by decide) (by decide), h7]⟩,
+    ⟨by rw [g 43 (by decide) (by decide), h43], by rw [g 44 (by decide) (by decide), h44],
+    by rw [g 45 (by decide) (by decide), h45], by rw [g 46 (by decide) (by decide), h46]⟩,
+    by rw [hrun]; simp [setSL], g, fun l a b => ?_⟩
+  rw [hrun]; simp [σ1, setSL, Function.update_of_ne a, Function.update_of_ne b]
+
+/-- **The representation of the constant `1`** into `tgt`. -/
+def constRepC (tgt : LR) : Code :=
+  .seq (.seq (.zero 43) (.seq (.zero 44) (.seq (.zero 45) (.seq (.zero 46) (.lnil tgt)))))
+    (oLoop (cBody tgt))
+
+theorem exec_constRepC (hnM : E.n + 1 ≤ E.M) {N k K : ℕ} (hk : 0 < k) (hN : 0 < N) (tgt : LR)
+    (htgt : tgt ≠ 12) (σ : St) (hq : CQ (E := E) k K N σ) (h12 : σ.sc 12 = 4 * k * N)
+    (hI : Inv E σ) (hM : 4 * k * N + 2 ≤ E.M) (hkM : k ≤ E.M) (hNM : N ≤ E.M)
+    (hC : 4 * k * N * k ≤ E.C) :
+    CQ (E := E) k K N (exec E (constRepC tgt) σ) ∧ Inv E (exec E (constRepC tgt) σ) ∧
+      (exec E (constRepC tgt) σ).ls tgt =
+        repList E ix (constRepV (.gate 0 : Wire ι) (gvExp (2 ^ K) : OI N k → ℕ)) ∧
+      (∀ r : SR, r.val < 41 ∨ 46 < r.val → (exec E (constRepC tgt) σ).sc r = σ.sc r) ∧
+      ∀ l : LR, l ≠ tgt → l ≠ 12 → (exec E (constRepC tgt) σ).ls l = σ.ls l := by
+  set σ0 := setSL σ (Function.update (Function.update (Function.update (Function.update σ.sc 43 0)
+    44 0) 45 0) 46 0) (Function.update σ.ls tgt [])
+  have e0 : exec E (.seq (.zero 43) (.seq (.zero 44) (.seq (.zero 45) (.seq (.zero 46)
+      (.lnil tgt))))) σ = σ0 := rfl
+  have hs0 : ∀ r : SR, r.val < 43 ∨ 46 < r.val → σ0.sc r = σ.sc r := fun r hr => by
+    simp only [σ0, setSL]
+    rw [Function.update_of_ne (by rintro rfl; revert hr; decide),
+      Function.update_of_ne (by rintro rfl; revert hr; decide),
+      Function.update_of_ne (by rintro rfl; revert hr; decide),
+      Function.update_of_ne (by rintro rfl; revert hr; decide)]
+  have hI0 : Inv E σ0 := by
+    have := inv_exec E (.seq (.zero 43) (.seq (.zero 44) (.seq (.zero 45) (.seq (.zero 46)
+      (.lnil tgt))))) σ hI
+    rw [e0] at this; exact this
+  let Q : St → Prop := fun τ => CQ (E := E) k K N τ ∧ Inv E τ ∧
+    (∀ r : SR, r.val < 41 ∨ 46 < r.val → τ.sc r = σ.sc r) ∧
+    ∀ l : LR, l ≠ tgt → l ≠ 12 → τ.ls l = σ.ls l
+  obtain ⟨⟨⟨q0, q1⟩, q2, q3, q4⟩, q5, q6, q7⟩ := hq
+  have hQ0 : Q σ0 := ⟨⟨⟨⟨by rw [hs0 0 (by decide), q0], by rw [hs0 1 (by decide), q1]⟩,
+      by rw [hs0 2 (by decide), q2], by rw [hs0 3 (by decide), q3], by rw [hs0 4 (by decide), q4]⟩,
+      by rw [hs0 5 (by decide), q5], by rw [hs0 6 (by decide), q6], by rw [hs0 7 (by decide), q7]⟩,
+    hI0, fun r hr => hs0 r (by omega),
+    fun l hl _ => by simp [σ0, setSL, Function.update_of_ne hl]⟩
+  have it := iter_oLoop (E := E) (tgt := tgt)
+    (f := fun o => (constL (.gate 0 : Wire ι) k (gvExp (2 ^ K) o)).map (pos E ix)) (Q := Q) hk hN
+    (fun o => by simp [constL_length]) (fun τ h => ⟨h.1.1.2.1, h.1.2.1, h.1.2.2.1⟩)
+    (fun τ a b c d h => ⟨⟨⟨⟨by simp [setSL, rONE, Function.update_apply, h.1.1.1.1],
+      by simp [setSL, rZ, Function.update_apply, h.1.1.1.2]⟩,
+      by simp [setSL, h.1.1.2.1], by simp [setSL, h.1.1.2.2.1], by simp [setSL, h.1.1.2.2.2]⟩,
+      by simp [setSL, h.1.2.1], by simp [setSL, h.1.2.2.1], by simp [setSL, h.1.2.2.2]⟩,
+      h.2.1, fun r hr => by
+        simp only [setSL]
+        rw [Function.update_of_ne (by rintro rfl; revert hr; decide),
+          Function.update_of_ne (by rintro rfl; revert hr; decide),
+          Function.update_of_ne (by rintro rfl; revert hr; decide),
+          Function.update_of_ne (by rintro rfl; revert hr; decide)]
+        exact h.2.2.1 r hr, fun l a b => h.2.2.2 l a b⟩)
+    (fun τ o h hd hC' => by
+      obtain ⟨a1, a2, a3, a4, a5⟩ := exec_cBody (ix := ix) hnM tgt htgt o τ hkM h.1 hd h.2.1 hC'
+      exact ⟨⟨a1, inv_exec E _ τ h.2.1, fun r hr => by
+          rw [a4 r (by rintro rfl; revert hr; decide) (by rintro rfl; revert hr; decide)]
+          exact h.2.2.1 r hr,
+        fun l a b => by rw [a5 l a b]; exact h.2.2.2 l a b⟩, a2, a3⟩)
+    hM hkM hNM (4 * k * N) σ0 [] le_rfl hQ0 (by simp [σ0, setSL])
+    (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by simp [σ0, setSL])
+    (by simpa using hC)
+  have hrun : exec E (constRepC tgt) σ = (exec E (.seq (cBody tgt) odoO))^[4 * k * N] σ0 := by
+    rw [constRepC, exec_seq, e0, oLoop, exec_rep, hs0 12 (by decide), h12]
+  obtain ⟨hQ, hL, -⟩ := it
+  rw [hrun]
+  refine ⟨hQ.1, hQ.2.1, ?_, hQ.2.2.1, hQ.2.2.2⟩
+  rw [hL, List.nil_append, List.take_of_length_le (by rw [length_enumO']), repList]
+  congr 1
+  apply List.map_congr_left; intro o _
+  simp only [constRepV]
+  rw [ofFn_getD _ _ (constL_length _ _ _)]
+
 end FhatGen
 
 end SigabaNeo.Lattices
