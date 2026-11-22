@@ -33,4 +33,4 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Compose.AndThen", "SigabaNeo.Lib.Machines.Compose.Cost",
   "SigabaNeo.Lib.Machines.Inline.LinSim", "SigabaNeo.Lib.Machines.Inline.LinDefs",
   "SigabaNeo.Lib.Machines.Inline.LinPrep", "SigabaNeo.Lib.Machines.Inline.LinMain",
-  "SigabaNeo.Lib.Machines.Inline.LinCost"]
+  "SigabaNeo.Lib.Machines.Inline.LinCost", "SigabaNeo.Lib.Machines.Inline.ProgRoutine"]
