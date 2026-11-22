@@ -107,3 +107,14 @@ Remaining (in order):
 5. Assembly `wfB2`, `wfSpec_wfB2`, its certificate (`xcheck` by `decide +kernel`, symbolic in
    `N, K, k, d, C_step`), `time_keyP` with per-tape hypotheses for the `W_f` block, size bound,
    numerics at `confP`.
+
+## Plan B (2026-11-23): more Ring-LWE strength instead of a tight budget
+The registry's `RingLWE.H` (`Estimator.estimatorBits`) saturates near 1024 bits: every lattice scan stops
+at `β < 1754` (the estimator's `conf.max_beta`, ≈ 2^512), exhaustive search is cut at 10000 bits, and the
+all-infinite fallback is `bitsCap = 1024`. At N = 2^33 the attacks need β ≈ 4041 (≈ 1193 bits with the
+scan extended), at N = 2^34 β ≈ 9400 (≈ 2700 bits). Decision of the owner: extend the estimator and raise N.
+* **B1** (branch `t3/estimator-large-params`): one configurable max block size (raised), a fallback bounded by
+  the reduction cost at that block size, evaluation fast enough for `decide +kernel` at n = 2^34,
+  q = 2^(2^25); `kb ≤ RingLWE.H (params3/params5)` at N = 2^34 in `Params/Strength.lean`.
+* **B2** (branch `t3/confp-n34`): `Np = 2^34`, `dp = 2^61` (LHL needs |Wd| ≥ 2KN + 600), all `*_conf` lemmas.
+With kb ≈ 2000+, the budget `64·2^256·C ≤ 2^kb` leaves room far above the per-query target of 2^556.
