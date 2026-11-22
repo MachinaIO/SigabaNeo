@@ -126,6 +126,9 @@ def moveRev (n : ℕ) (src dst tmp : Fin k) : Prog k := iter src (stepR src dst 
 def prependN (n : ℕ) (src dst t₁ t₂ : Fin k) : Prog k :=
   seq (moveRev n src t₁ t₂) (moveRev n t₁ dst t₂)
 
+/-- `i := replicate n b ++ i`. -/
+def consN (n : ℕ) (i : Fin k) (b : Bool) : Prog k := iter i (prim (.cons i b)) n
+
 /-- `i := drop n i`. -/
 def dropN (n : ℕ) (i : Fin k) : Prog k := iter i (prim (.tail i)) n
 
@@ -238,6 +241,20 @@ theorem law_dropN (n : ℕ) (i : Fin k) (s : Store k) :
     simp only [Function.update_apply]
     split_ifs <;> simp [List.drop_tail]
 
+/-- **Law of `consN`.** -/
+theorem law_consN (n : ℕ) (i : Fin k) (b : Bool) (s : Store k) :
+    law (consN n i b) s = PMF.pure (Function.update s i (List.replicate n b ++ s i)) := by
+  rw [consN, law_iter i _ (fun s => Function.update s i (b :: s i)) (fun s => by
+    rw [law_prim]; rfl)]
+  congr 1
+  induction n generalizing s with
+  | zero => simp
+  | succ n ih =>
+    rw [Function.iterate_succ_apply, ih]
+    funext j
+    simp only [Function.update_apply]
+    split_ifs <;> simp [List.replicate_succ']
+
 /-! ### Well-formedness -/
 
 theorem wf_moveFront (n : ℕ) (src dst tmp : Fin k) : (moveFront n src dst tmp).WF :=
@@ -250,6 +267,8 @@ theorem wf_prependN (n : ℕ) (src dst t₁ t₂ : Fin k) : (prependN n src dst 
   ⟨wf_moveRev _ _ _ _, wf_moveRev _ _ _ _⟩
 
 theorem wf_dropN (n : ℕ) (i : Fin k) : (dropN n i).WF := wf_iter _ _ (by simp [WF]) n
+
+theorem wf_consN (n : ℕ) (i : Fin k) (b : Bool) : (consN n i b).WF := wf_iter _ _ (by simp [WF]) n
 
 /-! ### Scalar bounds -/
 
@@ -325,6 +344,16 @@ theorem timeBound_dropN (n : ℕ) (i : Fin k) (L : ℕ) :
     (fun L => Nat.le_refl _) (fun L => by show 2 * (L + 0) + 3 ≤ _; omega) n L
   simpa [dropN] using this
 
+theorem lenBound_consN (n : ℕ) (i : Fin k) (b : Bool) (L : ℕ) : lenBound (consN n i b) L ≤ L + n := by
+  have := lenBound_iter_le i (prim (.cons i b)) (d := 1) (fun L => Nat.le_refl _) n L
+  simpa [consN] using this
+
+theorem timeBound_consN (n : ℕ) (i : Fin k) (b : Bool) (L : ℕ) :
+    timeBound (consN n i b) L ≤ n * (2 * (L + n) + 5) + 2 * (L + n) + 3 := by
+  have := timeBound_iter_le i (prim (.cons i b)) (a := 2) (c := 5) (d := 1)
+    (fun L => Nat.le_refl _) (fun L => by show 2 * (L + 1) + 3 ≤ _; omega) n L
+  simpa [consN] using this
+
 /-! ### Per-tape bounds -/
 
 theorem lenBoundT_moveFront_le (n : ℕ) (h1 : src ≠ dst) (h2 : src ≠ tmp) (h3 : dst ≠ tmp)
@@ -383,3 +412,20 @@ end Move
 end Prog
 
 end SigabaNeo.Tape
+
+namespace SigabaNeo.Tape.Prog
+
+variable {k : ℕ}
+
+theorem lenBoundT_consN (n : ℕ) (i : Fin k) (b : Bool) (ℓ : Fin k → ℕ) :
+    lenBoundT (consN n i b) ℓ = Function.update ℓ i (ℓ i + n) := by
+  rw [consN, lenBoundT_iter]
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [Function.iterate_succ_apply', ih]
+    funext t
+    simp only [lenBoundT, Prim.lenT, Function.update_apply]
+    split_ifs <;> omega
+
+end SigabaNeo.Tape.Prog
