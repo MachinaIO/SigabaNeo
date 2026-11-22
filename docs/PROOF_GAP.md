@@ -1552,6 +1552,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Fixed-block bound (1).** It covers all three Part 94 failure events, ties included. It is a valid template for a
     repaired Lean certificate: plant-norm tail + height-one bound + per-height CBD-weighted dual sum or exact coset count.
     On the physical zero design it is ≤ 0.217382%.
+  * **Lean (repaired certificate).** FixedBlockCount / FixedBlockChernoff / FixedBlockRestart / FixedBlockExample
+    (axiom-clean) formalize:
+    * `failure_le_smoothError`: formula (1), i.e. the Chernoff cap charge, height one, and CBD-weighted exact ball counts
+      per height. It covers all three Part 94 failure events, ties included.
+    * `restartCount_lwe`: the restart certificate with acceptance λ1(H) ≥ L ∧ smoothError ≤ ε ∧ (actual-length prefix
+      Babai sum) ≤ ℓ, giving failure ≤ ∏δᵢ + ε + ℓ;
+    * `exists_flat_accepted`: abstract non-vacuity, with no determinant contradiction, unlike Part 171.
+    So the Lean chain's acceptance test is now satisfiable in principle. A physical width-506 witness and the reducer's δᵢ
+    remain open; per Part 177 they reduce to λ1 ≥ 0.998·GH plus the height-2–30 nonintegral dual classes.
+
 * **Part 176 (audited, SOUND).** [inverse_branch](research/wall1_inverse_branch.md): inverting the restart's final selection
   (Vallée–Vera style).
   * On every reachable draw-406 upper-band output, the embedded projected lattice and the oriented positive-height winner
