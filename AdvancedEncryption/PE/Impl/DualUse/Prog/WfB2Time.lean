@@ -64,6 +64,61 @@ theorem ph_putW (t : Fin n) : ∀ (w : List Bool) (β : Fin n → ℕ),
       · subst h; simp only [Function.update_self]; omega
       · simp only [Function.update_of_ne h]; exact le_rfl
 
+theorem natB_mono {n : ℕ} (t c : Fin n) {m m' : ℕ} (hm : m ≤ m') {β β' : Fin n → ℕ} (h : β ≤ β') :
+    natB t c m β ≤ natB t c m' β' := fun i => by
+  simp only [natB]
+  split_ifs
+  · exact hm
+  · exact max_le_max (h c) hm
+  · exact h i
+
+/-- Two template lists with the same tapes, the values of the first below those of the second. -/
+def TLe {n : ℕ} : List (Fin n × ℕ) → List (Fin n × ℕ) → Prop
+  | [], [] => True
+  | x :: l, y :: l' => x.1 = y.1 ∧ x.2 ≤ y.2 ∧ TLe l l'
+  | _, _ => False
+
+theorem tmplB_mono {n : ℕ} (c : Fin n) : ∀ (l l' : List (Fin n × ℕ)), TLe l l' →
+    ∀ {β β' : Fin n → ℕ}, β ≤ β' → tmplB c l β ≤ tmplB c l' β'
+  | [], [], _, _, _, h => h
+  | x :: l, y :: l', ⟨h1, h2, h3⟩, _, _, h => by
+    simp only [tmplB]
+    rw [h1] at *
+    exact tmplB_mono c l l' h3 (natB_mono y.1 c h2 h)
+  | [], _ :: _, h, _, _, _ => h.elim
+  | _ :: _, [], h, _, _, _ => h.elim
+
+theorem natB_le {n : ℕ} (t c : Fin n) (m : ℕ) {β : Fin n → ℕ} {M : ℕ} (h : ∀ i, β i ≤ M)
+    (hm : m ≤ M) : ∀ i, natB t c m β i ≤ M := fun i => by
+  simp only [natB]; split_ifs
+  · exact hm
+  · exact max_le (h c) hm
+  · exact h i
+
+/-- **The steps of templates below a uniform bound.** -/
+theorem tmplTT_le {n : ℕ} (c : Fin n) (M : ℕ) : ∀ (l : List (Fin n × ℕ)) (β : Fin n → ℕ),
+    (∀ i, β i ≤ M) → (∀ x ∈ l, x.2 ≤ M) →
+    tmplTT c l β ≤ (l.length + 1) * ((2 * M + 1) * (4 * M + 12))
+  | [], β, hβ, _ => by
+    simp only [tmplTT, List.length_nil, Nat.zero_add, Nat.one_mul]
+    have := supB_le_of hβ
+    nlinarith
+  | x :: l, β, hβ, hl => by
+    simp only [tmplTT, List.length_cons]
+    have hx := hl x (by simp)
+    have ih := tmplTT_le c M l (natB x.1 c x.2 β) (natB_le x.1 c x.2 hβ hx)
+      (fun y hy => hl y (by simp [hy]))
+    have hs : max (supB β) x.2 ≤ M := max_le (supB_le_of hβ) hx
+    have : (2 * x.2 + 1) * (4 * max (supB β) x.2 + 12) ≤ (2 * M + 1) * (4 * M + 12) :=
+      Nat.mul_le_mul (by omega) (by omega)
+    nlinarith
+
+theorem tmplB_le {n : ℕ} (c : Fin n) (M : ℕ) : ∀ (l : List (Fin n × ℕ)) (β : Fin n → ℕ),
+    (∀ i, β i ≤ M) → (∀ x ∈ l, x.2 ≤ M) → ∀ i, tmplB c l β i ≤ M
+  | [], β, hβ, _ => hβ
+  | x :: l, β, hβ, hl => tmplB_le c M l _ (natB_le x.1 c x.2 hβ (hl x (by simp)))
+      (fun y hy => hl y (by simp [hy]))
+
 end Tmpl
 
 /-! ### The preparation of the run of `f̂` -/
