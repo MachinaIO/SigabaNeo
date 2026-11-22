@@ -684,6 +684,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   rank-d lattice with GS floor g inside the image of Q, the CBD(3) probability that some nonzero h ties or beats the plant at
   height one is ≤ (Σ_k e^{−(g²/12)k²})^d − 1. Both are accepted on Prove2Me. (`#print axioms` shows `choice`, which is
   Classical.choice: the repository declares no axioms.)
+  UniquenessProbability.lean (`uniquenessProbability`) is the end-to-end terminal certificate. Take a fixed projection Q of
+  trace d and a fixed rank-d lattice H in its image with minimum ≥ L and GS floor g, where a = L² − 1 − (3/2)d > 0. Then
+  Pr_CBD[all-heights uniqueness] ≥ 1 − (v/(v+a²) + T(1) + Σ_{k=2}^{⌊√(9N+1)⌋} T(k)), with v = (9/2)d and
+  T(k) = (Σ_m e^{−g²m²/(12k²)})^d − 1. Heights ≥ 2 reduce deterministically to ⟨y,h⟩ ≤ −‖h‖²/(2k). It is accepted on Prove2Me.
+  What remains for Wall 1 is to show that the reducer-selected H satisfies these hypotheses with high probability.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
