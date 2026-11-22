@@ -1488,6 +1488,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     Babai sum alone does not help.
   * The Part 120/147–170 terminal-ratio analysis uses Part 94 directly and is unaffected. With the unrounded constants,
     Part 151's allowance becomes 0.0001977086810795.
+  * **Lean (follow-up).** ThetaProfile / UniquenessProfile / ProfileObstruction (axiom-clean) prove three things:
+    * `failure_le_errGeom`: a uniqueness bound using the actual GS lengths;
+    * `latticeThetaProfile`: the coordinatewise theta-product bound;
+    * `recordedProfile_rejection_eq_one`: even the actual-length test rejects every physical profile at the recorded
+      dimensions when ε, ℓ ≤ 0.01.
+    The cause is that the coordinatewise theta-product method itself is too lossy. At height 67 alone, each terminal length
+    t_i is charged ≥ 2exp(−t_i²/(12·67²)), which forces t_i ≥ 500. So a fundamentally stronger final-block uniqueness bound
+    is needed, for example one using smoothing over the random plant against the final block's dual minimum.
 * **Part 172 (audited, minor caveats).** [transference](research/wall1_transference.md): primal–dual constraints on the
   selected window.
   * **Dual exit sharpened by 10 orders.** Counting opposite pairs with inward half-cubes, the simultaneous failure of Part
