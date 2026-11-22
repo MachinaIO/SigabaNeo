@@ -655,6 +655,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   NormOnlyCertificate.lean (`allHeightsUnique_of_normOnly`, `allHeightsUnique_of_normSq`) proves the matching sufficient side
   (Part 94). If every nonzero h ∈ H satisfies ‖h‖ > k‖y‖ + √(R² − k²), or simply ‖h‖ > R², then all-heights uniqueness holds.
   Both are accepted on Prove2Me.
+  SelectionLaw.lean (`shortest_projection_gap`, `haar_short_vector_upper`) formalizes two pieces of Part 105. The first is the
+  √3/2 projection gap after removing a shortest vector. The second is the Haar bound Pr[λ1 < r] ≤ V_n·r^n/(2ζ(n)). Both are
+  accepted on Prove2Me. The void-probability inequality and the selected-quotient law remain open in Lean.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
