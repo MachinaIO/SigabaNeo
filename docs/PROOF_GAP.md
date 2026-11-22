@@ -1473,6 +1473,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Pooling over marks fails.** Summing numerator and denominator separately reweights the marks: in an exact example,
     selected probability 1/2 against a pooled value ≈ 0.11798. So the pooled ratio is not a majorant.
   * The certified bound at width 506 is P ≤ 1 − 3329^{−400}. The Haar bound does not transfer.
+* **Part 171 (audited, SOUND; IMPORTANT CORRECTION to the Lean BKZ chain).**
+  [budget_reallocation](research/wall1_budget_reallocation.md): the physical width-506 certificate is infeasible.
+  * **Determinant obstruction.** Suppose `restartAttack_lwe` (one ordered basis per block) is to certify 99%. Even giving
+    each error term the whole 1%:
+    * every prefix GS length must exceed 7.973694;
+    * all 505 terminal GS lengths must exceed 787.854220 (the uniform floor g in `reductionError`);
+    * then ln(required product / physical covolume) > 299.02 at 511 rows, and fewer rows make it worse.
+  * So every block is rejected, the rejection product is 1 for every disjoint row partition, and **δᵢ ≡ 1 for the current
+    acceptance test.** The earlier statement "only δᵢ is open" is therefore vacuous for this test. This limits the
+    certificate, not the decoder's real success probability.
+  * **Fix.** State the final-block obligation directly as the conditional probability of failing Part 94's all-heights
+    criterion, from the block's actual geometry, with no uniform terminal GS floor. Using actual prefix lengths in the
+    Babai sum alone does not help.
+  * The Part 120/147–170 terminal-ratio analysis uses Part 94 directly and is unaffected. With the unrounded constants,
+    Part 151's allowance becomes 0.0001977086810795.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1482,7 +1497,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–170 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–171 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
@@ -1493,7 +1508,8 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * The chain from (A, b) through a reducer's ordered basis, the plant-blind restart over k disjoint row blocks, the
       final-block test, uniqueness, the Babai lift and decoding to the secret is formalized (`restartAttack_lwe`).
     * Its bound is failure ≤ ∏δᵢ + reductionError + Σ 2·exp(−g²/12).
-    * **δᵢ, the rejection probability of the reducer's output, is the only open quantity.**
+    * **δᵢ, the rejection probability of the reducer's output, is the only open quantity.** Part 171 corrects this: the
+      current test's uniform terminal GS floor makes δᵢ ≡ 1, so the test must be restated (see Part 171).
   * **What δᵢ needs (Parts 134–144).**
     * Necessary: Pr[λ1(H) ≤ 16.86] ≤ 1/99 at β = 506.
     * Sufficient: λ1 ≥ 35.11.
