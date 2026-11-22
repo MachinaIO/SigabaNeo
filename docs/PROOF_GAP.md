@@ -1080,6 +1080,20 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
       the audit gives an explicit counterexample. Their theorems survive via Lemma 4.5.
   * **Open.** A proven word-RAM sampler cost. A Lean formalization is estimated at 4–8 months; Gaussian Poisson summation on
     lattices is missing.
+* **Part 141 (audited, minor caveats).** [sampler_wordram](research/wall1_sampler_wordram.md): a word-RAM version of Part
+  140 at the recorded instance.
+  * The Part 39 lattice is L_M = {(h, u) : h ≡ Mu mod q}, whose Gram–Schmidt norms are q and 1.
+  * Here s/q ≥ 38.39 at every run, so plain Klein sampling without rejection is within 2^−6670 of D_{L,s} for every M
+    (one-dimensional Poisson summation).
+  * The one-dimensional draws use 960-bit inversion tables built from a 1024-bit fixed-point recurrence. Each sample is
+    within 2^−923.9 of D_{L,s}, and all samples together within 2^−149.26. The list phase is deterministic, so this adds
+    directly to the failure probability.
+  * **Theorem W.** At the recorded instance: ≤ 2^794.98 word operations at n = 647, with failure < 2^−120.92, worst case and
+    no rejection loop. The two 646 calls also total 2^794.98.
+    * The model is a word-RAM with words wide enough to address ≈ 2^782 words (sample arithmetic < 2^63).
+    * This settles Part 140's real-RAM caveat for these lattices. General integral bases are still open there.
+  * **Rigorous cost frontier (Nov 2026).** Recovering the secret of plain LWE (511, 512, 3329), CBD(3) with probability ≥
+    99.5% costs ≤ 2^795 word operations, fully explicit. The previous explicit bound was 2^1253.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
