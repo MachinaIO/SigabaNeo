@@ -1320,6 +1320,18 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * A C^D suffix comparison holds, but it still needs the average over the selected state at the start of the block.
   * The area cutoff 3/2 used here is diagnostic. Smaller factors for the specific terminal residuals are not ruled out.
     Both allowances remain open.
+* **Part 158 (audited, minor caveats; empirical).** [selected_scaling](research/wall1_selected_scaling.md): exact toy
+  computations of the terminal selected averages. 156,049,323 terminal designs over 39 toy parameter sets, all
+  representative counts independently reproduced.
+  * Inherited minima: in the single-output depth-2 family, the contribution is exactly (16q−38)/q^5 for primes q ≥ 19.
+  * Plane hits: in one rank-4 row, 3420 vertical band wins, 1980 gated, 4 hits. In that row, two successive rounding
+    inequalities make the event empty for q ≥ 89. Part 159 shows this does not carry over to width 506.
+  * Terminal multiplicity: the non-horizontal-lift class dominates in some rows, while in others all witnesses are
+    horizontal.
+  * Per the audit, the "56% of allowance" toy figure does not measure the width-506 contribution. The q = 23 zero-mark
+    incidences would fail the real terminal gate.
+  * **Conjecture.** The three high-rank averages are bounded by gated ball volumes in witness ranks d−2, d−1 and d, times
+    e^{o(d)}.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1329,7 +1341,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–157 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–158 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
