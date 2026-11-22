@@ -416,6 +416,9 @@ def tmOutN (N K k d M31 : ℕ) (β : Fin 256 → ℕ) : Fin 256 → ℕ :=
   embedF (ValVM.mkE tm31 tm31_inj) β fun j =>
     Sym.pEval (tmVars M31 N K k (lenA N K k d)) (Sym.aGet σTmF' j.val)
 
+theorem tmOut_eq {N K k : ℕ} (c : Conf N K k) (M31 : ℕ) (β : Fin 256 → ℕ) :
+    tmOut c M31 β = tmOutN N K k c.d M31 β := rfl
+
 /-- The bounds after `prepT` with explicit parameters (`oB oW oP` the stream offsets). -/
 def vTn (N K k d W : ℕ) (lw : List (Fin 256 × ℕ)) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v1 := Prog.lenBoundT (cp (mw GSC) (mw GS)) β0
