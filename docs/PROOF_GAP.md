@@ -936,8 +936,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * `failProb_eq` gives the exact law: failure = ∏δᵢ + Σᵢ (∏_{j<i} δⱼ)·Pr[accᵢ ∧ Fᵢ].
     * `restart_le` / `restart_le_avg` / `restart_le_lift` give failure ≤ ∏δᵢ + ε (+ ℓ). `restart_le_pow` gives δ^k + ε.
     * `restart_le_lwe` instantiates the plant as iid (s, e).
-    * Still open: connecting the abstract acc and F to the concrete GS/minimum test, `uniquenessProbability` and the Babai
-      lift bound.
+    * RestartReduction.lean connects this to the concrete test (axiom-clean). The key results:
+      * `restartReduction`: for k disjoint blocks with acceptance "GS floor ≥ g, minimum ≥ L (and a prefix test)", failure
+        ≤ ∏δᵢ + reductionError + ℓ;
+      * `restartReduction_lwe`: the LWE plant marginal is discharged;
+      * `restartReduction_single`: the k = 1 analogue of `conditionalReduction`.
+    * The Babai-lift bound ℓ (Part 47) is still a hypothesis. There is no lift lemma in the repo yet.
 * **Part 135 (audited, minor caveats; the corrections are in the note's Audit section).**
   [plant_symmetry](research/wall1_plant_symmetry.md): what averaging over the plant can and cannot do.
   * A lattice containing the plant determines it: a second admissible solution exists with probability < 2^−3107.2. So
