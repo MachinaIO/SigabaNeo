@@ -782,7 +782,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     the budget.
   * The smallest surviving leaf has rank 89, with a pathwise floor of 1.095, a factor 25 short.
   * Part 39's 647 is minimal within its certificate family (failure 0.0149 at 646, 0.00483 at 647).
-* **Frontier after Parts 1–130 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 131 (audited; corrected by the audit).** [rethink](research/wall1_rethink.md): three architectures and their gaps:
+  * restart certificates need a non-rare-acceptance estimate;
+  * list decoding needs selected primal ball counts, which Part 101's dual counts do not give (rectangular counterexample);
+  * multiple final blocks need a joint estimate.
+
+  The audit found that multiple blocks DO close with disjoint sample blocks. Conditional on s, Part 39 blocks on disjoint rows
+  are independent, so k blocks fail together with probability ≤ E_s[f(‖s‖²)^k]. Two width-646 exact SVP calls (133 rows each,
+  with candidate verification on the 245 unused rows) succeed with probability > 99.409%. **New rigorous frontier: maximum
+  oracle dimension 646 (two calls), improving 647 (one call).** Optimizing the block count and size is in progress.
+* **Frontier after Parts 1–131 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
