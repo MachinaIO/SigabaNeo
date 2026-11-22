@@ -469,9 +469,9 @@ theorem exec_gswC (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
 def posBody : Code :=
   ofList [.cp 64 63, .drop 64 62, .cp 65 64, .mv 61 64 65, .cp 65 62, .cp 66 62, .mv 61 66 65, .tl 62]
 
-/-- **The unary positions `0, 1, …, M − 1`** (`W'` bits each, `M = |69|`) into `61`
-(`TT = true^W'` on `63` from the template `68`). -/
-def posC : Code := ofList [fillC 63 OB 29 68 68, .cp 61 67, .cp 62 68, .cp CQ 69, .rep CQ posBody]
+/-- **The unary positions `0, 1, …, M − 1`** (`W'` bits each, `M = |75|`) into `61`
+(`TT = true^W'` on `63` from the template `74`). -/
+def posC : Code := ofList [fillC 63 OB 29 74 74, .cp 61 73, .cp 62 74, .cp CQ 75, .rep CQ posBody]
 
 theorem exec_posBody {W' m : ℕ} (hm : m ≤ W') (w : St) (hTT : w 63 = List.replicate W' true)
     (hF : w 62 = List.replicate (W' - m) false) :
@@ -498,22 +498,22 @@ theorem exec_posBody {W' m : ℕ} (hm : m ≤ W') (w : St) (hTT : w 63 = List.re
 
 /-- **The unary positions.** -/
 theorem exec_posC {W' M : ℕ} (hM : M ≤ W') (w : St) (hob : w OB = [true]) (h29 : (w 29).length = 1)
-    (h67 : (w 67).length = M * W') (h68 : w 68 = List.replicate W' false)
-    (h69 : (w 69).length = M) :
+    (h67 : (w 73).length = M * W') (h68 : w 74 = List.replicate W' false)
+    (h69 : (w 75).length = M) :
     exec V f posC w 61 = concatN M (unaryW W') ∧
       ∀ j, j ≠ 61 → j ≠ 62 → j ≠ 63 → j ≠ 64 → j ≠ 65 → j ≠ 66 → j ≠ rY → j ≠ CQ →
         exec V f posC w j = w j := by
-  rw [show posC = ofList ([fillC 63 OB 29 68 68] ++ [.cp 61 67, .cp 62 68, .cp CQ 69,
+  rw [show posC = ofList ([fillC 63 OB 29 74 74] ++ [.cp 61 73, .cp 62 74, .cp CQ 75,
     .rep CQ posBody]) from rfl, exec_ofList_append]
-  obtain ⟨F1, F2⟩ := exec_fillC (V := V) (f := f) (dst := 63) (src := OB) (cl := 29) (tD := 68)
-    (tC := 68) (by decide) (by decide) (by decide) (by decide) w (by rw [hob, h29]; rfl)
+  obtain ⟨F1, F2⟩ := exec_fillC (V := V) (f := f) (dst := 63) (src := OB) (cl := 29) (tD := 74)
+    (tC := 74) (by decide) (by decide) (by decide) (by decide) w (by rw [hob, h29]; rfl)
     (by rw [h29, Nat.mul_one])
   rw [h68, List.length_replicate, hob, flatten_replicate_single] at F1
   simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
-  generalize exec V f (fillC 63 OB 29 68 68) w = u at F1 F2
-  set u1 := Function.update (Function.update (Function.update u 61 (u 67)) 62
-    (Function.update u 61 (u 67) 68)) CQ (Function.update (Function.update u 61 (u 67)) 62
-    (Function.update u 61 (u 67) 68) 69) with hu1
+  generalize exec V f (fillC 63 OB 29 74 74) w = u at F1 F2
+  set u1 := Function.update (Function.update (Function.update u 61 (u 73)) 62
+    (Function.update u 61 (u 73) 74)) CQ (Function.update (Function.update u 61 (u 73)) 62
+    (Function.update u 61 (u 73) 74) 75) with hu1
   have e1 : ∀ j, j ≠ 61 → j ≠ 62 → j ≠ CQ → u1 j = u j := fun j a1 a2 a3 => by
     simp [hu1, Function.update_apply, a1, a2, a3]
   have I := exec_rep_inv (V := V) (f := f) (c := CQ) (B := posBody)
@@ -536,16 +536,16 @@ theorem exec_posC {W' M : ℕ} (hM : M ≤ W') (w : St) (hob : w OB = [true]) (h
       · rw [P3 j b1 b2 b3 b4 b5, Function.update_of_ne b6, a4 j b1 b2 b3 b4 b5 b6]) u1
     (fun _ => ⟨by rw [e1 63 (by decide) (by decide) (by decide), F1],
       by simp (config := {decide := true}) [hu1, Function.update_apply,
-        F2 68 (by decide) (by decide) (by decide), h68],
+        F2 74 (by decide) (by decide) (by decide), h68],
       by simp [concatN], fun _ _ _ _ _ _ _ => rfl⟩)
   have hn : (u1 CQ).length = M := by
     simp (config := {decide := true}) [hu1, Function.update_apply,
-      F2 69 (by decide) (by decide) (by decide), h69]
+      F2 75 (by decide) (by decide) (by decide), h69]
   rw [hn] at I
   obtain ⟨-, -, I3, I4⟩ := I le_rfl
   refine ⟨?_, fun j b1 b2 b3 b4 b5 b6 b7 b8 => ?_⟩
-  · rw [I3, show u1 61 = w 67 by simp (config := {decide := true}) [hu1, Function.update_apply,
-      F2 67 (by decide) (by decide) (by decide)],
+  · rw [I3, show u1 61 = w 73 by simp (config := {decide := true}) [hu1, Function.update_apply,
+      F2 73 (by decide) (by decide) (by decide)],
       List.drop_left' (by rw [h67])]
   · rw [I4 j b1 b2 b4 b5 b6 b8, e1 j b1 b2 b8, F2 j b3 b7 b8]
 
