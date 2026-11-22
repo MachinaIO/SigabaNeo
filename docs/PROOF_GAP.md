@@ -900,6 +900,20 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * the kernel check of the recorded 99.409% figure;
   * the end-to-end composition (SVP outputs feeding the candidate list);
   * decoding to the CBD-support representative.
+* **Part 133 (audited, minor caveats; corrected by the audit).** [provable_cost](research/wall1_provable_cost.md): rigorous
+  cost of the exact SVP call.
+  * The Doulgerakis–Laarhoven-type provable sieve is a statement about Haar-random lattices. Part 39's lattices form a
+    countable set (Haar-null), so even a proven version would say nothing about them.
+  * Algorithms proven for every lattice:
+    * Micciancio–Voulgaris: Õ(2^{2D}), i.e. 2^1294·polylog at D = 647, with an unspecified exponent c.
+    * ADRS/ASD18: 2^{D+o(D)}, with no published constants, so no number at D = 647.
+    * Kannan/Hanrot–Stehlé: D^{D/(2e)+o(D)}; with explicit constants this is ≈ 2^4300.
+  * Explicit baseline (exact arithmetic, audited): enumerating secrets by decreasing CBD(3) probability needs ≤ 2^1234.3955
+    candidates for 99%, at < 2^19 operations each. The cost of generating candidates in order is not counted. Wrong output
+    has probability ≤ 2^{1234.4−4544.59}.
+  * Rigorous BKZ tour bounds exist only for modified variants (HPS11 BKZ', Li–Nguyen, Li–Walter). The original BKZ has only
+    O(β)^n. None of these certifies success for β < 647.
+  * Next step: make ADRS/ASD18's constants explicit at D = 647.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
