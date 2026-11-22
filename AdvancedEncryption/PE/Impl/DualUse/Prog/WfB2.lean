@@ -659,6 +659,55 @@ theorem qsL_entries (N K k : ℕ) (w : List Bool) (hw : w.length = 2 * (2 * k) *
   rw [e, qsL_idx, ← concatN_eq_flatten]
   exact concatN_block hw
 
+/-! ### The streams and `one` -/
+
+section Streams
+
+variable {V : ℕ} {f : List Bool → List Bool → List Bool}
+
+theorem exec_streamsT (w : St) : exec V f streamsT w =
+    Function.update (Function.update (Function.update w BSt ((w SDW).drop (w 61).length)) WSt
+      ((w SDW).drop (w 62).length)) PSt ((w SDW).drop (w 63).length) := by
+  funext x
+  simp (config := {decide := true}) only [streamsT, exec_ofList, List.foldl_cons, List.foldl_nil,
+    exec_cp', exec_drop' (show BSt ≠ 61 by decide), exec_drop' (show WSt ≠ 62 by decide),
+    exec_drop' (show PSt ≠ 63 by decide), Function.update_apply]
+  split_ifs <;> simp_all
+
+theorem exec_streamsG (w : St) : exec V f streamsG w =
+    Function.update (Function.update (Function.update w BSt ((w SDW).drop (w 61).length)) WSt
+      ((w SDW).drop (w 62).length)) rZ ((w SDW).drop (w 63).length) := by
+  funext x
+  simp (config := {decide := true}) only [streamsG, exec_ofList, List.foldl_cons, List.foldl_nil,
+    exec_cp', exec_drop' (show BSt ≠ 61 by decide), exec_drop' (show WSt ≠ 62 by decide),
+    exec_drop' (show rZ ≠ 63 by decide), Function.update_apply]
+  split_ifs <;> simp_all
+
+theorem exec_oneC (w : St) {g z o : List Bool} (h10 : w 10 = List.replicate V false)
+    (hV : V = g.length + z.length + o.length) (hg : w GADW = g) (hz : w ZEROW = z)
+    (ho : w ONEW = o) (h1 : (w TA1).length = g.length) (h2 : (w TAd).length = z.length)
+    (h3 : (w TNK).length = o.length) :
+    exec V f oneC w 10 = g ++ z ++ o ∧
+      ∀ x, x ≠ 10 → x ≠ GADW → x ≠ ZEROW → x ≠ ONEW → exec V f oneC w x = w x := by
+  simp only [oneC, exec_ofList, List.foldl_cons, List.foldl_nil]
+  rw [exec_mv_shift (d := 10) (s := GADW) (c := TA1) (by decide) (x := g) h1.symm (L := []) (by simp [hg])]
+  rw [exec_mv_shift (d := 10) (s := ZEROW) (c := TAd) (by decide) (x := z)
+    (by rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide), h2]) (L := [])
+    (by rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide), hz,
+      List.append_nil])]
+  rw [exec_mv_shift (d := 10) (s := ONEW) (c := TNK) (by decide) (x := o)
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false, h3]) (L := [])
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false, ho,
+      List.append_nil])]
+  refine ⟨?_, fun x a b d e => ?_⟩
+  · simp (config := {decide := true}) only [Function.update_apply, if_true, if_false, h10]
+    rw [List.drop_append_of_le_length (by simp; omega), List.drop_append_of_le_length (by simp; omega),
+      List.drop_append_of_le_length (by simp; omega)]
+    simp [List.drop_replicate, hV]
+  · simp only [Function.update_apply, if_neg a, if_neg b, if_neg d, if_neg e]
+
+end Streams
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
