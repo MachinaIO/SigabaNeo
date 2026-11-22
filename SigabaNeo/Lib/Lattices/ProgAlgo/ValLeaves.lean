@@ -241,15 +241,36 @@ theorem modSubV_shape (hf : ∀ a b, a.length = V → b.length = V → (f a b).l
   rw [length_muxLV, List.length_take, List.length_take, l1, l2]
   omega
 
+/-- The subtracted term. -/
+def Fsub (V K : ℕ) (f : List Bool → List Bool → List Bool) (one zv d : List Bool)
+    (cs : List (List Bool)) : List Bool :=
+  (modSubV one (fV V f) zv (2 ^ K) (K + 1) (List.replicate (K + 1) zv) (andLV one (fV V f) d cs)).flatten
+
+/-- The added term. -/
+def Fadd (V K : ℕ) (f : List Bool → List Bool → List Bool) (one zv d : List Bool)
+    (cs : List (List Bool)) : List Bool :=
+  (modAddV one (fV V f) zv (2 ^ K) (K + 1) (List.replicate (K + 1) zv) (andLV one (fV V f) d cs)).flatten
+
+theorem zipWith_len {F : List Bool → List (List Bool) → List Bool} {c : ℕ} :
+    ∀ (l₁ : List (List Bool)) (l₂ : List (List (List Bool))),
+      (∀ a ∈ l₁, ∀ b ∈ l₂, (F a b).length = c) → ∀ x ∈ List.zipWith F l₁ l₂, x.length = c
+  | [], _, _, x, hx => by simp at hx
+  | _ :: _, [], _, x, hx => by simp at hx
+  | a :: l₁, b :: l₂, h, x, hx => by
+    rw [List.zipWith_cons_cons, List.mem_cons] at hx
+    rcases hx with rfl | hx
+    · exact h a (by simp) b (by simp)
+    · exact zipWith_len l₁ l₂ (fun a ha b hb => h a (by simp [ha]) b (by simp [hb])) x hx
+
 /-- **`termSubC` is a term code.** -/
 theorem termOk_sub (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (K : ℕ)
     (one zv : List Bool) (h1 : one.length = V) (hz : zv.length = V) :
-    TermOk V K f one zv termSubC fun d cs => (modSubV one (fV V f) zv (2 ^ K) (K + 1)
-      (List.replicate (K + 1) zv) (andLV one (fV V f) d cs)).flatten where
-  val w cs ht h10 h11 hcl hcv hC := by rw [exec_termSubC hf w K ht cs hcl hcv hC, h10, h11]
+    TermOk V K f one zv termSubC (Fsub V K f one zv) where
+  val w cs ht h10 h11 hcl hcv hC := by rw [exec_termSubC hf w K ht cs hcl hcv hC, h10, h11]; rfl
   len d cs hcl hcv := by
     obtain ⟨l, v⟩ := modSubV_shape hf h1 hz (2 ^ K) (K + 1) (List.replicate (K + 1) zv)
       (andLV one (fV V f) d cs) (by simp) (by rw [length_andLV, hcl])
+    unfold Fsub
     rw [length_flatten_of v, l]
   wr32 := by decide
   wr30 := by decide
@@ -274,12 +295,12 @@ theorem modAddV_shape (hf : ∀ a b, a.length = V → b.length = V → (f a b).l
 /-- **`termAddC` is a term code.** -/
 theorem termOk_add (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (K : ℕ)
     (one zv : List Bool) (h1 : one.length = V) (hz : zv.length = V) :
-    TermOk V K f one zv termAddC fun d cs => (modAddV one (fV V f) zv (2 ^ K) (K + 1)
-      (List.replicate (K + 1) zv) (andLV one (fV V f) d cs)).flatten where
-  val w cs ht h10 h11 hcl hcv hC := by rw [exec_termAddC hf w K ht cs hcl hcv hC, h10, h11]
+    TermOk V K f one zv termAddC (Fadd V K f one zv) where
+  val w cs ht h10 h11 hcl hcv hC := by rw [exec_termAddC hf w K ht cs hcl hcv hC, h10, h11]; rfl
   len d cs hcl hcv := by
     obtain ⟨l, v⟩ := modAddV_shape hf h1 hz (2 ^ K) (K + 1) (List.replicate (K + 1) zv)
       (andLV one (fV V f) d cs) (by simp) (by rw [length_andLV, hcl])
+    unfold Fadd
     rw [length_flatten_of v, l]
   wr32 := by decide
   wr30 := by decide
