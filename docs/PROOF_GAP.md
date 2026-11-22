@@ -1096,8 +1096,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * Lemma 4.5 in one-step form: maximal within-label pairings have one output law, and sub-multiset coupling dominates
       upward-closed events;
     * the audit's exact counterexample to ASD18 Def 2.2 (L = Z, s = 2).
-    Still open in Lean: the conditional output law I2, Lemma 4.3b(2), and the history induction through a full run of
-    Procedure E.
+    Eleven further Adrs* modules (axiom-clean, 99 declarations) complete the algorithm analysis:
+    * I2: conditioned on X ≡ Y mod 2L, (X+Y)/2 ~ D_{L,s/√2} exactly.
+    * Lemma 4.3b(2): the selected averages dominate a Poissonized iid D_{L,s/√2} list with rate
+      Λ' = θΛ·ρ_{s/√2}(L)²/(ρ_s(L)ρ_{s/2}(L)).
+    * History induction: for every finite admissible schedule, Procedure E's final list contains a Pois(Λ_ℓ) iid D_{L,s_ℓ}
+      multiset with probability ≥ 1 − Σεⱼ − Pr[Pois(Λ0) > M0].
+    * Final hit: the miss probability is exp[−Λ_ℓ·D_{L,s_ℓ}(S)] for the set S of shortest vectors.
+    Still open in Lean: the numerical instantiation at the recorded lattice (the 2^794.98 count and the 2^−120.9 failure)
+    and the word-operation cost accounting.
 * **Part 141 (audited, minor caveats).** [sampler_wordram](research/wall1_sampler_wordram.md): a word-RAM version of Part
   140 at the recorded instance.
   * The Part 39 lattice is L_M = {(h, u) : h ≡ Mu mod q}, whose Gram–Schmidt norms are q and 1.
