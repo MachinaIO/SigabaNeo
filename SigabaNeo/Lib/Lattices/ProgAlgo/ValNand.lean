@@ -1203,6 +1203,120 @@ theorem exec_rasLoop {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (A : BI N (K 
        rw [hl, List.drop_left, rasW_eq])
     | (rw [I'.sa]; congr 2; ring)
 
+/-! ### The rows `a` and the block -/
+
+/-- One row `a`: its reversed rows, the streams of `B`, its `2k` columns. -/
+def aBody : Code := ofList [rasLoop, .cp SB0 IB, .cp SB1 IB, .drop SB1 T2kkNV, c1Loop]
+
+/-- **A NAND block**: `RES` receives the bundle of the NAND of the bundles `IA`, `IB`. -/
+def nandC : Code := ofList [.cp SA IA, .cp CA TT2, .rep CA aBody]
+
+/-- The blocks shifted into `RES` by the first `r` rows. -/
+def resA {N K : ℕ} (P : BI N (K + 1) → List Bool) (r : ℕ) : List (List Bool) :=
+  ((List.finRange 2).take r).flatMap fun a => resC1 P a 2
+
+theorem resA_two {N K : ℕ} (P : BI N (K + 1) → List Bool) : resA P 2 = (blocks P).flatten := by
+  simp only [resA, resC1, resC2, List.take_of_length_le (by simp : (List.finRange 2).length ≤ 2),
+    List.take_of_length_le (by simp : (List.finRange (K + 1)).length ≤ K + 1), blocks, cols,
+    product_def', List.map_flatMap, List.map_map, flatten_flatMap']
+  rw [List.flatMap_def]
+  congr 1
+
+/-- The invariant of the loop over `a`. -/
+structure AInv (V K N : ℕ) (one zv : List Bool) (A B P : BI N (K + 1) → List Bool) (w₀ : St)
+    (r : ℕ) (w : St) : Prop where
+  ctx : NCtx V K N one zv w
+  ib : w IB = bw B
+  ca : w CA = List.replicate (2 - r) true
+  sa : w SA = bstream ((blocks A).drop (r * (2 * (K + 1))))
+  res : w RES = (w₀ RES ++ (resA P r).flatten).drop (resA P r).flatten.length
+
+theorem aInv_step (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    (hN : 0 < N) {one zv : List Bool} (A B : BI N (K + 1) → List Bool) (hA : ∀ b, (A b).length = V)
+    (hB : ∀ b, (B b).length = V) {w₀ : St} {r : ℕ} (hr : r < 2) {w : St}
+    (h : AInv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) zv (2 ^ K) A B) w₀ r w) :
+    AInv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) zv (2 ^ K) A B) w₀ (r + 1)
+      (exec V f aBody (Function.update w CA (w CA).tail)) := by
+  set P := nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B
+  set a : Fin 2 := ⟨r, hr⟩
+  have c0 := h.ctx.upd CA (by decide) (w CA).tail
+  simp only [aBody, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  obtain ⟨R1, R2, R3, R4⟩ := exec_rasLoop (V := V) (f := f) hN A hA a
+    (Function.update w CA (w CA).tail) c0 (by rw [Function.update_of_ne (by decide), h.sa])
+  generalize exec V f rasLoop (Function.update w CA (w CA).tail) = u at R1 R2 R3 R4
+  have uIB : u IB = bw B := by
+    rw [R4 IB (by decide), Function.update_of_ne (by decide), h.ib]
+  rw [exec_drop' (by decide)]
+  set u2 := Function.update (Function.update (Function.update u SB0 (u IB)) SB1
+    (Function.update u SB0 (u IB) IB)) SB1 ((Function.update (Function.update u SB0 (u IB)) SB1
+      (Function.update u SB0 (u IB) IB) SB1).drop (Function.update (Function.update u SB0 (u IB))
+      SB1 (Function.update u SB0 (u IB) IB) T2kkNV).length) with hu2
+  have cu2 : NCtx V K N one zv u2 := ((R3.upd SB0 (by decide) _).upd SB1 (by decide) _).upd SB1
+    (by decide) _
+  have hbl : ∀ x ∈ blocks B, x.flatten.length = N * ((K + 1) * V) := by
+    intro x hx
+    simp only [blocks, List.mem_map] at hx
+    obtain ⟨q, -, rfl⟩ := hx
+    exact blk_len hB q.1 q.2
+  obtain ⟨I, Io⟩ := exec_c1Loop (V := V) (f := f) hf A B hA hB a u2 cu2
+    (by simp (config := {decide := true}) [hu2, Function.update_apply, R1])
+    (by rw [show u2 CA = u CA by simp (config := {decide := true}) [hu2, Function.update_apply],
+          R4 CA (by decide), Function.update_self, h.ca, List.tail_replicate]
+        congr 1; show 2 - r - 1 = 1 - r; omega)
+    (by simp (config := {decide := true}) [hu2, Function.update_apply, uIB, bw_blocks]; rfl)
+    (by simp (config := {decide := true}) only [hu2, Function.update_apply, if_true, if_false]
+        rw [uIB, R3.t2kknv, bw_blocks, ← bstream, bstream_drop hbl])
+  refine ⟨I.ctx, ?_, ?_, ?_, ?_⟩
+  · rw [Io IB (by decide)]; simp (config := {decide := true}) [hu2, Function.update_apply, uIB]
+  · rw [Io CA (by decide), show u2 CA = u CA by simp (config := {decide := true}) [hu2,
+      Function.update_apply], R4 CA (by decide), Function.update_self, h.ca, List.tail_replicate]
+    congr 1
+  · rw [Io SA (by decide)]
+    simp (config := {decide := true}) [hu2, Function.update_apply, R2]
+    rfl
+  · rw [I.res]
+    simp (config := {decide := true}) only [hu2, Function.update_apply, if_false]
+    rw [R4 RES (by decide), Function.update_of_ne (by decide), h.res, shift_acc]
+    have e : resA P (r + 1) = resA P r ++ resC1 P a 2 := by
+      simp only [resA]
+      rw [List.take_succ, List.flatMap_append, List.getElem?_eq_getElem (by simpa using hr)]
+      have : (List.finRange 2)[r]'(by simpa using hr) = a := Fin.ext (by simp [a])
+      simp [this]
+    rw [e, List.flatten_append]
+
+/-- **A NAND block on the machine**: from the bundles `A` on `IA` and `B` on `IB` (in the order of
+`BI`), `RES` ends with the bundle `nandV … A B` of the NAND block (the shadow of `nandBlockL` at the
+orders `enumT`, `enumO`, the gadget coefficients `gvExp q`, `q = 2 ^ K`). -/
+theorem exec_nandC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    (hN : 0 < N) {one zv : List Bool} (A B : BI N (K + 1) → List Bool)
+    (hA : ∀ b, (A b).length = V) (hB : ∀ b, (B b).length = V) (w : St)
+    (ctx : NCtx V K N one zv w) (hIA : w IA = bw A) (hIB : w IB = bw B) :
+    exec V f nandC w RES = (w RES ++ bw (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+        (gvExp (2 ^ K)) zv (2 ^ K) A B)).drop (bw (nandV one (fV V f) (enumT N (K + 1))
+        (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B)).length ∧
+      NCtx V K N one zv (exec V f nandC w) ∧ ∀ j ∉ wr nandC, exec V f nandC w j = w j := by
+  refine ⟨?_, ctx.exec _ (by decide), fun j hj => exec_not_mem _ _ _ hj⟩
+  simp only [nandC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  have I := exec_rep_inv (V := V) (f := f) (c := CA) (B := aBody)
+    (fun r w' => r ≤ 2 → AInv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1))
+      (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B)
+      (Function.update (Function.update w SA (w IA)) CA (Function.update w SA (w IA) TT2)) r w')
+    (fun r w' ih hr => aInv_step hf hN A B hA hB (by omega) (ih (by omega)))
+    (Function.update (Function.update w SA (w IA)) CA (Function.update w SA (w IA) TT2))
+    (fun _ => ⟨(ctx.upd SA (by decide) _).upd CA (by decide) _,
+      by simp (config := {decide := true}) [Function.update_apply, hIB],
+      by simp (config := {decide := true}) [Function.update_apply, ctx.tt2],
+      by simp (config := {decide := true}) [Function.update_apply, hIA, bw_blocks]; rfl,
+      by simp [resA]⟩)
+  have hn : (Function.update (Function.update w SA (w IA)) CA
+      (Function.update w SA (w IA) TT2) CA).length = 2 := by
+    simp (config := {decide := true}) [Function.update_apply, ctx.tt2]
+  rw [hn] at I
+  rw [(I le_rfl).res, resA_two, bw_blocks, List.flatten_flatten]
+  simp (config := {decide := true}) [Function.update_apply]
+
 end ValVM
 
 end SigabaNeo.Tape
