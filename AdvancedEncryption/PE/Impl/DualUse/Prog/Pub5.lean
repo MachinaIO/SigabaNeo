@@ -68,25 +68,25 @@ def timepub5 (M : ℕ) : ℕ :=
   timeGetB (0) (fD N K c.d) M + (timeGetB (o5u c) (fR N K) M + (timeGetB (o5v c) (fD N K c.d) M + (timeMmB (1) (1) (c.d) N K M + (timeAddB (1 * c.d) N K M + (timeGetB (o5R hk c) (fencLen (rmTEnc c)) M + (timeGetB (o5x c) (fencLen dateEnc) M + (timeGetB (o5w c) (fencLen (wEnc hk c)) M + (timePsiCore N K k c.d M + (timeBjCore N K k c.d M + (timeGetB (o5a c) (fC N K k) M + (timeGetB (o5z c) (fC N K k) M + (timeOneB N K M + (timeJoinB (N * K) (rowL N K k) (rowL N K k) M + (timeGetB (o5p c) (fR N K) M + (timeJoinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M + (timeJoinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M))))))))))))))))
 
 theorem ub_pub5Body (M : ℕ) (hM : sizepub5 hk c ≤ M) :
-    UB (pub5Body hk c) M (timepub5 hk c M) M := by
+    UBZ 20 (pub5Body hk c) M (timepub5 hk c M) M := by
   unfold sizepub5 at hM
-  exact (ub_frameB _ (ub_getB (0) (fD N K c.d) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5u c) (fR N K) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5v c) (fD N K c.d) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_mmB (1) (1) (c.d) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_addB (1 * c.d) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5R hk c) (fencLen (rmTEnc c)) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5x c) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5w c) (fencLen (wEnc hk c)) M (by omega)) le_rfl).seq <|
+  exact (UBZ.frame _ (by decide) (ub_getB (0) (fD N K c.d) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5u c) (fR N K) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5v c) (fD N K c.d) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_mmB (1) (1) (c.d) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_addB (1 * c.d) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5R hk c) (fencLen (rmTEnc c)) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5x c) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5w c) (fencLen (wEnc hk c)) M (by omega)) le_rfl).seq <|
     (ub_psiCore N K k c.d M (by omega)).seq <|
     (ub_bjCore N K k c.d M (by omega)).seq <|
-    (ub_frameB _ (ub_getB (o5a c) (fC N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5z c) (fC N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_oneB' N K M (by omega) (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5p c) (fR N K) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M (by omega)) le_rfl)
+    (UBZ.frame _ (by decide) (ub_getB (o5a c) (fC N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5z c) (fC N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_oneB' N K M (by omega) (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5p c) (fR N K) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M (by omega)) le_rfl)
 
 
 /-- **The public-key component of hybrid 5.** -/
@@ -192,11 +192,11 @@ theorem law_sd5P (hN : 0 < N) (hK : 0 < K) (i : Pub (Fin c.d) (Rg N K) k × Pub 
 theorem time_pub5P (a b : ℕ) :
     timeBoundT (pub5P hk c) (io2 (R := 80) a b 0) ≤
       timepub5 hk c (max a b + sizepub5 hk c) + timeFin (max a b + sizepub5 hk c) :=
-  time_comp (ub_pub5Body hk c _ (by omega)) 15 _ fun i => (io2_le a b i).trans (by omega)
+  time_comp (ub_pub5Body hk c _ (by omega)) 15 _ (io2_le_zv (by omega))
 
 theorem len_pub5P (a b : ℕ) :
     lenBoundT (pub5P hk c) (io2 (R := 80) a b 0) ≤ io2 (R := 80) (max a b + sizepub5 hk c) 0 0 :=
-  len_comp (ub_pub5Body hk c _ (by omega)) 15 _ fun i => (io2_le a b i).trans (by omega)
+  len_comp (ub_pub5Body hk c _ (by omega)) 15 _ (io2_le_zv (by omega))
 
 /-- The sizes of the templates of `sd5P`. -/
 def sizeSd5 : ℕ := sizepub5 hk c + sizesdTail hk c
@@ -205,17 +205,17 @@ def sizeSd5 : ℕ := sizepub5 hk c + sizesdTail hk c
 def timeSd5 (M : ℕ) : ℕ := timepub5 hk c M + timesdTail hk c M
 
 theorem ub_sd5Body (M : ℕ) (hM : sizeSd5 hk c ≤ M) :
-    UB (seq (pub5Body hk c) (sdTailBody hk c)) M (timeSd5 hk c M) M :=
+    UBZ 20 (seq (pub5Body hk c) (sdTailBody hk c)) M (timeSd5 hk c M) M :=
   (ub_pub5Body hk c M (by unfold sizeSd5 at hM; omega)).seq
     (ub_sdTailBody hk c M (by unfold sizeSd5 at hM; omega))
 
 theorem time_sd5P (a b : ℕ) :
     timeBoundT (sd5P hk c) (io2 (R := 80) a b 0) ≤
       timeSd5 hk c (max a b + sizeSd5 hk c) + timeFin (max a b + sizeSd5 hk c) :=
-  time_comp (ub_sd5Body hk c _ (by omega)) 13 _ fun i => (io2_le a b i).trans (by omega)
+  time_comp (ub_sd5Body hk c _ (by omega)) 13 _ (io2_le_zv (by omega))
 
 theorem len_sd5P (a b : ℕ) :
     lenBoundT (sd5P hk c) (io2 (R := 80) a b 0) ≤ io2 (R := 80) (max a b + sizeSd5 hk c) 0 0 :=
-  len_comp (ub_sd5Body hk c _ (by omega)) 13 _ fun i => (io2_le a b i).trans (by omega)
+  len_comp (ub_sd5Body hk c _ (by omega)) 13 _ (io2_le_zv (by omega))
 
 end AdvancedEncryption.DualUse.Prog

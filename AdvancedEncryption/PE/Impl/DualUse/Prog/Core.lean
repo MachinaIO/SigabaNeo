@@ -149,14 +149,25 @@ theorem law_bjCore (s : Store 82) (hS : Blank20 s) (B₀ : Matrix (Fin 1) (Fin c
 
 /-! ### Time -/
 
-theorem ub_copy {k : ℕ} (i j : Fin k) (M : ℕ) : UB (prog (.prim (.copy i j))) M (2 * (M + 1) + 3) M := by
-  intro ℓ hℓ
-  refine ⟨((ub_prim _ M) ℓ hℓ).1, fun t => ?_⟩
-  rw [lenBoundT_prim]
-  simp only [Prim.lenT, Function.update_apply]
-  split_ifs
-  · exact hℓ j
-  · exact hℓ t
+/-- A primitive on the component's tapes, keeping the scratch tapes `≥ 20` blank. -/
+theorem ubz_prim82 (p : Prim 82) (M : ℕ) (h : ∀ ℓ : Fin 82 → ℕ, ℓ ≤ zv 20 M → p.lenT ℓ ≤ zv 20 M) :
+    UBZ 20 (prog (.prim p)) M (2 * (M + 1) + 3) M := fun ℓ hℓ =>
+  ⟨((VB.prim p (a := zv 20 M) (zv_le 20 M)) ℓ hℓ).1, h ℓ hℓ⟩
+
+theorem ubz_copy (i j : Fin 82) (hi : i.val < 20) (M : ℕ) :
+    UBZ 20 (prog (.prim (.copy i j))) M (2 * (M + 1) + 3) M :=
+  ubz_prim82 _ M fun ℓ hℓ t => by
+    simp only [Prim.lenT, Function.update_apply]
+    split_ifs with h
+    · subst h; refine (hℓ j).trans ((zv_le 20 M j).trans ?_); simp [zv, hi]
+    · exact hℓ t
+
+theorem ubz_clear (j : Fin 82) (M : ℕ) : UBZ 20 (clr82 j) M (2 * (M + 1) + 3) M :=
+  ubz_prim82 _ M fun ℓ hℓ t => by
+    simp only [Prim.lenT, Function.update_apply]
+    split_ifs
+    · exact Nat.zero_le _
+    · exact hℓ t
 
 /-- The sizes of the templates of `psiCore`. -/
 def sizePsiCore (N K k d : ℕ) : ℕ :=
@@ -173,18 +184,18 @@ def timePsiCore (N K k d M : ℕ) : ℕ :=
     ((2 * (M + 1) + 3) + ((2 * (M + 1) + 3) + ((2 * (M + 1) + 3) + (2 * (M + 1) + 3))))))))))))
 
 theorem ub_psiCore (N K k d M : ℕ) (hM : sizePsiCore N K k d ≤ M) :
-    UB (psiCore N K k d) M (timePsiCore N K k d M) M := by
+    UBZ 20 (psiCore N K k d) M (timePsiCore N K k d M) M := by
   unfold sizePsiCore at hM
-  exact (ub_frameB _ (ub_joinB _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_mmB _ _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_gadB _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_copy _ _ M).seq <|
-    (ub_frameB _ (ub_joinB _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_selB _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_addB _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_clear _ M).seq <| (ub_clear _ M).seq <| (ub_clear _ M).seq <| ub_clear _ M
+  exact (UBZ.frame _ (by decide) (ub_joinB _ _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_mmB _ _ _ _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_gadB _ _ _ M (by omega)) le_rfl).seq <|
+    (ubz_copy _ _ (by decide) M).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB _ _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_selB _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_addB _ _ _ M (by omega)) le_rfl).seq <|
+    (ubz_clear _ M).seq <| (ubz_clear _ M).seq <| (ubz_clear _ M).seq <| ubz_clear _ M
 
 /-- The sizes of the templates of `bjCore`. -/
 def sizeBjCore (N K k d : ℕ) : ℕ :=
@@ -200,12 +211,12 @@ def timeBjCore (N K k d M : ℕ) : ℕ :=
     ((2 * (M + 1) + 3) + ((2 * (M + 1) + 3) + (2 * (M + 1) + 3))))))
 
 theorem ub_bjCore (N K k d M : ℕ) (hM : sizeBjCore N K k d ≤ M) :
-    UB (bjCore N K k d) M (timeBjCore N K k d M) M := by
+    UBZ 20 (bjCore N K k d) M (timeBjCore N K k d M) M := by
   unfold sizeBjCore at hM
-  exact (ub_frameB _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_gadB _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_selB _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_hashB _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_clear _ M).seq <| (ub_clear _ M).seq <| ub_clear _ M
+  exact (UBZ.frame _ (by decide) (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_gadB _ _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_selB _ _ M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_hashB _ _ _ _ M (by omega)) le_rfl).seq <|
+    (ubz_clear _ M).seq <| (ubz_clear _ M).seq <| ubz_clear _ M
 
 end AdvancedEncryption.DualUse.Prog

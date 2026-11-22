@@ -92,23 +92,23 @@ def timechal5Tail (M : ℕ) : ℕ :=
   timeGetB (o5va c) (fC N K k) M + (timeMmB (1) (1) (2 * k) N K M + (timeAddB (1 * (2 * k)) N K M + (timeGetB (o5vz c) (fC N K k) M + (timeMmB (1) (1) (2 * k) N K M + (timeAddB (1 * (2 * k)) N K M + (timeJoinB (N * K) (rowL N K k) (rowL N K k) M + (timeGetB (o5e hk c) (fencLen (eEnc (N := N) hk)) M + (timeHashB (P1 N k * (2 * k)) (c.d) N K M + (timeMmB (1) (1) (1) N K M + (timeGetB (o5vp c) (fR N K) M + (timeAddB (1) N K M + (timeJoinB (fPsi N K k) (fD N K c.d) (fT N K k) M + (timeJoinB (fPsi N K k + fD N K c.d + fT N K k) (fJ (N := N) hk) (fR N K) M + (timeFlipB (offK hk c + (K - 1)) (fencLen (ctEnc hk c)) M))))))))))))))
 
 theorem ub_chal5TailBody (M : ℕ) (hM : sizechal5Tail hk c ≤ M) :
-    UB (chal5TailBody hk c) M (timechal5Tail hk c M) M := by
+    UBZ 20 (chal5TailBody hk c) M (timechal5Tail hk c M) M := by
   unfold sizechal5Tail at hM
-  exact (ub_frameB _ (ub_getB (o5va c) (fC N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_mmB (1) (1) (2 * k) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_addB (1 * (2 * k)) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5vz c) (fC N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_mmB (1) (1) (2 * k) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_addB (1 * (2 * k)) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5e hk c) (fencLen (eEnc (N := N) hk)) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_hashB (P1 N k * (2 * k)) (c.d) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_mmB (1) (1) (1) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o5vp c) (fR N K) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_addB (1) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fPsi N K k) (fD N K c.d) (fT N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fPsi N K k + fD N K c.d + fT N K k) (fJ (N := N) hk) (fR N K) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_flipB (offK hk c + (K - 1)) (fencLen (ctEnc hk c)) M (by omega)) le_rfl)
+  exact (UBZ.frame _ (by decide) (ub_getB (o5va c) (fC N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_mmB (1) (1) (2 * k) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_addB (1 * (2 * k)) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5vz c) (fC N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_mmB (1) (1) (2 * k) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_addB (1 * (2 * k)) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5e hk c) (fencLen (eEnc (N := N) hk)) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_hashB (P1 N k * (2 * k)) (c.d) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_mmB (1) (1) (1) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5vp c) (fR N K) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_addB (1) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fPsi N K k) (fD N K c.d) (fT N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fPsi N K k + fD N K c.d + fT N K k) (fJ (N := N) hk) (fR N K) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_flipB (offK hk c + (K - 1)) (fencLen (ctEnc hk c)) M (by omega)) le_rfl)
 
 
 set_option maxHeartbeats 8000000 in
@@ -196,17 +196,17 @@ def sizeChal5 : ℕ := sizepub5 hk c + sizechal5Tail hk c
 def timeChal5 (M : ℕ) : ℕ := timepub5 hk c M + timechal5Tail hk c M
 
 theorem ub_chal5Body (M : ℕ) (hM : sizeChal5 hk c ≤ M) :
-    UB (seq (pub5Body hk c) (chal5TailBody hk c)) M (timeChal5 hk c M) M :=
+    UBZ 20 (seq (pub5Body hk c) (chal5TailBody hk c)) M (timeChal5 hk c M) M :=
   (ub_pub5Body hk c M (by unfold sizeChal5 at hM; omega)).seq
     (ub_chal5TailBody hk c M (by unfold sizeChal5 at hM; omega))
 
 theorem time_chal5P (a b : ℕ) :
     timeBoundT (chal5P hk c) (io2 (R := 80) a b 0) ≤
       timeChal5 hk c (max a b + sizeChal5 hk c) + timeFin (max a b + sizeChal5 hk c) :=
-  time_comp (ub_chal5Body hk c _ (by omega)) 10 _ fun i => (io2_le a b i).trans (by omega)
+  time_comp (ub_chal5Body hk c _ (by omega)) 10 _ (io2_le_zv (by omega))
 
 theorem len_chal5P (a b : ℕ) :
     lenBoundT (chal5P hk c) (io2 (R := 80) a b 0) ≤ io2 (R := 80) (max a b + sizeChal5 hk c) 0 0 :=
-  len_comp (ub_chal5Body hk c _ (by omega)) 10 _ fun i => (io2_le a b i).trans (by omega)
+  len_comp (ub_chal5Body hk c _ (by omega)) 10 _ (io2_le_zv (by omega))
 
 end AdvancedEncryption.DualUse.Prog

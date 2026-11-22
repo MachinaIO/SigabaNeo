@@ -45,6 +45,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.Spec
 import SigabaNeo.Lib.Lattices.ProgAlgo.SLPTape
 import SigabaNeo.Lib.Lattices.ProgAlgo.SLPPK
 import SigabaNeo.Lib.Lattices.ProgAlgo.SpecT
+import SigabaNeo.Lib.Lattices.ProgAlgo.SpecZ
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimSLP
 import SigabaNeo.Lib.Lattices.ProgAlgo.GateListLayout
 import SigabaNeo.Lib.Machines.Prog.Lookup

@@ -126,27 +126,27 @@ def timepub3 (M : ℕ) : ℕ :=
   timeGetB (o3B (N := N) (K := K) (k := k)) (fD N K c.d) M + (timeGetB (o3s hk c) (fR N K) M + (timeGetB (o3e0 hk c) (fD N K c.d) M + (timeMmB (1) (1) (c.d) N K M + (timeAddB (1 * c.d) N K M + (timeGetB (o3R hk c) (fencLen (rmTEnc c)) M + (timeGetB (o3x (N := N) (K := K) (k := k)) (fencLen dateEnc) M + (timeGetB (o3w c) (fencLen (wEnc hk c)) M + (timePsiCore N K k c.d M + (timeBjCore N K k c.d M + (timeGetB (0) (fC N K k) M + (timeGetB (fC N K k + 0) (fC N K k) M + (timeGadB N K k M + (timeSubB (1 * (2 * k)) N K M + (timeOneB N K M + (timeJoinB (N * K) (rowL N K k) (rowL N K k) M + (timeGetB (o3p hk c) (fR N K) M + (timeJoinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M + (timeJoinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M))))))))))))))))))
 
 theorem ub_pub3Body (M : ℕ) (hM : sizepub3 hk c ≤ M) :
-    UB (pub3Body hk c) M (timepub3 hk c M) M := by
+    UBZ 20 (pub3Body hk c) M (timepub3 hk c M) M := by
   unfold sizepub3 at hM
-  exact (ub_frameB _ (ub_getB (o3B (N := N) (K := K) (k := k)) (fD N K c.d) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o3s hk c) (fR N K) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o3e0 hk c) (fD N K c.d) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_mmB (1) (1) (c.d) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_addB (1 * c.d) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o3R hk c) (fencLen (rmTEnc c)) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o3x (N := N) (K := K) (k := k)) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o3w c) (fencLen (wEnc hk c)) M (by omega)) le_rfl).seq <|
+  exact (UBZ.frame _ (by decide) (ub_getB (o3B (N := N) (K := K) (k := k)) (fD N K c.d) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o3s hk c) (fR N K) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o3e0 hk c) (fD N K c.d) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_mmB (1) (1) (c.d) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_addB (1 * c.d) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o3R hk c) (fencLen (rmTEnc c)) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o3x (N := N) (K := K) (k := k)) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o3w c) (fencLen (wEnc hk c)) M (by omega)) le_rfl).seq <|
     (ub_psiCore N K k c.d M (by omega)).seq <|
     (ub_bjCore N K k c.d M (by omega)).seq <|
-    (ub_frameB _ (ub_getB (0) (fC N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (fC N K k + 0) (fC N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_gadB N K k M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_subB (1 * (2 * k)) N K M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_oneB' N K M (by omega) (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_getB (o3p hk c) (fR N K) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M (by omega)) le_rfl)
+    (UBZ.frame _ (by decide) (ub_getB (0) (fC N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (fC N K k + 0) (fC N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_gadB N K k M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_subB (1 * (2 * k)) N K M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_oneB' N K M (by omega) (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o3p hk c) (fR N K) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M (by omega)) le_rfl)
 
 
 /-- **The public-key component of hybrid 3.** -/
@@ -283,13 +283,13 @@ theorem law_pub3P (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : Sec3 hk c)
 theorem time_pub3P (a b : ℕ) :
     timeBoundT (pub3P hk c) (io2 (R := 80) a b 0) ≤
       timepub3 hk c (max a b + sizepub3 hk c) + timeFin (max a b + sizepub3 hk c) :=
-  time_comp (ub_pub3Body hk c _ (by omega)) 15 _ fun i => (io2_le a b i).trans (by omega)
+  time_comp (ub_pub3Body hk c _ (by omega)) 15 _ (io2_le_zv (by omega))
 
 /-- **The length bound of the public-key component of hybrid 3**: the output below
 `max a b + sizepub3`, every other tape blank. -/
 theorem len_pub3P (a b : ℕ) :
     lenBoundT (pub3P hk c) (io2 (R := 80) a b 0) ≤ io2 (R := 80) (max a b + sizepub3 hk c) 0 0 :=
-  len_comp (ub_pub3Body hk c _ (by omega)) 15 _ fun i => (io2_le a b i).trans (by omega)
+  len_comp (ub_pub3Body hk c _ (by omega)) 15 _ (io2_le_zv (by omega))
 
 /-! ### The ideal side: the same program -/
 
