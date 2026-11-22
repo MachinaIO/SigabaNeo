@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenBlock
+import SigabaNeo.Lib.Machines.GatesSLP
 
 /-!
 # Generating gate tapes: the representations of the source wires
@@ -418,6 +419,189 @@ theorem exec_constRepC (hnM : E.n + 1 ≤ E.M) {N k K : ℕ} (hk : 0 < k) (hN : 
   apply List.map_congr_left; intro o _
   simp only [constRepV]
   rw [ofFn_getD _ _ (constL_length _ _ _)]
+
+/-! ### The dispatch on a wire index -/
+
+/-- **The representation of the source wire of index `|60|`** (in the format of gate lists:
+`0` is `1`, `1 … 10` the inputs, then the gates) into `tgt`; the earlier block outputs are the
+list `22` (`|59|` of them, `B = |10|` wires each). Constants: `13 = 1`, `14 = 11`. -/
+def repOfC (tgt : LR) : Code :=
+  .ifLt 7 60
+    (.ifLt 60 14
+      (.seq (.mov 61 60) (.seq (.sub 61 13) (.seq (maddC 61 10 7 53) (inRepC tgt))))
+      (.seq (.mov 58 60) (.seq (.sub 58 14) (.ifLt 58 59
+        (.seq (maddC 58 10 7 53) (sliceC tgt 22 58 10 20)) (constRepC tgt)))))
+    (constRepC tgt)
+
+theorem slice_reps {N k : ℕ} {ι : Type*} (E : Env) (ix : ι → ℕ) (reps : List (BI N k → Wire ι))
+    (m : ℕ) (hm : m < reps.length) :
+    (((reps.map (repList E ix)).flatten.drop (m * (4 * k * N * k))).take (4 * k * N * k)) =
+      repList E ix reps[m] := by
+  rw [drop_take_flatten' _ (fun w hw => by
+    obtain ⟨r, _, rfl⟩ := List.mem_map.mp hw; exact length_repList E ix r) m (by simpa using hm)]
+  simp
+
+/-- The constants the representations need: `CQ`, `10 = B`, `12 = 4kN`, `13 = 1`, `14 = 11`. -/
+def RQ (k K N : ℕ) (σ : St) : Prop :=
+  CQ (E := E) k K N σ ∧ σ.sc 10 = 4 * k * N * k ∧ σ.sc 12 = 4 * k * N ∧ σ.sc 13 = 1 ∧ σ.sc 14 = 11
+
+set_option maxHeartbeats 4000000 in
+theorem exec_repOfC (hnM : E.n + 1 ≤ E.M) {N k K : ℕ} (hk : 0 < k) (hN : 0 < N)
+    (ix' : Fin 10 × BI N k → ℕ) (hix : ∀ i b, ix' (i, b) = i.val * (4 * k * N * k) + codec b)
+    (tgt : LR) (htgt : tgt.val < 12 ∨ (12 < tgt.val ∧ tgt.val < 20) ∨ 22 < tgt.val)
+    (reps : List (BI N k → Wire (Fin 10 × BI N k))) (v : ℕ) (σ : St)
+    (hq : RQ (E := E) k K N σ) (hI : Inv E σ) (h60 : σ.sc 60 = v) (h59 : σ.sc 59 = reps.length)
+    (h22 : σ.ls 22 = (reps.map (repList E ix')).flatten)
+    (hM : (reps.length + 11) * (4 * k * N * k) + 4 * k * N + 2 ≤ E.M)
+    (hC : 4 * k * N * k ≤ E.C) :
+    (exec E (repOfC tgt) σ).ls tgt =
+        repList E ix' (repOfL (.gate 0) (gvExp (2 ^ K)) reps (ofIdx 10 v)) ∧
+      RQ (E := E) k K N (exec E (repOfC tgt) σ) ∧ Inv E (exec E (repOfC tgt) σ) ∧
+      (∀ r : SR, r.val < 16 ∨ 62 < r.val ∨ r.val = 59 ∨ r.val = 60 →
+        (exec E (repOfC tgt) σ).sc r = σ.sc r) ∧
+      ∀ l : LR, l ≠ tgt → l ≠ 12 → l ≠ 20 → (exec E (repOfC tgt) σ).ls l = σ.ls l := by
+  obtain ⟨hcq, h10, h12, h13, h14⟩ := hq
+  have hB : 4 * k * N * k ≤ E.M := by nlinarith
+  have hkM : k ≤ E.M := by nlinarith
+  have hNM : N ≤ E.M := by nlinarith
+  have ht12 : tgt ≠ 12 := by rintro rfl; revert htgt; decide
+  have hRQ : ∀ τ : St, (∀ r : SR, r.val < 16 → τ.sc r = σ.sc r) → RQ (E := E) k K N τ :=
+    fun τ h => ⟨⟨⟨⟨by rw [h 0 (by decide), hcq.1.1.1], by rw [h 1 (by decide), hcq.1.1.2]⟩,
+      by rw [h 2 (by decide), hcq.1.2.1], by rw [h 3 (by decide), hcq.1.2.2.1],
+      by rw [h 4 (by decide), hcq.1.2.2.2]⟩, by rw [h 5 (by decide), hcq.2.1],
+      by rw [h 6 (by decide), hcq.2.2.1], by rw [h 7 (by decide), hcq.2.2.2]⟩,
+      by rw [h 10 (by decide), h10], by rw [h 12 (by decide), h12], by rw [h 13 (by decide), h13],
+      by rw [h 14 (by decide), h14]⟩
+  -- the constant case
+  have hconst : (repOfL (.gate 0) (gvExp (2 ^ K)) reps (.one : Wire (Fin 10)) :
+      BI N k → Wire (Fin 10 × BI N k)) = constRepV (.gate 0) (gvExp (2 ^ K)) := rfl
+  have caseC : ∀ w : Wire (Fin 10), (repOfL (.gate 0) (gvExp (2 ^ K)) reps w :
+      BI N k → Wire (Fin 10 × BI N k)) = constRepV (.gate 0) (gvExp (2 ^ K)) →
+      (exec E (constRepC tgt) σ).ls tgt = repList E ix' (repOfL (.gate 0) (gvExp (2 ^ K)) reps w) ∧
+      RQ (E := E) k K N (exec E (constRepC tgt) σ) ∧ Inv E (exec E (constRepC tgt) σ) ∧
+      (∀ r : SR, r.val < 16 ∨ 62 < r.val ∨ r.val = 59 ∨ r.val = 60 →
+        (exec E (constRepC tgt) σ).sc r = σ.sc r) ∧
+      ∀ l : LR, l ≠ tgt → l ≠ 12 → l ≠ 20 → (exec E (constRepC tgt) σ).ls l = σ.ls l := by
+    intro w hw
+    obtain ⟨_, a2, a3, a4, a5⟩ := exec_constRepC (ix := ix') hnM hk hN tgt ht12 σ hcq h12 hI
+      (by nlinarith) hkM hNM hC
+    exact ⟨by rw [a3, hw], hRQ _ (fun r hr => a4 r (by omega)), a2,
+      fun r hr => a4 r (by omega), fun l a b _ => a5 l a b⟩
+  by_cases hv0 : v = 0
+  · subst hv0
+    have e : exec E (repOfC tgt) σ = exec E (constRepC tgt) σ := by
+      simp [repOfC, exec_ifLt, h60, hcq.2.2.2]
+    rw [e]; exact caseC _ (by simp only [ofIdx, ite_true]; rfl)
+  by_cases hv : v < 11
+  · -- an input
+    have hi : v - 1 < 10 := by omega
+    set σ1 := setSL σ (Function.update (Function.update σ.sc 61 ((v - 1) * (4 * k * N * k))) 53
+      (v - 1)) σ.ls
+    have e1 : exec E (maddC 61 10 7 53) (exec E (.sub 61 13) (exec E (.mov 61 60) σ)) = σ1 := by
+      rw [exec_maddC 61 10 7 53 (by decide) (by decide) (by decide) (by decide) (by decide) _
+        (by simp [exec, h60, h13, h10, hcq.2.2.2]; nlinarith)]
+      simp only [exec, σ1, setSL, h60, h13, h10, hcq.2.2.2, Function.update_self,
+        Function.update_idem, Function.update_of_ne (show (61 : SR) ≠ 10 by decide),
+        Function.update_of_ne (show (53 : SR) ≠ 61 by decide), Function.update_of_ne
+        (show (7 : SR) ≠ 53 by decide), Function.update_of_ne (show (7 : SR) ≠ 61 by decide),
+        Function.update_of_ne (show (10 : SR) ≠ 61 by decide), Nat.add_zero]
+      congr 1; funext r; simp only [Function.update_apply]; split_ifs <;> simp_all
+    have hs1 : ∀ r : SR, r ≠ 53 → r ≠ 61 → σ1.sc r = σ.sc r := fun r a b => by
+      simp [σ1, setSL, Function.update_of_ne a, Function.update_of_ne b]
+    have e : exec E (repOfC tgt) σ = exec E (inRepC tgt) σ1 := by
+      simp only [repOfC, exec_ifLt, h60, hcq.2.2.2, h14, show 0 < v by omega, hv, ite_true,
+        exec_seq]
+      rw [e1]
+    obtain ⟨a1, a2, a3, a4⟩ := exec_inRepC (E := E) hk hN ix' ⟨v - 1, hi⟩ ((v - 1) * (4 * k * N * k))
+      (fun b => hix _ b) tgt σ1 ⟨by rw [hs1 2 (by decide) (by decide), hcq.1.2.1],
+        by rw [hs1 5 (by decide) (by decide), hcq.2.1], by rw [hs1 6 (by decide) (by decide),
+        hcq.2.2.1], by simp [σ1, setSL]⟩ (by rw [hs1 12 (by decide) (by decide), h12])
+      (by nlinarith) hC
+    have hI1 : Inv E σ1 := by
+      have := inv_exec E (.seq (.mov 61 60) (.seq (.sub 61 13) (maddC 61 10 7 53))) σ hI
+      simp only [exec_seq] at this; rw [e1] at this; exact this
+    rw [e]
+    have hw : ofIdx 10 v = .input ⟨v - 1, hi⟩ := by simp [ofIdx, hv0, hi]
+    refine ⟨by rw [a2, hw]; rfl, hRQ _ (fun r hr => by
+        rw [a3 r (by omega), hs1 r (by rintro rfl; revert hr; decide) (by rintro rfl; revert hr; decide)]),
+      inv_exec E _ σ1 hI1, fun r hr => ?_, fun l a b _ => by rw [a4 l a]; simp [σ1, setSL]⟩
+    have nv : ∀ (r : SR) (c : ℕ), r.val ≠ c → ∀ d : SR, d.val = c → r ≠ d :=
+      fun r c h d hd e => h (by rw [e, hd])
+    rw [a3 r (by omega), hs1 r (nv r 53 (by omega) 53 rfl) (nv r 61 (by omega) 61 rfl)]
+  · -- a gate
+    have nv : ∀ (r : SR) (c : ℕ), r.val ≠ c → ∀ d : SR, d.val = c → r ≠ d :=
+      fun r c h d hd e => h (by rw [e, hd])
+    have hw : ofIdx 10 v = .gate (v - 11) := by
+      simp only [ofIdx, hv0, ite_false, show ¬ (v - 1 < 10) by omega, dite_false]; congr 1
+    set m := v - 11
+    set σ2 := setSL σ (Function.update σ.sc 58 m) σ.ls
+    have e2 : exec E (.sub 58 14) (exec E (.mov 58 60) σ) = σ2 := by
+      simp only [exec, σ2, setSL, h60, h14, Function.update_self, Function.update_idem,
+        Function.update_of_ne (show (14 : SR) ≠ 58 by decide)]
+      rfl
+    have pre : exec E (repOfC tgt) σ = exec E (.ifLt 58 59 (.seq (maddC 58 10 7 53)
+        (sliceC tgt 22 58 10 20)) (constRepC tgt)) σ2 := by
+      simp only [repOfC, exec_ifLt, h60, hcq.2.2.2, h14, show 0 < v by omega, hv, ite_true,
+        ite_false, exec_seq]
+      rw [e2]
+    rw [pre, exec_ifLt, show σ2.sc 58 = m by simp [σ2, setSL],
+      show σ2.sc 59 = reps.length by simp [σ2, setSL, h59]]
+    by_cases hm : m < reps.length
+    · rw [if_pos hm, exec_seq]
+      set σ3 := setSL σ (Function.update (Function.update σ.sc 58 (m * (4 * k * N * k))) 53 m)
+        σ.ls
+      have e3 : exec E (maddC 58 10 7 53) σ2 = σ3 := by
+        rw [exec_maddC 58 10 7 53 (by decide) (by decide) (by decide) (by decide) (by decide) _
+          (by simp [σ2, setSL, h10, hcq.2.2.2]; nlinarith)]
+        simp only [σ3, σ2, setSL, Function.update_self, Function.update_idem, h10, hcq.2.2.2,
+          Function.update_of_ne (show (10 : SR) ≠ 58 by decide),
+          Function.update_of_ne (show (7 : SR) ≠ 58 by decide),
+          Function.update_of_ne (show (7 : SR) ≠ 53 by decide), Nat.add_zero]
+        congr 1; funext r; simp only [Function.update_apply]; split_ifs <;> simp_all
+      rw [e3]
+      have hI3 : Inv E σ3 := hI
+      have hl22 : (σ3.ls 22).length = reps.length * (4 * k * N * k) := by
+        simp only [σ3, setSL, h22]
+        rw [length_flatten_of' (V := 4 * k * N * k) _ (fun w hw => by
+          obtain ⟨r, _, rfl⟩ := List.mem_map.mp hw; exact length_repList E ix' r)]
+        simp
+      obtain ⟨sc4, h4, f4⟩ := exec_sliceC (E := E) tgt 22 58 10 20
+        (by rintro h; rw [← h] at htgt; revert htgt; decide) σ3 hI3
+        (by rw [hl22]; simp [σ3, setSL, h10]; nlinarith) (by decide)
+        (by simp [σ3, setSL, h10]; exact hC)
+      have hs3 : ∀ r : SR, r ≠ 53 → r ≠ 58 → σ3.sc r = σ.sc r := fun r a b => by
+        simp [σ3, setSL, Function.update_of_ne a, Function.update_of_ne b]
+      have hIn := inv_exec E (sliceC tgt 22 58 10 20) σ3 hI3
+      rw [h4] at hIn
+      rw [h4]
+      refine ⟨?_, hRQ _ (fun r hr => by
+          show sc4 r = _
+          rw [f4 r (by simp only [List.mem_singleton]; exact nv r 41 (by omega) 41 rfl),
+            hs3 r (nv r 53 (by omega) 53 rfl) (nv r 58 (by omega) 58 rfl)]),
+        hIn, fun r hr => ?_, fun l a b c => ?_⟩
+      · simp only [setSL, Function.update_self]
+        simp only [σ3, setSL, h22, h10, hw, repOfL, Function.update_self,
+          Function.update_of_ne (show (10 : SR) ≠ 53 by decide),
+          Function.update_of_ne (show (10 : SR) ≠ 58 by decide),
+          Function.update_of_ne (show (58 : SR) ≠ 53 by decide)]
+        rw [slice_reps E ix' reps m hm, List.getD_eq_getElem _ _ hm]
+      · show sc4 r = _
+        rw [f4 r (by simp only [List.mem_singleton]; exact nv r 41 (by omega) 41 rfl),
+          hs3 r (nv r 53 (by omega) 53 rfl) (nv r 58 (by omega) 58 rfl)]
+      · simp [setSL, Function.update_of_ne a, Function.update_of_ne c, σ3]
+    · rw [if_neg hm]
+      have hs2 : ∀ r : SR, r ≠ 58 → σ2.sc r = σ.sc r := fun r a => by
+        simp [σ2, setSL, Function.update_of_ne a]
+      obtain ⟨_, a2, a3, a4, a5⟩ := exec_constRepC (ix := ix') hnM hk hN tgt ht12 σ2
+        ⟨⟨⟨by rw [hs2 0 (by decide), hcq.1.1.1], by rw [hs2 1 (by decide), hcq.1.1.2]⟩,
+          by rw [hs2 2 (by decide), hcq.1.2.1], by rw [hs2 3 (by decide), hcq.1.2.2.1],
+          by rw [hs2 4 (by decide), hcq.1.2.2.2]⟩, by rw [hs2 5 (by decide), hcq.2.1],
+          by rw [hs2 6 (by decide), hcq.2.2.1], by rw [hs2 7 (by decide), hcq.2.2.2]⟩
+        (by rw [hs2 12 (by decide), h12]) hI (by nlinarith) hkM hNM hC
+      refine ⟨?_, hRQ _ (fun r hr => by rw [a4 r (by omega), hs2 r (nv r 58 (by omega) 58 rfl)]),
+        a2, fun r hr => by rw [a4 r (by omega), hs2 r (nv r 58 (by omega) 58 rfl)],
+        fun l a b _ => (a5 l a b).trans rfl⟩
+      rw [a3, hw]; simp only [repOfL]; rw [List.getD_eq_default _ _ (by omega)]
 
 end FhatGen
 
