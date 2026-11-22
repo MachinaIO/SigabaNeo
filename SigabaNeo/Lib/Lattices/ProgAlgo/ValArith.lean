@@ -496,6 +496,77 @@ theorem notLV_eq_zipWith {α : Type*} (one : α) (step : α → α → α) :
   | [] => rfl
   | a :: as => by rw [notLV, List.zipWith_cons_cons, notLV_eq_zipWith one step as]
 
+/-! ### Constants -/
+
+/-- Push `|tk|` copies of the register `src` into `NC`. -/
+def constC (src tk : Fin 40) : Code := ofList [.cp CT0 tk, .rep CT0 (ofList [.cp 3 src, .mvV NC 3])]
+
+/-- Push the register `src` into `NC`. -/
+def pushC (src : Fin 40) : Code := ofList [.cp 3 src, .mvV NC 3]
+
+theorem exec_pushC {src : Fin 40} (h3 : src ≠ 3) (hNC : src ≠ NC) {w : St}
+    (hs : (w src).length = V) :
+    exec V f (pushC src) w = Function.update (Function.update (Function.update w 3 (w src)) 3 [])
+      NC ((w NC ++ w src).drop V) := by
+  simp only [pushC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  rw [exec_mvV_push (by decide) (by simp [hs])]
+  simp (config := {decide := true}) [Function.update_apply]
+
+theorem iter_constBody {src : Fin 40} (h3 : src ≠ 3) (hNC : src ≠ NC) (hCT : src ≠ CT0) :
+    ∀ (n : ℕ) (w : St), (w src).length = V →
+      let g := fun w' => exec V f (ofList [.cp 3 src, .mvV NC 3])
+        (Function.update w' CT0 (w' CT0).tail)
+      (g^[n] w) NC = (w NC ++ (List.replicate n (w src)).flatten).drop (n * V) ∧
+        (g^[n] w) src = w src ∧
+        ∀ j, j ≠ 3 → j ≠ NC → j ≠ CT0 → (g^[n] w) j = w j
+  | 0, w, _ => by simp
+  | n + 1, w, hs => by
+    intro g
+    have hg : g w = Function.update (Function.update (Function.update (Function.update w CT0
+        (w CT0).tail) 3 (w src)) 3 []) NC ((w NC ++ w src).drop V) := by
+      show exec V f (pushC src) (Function.update w CT0 (w CT0).tail) = _
+      rw [exec_pushC h3 hNC (by simp [Function.update_of_ne hCT, hs])]
+      simp [Function.update_of_ne hCT, Function.update_of_ne (show NC ≠ CT0 by decide)]
+    have gs : g w src = w src := by rw [hg]; simp [Function.update_of_ne hNC, Function.update_of_ne h3,
+      Function.update_of_ne hCT]
+    obtain ⟨i1, i2, i3⟩ := iter_constBody h3 hNC hCT n (g w) (by rw [gs]; exact hs)
+    rw [gs] at i1 i2
+    refine ⟨?_, ?_, fun j hj3 hjN hjC => ?_⟩
+    · rw [Function.iterate_succ_apply, i1, hg, Function.update_self, List.replicate_succ,
+        List.flatten_cons, ← List.drop_append_of_le_length (show V ≤ (w NC ++ w src).length by
+          simp [hs]), List.drop_drop, List.append_assoc]
+      congr 1; ring
+    · rw [Function.iterate_succ_apply, i2]
+    · rw [Function.iterate_succ_apply, i3 j hj3 hjN hjC, hg]
+      simp [Function.update_of_ne hj3, Function.update_of_ne hjN, Function.update_of_ne hjC]
+
+theorem exec_constC {src tk : Fin 40} (h3 : src ≠ 3) (hNC : src ≠ NC) (hCT : src ≠ CT0)
+    (htkC : tk ≠ CT0) {w : St} (hs : (w src).length = V) :
+    exec V f (constC src tk) w NC =
+        (w NC ++ (List.replicate (w tk).length (w src)).flatten).drop ((w tk).length * V) ∧
+      ∀ j, j ≠ 3 → j ≠ NC → j ≠ CT0 → exec V f (constC src tk) w j = w j := by
+  have hex : exec V f (constC src tk) w = (fun w' => exec V f (ofList [.cp 3 src, .mvV NC 3])
+      (Function.update w' CT0 (w' CT0).tail))^[(w tk).length] (Function.update w CT0 (w tk)) := by
+    simp only [constC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp', exec_rep',
+      Function.update_self]
+  obtain ⟨i1, i2, i3⟩ := iter_constBody (V := V) (f := f) h3 hNC hCT (w tk).length
+    (Function.update w CT0 (w tk)) (by simp [Function.update_of_ne hCT, hs])
+  rw [hex]
+  refine ⟨?_, fun j hj3 hjN hjC => ?_⟩
+  · rw [i1]; simp [Function.update_of_ne hCT, Function.update_of_ne (show NC ≠ CT0 by decide)]
+  · rw [i3 j hj3 hjN hjC]; simp [Function.update_of_ne hjC]
+
+theorem constV_pow {α : Type*} (one zv : α) :
+    ∀ (K j m : ℕ), constV one zv (K + j) (m * 2 ^ K) = List.replicate K zv ++ constV one zv j m
+  | 0, j, m => by simp
+  | K + 1, j, m => by
+    rw [show K + 1 + j = (K + j) + 1 by ring, constV, pow_succ]
+    have h1 : m * (2 ^ K * 2) % 2 = 0 := by rw [← Nat.mul_assoc]; exact Nat.mul_mod_left _ _
+    have h2 : m * (2 ^ K * 2) / 2 = m * 2 ^ K := by
+      rw [← Nat.mul_assoc]; exact Nat.mul_div_cancel _ (by norm_num)
+    rw [h1, h2, constV_pow one zv K j m]
+    simp [List.replicate_succ]
+
 end ValVM
 
 end SigabaNeo.Tape
