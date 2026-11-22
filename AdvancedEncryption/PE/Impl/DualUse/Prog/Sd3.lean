@@ -62,15 +62,26 @@ def timesdTail (M : ℕ) : ℕ :=
   timeTrB (10) (2 * k) (c.d) (N * K) (0) M + (timeTrB (P1 N k) (2 * k) (c.d) (1) (0) M + (timeOneB N K M + (timeSelB (P1 N k * (c.d * (2 * k))) (N * K) M + (timeJoinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M + (timeJoinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M + (timeJoinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M))))))
 
 theorem ub_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) :
-    UB (sdTailBody hk c) M (timesdTail hk c M) M := by
+    UBZ 20 (sdTailBody hk c) M (timesdTail hk c M) M := by
   unfold sizesdTail at hM
-  exact (ub_frameB _ (ub_trB (10) (2 * k) (c.d) (N * K) (0) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_trB (P1 N k) (2 * k) (c.d) (1) (0) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_oneB' N K M (by omega) (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_selB (P1 N k * (c.d * (2 * k))) (N * K) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
-    (ub_frameB _ (ub_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M (by omega)) le_rfl)
+  exact (UBZ.frame _ (by decide) (ub_trB (10) (2 * k) (c.d) (N * K) (0) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_trB (P1 N k) (2 * k) (c.d) (1) (0) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_oneB' N K M (by omega) (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_selB (P1 N k * (c.d * (2 * k))) (N * K) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M (by omega)) le_rfl)
+
+theorem sz_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (sdTailBody hk c) (2 ^ 21) := by
+  unfold sizesdTail at hM
+  exact ((SZ.frame _ (sz_trB (10) (2 * k) (c.d) (N * K) (0) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_trB (P1 N k) (2 * k) (c.d) (1) (0) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_oneB' N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_selB (P1 N k * (c.d * (2 * k))) (N * K) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M (by omega) hB))).mono (by norm_num)
 
 
 set_option maxHeartbeats 4000000 in
@@ -157,19 +168,24 @@ def sizeSd3 : ℕ := sizepub3 hk c + sizesdTail hk c
 def timeSd3 (M : ℕ) : ℕ := timepub3 hk c M + timesdTail hk c M
 
 theorem ub_sd3Body (M : ℕ) (hM : sizeSd3 hk c ≤ M) :
-    UB (seq (pub3Body hk c) (sdTailBody hk c)) M (timeSd3 hk c M) M :=
+    UBZ 20 (seq (pub3Body hk c) (sdTailBody hk c)) M (timeSd3 hk c M) M :=
   (ub_pub3Body hk c M (by unfold sizeSd3 at hM; omega)).seq
     (ub_sdTailBody hk c M (by unfold sizeSd3 at hM; omega))
+
+theorem sz_sd3Body (M : ℕ) (hM : sizeSd3 hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (seq (pub3Body hk c) (sdTailBody hk c)) (2 ^ 24) :=
+  ((sz_pub3Body hk c M (by unfold sizeSd3 at hM; omega) hB).seq
+    (sz_sdTailBody hk c M (by unfold sizeSd3 at hM; omega) hB)).mono (by norm_num)
 
 /-- **The time of the simulation-data component** (hybrid 3 and the ideal side). -/
 theorem time_sd3P (a b : ℕ) :
     timeBoundT (sd3P hk c) (io2 (R := 80) a b 0) ≤
       timeSd3 hk c (max a b + sizeSd3 hk c) + timeFin (max a b + sizeSd3 hk c) :=
-  time_comp (ub_sd3Body hk c _ (by omega)) 13 _ fun i => (io2_le a b i).trans (by omega)
+  time_comp (ub_sd3Body hk c _ (by omega)) 13 _ (io2_le_zv (by omega))
 
 /-- **The length bound of the simulation-data component.** -/
 theorem len_sd3P (a b : ℕ) :
     lenBoundT (sd3P hk c) (io2 (R := 80) a b 0) ≤ io2 (R := 80) (max a b + sizeSd3 hk c) 0 0 :=
-  len_comp (ub_sd3Body hk c _ (by omega)) 13 _ fun i => (io2_le a b i).trans (by omega)
+  len_comp (ub_sd3Body hk c _ (by omega)) 13 _ (io2_le_zv (by omega))
 
 end AdvancedEncryption.DualUse.Prog

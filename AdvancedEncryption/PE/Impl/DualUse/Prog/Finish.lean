@@ -59,51 +59,44 @@ theorem len_finP (o : Fin 82) (ℓ : Fin 82 → ℕ) : lenBoundT (finP o) ℓ = 
 /-- The time of `finP` from tapes below `M`. -/
 def timeFin (M : ℕ) : ℕ := (2 * (M + 1) + 3) + (scrL.length * (2 * (M + 1) + 3) + (2 * (M + 1) + 3))
 
-theorem ub_finP (o : Fin 82) (M : ℕ) : UB (finP o) M (timeFin M) M :=
-  (ub_copy 0 o M).seq (ub_clearL M scrL)
+theorem time_finP (o : Fin 82) (M : ℕ) {ℓ : Fin 82 → ℕ} (hℓ : ∀ i, ℓ i ≤ M) :
+    timeBoundT (finP o) ℓ ≤ timeFin M := by
+  have h1 := VB.prim (.copy 0 o) hℓ
+  have h2 := vb_clearL (M := M) scrL (a := (Prim.copy 0 o).lenT ℓ) fun t => by
+    simp only [Prim.lenT, Function.update_apply]; split_ifs
+    · exact hℓ o
+    · exact hℓ t
+  exact ((h1.seq h2) ℓ le_rfl).1
 
 /-- **The length bound of a component**: the output below `M'`, every other tape blank. -/
-theorem len_comp {body : XProg 82} {M T M' : ℕ} (hb : UB body M T M') (o : Fin 82)
-    (ℓ : Fin 82 → ℕ) (hℓ : ∀ i, ℓ i ≤ M) :
+theorem len_comp {body : XProg 82} {M T M' : ℕ} (hb : UBZ 20 body M T M') (o : Fin 82)
+    (ℓ : Fin 82 → ℕ) (hℓ : ℓ ≤ zv 20 M) :
     lenBoundT (seq body (finP o)) ℓ ≤ io2 (R := 80) M' 0 0 := by
   show lenBoundT (finP o) (lenBoundT body ℓ) ≤ _
   rw [len_finP]
   intro t
   simp only [io2]
   split_ifs
-  · exact (hb ℓ hℓ).2 o
+  · exact ((hb ℓ hℓ).2 o).trans (zv_le 20 M' o)
   · exact le_rfl
   · exact le_rfl
 
 /-- **The time of a component.** -/
-theorem time_comp {body : XProg 82} {M T M' : ℕ} (hb : UB body M T M') (o : Fin 82)
-    (ℓ : Fin 82 → ℕ) (hℓ : ∀ i, ℓ i ≤ M) :
+theorem time_comp {body : XProg 82} {M T M' : ℕ} (hb : UBZ 20 body M T M') (o : Fin 82)
+    (ℓ : Fin 82 → ℕ) (hℓ : ℓ ≤ zv 20 M) :
     timeBoundT (seq body (finP o)) ℓ ≤ T + timeFin M' := by
   rw [timeBoundT_seq]
-  exact Nat.add_le_add (hb ℓ hℓ).1 ((ub_finP o M') _ (hb ℓ hℓ).2).1
+  exact Nat.add_le_add (hb ℓ hℓ).1 (time_finP o M' fun i => ((hb ℓ hℓ).2 i).trans (zv_le 20 M' i))
 
 theorem io2_le (a b : ℕ) (i : Fin 82) : io2 (R := 80) a b 0 i ≤ max a b := by
   simp only [io2]; split_ifs <;> omega
 
-/-- **A uniform bound of the word of `1`** that keeps the bound `M`. -/
-theorem ub_oneB' (N K M : ℕ) (hM : N * K ≤ M) (h1 : 1 ≤ M) : UB (oneB N K) M (timeOneB N K M) M := by
-  intro ℓ hℓ
-  obtain ⟨hl, ht⟩ := natP_bounds (t := (0 : Fin 2)) (c := 1) (by decide) (N * K - 1) ℓ M hℓ (by omega)
-  have hl' : ∀ i, lenBoundT (natP (0 : Fin 2) 1 (N * K - 1)) ℓ i ≤ M := fun i => by
-    have := hl i
-    simp only [natB] at this
-    split_ifs at this <;> first | omega | (have := hℓ i; omega) | (have := hℓ 1; omega)
-  refine ⟨?_, fun i => ?_⟩
-  · show timeBoundT (natP (0 : Fin 2) 1 (N * K - 1)) ℓ + timeBoundT (prog (.prim (.cons 0 true)))
-      (lenBoundT (natP (0 : Fin 2) 1 (N * K - 1)) ℓ) ≤ _
-    exact Nat.add_le_add ht ((ub_prim _ M) _ hl').1
-  · show (Prim.cons (0 : Fin 2) true).lenT (lenBoundT (natP (0 : Fin 2) 1 (N * K - 1)) ℓ) i ≤ M
-    simp only [Prim.lenT, Function.update_apply]
-    split_ifs with h
-    · subst h
-      have := hl 0
-      simp only [natB, if_true] at this
-      omega
-    · exact hl' i
+/-- The inputs of a component fit the scratch-blank shape. -/
+theorem io2_le_zv {a b M : ℕ} (h : max a b ≤ M) : io2 (R := 80) a b 0 ≤ zv 20 M := fun i => by
+  simp only [io2, zv]; split_ifs <;> first | omega | simp_all
+
+/-- **The word of `1`** at the component level. -/
+theorem ub_oneB' (N K M : ℕ) (hM : N * K ≤ M) (h1 : 1 ≤ M) : UBZ 1 (oneB N K) M (timeOneB N K M) M :=
+  ub_oneB N K M hM h1
 
 end AdvancedEncryption.DualUse.Prog

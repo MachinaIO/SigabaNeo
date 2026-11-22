@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Prog.Chal5
+import PE.Impl.DualUse.Prog.ChalITime
 import PE.Impl.DualUse.Prog.KeyP
 import PE.Impl.DualUse.ReductionOracle
 
@@ -9,7 +10,7 @@ The handlers take components `XProg (R + 2)` with `R = 254` (`XProg 256`, as the
 `keyP`). The public-key and challenge components of `PE.Impl.DualUse.Prog.{Pub3, Chal3, Pub5,
 Chal5}` (`XProg 82`) are lifted (`liftP`), with their laws in the form of `Comps.law_pub` and
 `Comps.law_chal` for the packed challenger `spPack` (`law_pub3L`, `law_pubIL`, `law_pub5L`,
-`law_chal3L`, `law_chal5L`; the challenge of the ideal side is `chalIL`), their time bounds and
+`law_chal3L`, `law_chal5L`; the challenge of the ideal side is `chalIL2`, with `law_chalIL2`), their time bounds and
 their output length bounds `io2 L 0 0` (`CompBoundsP`). The simulation-data components stay
 `XProg 82`, framed by `keyP`: `sdSpec3`, `sdSpecI`, `sdSpec5` (`SdSpec`).
 -/
@@ -108,6 +109,28 @@ theorem time_pubIL (a b : ℕ) :
 theorem len_pubIL (a b : ℕ) :
     lenBoundT (pubIL hk c) (io2 (R := 254) a b 0) ≤ io2 (R := 254) (max a b + sizepub3 hk c) 0 0 :=
   len_lift256 (len_pubIP hk c a b)
+
+/-- **The challenge component of the ideal side** at the handlers' width. -/
+def chalIL2 : XProg 256 := lift256 (chalIL hk c)
+
+theorem wf_chalIL2 : (chalIL2 hk c).WF := wf_chalIL hk c
+
+theorem law_chalIL2 (hN : 0 < N) (hK : 1 ≤ K) (st : dateUniverse.Attr → PMF (Inst3T N K k × SecI hk c))
+    (p : Inst3T N K k × SecI hk c) (μ : Bool) :
+    (chalIL2 hk c).law (io2 (R := 254) (((inst3Enc (N := N) (K := K) (k := k)).prod (secIEnc hk c)).enc p)
+      (encMsg μ) []) =
+      ((spPack st (viewI hk c) (sdI hk c)).chal p μ).map fun ct => io2 (R := 254) ct [] [] := by
+  refine (law_lift256 (law_chalIL hk c hN hK p.1 p.2 μ)).trans ?_
+  simp [spPack]
+
+theorem time_chalIL2 (a b : ℕ) :
+    timeBoundT (chalIL2 hk c) (io2 (R := 254) a b 0) ≤ timeChalI hk c a b := by
+  rw [chalIL2, time_lift256]; exact time_chalIL hk c a b
+
+theorem len_chalIL2 (a b : ℕ) :
+    lenBoundT (chalIL2 hk c) (io2 (R := 254) a b 0) ≤
+      io2 (R := 254) (2 * (sChalI hk c a b + (offK hk c + (K - 1)) + 1)) 0 0 :=
+  len_lift256 (len_chalIL hk c a b)
 
 /-- **The simulation-data component of the ideal side** for `keyP`. -/
 theorem sdSpecI (hN : 0 < N) (hK : 0 < K) :

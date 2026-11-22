@@ -262,10 +262,23 @@ theorem law_flipP (P : ℕ) (s : Store 7) (h2 : s 2 = []) (h3 : s 3 = []) (h4 : 
       · subst t3; simp [Prim.apply, h3]
       · simp [Prim.apply, t0, t2, t3]
 
+/-- Clear every tape but `0`. -/
+def clrS : XProg 7 :=
+  seq (prog (.prim (.clear 1))) (seq (prog (.prim (.clear 2))) (seq (prog (.prim (.clear 3)))
+    (seq (prog (.prim (.clear 4))) (seq (prog (.prim (.clear 5))) (prog (.prim (.clear 6)))))))
+
+theorem law_clrS (s : Store 7) : clrS.law s = PMF.pure (fun t => if t = 0 then s 0 else []) := by
+  simp only [clrS, law_seq, law_prim, PMF.pure_bind]
+  congr 1
+  funext t
+  fin_cases t <;> simp [Prim.apply]
+
+theorem wf_clrS : clrS.WF := ⟨trivial, trivial, trivial, trivial, trivial, trivial⟩
+
 /-- **The challenge from the packed secret** (`D` the prefix before the challenge, `P` the bit
 of `half`). -/
 def chalBodyP (D P : ℕ) : XProg 7 :=
-  seq (dropF D) (seq (ifBit 1 (flipP P) nopX) (prog (.prim (.clear 1))))
+  seq (dropF D) (seq (ifBit 1 (flipP P) nopX) clrS)
 
 theorem law_chalBodyP (D P : ℕ) (pre w : List Bool) (hpre : pre.length = D) (hP : P < w.length)
     (μ : Bool) :
@@ -277,22 +290,22 @@ theorem law_chalBodyP (D P : ℕ) (pre w : List Bool) (hpre : pre.length = D) (h
   have hd : (pre ++ w).drop D = w := by rw [← hpre, List.drop_left]
   have hm : ∀ b, encMsg b = [b] := fun _ => rfl
   cases μ
-  · rw [if_neg (by simp [ioS, hm]), law_nopX, PMF.pure_bind, law_prim]
+  · rw [if_neg (by simp [ioS, hm]), law_nopX, PMF.pure_bind, law_clrS]
     congr 1
     funext t
-    fin_cases t <;> simp [ioS, Prim.apply, hd]
+    fin_cases t <;> simp [ioS, hd]
   · rw [if_pos (by simp [ioS, hm]), law_flipP P _ (by simp [ioS]) (by simp [ioS])
-      (by simp [ioS]) (by simp [hw, hP]), PMF.pure_bind, law_prim]
+      (by simp [ioS]) (by simp [hw, hP]), PMF.pure_bind, law_clrS]
     congr 1
     funext t
-    fin_cases t <;> simp [ioS, Prim.apply, hd]
+    fin_cases t <;> simp [ioS, hd]
 
 theorem wf_chalBodyP (D P : ℕ) : (chalBodyP D P).WF := by
   refine ⟨wf_withCount (by decide) (wf_forN trivial (preserves_prim (by simp [Prim.writes]))),
     ⟨⟨wf_withCount (by decide) (wf_forN ⟨trivial, trivial⟩
       ⟨preserves_prim (by simp [Prim.writes]), preserves_prim (by simp [Prim.writes])⟩),
       ⟨⟨trivial, trivial⟩, ⟨trivial, trivial⟩⟩, wf_appendTapeP (by decide) (by decide),
-      trivial, trivial⟩, wf_nopX⟩, trivial⟩
+      trivial, trivial⟩, wf_nopX⟩, wf_clrS⟩
 
 /-! ### The component of the ideal side -/
 

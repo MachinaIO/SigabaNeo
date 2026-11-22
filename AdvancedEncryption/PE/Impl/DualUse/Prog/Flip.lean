@@ -99,7 +99,7 @@ theorem flU_inj : Function.Injective flU := by decide
 /-- **The flip block**: bit `P` of a word of `L` bits. -/
 def flipB (P L : ℕ) : XProg 11 :=
   seq (natP 3 10 P) <| seq (natP 4 10 (L - P - 1)) <| seq (natP 5 10 L) <|
-  seq (prog (Prog.map flU cflipP)) <| clearL [3, 4, 5]
+  seq (prog (Prog.map flU cflipP)) <| clearL (scrFrom 11 3)
 
 theorem wf_flipB (P L : ℕ) : (flipB P L).WF :=
   ⟨wf_natP (by decide) _, wf_natP (by decide) _, wf_natP (by decide) _,
@@ -119,20 +119,45 @@ theorem law_flipB (P L : ℕ) (S : Store 11) (hS : ∀ i : Fin 11, 3 ≤ i.val �
     (by simp [flU]; omega)), PMF.pure_bind, law_clearL]
   congr 1
   funext t
-  fin_cases t <;> simp [flU, hS]
+  fin_cases t <;> simp [flU, hS, mem_scrFrom]
   simpa using cflip_eq (hd (S 2)) (P := P) (Q := L - P - 1) (w := S 1) (by omega)
 
-def timeFlipB (P L M : ℕ) : ℕ :=
-  (2 * P + 1) * (4 * M + 12) + (2 * (L - P - 1) + 1) * (4 * M + 12) + (2 * L + 1) * (4 * M + 12) +
-    Prog.timeBound cflipP M + ([3, 4, 5].length * (2 * (M + 1) + 3) + (2 * (M + 1) + 3))
+/-- The sweeps of `cflipP` (templates `3 4 5 ↦` variables `1 2 3`). -/
+def wFlip : Sym.Poly := [([], 12), ([0, 1], 6), ([0, 0, 1], 6)]
 
-theorem ub_flipB (P L M : ℕ) (hM : P + L ≤ M) : UB (flipB P L) M (timeFlipB P L M) M := by
-  have u := (ub_natP (t := (3 : Fin 11)) (c := 10) (by decide) (n := P) (M := M) (by omega)).seq <|
-    (ub_natP (t := (4 : Fin 11)) (c := 10) (by decide) (n := L - P - 1) (M := M) (by omega)).seq <|
-    (ub_natP (t := (5 : Fin 11)) (c := 10) (by decide) (n := L) (M := M) (by omega)).seq <|
-    (ub_progMap flU _ noGrow_cflipP M).seq <| ub_clearL M [3, 4, 5]
-  refine u.mono (le_of_eq ?_) le_rfl
-  simp only [timeFlipB, Nat.add_assoc, List.length_cons, List.length_nil]
+open Sym Prog.SpecZ in
+theorem check_cflipP : check 8 cflipP [T, T, T, vv 1, vv 2, vv 3] [] wFlip = true := by
+  decide +kernel
+
+/-- The time of `flipB` from tapes below `M` (scratch blank). -/
+def timeFlipB (P L M : ℕ) : ℕ :=
+  (2 * P + 1) * (4 * M + 12) + ((2 * (L - P - 1) + 1) * (4 * M + 12) + ((2 * L + 1) * (4 * M + 12) +
+    ((2 * M + 3) * (12 + 6 * P + 6 * (L - P - 1)) + (8 * (2 * (M + 1) + 3) + (2 * (M + 1) + 3)))))
+
+open Sym Prog.SpecZ in
+theorem ub_flipB (P L M : ℕ) (hM : P + L ≤ M) : UBZ 3 (flipB P L) M (timeFlipB P L M) M := by
+  have a0 := zv_le (k := 11) 3 M
+  have h1 := VB.natP (t := (3 : Fin 11)) (c := 10) (by decide) P a0 (by omega)
+  have a1 := natB_le (t := (3 : Fin 11)) (c := 10) (n := P) a0 (by omega)
+  have h2 := VB.natP (t := (4 : Fin 11)) (c := 10) (by decide) (L - P - 1) a1 (by omega)
+  have a2 := natB_le (t := (4 : Fin 11)) (c := 10) (n := L - P - 1) a1 (by omega)
+  have h3 := VB.natP (t := (5 : Fin 11)) (c := 10) (by decide) L a2 (by omega)
+  have a3 := natB_le (t := (5 : Fin 11)) (c := 10) (n := L) a2 (by omega)
+  have hl := vb_leafClear (M := M) (j := 3) check_cflipP [M, P, L - P - 1, L] rfl flU_inj a3
+    (fun i => by fin_cases i <;> simp [natB, zv, flU, aGet, pEval_vv, pEval_pTop, top, T])
+    (scrFrom 11 3) (fun t ht => (mem_scrFrom t).2 ht)
+  refine (h1.seq (h2.seq (h3.seq hl))).mono le_rfl (le_of_eq ?_) le_rfl
+  have e : (scrFrom 11 3).length = 8 := rfl
+  rw [e, timeFlipB]
+  simp only [wFlip, pEval, mEval, List.headD, List.tail]
+  ring
+
+theorem size_cflipP : cflipP.size ≤ 2 ^ 12 := by decide +kernel
+
+theorem sz_flipB (P L M : ℕ) (hM : P + L ≤ M) (hB : M < 2 ^ 240) :
+    SZ (flipB P L) (3 * 46836 + 2 ^ 12 + 36 * 9) :=
+  ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_cflipP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
 
 /-- Output `o`, word `a`, flag `b`; scratch from `20`. -/
 def vFl (o a b : Fin 82) (j : Fin 11) : Fin 82 :=
