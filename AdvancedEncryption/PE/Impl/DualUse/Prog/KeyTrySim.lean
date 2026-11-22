@@ -313,4 +313,103 @@ theorem run_ph3 {N K k d : ℕ} (hK0 : 0 < K) (t : Store 90) (ht : ∀ j : Fin 9
   funext j
   fin_cases j <;> simp [hS3]
 
+/-! ### Phase 4: the output -/
+
+/-- Blank the working tapes `26 … 40`. -/
+def clrWork : Prog 90 :=
+  clr 26 ⨾ clr 27 ⨾ clr 28 ⨾ clr 29 ⨾ clr 30 ⨾ clr 31 ⨾ clr 32 ⨾ clr 33 ⨾ clr 34 ⨾ clr 35 ⨾ clr 36 ⨾
+    clr 37 ⨾ clr 38 ⨾ clr 39 ⨾ clr 40
+
+theorem run_clrWork (t : Store 90) :
+    run clrWork t = fun j => if 26 ≤ j.val ∧ j.val ≤ 40 then [] else t j := by
+  funext j
+  simp only [clrWork, run_seq, run_clear]
+  fin_cases j <;> simp
+
+/-- `0 := pk ++ (x ++ z or zeros)`, by the bit `40`; the working tapes blanked. -/
+def ph4 : Prog 90 :=
+  cp 0 24 ⨾ cp 26 1 ⨾ map (mvAt 26 0 23) mvP ⨾ ifBit 40 (nop 0) (clr 39 ⨾ clr 36) ⨾
+    map (mvAt 39 0 11) mvP ⨾ map (mvAt 36 0 20) mvP ⨾ clrWork
+
+theorem drop_drop_append (r a b : List Bool) {α β : ℕ} (ha : a.length = α) (hb : b.length = β)
+    (hr : r.length = α + β) : ((r ++ a).drop α ++ b).drop β = a ++ b := by
+  have := drop_append_drop r a b
+  rw [ha, hb] at this
+  rw [this, List.drop_left' hr]
+
+theorem run_ph4 {N K k d P : ℕ} (s0 t : Store 90)
+    (hag : ∀ j : Fin 90, (j.val < 26 ∨ 40 < j.val) → t j = s0 j)
+    (hbl : ∀ j : Fin 90, 26 ≤ j.val → s0 j = []) (b : Bool) (h40 : t 40 = [b])
+    (hpk : (t 1).length = P) (hnK : (t 11).length = (d + nT k) * N * K)
+    (h20 : (t 20).length = 2 * k * (N * K)) (h23 : (t 23).length = P)
+    (h24 : (t 24).length = P + (d + nT k) * N * K + 2 * k * (N * K))
+    (hx : (t 39).length = (d + nT k) * N * K) (hz : (t 36).length = 2 * k * (N * K)) :
+    run ph4 t = Function.update s0 0 (t 1 ++ if b = true then t 39 ++ t 36
+      else zeroW (d * (N * K)) ++ (zeroW (nT k * (N * K)) ++ zeroW (2 * k * (N * K)))) := by
+  have ht41 : ∀ j : Fin 90, 41 ≤ j.val → t j = [] := fun j hj => (hag j (by omega)).trans (hbl j (by omega))
+  set U1 := Function.update (Function.update t 0 (t 24)) 26 (t 1) with hU1
+  have q2 : run (map (mvAt 26 0 23) mvP) U1 =
+      Function.update (Function.update U1 26 []) 0 ((t 24 ++ t 1).drop P) := by
+    rw [run_mvAt (a := 26) (b := 0) (c := 23) (by decide) _ (by simp [hU1, ht41])
+      (by simp [hU1, ht41])]
+    have a26 : U1 26 = t 1 := by simp [hU1]
+    have a23 : U1 23 = t 23 := by simp [hU1]
+    have a0 : U1 0 = t 24 := by simp [hU1]
+    rw [a26, a23, a0, h23, takeD_of_length' hpk, List.drop_eq_nil_of_le (le_of_eq hpk)]
+  set U2 := Function.update (Function.update U1 26 []) 0 ((t 24 ++ t 1).drop P) with hU2
+  set X' := if b = true then t 39 else [] with hX'
+  set Z' := if b = true then t 36 else [] with hZ'
+  have q3 : run (ifBit 40 (nop 0) (clr 39 ⨾ clr 36)) U2 =
+      Function.update (Function.update U2 39 X') 36 Z' := by
+    have a40 : U2 40 = [b] := by simp [hU2, hU1, h40]
+    rw [run_ifBit, a40]
+    cases b
+    · simp [hX', hZ']
+    · simp only [hd_cons, if_true, run_nop, hX', hZ']
+      funext j
+      fin_cases j <;> simp [hU2, hU1]
+  set U3 := Function.update (Function.update U2 39 X') 36 Z' with hU3
+  have q4 : run (map (mvAt 39 0 11) mvP) U3 =
+      Function.update (Function.update U3 39 (X'.drop ((d + nT k) * N * K))) 0
+        ((((t 24 ++ t 1).drop P) ++ takeD ((d + nT k) * N * K) X').drop ((d + nT k) * N * K)) := by
+    rw [run_mvAt (a := 39) (b := 0) (c := 11) (by decide) _ (by simp [hU3, hU2, hU1, ht41])
+      (by simp [hU3, hU2, hU1, ht41])]
+    have a39 : U3 39 = X' := by simp [hU3]
+    have a11 : U3 11 = t 11 := by simp [hU3, hU2, hU1]
+    have a0 : U3 0 = (t 24 ++ t 1).drop P := by simp [hU3, hU2]
+    rw [a39, a11, a0, hnK]
+  set V := (((t 24 ++ t 1).drop P) ++ takeD ((d + nT k) * N * K) X').drop ((d + nT k) * N * K)
+    with hV
+  set U4 := Function.update (Function.update U3 39 (X'.drop ((d + nT k) * N * K))) 0 V with hU4
+  have q5 : run (map (mvAt 36 0 20) mvP) U4 =
+      Function.update (Function.update U4 36 (Z'.drop (2 * k * (N * K)))) 0
+        ((V ++ takeD (2 * k * (N * K)) Z').drop (2 * k * (N * K))) := by
+    rw [run_mvAt (a := 36) (b := 0) (c := 20) (by decide) _ (by simp [hU4, hU3, hU2, hU1, ht41])
+      (by simp [hU4, hU3, hU2, hU1, ht41])]
+    have a36 : U4 36 = Z' := by simp [hU4, hU3]
+    have a20 : U4 20 = t 20 := by simp [hU4, hU3, hU2, hU1]
+    have a0 : U4 0 = V := by simp [hU4]
+    rw [a36, a20, a0, h20]
+  have hout : (V ++ takeD (2 * k * (N * K)) Z').drop (2 * k * (N * K)) =
+      t 1 ++ if b = true then t 39 ++ t 36
+        else zeroW (d * (N * K)) ++ (zeroW (nT k * (N * K)) ++ zeroW (2 * k * (N * K))) := by
+    have e1 := drop_append_drop (t 24) (t 1) (takeD ((d + nT k) * N * K) X')
+    rw [hpk, length_takeD] at e1
+    rw [hV, e1]
+    have e2 := drop_append_drop (t 24) (t 1 ++ takeD ((d + nT k) * N * K) X')
+      (takeD (2 * k * (N * K)) Z')
+    rw [List.length_append, hpk, length_takeD, length_takeD] at e2
+    rw [e2, List.drop_left' (by rw [h24]; try ring), List.append_assoc]
+    congr 1
+    cases b
+    · simp only [hX', hZ', Bool.false_eq_true, ite_false, takeD_nil, zeroW, ← List.replicate_add]
+      congr 1; ring
+    · simp only [hX', hZ', ite_true, takeD_of_length' hx, takeD_of_length' hz]
+  have c1 : Function.update (Function.update t 0 (t 24)) 26 (Function.update t 0 (t 24) 1) = U1 := by
+    simp [hU1]
+  simp only [ph4, run_seq, run_copy]
+  rw [c1, q2, q3, q4, q5, run_clrWork, hout]
+  funext j
+  fin_cases j <;> simp [hU4, hU3, hU2, hU1, hag, hbl]
+
 end AdvancedEncryption.DualUse.ProgKey
