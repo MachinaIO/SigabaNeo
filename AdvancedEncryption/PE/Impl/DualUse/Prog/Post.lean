@@ -265,6 +265,155 @@ theorem run_caseB_good (nA nM : ℕ) (t : Store 8) {m : Bool} {μ a σ : List Bo
     show nA = (t4 5).length by simp [e4.2, ha], run_appendFR 5 (by decide)]
   simp [Prim.apply, e4.1, e4.2, rfr]
 
+/-- **The program, up to its branch**: the rounds move the bits of `u` to tape `3`. -/
+theorem run_postProg (E nA nM : ℕ) (s : Store 8) (u R : List Bool)
+    (h1 : s 1 = u.reverse.flatMap (fun b => [true, b]) ++ false :: R) (h3 : s 3 = [])
+    (h4 : s 4 = []) (hu : u.length ≤ E) :
+    run (postProg E nA nM) s 1 = run (.ifBlank 3 caseA (.ifBit 3 caseA (caseB nA nM)))
+      (Function.update (Function.update s 1 R) 3 u) 1 := by
+  rw [postProg, run_seq, run_iter, run_rnds R u.reverse s E h1 h4 (by simpa using hu), run_seq,
+    run_prim]
+  congr 2
+  funext i
+  simp only [Prim.apply, Function.update_apply, List.reverse_reverse, h3, List.append_nil]
+  split_ifs <;> simp_all
+
 end Sem
+
+/-! ### Structural properties -/
+
+section Struct
+
+open Prog
+
+theorem loopFree_frBody (j : Fin 8) : (frBody j).LoopFree := by simp [frBody, LoopFree]
+
+theorem loopFree_appendFR (j : Fin 8) (c : ℕ) : (appendFR j c).LoopFree := by
+  have h := loopFree_iter 1 (frBody j) (loopFree_frBody j) c
+  simp only [frBody] at h
+  simp [appendFR, LoopFree, h]
+
+theorem loopFree_postProg (E nA nM : ℕ) : (postProg E nA nM).LoopFree := by
+  have h1 := loopFree_iter 1 rnd (by simp [rnd, LoopFree]) E
+  simp [postProg, caseA, caseB, badB, goodB, LoopFree, h1, loopFree_moveRev, loopFree_appendFR]
+
+theorem wf_of_loopFree : ∀ p : Prog 8, p.LoopFree → p.WF
+  | .prim _, _ | .coin _, _ => trivial
+  | .seq p q, h => ⟨wf_of_loopFree p h.1, wf_of_loopFree q h.2⟩
+  | .ifBlank _ p q, h => ⟨wf_of_loopFree p h.1, wf_of_loopFree q h.2⟩
+  | .ifBit _ p q, h => ⟨wf_of_loopFree p h.1, wf_of_loopFree q h.2⟩
+  | .loop _ _, h => h.elim
+
+theorem coinFree_appendFR (j : Fin 8) (c : ℕ) : (appendFR j c).CoinFree := by
+  have h := coinFree_iter 1 (frBody j) rfl c
+  simp only [CoinFree, frBody] at h ⊢
+  simp [appendFR, coinFreeB, h]
+
+theorem coinFree_postProg (E nA nM : ℕ) : (postProg E nA nM).CoinFree := by
+  have h1 := coinFree_iter 1 rnd rfl E
+  have h2 := coinFree_moveRev nM 3 6 4
+  have h3 := coinFree_moveRev nA 3 5 4
+  have h4 := coinFree_appendFR 6 nM
+  have h5 := coinFree_appendFR 5 nA
+  simp only [CoinFree] at *
+  simp [postProg, caseA, caseB, badB, goodB, coinFreeB, h1, h2, h3, h4, h5]
+
+theorem preserves_appendFR (j : Fin 8) (hj : j ≠ 2) (c : ℕ) : (appendFR j c).Preserves 2 := by
+  have h := preserves_iter 1 (frBody j) (i := 2) (by decide)
+    (by simp [frBody, Preserves, Prim.writes, Ne.symm hj]) c
+  simp only [frBody] at h
+  simp [appendFR, Preserves, Prim.writes, h]
+
+theorem preserves_moveRev2 (n : ℕ) (dst : Fin 8) (hd : dst ≠ 2) :
+    (Prog.moveRev n 3 dst 4).Preserves 2 :=
+  preserves_iter _ _ (by decide) (by simp [Prog.stepR, Preserves, Prim.writes, Ne.symm hd]) n
+
+theorem preserves_postProg (E nA nM : ℕ) : (postProg E nA nM).Preserves 2 := by
+  have h1 := preserves_iter 1 rnd (i := 2) (by decide) (by simp [rnd, Preserves, Prim.writes]) E
+  simp [postProg, caseA, caseB, badB, goodB, Preserves, Prim.writes, h1,
+    preserves_moveRev2 _ 6 (by decide), preserves_moveRev2 _ 5 (by decide),
+    preserves_appendFR 6 (by decide), preserves_appendFR 5 (by decide)]
+
+end Struct
+
+/-! ### The machine -/
+
+/-- Tape `0` of the first phase. -/
+def eIn : Fin 1 ↪ Fin 8 := ⟨fun _ => 0, fun a b _ => Subsingleton.elim a b⟩
+/-- Output, input and flag tapes of the transducer. -/
+def eTr : Fin 3 ↪ Fin 8 := ⟨![1, 0, 2], by decide⟩
+/-- Input and flag tapes of the last phase. -/
+def eOut : Fin 2 ↪ Fin 8 := ⟨![1, 2], by decide⟩
+
+@[simp] theorem eIn_apply (i : Fin 1) : eIn i = 0 := rfl
+@[simp] theorem eTr_zero : eTr 0 = 1 := rfl
+@[simp] theorem eTr_one : eTr 1 = 0 := rfl
+@[simp] theorem eTr_two : eTr 2 = 2 := rfl
+@[simp] theorem eOut_zero : eOut 0 = 1 := rfl
+@[simp] theorem eOut_one : eOut 1 = 2 := rfl
+
+/-- The four phases. -/
+noncomputable def postPTM (E nA nM : ℕ) :=
+  (revInPhase eIn).seq ((trPhase sepT eTr).seq ((Prog.compile (postProg E nA nM)).seq (revOutPhase eOut)))
+
+/-- The number of primitives of the program. -/
+def postPc (E nA nM : ℕ) : ℕ := Prog.pcount (postProg E nA nM)
+
+/-- The clock, for outputs of `A` of at most `n` bits and encoded states of at most `E` bits. -/
+def postClock (n E nA nM : ℕ) : ℕ :=
+  9 * (n + 2 + 2 * E) + 20 +
+    postPc E nA nM * (2 * (2 * (n + 2 + 2 * E) + 2 + postPc E nA nM) + 5) +
+    (2 * (2 * (n + 2 + 2 * E) + 2 + postPc E nA nM) + 6)
+
+/-- **The post-processing machine.** -/
+noncomputable def Post (n E nA nM : ℕ) : Machine :=
+  Machine.ofPTM (postPTM E nA nM) (postClock n E nA nM)
+
+/-- The store before the program. -/
+def postS (x : List Bool) : Store 8 :=
+  Function.update (Function.update (fun _ => []) 0 x.reverse) 1 (sepT.run sepT.q₀ x.reverse)
+
+/-- **The output of the machine on a word**: the reversal of tape `1` after the program. -/
+theorem run_Post_word (n E nA nM : ℕ) (x : List Bool) (hx : x.length ≤ n + 2 + 2 * E) :
+    (Post n E nA nM).run x =
+      PMF.pure (Prog.run (postProg E nA nM) (postS x) 1).reverse := by
+  set p := postProg E nA nM
+  set L := 2 * (n + 2 + 2 * E) + 2
+  have h1 := revInPhase_runs eIn x (fun _ => []) rfl []
+  have h2 := trPhase_runs sepT eTr x (Function.update (fun _ => []) (eIn 0) x.reverse)
+    (by simp) (by simp) ([] ++ [])
+  have hmax : maxLen (postS x) ≤ L := by
+    rw [maxLen_le_iff]
+    intro i
+    have := Transducer.length_run_le sepT sepT.q₀ x.reverse
+    simp only [sepT_q₀, List.length_reverse] at this
+    simp only [postS, Function.update_apply]
+    split_ifs <;> simp <;> omega
+  have h3 := Prog.compile_runsWordsU p (wf_of_loopFree p (loopFree_postProg E nA nM))
+    (coinFree_postProg E nA nM) x L (postS x) ([] ++ [] ++ []) hmax
+  have h4 := revOutPhase_runs eOut x (Prog.run p (postS x))
+    (by rw [eOut_one,
+      Prog.run_eq_of_preserves p (coinFree_postProg E nA nM) (preserves_postProg E nA nM)]; rfl)
+    ([] ++ [] ++ [] ++ [])
+  have h := RunsWords.seqU h1 (RunsWords.seqU h2 (RunsWords.seqU h3 h4))
+  have hlen : (Prog.run p (postS x) 1).length ≤ L + postPc E nA nM := by
+    have hs := Prog.lenBound_spec p L (postS x) hmax (Prog.run p (postS x))
+      (by rw [Prog.law_eq_run_of_coinFree p (coinFree_postProg E nA nM)]; simp)
+    exact ((length_le_maxLen _ 1).trans hs).trans (Prog.lenBound_le_pcount p (loopFree_postProg E nA nM) L)
+  have ht := Prog.timeBound_le_pcount p (loopFree_postProg E nA nM) L
+  have hT : 3 * x.length + 4 + (6 * x.reverse.length + 16 +
+      (Prog.timeBound p L + (2 * (Prog.run p (postS x) (eOut 0)).length + 6))) ≤
+      postClock n E nA nM := by
+    have hp : postProg E nA nM = p := rfl
+    have hL : L = 2 * (n + 2 + 2 * E) + 2 := rfl
+    clear_value p L
+    subst hL
+    simp only [postClock, postPc, hp, List.length_reverse, eOut_zero] at hlen ⊢
+    generalize Prog.pcount p = c at *
+    generalize Prog.timeBound p (2 * (n + 2 + 2 * E) + 2) = tb at *
+    generalize c * (2 * (2 * (n + 2 + 2 * E) + 2 + c) + 5) = T at *
+    omega
+  rw [Post, Machine.run_ofPTM]
+  exact eval_runClosed_of_runsWordsU (h.mono hT)
 
 end AdvancedEncryption.PE.Generic
