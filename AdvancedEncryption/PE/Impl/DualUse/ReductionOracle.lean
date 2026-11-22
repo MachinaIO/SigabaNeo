@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.ReductionMachine
 import PE.Impl.Game.HandlersMain
+import PE.Impl.Game.HandlersP
 
 /-!
 # The reduction's oracle with the instance in the state
@@ -83,5 +84,16 @@ theorem hgame_oracleW (st : dateUniverse.Attr → PMF (Inst × Sec)) (inst : Lis
             Function.comp_def, specSim, spPack]
   rw [← h1, PMF.map_comp, ← h2, PMF.map_comp]
   rfl
+
+/-- **The packed challenger answers long predicates with a fixed word and never authorizes
+them**: the hypothesis of the per-query handlers, with `K₀ = L` and the empty answer. -/
+theorem longKeys_spPack (st : dateUniverse.Attr → PMF (Inst × Sec))
+    (viewI : Inst → Sec → PK hk c × CT hk c) (sdI : Inst → Sec → SimData hk c)
+    (Ok : Inst × Sec → Prop) : Generic.LongKeys (spPack st viewI sdI) Ok c.L [] where
+  key p C _ hC := by
+    show KGsim (sdI p.1 p.2) C = PMF.pure []
+    unfold KGsim
+    rw [if_neg (by omega)]
+  auth C x hC := authI_long hk c C x hC
 
 end AdvancedEncryption.DualUse

@@ -37,6 +37,16 @@ open Classical in
 noncomputable def authI (C : List Bool) (x : Date) : Bool :=
   decide (Authorized (U := dateUniverse) params (impl hk c) C x)
 
+/-- **Long predicates are never authorized**: `Eval` rejects inputs longer than `L`. -/
+theorem authI_long (C : List Bool) (x : Date) (hC : c.L < C.length) : authI hk c C x = false := by
+  unfold authI
+  rw [decide_eq_false_iff_not]
+  intro h
+  obtain ⟨h1, -, -⟩ := (win_authorized_iff (impl hk c) rfl C x).mp h
+  have := (length_le_encodeTuple (C := C)
+    (xs := [paramsWord dateUniverse params, C, encDate x]) (by simp)).trans h1
+  omega
+
 /-- The real trapdoor is covered for every key of `Setup` and every window predicate. -/
 def RealCovered : Prop :=
   ∀ v ∈ (setupM hk c).support, ∀ w : Window,

@@ -48,6 +48,25 @@ theorem guardK_postW (D : Machine) (ob : Ob) :
     · intro b hb; simp [hb]
   · simp
 
+open Turing MultiTapeMachine in
+/-- **The final outputs and states of a run**: `A`'s output has at most `A.time` bits, and an
+oracle keeping `InvS` on queries of at most `A.time` bits keeps it along the run. -/
+theorem _root_.SigabaNeo.Machine.runWith_support_inv {ops : ℕ} {σ : Type} (A : Machine ops)
+    (oracle : Fin ops × List Bool → StateT σ PMF (List Bool)) (InvS : σ → Prop)
+    (hinv : ∀ o b s, b.length ≤ A.time → InvS s → ∀ r ∈ (oracle (o, b) s).support, InvS r.2)
+    (x : List Bool) (s₀ : σ) (hs₀ : InvS s₀) :
+    ∀ r ∈ (A.runWith oracle x s₀).support, r.1.length ≤ A.time ∧ InvS r.2 := by
+  intro r hr
+  unfold Machine.runWith at hr
+  rw [MultiTapePTM.runOracle_eq_map, ProbOracleComp.runWith_map] at hr
+  obtain ⟨⟨c, s⟩, hcs, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hr
+  refine ⟨?_, ?_⟩
+  · have := MultiTapePTM.length_output_le_of_mem_support_runOracleConfigFrom A.machine oracle
+      A.time _ s₀ hcs
+    simpa [MultiTapeMachine.initialConfig] using this
+  · exact Inline.lawA_inv A.machine oracle InvS A.time hinv A.time _ s₀ hs₀
+      (fun o => by simp [MultiTapeMachine.initialConfig]) (c, s) hcs
+
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
 variable {m : ℕ} {σ : Type}
 
@@ -64,7 +83,8 @@ theorem acceptProb_reduction {Sec Inst : Type} (P Post : Machine) (A : Machine 3
     (obsOf : List Bool → σ → Ob) (D : Machine) (μ : PMF (List Bool)) (s₀ : List Bool → σ)
     (hs₀ : ∀ w ∈ μ.support, InvS (s₀ w))
     (hP : ∀ w ∈ μ.support, P.run w = PMF.pure (enc (s₀ w)))
-    (hPost : ∀ o s, Post.run (pairOut o (enc s)) = PMF.pure (postW (obsOf o s)))
+    (hPost : ∀ o s, o.length ≤ A.time → InvS s →
+      Post.run (pairOut o (enc s)) = PMF.pure (postW (obsOf o s)))
     (inst : List Bool → Inst) (setupI : Inst → Date → PMF Sec)
     (viewI : Inst → Sec → PK hk c × CT hk c) (sdI : Inst → Sec → SimData hk c)
     (hgame : ∀ w ∈ μ.support,
@@ -90,9 +110,10 @@ theorem acceptProb_reduction {Sec Inst : Type} (P Post : Machine) (A : Machine 3
         (((A.runWith orc (paramsWord dateUniverse params) (s₀ w)).map
           (fun r => obsOf r.1 r.2))).bind (fun ob => D.guardK (postW ob)) := by
       rw [PMF.bind_map]
-      congr 1
-      funext r
-      simp only [Function.comp_apply, hPost, PMF.pure_bind]
+      refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ (fun r hr => ?_)
+      obtain ⟨hlen, hinv⟩ := A.runWith_support_inv orc InvS
+        (fun o b s hb hs r hr => (hH.inv o b s hb hs r hr).1) _ (s₀ w) (hs₀ w hw) r hr
+      simp only [Function.comp_apply, hPost r.1 r.2 hlen hinv, PMF.pure_bind]
     rw [Function.comp_def] at *
     rw [h1, hgame w hw, PMF.bind_apply, Function.comp_apply, PMF.bind_apply]
     refine tsum_congr fun ob => ?_
@@ -108,7 +129,8 @@ theorem acceptProb_reduction_accOn {Sec Inst : Type} (P Post : Machine) (A : Mac
     (obsOf : List Bool → σ → Ob) (D : Machine) (μ : PMF (List Bool)) (s₀ : List Bool → σ)
     (hs₀ : ∀ w ∈ μ.support, InvS (s₀ w))
     (hP : ∀ w ∈ μ.support, P.run w = PMF.pure (enc (s₀ w)))
-    (hPost : ∀ o s, Post.run (pairOut o (enc s)) = PMF.pure (postW (obsOf o s)))
+    (hPost : ∀ o s, o.length ≤ A.time → InvS s →
+      Post.run (pairOut o (enc s)) = PMF.pure (postW (obsOf o s)))
     (inst : List Bool → Inst) (instLaw : PMF Inst) (hinst : μ.map inst = instLaw)
     (F : Date → Inst → PMF (PK hk c × CT hk c))
     (setupI : Inst → Date → PMF Sec)
