@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.Algo.KeyTrySim
 import SigabaNeo.Lib.Lattices.ProgAlgo.BoxProgs
+import SigabaNeo.Lib.Lattices.ProgAlgo.Nand
 
 /-!
 # One try of key generation with the simulated trapdoor, as a tape program
@@ -165,5 +166,71 @@ theorem run_ph1 {N K k d B P : ℕ} (t : Store 90) (ht : ∀ j : Fin 90, 26 ≤ 
     (by simp [hB]) (by simp [hK]) (by simp [hn]) (by simp [hc]) (by simp [hnK])]
   funext j
   fin_cases j <;> simp [ht, e1, e2, hpk, h22]
+
+/-! ### Phase 2: the decomposition `z` -/
+
+theorem dotW_eq_matMulW (N K n : ℕ) (x y : List Bool) : dotW N K n x y = matMulW N K 1 n 1 x y := by
+  simp [dotW, matMulW, concatN]
+
+/-- `26 := p₁`, `31 := p₀`, `32 := B₀ · p₀`, `33 := B₁ · p₁`, `34` their sum, `35 := p_pub − 34`,
+`36 := z = G̲⁻¹(35)`. -/
+def ph2 : Prog 90 :=
+  cp 26 30 ⨾ cp 31 18 ⨾ map (mvAt 26 31 18) mvP ⨾ map (mmAt 32 27 31 14 16 15 29) matMulP ⨾
+    map (mmAt 33 28 26 14 17 15 29) matMulP ⨾ map (bzAt 34 32 33 6 7) addRWP ⨾
+    map (bzAt 35 29 34 6 7) subRWP ⨾ map decAt decP
+
+theorem run_ph2 {N K k d : ℕ} (t : Store 90) (ht : ∀ j : Fin 90, 31 ≤ j.val → t j = [])
+    (h26 : t 26 = []) (hK : (t 6).length = K) (hN : (t 7).length = N) (hNK : (t 8).length = N * K)
+    (hk : (t 12).length = k) (h14 : (t 14).length = 1) (h15 : (t 15).length = 1)
+    (h16 : (t 16).length = d) (h17 : (t 17).length = nT k)
+    (h18 : (t 18).length = d * (N * K)) (h20 : (t 20).length = 2 * k * (N * K))
+    (hb0 : (t 27).length = d * (N * K)) (hb1 : (t 28).length = nT k * (N * K))
+    (hpp : (t 29).length = N * K) (hp : (t 30).length = (d + nT k) * N * K) :
+    run ph2 t = Function.update (Function.update (Function.update (Function.update
+      (Function.update (Function.update (Function.update t
+      26 ((t 30).drop (d * (N * K))))
+      31 ((t 30).take (d * (N * K))))
+      32 (dotW N K d (t 27) ((t 30).take (d * (N * K)))))
+      33 (dotW N K (nT k) (t 28) ((t 30).drop (d * (N * K)))))
+      34 (shortMapW N K d (nT k) (t 27) (t 28) (t 30)))
+      35 (subRW N K (t 29) (shortMapW N K d (nT k) (t 27) (t 28) (t 30))))
+      36 (decW N K k (subRW N K (t 29) (shortMapW N K d (nT k) (t 27) (t 28) (t 30)))) := by
+  have ht41 : ∀ j : Fin 90, 41 ≤ j.val → t j = [] := fun j hj => ht j (by omega)
+  have e1 : takeD (t 18).length (t 30) = (t 30).take (d * (N * K)) := by
+    rw [h18]; exact takeD_eq_take (by rw [hp]; nlinarith)
+  have e1'' : List.take (t 18).length (t 30) = List.take (d * (N * K)) (t 30) := by rw [h18]
+  have hl0 : ((t 30).take (d * (N * K))).length = d * (N * K) := by
+    rw [List.length_take, hp]; apply min_eq_left; nlinarith
+  have hl1 : ((t 30).drop (d * (N * K))).length = nT k * (N * K) := by
+    rw [List.length_drop, hp]; rw [Nat.add_mul, Nat.add_mul]; ring_nf; omega
+  simp only [ph2, run_seq, run_copy]
+  rw [run_mvAt (a := 26) (b := 31) (c := 18) (by decide) _ (by simp [ht]) (by simp [ht])]
+  rw [run_mmAt (o := 32) (x := 27) (y := 31) (O := 29) (K := K) (N := N) (m' := 1) (n' := d) (l' := 1)
+    (by decide) _ (by (repeat' (apply clean_upd (by decide))); exact ht41)
+    (by simp [hK]) (by simp [hN]) (by simp [hNK]) (by simp [h14]) (by simp [h16]) (by simp [h15])
+    (by simp [hpp]) (by simp [hb0]) (by simp [e1, hl0])]
+  rw [run_mmAt (o := 33) (x := 28) (y := 26) (O := 29) (K := K) (N := N) (m' := 1) (n' := nT k) (l' := 1)
+    (by decide) _ (by (repeat' (apply clean_upd (by decide))); exact ht41)
+    (by simp [hK]) (by simp [hN]) (by simp [hNK]) (by simp [h14]) (by simp [h17]) (by simp [h15])
+    (by simp [hpp]) (by simp [hb1]) (by simp [h18, hl1])]
+  rw [run_addAt (o := 34) (x := 32) (y := 33) (K := K) (N := N)
+    (by decide) _ (by (repeat' (apply clean_upd (by decide))); exact ht41)
+    (by simp [hK]) (by simp [hN]) (by simp [length_matMulW]) (by simp [length_matMulW])]
+  rw [run_subAt (o := 35) (x := 29) (y := 34) (K := K) (N := N)
+    (by decide) _ (by (repeat' (apply clean_upd (by decide))); exact ht41)
+    (by simp [hK]) (by simp [hN]) (by simp [hpp]) (by simp [length_addRW, length_matMulW])]
+  rw [run_decAt (K := K) (N := N) (k := k) _ (by (repeat' (apply clean_upd (by decide))); exact ht41)
+    (by simp [length_subRW, hpp]) (by simp [hK]) (by simp [hN]) (by simp [hk]) (by simp [hNK])
+    (by simp [h20])]
+  have hsm : addRW N K (matMulW N K 1 d 1 (t 27) ((t 30).take (d * (N * K))))
+      (matMulW N K 1 (nT k) 1 (t 28) ((t 30).drop (d * (N * K)))) =
+      shortMapW N K d (nT k) (t 27) (t 28) (t 30) := by
+    rw [shortMapW, dotW_eq_matMulW, dotW_eq_matMulW]
+  have e1' : takeD (d * (N * K)) (t 30) = (t 30).take (d * (N * K)) := by
+    have := e1; rwa [h18] at this
+  have ed : List.drop (d * (N * K)) (t 18 ++ List.take (d * (N * K)) (t 30)) =
+      List.take (d * (N * K)) (t 30) := List.drop_left' h18
+  funext j
+  fin_cases j <;> simp [ht, e1', h18, ed, hsm, dotW_eq_matMulW]
 
 end AdvancedEncryption.DualUse.ProgKey
