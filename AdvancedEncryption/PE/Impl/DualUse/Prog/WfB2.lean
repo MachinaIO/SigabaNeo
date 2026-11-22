@@ -250,6 +250,25 @@ theorem tmplS_mem {n : ℕ} : ∀ (l : List (Fin n × ℕ)), (l.map Prod.fst).No
     · rw [tmplS_apply_of_not_mem l _ _ (fun z hz e => hn.1 ⟨z, hz, e⟩), Function.update_self]
     · exact tmplS_mem l hn.2 x hx _
 
+theorem tmplS_eq {n : ℕ} : ∀ (l : List (Fin n × ℕ)), (l.map Prod.fst).Nodup → ∀ (s : Store n)
+    (t : Fin n), tmplS l s t = match l.lookup t with
+      | some m => List.replicate m false
+      | none => s t
+  | [], _, s, t => by simp [tmplS]
+  | (y1, y2) :: l, hn, s, t => by
+    simp only [List.map_cons, List.nodup_cons] at hn
+    rw [tmplS, List.foldl_cons, ← tmplS, tmplS_eq l hn.2, List.lookup_cons]
+    by_cases h : t = y1
+    · subst h
+      have : l.lookup t = none := by
+        rw [List.lookup_eq_none_iff]; intro p hp
+        simp only [bne_iff_ne, ne_eq]
+        intro hpe
+        exact hn.1 (by rw [List.mem_map]; exact ⟨p, hp, hpe.symm⟩)
+      simp [this]
+    · have : (t == y1) = false := by simpa using h
+      simp only [this, Function.update_of_ne h]
+
 theorem run_map_apply {n m : ℕ} {u : Fin n → Fin m} (hu : Function.Injective u) (p : Prog n)
     (s : Store m) (j : Fin n) : run (Prog.map u p) s (u j) = run p (s ∘ u) j := by
   rw [run_map hu, hu.extend_apply]
@@ -346,6 +365,87 @@ theorem law_prepT : (prepT hk c W).law (S0 W a gs) = PMF.pure (S1 hk c W a gs) :
       (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)),
     PMF.pure_bind, XProg.law_seq, law_putW, PMF.pure_bind, law_putW]
   rfl
+
+theorem nodup_T (N K k d W oB oW oP : ℕ) :
+    ((stepT N K k d ++ wordsT N K k d W oB oW oP).map Prod.fst).Nodup := by
+  rw [keys_T]; decide
+
+theorem nodup_31 (N K k d : ℕ) : ((tmpl31 N K k d).map Prod.fst).Nodup := by
+  rw [keys_tmpl31]; decide
+
+/-- The gate count and the junk of `convP`. -/
+theorem X2_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
+    X2 W a gs t = if t = mw GS then [] else
+      if t = mw 1 then gatesW (fun i : Fin 10 => i.val) 10 W (predOf 10 gs).1 0 else
+      if t = mw GCNT then List.replicate gs.length false else
+      if t = mw 3 then unaryW W (gs.length + 10) else
+      Function.update (S0 W a gs) (mw GSC) (gsW W gs) t := by
+  have hin : (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS))) ∘ cm13 =
+      fun i => if i = 0 then gsW W gs else [] := by
+    funext i
+    fin_cases i <;> simp (config := {decide := true}) [cm13, S0, Function.update_apply]
+  rw [X2]
+  by_cases ht : ∃ j, cm13 j = t
+  · obtain ⟨j, rfl⟩ := ht
+    rw [run_map_apply cm13_inj, hin, run_convP hW gs hb _ rfl]
+    fin_cases j <;> simp (config := {decide := true}) [cm13, S0, Function.update_apply]
+  · push_neg at ht
+    rw [run_map_apply_not cm13_inj _ _ _ ht]
+    have h1 : t ≠ mw GS := fun e => ht 0 (by rw [e]; rfl)
+    have h2 : t ≠ mw 1 := fun e => ht 1 (by rw [e]; rfl)
+    have h3 : t ≠ mw GCNT := fun e => ht 2 (by rw [e]; rfl)
+    have h4 : t ≠ mw 3 := fun e => ht 3 (by rw [e]; rfl)
+    simp (config := {decide := true}) [h1, h2, h3, h4, Function.update_apply, S0]
+
+theorem X4_word (hW : 0 < W) (hb : BndG W gs) (j : ℕ) (hj : 12 ≤ j) (hj' : j < 120) (h31 : j < 31) :
+    X4 c W a gs (mw ⟨j, hj'⟩) = [] := by
+  have hv : ∀ x : Fin 120, (mw ⟨j, hj'⟩ : Fin 256) = mw x → j = x.val := fun x e => by
+    have := congrArg Fin.val e; simp [ValVM.tWd] at this; omega
+  rw [X4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> intro e <;> have := hv _ e <;> simp at this <;>
+      omega)), Function.update_of_ne (fun e => by have := hv _ e; simp at this; omega),
+    X2_apply W a gs hW hb]
+  have h1 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GS := fun e => by have := hv _ e; simp at this; omega
+  have h2 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw 1 := fun e => by have := hv _ e; simp at this; omega
+  have h3 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GCNT := fun e => by have := hv _ e; simp at this; omega
+  have h4 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw 3 := fun e => by have := hv _ e; simp at this; omega
+  have h5 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GSC := fun e => by have := hv _ e; simp at this; omega
+  have h6 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw SDW := fun e => by have := hv _ e; simp at this; omega
+  simp [h1, h2, h3, h4, h5, h6, Function.update_apply, S0]
+
+theorem X4_key {t : Fin 256} {n : ℕ} (h : (t, n) ∈ tmpl31 N K k c.d) :
+    X4 c W a gs t = List.replicate n false := by
+  rw [X4]; exact tmplS_mem _ (nodup_31 _ _ _ _) (t, n) h _
+
+/-- The content words written by `simTmplP`. -/
+theorem Y4_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
+    run (Prog.map tm31 simTmplP) (X4 c W a gs) t =
+      if t = mw 0 then gadW N K k else if t = mw 1 then gswGadW N K k else
+      if t = mw 2 then zeroW (lenA N K k c.d) else if t = mw 3 then oneW N K else X4 c W a gs t := by
+  have hrun := run_simTmplP (N := N) (K := K) (k := k) (Lw := lenA N K k c.d)
+    (X4 c W a gs ∘ tm31) (fun t ht => by
+      have := X4_word c W a gs hW hb t.val ht (by omega) t.isLt
+      simpa [tm31] using this)
+    (by simp [tm31, X4_key c W a gs (t := mw 4) (n := K) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c W a gs (t := mw 5) (n := N) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c W a gs (t := mw 6) (n := N * K) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c W a gs (t := mw 7) (n := k) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c W a gs (t := mw 8) (n := 2 * k * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c W a gs (t := mw 9) (n := 2 * (2 * k) * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c W a gs (t := mw 10) (n := k * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c W a gs (t := mw 11) (n := lenA N K k c.d) (by simp [tmpl31])])
+  by_cases ht : ∃ j, tm31 j = t
+  · obtain ⟨j, rfl⟩ := ht
+    rw [run_map_apply tm31_inj, hrun]
+    fin_cases j <;> simp (config := {decide := true}) [tm31, Function.update_apply]
+  · push_neg at ht
+    rw [run_map_apply_not tm31_inj _ _ _ ht]
+    have h0 : t ≠ mw 0 := fun e => ht 0 (by rw [e]; rfl)
+    have h1 : t ≠ mw 1 := fun e => ht 1 (by rw [e]; rfl)
+    have h2 : t ≠ mw 2 := fun e => ht 2 (by rw [e]; rfl)
+    have h3 : t ≠ mw 3 := fun e => ht 3 (by rw [e]; rfl)
+    simp [h0, h1, h2, h3]
 
 end PrepT
 
