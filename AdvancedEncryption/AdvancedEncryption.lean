@@ -74,3 +74,8 @@ import PE.Impl.DualUse.Prog.SetupI
 import PE.Impl.DualUse.Prog.DecodeWord
 import PE.Impl.DualUse.Prog.Decode
 import PE.Impl.DualUse.Prog.DecodeLaw
+import PE.Impl.DualUse.Prog.Chi
+import PE.Impl.DualUse.Prog.Auth
+import PE.Impl.DualUse.Prog.ChalI
+import PE.Impl.DualUse.Prog.SetupTime
+import PE.Impl.DualUse.Prog.SetupTime3
