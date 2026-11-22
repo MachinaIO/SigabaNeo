@@ -139,11 +139,11 @@ open Prog
 theorem run_rnd_true (s : Store 8) {b : Bool} {R : List Bool} (h1 : s 1 = true :: b :: R)
     (h4 : s 4 = []) : run rnd s = Function.update (Function.update s 1 R) 3 (b :: s 3) := by
   funext j
-  fin_cases j <;> simp [rnd, run_ifBit, run_prim, Prim.apply, Function.update_apply, h1, h4]
+  fin_cases j <;> simp [rnd, run_ifBit, run_prim, Prim.apply, h1, h4]
 
 theorem run_rnd_false (s : Store 8) {R : List Bool} (h1 : s 1 = false :: R) : run rnd s = s := by
   funext j
-  fin_cases j <;> simp [rnd, run_ifBit, run_prim, Prim.apply, Function.update_apply, h1]
+  fin_cases j <;> simp [rnd, run_ifBit, run_prim, Prim.apply, h1]
 
 theorem run_rnds (R : List Bool) : ∀ (v : List Bool) (s : Store 8) (E : ℕ),
     s 1 = v.flatMap (fun b => [true, b]) ++ false :: R → s 4 = [] → v.length ≤ E →
@@ -159,7 +159,7 @@ theorem run_rnds (R : List Bool) : ∀ (v : List Bool) (s : Store 8) (E : ℕ),
   | b :: v, s, E, h1, h4, hE => by
     obtain ⟨E, rfl⟩ : ∃ E', E = E' + 1 := ⟨E - 1, by simp at hE; omega⟩
     rw [Function.iterate_succ_apply, run_rnd_true s (by simpa using h1) h4]
-    rw [run_rnds R v _ E (by simp) (by simp [Function.update_apply, h4]) (by simp at hE; omega)]
+    rw [run_rnds R v _ E (by simp) (by simp [h4]) (by simp at hE; omega)]
     funext j
     simp [Function.update_apply]
     split_ifs <;> simp_all
@@ -197,7 +197,7 @@ theorem run_appendFR (j : Fin 8) (hj : j ≠ 1) (s : Store 8) :
         (.prim (.snoc 1 true)))) := rfl
   rw [e, run_seq, run_seq, run_iter, run_prim]
   have hj' : (Prim.snoc 1 false).apply s j = s j := by
-    simp [Prim.apply, Function.update_apply, hj]
+    simp [Prim.apply, hj]
   rw [← hj', run_frBody_iter j hj _ _ rfl]
   funext i
   simp only [run_seq, run_prim, Prim.apply, Function.update_apply]
@@ -562,3 +562,44 @@ theorem descLen_post (n n' E nA nM : ℕ) : (Post n E nA nM).descLen = (Post n' 
   descLen_ofPTM _ _ _
 
 end AdvancedEncryption.PE.Generic
+
+/-! ### The post-processing of the reduction -/
+
+namespace AdvancedEncryption.DualUse
+
+open SigabaNeo SigabaNeo.Inline AdvancedEncryption.PE AdvancedEncryption.PE.Generic
+
+theorem postW_eq_postG (ob : Ob) : postW ob = postG ob := rfl
+
+/-- **The hypothesis `hPost` of `acceptProb_reduction`** for the handlers of the date universe
+(state encoding `(dateCodes sig).encState`, invariant `InvS IW W Ok`, encoded states of at most `E`
+bits), with `Post A.time E 10 1`. -/
+theorem hPost_post {Sig : Type} {nS : ℕ} (sig : Encode.FixedEnc Sig nS) (IW : List Bool → Prop)
+    (W : ℕ) (Ok : Sig → Prop) (n E : ℕ)
+    (hE : ∀ st, InvS IW W Ok st → ((dateCodes sig).encState st).length ≤ E) :
+    ∀ (o : List Bool) (st : List Bool × GState PE.DateWindow.dateUniverse Sig), o.length ≤ n →
+      InvS IW W Ok st →
+      (Post n E 10 1).run (pairOut o ((dateCodes sig).encState st)) =
+        PMF.pure (postW (Generic.obs (o, st.2))) :=
+  fun o st ho hst => run_post (dateCodes sig) n E o st ho (postOK_of_invS _ hst (hE st hst))
+
+/-- **The time of the post-processing against the cost of `A`.** -/
+theorem time_post_le_cost {ops : ℕ} (A : Machine ops) (E nA nM : ℕ) :
+    (Post A.time E nA nM).time ≤ (postA E nA nM + postB E nA nM) * A.cost :=
+  time_post_le _ _ _ _ _ (by unfold Machine.cost; omega) A.one_le_cost
+
+variable {m : ℕ}
+
+/-- **Cost of the reduction with this post-processing**: the factor does not depend on `A`
+(`Post 0 …` has the description length of `Post A.time …`). -/
+theorem cost_reduction_post (P : Machine) (A : Machine 3) (H : Fin 3 → Routine (m + 3))
+    (E Q L : ℕ) (D : Machine) :
+    (reduction P (Post A.time E 10 1) A H E Q L D).cost ≤
+      redFactor P (Post 0 E 10 1) H E Q L (postA E 10 1 + postB E 10 1) * A.cost * D.cost := by
+  have h := cost_reduction_le P (Post A.time E 10 1) A H E Q L _ D (time_post_le_cost A E 10 1)
+  have e : redFactor P (Post A.time E 10 1) H E Q L (postA E 10 1 + postB E 10 1) =
+      redFactor P (Post 0 E 10 1) H E Q L (postA E 10 1 + postB E 10 1) := by
+    unfold redFactor; rw [descLen_post A.time 0]
+  rw [← e]; exact h
+
+end AdvancedEncryption.DualUse

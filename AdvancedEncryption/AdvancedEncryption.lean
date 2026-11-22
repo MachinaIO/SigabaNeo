@@ -40,6 +40,7 @@ import PE.Impl.DualUse.SimGame3
 import PE.Impl.DualUse.SimGame5
 import PE.Impl.DualUse.ReductionMachine
 import PE.Impl.DualUse.ReductionOracle
+import PE.Impl.DualUse.Prog.Post
 import PE.Impl.DualUse.GameChain
 import PE.Impl.DualUse.Params.SimTrapNorm
 import PE.Impl.DualUse.Params.Sizes
