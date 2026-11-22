@@ -45,6 +45,24 @@ theorem size_natP_le (t c : Fin k) : ∀ n : ℕ,
         nlinarith
   decreasing_by all_goals omega
 
+@[simp] theorem size_bitAp (t : Fin k) (b : Bool) : (bitAp t b).size = 60 := by
+  simp [bitAp, Prog.size, Prim.pad]
+
+@[simp] theorem size_dblP (t c : Fin k) : (dblP t c).size = 135 := by
+  simp [dblP, forN, bitAp, Prog.size, Prim.pad]
+
+/-- **The state count of `natP`** below a power of two. -/
+theorem size_natP_lt (t c : Fin k) {n B : ℕ} (h : n < 2 ^ (B + 1)) :
+    (natP t c n).size ≤ (B + 1) * 195 + 36 := by
+  have h1 := size_natP_le t c n
+  rw [size_dblP, size_bitAp] at h1
+  have h2 : Nat.log2 n ≤ B := by
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp [Nat.log2_zero]
+    · exact Nat.lt_succ_iff.mp ((Nat.log2_lt hn.ne').2 h)
+  have : (Nat.log2 n + 1) * 195 ≤ (B + 1) * 195 := Nat.mul_le_mul_right _ (by omega)
+  omega
+
 end XProg
 
 end SigabaNeo.Tape
