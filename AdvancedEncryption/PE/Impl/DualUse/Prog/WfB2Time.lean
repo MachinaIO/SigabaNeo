@@ -164,6 +164,29 @@ theorem ph_cnt (β : Fin 256 → ℕ) :
   refine h.mono (fun j => ?_) le_rfl le_rfl
   fin_cases j <;> rfl
 
+/-- The bounds of the frame of `capP` from `β`. -/
+def capOut (W : ℕ) (β : Fin 256 → ℕ) : Fin 5 → ℕ :=
+  ![β (mw 1) + W, 0, max (β (mw 5)) 1, 0, W]
+
+/-- The bounds after `capP`. -/
+def capV (W : ℕ) (β : Fin 256 → ℕ) : Fin 256 → ℕ := embedF (ValVM.mkE capE capE_inj) β (capOut W β)
+
+/-- The steps of `capP`. -/
+def capT2 (W : ℕ) (β : Fin 256 → ℕ) : ℕ :=
+  Prog.capT W (β (mw GCNT) + β (mw 1) + β (mw 5) + β (mw 3) + β (mw 4) + W + 1)
+
+/-- The bounds after `countP` and `capP`. -/
+def ccV (W : ℕ) (β : Fin 256 → ℕ) : Fin 256 → ℕ :=
+  capV W (embedF (ValVM.mkE cntE cntE_inj) β (cntOut W β))
+
+theorem ph_cap (β : Fin 256 → ℕ) :
+    Ph (.frame (ValVM.mkE capE capE_inj) (.prog (Prog.capP W))) β (capT2 W β) (capV W β) := by
+  refine ph_frame _ fun ℓ hℓ => ?_
+  obtain ⟨h1, h2⟩ := Prog.bounds_capP W (β (mw GCNT)) (β (mw 1)) (β (mw 5)) (β (mw 3)) (β (mw 4)) ℓ
+    (fun j => by fin_cases j <;> exact hℓ _)
+  refine ⟨h2, fun j => (h1 j).trans ?_⟩
+  fin_cases j <;> simp [capOut]
+
 /-- The bounds after `simTmplP` (on the words `0 … 30`, with the top `M31`). -/
 def tmOut (M31 : ℕ) (β : Fin 256 → ℕ) : Fin 256 → ℕ :=
   embedF (ValVM.mkE tm31 tm31_inj) β fun j =>
@@ -189,7 +212,7 @@ theorem ph_tm (M31 : ℕ) (β : Fin 256 → ℕ)
 /-- The bounds after `prepT`, step by step. -/
 def vT (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v1 := Prog.lenBoundT (cp (mw GSC) (mw GS)) β0
-  let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  let v2 := ccV W v1
   let v3 := Prog.lenBoundT (clr (mw 12)) v2
   let v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
   let v5 := tmplB tX0 (tmpl31 N K k c.d) v4
@@ -203,7 +226,7 @@ def vT (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
 /-- The steps of `prepT`. -/
 def tT (β0 : Fin 256 → ℕ) (M31 : ℕ) : ℕ :=
   let v1 := Prog.lenBoundT (cp (mw GSC) (mw GS)) β0
-  let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  let v2 := ccV W v1
   let v3 := Prog.lenBoundT (clr (mw 12)) v2
   let v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
   let v5 := tmplB tX0 (tmpl31 N K k c.d) v4
@@ -212,29 +235,25 @@ def tT (β0 : Fin 256 → ℕ) (M31 : ℕ) : ℕ :=
   let v8 := tmplB tX0 (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) v7
   let v9 := Prog.lenBoundT (clr tX0) v8
   let v10 := Function.update v9 (mw OB) (v9 (mw OB) + 1)
-  Prog.timeBoundT (cp (mw GSC) (mw GS)) β0 + (cntT W v1 + (Prog.timeBoundT (clr (mw 12)) v2 +
+  Prog.timeBoundT (cp (mw GSC) (mw GS)) β0 + (cntT W v1 + (capT2 W (embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)) + (Prog.timeBoundT (clr (mw 12)) v2 +
     (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 + (tmplTT tX0 (tmpl31 N K k c.d) v4 +
     ((2 * M31 + 3) * simTmplSweeps N K k + (Prog.timeBoundT (copiesP 0) v6 +
     (tmplTT tX0 (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) v7 +
     (Prog.timeBoundT (clr tX0) v8 + ((1 + 1) * (2 * (supB v9 + 1 + 1) + 3) +
-      (1 + 1) * (2 * (supB v10 + 1 + 1) + 3))))))))))
+      (1 + 1) * (2 * (supB v10 + 1 + 1) + 3)))))))))))
 
 /-- **The phase of `prepT`.** -/
 theorem ph_prepT (β0 : Fin 256 → ℕ) (M31 : ℕ)
     (hin : (fun j => tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-        (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)
-        (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0))))) (tm31 j)) ≤
+      (Prog.lenBoundT (clr (mw 12)) (ccV W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)))) (tm31 j)) ≤
       Sym.bnd (tmVars M31 N K k (lenA N K k c.d)) σTmF)
     (htop : ∀ j, tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-        (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)
-        (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0))))) (tm31 j) ≤ M31) :
+      (Prog.lenBoundT (clr (mw 12)) (ccV W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)))) (tm31 j) ≤ M31) :
     Ph (prepT hk c W) β0 (tT hk c W β0 M31) (vT hk c W β0 M31) := by
   have k31 : ∀ x ∈ tmpl31 N K k c.d, x.1 ≠ tX0 := ne_of_keys (keys_tmpl31 N K k c.d) (by decide)
   have kT : ∀ x ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c),
       x.1 ≠ tX0 := ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)
-  exact (ph_prog _ β0).seq <| (ph_cnt W _).seq <| (ph_prog _ _).seq <| (ph_prog _ _).seq <|
+  exact (ph_prog _ β0).seq <| (ph_cnt W _).seq <| (ph_cap W _).seq <| (ph_prog _ _).seq <| (ph_prog _ _).seq <|
     (ph_tmplP tX0 _ _ k31).seq <| (ph_tm c M31 _ hin htop).seq <| (ph_prog _ _).seq <|
     (ph_tmplP tX0 _ _ kT).seq <| (ph_prog _ _).seq <| (ph_putW _ _ _).seq (ph_putW _ _ _)
 
@@ -289,7 +308,7 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ)
 /-- The bounds after `prepG`, step by step. -/
 def vG (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v1 := Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0
-  let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  let v2 := ccV W v1
   let v3 := Prog.lenBoundT (clr (mw 12)) v2
   let v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
   let v5 := tmplB tX0 (tmpl31 N K k c.d) v4
@@ -302,7 +321,7 @@ def vG (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
 /-- The steps of `prepG`. -/
 def tG (β0 : Fin 256 → ℕ) (M31 : ℕ) : ℕ :=
   let v1 := Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0
-  let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  let v2 := ccV W v1
   let v3 := Prog.lenBoundT (clr (mw 12)) v2
   let v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
   let v5 := tmplB tX0 (tmpl31 N K k c.d) v4
@@ -310,30 +329,26 @@ def tG (β0 : Fin 256 → ℕ) (M31 : ℕ) : ℕ :=
   let v7 := Prog.lenBoundT (copiesP 1) v6
   let v8 := tmplB tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
     (offPsi hk c + 10 * lenPsi N K k)) v7
-  Prog.timeBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0 + (cntT W v1 +
+  Prog.timeBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0 + (cntT W v1 + (capT2 W (embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)) +
     (Prog.timeBoundT (clr (mw 12)) v2 + (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 +
     (tmplTT tX0 (tmpl31 N K k c.d) v4 + ((2 * M31 + 3) * simTmplSweeps N K k +
     (Prog.timeBoundT (copiesP 1) v6 + (tmplTT tX0 (stepG N K k c.d ++ wordsG N K k c.d W
       (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) v7 +
-    (Prog.timeBoundT (clr tX0) v8 + Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8)))))))))
+    (Prog.timeBoundT (clr tX0) v8 + Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8))))))))))
 
 /-- **The phase of `prepG`.** -/
 theorem ph_prepG (β0 : Fin 256 → ℕ) (M31 : ℕ)
     (hin : (fun j => tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-        (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)
-        (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0))))) (tm31 j)) ≤
+      (Prog.lenBoundT (clr (mw 12)) (ccV W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)))) (tm31 j)) ≤
       Sym.bnd (tmVars M31 N K k (lenA N K k c.d)) σTmF)
     (htop : ∀ j, tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-        (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)
-        (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0))))) (tm31 j) ≤ M31) :
+      (Prog.lenBoundT (clr (mw 12)) (ccV W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)))) (tm31 j) ≤ M31) :
     Ph (prepG hk c W) β0 (tG hk c W β0 M31) (vG hk c W β0 M31) := by
   have k31 : ∀ x ∈ tmpl31 N K k c.d, x.1 ≠ tX0 := ne_of_keys (keys_tmpl31 N K k c.d) (by decide)
   have kG : ∀ x ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
       (offPsi hk c + 10 * lenPsi N K k), x.1 ≠ tX0 :=
     ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)
-  exact (ph_prog _ β0).seq <| (ph_cnt W _).seq <| (ph_prog _ _).seq <| (ph_prog _ _).seq <|
+  exact (ph_prog _ β0).seq <| (ph_cnt W _).seq <| (ph_cap W _).seq <| (ph_prog _ _).seq <| (ph_prog _ _).seq <|
     (ph_tmplP tX0 _ _ k31).seq <| (ph_tm c M31 _ hin htop).seq <| (ph_prog _ _).seq <|
     (ph_tmplP tX0 _ _ kG).seq ((ph_prog _ _).seq (ph_prog _ _))
 
@@ -422,7 +437,7 @@ theorem tmOut_eq {N K k : ℕ} (c : Conf N K k) (M31 : ℕ) (β : Fin 256 → �
 /-- The bounds after `prepT` with explicit parameters (`oB oW oP` the stream offsets). -/
 def vTn (N K k d W : ℕ) (lw : List (Fin 256 × ℕ)) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v1 := Prog.lenBoundT (cp (mw GSC) (mw GS)) β0
-  let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  let v2 := ccV W v1
   let v3 := Prog.lenBoundT (clr (mw 12)) v2
   let v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
   let v5 := tmplB tX0 (tmpl31 N K k d) v4
@@ -436,7 +451,7 @@ def vTn (N K k d W : ℕ) (lw : List (Fin 256 × ℕ)) (β0 : Fin 256 → ℕ) (
 /-- The bounds after `prepG` with explicit parameters. -/
 def vGn (N K k d W : ℕ) (lw : List (Fin 256 × ℕ)) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v1 := Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0
-  let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  let v2 := ccV W v1
   let v3 := Prog.lenBoundT (clr (mw 12)) v2
   let v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
   let v5 := tmplB tX0 (tmpl31 N K k d) v4
@@ -473,8 +488,7 @@ theorem vT_le (β0 : Fin 256 → ℕ) (M31 : ℕ) (lw : List (Fin 256 × ℕ))
   simp only [vT, vTn]
   have hm := tmplB_mono tX0 _ _ (TLe_append (TLe_refl (stepT N K k c.d)) hl) (le_refl (Prog.lenBoundT (copiesP 0) (tmOut c M31 (tmplB tX0 (tmpl31 N K k c.d)
       (Prog.lenBoundT (cp (mw GS) (mw GSC)) (Prog.lenBoundT (clr (mw 12))
-        (embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)
-          (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)))))))))
+        (ccV W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0))))))))
   intro t
   have h9 := Prog.lenBoundT_mono (clr tX0) hm
   by_cases e1 : t = mw ZB
@@ -574,18 +588,16 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ)
 set_option maxHeartbeats 2000000 in
 /-- **The steps of `prepT`**, below a uniform bound of its intermediate tapes. -/
 theorem tT_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
-    (h2 : ∀ t, embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)
-      (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)) t ≤ M)
+    (h2 : ∀ t, ccV W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0) t ≤ M)
     (h6 : ∀ t, tmOut c M31 (tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-        (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)
-        (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)))))) t ≤ M)
+      (Prog.lenBoundT (clr (mw 12)) (ccV W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0))))) t ≤ M)
     (h31 : ∀ x ∈ tmpl31 N K k c.d, x.2 ≤ M)
     (hl : ∀ x ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c), x.2 ≤ M) :
     tT hk c W β0 M31 ≤ cntT W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0) +
+      capT2 W (embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0) (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0))) +
       (2 * M31 + 3) * simTmplSweeps N K k + 90 * uT (M + 6) := by
   set v1 := Prog.lenBoundT (cp (mw GSC) (mw GS)) β0
-  set v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  set v2 := ccV W v1
   set v3 := Prog.lenBoundT (clr (mw 12)) v2
   set v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
   set v5 := tmplB tX0 (tmpl31 N K k c.d) v4
@@ -603,12 +615,12 @@ theorem tT_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
     simp only [v10, Function.update_apply]; split_ifs
     · have := h9 (mw OB); omega
     · have := h9 t; omega
-  show Prog.timeBoundT (cp (mw GSC) (mw GS)) β0 + (cntT W v1 + (Prog.timeBoundT (clr (mw 12)) v2 +
+  show Prog.timeBoundT (cp (mw GSC) (mw GS)) β0 + (cntT W v1 + (capT2 W (embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)) + (Prog.timeBoundT (clr (mw 12)) v2 +
     (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 + (tmplTT tX0 (tmpl31 N K k c.d) v4 +
     ((2 * M31 + 3) * simTmplSweeps N K k + (Prog.timeBoundT (copiesP 0) v6 +
     (tmplTT tX0 (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) v7 +
     (Prog.timeBoundT (clr tX0) v8 + ((1 + 1) * (2 * (supB v9 + 1 + 1) + 3) +
-      (1 + 1) * (2 * (supB v10 + 1 + 1) + 3)))))))))) ≤ _
+      (1 + 1) * (2 * (supB v10 + 1 + 1) + 3))))))))))) ≤ _
   have a : Prog.timeBoundT (cp (mw GSC) (mw GS)) β0 ≤ 2 * M + 7 := tb_prim _ β0 M h0
   have b : Prog.timeBoundT (clr (mw 12)) v2 ≤ 2 * M + 7 := tb_prim _ v2 M h2
   have c' : Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 ≤ 2 * M + 7 := tb_prim _ v3 M h3
@@ -641,19 +653,17 @@ theorem tT_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
 set_option maxHeartbeats 2000000 in
 /-- **The steps of `prepG`**, below a uniform bound of its intermediate tapes. -/
 theorem tG_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
-    (h2 : ∀ t, embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)
-      (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)) t ≤ M)
+    (h2 : ∀ t, ccV W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0) t ≤ M)
     (h6 : ∀ t, tmOut c M31 (tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
-      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
-        (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)
-        (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)))))) t ≤ M)
+      (Prog.lenBoundT (clr (mw 12)) (ccV W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0))))) t ≤ M)
     (h31 : ∀ x ∈ tmpl31 N K k c.d, x.2 ≤ M)
     (hl : ∀ x ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
       (offPsi hk c + 10 * lenPsi N K k), x.2 ≤ M) :
     tG hk c W β0 M31 ≤ cntT W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0) +
+      capT2 W (embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0) (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0))) +
       (2 * M31 + 3) * simTmplSweeps N K k + 120 * uT (M + 40) := by
   set v1 := Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0
-  set v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  set v2 := ccV W v1
   set v3 := Prog.lenBoundT (clr (mw 12)) v2
   set v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
   set v5 := tmplB tX0 (tmpl31 N K k c.d) v4
@@ -666,12 +676,12 @@ theorem tG_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
   have h7 : ∀ t, v7 t ≤ M := Sym.lenBoundT_le_const (copiesP 1) rfl h6
   have h8 : ∀ t, v8 t ≤ M := tmplB_le tX0 M _ v7 h7 hl
   have h9 : ∀ t, Prog.lenBoundT (clr tX0) v8 t ≤ M := Sym.lenBoundT_le_const (clr tX0) rfl h8
-  show Prog.timeBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0 + (cntT W v1 +
+  show Prog.timeBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0 + (cntT W v1 + (capT2 W (embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)) +
     (Prog.timeBoundT (clr (mw 12)) v2 + (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 +
     (tmplTT tX0 (tmpl31 N K k c.d) v4 + ((2 * M31 + 3) * simTmplSweeps N K k +
     (Prog.timeBoundT (copiesP 1) v6 + (tmplTT tX0 (stepG N K k c.d ++ wordsG N K k c.d W
       (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) v7 +
-    (Prog.timeBoundT (clr tX0) v8 + Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8))))))))) ≤ _
+    (Prog.timeBoundT (clr tX0) v8 + Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8)))))))))) ≤ _
   have a := timeBoundT_le_pcount (clrsP lowW ⨾ cp (mw GS) (mw GSC)) ⟨loopFree_clrsP _, trivial⟩ β0 h0
   have pa : pcount (clrsP lowW ⨾ cp (mw GS) (mw GSC)) = 34 := by
     simp only [pcount, pcount_clrsP]; rfl

@@ -83,6 +83,11 @@ def cntE : Fin 5 → Fin 256 := ![mw GS, mw GCNT, mw 1, mw 3, mw 4]
 
 theorem cntE_inj : Function.Injective cntE := by decide
 
+/-- The tapes of `capP`: the count `GCNT`, the words `1 5 3 4`. -/
+def capE : Fin 5 → Fin 256 := ![mw GCNT, mw 1, mw 5, mw 3, mw 4]
+
+theorem capE_inj : Function.Injective capE := by decide
+
 /-- The tapes of `simTmplP`: the words `0 … 30`. -/
 def tm31 : Fin 31 → Fin 256 := fun j => mw ⟨j.val, by omega⟩
 
@@ -227,6 +232,7 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 def prepT (W : ℕ) : XProg 256 :=
   .seq (.prog (cp (mw GSC) (mw GS))) <|
   .seq (.frame (ValVM.mkE cntE cntE_inj) (.prog (Prog.countP (2 * W)))) <|
+  .seq (.frame (ValVM.mkE capE capE_inj) (.prog (Prog.capP W))) <|
   .seq (.prog (clr (mw 12))) <|
   .seq (.prog (cp (mw GS) (mw GSC))) <|
   .seq (tmplP ValVM.tX0 (tmpl31 N K k c.d)) <|
@@ -240,6 +246,7 @@ def prepT (W : ℕ) : XProg 256 :=
 def prepG (W : ℕ) : XProg 256 :=
   .seq (.prog (clrsP lowW ⨾ cp (mw GS) (mw GSC))) <|
   .seq (.frame (ValVM.mkE cntE cntE_inj) (.prog (Prog.countP (2 * W)))) <|
+  .seq (.frame (ValVM.mkE capE capE_inj) (.prog (Prog.capP W))) <|
   .seq (.prog (clr (mw 12))) <|
   .seq (.prog (cp (mw GS) (mw GSC))) <|
   .seq (tmplP ValVM.tX0 (tmpl31 N K k c.d)) <|
@@ -317,8 +324,8 @@ variable (W : ℕ) (a : List Bool) (gs : GateList)
 /-- The input, in the machine's coordinates. -/
 def S0 : Store 256 := fun t => if t = mw SDW then a else if t = mw GS then gsW W gs else []
 
-def X2 : Store 256 := Function.update
-  (run (Prog.map cntE (Prog.countP (2 * W))) (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS))))
+def X2 : Store 256 := Function.update (run (Prog.map capE (Prog.capP W))
+  (run (Prog.map cntE (Prog.countP (2 * W))) (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS)))))
   (mw 12) []
 
 def X4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (X2 W a gs) (mw GS) (X2 W a gs (mw GSC)))
@@ -351,8 +358,8 @@ theorem keys_T (N K k d W oB oW oP : ℕ) :
         mw INSW, mw TSl, mw TST, mw TD2, mw TW, mw TPAD, mw TW9, mw TINS, mw 61, mw 62, mw 63] := rfl
 
 theorem X2_tX0 : X2 W a gs tX0 = [] := by
-  rw [X2, Function.update_of_ne (by decide), run_map_apply_not cntE_inj _ _ _ (by decide),
-    Function.update_of_ne (by decide)]
+  rw [X2, Function.update_of_ne (by decide), run_map_apply_not capE_inj _ _ _ (by decide),
+    run_map_apply_not cntE_inj _ _ _ (by decide), Function.update_of_ne (by decide)]
   simp (config := {decide := true}) [S0]
 
 theorem X4_tX0 : X4 c W a gs tX0 = [] := by
@@ -385,6 +392,7 @@ theorem law_prepT : (prepT hk c W).law (S0 W a gs) = PMF.pure (S1 hk c W a gs) :
     simp [coinFreeB, h1, show (copiesP 0).coinFreeB = true from rfl]
   rw [prepT, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind,
     XProg.law_seq, law_frame_map cntE_inj _ (Prog.coinFree_countP (2 * W)), PMF.pure_bind,
+    XProg.law_seq, law_frame_map capE_inj _ (Prog.coinFree_capP W), PMF.pure_bind,
     XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
       from rfl, XProg.law_prim, PMF.pure_bind,
     XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
@@ -413,9 +421,10 @@ theorem nodup_T (N K k d W oB oW oP : ℕ) :
 theorem nodup_31 (N K k d : ℕ) : ((tmpl31 N K k d).map Prod.fst).Nodup := by
   rw [keys_tmpl31]; decide
 
-/-- The gate count. -/
-theorem X2_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
-    X2 W a gs t = if t = mw GCNT then List.replicate gs.length false else
+/-- The gate count before its cap. -/
+theorem X2c_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
+    run (Prog.map cntE (Prog.countP (2 * W))) (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS))) t =
+      if t = mw GCNT then List.replicate gs.length false else
       Function.update (S0 W a gs) (mw GSC) (gsW W gs) t := by
   have hin : (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS))) ∘ cntE =
       fun i => if i = 0 then gsW W gs else [] := by
@@ -425,11 +434,6 @@ theorem X2_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
     ((Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS))) ∘ cntE)
     (by rw [hin]; simp [length_gsW hb, Nat.mul_comm]) (by rw [hin]; simp) (by rw [hin]; simp)
     (by rw [hin]; simp)
-  rw [X2]
-  by_cases h12 : t = mw 12
-  · subst h12; rw [Function.update_self]
-    simp (config := {decide := true}) [S0, Function.update_apply]
-  rw [Function.update_of_ne h12]
   by_cases ht : ∃ j, cntE j = t
   · obtain ⟨j, rfl⟩ := ht
     rw [run_map_apply cntE_inj, hrun, hin]
@@ -439,6 +443,34 @@ theorem X2_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
     have h3 : t ≠ mw GCNT := fun e => ht 1 (by rw [e]; rfl)
     have h1 : t ≠ mw GS := fun e => ht 0 (by rw [e]; rfl)
     simp (config := {decide := true}) [h1, h3, Function.update_apply, S0]
+
+/-- The gate count. -/
+theorem X2_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
+    X2 W a gs t = if t = mw GCNT then List.replicate (min gs.length W) false else
+      Function.update (S0 W a gs) (mw GSC) (gsW W gs) t := by
+  have hc := X2c_apply W a gs hW hb
+  have hin : (run (Prog.map cntE (Prog.countP (2 * W)))
+      (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS)))) ∘ capE =
+      fun i => if i = 0 then List.replicate gs.length false else [] := by
+    funext i
+    simp only [Function.comp_apply]
+    rw [hc]
+    fin_cases i <;> simp (config := {decide := true}) [capE, S0, Function.update_apply]
+  have hrun := Prog.run_capP W gs.length (_ ∘ capE) (by rw [hin]; simp) (by rw [hin]; simp)
+    (by rw [hin]; simp) (by rw [hin]; simp) (by rw [hin]; simp)
+  rw [X2]
+  by_cases h12 : t = mw 12
+  · subst h12; rw [Function.update_self]
+    simp (config := {decide := true}) [S0, Function.update_apply]
+  rw [Function.update_of_ne h12]
+  by_cases ht : ∃ j, capE j = t
+  · obtain ⟨j, rfl⟩ := ht
+    rw [run_map_apply capE_inj, hrun, hin]
+    fin_cases j <;> simp (config := {decide := true}) [capE, S0, Function.update_apply]
+  · push_neg at ht
+    rw [run_map_apply_not capE_inj _ _ _ ht, hc]
+    have h3 : t ≠ mw GCNT := fun e => ht 0 (by rw [e]; rfl)
+    simp [h3]
 
 theorem X4_word (hW : 0 < W) (hb : BndG W gs) (j : ℕ) (hj : 12 ≤ j) (hj' : j < 120) (h31 : j < 31) :
     X4 c W a gs (mw ⟨j, hj'⟩) = [] := by
@@ -539,6 +571,13 @@ theorem X6_eq_S0 (t : Fin 256) (h1 : t ∉ keysT)
   rw [run_map_apply_not tm31_inj _ _ _ h3, X4, tmplS_apply_of_not_mem _ _ _
     (ne_of_keys (keys_tmpl31 N K k c.d) h5), Function.update_of_ne a9, X2,
     Function.update_of_ne (fun e => h3 12 (by rw [e]; rfl)),
+    run_map_apply_not capE_inj _ _ _ (fun j e => by
+      fin_cases j
+      · exact h4 1 (by rw [← e]; rfl)
+      · exact h4 2 (by rw [← e]; rfl)
+      · exact h3 5 (by rw [← e]; rfl)
+      · exact h4 3 (by rw [← e]; rfl)
+      · exact h4 4 (by rw [← e]; rfl)),
     run_map_apply_not cntE_inj _ _ _ h4, Function.update_of_ne a10]
 
 theorem S1_eq_S0 (t : Fin 256) (h1 : t ∉ keysT)
@@ -775,7 +814,8 @@ theorem w1_content (hW : 0 < W) (hb : BndG W gs) :
     simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
 
 theorem w1_GS (hW : 0 < W) (hb : BndG W gs) :
-    w1 hk c W a gs GS = gsW W gs ∧ w1 hk c W a gs GCNT = List.replicate gs.length false := by
+    w1 hk c W a gs GS = gsW W gs ∧
+      w1 hk c W a gs GCNT = List.replicate (min gs.length W) false := by
   refine ⟨?_, ?_⟩ <;>
   · rw [w1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
     simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
@@ -869,7 +909,8 @@ abbrev entS : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool :=
   fun i q => entQ N K (K + 1) (colsW N K (K + 1) 2 (sd.Ψ i)) q
 
 /-- **The words before `fhatC` meet `FInit`.** -/
-theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) :
+theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
+    (hgs : gs.length + 10 ≤ W) :
     FInit (VT N K (K + 1) c.d) K N W (lenA N K (K + 1) 1) (lenA N K (K + 1) c.d) (oneT N K c.d) gs
       (bWs hk c sd) (wWs hk c sd) (entS hk c sd)
       ((w2 hk c W gs sd BSt).drop
@@ -945,7 +986,7 @@ theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) :
     tw9 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     tins := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     gsw := by rw [o2 _ (by decide)]; exact g1
-    gcnt := by rw [o2 _ (by decide), g2, List.length_replicate] }
+    gcnt := by rw [o2 _ (by decide), g2, List.length_replicate]; omega }
 
 theorem vstepT (N K d : ℕ) : VStep (simStepP ginvTopP) (VT N K (K + 1) d) (fT N K d)
     (SimPre N K (K + 1) 1 d (gadW N K (K + 1)) (GPreTop N K (K + 1))) :=
@@ -987,7 +1028,7 @@ theorem w3_FOUT (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) (hgs : g
       simp only [entS, entQ, rget]
       exact length_block (N := 2 * (2 * (K + 1))) (by rw [length_colsW'])
         (by have := q.1.isLt; have := q.2.1.isLt; have := q.2.2.isLt; nlinarith))
-    _ (fInit_w2 hk c W gs sd hN hK hW hb)
+    _ (fInit_w2 hk c W gs sd hN hK hW hb hgs)
 
 theorem w1_GSC (hW : 0 < W) (hb : BndG W gs) (a : List Bool) :
     w1 hk c W a gs GSC = gsW W gs := by
@@ -1007,7 +1048,9 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) (gs : Gat
 
 def Z1 : Store 256 := run (clrsP lowW ⨾ cp (mw GS) (mw GSC)) T
 
-def Z2 : Store 256 := Function.update (run (Prog.map cntE (Prog.countP (2 * W))) (Z1 T)) (mw 12) []
+def Z2 : Store 256 :=
+  Function.update (run (Prog.map capE (Prog.capP W)) (run (Prog.map cntE (Prog.countP (2 * W))) (Z1 T)))
+    (mw 12) []
 
 def Z4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (Z2 W T) (mw GS) (Z2 W T (mw GSC)))
 
@@ -1038,19 +1081,15 @@ theorem Z1_apply (t : Fin 256) :
   · subst h; simp (config := {decide := true})
   · rw [Function.update_of_ne h, if_neg h]
 
-theorem Z2_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t : Fin 256) :
-    Z2 W T t = if t = mw GCNT then List.replicate gs.length false else Z1 T t := by
+theorem Z2c_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t : Fin 256) :
+    run (Prog.map cntE (Prog.countP (2 * W))) (Z1 T) t =
+      if t = mw GCNT then List.replicate gs.length false else Z1 T t := by
   have hin : Z1 T ∘ cntE = fun i => if i = 0 then gsW W gs else [] := by
     funext i
     fin_cases i <;> simp (config := {decide := true}) [cntE, Z1_apply, hT, lowW]
   have hrun := Prog.run_countP (m := 2 * W) (g := gs.length) (by omega) (Z1 T ∘ cntE)
     (by rw [hin]; simp [length_gsW hb, Nat.mul_comm]) (by rw [hin]; simp) (by rw [hin]; simp)
     (by rw [hin]; simp)
-  rw [Z2]
-  by_cases h12 : t = mw 12
-  · subst h12; rw [Function.update_self]
-    simp (config := {decide := true}) [Z1_apply, lowW]
-  rw [Function.update_of_ne h12]
   by_cases ht : ∃ j, cntE j = t
   · obtain ⟨j, rfl⟩ := ht
     rw [run_map_apply cntE_inj, hrun, hin]
@@ -1058,6 +1097,31 @@ theorem Z2_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t :
   · push_neg at ht
     rw [run_map_apply_not cntE_inj _ _ _ ht]
     have h3 : t ≠ mw GCNT := fun e => ht 1 (by rw [e]; rfl)
+    simp [h3]
+
+theorem Z2_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t : Fin 256) :
+    Z2 W T t = if t = mw GCNT then List.replicate (min gs.length W) false else Z1 T t := by
+  have hc := Z2c_apply W gs T hW hb hT
+  have hin : (run (Prog.map cntE (Prog.countP (2 * W))) (Z1 T)) ∘ capE =
+      fun i => if i = 0 then List.replicate gs.length false else [] := by
+    funext i
+    simp only [Function.comp_apply]
+    rw [hc]
+    fin_cases i <;> simp (config := {decide := true}) [capE, Z1_apply, lowW]
+  have hrun := Prog.run_capP W gs.length (_ ∘ capE) (by rw [hin]; simp) (by rw [hin]; simp)
+    (by rw [hin]; simp) (by rw [hin]; simp) (by rw [hin]; simp)
+  rw [Z2]
+  by_cases h12 : t = mw 12
+  · subst h12; rw [Function.update_self]
+    simp (config := {decide := true}) [Z1_apply, lowW]
+  rw [Function.update_of_ne h12]
+  by_cases ht : ∃ j, capE j = t
+  · obtain ⟨j, rfl⟩ := ht
+    rw [run_map_apply capE_inj, hrun, hin]
+    fin_cases j <;> simp (config := {decide := true}) [capE, Z1_apply, lowW]
+  · push_neg at ht
+    rw [run_map_apply_not capE_inj _ _ _ ht, hc]
+    have h3 : t ≠ mw GCNT := fun e => ht 0 (by rw [e]; rfl)
     simp [h3]
 
 theorem Z4_word (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (j : ℕ) (hj : 12 ≤ j)
@@ -1127,6 +1191,7 @@ theorem Z1_tX0 (hX : T tX0 = []) : Z1 T tX0 = [] := by
 theorem Z4_tX0 (hX : T tX0 = []) : Z4 c W T tX0 = [] := by
   rw [Z4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     Function.update_of_ne (by decide), Z2, Function.update_of_ne (by decide),
+    run_map_apply_not capE_inj _ _ _ (by decide),
     run_map_apply_not cntE_inj _ _ _ (by decide), Z1_tX0 T hX]
 
 theorem Z5_tX0 (hX : T tX0 = []) : Z5 c W T tX0 = [] := by
@@ -1151,6 +1216,8 @@ theorem tm31_mem : ∀ j, tm31 j ∈ lowW := by decide
 
 theorem cntE_mem : ∀ j, cntE j ∈ lowW ∨ cntE j = mw GS := by decide
 
+theorem capE_mem : ∀ j, capE j ∈ lowW := by decide
+
 theorem S3_key {t : Fin 256} {n : ℕ}
     (h : (t, n) ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) :
     S3 hk c W T t = List.replicate n false :=
@@ -1172,6 +1239,7 @@ theorem S3_eq_T {t : Fin 256} (h1 : t ∉ keysG)
       rcases hm with e | e | e | e | e | e | e | e <;> rw [e] <;> decide))),
     Function.update_of_ne a7, Z2,
     Function.update_of_ne (fun e => h3 (by rw [e]; decide)),
+    run_map_apply_not capE_inj _ _ _ (fun j e => h3 (by rw [← e]; exact capE_mem j)),
     run_map_apply_not cntE_inj _ _ _ (fun j e => by
       rcases cntE_mem j with m | m
       · exact h3 (by rw [← e]; exact m)
@@ -1196,13 +1264,14 @@ theorem law_prepG (hX : T tX0 = []) (h92 : T (ms 92) = []) :
     simp [coinFreeB, h1, show (copiesP 1).coinFreeB = true from rfl]
   rw [prepG, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc0, PMF.pure_bind,
     XProg.law_seq, law_frame_map cntE_inj _ (Prog.coinFree_countP (2 * W)), PMF.pure_bind,
+    XProg.law_seq, law_frame_map capE_inj _ (Prog.coinFree_capP W), PMF.pure_bind,
     XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
       from rfl, XProg.law_prim, PMF.pure_bind,
     XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
   simp only [run_copy, Prim.apply]
   rw [XProg.law_seq, law_tmplP _ _ _ (by
       rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide),
-        run_map_apply_not cntE_inj _ _ _ (by decide)]
+        run_map_apply_not capE_inj _ _ _ (by decide), run_map_apply_not cntE_inj _ _ _ (by decide)]
       exact Z1_tX0 T hX)
       (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     PMF.pure_bind, XProg.law_seq,
@@ -1224,7 +1293,7 @@ theorem law_prepG (hX : T tX0 = []) (h92 : T (ms 92) = []) :
 
 theorem S3_GS (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
     S3 hk c W T (mw GS) = gsW W gs ∧ S3 hk c W T (mw GSC) = gsW W gs ∧
-      S3 hk c W T (mw GCNT) = List.replicate gs.length false := by
+      S3 hk c W T (mw GCNT) = List.replicate (min gs.length W) false := by
   refine ⟨?_, ?_, ?_⟩ <;>
   · rw [S3_not hk c W T (by decide), Z5_apply]
     simp (config := {decide := true}) only [Y4G_apply c W gs T hW hb hT, if_true, if_false]
@@ -1416,6 +1485,7 @@ theorem w5_spec (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
 
 /-- **The words before `gswC` meet `GInit`.** -/
 theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
+    (hgs : gs.length + 10 ≤ W)
     (hT : T (mw GSC) = gsW W gs) (hA : T (mw SDW) = (sdEnc hk c).enc sd) :
     GInit (VG N K k c.d) W (lenA N K k 2) (lenA N K k c.d) (N * K) (oneG N K k c.d) gs
       (fun i => colsW N K k 2 (sd.Ψ i)) (fun i => colsW N K k c.d (sd.Rm i))
@@ -1458,7 +1528,7 @@ theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb 
     tw9 := L _ _ (by simp [wordsG]) (by decide)
     tins := L _ _ (by simp [wordsG]) (by decide)
     gsw := oG
-    gcnt := by rw [o2 _ (by decide), w4, g3, List.length_replicate] }
+    gcnt := by rw [o2 _ (by decide), w4, g3, List.length_replicate]; omega }
 
 /-- The words after the predicate's run. -/
 def w6 : St := exec (VG N K k c.d) (fG N K k c.d) gswFullC (w4 hk c W T)
@@ -1494,7 +1564,7 @@ theorem w6_spec (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb :
       (oneG N K k c.d) (fV (VG N K k c.d) (fG N K k c.d)) (predOf 10 gs).1 (predOf 10 gs).2 ∧
     w6 hk c W T 61 = concatN (nPos N k) (unaryW (nPos N k)) := by
   have hG := exec_gswC (vstepG N K k c.d).len hgs hb hne (fun i => length_colsW' _ _)
-    (fun i => length_colsW' _ _) _ (gInit_w5 hk c W gs T sd hN hK hW hb hT hA)
+    (fun i => length_colsW' _ _) _ (gInit_w5 hk c W gs T sd hN hK hW hb hgs hT hA)
   have fr : ∀ x : Fin 120, x ∈ [OB, 29, 73, 74, 75] →
       exec (VG N K k c.d) (fG N K k c.d) gswC (w5 hk c W T) x = w4 hk c W T x := by
     intro x hx
@@ -2023,12 +2093,12 @@ theorem wf_wfBody {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) 
     (wfBody hk c W).WF := by
   have hT : runT.WF := wf_compileA _ (stepSpec_simTop N K k 1).wf fhatFullC (by decide +kernel)
   have hG : runG.WF := wf_compileA _ (stepSpec_simGsw N K k 1).wf gswFullC (by decide +kernel)
-  refine ⟨⟨wf_of_wfB rfl, Prog.wf_countP (2 * W), wf_of_wfB rfl, wf_of_wfB rfl,
+  refine ⟨⟨wf_of_wfB rfl, Prog.wf_countP (2 * W), Prog.wf_capP W, wf_of_wfB rfl, wf_of_wfB rfl,
     wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     wf_simTmplP, wf_copiesP 0,
     wf_tmplP _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)), wf_of_wfB rfl, wf_putW _ _,
     wf_putW _ _⟩,
-    hT, ⟨⟨wf_clrsP _, wf_of_wfB rfl⟩, Prog.wf_countP (2 * W), wf_of_wfB rfl, wf_of_wfB rfl,
+    hT, ⟨⟨wf_clrsP _, wf_of_wfB rfl⟩, Prog.wf_countP (2 * W), Prog.wf_capP W, wf_of_wfB rfl, wf_of_wfB rfl,
     wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     wf_simTmplP, wf_copiesP 1,
     wf_tmplP _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), wf_of_wfB rfl,
