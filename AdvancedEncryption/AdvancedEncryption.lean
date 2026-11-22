@@ -52,6 +52,7 @@ import PE.Impl.DualUse.Algo.SimKey
 import PE.Impl.DualUse.Algo.Gates
 import PE.Impl.DualUse.Algo.KeyWords
 import PE.Impl.DualUse.Algo.KeyTry
+import PE.Impl.DualUse.Algo.KeyTrySim
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad
