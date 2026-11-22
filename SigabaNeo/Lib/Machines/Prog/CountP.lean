@@ -250,7 +250,7 @@ theorem coinFree_capP (w : ℕ) : (capP w).CoinFree := by
   simp [capP, forN, capBody, nop, coinFreeB, h]
 
 theorem wf_capP (w : ℕ) : (capP w).WF :=
-  ⟨wf_putW _ _, ⟨⟨trivial, wf_of_wfB rfl, preserves_of_preservesB rfl⟩, trivial⟩⟩
+  ⟨wf_putW _ _, ⟨⟨trivial, wf_of_wfB rfl, preserves_of_preservesB rfl⟩, trivial, trivial, trivial⟩⟩
 
 /-- The bound of the rounds' iterates of `capP`. -/
 def capV (w S O X : ℕ) (j : ℕ) : Fin 5 → ℕ := ![S, O + j, max X 1, w, w]
