@@ -44,6 +44,8 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.SLPTape
 import SigabaNeo.Lib.Lattices.ProgAlgo.SLPPK
 import SigabaNeo.Lib.Lattices.ProgAlgo.SpecT
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimSLP
+import SigabaNeo.Lib.Lattices.ProgAlgo.SimTmpl
+import SigabaNeo.Lib.Lattices.ProgAlgo.KeySum
 
 /-!
 # Lattice library
@@ -99,5 +101,7 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   bounds `C · (L + 1) ^ d`, state counts) — `Blocks` (block-wise programs on ring words: `addRW`,
   `subRW`), `MulAlg` (the product by Horner's rule in `X⁻¹`), `RingProgs` and `MulRW` (`mulRW`),
   `Digits` (`digitRW`, `monoW`, `constW`), `MatAdd` (`matAddW`, `matSubW`), `MatMul` (`matMulW`),
-  `Gadget` (`ginvW`, `gadW`), `Nand` (`nandPKW`).
+  `Gadget` (`ginvW`, `gadW`), `Nand` (`nandPKW`), `SimTmpl` (the content templates `gadW`,
+  `gswGadW`, `zeroW`, `oneW` of the simulation step), `KeySum` (the key-matrix sum `keySumMW` read
+  from the final store of an SLP evaluator, and `W_f`: the sum plus one block).
 -/

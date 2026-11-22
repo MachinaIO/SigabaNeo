@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.SimSLP
+import SigabaNeo.Lib.Lattices.ProgAlgo.SimTmpl
 import SigabaNeo.Lib.Lattices.ProgAlgo.SLPPK
 import SigabaNeo.Lib.Lattices.Algo.SimWords
 
@@ -397,13 +397,6 @@ theorem run_loopJ {N K k m W V off c i : ℕ} (r : Store 86) (ht : KTmpl N K k m
   · funext x
     fin_cases x <;> simp [H, h18, h24, ht.h4, ht.h13, mSum, zeroW]
 
-theorem serF_oneOp_powW (K : ℕ) (y : List Bool) :
-    serF oneOp true (List.replicate K false) y = powW K 0 := by
-  rw [serF_oneOp, powW_zero]
-  cases K with
-  | zero => rfl
-  | succ K => rw [List.replicate_succ]; simp [bitW, zeroW]
-
 theorem run_oSh {K i : ℕ} (t : Store 86) (hb : ∀ x : Fin 86, 33 ≤ x.val → x.val < 41 → t x = [])
     (h21 : t 21 = powW K i) :
     run (map oSh shlP) t = Function.update t 29 (powW K (i + 1)) := by
@@ -471,6 +464,198 @@ theorem run_loopI {N K k m W V off c : ℕ} (r : Store 86) (ht : KTmpl N K k m W
     fin_cases x <;> simp [H, hSk, h21, h31]
   · funext x
     fin_cases x <;> simp [H, h18, h29, ht.h13, mSum, zeroW]
+
+/-- **The positions** in the loop order: the unary words of `pos c i j` for `c < 2k`, `i < k`,
+`j < N`, `W` bits each. -/
+def posW (W N k : ℕ) (pos : ℕ → ℕ → ℕ → ℕ) : List Bool :=
+  concatN (2 * k) fun c => concatN k fun i => concatN N fun j => unaryW W (pos c i j)
+
+/-- The sum over `i < k` of the sums of `(c, i)`. -/
+def sumI (N K k m V off W : ℕ) (st : List Bool) (pos : ℕ → ℕ → ℕ → ℕ) (c : ℕ) : List Bool :=
+  mSum N K k m (sumJ N K k m V off W st pos c) k
+
+theorem keySumMW_eq_mSum (N K k m V off W : ℕ) (st : List Bool) (pos : ℕ → ℕ → ℕ → ℕ) :
+    keySumMW N K k m (fun c i j => readW V off (m * (2 * k) * (N * K)) st (unaryW W (pos c i j))) =
+      mSum N K k m (sumI N K k m V off W st pos) (2 * k) := rfl
+
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSimpArgs false in
+/-- **`keySumP` computes the key-matrix sum** `keySumMW N K k m xW`, the term `xW c i j` being the
+block of the store `s 1` at the position `pos c i j` (`readW`), the positions given in the loop
+order on `s 2` (`posW`); only the output tape `0` changes. -/
+theorem run_keySumP {N K k m W V off : ℕ} (r : Store 86) (ht : KTmpl N K k m W V off r)
+    (hb : ∀ t : Fin 86, 18 ≤ t.val → r t = []) (pos : ℕ → ℕ → ℕ → ℕ)
+    (hpos : ∀ c < 2 * k, ∀ i < k, ∀ j < N, pos c i j ≤ W) (h2 : r 2 = posW W N k pos) :
+    run keySumP r = Function.update r 0 (keySumMW N K k m
+      (fun c i j => readW V off (m * (2 * k) * (N * K)) (r 1) (unaryW W (pos c i j)))) := by
+  set S := posW W N k pos ++ [] with hS
+  have hlu : ∀ c < 2 * k, (concatN k fun i => concatN N fun j => unaryW W (pos c i j)).length =
+      k * (N * W) := fun c hc => length_concatN fun i hi => length_concatN fun j hj =>
+    length_unaryW (hpos c hc i hi j hj)
+  let H : ℕ → Store 86 := fun c => Function.update (Function.update (Function.update
+    (Function.update r 28 (mSum N K k m (sumI N K k m V off W (r 1) pos) c)) 18
+      (S.drop (c * (k * (N * W))))) 23 ((r 7).drop c)) 22 ((r 7).drop (2 * k - c))
+  have hstep : ∀ c < 2 * k, ∀ w, run bodyC (Function.update (H c) 30 w) =
+      Function.update (H (c + 1)) 30 w := by
+    intro c hc w
+    have hD := drop_concatN_append
+      (f := fun c => concatN k fun i => concatN N fun j => unaryW W (pos c i j)) hlu [] hc
+    simp only [bodyC, run_seq, run_copy, run_clear, run_tail]
+    rw [run_loopI (N := N) (K := K) (k := k) (m := m) (W := W) (V := V) (off := off) (c := c)
+      _ (ht.upd 28 (by decide) _ |>.upd 18 (by decide) _ |>.upd 23 (by decide) _
+        |>.upd 22 (by decide) _ |>.upd 30 (by decide) _)
+      (fun x hx => by fin_cases x <;> simp [H] at hx ⊢ <;> (apply hb; decide))
+      (by simp [H, hb 19 (by decide)]) (by simp [H, hb 20 (by decide)])
+      (by simp [H, hb 21 (by decide)]) (by simp [H, hb 24 (by decide)])
+      (by simp [H, hb 25 (by decide)]) (by simp [H, hb 26 (by decide)])
+      (by simp [H, hb 29 (by decide)]) (by simp [H, hb 31 (by decide)])
+      (by simp [H, hb 32 (by decide)]) hc (by simp [H, ht.h7]; omega) pos (hpos c hc)
+      (S.drop ((c + 1) * (k * (N * W)))) (by
+        rw [Function.update_of_ne (by decide)]
+        simp only [H, Function.update_of_ne (show (18 : Fin 86) ≠ 22 by decide),
+          Function.update_of_ne (show (18 : Fin 86) ≠ 23 by decide), Function.update_self]
+        rw [hS, posW, hD])]
+    rw [run_addRWP_mat_map oAc_inj (K := K) (N := N) (L := m * (2 * k)) _
+      (fun x hx => by fin_cases x <;> simp [H] at hx ⊢ <;> (apply hb; decide))
+      (by simp [H, ht.h3]) (by simp [H, ht.h14])
+      (by simp [H, length_mSum]; ring) (by simp [H, length_mSum]; ring)]
+    rw [run_dropP_map oDc_inj _ (by simp [H, hb 33 (by decide)])]
+    funext x
+    fin_cases x <;> simp [H, hb 27 (by decide), hb 29 (by decide), ht.h7, mSum, sumI, Nat.succ_mul]
+  have hS2 : S.drop (2 * k * (k * (N * W))) = [] := by
+    rw [hS, posW, List.drop_left' (length_concatN hlu)]
+  simp only [keySumP, run_seq, run_copy, run_setZero, run_clear]
+  rw [run_forN_idx 30 7 bodyC H (2 * k) hstep _ ?_ (by simp [ht.h7])]
+  · rw [keySumMW_eq_mSum]
+    have e18 : S.drop (2 * k * (k * (N * W))) = r 18 := by rw [hS2, hb 18 (by decide)]
+    have e23 : (r 7).drop (2 * k) = r 23 := by simp [ht.h7, hb 23 (by decide)]
+    simp only [H, e18, e23, Nat.sub_self, List.drop_zero]
+    generalize mSum N K k m (sumI N K k m V off W (r 1) pos) (2 * k) = v
+    clear hstep
+    funext x
+    fin_cases x <;> simp [hb 18 (by decide), hb 22 (by decide), hb 23 (by decide),
+      hb 28 (by decide), hb 30 (by decide)]
+  · have e18 : S.drop (0 * (k * (N * W))) = r 2 := by simp [hS, h2]
+    have e28 : mSum N K k m (sumI N K k m V off W (r 1) pos) 0 =
+        List.replicate (r 13).length false := by simp [mSum, zeroW, ht.h13]
+    have e22 : (r 7).drop (2 * k - 0) = r 22 := by simp [ht.h7, hb 22 (by decide)]
+    simp only [H, e18, e28, e22, List.drop_zero]
+    clear hstep
+    funext x
+    fin_cases x <;> simp
+
+/-! ### Reading the final store of an evaluator -/
+
+theorem mSum_congr {N K k m n : ℕ} {f g : ℕ → List Bool} (h : ∀ t < n, f t = g t) :
+    mSum N K k m f n = mSum N K k m g n := by
+  induction n with
+  | zero => rfl
+  | succ n ih => rw [mSum, mSum, ih (fun t ht => h t (by omega)), h n (by omega)]
+
+theorem keySumMW_congr {N K k m : ℕ} {f g : ℕ → ℕ → ℕ → List Bool}
+    (h : ∀ c < 2 * k, ∀ i < k, ∀ j < N, f c i j = g c i j) :
+    keySumMW N K k m f = keySumMW N K k m g :=
+  mSum_congr fun c hc => mSum_congr fun i hi => mSum_congr fun j hj => by rw [h c hc i hi j hj]
+
+theorem rowSum_eq_mSum (N K k : ℕ) (f : ℕ → List Bool) :
+    ∀ t, rowSum N K k f t = mSum N K k 1 f t
+  | 0 => rfl
+  | t + 1 => by rw [rowSum, mSum, rowSum_eq_mSum N K k f t]
+
+/-- `keySumW` is `keySumMW` with one row. -/
+theorem keySumW_eq_keySumMW (N K k : ℕ) (f : ℕ → ℕ → ℕ → List Bool) :
+    keySumW N K k f = keySumMW N K k 1 f := by
+  simp only [keySumW, keySumMW, rowSum_eq_mSum]
+
+/-- **The block read** from a flattened list of words of `V` bits: `Lx` bits of the entry `j`, after
+`off` bits. -/
+theorem readW_flatten {V off Lx W j : ℕ} (L : List (List Bool)) (hL : ∀ x ∈ L, x.length = V)
+    (hj : j < L.length) (hV : off + Lx ≤ V) :
+    readW V off Lx L.flatten (unaryW W j) = (L[j].drop off).take Lx := by
+  have hlen := length_flatten_of L hL
+  have hle : V ≤ (L.flatten.drop (j * V)).length := by
+    rw [List.length_drop, hlen]
+    have := Nat.mul_le_mul_right V (show j + 1 ≤ L.length by omega)
+    rw [Nat.succ_mul] at this; omega
+  have e : L.flatten.drop (j * V) = L[j] ++ (L.flatten.drop (j * V)).drop V := by
+    rw [← drop_take_flatten L hL j hj, List.take_append_drop]
+  have hj' : (L[j]).length = V := hL _ (List.getElem_mem hj)
+  rw [readW, count_unaryW, Nat.mul_comm V j, e, List.drop_append_of_le_length (by omega),
+    takeD_eq_take (by simp; omega), List.take_append_of_le_length (by simp; omega)]
+
+/-- The words of the final store of an evaluator all have `V` bits. -/
+theorem store_len {ι : Type*} {V : ℕ} {ins : List (List Bool)} (hins : ∀ x ∈ ins, x.length = V)
+    {n : ℕ} (hn : ins.length = n) {ix : ι → ℕ} (hix : ∀ i, ix i < n) {one : List Bool}
+    (hone : one.length = V) (step : List Bool → List Bool → List Bool)
+    (hstep : ∀ a b, a.length = V → b.length = V → (step a b).length = V) (p : SLP ι) :
+    ∀ x ∈ ins ++ [one] ++ SLP.values (fun i => ins.getD (ix i) []) one step p, x.length = V := by
+  intro x hx
+  simp only [List.mem_append, List.mem_singleton] at hx
+  rcases hx with (hx | rfl) | hx
+  · exact hins x hx
+  · exact hone
+  · refine slpRun_len _ one step (fun i => ?_) hone hstep p [] (by simp) x hx
+    rw [List.getD_eq_getElem _ _ (by rw [hn]; exact hix i)]
+    exact hins _ (List.getElem_mem _)
+
+theorem wireIx_lt_store {ι : Type*} {α : Type*} {ins : List α} {n : ℕ} (hn : ins.length = n)
+    {ix : ι → ℕ} (hix : ∀ i, ix i < n) (inp : ι → α) (one : α) (step : α → α → α) (p : SLP ι)
+    (w : Wire ι) : wireIx ix n p.length w < (ins ++ [one] ++ SLP.values inp one step p).length := by
+  have := wireIx_le ix hix p.length w
+  have hv : (SLP.values inp one step p).length = p.length := by
+    rw [SLP.values, length_slpRun]; simp
+  simp [hn, hv]; omega
+
+theorem length_keySumMW (N K k m : ℕ) (f : ℕ → ℕ → ℕ → List Bool) :
+    (keySumMW N K k m f).length = m * (2 * k) * (N * K) := length_mSum _ _ _ _ _ _
+
+/-! ### The short matrix `W_f`: a key sum plus one block
+
+`simKeyP : Prog 94` runs `keySumP` on its tapes `0 … 85`, then reads one more block (`readP`) from a
+second store (`86`) at the unary position on `87` (templates `88` `89` `90` of lengths `W'`, `V'`,
+`off'`) and adds it: `matAddW N K (m 2k) (keySumMW …) (readW V' off' (m 2k N K) …)`. Tapes `91`
+`92` `93` are blank before and after. -/
+
+def oRg : Fin 15 → Fin 94 := ![91, 86, 93, 88, 89, 90, 13, 33, 34, 35, 36, 37, 38, 39, 40]
+def oAf : Fin 28 → Fin 94 := ![92, 0, 91, 3, 14, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55]
+theorem oRg_inj : Function.Injective oRg := by decide
+theorem oAf_inj : Function.Injective oAf := by decide
+
+/-- The tapes of `keySumP` inside `simKeyP`. -/
+def oKs : Fin 86 → Fin 94 := Fin.castLE (by decide)
+theorem oKs_inj : Function.Injective oKs := Fin.castLE_injective _
+
+/-- **The key sum plus one block.** -/
+def simKeyP : Prog 94 :=
+  map oKs keySumP ⨾ cp 93 87 ⨾ map oRg readP ⨾ map oAf addRWP ⨾ cp 0 92 ⨾ clr 92 ⨾ clr 91 ⨾ clr 93
+
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSimpArgs false in
+theorem run_simKeyP {N K k m W V off W' V' off' : ℕ} (r : Store 94)
+    (ht : KTmpl N K k m W V off (r ∘ oKs)) (hb : ∀ t : Fin 94, 18 ≤ t.val → t.val < 86 → r t = [])
+    (hb' : ∀ t : Fin 94, 91 ≤ t.val → r t = []) (pos : ℕ → ℕ → ℕ → ℕ)
+    (hpos : ∀ c < 2 * k, ∀ i < k, ∀ j < N, pos c i j ≤ W) (h2 : r 2 = posW W N k pos)
+    (h88 : (r 88).length = W') (h89 : (r 89).length = V') (h90 : (r 90).length = off') :
+    run simKeyP r = Function.update r 0 (matAddW N K (m * (2 * k))
+      (keySumMW N K k m (fun c i j => readW V off (m * (2 * k) * (N * K)) (r 1) (unaryW W (pos c i j))))
+      (readW V' off' (m * (2 * k) * (N * K)) (r 86) (takeD W' (r 87)))) := by
+  have h13 : (r 13).length = m * (2 * k) * (N * K) := ht.h13
+  have h14 : (r 14).length = m * (2 * k) * N := ht.h14
+  have h3 : (r 3).length = K := ht.h3
+  simp only [simKeyP, run_seq, run_copy, run_clear]
+  rw [run_map_eq_update oKs_inj keySumP r 0 _ (run_keySumP (r ∘ oKs) ht
+    (fun x hx => hb (oKs x) hx (by simp [oKs])) pos hpos h2)]
+  rw [run_map oRg_inj, run_readP (W := W') (V := V') (off := off') (Lx := m * (2 * k) * (N * K)) _
+    (fun x hx => by fin_cases x <;> simp [oRg, oKs] at hx ⊢ <;> (apply hb <;> decide))
+    (by simp [oRg, oKs, h88]) (by simp [oRg, oKs, h89]) (by simp [oRg, oKs, h90])
+    (by simp [oRg, oKs, h13]), extend_update oRg_inj, extend_update oRg_inj, extend_comp_self]
+  rw [run_addRWP_mat_map oAf_inj (K := K) (N := N) (L := m * (2 * k)) _
+    (fun x hx => by fin_cases x <;> simp [oAf, oRg, oKs] at hx ⊢ <;> (apply hb <;> decide))
+    (by simp [oAf, oRg, oKs, h3]) (by simp [oAf, oRg, oKs, h14])
+    (by simp [oAf, oRg, oKs, length_keySumMW]; ring) (by simp [oAf, oRg, oKs, readW]; ring)]
+  funext x
+  fin_cases x <;> simp [oAf, oRg, oKs, hb' 91 (by decide), hb' 92 (by decide), hb' 93 (by decide)]
+
 
 end Prog
 
