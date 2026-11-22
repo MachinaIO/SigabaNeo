@@ -101,6 +101,41 @@ def stC : Code := ofList [.cp GST TST, .cp CQ TW9, .rep CQ (shiftOne GST CBW rX 
 def fhatC : Code :=
   ofList [.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC, gloopC nandC]
 
+theorem exec_stC {S W : ℕ} (hW : 10 ≤ W) (w : St) {C : List Bool} (hC : w CBW = C)
+    (hCl : C.length = S) (hts : (w TSl).length = S) (htst : (w TST).length = (W + 1) * S)
+    (htw9 : (w TW9).length = W - 9) {ins : List (List Bool)} (hins : UV S ins)
+    (hinsl : ins.length = 10) (hI : w INSW = ins.flatten) (htins : (w TINS).length = 10 * S) :
+    exec V f stC w GST = (List.replicate (W - 10) C ++ (C :: ins)).flatten ∧
+      ∀ j, j ≠ GST → j ≠ CQ → j ≠ rX → j ≠ INSW → exec V f stC w j = w j := by
+  rw [show stC = ofList ([.cp GST TST, .cp CQ TW9] ++ [.rep CQ (shiftOne GST CBW rX TSl),
+    .mv GST INSW TINS]) from rfl, exec_ofList_append]
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  set w1 := Function.update (Function.update w GST (w TST)) CQ
+    (Function.update w GST (w TST) TW9) with hw1
+  have e1 : ∀ j, j ≠ GST → j ≠ CQ → w1 j = w j := fun j a1 a2 => by
+    simp [hw1, Function.update_apply, a1, a2]
+  obtain ⟨R1, R2⟩ := exec_shiftRep (V := V) (f := f) (dst := GST) (src := CBW) (sc := rX) (cl := TSl)
+    (ctr := CQ) (by decide) (by decide) (by decide) w1
+    (by rw [e1 CBW (by decide) (by decide), e1 TSl (by decide) (by decide), hC, hCl, hts])
+  have hCQ : (w1 CQ).length = W - 9 := by simp (config := {decide := true}) [hw1, Function.update_apply, htw9]
+  rw [hCQ, e1 CBW (by decide) (by decide), e1 TSl (by decide) (by decide), hC, hts,
+    show w1 GST = w TST by simp (config := {decide := true}) [hw1, Function.update_apply]] at R1
+  generalize exec V f (.rep CQ (shiftOne GST CBW rX TSl)) w1 = v at R1 R2
+  have hrep : UV S (List.replicate (W - 9) C) := fun x hx => by rw [List.eq_of_mem_replicate hx, hCl]
+  rw [exec_mv_shift (d := GST) (s := INSW) (c := TINS) (x := ins.flatten) (L := []) (by decide)
+    (by rw [R2 TINS (by decide) (by decide) (by decide), e1 TINS (by decide) (by decide), htins,
+      length_flatten_of hins, hinsl]) (by rw [R2 INSW (by decide) (by decide) (by decide),
+      e1 INSW (by decide) (by decide), hI, List.append_nil])]
+  refine ⟨?_, fun j a1 a2 a3 a4 => ?_⟩
+  · have hCf : (List.replicate (W - 9) C).flatten.length = (W - 9) * S := by
+      rw [length_flatten_of hrep]; simp
+    rw [Function.update_self, R1, drop_append_drop' (by simp only [List.length_append, hCf]; omega),
+      List.append_assoc, List.drop_left' (by
+        rw [htst, length_flatten_of hins, hinsl, ← Nat.add_mul]; congr 1; omega)]
+    rw [← List.flatten_append, show W - 9 = (W - 10) + 1 by omega, List.replicate_succ',
+      List.append_assoc, List.singleton_append]
+  · rw [Function.update_of_ne a1, Function.update_of_ne a4, R2 j a1 a3 a2, e1 j a1 a2]
+
 end ValVM
 
 end SigabaNeo.Tape
