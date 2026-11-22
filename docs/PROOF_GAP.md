@@ -954,9 +954,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
         under uniqueness and lift success.
       * `restartDecoder_lwe_choose`: Pr[recovered secret ≠ s] ≤ ∏δᵢ + reductionError + Σ 2·exp(−g²/12), with concrete
         choice-based SVP and lift oracles.
-    * Remaining modelling hypothesis: `Compatible` (plant-free, on accepted rows only). It requires the reducer's prefix to
-      generate L0 ∩ W, the projection to act as the final-block matrix, and PL0 ⊆ H. The construction of L from (A, b) is
-      taken literally from Part 47. CBD(3) only. **The only open mathematical quantity in the Lean chain is now δᵢ.**
+    * AttackLattice.lean (axiom-clean) removes `Compatible` and builds the lattice from (A, b).
+      * `attackLattice_eq`: with b = e + As, the attack lattice {z : z_err + A z_sec ≡ z_h·b} equals L0 ⊕ Z(X, 1).
+      * `compatible_ofBasis`: `Compatible` holds for the canonical prefix and final block of ANY ordered Z-basis of L0.
+      * `restartAttack_lwe`: for any reducer mapping block rows (+coins) to an ordered basis of the block's null lattice,
+        Pr[recovered secret ≠ s] ≤ ∏δᵢ + reductionError + Σ 2·exp(−g²/12).
+      * The only residual hypotheses are J + d = N and q ≠ 0. CBD(3) only.
+    * **The Lean chain from (A, b) to secret recovery is complete. The only open mathematical quantity is δᵢ**, the
+      rejection probability of the GS/minimum/prefix-floor test on the reducer's output.
 * **Part 135 (audited, minor caveats; the corrections are in the note's Audit section).**
   [plant_symmetry](research/wall1_plant_symmetry.md): what averaging over the plant can and cannot do.
   * A lattice containing the plant determines it: a second admissible solution exists with probability < 2^−3107.2. So
