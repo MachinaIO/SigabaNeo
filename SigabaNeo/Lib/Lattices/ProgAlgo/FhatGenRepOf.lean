@@ -142,6 +142,158 @@ theorem exec_valC {N k : ℕ} (σ : St) (o : OI N k) (i : Fin k) (base : ℕ) (h
   · intro r h53 h62
     simp [exec, setSL, Function.update_apply, h53, h62]
 
+/-- The codec index with the bit as a natural. -/
+def codecN {N k : ℕ} (o : OI N k) (i : ℕ) : ℕ :=
+  (((o.1.val * 2 + o.2.1.1.val) * k + o.2.1.2.val) * k + i) * N + o.2.2.val
+
+/-- The registers an input-representation body relies on. -/
+def InQ (N k base : ℕ) (σ : St) : Prop :=
+  σ.sc 2 = k ∧ σ.sc 5 = N ∧ σ.sc 6 = 2 ∧ σ.sc 61 = base
+
+theorem iter_inner {N k : ℕ} (tgt : LR) (o : OI N k) (base : ℕ)
+    (hM : base + 4 * k * N * k ≤ E.M) (hkM : k ≤ E.M) :
+    ∀ (j i0 : ℕ) (σ : St), i0 + j ≤ k → InQ N k base σ → ODig o σ → σ.sc 42 = i0 →
+      (σ.ls tgt).length + j ≤ E.C →
+      ∃ sc', (exec E (.seq valC (.seq (.lpush tgt 62) (.inc 42))))^[j] σ =
+          setSL σ sc' (Function.update σ.ls tgt (σ.ls tgt ++
+            (List.range j).map fun x => base + codecN o (i0 + x))) ∧
+        ∀ r : SR, r ≠ 42 → r ≠ 53 → r ≠ 62 → sc' r = σ.sc r
+  | 0, i0, σ, _, _, _, _, _ => ⟨σ.sc, by simp [setSL], fun _ _ _ _ => rfl⟩
+  | j + 1, i0, σ, hj, hq, hd, h42, hC => by
+    rw [Function.iterate_succ_apply, exec_seq]
+    have hi0 : i0 < k := by omega
+    obtain ⟨sc1, e1, d1, f1⟩ := exec_valC (E := E) σ o ⟨i0, hi0⟩ base hd hq.1 hq.2.1 hq.2.2.1 h42
+      hq.2.2.2 hM
+    rw [e1, exec_seq]
+    have hv : base + codec ((o.1, o.2.1, ⟨i0, hi0⟩, o.2.2) : BI N k) ≤ E.M := by
+      have := codec_lt ((o.1, o.2.1, ⟨i0, hi0⟩, o.2.2) : BI N k); omega
+    set σ2 : St := setSL σ (Function.update sc1 42 (i0 + 1)) (Function.update σ.ls tgt
+      (σ.ls tgt ++ [base + codecN o i0]))
+    have e2 : exec E (.inc 42) (exec E (.lpush tgt 62) (setSL σ sc1 σ.ls)) = σ2 := by
+      rw [exec_lpush_lt (setSL σ sc1 σ.ls) tgt 62 (by simp [setSL]; omega)
+        (by simp [setSL, d1]; exact hv)]
+      simp only [exec, setSL, σ2, d1, f1 42 (by decide) (by decide), h42,
+        min_eq_left (show i0 + 1 ≤ E.M by omega)]
+      rfl
+    rw [e2]
+    have hfr : ∀ r : SR, r ≠ 42 → r ≠ 53 → r ≠ 62 → σ2.sc r = σ.sc r := fun r a b c => by
+      simp [σ2, setSL, Function.update_of_ne a, f1 r b c]
+    obtain ⟨sc', e', f'⟩ := iter_inner tgt o base hM hkM j (i0 + 1) σ2 (by omega)
+      ⟨by rw [hfr 2 (by decide) (by decide) (by decide), hq.1],
+        by rw [hfr 5 (by decide) (by decide) (by decide), hq.2.1],
+        by rw [hfr 6 (by decide) (by decide) (by decide), hq.2.2.1],
+        by rw [hfr 61 (by decide) (by decide) (by decide), hq.2.2.2]⟩
+      ⟨by rw [hfr 43 (by decide) (by decide) (by decide), hd.1],
+        by rw [hfr 44 (by decide) (by decide) (by decide), hd.2.1],
+        by rw [hfr 45 (by decide) (by decide) (by decide), hd.2.2.1],
+        by rw [hfr 46 (by decide) (by decide) (by decide), hd.2.2.2]⟩
+      (by simp [σ2, setSL]) (by simp [σ2, setSL]; omega)
+    refine ⟨sc', ?_, fun r a b c => (f' r a b c).trans (hfr r a b c)⟩
+    rw [e']
+    simp only [σ2, setSL, Function.update_idem, Function.update_self, List.append_assoc]
+    congr 3
+    rw [List.range_succ_eq_map]
+    simp [codecN, codec, Nat.add_comm, Nat.add_left_comm]
+
+theorem exec_inBody {N k : ℕ} (tgt : LR) (o : OI N k) (base : ℕ) (σ : St)
+    (hM : base + 4 * k * N * k ≤ E.M) (hkM : k ≤ E.M) (hq : InQ N k base σ) (hd : ODig o σ)
+    (hC : (σ.ls tgt).length + k ≤ E.C) :
+    InQ N k base (exec E (inBody tgt) σ) ∧ ODig o (exec E (inBody tgt) σ) ∧
+      (exec E (inBody tgt) σ).ls tgt = σ.ls tgt ++ (List.range k).map (fun x => base + codecN o x) ∧
+      (∀ r : SR, r ≠ 42 → r ≠ 53 → r ≠ 62 → (exec E (inBody tgt) σ).sc r = σ.sc r) ∧
+      ∀ l : LR, l ≠ tgt → (exec E (inBody tgt) σ).ls l = σ.ls l := by
+  set σ0 := setSL σ (Function.update σ.sc 42 0) σ.ls
+  have e0 : exec E (.zero 42) σ = σ0 := rfl
+  have hs0 : ∀ r : SR, r ≠ 42 → σ0.sc r = σ.sc r := fun r h => by
+    simp [σ0, setSL, Function.update_of_ne h]
+  obtain ⟨sc', e', f'⟩ := iter_inner (E := E) tgt o base hM hkM k 0 σ0 (by omega)
+    ⟨by rw [hs0 2 (by decide), hq.1], by rw [hs0 5 (by decide), hq.2.1],
+      by rw [hs0 6 (by decide), hq.2.2.1], by rw [hs0 61 (by decide), hq.2.2.2]⟩
+    ⟨by rw [hs0 43 (by decide), hd.1], by rw [hs0 44 (by decide), hd.2.1],
+      by rw [hs0 45 (by decide), hd.2.2.1], by rw [hs0 46 (by decide), hd.2.2.2]⟩
+    (by simp [σ0, setSL]) (by simp [σ0, setSL]; exact hC)
+  have hrun : exec E (inBody tgt) σ = setSL σ0 sc' (Function.update σ0.ls tgt (σ0.ls tgt ++
+      (List.range k).map fun x => base + codecN o (0 + x))) := by
+    rw [inBody, exec_seq, e0, exec_rep, show σ0.sc 2 = k by rw [hs0 2 (by decide), hq.1], e']
+  have g : ∀ r : SR, r ≠ 42 → r ≠ 53 → r ≠ 62 → (exec E (inBody tgt) σ).sc r = σ.sc r :=
+    fun r a b c => by rw [hrun]; simp only [setSL]; rw [f' r a b c, hs0 r a]
+  refine ⟨⟨by rw [g 2 (by decide) (by decide) (by decide), hq.1],
+    by rw [g 5 (by decide) (by decide) (by decide), hq.2.1],
+    by rw [g 6 (by decide) (by decide) (by decide), hq.2.2.1],
+    by rw [g 61 (by decide) (by decide) (by decide), hq.2.2.2]⟩,
+    ⟨by rw [g 43 (by decide) (by decide) (by decide), hd.1],
+    by rw [g 44 (by decide) (by decide) (by decide), hd.2.1],
+    by rw [g 45 (by decide) (by decide) (by decide), hd.2.2.1],
+    by rw [g 46 (by decide) (by decide) (by decide), hd.2.2.2]⟩, ?_, g, fun l hl => ?_⟩
+  · rw [hrun]; simp [σ0, setSL]
+  · rw [hrun]; simp [σ0, setSL, Function.update_of_ne hl]
+
+/-- **The representation of an input** (base `ix (i, 0)` in `61`) into `tgt`. -/
+def inRepC (tgt : LR) : Code :=
+  .seq (.seq (.zero 43) (.seq (.zero 44) (.seq (.zero 45) (.seq (.zero 46) (.lnil tgt)))))
+    (oLoop (inBody tgt))
+
+theorem exec_inRepC {A : Type*} {N k : ℕ} (hk : 0 < k) (hN : 0 < N)
+    (ix' : A × BI N k → ℕ) (i : A) (base : ℕ) (hix : ∀ b, ix' (i, b) = base + codec b)
+    (tgt : LR) (σ : St) (hq : InQ N k base σ) (h12 : σ.sc 12 = 4 * k * N)
+    (hM : base + 4 * k * N * k + 4 * k * N + 2 ≤ E.M) (hC : 4 * k * N * k ≤ E.C) :
+    InQ N k base (exec E (inRepC tgt) σ) ∧
+      (exec E (inRepC tgt) σ).ls tgt = repList E ix' (fun b => Wire.input (i, b)) ∧
+      (∀ r : SR, r.val < 42 ∨ (46 < r.val ∧ r.val ≠ 53 ∧ r.val ≠ 62) →
+        (exec E (inRepC tgt) σ).sc r = σ.sc r) ∧
+      ∀ l : LR, l ≠ tgt → (exec E (inRepC tgt) σ).ls l = σ.ls l := by
+  have hkM : k ≤ E.M := by nlinarith
+  have hNM : N ≤ E.M := by nlinarith
+  set σ0 := setSL σ (Function.update (Function.update (Function.update (Function.update σ.sc 43 0)
+    44 0) 45 0) 46 0) (Function.update σ.ls tgt [])
+  have e0 : exec E (.seq (.zero 43) (.seq (.zero 44) (.seq (.zero 45) (.seq (.zero 46)
+      (.lnil tgt))))) σ = σ0 := rfl
+  have hs0 : ∀ r : SR, r.val < 43 ∨ 46 < r.val → σ0.sc r = σ.sc r := fun r hr => by
+    simp only [σ0, setSL]
+    rw [Function.update_of_ne (by rintro rfl; revert hr; decide),
+      Function.update_of_ne (by rintro rfl; revert hr; decide),
+      Function.update_of_ne (by rintro rfl; revert hr; decide),
+      Function.update_of_ne (by rintro rfl; revert hr; decide)]
+  let Q : St → Prop := fun τ => InQ N k base τ ∧
+    (∀ r : SR, r.val < 42 ∨ (46 < r.val ∧ r.val ≠ 53 ∧ r.val ≠ 62) → τ.sc r = σ.sc r) ∧
+    ∀ l : LR, l ≠ tgt → τ.ls l = σ.ls l
+  have hQ0 : Q σ0 := ⟨⟨by rw [hs0 2 (by decide), hq.1], by rw [hs0 5 (by decide), hq.2.1],
+      by rw [hs0 6 (by decide), hq.2.2.1], by rw [hs0 61 (by decide), hq.2.2.2]⟩,
+    fun r hr => hs0 r (by omega), fun l hl => by simp [σ0, setSL, Function.update_of_ne hl]⟩
+  have hf : ∀ o : OI N k, ((List.range k).map fun x => base + codecN o x).length = k :=
+    fun o => by simp
+  have it := iter_oLoop (E := E) (tgt := tgt) (f := fun o => (List.range k).map
+      fun x => base + codecN o x) (Q := Q) hk hN hf (fun τ h => ⟨h.1.1, h.1.2.1, h.1.2.2.1⟩)
+    (fun τ a b c d h => ⟨⟨by simp [setSL, h.1.1], by simp [setSL, h.1.2.1],
+      by simp [setSL, h.1.2.2.1], by simp [setSL, h.1.2.2.2]⟩,
+      fun r hr => by
+        simp only [setSL]
+        rw [Function.update_of_ne (by rintro rfl; revert hr; decide),
+          Function.update_of_ne (by rintro rfl; revert hr; decide),
+          Function.update_of_ne (by rintro rfl; revert hr; decide),
+          Function.update_of_ne (by rintro rfl; revert hr; decide)]
+        exact h.2.1 r hr, fun l hl => h.2.2 l hl⟩)
+    (fun τ o h hd hC' => by
+      obtain ⟨a1, a2, a3, a4, a5⟩ := exec_inBody (E := E) tgt o base τ (by omega) hkM h.1 hd hC'
+      exact ⟨⟨a1, fun r hr => by
+          rw [a4 r (by rintro rfl; revert hr; decide) (by rintro rfl; revert hr; decide)
+            (by rintro rfl; revert hr; decide)]; exact h.2.1 r hr,
+        fun l hl => by rw [a5 l hl]; exact h.2.2 l hl⟩, a2, a3⟩)
+    (by omega) hkM hNM (4 * k * N) σ0 [] le_rfl hQ0 (by simp [σ0, setSL])
+    (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by simp [σ0, setSL])
+    (by simpa using hC)
+  have hrun : exec E (inRepC tgt) σ = (exec E (.seq (inBody tgt) odoO))^[4 * k * N] σ0 := by
+    rw [inRepC, exec_seq, e0, oLoop, exec_rep, hs0 12 (by decide), h12]
+  obtain ⟨hQ, hL, -⟩ := it
+  rw [hrun]
+  refine ⟨hQ.1, ?_, hQ.2.1, hQ.2.2⟩
+  rw [hL, List.nil_append, List.take_of_length_le (by rw [length_enumO']), repList]
+  congr 1
+  apply List.map_congr_left; intro o _
+  apply List.ext_getElem (by simp)
+  intro j h1 h2
+  simp [pos, hix, codec, codecN]
+
 end FhatGen
 
 end SigabaNeo.Lattices
