@@ -1392,6 +1392,59 @@ theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb 
     gsw := oG
     gcnt := by rw [o2 _ (by decide), w4, g3, List.length_replicate] }
 
+/-- The words after the predicate's run. -/
+def w6 : St := exec (VG N K k c.d) (fG N K k c.d) gswFullC (w4 hk c W T)
+
+/-- **The law of the predicate's run.** -/
+theorem law_runG (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs)
+    (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) (hX0 : T tX0 = []) (hX1 : T tX1 = [])
+    (hX2 : T tX2 = []) :
+    runG.law (S3 hk c W T) =
+      PMF.pure (ValVM.enc (s3 hk c W T) (VG N K k c.d) (w6 hk c W T)) := by
+  rw [S3_enc hk c W T hX0 hX1 hX2]
+  exact law_compileA (nocert _) (vstepG N K k c.d) (s3_simPre hk c W gs T hW hb hT hS)
+    (s3_blank hk c W T hS 0 (by decide)) (s3_blank hk c W T hS 1 (by decide))
+    (s3_blank hk c W T hS 2 (by decide)) _ _
+
+theorem w6_eq : w6 hk c W T = exec (VG N K k c.d) (fG N K k c.d) posC
+    (exec (VG N K k c.d) (fG N K k c.d) gswC (w5 hk c W T)) := by
+  rw [w6, w5, gswFullC, show [Code.cp GS GSC, streamsG, oneC, gswC, posC] =
+    [Code.cp GS GSC, streamsG, oneC] ++ ([gswC] ++ [posC]) from rfl, exec_ofList_append,
+    exec_ofList_append]
+  rfl
+
+theorem w6_frame (x : Fin 120) (hx : x ∉ wr gswFullC) : w6 hk c W T x = w4 hk c W T x :=
+  exec_not_mem _ _ _ hx
+
+/-- **The predicate's output wire and the positions.** -/
+theorem w6_spec (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
+    (hgs : gs.length + 10 ≤ W) (hne : gs ≠ [])
+    (hT : T (mw GSC) = gsW W gs) (hA : T (mw SDW) = (sdEnc hk c).enc sd) (hOB : T (mw OB) = [true]) :
+    w6 hk c W T OUTW = SLP.valueOf (fun i : Fin 10 =>
+        ((List.finRange 10).map fun i => jw (colsW N K k 2 (sd.Ψ i)) (colsW N K k c.d (sd.Rm i))
+          (((T (mw SDW)).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val [])
+      (oneG N K k c.d) (fV (VG N K k c.d) (fG N K k c.d)) (predOf 10 gs).1 (predOf 10 gs).2 ∧
+    w6 hk c W T 61 = concatN (nPos N k) (unaryW (nPos N k)) := by
+  have hG := exec_gswC (vstepG N K k c.d).len hgs hb hne (fun i => length_colsW' _ _)
+    (fun i => length_colsW' _ _) _ (gInit_w5 hk c W gs T sd hN hK hW hb hT hA)
+  have fr : ∀ x : Fin 120, x ∈ [OB, 29, 73, 74, 75] →
+      exec (VG N K k c.d) (fG N K k c.d) gswC (w5 hk c W T) x = w4 hk c W T x := by
+    intro x hx
+    obtain ⟨-, -, -, -, -, o2⟩ := w5_spec hk c W gs T hW hb hT
+    rw [exec_not_mem _ _ _ (by revert x; decide), o2 x (by revert x; decide)]
+  obtain ⟨P1, P2⟩ := exec_posC (V := VG N K k c.d) (f := fG N K k c.d) (W' := nPos N k)
+    (M := nPos N k) le_rfl (exec (VG N K k c.d) (fG N K k c.d) gswC (w5 hk c W T))
+    (by rw [fr OB (by decide), w4, S3_eq_T hk c W T (by decide) (by decide) (by decide), hOB])
+    (by rw [fr 29 (by decide), w4_key hk c W T (n := 1) (by simp [wordsG]), List.length_replicate])
+    (by rw [fr 73 (by decide), w4_key hk c W T (n := nPos N k * nPos N k) (by simp [wordsG]),
+      List.length_replicate])
+    (by rw [fr 74 (by decide), w4_key hk c W T (n := nPos N k) (by simp [wordsG])])
+    (by rw [fr 75 (by decide), w4_key hk c W T (n := nPos N k) (by simp [wordsG]),
+      List.length_replicate])
+  rw [w6_eq]
+  exact ⟨by rw [P2 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide)]; exact hG, P1⟩
+
 end RunG
 
 end WB2
