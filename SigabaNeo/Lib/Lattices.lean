@@ -54,6 +54,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.SimTmpl
 import SigabaNeo.Lib.Lattices.ProgAlgo.KeySum
 import SigabaNeo.Lib.Lattices.ProgAlgo.KeySumT
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimStepT
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValArith
 import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenTape
 
 /-!
