@@ -15,13 +15,13 @@ namespace AdvancedEncryption.DualUse.Prog
 open SigabaNeo SigabaNeo.Tape
 
 /-- **The state count of the templates**, values below `2^(B+1)`. -/
-theorem size_tmplP_le {n : ℕ} (c : Fin n) (B : ℕ) : ∀ l : List (Fin n × ℕ),
+theorem size_tmplP_leB {n : ℕ} (c : Fin n) (B : ℕ) : ∀ l : List (Fin n × ℕ),
     (∀ x ∈ l, x.2 < 2 ^ (B + 1)) → (tmplP c l).size ≤ l.length * ((B + 1) * 195 + 36) + 36
   | [], _ => by simp [tmplP, Prog.size, Prim.pad]
   | x :: l, h => by
     rw [tmplP, XProg.size_seq]
     have h1 := XProg.size_natP_lt x.1 c (h x (by simp))
-    have h2 := size_tmplP_le c B l (fun y hy => h y (by simp [hy]))
+    have h2 := size_tmplP_leB c B l (fun y hy => h y (by simp [hy]))
     simp only [List.length_cons]
     nlinarith
 
@@ -80,15 +80,15 @@ theorem size_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K +
   have hGl : TLe (wordsG Nc Kc (Kc + 1) c.d Wc (offPsi hk c) (offR hk c)
       (offPsi hk c + 10 * lenPsi Nc Kc (Kc + 1))) wGc := by
     rw [hd]; exact TLe_wordsG _ _ _ _ _ hoP hoR hoX
-  have hM : Mall < 2 ^ (240 + 1) := Nat.pow_lt_pow_right (by norm_num) (by norm_num)
-  have lt : ∀ {l : List (Fin 256 × ℕ)}, (∀ x ∈ l, x.2 ≤ Mall) → ∀ x ∈ l, x.2 < 2 ^ (240 + 1) :=
+  have hM : Mall < 2 ^ (250 + 1) := Nat.pow_lt_pow_right (by norm_num) (by norm_num)
+  have lt : ∀ {l : List (Fin 256 × ℕ)}, (∀ x ∈ l, x.2 ≤ Mall) → ∀ x ∈ l, x.2 < 2 ^ (250 + 1) :=
     fun h x hx => (h x hx).trans_lt hM
-  have a1 := size_tmplP_le ValVM.tX0 240 (tmpl31 Nc Kc (Kc + 1) c.d) (lt (by rw [hd]; exact s31))
-  have a2 := size_tmplP_le ValVM.tX0 240 _
+  have a1 := size_tmplP_leB ValVM.tX0 250 (tmpl31 Nc Kc (Kc + 1) c.d) (lt (by rw [hd]; exact s31))
+  have a2 := size_tmplP_leB ValVM.tX0 250 _
     (lt (TLe_le (TLe_append (TLe_refl (stepT Nc Kc (Kc + 1) c.d)) hTl) (by rw [hd]; exact sT)))
-  have a4 := size_tmplP_le ValVM.tX0 240 _
+  have a4 := size_tmplP_leB ValVM.tX0 250 _
     (lt (TLe_le (TLe_append (TLe_refl (stepG Nc Kc (Kc + 1) c.d)) hGl) (by rw [hd]; exact sG)))
-  have a5 := size_tmplP_le ValVM.tX0 240 (keyT Nc Kc (Kc + 1) c.d) (lt (by rw [hd]; exact sK))
+  have a5 := size_tmplP_leB ValVM.tX0 250 (keyT Nc Kc (Kc + 1) c.d) (lt (by rw [hd]; exact sK))
   rw [List.length_append, length_stepT, length_wordsT] at a2
   rw [List.length_append, length_stepG, length_wordsG] at a4
   rw [length_tmpl31] at a1

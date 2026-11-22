@@ -10,12 +10,12 @@ The hypotheses of `wfSpec_wfB2`, `time_wfB2_conf`, `size_wfB2_conf` and `time_ke
 parameters `confP`:
 * the windows (`hP_win`): a window predicate parses to its gate list, nonempty, of at most
   `375` gates, every wire index at most `385` (`gates_facts`, through `bnd_predGates`);
-* `treeHeight Np kp = 60 ≤ 64` (`treeHeight_conf`);
-* the stream offsets and `|sdEnc|` below `2^234` (`offs_conf`, closed forms of the encodings);
+* `treeHeight Np kp = 61 ≤ 64` (`treeHeight_conf`);
+* the stream offsets and `|sdEnc|` below `2^238 ≤ Lb = 2^240` (`offs_conf`, closed forms of the encodings);
 * `dateBound ≤ 2^20` and the front end's output `frontL dateBound 512 ≤ 2^64` (`frontL_le`).
 
 **`wfB2_confP`**: at `confP` the block meets its specification `WfSpec`, has at most `2^25`
-states and runs in at most `2^549` steps; **`time_keyP_confP`**: the key component with it.
+states and runs in at most `2^556` steps; **`time_keyP_confP`**: the key component with it.
 -/
 
 namespace AdvancedEncryption.DualUse.Prog
@@ -78,7 +78,7 @@ theorem lenAI {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) :
       10 * (4 * k * N * k) :=
   nT_eq (N := N) (K := K) hk
 
-/-- **The stream offsets and the SimData word at `confP`** are below `2^234`. -/
+/-- **The stream offsets and the SimData word at `confP`** are below `2^240`. -/
 theorem offs_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (hN : N = Nc)
     (hK : K = Kc) (hd : c.d = dc) :
     offB c ≤ Lb ∧ offW hk c ≤ Lb ∧ offPsi hk c ≤ Lb ∧ offR hk c ≤ Lb ∧
@@ -165,13 +165,13 @@ theorem hN_conf : Np = Nc := by rw [Np_def]; rfl
 theorem hK_conf : Kp = Kc := by rw [Kp_def]; rfl
 theorem hd_conf : confP.d = dc := by show dp = dc; rw [dp_def]; rfl
 
-/-- **The block at `confP`**: its specification, at most `2^25` states, at most `2^549` steps on
-SimData words of at most `2^234` bits and gate lists of at most `2^64` bits, every tape below
-`2^240` afterwards. -/
+/-- **The block at `confP`**: its specification, at most `2^25` states, at most `2^556` steps on
+SimData words of at most `2^240` bits and gate lists of at most `2^64` bits, every tape below
+`2^250` afterwards. -/
 theorem wfB2_confP :
     WfSpec hkp confP (wfB2 hkp confP Wc) Wc ∧ (wfB2 hkp confP Wc).size ≤ 2 ^ 25 ∧
       ∀ Lsd Lg : ℕ, Lsd ≤ Lb → Lg ≤ Lgc →
-        XProg.timeBoundT (wfB2 hkp confP Wc) (io2 (R := 254) Lsd Lg 0) ≤ 2 ^ 549 ∧
+        XProg.timeBoundT (wfB2 hkp confP Wc) (io2 (R := 254) Lsd Lg 0) ≤ 2 ^ 556 ∧
         ∀ t, XProg.lenBoundT (wfB2 hkp confP Wc) (io2 (R := 254) Lsd Lg 0) t ≤ Mall := by
   have hth : treeHeight Np (Kp + 1) ≤ 64 := by rw [hN_conf, hK_conf]; exact treeHeight_conf
   obtain ⟨hoB, hoW, hoP, hoR, hoX, -⟩ := offs_conf hkp confP hN_conf hK_conf hd_conf
@@ -182,13 +182,13 @@ theorem wfB2_confP :
 
 /-- **The key component with the block at `confP`**: `time_keyP_wfB2` with every hypothesis on the
 block discharged; what remains is the SimData program `sdP` (its time and its output below
-`2^234` bits, e.g. `Lsd = fixLen (sdEnc hkp confP)`, `offs_conf`). -/
+`2^240` bits, e.g. `Lsd = fixLen (sdEnc hkp confP)`, `offs_conf`). -/
 theorem time_keyP_confP {sdP : XProg 82} {Ls Ts Lsd : ℕ}
     (hsT : XProg.timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
     (hsL : XProg.lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0) (hLsd : Lsd ≤ Lb)
     (cf : KeyCfg) (K₀ : ℕ) :
     XProg.timeBoundT (keyP hkp confP sdP (wfB2 hkp confP Wc) Wc cf) (io2 (R := 254) Ls K₀ 0) ≤
-        Ts + frontT confP.L Wc K₀ + branchT hkp confP (fun _ => 2 ^ 549) (fun _ => Mall) cf
+        Ts + frontT confP.L Wc K₀ + branchT hkp confP (fun _ => 2 ^ 556) (fun _ => Mall) cf
           (keyM hkp confP Lsd Wc cf) +
           clrT (branchL hkp confP (fun _ => Mall) cf (keyM hkp confP Lsd Wc cf)) ∧
       XProg.lenBoundT (keyP hkp confP sdP (wfB2 hkp confP Wc) Wc cf) (io2 (R := 254) Ls K₀ 0) ≤

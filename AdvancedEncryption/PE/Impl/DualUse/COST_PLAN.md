@@ -294,3 +294,33 @@ chal `2^440`, key `2^T + 2^2045` (the uniform key-try bound `20000 (2M+1)^8` at 
   as stated; `simCovered_conf` from `goodTrap_sim`); the public-key components bounded on the
   setup's output bound `2^182` (`time_pub3L_conf'`, …); `dateBound ≤ 2^20` and the front end's
   table (`Gates/WindowBound.lean`); `time_keyPT` (per-tape `W_f` bound, `KeyPTimeT.lean`).
+
+### Status (2026-11-23, night): the `W_f` numerics at `N = 2^34`, `d = 2^61`
+
+* `WfB2Conf.lean` re-established at the merged `confP` (`Np = 2^34`, `dp = 2^61`, `Kp = 2^25`):
+  `Nc = 2^34`, `dc = 2^61`, **`Lb = 2^240`** (the SimData components' output bound
+  `2^180 + sizeSd3/5 ≤ 2^240`; the stream offsets and `|sdEnc|` are `≤ 2^238`, `offs_conf`),
+  `M31c = 2^160` (templates `≤ 2^146`), **`Mall = 2^250`** (tapes `≤ 2^242`), `Msk = 2^233`
+  (frame of `simKeyP` `≤ 2^232`). The certificate lists `L1c`, `L1Gc` are the values of `absC` on
+  `L0c`, `L0Gc`, obtained by kernel reduction of the same terms (`Lean.Kernel.whnf` on an
+  encoding of the result as one numeral; the interpreter's `#eval` is far slower), and checked by
+  `chk_r1`/`chk_r2` (`decide +kernel`, the module ≈ 3 min).
+* Steps: run of `f̂` `≤ 2^551` (≈ `2^550.65`), predicate's run `≤ 2^485` (≈ `2^484.2`),
+  `simKeyP` `≤ 2^555` (`(2·2^233 + 3) · 2^320.6`): **`time_wfB2_conf ≤ 2^556`**.
+  `size_wfB2_conf`: still `≤ 2^25` (templates below `2^251`).
+* **`wfB2_confP`**: `WfSpec hkp confP (wfB2 hkp confP 512) 512`, at most `2^25` states, and for
+  `Lsd ≤ 2^240`, `Lg ≤ 2^64`: at most **`2^556` steps**, every tape at most **`2^250`** bits.
+  **`time_keyP_confP`**: the key component with block time `2^556` and tape bound `2^250`, for a
+  SimData output of at most `2^240` bits.
+
+### Status (2026-11-23, night): attribute hiding from Ring-LWE alone
+
+* `AHFinal.lean`: `wfCost_wfB2 : WfCost (wfB2 hkp confP 512) 512 556` (from `wfB2_confP` on
+  `wfIn (2^240) (frontL confP.L 512)`: `2^556` steps, tapes `≤ 2^250`, `2^25 ≤ 2^200` states),
+  `384 ≤ 512 ≤ 2^200`, so `T = 556 ≤ 2370` discharges the remaining hypothesis of `AHConcrete`:
+  * **`attributeHiding_conf_rlwe`**: from `HardAt (params3 …) kb`, `HardAt (params5 …) kb`,
+    `2645 ≤ kb`;
+  * **`attributeHiding_conf_registry'`**: `RingLWE.decision.Holds → AttributeHiding dateUniverse
+    params (impl hkp confP ms)`, the registry's assumption the only hypothesis;
+  * **`attributeHiding_implP_registry'`**: the same for `implP` (its own `ChiSampler`, `BfSpec`,
+    `CfSpec` arguments).

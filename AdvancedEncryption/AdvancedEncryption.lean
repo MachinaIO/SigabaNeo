@@ -58,6 +58,7 @@ import PE.Impl.DualUse.ReductionSteps
 import PE.Impl.DualUse.AHComps
 import PE.Impl.DualUse.ReductionCompsBound
 import PE.Impl.DualUse.AHConcrete
+import PE.Impl.DualUse.AHFinal
 import PE.Impl.DualUse.GameChain
 import PE.Impl.DualUse.Params.SimTrapNorm
 import PE.Impl.DualUse.Params.Sizes

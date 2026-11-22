@@ -88,7 +88,7 @@ theorem tmplB_mono {n : ℕ} (c : Fin n) : ∀ (l l' : List (Fin n × ℕ)), TLe
   | [], _ :: _, h, _, _, _ => h.elim
   | _ :: _, [], h, _, _, _ => h.elim
 
-theorem natB_le {n : ℕ} (t c : Fin n) (m : ℕ) {β : Fin n → ℕ} {M : ℕ} (h : ∀ i, β i ≤ M)
+theorem natB_leT {n : ℕ} (t c : Fin n) (m : ℕ) {β : Fin n → ℕ} {M : ℕ} (h : ∀ i, β i ≤ M)
     (hm : m ≤ M) : ∀ i, natB t c m β i ≤ M := fun i => by
   simp only [natB]; split_ifs
   · exact hm
@@ -106,7 +106,7 @@ theorem tmplTT_le {n : ℕ} (c : Fin n) (M : ℕ) : ∀ (l : List (Fin n × ℕ)
   | x :: l, β, hβ, hl => by
     simp only [tmplTT, List.length_cons]
     have hx := hl x (by simp)
-    have ih := tmplTT_le c M l (natB x.1 c x.2 β) (natB_le x.1 c x.2 hβ hx)
+    have ih := tmplTT_le c M l (natB x.1 c x.2 β) (natB_leT x.1 c x.2 hβ hx)
       (fun y hy => hl y (by simp [hy]))
     have hs : max (supB β) x.2 ≤ M := max_le (supB_le_of hβ) hx
     have : (2 * x.2 + 1) * (4 * max (supB β) x.2 + 12) ≤ (2 * M + 1) * (4 * M + 12) :=
@@ -116,7 +116,7 @@ theorem tmplTT_le {n : ℕ} (c : Fin n) (M : ℕ) : ∀ (l : List (Fin n × ℕ)
 theorem tmplB_le {n : ℕ} (c : Fin n) (M : ℕ) : ∀ (l : List (Fin n × ℕ)) (β : Fin n → ℕ),
     (∀ i, β i ≤ M) → (∀ x ∈ l, x.2 ≤ M) → ∀ i, tmplB c l β i ≤ M
   | [], β, hβ, _ => hβ
-  | x :: l, β, hβ, hl => tmplB_le c M l _ (natB_le x.1 c x.2 hβ (hl x (by simp)))
+  | x :: l, β, hβ, hl => tmplB_le c M l _ (natB_leT x.1 c x.2 hβ (hl x (by simp)))
       (fun y hy => hl y (by simp [hy]))
 
 end Tmpl
