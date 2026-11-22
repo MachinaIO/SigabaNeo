@@ -668,6 +668,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   SubsetCollision.lean (`subsetSumCollision`, `subgroupCollision`) proves the subset-sum pigeonhole behind Parts 129–130. If
   2^f > |U| (or |B/G| < 2^f), some nonzero ternary z has Σ z_i v_i = 0 (or lies in G), with ‖z‖² equal to a Hamming distance
   ≤ f. Both are accepted on Prove2Me.
+  CBDPaleyZygmund.lean (`paley_zygmund`, `projection_second_moment_le`, `projection_tail_lower`) proves
+  Pr[XᵀQX > 6d/5] ≥ d/(25(d+2)). This is the Paley–Zygmund step behind Part 97's height-zero necessity. All three are accepted
+  on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
