@@ -411,6 +411,117 @@ theorem exec_eBody {A1 Ad N K : ℕ} (w : St) (ht : ITmpl V A1 Ad N K w)
     | (rw [T4 PSt (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
         (by decide), Function.update_of_ne (by decide), hP'])
 
+/-! ### The entries and the inputs -/
+
+/-- The `4k` entries of `ψᵢ`. -/
+def iBody : Code := ofList [.cp CC2 T4k, .rep CC2 eBody]
+
+/-- **The inputs of `f̂`**: the `10` words `ψᵢ`. -/
+def insC : Code := ofList [.cp CA T10, .rep CA iBody]
+
+/-- The entries `(a, c)` of a `2 × 2k` matrix. -/
+def qsL (k : ℕ) : List (Fin 2 × (Fin 2 × Fin k)) := List.finRange 2 ×ˢ cols k
+
+theorem length_qsL (k : ℕ) : (qsL k).length = 2 * (2 * k) := by
+  simp [qsL, cols, List.length_product]
+
+/-- The words of a stream in the order of the inputs: for each entry `q`, its `k × N` items. -/
+def strQ {N K : ℕ} (g : Fin 2 × (Fin 2 × Fin (K + 1)) → Fin (K + 1) → Fin N → List Bool)
+    (qs : List (Fin 2 × (Fin 2 × Fin (K + 1)))) : List Bool :=
+  (qs.flatMap fun q => (List.finRange (K + 1)).flatMap fun i' => (List.finRange N).map (g q i')).flatten
+
+/-- The inputs of the entries `qs`. -/
+def insQ {N K : ℕ} (bF wF : Fin 2 × (Fin 2 × Fin (K + 1)) → Fin (K + 1) → Fin N → List Bool)
+    (ent : Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) (qs : List (Fin 2 × (Fin 2 × Fin (K + 1)))) :
+    List (List Bool) :=
+  qs.flatMap fun q => entryI N K (bF q) (wF q) (ent q)
+
+theorem entryI_shape {A1 Ad N K : ℕ} (hV : V = A1 + Ad + N * K) (hNK : 0 < N * K)
+    {bF wF : Fin (K + 1) → Fin N → List Bool} (hb : ∀ i t, (bF i t).length = A1)
+    (hx : ∀ i t, (wF i t).length = Ad) (E : List Bool) :
+    UV V (entryI N K bF wF E) ∧ (entryI N K bF wF E).length = (K + 1) * N := by
+  refine ⟨fun y hy => ?_, ?_⟩
+  · simp only [entryI, List.mem_flatMap] at hy
+    obtain ⟨j, -, hy⟩ := hy
+    exact (blockI_shape hV hNK (hb j) (hx j) _).1 y hy
+  · simp only [entryI, List.length_flatMap]
+    rw [List.map_congr_left (fun j _ => (blockI_shape (V := V) hV hNK (hb j) (hx j) _).2),
+      List.map_const', List.sum_replicate]; simp
+
+theorem exec_iBody {A1 Ad N K : ℕ} (w : St) (ht : ITmpl V A1 Ad N K w)
+    (htn : (w TN).length = N) (h20 : (w 20).length = K) (hnk : (w TNK).length = N * K)
+    (h4k : (w T4k).length = 2 * (2 * (K + 1)))
+    (bF wF : Fin 2 × (Fin 2 × Fin (K + 1)) → Fin (K + 1) → Fin N → List Bool)
+    (hb : ∀ q i t, (bF q i t).length = A1) (hx : ∀ q i t, (wF q i t).length = Ad)
+    (ent : Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) (he : ∀ q, (ent q).length = N * K)
+    {RB RW RP : List Bool} (hB : w BSt = strQ bF (qsL (K + 1)) ++ RB)
+    (hW : w WSt = strQ wF (qsL (K + 1)) ++ RW)
+    (hP : w PSt = ((qsL (K + 1)).map ent).flatten ++ RP) :
+    exec V f iBody w INSW = (w INSW ++ (insQ bF wF ent (qsL (K + 1))).flatten).drop
+        ((insQ bF wF ent (qsL (K + 1))).flatten.length) ∧
+      exec V f iBody w BSt = RB ∧ exec V f iBody w WSt = RW ∧ exec V f iBody w PSt = RP ∧
+      ITmpl V A1 Ad N K (exec V f iBody w) ∧ ∀ j ∉ wr iBody, exec V f iBody w j = w j := by
+  have hsh : ∀ q, UV V (entryI N K (bF q) (wF q) (ent q)) ∧
+      (entryI N K (bF q) (wF q) (ent q)).length = (K + 1) * N :=
+    fun q => entryI_shape ht.hV ht.hNK (hb q) (hx q) _
+  refine ⟨?_, ?_, ?_, ?_, ht.of_eq fun j hj => exec_not_mem _ _ _ (by revert j hj; decide),
+    fun j hj => exec_not_mem _ _ _ hj⟩ <;>
+  · simp only [iBody, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+    set w1 := Function.update w CC2 (w T4k) with hw1
+    have e1 : ∀ j, j ≠ CC2 → w1 j = w j := fun j h => Function.update_of_ne h _ _
+    have I := exec_rep_inv (V := V) (f := f) (c := CC2) (B := eBody)
+      (fun r w' => r ≤ (qsL (K + 1)).length → ITmpl V A1 Ad N K w' ∧ (w' TN).length = N ∧
+        (w' 20).length = K ∧ (w' TNK).length = N * K ∧
+        w' BSt = strQ bF ((qsL (K + 1)).drop r) ++ RB ∧
+        w' WSt = strQ wF ((qsL (K + 1)).drop r) ++ RW ∧
+        w' PSt = (((qsL (K + 1)).drop r).map ent).flatten ++ RP ∧
+        w' INSW = (w1 INSW ++ (insQ bF wF ent ((qsL (K + 1)).take r)).flatten).drop
+          ((insQ bF wF ent ((qsL (K + 1)).take r)).flatten.length))
+      (fun r w' ih hr => by
+        obtain ⟨t1, tn1, t20, tnk, hB', hW', hP', hI'⟩ := ih (by omega)
+        have hrl : r < (qsL (K + 1)).length := by omega
+        set q := (qsL (K + 1))[r]
+        have c0 : ∀ j, j ≠ CC2 → Function.update w' CC2 (w' CC2).tail j = w' j :=
+          fun j h => Function.update_of_ne h _ _
+        obtain ⟨E1, E2, E3, E4, E5⟩ := exec_eBody (V := V) (f := f)
+          (Function.update w' CC2 (w' CC2).tail)
+          (t1.of_eq fun j hj => c0 j (by revert j hj; decide))
+          (by rw [c0 TN (by decide), tn1]) (by rw [c0 20 (by decide), t20])
+          (by rw [c0 TNK (by decide), tnk]) (bF q) (wF q) (hb q) (hx q) (he q)
+          (RB := strQ bF ((qsL (K + 1)).drop (r + 1)) ++ RB)
+          (RW := strQ wF ((qsL (K + 1)).drop (r + 1)) ++ RW)
+          (RP := (((qsL (K + 1)).drop (r + 1)).map ent).flatten ++ RP)
+          (by rw [c0 BSt (by decide), hB', strQ, List.drop_eq_getElem_cons hrl, List.flatMap_cons,
+            List.flatten_append, List.append_assoc]; rfl)
+          (by rw [c0 WSt (by decide), hW', strQ, List.drop_eq_getElem_cons hrl, List.flatMap_cons,
+            List.flatten_append, List.append_assoc]; rfl)
+          (by rw [c0 PSt (by decide), hP', List.drop_eq_getElem_cons hrl, List.map_cons,
+            List.flatten_cons, List.append_assoc])
+        refine ⟨t1.of_eq fun j hj => by rw [E5 j (by revert j hj; decide), c0 j (by revert j hj; decide)],
+          by rw [E5 TN (by decide), c0 TN (by decide), tn1],
+          by rw [E5 20 (by decide), c0 20 (by decide), t20],
+          by rw [E5 TNK (by decide), c0 TNK (by decide), tnk], E2, E3, E4, ?_⟩
+        rw [E1, c0 INSW (by decide), hI', show (K + 1) * (N * V) =
+          (entryI N K (bF q) (wF q) (ent q)).flatten.length by
+            rw [length_flatten_of (hsh q).1, (hsh q).2]; ring, shift_acc]
+        have e : insQ bF wF ent ((qsL (K + 1)).take (r + 1)) =
+            insQ bF wF ent ((qsL (K + 1)).take r) ++ entryI N K (bF q) (wF q) (ent q) := by
+          rw [insQ, insQ, List.take_succ, List.getElem?_eq_getElem hrl, Option.toList_some,
+            List.flatMap_append, List.flatMap_singleton]
+        rw [e, List.flatten_append]) w1
+      (fun _ => ⟨ht.of_eq fun j hj => e1 j (by revert j hj; decide),
+        by rw [e1 TN (by decide), htn], by rw [e1 20 (by decide), h20],
+        by rw [e1 TNK (by decide), hnk], by rw [e1 BSt (by decide), hB]; rfl,
+        by rw [e1 WSt (by decide), hW]; rfl, by rw [e1 PSt (by decide), hP]; rfl, by simp [insQ]⟩)
+    rw [show (w1 CC2).length = (qsL (K + 1)).length by rw [hw1, Function.update_self, h4k,
+      length_qsL]] at I
+    obtain ⟨-, -, -, -, I5, I6, I7, I8⟩ := I le_rfl
+    first
+    | (rw [I8, List.take_of_length_le le_rfl, e1 INSW (by decide)])
+    | (rw [I5, List.drop_eq_nil_of_le le_rfl]; rfl)
+    | (rw [I6, List.drop_eq_nil_of_le le_rfl]; rfl)
+    | (rw [I7, List.drop_eq_nil_of_le le_rfl]; rfl)
+
 end ValVM
 
 end SigabaNeo.Tape
