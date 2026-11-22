@@ -267,10 +267,23 @@ noncomputable def dumB : XProg 256 :=
 def longB : XProg 256 := clearL [0]
 
 variable (hk c) in
-/-- **The key component.** -/
+/-- The branches on the output of the front end. -/
+noncomputable def branchB (wfB : XProg 256) (cf : KeyCfg) : XProg 256 :=
+  ifBit 1 (winB hk c wfB cf) (ifBlank 1 longB (dumB hk c))
+
+/-- Every tape but `0`. -/
+@[irreducible] def clrAll : List (Fin 256) := (List.finRange 256).filter fun t => t ≠ 0
+
+theorem mem_clrAll (t : Fin 256) : t ∈ clrAll ↔ t ≠ 0 := by simp [clrAll]
+
+theorem length_clrAll_le : clrAll.length ≤ 256 := by
+  rw [clrAll]; exact (List.length_filter_le _ _).trans (by rw [List.length_finRange])
+
+variable (hk c) in
+/-- **The key component**: the SimData block, the front end, the branches, then every tape but `0`
+cleared (for the per-tape length bound). -/
 noncomputable def keyP (sdP : XProg 82) (wfB : XProg 256) (W : ℕ) (cf : KeyCfg) : XProg 256 :=
-  seq (frame eSd sdP) <| seq (frame eFr (frontP c.L W)) <|
-    ifBit 1 (winB hk c wfB cf) (ifBlank 1 longB (dumB hk c))
+  seq (frame eSd sdP) <| seq (frame eFr (frontP c.L W)) <| seq (branchB hk c wfB cf) (clearL clrAll)
 
 /-! ### The laws of the branches -/
 
@@ -430,6 +443,35 @@ theorem law_winB (wfB : XProg 256) {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : Key
 /-! ### The law of the key component -/
 
 variable (hk c) in
+/-- The branches on the output of the front end. -/
+theorem law_branchB {wfB : XProg 256} {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg)
+    (hcf : cf.Valid hk c) (sd : SimData hk c) (C : List Bool) :
+    (branchB hk c wfB cf).law (io2 (R := 254) ((sdEnc hk c).enc sd) (frontV c.L W C) []) =
+      (KGsim sd C).map fun w => io2 (R := 254) w [] [] := by
+  rw [branchB, law_ifBit]
+  by_cases hl : C.length ≤ c.L
+  · by_cases hw : ∃ w : Window, winWord w = C
+    · rw [frontV_win hl hw, if_pos (by simp [io2])]
+      exact law_winB hk c wfB hwf cf hcf sd C hl hw
+    · unfold KGsim
+      rw [if_pos hl, frontV_short_not hl hw, if_neg hw, if_neg (by simp [io2]), law_ifBlank,
+        if_neg (by simp [io2]), law_dumB, PMF.pure_map]
+  · unfold KGsim
+    rw [frontV_long hl, if_neg hl, if_neg (by simp [io2]), law_ifBlank, if_pos (by simp [io2]),
+      law_longB, PMF.pure_map]
+
+theorem law_clrAll (w : List Bool) : (clearL clrAll).law (io2 (R := 254) w [] []) =
+    PMF.pure (io2 (R := 254) w [] []) := by
+  rw [law_clearL]
+  congr 1
+  funext t
+  simp only [mem_clrAll]
+  by_cases h : t = 0
+  · subst h; simp
+  · have : t.val ≠ 0 := fun e => h (Fin.ext e)
+    simp [h, io2, this]
+
+variable (hk c) in
 /-- **The law of the key component**: for every query `C`, the image of the simulated key oracle
 `KGsim (sdOf p) C` of the simulation data of the packed secret. -/
 theorem law_keyP {Sig : Type} {sdP : XProg 82} {encS : Sig → List Bool}
@@ -439,24 +481,18 @@ theorem law_keyP {Sig : Type} {sdP : XProg 82} {encS : Sig → List Bool}
     (keyP hk c sdP wfB W cf).law (io2 (R := 254) (encS p) C []) =
       (KGsim (sdOf p) C).map fun w => io2 (R := 254) w [] [] := by
   rw [keyP, law_seq_pure (by rw [law_frame, io2_eSd, hsd.law p hp, PMF.pure_map, embedF_eSd]),
-    law_seq_pure (by rw [law_frame, io2_eFr, law_frontP, PMF.pure_map, embedF_eFr]), law_ifBit]
-  by_cases hl : C.length ≤ c.L
-  · by_cases hw : ∃ w : Window, winWord w = C
-    · rw [frontV_win hl hw, if_pos (by simp [io2])]
-      exact law_winB hk c wfB hwf cf hcf (sdOf p) C hl hw
-    · unfold KGsim
-      rw [if_pos hl, frontV_short_not hl hw, if_neg hw, if_neg (by simp [io2]), law_ifBlank,
-        if_neg (by simp [io2]), law_dumB, PMF.pure_map]
-  · unfold KGsim
-    rw [frontV_long hl, if_neg hl, if_neg (by simp [io2]), law_ifBlank, if_pos (by simp [io2]),
-      law_longB, PMF.pure_map]
+    law_seq_pure (by rw [law_frame, io2_eFr, law_frontP, PMF.pure_map, embedF_eFr]), law_seq,
+    law_branchB hk c hwf cf hcf, PMF.bind_map]
+  have e : (clearL clrAll).law ∘ (fun w => io2 (R := 254) w [] []) =
+      PMF.pure ∘ (fun w => io2 (R := 254) w [] []) := funext law_clrAll
+  rw [e, PMF.bind_pure_comp]
 
 theorem wf_keyP {sdP : XProg 82} (hsd : sdP.WF) {wfB : XProg 256} (hwf : wfB.WF) (W : ℕ)
     (cf : KeyCfg) : (keyP hk c sdP wfB W cf).WF :=
   ⟨hsd, wf_frontP _ _,
-    ⟨trivial, hwf, wf_prefP _ _ _ _ _, wf_putW _ _, wf_putW _ _,
+    ⟨⟨trivial, hwf, wf_prefP _ _ _ _ _, wf_putW _ _, wf_putW _ _,
       wf_tmplP _ _ (keyTmpl_ne (Or.inr (Or.inr rfl))), ProgKey.wf_keyTrySimCoinsP, wf_clearL _⟩,
-    wf_clearL _, trivial, wf_prefP _ _ _ _ _, wf_putW _ _, trivial, trivial⟩
+    wf_clearL _, trivial, wf_prefP _ _ _ _ _, wf_putW _ _, trivial, trivial⟩, wf_clearL _⟩
 
 /-! ### The packed challenger -/
 
