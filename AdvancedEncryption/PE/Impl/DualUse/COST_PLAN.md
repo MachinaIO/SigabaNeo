@@ -141,3 +141,27 @@ Remaining (in order):
   Then the cost: per-instruction bounds of `compileA` with static word bounds, the steps'
   summaries (`xsound_simStepP`; the Ring-GSW step needs its own), `natP`/`simTmplP`/`simKeyP`
   bounds, `time_keyP` with the per-tape bound of `wfB2`, the size, the numerics at `confP`.
+
+### Status (2026-11-23, later): `wfSpec_wfB2` proven
+
+* **`wfSpec_wfB2`** (`PE/Impl/DualUse/Prog/WfB2.lean`): `WfSpec hk c (wfB2 hk c W) W` for
+  `c : Conf N K (K + 1)`, `0 < N`, `0 < K`, and every window predicate with `parse C ≠ []`,
+  `|parse C| + 10 ≤ W`, `BndG W (parse C)`. Axioms: `propext`, `Classical.choice`, `Quot.sound`.
+  Chain: `law_prepT` → `law_runT` (`law_compileA`, `vstepT` from `stepSpec_simTop`, `s1_simPre`,
+  `fInit_w2`, `exec_fhatC`) → `law_prepG` (`s3_simPre`) → `law_runG` (`gInit_w5`, `exec_gswC`,
+  `exec_posC`) → `law_keyPrep` → `law_keyF` (`key_run`: `run_simKeyP_B2`, the identification
+  `fhatOut_eq` / `predOut_eq` with the stores `storeT` / `storeG` of `simKeyStoreW`, `biIx_out`:
+  the output coefficient `(0, colE c, i, j)` sits at `(c k + i) N + j` of the bundle) →
+  `law_clrsP` → the frame `eW` (`swp_eq`).
+* Well-formedness: `Lib/Lattices/ProgAlgo/ValWF.lean` (`wf_compileA`: a compiled code is well
+  formed when no loop body writes its counter, `loopOkB`, checked by `decide +kernel`).
+* `wordsG` gained the template `TNK` (`oneC` moves `oneW` with it).
+
+### The cost of `wfB2` (route)
+
+* Loops of compiled code are not framed: a round of `rep` costs `2·M + 3` with `M` the longest of
+  the 256 tapes (≈ 2^239, the doubled store `TD2`). The rounds number ≈ 2^190 (≈ the steps), so the
+  sweeps add ≈ 2^431, far below the step's arithmetic: no change of the compiler is needed.
+* `costC`: structural recursion over a code from static word bounds `B` (closed under `cp`, `gate`),
+  the step's bound `Tst` (from `xsound_simStepP`; the Ring-GSW step needs its own certificate),
+  `V`, `M`; per instruction the closed-form bounds of `inP`, `outP`, `mvPc`, `dropPc`.
