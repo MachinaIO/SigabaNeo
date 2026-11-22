@@ -635,6 +635,119 @@ theorem tT_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
   generalize uT (M + 6) = U at *
   omega
 
+set_option maxHeartbeats 2000000 in
+/-- **The steps of `prepG`**, below a uniform bound of its intermediate tapes. -/
+theorem tG_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
+    (h2 : ∀ t, embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)
+      (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)) t ≤ M)
+    (h6 : ∀ t, tmOut c M31 (tmplB tX0 (tmpl31 N K k c.d) (Prog.lenBoundT (cp (mw GS) (mw GSC))
+      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
+        (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)
+        (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0)))))) t ≤ M)
+    (h31 : ∀ x ∈ tmpl31 N K k c.d, x.2 ≤ M)
+    (hl : ∀ x ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
+      (offPsi hk c + 10 * lenPsi N K k), x.2 ≤ M) :
+    tG hk c W β0 M31 ≤ cntT W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0) +
+      (2 * M31 + 3) * simTmplSweeps N K k + 120 * uT (M + 40) := by
+  set v1 := Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0
+  set v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
+  set v3 := Prog.lenBoundT (clr (mw 12)) v2
+  set v4 := Prog.lenBoundT (cp (mw GS) (mw GSC)) v3
+  set v5 := tmplB tX0 (tmpl31 N K k c.d) v4
+  set v6 := tmOut c M31 v5
+  set v7 := Prog.lenBoundT (copiesP 1) v6
+  set v8 := tmplB tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
+    (offPsi hk c + 10 * lenPsi N K k)) v7
+  have h3 : ∀ t, v3 t ≤ M := Sym.lenBoundT_le_const (clr (mw 12)) rfl h2
+  have h4 : ∀ t, v4 t ≤ M := Sym.lenBoundT_le_const (cp (mw GS) (mw GSC)) rfl h3
+  have h7 : ∀ t, v7 t ≤ M := Sym.lenBoundT_le_const (copiesP 1) rfl h6
+  have h8 : ∀ t, v8 t ≤ M := tmplB_le tX0 M _ v7 h7 hl
+  have h9 : ∀ t, Prog.lenBoundT (clr tX0) v8 t ≤ M := Sym.lenBoundT_le_const (clr tX0) rfl h8
+  show Prog.timeBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0 + (cntT W v1 +
+    (Prog.timeBoundT (clr (mw 12)) v2 + (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 +
+    (tmplTT tX0 (tmpl31 N K k c.d) v4 + ((2 * M31 + 3) * simTmplSweeps N K k +
+    (Prog.timeBoundT (copiesP 1) v6 + (tmplTT tX0 (stepG N K k c.d ++ wordsG N K k c.d W
+      (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) v7 +
+    (Prog.timeBoundT (clr tX0) v8 + Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8))))))))) ≤ _
+  have a := timeBoundT_le_pcount (clrsP lowW ⨾ cp (mw GS) (mw GSC)) ⟨loopFree_clrsP _, trivial⟩ β0 h0
+  have pa : pcount (clrsP lowW ⨾ cp (mw GS) (mw GSC)) = 34 := by
+    simp only [pcount, pcount_clrsP]; rfl
+  rw [pa] at a
+  have b : Prog.timeBoundT (clr (mw 12)) v2 ≤ 2 * M + 7 := tb_prim _ v2 M h2
+  have c' : Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 ≤ 2 * M + 7 := tb_prim _ v3 M h3
+  have d := tmplTT_le tX0 M _ v4 h4 h31
+  have e := timeBoundT_le_pcount (copiesP 1) ⟨trivial, trivial, trivial, trivial, trivial, trivial⟩
+    v6 h6
+  have f := tmplTT_le tX0 M _ v7 h7 hl
+  have g : Prog.timeBoundT (clr tX0) v8 ≤ 2 * M + 7 := tb_prim _ v8 M h8
+  have g' : Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8) ≤ 2 * M + 7 :=
+    tb_prim _ _ M h9
+  have l31 : (tmpl31 N K k c.d).length = 8 := rfl
+  have lG : (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
+    (offPsi hk c + 10 * lenPsi N K k)).length = 46 := rfl
+  have pc : pcount (copiesP 1) = 6 := rfl
+  rw [l31] at d
+  rw [lG] at f
+  rw [pc] at e
+  have u1 : uT M ≤ uT (M + 40) := by simp only [uT]; nlinarith
+  have u2 : 2 * M + 7 ≤ uT (M + 40) := (le_uT M).trans u1
+  have u3 : 6 * (2 * (M + 6) + 5) ≤ 6 * uT (M + 40) := by simp only [uT]; nlinarith
+  have u0 : 34 * (2 * (M + 34) + 5) ≤ 34 * uT (M + 40) := by simp only [uT]; nlinarith
+  have hd' : (8 + 1) * ((2 * M + 1) * (4 * M + 12)) ≤ 9 * uT (M + 40) := by
+    have : (2 * M + 1) * (4 * M + 12) = uT M := rfl
+    rw [this]; nlinarith
+  have hf' : (46 + 1) * ((2 * M + 1) * (4 * M + 12)) ≤ 47 * uT (M + 40) := by
+    have : (2 * M + 1) * (4 * M + 12) = uT M := rfl
+    rw [this]; nlinarith
+  generalize (2 * M + 1) * (4 * M + 12) = P at d f hd' hf'
+  generalize uT (M + 40) = U at *
+  omega
+
+set_option maxHeartbeats 2000000 in
+/-- **The steps of the key sum's preparation.** -/
+theorem tK_le (N K k d : ℕ) (β : Fin 256 → ℕ) (M : ℕ) (h0 : ∀ t, β t ≤ M)
+    (hl : ∀ x ∈ keyT N K k d, x.2 ≤ M) :
+    Prog.timeBoundT (clrsP keyClr) β + (tmplTT tX0 (keyT N K k d) (Prog.lenBoundT (clrsP keyClr) β) +
+      (1 + 1) * (2 * (supB (tmplB tX0 (keyT N K k d) (Prog.lenBoundT (clrsP keyClr) β)) + 1 + 1) + 3))
+      ≤ 120 * uT (M + 100) := by
+  have h1 : ∀ t, Prog.lenBoundT (clrsP keyClr) β t ≤ M :=
+    Sym.lenBoundT_le_const (clrsP keyClr) (by
+      show (clrsP keyClr).noGrowB = true
+      have : ∀ l : List (Fin 256), (clrsP l).noGrowB = true := by
+        intro l; induction l with
+        | nil => rfl
+        | cons x l ih => simp [clrsP, noGrowB, ih, Prim.noGrowB]
+      exact this _) h0
+  have a := timeBoundT_le_pcount (clrsP keyClr) (loopFree_clrsP _) β h0
+  rw [pcount_clrsP, show keyClr.length = 92 from rfl] at a
+  have hd := tmplTT_le tX0 M _ _ h1 hl
+  rw [show (keyT N K k d).length = 18 from rfl] at hd
+  have s := supB_le_of (tmplB_le tX0 M _ _ h1 hl)
+  have u1 : (92 + 1) * (2 * (M + (92 + 1)) + 5) ≤ 93 * uT (M + 100) := by simp only [uT]; nlinarith
+  have u2 : (18 + 1) * ((2 * M + 1) * (4 * M + 12)) ≤ 19 * uT (M + 100) := by
+    have : (2 * M + 1) * (4 * M + 12) = uT M := rfl
+    rw [this]; have : uT M ≤ uT (M + 100) := by simp only [uT]; nlinarith
+    nlinarith
+  have u3 : (1 + 1) * (2 * (supB (tmplB tX0 (keyT N K k d) (Prog.lenBoundT (clrsP keyClr) β)) + 1 + 1) + 3)
+      ≤ uT (M + 100) := by simp only [uT]; nlinarith
+  generalize (2 * M + 1) * (4 * M + 12) = P at hd u2
+  generalize uT (M + 100) = U at *
+  omega
+
+/-- **The steps of the final cleanup.** -/
+theorem tF_le (β : Fin 256 → ℕ) (M : ℕ) (h0 : ∀ t, β t ≤ M) :
+    Prog.timeBoundT (clrsP finClr) β ≤ 256 * (2 * (M + 256) + 5) := by
+  have a := timeBoundT_le_pcount (clrsP finClr) (loopFree_clrsP _) β h0
+  rw [pcount_clrsP] at a
+  have : finClr.length ≤ 255 := by
+    have : finClr.length ≤ 256 := (List.length_filter_le _ _).trans (by simp)
+    have h2 : finClr.length < 256 := by
+      rw [finClr]
+      exact List.length_filter_lt_length_iff_exists.mpr ⟨mw SDW, List.mem_finRange _, by simp⟩
+    omega
+  calc _ ≤ (finClr.length + 1) * (2 * (M + (finClr.length + 1)) + 5) := a
+    _ ≤ 256 * (2 * (M + 256) + 5) := Nat.mul_le_mul (by omega) (by omega)
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
