@@ -28,7 +28,9 @@ distinguisher `D`):
 * `Machine.cost_chain_le`: `cost ≤ chainConst … · A.cost · D.cost`, with
   `chainConst = 60 · R · 3 ^ K₀ · e + 11 P.time + 11 · chainSlope + 24`: the preparation enters
   additively, through its states (in `R`), its tapes (in `K₀`) and its time.
-* `three_pow_le_two_pow`: `3 ^ K ≤ 2 ^ (65 K / 41 + 1)`, for exponent arithmetic.
+* `three_pow_le_two_pow`: `3 ^ K ≤ 2 ^ (65 K / 41 + 1)`, and `chainConst_le_two_pow`:
+  `chainConst ≤ 2 ^ (r + g + 11 + 65 k / 41) + 2 ^ (t + 6)` from `states ≤ 2 ^ r`, `time ≤ 2 ^ t`,
+  `tapes ≤ k`, `entry bits ≤ 2 ^ g`, for exponent arithmetic.
 -/
 
 namespace SigabaNeo
@@ -318,5 +320,54 @@ theorem Machine.cost_chain_le (pt : ℕ) (hPostT : Post.time ≤ pt * A.cost) :
     _ = (F + 11 * P.time + 11 * c + 24) * a * d := by ring
 
 end Chain
+
+/-! ### Exponents -/
+
+theorem size_le_of_le_two_pow {a e : ℕ} (h : a ≤ 2 ^ e) : Nat.size a ≤ e + 1 :=
+  Nat.size_le.mpr (lt_of_le_of_lt h (Nat.pow_lt_pow_right (by norm_num) (by omega)))
+
+/-- **A power-of-two bound on the constant of the chain**, from power-of-two bounds on its parts:
+the states of `P` and `Post` and the handler term `3 ^ ops · Z · (|w₀| + 3)` at most `2 ^ r`, the
+time of `P` and the slope `chainSlope` at most `2 ^ t`, the tapes `chainTapes` at most `k`, and
+the entry bits `4 k + r + 10` at most `2 ^ g`. -/
+theorem chainConst_le_two_pow (P Post : Machine) (H : Fin ops → Routine (m + 3))
+    (Q L E pt wl r t k g : ℕ) (hsP : P.states ≤ 2 ^ r) (hsPo : Post.states ≤ 2 ^ r)
+    (hZ : 3 ^ ops * (1 + ∑ o, (9 + (H o).states)) * (wl + 3) ≤ 2 ^ r)
+    (htP : P.time ≤ 2 ^ t) (hc : chainSlope ops Q L E pt ≤ 2 ^ t)
+    (htr : 4 * (t + 1) + 108 ≤ 4 * 2 ^ r) (hk : chainTapes P Post ops m ≤ k)
+    (hg : 4 * k + r + 10 ≤ 2 ^ g) :
+    chainConst P Post H Q L E pt wl ≤ 2 ^ (r + g + 11 + 65 * k / 41) + 2 ^ (t + 6) := by
+  have hP : (clockDigits P.tapes P.time).length ≤ t + 1 :=
+    (clockDigits_length_le_size _ _).trans (size_le_of_le_two_pow htP)
+  have hcI : inlSlope ops Q L E ≤ 2 ^ t := le_trans (by unfold chainSlope; omega) hc
+  have hzI := size_le_of_le_two_pow hcI
+  have hzM := size_le_of_le_two_pow hc
+  have hR : chainStates P Post H Q L E pt wl ≤ 2 ^ (r + 4) := by
+    unfold chainStates
+    rw [pow_add]
+    have e : 4 * (3 ^ ops * (1 + ∑ o, (9 + (H o).states))) * (wl + 3) =
+        4 * (3 ^ ops * (1 + ∑ o, (9 + (H o).states)) * (wl + 3)) := by ring
+    rw [e]
+    norm_num
+    omega
+  have hsz := size_le_of_le_two_pow hR
+  have he : 5 + 4 * chainTapes P Post ops m + Nat.size (chainStates P Post H Q L E pt wl) ≤
+      2 ^ g := by omega
+  have h3 : 3 ^ chainTapes P Post ops m ≤ 2 ^ (65 * k / 41 + 1) :=
+    (Nat.pow_le_pow_right (by norm_num) hk).trans (three_pow_le_two_pow k)
+  have hmain : 60 * chainStates P Post H Q L E pt wl * 3 ^ chainTapes P Post ops m *
+      (5 + 4 * chainTapes P Post ops m + Nat.size (chainStates P Post H Q L E pt wl)) ≤
+      2 ^ (r + g + 11 + 65 * k / 41) := by
+    calc _ ≤ 2 ^ 6 * 2 ^ (r + 4) * 2 ^ (65 * k / 41 + 1) * 2 ^ g := by
+          gcongr; norm_num
+      _ = 2 ^ (r + g + 11 + 65 * k / 41) := by
+          rw [← pow_add, ← pow_add, ← pow_add]; congr 1; omega
+  have htime : 11 * P.time + 11 * chainSlope ops Q L E pt + 24 ≤ 2 ^ (t + 6) := by
+    rw [pow_add]
+    have : 1 ≤ 2 ^ t := Nat.one_le_two_pow
+    norm_num
+    omega
+  unfold chainConst
+  omega
 
 end SigabaNeo
