@@ -139,6 +139,75 @@ theorem iter_const {body : Code} {l : LR} {f : ℕ → ℕ} {Q : St → Prop}
     rw [e3, show i + 1 + j = i + (j + 1) by omega]
     rfl
 
+theorem exec_constC {body : Code} {l : LR} {f : ℕ → ℕ} {Q : St → Prop} {cnt : SR}
+    (hcnt : cnt ≠ 42)
+    (hQ : ∀ σ : St, Q σ → ∀ v ls', Q (setSL σ (Function.update σ.sc 42 v) ls'))
+    (hb : ∀ (σ : St) (i : ℕ), Q σ → σ.sc 42 = i → (σ.ls l).length < E.C →
+      exec E body σ = { σ with ls := Function.update σ.ls l (σ.ls l ++ [f i]) })
+    (σ : St) (hq : Q σ) (hM : σ.sc cnt ≤ E.M) (hC : σ.sc cnt ≤ E.C) :
+    exec E (constC cnt l body) σ = setSL σ (Function.update σ.sc 42 (σ.sc cnt))
+      (Function.update σ.ls l ((List.range (σ.sc cnt)).map f)) := by
+  simp only [constC, exec_seq]
+  have e1 : exec E (.zero 42) (exec E (.lnil l) σ) =
+      setSL σ (Function.update σ.sc 42 0) (Function.update σ.ls l []) := rfl
+  rw [e1, exec_rep]
+  have hc : (setSL σ (Function.update σ.sc 42 0) (Function.update σ.ls l [])).sc cnt = σ.sc cnt := by
+    simp [setSL, Function.update_of_ne hcnt]
+  rw [hc, iter_const hQ hb (σ.sc cnt) _ 0 (hQ σ hq _ _) (by simp [setSL]) (by omega)
+    (by simp [setSL]; omega)]
+  simp [setSL, Function.update_idem]
+
+theorem constL_eq_map (z : Wire ι) : ∀ (w m : ℕ),
+    constL z w m = (List.range w).map (fun i => if m.testBit i then .one else z)
+  | 0, m => rfl
+  | w + 1, m => by
+    rw [constL, constL_eq_map z w (m / 2), List.range_succ_eq_map, List.map_cons, List.map_map]
+    congr 1
+    · simp only [Nat.testBit_zero]
+      by_cases h : m % 2 = 1 <;> simp [h]
+    · apply List.map_congr_left; intro i _
+      simp only [Function.comp, Nat.testBit_succ]
+
+theorem testBit_two_pow_sub_two_pow {k K i : ℕ} (hK : K ≤ k + 1) :
+    (2 ^ (k + 1) - 2 ^ K).testBit i = decide (K ≤ i ∧ i < k + 1) := by
+  have e : 2 ^ (k + 1) - 2 ^ K = (2 ^ (k + 1 - K) - 1) * 2 ^ K := by
+    rw [Nat.sub_mul, one_mul, ← pow_add, Nat.sub_add_cancel hK]
+  rw [e, Nat.testBit_mul_two_pow, Nat.testBit_two_pow_sub_one]
+  by_cases h : K ≤ i <;> simp [h] <;> omega
+
+/-- The constant registers of the arithmetic: `1`, `z`, `k`, `k + 1`, `K`. -/
+def Cst (k K : ℕ) (σ : St) : Prop := Consts E σ ∧ σ.sc 2 = k ∧ σ.sc 3 = k + 1 ∧ σ.sc 4 = K
+
+theorem cst_setSL {k K : ℕ} {σ : St} (h : Cst (E := E) k K σ) {r : SR} (hr : 4 < r.val) (v : ℕ)
+    (ls' : LR → List ℕ) : Cst (E := E) k K (setSL σ (Function.update σ.sc r v) ls') := by
+  obtain ⟨⟨h0, h1⟩, h2, h3, h4⟩ := h
+  have ne : ∀ s : SR, s.val ≤ 4 → s ≠ r := fun s hs e => by subst e; omega
+  refine ⟨⟨?_, ?_⟩, ?_, ?_, ?_⟩ <;> simp only [setSL] <;>
+    rw [Function.update_of_ne (ne _ (by decide))]
+  all_goals assumption
+
+/-- The body pushing the bits of `2^(k+1) - 2^K` (`1` from the bit `K` on). -/
+def addConstBody (l : LR) : Code := .ifLt 42 4 (.lpush l rZ) (.lpush l rONE)
+
+/-- The body pushing the bits of `2^K`. -/
+def qConstBody (l : LR) : Code := .ifLt 42 4 (.lpush l rZ) (.ifLt 4 42 (.lpush l rZ) (.lpush l rONE))
+
+theorem exec_addConstBody (hnM : E.n + 1 ≤ E.M) {k K : ℕ} (l : LR) (σ : St) (i : ℕ)
+    (hc : Cst (E := E) k K σ) (hi : σ.sc 42 = i) (hl : (σ.ls l).length < E.C) :
+    exec E (addConstBody l) σ =
+      { σ with ls := Function.update σ.ls l (σ.ls l ++ [if i < K then E.n + 1 else E.n]) } := by
+  simp only [addConstBody, exec, hi, hc.2.2.2, hl, ite_true, hc.1.1, hc.1.2]
+  split_ifs <;> simp only [min_eq_left (show E.n + 1 ≤ E.M by omega),
+    min_eq_left (show E.n ≤ E.M by omega)]
+
+theorem exec_qConstBody (hnM : E.n + 1 ≤ E.M) {k K : ℕ} (l : LR) (σ : St) (i : ℕ)
+    (hc : Cst (E := E) k K σ) (hi : σ.sc 42 = i) (hl : (σ.ls l).length < E.C) :
+    exec E (qConstBody l) σ =
+      { σ with ls := Function.update σ.ls l (σ.ls l ++ [if i = K then E.n else E.n + 1]) } := by
+  simp only [qConstBody, exec, hi, hc.2.2.2, hl, ite_true, hc.1.1, hc.1.2]
+  split_ifs <;> simp only [min_eq_left (show E.n + 1 ≤ E.M by omega),
+    min_eq_left (show E.n ≤ E.M by omega)] <;> first | rfl | (exfalso; omega)
+
 end FhatGen
 
 end SigabaNeo.Lattices
