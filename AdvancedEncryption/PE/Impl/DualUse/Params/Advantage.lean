@@ -37,7 +37,7 @@ theorem date_mul_le {δ : ℝ≥0∞} (h : δ ≤ ((2 : ℝ≥0∞) ^ 180)⁻¹)
 
 /-- **Attribute hiding for `confP`**: the advantage of any distinguisher is at most the Ring-LWE
 advantages of the three experiments-as-distinguishers plus `2^{-135}`. -/
-theorem advantage_le_conf (A : Machine 3) (D : Machine) {δ₃ δ₅ δI : ℝ≥0∞}
+theorem advantage_le_conf (M : SEMachines hkp confP) (A : Machine 3) (D : Machine) {δ₃ δ₅ δI : ℝ≥0∞}
     (h₃ : CloseTo ((inst3Real (k := kp) (χR confP)).bind fun ab =>
         (G (hk := hkp) A fun x => F3 hkp confP x ab).bind (Dc D))
       (inst3Unif.bind fun ab => (G (hk := hkp) A fun x => F3 hkp confP x ab).bind (Dc D)) δ₃)
@@ -48,8 +48,8 @@ theorem advantage_le_conf (A : Machine 3) (D : Machine) {δ₃ δ₅ δI : ℝ�
         (G (hk := hkp) A fun x => FI hkp confP x ab).bind (Dc D))
       (inst3Unif.bind fun ab => (G (hk := hkp) A fun x => FI hkp confP x ab).bind (Dc D)) δI)
     (hfin : δ₃ + δ₅ + δI ≠ ⊤) :
-    |D.acceptProb ((PE.real dateUniverse params (impl hkp confP) A).map view) -
-        D.acceptProb ((PE.ideal dateUniverse params (impl hkp confP) (simMachine hkp confP) A).map
+    |D.acceptProb ((PE.real dateUniverse params (impl hkp confP M) A).map view) -
+        D.acceptProb ((PE.ideal dateUniverse params (impl hkp confP M) (simMachine hkp confP) A).map
           view)| ≤ (δ₃ + δ₅ + δI + ((2 : ℝ≥0∞) ^ 135)⁻¹).toReal := by
   set x : ℝ≥0∞ := ((2 : ℝ≥0∞) ^ 138)⁻¹
   have h1 := date_mul_le delta1_le

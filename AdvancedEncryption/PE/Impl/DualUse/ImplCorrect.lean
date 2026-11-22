@@ -19,6 +19,7 @@ open AdvancedEncryption.PE.Gates.DateWindow
 open scoped ENNReal
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+variable {M : SEMachines hk c}
 
 /-- A gate list whose last gate is `false` on `x` gives a predicate that is `false` on `x`. -/
 theorem evalBool_predC {x : Date} {C : List Bool} (h : evalGates (encDate x, parse C) = false) :
@@ -135,8 +136,8 @@ theorem correct (hd : 0 < c.d)
       (∀ i a b, cnorm (r.Rm i a b) ≤ 1) ∧ ∀ j, rnorm (r.ej j) ≤ Bχ)
     (hq : ∀ w : Window, 4 * noiseBound (Wd := Fin c.d) (Wt := TrapCol k) (N := N) hk Bχ Kb
       (predC (winWord w)) + 2 < 2 ^ K) :
-    Correct dateUniverse params (impl hk c) :=
-  correct_of_scheme hk c fun x w _ hev b => scheme_bound hk c hd hdec Bχ Kb Inner hIn hcov hInner
+    Correct dateUniverse params (impl hk c M) :=
+  correct_of_scheme hk c M fun x w _ hev b => scheme_bound hk c hd hdec Bχ Kb Inner hIn hcov hInner
     habort hSmall hdecK hr hq x w hev b
 
 end AdvancedEncryption.DualUse

@@ -20,6 +20,7 @@ open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.P
 open AdvancedEncryption.PE.Gates.DateWindow
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+variable (M : SEMachines hk c)
 
 open Classical in
 /-- **The ideal key oracle**: the ideal key law of `mpk` for window predicates of at most `L` bits,
@@ -35,14 +36,14 @@ noncomputable def KGi (mpk : PK hk c) (C : List Bool) : PMF (List Bool) :=
 open Classical in
 /-- The flag of the experiment: the query is authorized for the selected attribute. -/
 noncomputable def authI (C : List Bool) (x : Date) : Bool :=
-  decide (Authorized (U := dateUniverse) params (impl hk c) C x)
+  decide (Authorized (U := dateUniverse) params (impl hk c (SEMachines.finite hk c)) C x)
 
 /-- **Long predicates are never authorized**: `Eval` rejects inputs longer than `L`. -/
 theorem authI_long (C : List Bool) (x : Date) (hC : c.L < C.length) : authI hk c C x = false := by
   unfold authI
   rw [decide_eq_false_iff_not]
   intro h
-  obtain ⟨h1, -, -⟩ := (win_authorized_iff (impl hk c) rfl C x).mp h
+  obtain ⟨h1, -, -⟩ := (win_authorized_iff (impl hk c (SEMachines.finite hk c)) rfl C x).mp h
   have := (length_le_encodeTuple (C := C)
     (xs := [paramsWord dateUniverse params, C, encDate x]) (by simp)).trans h1
   omega
@@ -53,7 +54,7 @@ def RealCovered : Prop :=
     GoodTrap c.Big c.Small c.dec v.1 (keyMatrix v.1 (predC (winWord w)))
       (realTrap (S := Sdw (N := N) hk) (trapMat v.2.2.1 v.2.2.2) (keyMatrix v.1 (predC (winWord w))))
 
-variable {hk c}
+variable {hk c M}
 
 /-- **Real keys have the ideal law** for every key of `Setup`. -/
 theorem KGreal_eq_KGi (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
@@ -83,7 +84,7 @@ theorem setup_coins_eq_V0 (x : Date) :
   simp only [Function.comp_def, PMF.pure_bind, trapRow_eq_toB₁]
   rfl
 
-variable (hk c)
+variable (hk c M)
 
 /-- The challenge of the implementation, through the encodings. -/
 noncomputable def CHreal (mpk : PK hk c) (x : Date) (μ : Bool) : PMF (List Bool) :=
@@ -91,7 +92,7 @@ noncomputable def CHreal (mpk : PK hk c) (x : Date) (μ : Bool) : PMF (List Bool
 
 /-- The challenger of the implementation, as a generic challenger. -/
 noncomputable def realSpec :=
-  Generic.implSpec (U := dateUniverse) params (impl hk c) (pkEnc hk c).enc (setupM hk c)
+  Generic.implSpec (U := dateUniverse) params (impl hk c M) (pkEnc hk c).enc (setupM hk c)
     (KGreal hk c) (CHreal hk c)
 
 /-- The challenge with given coins. -/
@@ -104,32 +105,32 @@ noncomputable def toView (σ : (Date × PK hk c × SKey hk c) ×
     EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)) : PK hk c × CT hk c :=
   (σ.1.2.1, encrypt σ.1.2.1 (bitsOf σ.1.1) false σ.2)
 
-variable {hk c}
+variable {hk c M}
 
 /-- **The real experiment is the experiment of the first hybrid.** -/
 theorem real_eq_gameV (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) (A : Machine 3) :
-    (PE.real dateUniverse params (impl hk c) A).map (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad)) =
+    (PE.real dateUniverse params (impl hk c M) A).map (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad)) =
       gameV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A (V0 hk c) := by
   -- the generic challenger of the implementation
-  have b1 := Generic.game_eq_generic params (impl hk c) (pkEnc hk c).enc (mskEnc hk c).enc
-    (setupM hk c) (KGreal hk c) (CHreal hk c) (enc params (impl hk c)) (impl_setup hk c)
-    (impl_keyGen hk c) (fun mpk x μ => impl_enc hk c mpk x μ) A
+  have b1 := Generic.game_eq_generic params (impl hk c M) (pkEnc hk c).enc (mskEnc hk c).enc
+    (setupM hk c) (KGreal hk c) (CHreal hk c) (enc params (impl hk c M)) (impl_setup hk c M)
+    (impl_keyGen hk c M) (fun mpk x μ => impl_enc hk c M mpk x μ) A
   unfold PE.real
   rw [b1]
   unfold Machine.runWith gameV Machine.runWith
   -- the coins of the challenge at the selection
-  have hchal : ∀ σ μ, (realSpec hk c).chal σ μ = (coinsM hk c).map (gReal hk c σ μ) := by
+  have hchal : ∀ σ μ, (realSpec hk c M).chal σ μ = (coinsM hk c).map (gReal hk c σ μ) := by
     intro σ μ
     show (encM hk c σ.2.1 σ.1 μ).map (ctEnc hk c).enc = _
     unfold encM
     rw [PMF.map_comp]
     rfl
-  rw [show Generic.implSpec (U := dateUniverse) params (impl hk c) (pkEnc hk c).enc (setupM hk c)
-      (KGreal hk c) (CHreal hk c) = realSpec hk c from rfl,
-    Generic.runWith_eagerCoins (realSpec hk c) (coinsM hk c) (gReal hk c) hchal]
+  rw [show Generic.implSpec (U := dateUniverse) params (impl hk c M) (pkEnc hk c).enc (setupM hk c)
+      (KGreal hk c) (CHreal hk c) = realSpec hk c M from rfl,
+    Generic.runWith_eagerCoins (realSpec hk c M) (coinsM hk c) (gReal hk c) hchal]
   set prog := A.machine.runOracle A.time (paramsWord dateUniverse params)
-  set eag := Generic.eagerCoins (realSpec hk c) (coinsM hk c) (gReal hk c)
+  set eag := Generic.eagerCoins (realSpec hk c M) (coinsM hk c) (gReal hk c)
   set sp3 := (specV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) (V0 hk c)).comap
     (toView hk c) eag.setup
   -- the two challengers agree on the support of the secret

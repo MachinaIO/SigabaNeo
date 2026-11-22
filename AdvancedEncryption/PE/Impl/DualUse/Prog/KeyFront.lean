@@ -42,7 +42,7 @@ variable (hk c) in
 theorem authI_eq (C : List Bool) (x : Date) : authI hk c C x = authN (nAuth c.L) C x := by
   classical
   unfold authI authN
-  rw [Bool.eq_iff_iff, decide_eq_true_iff, win_authorized_iff (impl hk c) rfl,
+  rw [Bool.eq_iff_iff, decide_eq_true_iff, win_authorized_iff (impl hk c (SEMachines.finite hk c)) rfl,
     length_encodeTuple3, length_encDate]
   simp only [Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true']
   rw [← inClassW_iff]

@@ -33,7 +33,7 @@ def authTest (L : ℕ) (C : List Bool) (x : Date) : Bool :=
 /-- **`authI` is the test of `Eval`.** -/
 theorem authI_eq_test (C : List Bool) (x : Date) : authI hk c C x = authTest c.L C x := by
   classical
-  have h := win_authorized_iff (impl hk c) (L := c.L) rfl C x
+  have h := win_authorized_iff (impl hk c (SEMachines.finite hk c)) (L := c.L) rfl C x
   unfold authI authTest
   rw [Bool.eq_iff_iff, decide_eq_true_iff, h, Bool.and_eq_true, Bool.and_eq_true,
     decide_eq_true_iff, inClassW_iff, Bool.not_eq_true']

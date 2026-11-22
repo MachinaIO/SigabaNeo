@@ -125,7 +125,7 @@ theorem card_coef_le : Fintype.card (Coef dc (TrapCol kc) Nc) ≤ 2 ^ 46 := by
     _ = 2 ^ 46 := by rw [← pow_add]
 
 /-- **The implementation is correct.** -/
-theorem correct_concrete : Correct dateUniverse params (impl hkc conf) := by
+theorem correct_concrete (M : SEMachines hkc conf) : Correct dateUniverse params (impl hkc conf M) := by
   have hτ := τc_le
   refine DualUse.correct hkc conf (by show 0 < dc; rw [dc_def]; positivity) hdecc (2 ^ 512) Sc
     innerc ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
@@ -166,7 +166,7 @@ attribute [local irreducible] dateBound in
 theorem conf_L : conf.L = dateBound := rfl
 
 /-- **The implementation is expressive.** -/
-theorem expressive_concrete : Expressive dateUniverse params (impl hkc conf) :=
-  DualUse.expressive hkc conf (le_of_eq conf_L.symm)
+theorem expressive_concrete (M : SEMachines hkc conf) : Expressive dateUniverse params (impl hkc conf M) :=
+  DualUse.expressive hkc conf M (le_of_eq conf_L.symm)
 
 end AdvancedEncryption.DualUse.Concrete
