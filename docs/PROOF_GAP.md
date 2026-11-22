@@ -1332,6 +1332,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     incidences would fail the real terminal gate.
   * **Conjecture.** The three high-rank averages are bounded by gated ball volumes in witness ranks d−2, d−1 and d, times
     e^{o(d)}.
+* **Part 159 (audited, SOUND).** [plane_hit_rounding](research/wall1_plane_hit_rounding.md): the rounding argument for
+  residual (b) at the real instance.
+  * At q = 3329, width 506, rounding excludes no gated draw. The plane cutoff exceeds the rounding lower bound by ≥ 13.637%
+    on every gated draw, and by ≥ 14.270% outside the large-GH exit. So the toy emptiness (Part 158) does not transfer.
+  * A first moment bounds the band through 0.97×window GH by 4.038879·10⁻⁶.
+  * **Remaining.** After that and the 1/816000 exit, residual (a) plus the selected plane hits in (0.97, 1.097193]×GH must
+    total ≤ 0.00899473323. The void comparison costs nothing extra.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1341,7 +1348,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–158 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–159 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
