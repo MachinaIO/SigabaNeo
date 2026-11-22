@@ -217,10 +217,11 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 /-- **The preparation of the run of `f̂`.** -/
 def prepT (W : ℕ) : XProg 256 :=
   .seq (.prog (cp (mw GSC) (mw GS))) <|
-  .seq (.prog (Prog.map cm13 (convP W))) <|
+  .seq (.frame (ValVM.mkE cm13 cm13_inj) (.prog (convP W))) <|
   .seq (.prog (cp (mw GS) (mw GSC))) <|
   .seq (tmplP ValVM.tX0 (tmpl31 N K k c.d)) <|
-  .seq (.prog (Prog.map tm31 simTmplP ⨾ copiesP 0)) <|
+  .seq (.frame (ValVM.mkE tm31 tm31_inj) (.prog simTmplP)) <|
+  .seq (.prog (copiesP 0)) <|
   .seq (tmplP ValVM.tX0 (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c))) <|
   .seq (.prog (clr ValVM.tX0)) <|
   .seq (putW (mw OB) [true]) (putW (mw ZB) [false])
@@ -228,10 +229,11 @@ def prepT (W : ℕ) : XProg 256 :=
 /-- **The preparation of the run of the predicate.** -/
 def prepG (W : ℕ) : XProg 256 :=
   .seq (.prog (clrsP lowW ⨾ cp (mw GS) (mw GSC))) <|
-  .seq (.prog (Prog.map cm13 (convP W))) <|
+  .seq (.frame (ValVM.mkE cm13 cm13_inj) (.prog (convP W))) <|
   .seq (.prog (cp (mw GS) (mw GSC))) <|
   .seq (tmplP ValVM.tX0 (tmpl31 N K k c.d)) <|
-  .seq (.prog (Prog.map tm31 simTmplP ⨾ copiesP 1)) <|
+  .seq (.frame (ValVM.mkE tm31 tm31_inj) (.prog simTmplP)) <|
+  .seq (.prog (copiesP 1)) <|
   .seq (tmplP ValVM.tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
     (offPsi hk c + 10 * lenPsi N K k))) (.prog (clr ValVM.tX0))
 
@@ -350,6 +352,13 @@ theorem X5_tX0 : X5 c W a gs tX0 = [] := by
   simp (config := {decide := true}) only [Function.update_apply, if_false]
   rw [run_map_apply_not tm31_inj _ _ _ (by decide), X4_tX0]
 
+theorem law_frame_map {m : ℕ} {u : Fin m → Fin 256} (hu : Function.Injective u) (p : Prog m)
+    (hp : p.CoinFree) (s : Store 256) :
+    (XProg.frame (ValVM.mkE u hu) (.prog p)).law s = PMF.pure (run (Prog.map u p) s) := by
+  rw [XProg.law_frame, XProg.law_prog, law_eq_run_of_coinFree _ hp, PMF.pure_map, run_map hu,
+    XProg.embedF_eq_extend]
+  rfl
+
 theorem X6_tX0 : X6 hk c W a gs tX0 = [] := by
   unfold X6
   rw [tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide))]
@@ -362,13 +371,15 @@ theorem law_prepT : (prepT hk c W).law (S0 W a gs) = PMF.pure (S1 hk c W a gs) :
     simp only [CoinFree] at h1 ⊢
     simp [coinFreeB, h1, show (copiesP 0).coinFreeB = true from rfl]
   rw [prepT, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind,
-    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc1, PMF.pure_bind,
+    XProg.law_seq, law_frame_map cm13_inj _ (coinFree_convP W), PMF.pure_bind,
     XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
   simp only [run_copy]
   rw [XProg.law_seq, law_tmplP _ _ _ (by
       rw [Function.update_of_ne (by decide)]; exact X2_tX0 W a gs)
       (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
-    PMF.pure_bind, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc2, PMF.pure_bind,
+    PMF.pure_bind, XProg.law_seq,
+    law_frame_map tm31_inj _ (coinFree_of_noGrow _ noGrow_simTmplP), PMF.pure_bind,
+    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_copiesP 0), PMF.pure_bind,
     XProg.law_seq, law_tmplP _ _ _ (by exact X5_tX0 c W a gs)
       (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)),
     PMF.pure_bind, XProg.law_seq,
@@ -1125,14 +1136,16 @@ theorem law_prepG (hX : T tX0 = []) : (prepG hk c W).law T = PMF.pure (S3 hk c W
     simp only [CoinFree] at h1 ⊢
     simp [coinFreeB, h1, show (copiesP 1).coinFreeB = true from rfl]
   rw [prepG, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc0, PMF.pure_bind,
-    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc1, PMF.pure_bind,
+    XProg.law_seq, law_frame_map cm13_inj _ (coinFree_convP W), PMF.pure_bind,
     XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
   simp only [run_copy]
   rw [XProg.law_seq, law_tmplP _ _ _ (by
       rw [Function.update_of_ne (by decide), run_map_apply_not cm13_inj _ _ _ (by decide)]
       exact Z1_tX0 T hX)
       (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
-    PMF.pure_bind, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc2, PMF.pure_bind,
+    PMF.pure_bind, XProg.law_seq,
+    law_frame_map tm31_inj _ (coinFree_of_noGrow _ noGrow_simTmplP), PMF.pure_bind,
+    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_copiesP 1), PMF.pure_bind,
     XProg.law_seq, law_tmplP _ _ _ (by exact Z5_tX0 c W T hX)
       (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), PMF.pure_bind,
     show (XProg.prog (clr tX0) : XProg 256) = XProg.prog (.prim (.clear tX0)) from rfl, XProg.law_prim]
@@ -1982,14 +1995,14 @@ theorem wf_wfBody {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) 
     (wfBody hk c W).WF := by
   have hT : runT.WF := wf_compileA _ (stepSpec_simTop N K k 1).wf fhatFullC (by decide +kernel)
   have hG : runG.WF := wf_compileA _ (stepSpec_simGsw N K k 1).wf gswFullC (by decide +kernel)
-  refine ⟨⟨wf_of_wfB rfl, WF.map cm13_inj (wf_convP W), wf_of_wfB rfl,
+  refine ⟨⟨wf_of_wfB rfl, wf_convP W, wf_of_wfB rfl,
     wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
-    ⟨WF.map tm31_inj wf_simTmplP, wf_copiesP 0⟩,
+    wf_simTmplP, wf_copiesP 0,
     wf_tmplP _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)), wf_of_wfB rfl, wf_putW _ _,
     wf_putW _ _⟩,
-    hT, ⟨⟨wf_clrsP _, wf_of_wfB rfl⟩, WF.map cm13_inj (wf_convP W), wf_of_wfB rfl,
+    hT, ⟨⟨wf_clrsP _, wf_of_wfB rfl⟩, wf_convP W, wf_of_wfB rfl,
     wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
-    ⟨WF.map tm31_inj wf_simTmplP, wf_copiesP 1⟩,
+    wf_simTmplP, wf_copiesP 1,
     wf_tmplP _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), wf_of_wfB rfl⟩, hG,
     ⟨wf_clrsP _, wf_tmplP _ _ (ne_of_keys (keys_keyT N K k c.d) (by decide)), wf_putW _ _⟩,
     wf_simKeyP, wf_clrsP _⟩
