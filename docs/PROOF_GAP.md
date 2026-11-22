@@ -996,6 +996,25 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * Recorded joint bounds were reproduced: 0.014905 / 0.005908 / 0.003682 for 1/2/3 blocks. At most 3 blocks fit in
       511 rows.
   * Conjectures A–C are open.
+* **Part 138 (audited, minor caveats; the proof of Theorem B is repaired in the note's Audit section).**
+  [reducer_variants](research/wall1_reducer_variants.md): block-reduction variants whose output might be analyzable.
+  * **Gap, w.p. > 98.5%:** λ2 ≥ 440 and ‖plant‖ ∈ (36.76, 41.73], so λ2/λ1 ∈ [10.545, 17.234].
+  * **Worst case falls short.** Worst-case guarantees at β = 506 are 991.9 (BKZ), 32.9 (slide approximation factor) and
+    31.5 (Hermite factor), all above the gap. ALNS20 Thm 1.2 drops below the gap only from oracle rank 774, and never
+    with Blichfeldt constants.
+  * **Theorem B (profile-only barrier, 2 ≤ β ≤ 566).** Block-Hermite inequalities, size reduction, the gap and the plant
+    position do not by themselves certify success.
+  * **Lemma U1.** Every reducer has an atomic final-block law. This rules out density, TV and L² arguments, but not weak
+    Haar comparisons.
+  * **Lemma U2.** Symmetry re-randomization leaves success unchanged.
+  * **Lemma S1.** In Li–Walter slide reduction, slack in the dual twin test trades for a strictly worse final block.
+  * **Lemma S2 (ALNS20 exact twins, rank 512).** Reduced bases correspond to sublattices Q, and ρ has a closed form in
+    det Q, ‖b1‖ and η*.
+    * ρ ≥ 0.954 holds if log det Q ≥ 954.34 (rigorous, sufficient) or ≈ 862.75 (heuristic typical η*). The GSA value is
+      ≈ 874 [heur].
+    * The densest Q passes with ρ ≈ 0.28 [heur].
+  * **Verdicts.** Re-randomized BKZ, DBKZ and random sub-designs remain subject to Parts 106, 111 and 112. Self-dual BKZ is
+    limited to Parts 86–87. Prefixes independent of A stay at 646/647.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
