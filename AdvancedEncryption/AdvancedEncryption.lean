@@ -70,3 +70,4 @@ import PE.Impl.DualUse.Prog.Chi
 import PE.Impl.DualUse.Prog.Auth
 import PE.Impl.DualUse.Prog.ChalI
 import PE.Impl.DualUse.Prog.SetupTime
+import PE.Impl.DualUse.Prog.SetupTime3
