@@ -74,6 +74,16 @@ theorem run_forN {σ : Type} (c t : Fin k) (body : Prog k) (G : σ → Store k) 
   exact run_loop_iter c body G step (fun _ => True) (fun a w _ => hstep a w) (fun _ _ => trivial)
     (s t) a trivial
 
+/-- The counter idiom with an invariant of the abstract state. -/
+theorem run_forN_inv {σ : Type} (c t : Fin k) (body : Prog k) (G : σ → Store k) (step : σ → σ)
+    (I : σ → Prop)
+    (hstep : ∀ a w, I a → run body (Function.update (G a) c w) = Function.update (G (step a)) c w)
+    (hI : ∀ a, I a → I (step a)) (a : σ) (ha : I a) (s : Store k)
+    (hs : Function.update s c (s t) = Function.update (G a) c (s t)) :
+    run (forN c t body) s = Function.update (G (step^[(s t).length] a)) c [] := by
+  rw [forN, run_seq, run_copy, hs]
+  exact run_loop_iter c body G step I hstep hI (s t) a ha
+
 /-! ### Moving bits -/
 
 /-- Move `|s 4|` bits from the stream `0` into the register `1`. -/
