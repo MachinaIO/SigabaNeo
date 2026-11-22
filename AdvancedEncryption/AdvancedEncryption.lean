@@ -55,6 +55,7 @@ import PE.Impl.DualUse.Algo.SimKey
 import PE.Impl.DualUse.Prog.SimKeyStore
 import PE.Impl.DualUse.Prog.KeyFront
 import PE.Impl.DualUse.Prog.PsiBits
+import PE.Impl.DualUse.Prog.KeySumStore
 import PE.Impl.DualUse.Algo.Gates
 import PE.Impl.DualUse.Algo.KeyWords
 import PE.Impl.DualUse.Algo.KeyTry
@@ -89,6 +90,14 @@ import PE.Impl.DualUse.Prog.Lift
 import PE.Impl.DualUse.Prog.ChalITime
 import PE.Impl.DualUse.Prog.B1
 import PE.Impl.DualUse.Prog.UBound
+import PE.Impl.DualUse.Prog.KeyP
+import PE.Impl.DualUse.Prog.KeyPTime
+import PE.Impl.DualUse.Prog.KeyWfWords
+import PE.Impl.DualUse.Prog.WfLib
+import PE.Impl.DualUse.Prog.WfPred
+import PE.Impl.DualUse.Prog.WfIns
+import PE.Impl.DualUse.Prog.WfB
+import PE.Impl.DualUse.Prog.WfTime
 import PE.Impl.DualUse.Prog.C0
 import PE.Impl.DualUse.Prog.Blocks
 import PE.Impl.DualUse.Prog.WordLemmas

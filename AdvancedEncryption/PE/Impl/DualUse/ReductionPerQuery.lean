@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.Prog.Post
 import SigabaNeo.Lib.Machines.Inline.InitPerQuery
+import SigabaNeo.Lib.Machines.Inline.InitStructCost
 
 /-!
 # The reduction machine with per-query handlers
@@ -13,6 +14,12 @@ query `b` halts within `q₀ + q₁ |b|` steps): it is `reduction P Post A H E (
 * `cost_reductionP_le`, `cost_reductionP_post`: `cost ≤ redFactorP · cost A · cost D`, where
   `redFactorP` depends on the handlers only through their numbers of states, `q₀`, `q₁`, `L` and
   `E` — not on `A` (in particular not on `A.time`, which bounds the query lengths), nor on `D`.
+* `cost_reductionP_le_struct`, `cost_reductionP_post_struct`: the structured bound
+  `cost ≤ redConstP · cost A · cost D` (`Machine.cost_chain_le`), where `redConstP` is
+  `60 · R · 3 ^ K₀ · (5 + 4 K₀ + size R) + 11 P.time + 11 · slope + 24` with
+  `R ≈ 2 s_P + 2 s_Post + 108 Z (|w₀| + 3)` and `K₀ = k_P + k_Post + m + 17`: the decoder `P` enters
+  additively (states, tapes, time), not multiplied by the handlers' constant;
+  `redConstP_le_two_pow`: a power-of-two bound by exponent arithmetic.
 -/
 
 namespace AdvancedEncryption.DualUse
@@ -127,5 +134,50 @@ theorem cost_reductionP_post (P : Machine) (A : Machine 3) (H : Fin 3 → Routin
     (reductionP P (Post A.time E 10 1) A H E q₀ q₁ L D).cost ≤
       redFactorP P (Post 0 E 10 1) H E q₀ q₁ L (postA E 10 1 + postB E 10 1) * A.cost * D.cost :=
   cost_reduction_post P A H E _ L D
+
+/-! ### Structured cost -/
+
+/-- The structured constant of the cost of the reduction for per-query handlers
+(`chainConst`). -/
+noncomputable def redConstP (P Post : Machine) (H : Fin 3 → Routine (m + 3)) (E q₀ q₁ L pt : ℕ) :
+    ℕ :=
+  chainConst P Post H (q₀ + q₁ * 3) L E pt (paramsWord dateUniverse params).length
+
+/-- **Structured cost of the reduction for per-query handlers**: `cost ≤ redConstP · cost A ·
+cost D` when the post-processing takes time at most `pt · cost A`. -/
+theorem cost_reductionP_le_struct (P Post : Machine) (A : Machine 3) (H : Fin 3 → Routine (m + 3))
+    (E q₀ q₁ L pt : ℕ) (D : Machine) (hPostT : Post.time ≤ pt * A.cost) :
+    (reductionP P Post A H E q₀ q₁ L D).cost ≤
+      redConstP P Post H E q₀ q₁ L pt * A.cost * D.cost :=
+  Machine.cost_chain_le P Post D A H _ E _ L pt hPostT
+
+/-- **Structured cost of the reduction with the post-processing `Post`**: the constant depends
+neither on `A` nor on `D`, and `Post`'s part (states and tapes) not on `E` either. -/
+theorem cost_reductionP_post_struct (P : Machine) (A : Machine 3) (H : Fin 3 → Routine (m + 3))
+    (E q₀ q₁ L : ℕ) (D : Machine) :
+    (reductionP P (Post A.time E 10 1) A H E q₀ q₁ L D).cost ≤
+      redConstP P (Post 0 0 10 1) H E q₀ q₁ L (postA E 10 1 + postB E 10 1) * A.cost * D.cost := by
+  have h := cost_reductionP_le_struct P (Post A.time E 10 1) A H E q₀ q₁ L _ D
+    (time_post_le_cost A E 10 1)
+  have e : redConstP P (Post A.time E 10 1) H E q₀ q₁ L (postA E 10 1 + postB E 10 1) =
+      redConstP P (Post 0 0 10 1) H E q₀ q₁ L (postA E 10 1 + postB E 10 1) := by
+    unfold redConstP chainConst chainStates chainTapes
+    rw [states_post A.time 0 E 0, tapes_post A.time 0 E 0]
+  rw [← e]; exact h
+
+/-- **A power-of-two bound on the structured constant** (`chainConst_le_two_pow`): with the states
+of `P` and `Post` and `27 Z (|w₀| + 3)` (`Z = 1 + ∑ (9 + handler states)`) at most `2 ^ r`, the
+time of `P` and the slope at most `2 ^ t`, `k_P + k_Post + m + 17 ≤ k` and `4 k + r + 10 ≤ 2 ^ g`:
+`redConstP ≤ 2 ^ (r + g + 11 + 65 k / 41) + 2 ^ (t + 6)`. -/
+theorem redConstP_le_two_pow (P Post : Machine) (H : Fin 3 → Routine (m + 3))
+    (E q₀ q₁ L pt r t k g : ℕ) (hsP : P.states ≤ 2 ^ r) (hsPo : Post.states ≤ 2 ^ r)
+    (hZ : 27 * (1 + ∑ o, (9 + (H o).states)) * ((paramsWord dateUniverse params).length + 3) ≤
+      2 ^ r)
+    (htP : P.time ≤ 2 ^ t) (hc : chainSlope 3 (q₀ + q₁ * 3) L E pt ≤ 2 ^ t)
+    (htr : 4 * (t + 1) + 108 ≤ 4 * 2 ^ r) (hk : P.tapes + Post.tapes + m + 17 ≤ k)
+    (hg : 4 * k + r + 10 ≤ 2 ^ g) :
+    redConstP P Post H E q₀ q₁ L pt ≤ 2 ^ (r + g + 11 + 65 * k / 41) + 2 ^ (t + 6) :=
+  chainConst_le_two_pow P Post H _ L E pt _ r t k g hsP hsPo (by norm_num; exact hZ) htP hc htr
+    (by unfold chainTapes; omega) hg
 
 end AdvancedEncryption.DualUse
