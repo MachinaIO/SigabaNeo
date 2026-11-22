@@ -24,6 +24,7 @@ open SigabaNeo AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEn
 open AdvancedEncryption.PE.Gates.DateWindow
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+variable {ms : Machines hk c}
 
 /-- **The test of `Eval`** for window predicates, as a Boolean computation. -/
 def authTest (L : ℕ) (C : List Bool) (x : Date) : Bool :=

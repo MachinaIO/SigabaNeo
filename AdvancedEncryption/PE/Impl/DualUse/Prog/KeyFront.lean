@@ -26,6 +26,7 @@ open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.P
 open AdvancedEncryption.PE.Gates.DateWindow
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
+variable {ms : Machines hk c}
 
 /-- The longest query authorized under the input bound `L` of `Eval`. -/
 def nAuth (L : ℕ) : ℕ := (L - (2 * (paramsWord dateUniverse params).length + 23)) / 2

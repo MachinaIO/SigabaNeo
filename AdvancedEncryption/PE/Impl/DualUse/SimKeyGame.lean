@@ -21,6 +21,7 @@ open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.P
 open AdvancedEncryption.PE.Gates.DateWindow
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+variable {ms : Machines hk c}
 
 /-- What a reduction knows about the selected attribute's ciphertext and keys. -/
 structure SimData where
