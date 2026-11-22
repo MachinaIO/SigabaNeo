@@ -5,10 +5,18 @@ import PE.Impl.DualUse.Params.Conf
 # The public-key, challenge and simulation-data components at the concrete parameters
 
 At `confP` (`N = 2^34`, `K = 2^25`, `k = K + 1`, `d = 2^61`), on inputs of at most `2^180` bits
-(every secret word of the three reductions is shorter, `PE.Impl.DualUse.Prog.CompBounds`), the
+(every secret word of the three reductions is shorter, `nS3_conf`, …), the
 lifted components `pub3L`, `pubIL`, `pub5L`, `chal3L`, `chal5L` cost at most `2^423`
 (public keys), `2^430` (`chal3L`) and `2^440` (`chal5L`) steps, and their outputs have at most
-`2^181` bits. The bounds are those of `PE.Impl.DualUse.Prog.Blocks` (`UBZ`: every
+`2^181` bits.
+
+The handlers feed the public-key component the setup's *length bound* (`CompBoundsP.len_pub` at
+`io2 Ssig 0 0`), which is `2^182` (`len_setup3D_conf`), not the `2^180` of the secret words; so
+the public-key components are also bounded on inputs of at most `2^182` bits: at most `2^425`
+steps, outputs at most `2^183` bits (`time_pub3L_conf'`, `len_pub3L_conf'`, …). The challenge and
+key components get the secret word bound `sigBound ≤ 2^180` and keep the `2^180` versions. The
+simulation-data programs (inside the key component) on secrets of at most `2^180` bits take at
+most `2^500` steps with outputs of at most `2^240` bits (`time_sd3P_conf`, `len_sd3P_conf`, …). The bounds are those of `PE.Impl.DualUse.Prog.Blocks` (`UBZ`: every
 loop is charged the length of its own counter), evaluated by `norm_num`.
 -/
 
@@ -96,6 +104,26 @@ theorem sizeSd3_conf : sizeSd3 hkp confP ≤ 2 ^ 239 := by
 theorem sizeSd5_conf : sizeSd5 hkp confP ≤ 2 ^ 239 := by
   simp only [sizeSd5]; comp_unfold; norm_num
 
+theorem timepub3_conf' :
+    timepub3 hkp confP (2 ^ 182 + sizepub3 hkp confP) + timeFin (2 ^ 182 + sizepub3 hkp confP) ≤
+      2 ^ 425 := by
+  comp_unfold; norm_num
+
+theorem timepub5_conf' :
+    timepub5 hkp confP (2 ^ 182 + sizepub5 hkp confP) + timeFin (2 ^ 182 + sizepub5 hkp confP) ≤
+      2 ^ 425 := by
+  comp_unfold; norm_num
+
+theorem timeSd3_conf :
+    timeSd3 hkp confP (2 ^ 180 + sizeSd3 hkp confP) + timeFin (2 ^ 180 + sizeSd3 hkp confP) ≤
+      2 ^ 500 := by
+  simp only [timeSd3, sizeSd3]; comp_unfold; norm_num
+
+theorem timeSd5_conf :
+    timeSd5 hkp confP (2 ^ 180 + sizeSd5 hkp confP) + timeFin (2 ^ 180 + sizeSd5 hkp confP) ≤
+      2 ^ 500 := by
+  simp only [timeSd5, sizeSd5]; comp_unfold; norm_num
+
 end Eval
 
 /-! ### The lifted components at `confP` -/
@@ -171,6 +199,73 @@ theorem len_chalIL2_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
     lenBoundT (chalIL2 hkp confP) (io2 a b 0) ≤ io2 (2 ^ 182) 0 0 :=
   (lenBoundT_mono _ (io2_mono ha hb)).trans ((len_chalIL2 hkp confP _ _).trans
     (io2_mono (by simpa only [kp] using lenChalI_conf) le_rfl))
+
+theorem pow182_add {s : ℕ} (h : s ≤ 2 ^ 180) : 2 ^ 182 + s ≤ 2 ^ 183 := by
+  have : (2 : ℕ) ^ 183 = 2 ^ 182 + 2 ^ 182 := by norm_num
+  have : (2 : ℕ) ^ 180 ≤ 2 ^ 182 := by norm_num
+  omega
+
+theorem pow239_add {s : ℕ} (h : s ≤ 2 ^ 239) : 2 ^ 180 + s ≤ 2 ^ 240 := by
+  have : (2 : ℕ) ^ 240 = 2 ^ 239 + 2 ^ 239 := by norm_num
+  have : (2 : ℕ) ^ 180 ≤ 2 ^ 239 := by norm_num
+  omega
+
+theorem time_pub3L_conf' (ha : a ≤ 2 ^ 182) (hb : b ≤ 2 ^ 182) :
+    timeBoundT (pub3L hkp confP) (io2 a b 0) ≤ 2 ^ 425 :=
+  (timeBoundT_mono _ (io2_mono ha hb)).trans
+    ((time_pub3L hkp confP _ _).trans (by rw [max_self]; exact timepub3_conf'))
+
+theorem len_pub3L_conf' (ha : a ≤ 2 ^ 182) (hb : b ≤ 2 ^ 182) :
+    lenBoundT (pub3L hkp confP) (io2 a b 0) ≤ io2 (2 ^ 183) 0 0 :=
+  (lenBoundT_mono _ (io2_mono ha hb)).trans
+    ((len_pub3L hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow182_add sizepub3_conf)
+      le_rfl))
+
+theorem time_pubIL_conf' (ha : a ≤ 2 ^ 182) (hb : b ≤ 2 ^ 182) :
+    timeBoundT (pubIL hkp confP) (io2 a b 0) ≤ 2 ^ 425 :=
+  (timeBoundT_mono _ (io2_mono ha hb)).trans
+    ((time_pubIL hkp confP _ _).trans (by rw [max_self]; exact timepub3_conf'))
+
+theorem len_pubIL_conf' (ha : a ≤ 2 ^ 182) (hb : b ≤ 2 ^ 182) :
+    lenBoundT (pubIL hkp confP) (io2 a b 0) ≤ io2 (2 ^ 183) 0 0 :=
+  (lenBoundT_mono _ (io2_mono ha hb)).trans
+    ((len_pubIL hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow182_add sizepub3_conf)
+      le_rfl))
+
+theorem time_pub5L_conf' (ha : a ≤ 2 ^ 182) (hb : b ≤ 2 ^ 182) :
+    timeBoundT (pub5L hkp confP) (io2 a b 0) ≤ 2 ^ 425 :=
+  (timeBoundT_mono _ (io2_mono ha hb)).trans
+    ((time_pub5L hkp confP _ _).trans (by rw [max_self]; exact timepub5_conf'))
+
+theorem len_pub5L_conf' (ha : a ≤ 2 ^ 182) (hb : b ≤ 2 ^ 182) :
+    lenBoundT (pub5L hkp confP) (io2 a b 0) ≤ io2 (2 ^ 183) 0 0 :=
+  (lenBoundT_mono _ (io2_mono ha hb)).trans
+    ((len_pub5L hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow182_add sizepub5_conf)
+      le_rfl))
+
+/-- **The simulation-data program of hybrid 3 and the ideal side** on secrets of at most `2^180`
+bits. -/
+theorem time_sd3P_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
+    timeBoundT (sd3P hkp confP) (io2 a b 0) ≤ 2 ^ 500 :=
+  (timeBoundT_mono _ (io2_mono ha hb)).trans
+    ((time_sd3P hkp confP _ _).trans (by rw [max_self]; exact timeSd3_conf))
+
+theorem len_sd3P_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
+    lenBoundT (sd3P hkp confP) (io2 a b 0) ≤ io2 (2 ^ 240) 0 0 :=
+  (lenBoundT_mono _ (io2_mono ha hb)).trans
+    ((len_sd3P hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow239_add sizeSd3_conf)
+      le_rfl))
+
+theorem time_sd5P_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
+    timeBoundT (sd5P hkp confP) (io2 a b 0) ≤ 2 ^ 500 :=
+  (timeBoundT_mono _ (io2_mono ha hb)).trans
+    ((time_sd5P hkp confP _ _).trans (by rw [max_self]; exact timeSd5_conf))
+
+theorem len_sd5P_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
+    lenBoundT (sd5P hkp confP) (io2 a b 0) ≤ io2 (2 ^ 240) 0 0 :=
+  (lenBoundT_mono _ (io2_mono ha hb)).trans
+    ((len_sd5P hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow239_add sizeSd5_conf)
+      le_rfl))
 
 end Lifted
 

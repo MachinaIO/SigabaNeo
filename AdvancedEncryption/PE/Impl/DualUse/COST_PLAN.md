@@ -118,3 +118,21 @@ scan extended), at N = 2^34 β ≈ 9400 (≈ 2700 bits). Decision of the owner: 
   q = 2^(2^25); `kb ≤ RingLWE.H (params3/params5)` at N = 2^34 in `Params/Strength.lean`.
 * **B2** (branch `t3/confp-n34`): `Np = 2^34`, `dp = 2^61` (LHL needs |Wd| ≥ 2KN + 600), all `*_conf` lemmas.
 With kb ≈ 2000+, the budget `64·2^256·C ≤ 2^kb` leaves room far above the per-query target of 2^556.
+
+## Status of the assembly (branch `t3/ah-assembly`, 2026-11-23)
+`AHConcrete.lean`: the three reductions at `confP` assembled (`StepComps`, `step3/step5/stepI`,
+`StepComps.comps/bounds/bundle`); each constant `≤ 2^2383` (`const_le`, through
+`compConst_le_two_pow` with `r = 270, t = 2376, p = 14, s = 240, τ = 2371, ℓ = 252, lc = 20,
+k' = 298, g = 11`), so `64 · 2^256 · C ≤ 2^2645` and **`kb = 2645 ≤ 2650`** suffices
+(`attributeHiding_conf`; from the registry, `attributeHiding_conf_registry`,
+`attributeHiding_implP_registry`). Per-query time: setup `2^403`, pub `2^425`, auth `2^275`,
+chal `2^440`, key `2^T + 2^2045` (the uniform key-try bound `20000 (2M+1)^8` at `M ≈ 2^251`,
+`KeyCostP`).
+* **Remaining hypothesis: the `W_f` block**, `WfSpec hkp confP wfB Wg` and `WfCost wfB Wg T`
+  (time `≤ 2^T`, tapes `≤ 2^250`, `≤ 2^200` states on `wfIn (2^240) (frontL confP.L Wg)`), with
+  `T ≤ 2370`, `384 ≤ Wg ≤ 2^200`. `wfB2_confP` (WS-T1) was certified at `N = 2^33, d = 2^60` and
+  does not build against `confP` at `N = 2^34`; WS-T1b re-certifies it (with `Lb = 2^240`).
+* Fixed on the way: `SimValid` now includes the binarity of `Rᵢ`, `W_j` (`SimCovered` was false
+  as stated; `simCovered_conf` from `goodTrap_sim`); the public-key components bounded on the
+  setup's output bound `2^182` (`time_pub3L_conf'`, …); `dateBound ≤ 2^20` and the front end's
+  table (`Gates/WindowBound.lean`); `time_keyPT` (per-tape `W_f` bound, `KeyPTimeT.lean`).

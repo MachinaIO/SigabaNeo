@@ -51,12 +51,16 @@ theorem F3_eq (x : Date) (ab) : F3 hk c x ab = (setup3 hk c x).map (view3 hk c a
   simp only [PMF.map_bind, PMF.pure_map, PMF.pure_bind]
   rfl
 
-theorem sd3_valid (ab) (σ : Sec3 hk c) : SimValid (sd3 hk c ab σ) := by
-  refine ⟨fun i => rfl, fun j => ?_⟩
-  show bjOf σ.2.1 (bitsOf σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
-  unfold bjOf
-  rw [of_hashCols]
-  rfl
+theorem sd3_valid (ab) (x : Date) (σ : Sec3 hk c) (hσ : σ ∈ (setup3 hk c x).support) :
+    SimValid (sd3 hk c ab σ) := by
+  refine ⟨fun i => rfl, fun j => ?_, ?_, fun j a b => cnorm_wMat _ j a b⟩
+  · show bjOf σ.2.1 (bitsOf σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
+    unfold bjOf
+    rw [of_hashCols]
+    rfl
+  · simp only [setup3, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hσ
+    obtain ⟨_, _, _, _, _, _, rest, hrest, _, _, rfl⟩ := hσ
+    exact cnorm_of_lawRestC hrest
 
 theorem setup3_x (x : Date) : ∀ σ ∈ (setup3 hk c x).support, σ.1 = x := by
   intro σ hσ
@@ -75,6 +79,6 @@ theorem accept3 (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
         (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
   accOn_sim hdec hL hcov A D inst (F3 hk c) (fun _ => setup3 hk c) (view3 hk c) (sd3 hk c)
     (fun x ab => F3_eq hk c x ab) (fun _ _ => rfl) (fun _ x σ hσ => setup3_x hk c x σ hσ)
-    (fun ab _ σ _ => sd3_valid hk c ab σ)
+    (fun ab x σ hσ => sd3_valid hk c ab x σ hσ)
 
 end AdvancedEncryption.DualUse

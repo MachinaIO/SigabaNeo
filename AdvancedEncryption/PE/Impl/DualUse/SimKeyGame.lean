@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.AHAssembly
 import PE.Impl.DualUse.SimKeys
+import PE.Impl.DualUse.ParamSupport
 
 /-!
 # Key queries answered with the simulated trapdoor
@@ -40,11 +41,37 @@ structure SimData where
 
 variable {hk c}
 
-/-- The relations between the data. -/
+/-- The relations between the data, and the matrices `Rᵢ`, `W_j` binary (coefficients within
+`1`, what the boxes need to cover the simulated trapdoor). -/
 def SimValid (d : SimData hk c) : Prop :=
   (∀ i, d.Ψ i = gswPK d.mpk.B₀ d.c₀ * d.Rm i + bitR (R := Rg N K) (bitsOf d.x i) •
       (Sdw (N := N) hk).Γ.G) ∧
-    ∀ j, d.mpk.Bj j = d.mpk.B₀ * d.W j + bitsOf (Sdw (N := N) hk) d.Ψ j • (Sdw (N := N) hk).Γ₁.G
+    (∀ j, d.mpk.Bj j = d.mpk.B₀ * d.W j + bitsOf (Sdw (N := N) hk) d.Ψ j • (Sdw (N := N) hk).Γ₁.G) ∧
+    (∀ i a b, cnorm (d.Rm i a b) ≤ 1) ∧ ∀ j a b, cnorm (d.W j a b) ≤ 1
+
+/-- The binary matrices `W_j` from their columns have coefficients within `1`. -/
+theorem cnorm_wMat (w : JC (Sdw (N := N) hk) → (Fin c.d → Bool)) (j) (a : Fin c.d) (b : Col k) :
+    cnorm (wMat (R := Rg N K) w j a b) ≤ 1 :=
+  cnorm_bitVal_le _
+
+/-- The binary matrices `Rᵢ` of `lawRmBin` have coefficients within `1`. -/
+theorem cnorm_of_lawRmBin {Rm : (Sdw (N := N) hk).Attr → Matrix (Fin c.d) (Col k) (Rg N K)}
+    (h : Rm ∈ (lawRmBin (S := Sdw (N := N) hk) (Wd := Fin c.d)).support) :
+    ∀ i a b, cnorm (Rm i a b) ≤ 1 := by
+  unfold lawRmBin at h
+  rw [PMF.mem_support_map_iff] at h
+  obtain ⟨bits, -, rfl⟩ := h
+  intro i a b
+  exact cnorm_bitVal_le _
+
+/-- The coins of the rest of `Enc` have binary `Rᵢ`. -/
+theorem cnorm_of_lawRestC {rest : Rest (Sdw (N := N) hk) (Fin c.d) (TrapCol k)}
+    (h : rest ∈ (lawRestC hk c).support) : ∀ i a b, cnorm (rest.2.2.2.1 i a b) ≤ 1 := by
+  unfold lawRestC lawRestNF at h
+  simp only [Cslib.Probability.PMF.monad_bind_eq_bind, Cslib.Probability.PMF.monad_pure_eq_pure,
+    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at h
+  obtain ⟨σ, -, u₀, -, e₀, -, ea, -, ez, -, Rm, hRm, e', -, rfl⟩ := h
+  exact cnorm_of_lawRmBin hRm
 
 /-- The simulated trapdoor of a predicate. -/
 noncomputable def simW (d : SimData hk c) (C : List Bool) : Matrix (Fin c.d) (Col k) (Rg N K) :=
@@ -84,7 +111,7 @@ theorem keyMatrix_simW (d : SimData hk c) (hv : SimValid d) (w : Window)
     keyMatrix d.mpk (predC (winWord w)) =
       d.mpk.B₀ * simW d (winWord w) + (Sdw (N := N) hk).Γ₁.G := by
   have h := keyMatrix_eq_sim (ringSetting_fhatCorrect hk (Fin 10)) d.mpk d.c₀ d.Rm (bitsOf d.x)
-    d.W d.Ψ hv.1 hv.2 (predC (winWord w))
+    d.W d.Ψ hv.1 hv.2.1 (predC (winWord w))
   have hne : parse (winWord w) ≠ [] := by
     rw [winWord, parse_unparse, winGates, predGates, toGates]
     simp
