@@ -340,3 +340,62 @@ theorem law_decFinB (hK2 : 2 ≤ K) (sk : SK hk c) (ct : CT hk c)
     · have t0' : t.val ≠ 0 := fun e => t0 (Fin.ext e)
       simp only [mem_clrAll, ne_eq, t0, not_false_eq_true, if_true, io2, t0', if_false]
       split_ifs <;> rfl
+
+/-! ### Coin-freeness of the helpers -/
+
+theorem coinFree_noGrowP {n : ℕ} : ∀ p : Prog n, p.NoGrow → p.CoinFree
+  | .prim _, _ => rfl
+  | .coin _, h => absurd h (by simp [NoGrow, noGrowB])
+  | .seq p q, h | .ifBlank _ p q, h | .ifBit _ p q, h => by
+    simp only [NoGrow, noGrowB, Bool.and_eq_true] at h
+    have h1 := coinFree_noGrowP p h.1
+    have h2 := coinFree_noGrowP q h.2
+    simp only [CoinFree] at h1 h2
+    simp [CoinFree, coinFreeB, h1, h2]
+  | .loop _ b, h => coinFree_noGrowP b h
+
+theorem cfX_putW {n : ℕ} (t : Fin n) : ∀ w : List Bool, (putW t w).CoinFree
+  | [] => rfl
+  | _ :: w => XProg.coinFree_seq rfl (cfX_putW t w)
+
+theorem cfX_prefP {n : ℕ} (P : ℕ) (src dst a b : Fin n) : (prefP P src dst a b).CoinFree :=
+  XProg.coinFree_seq rfl (XProg.coinFree_seq (coinFree_iter _ (stepF a dst b) rfl P) rfl)
+
+theorem cfX_natP {n : ℕ} (t c' : Fin n) : ∀ m, (XProg.natP t c' m).CoinFree
+  | 0 => by rw [XProg.natP]; rfl
+  | m + 1 => by
+    rw [XProg.natP]
+    have ih := cfX_natP t c' ((m + 1) / 2)
+    split_ifs
+    · exact XProg.coinFree_seq ih rfl
+    · exact XProg.coinFree_seq (XProg.coinFree_seq ih rfl) rfl
+
+theorem cfX_tmplP {n : ℕ} (c' : Fin n) : ∀ l : List (Fin n × ℕ), (tmplP c' l).CoinFree
+  | [] => rfl
+  | x :: l => XProg.coinFree_seq (cfX_natP _ _ _) (cfX_tmplP c' l)
+
+theorem cfX_clearL {n : ℕ} [NeZero n] : ∀ l : List (Fin n), (clearL l).CoinFree
+  | [] => rfl
+  | _ :: l => XProg.coinFree_seq rfl (cfX_clearL l)
+
+theorem cfX_frontP (n W : ℕ) : (frontP n W).CoinFree :=
+  XProg.coinFree_seq (XProg.coinFree_seq (coinFree_putW 0 _) rfl) (coinFree_lookTail _ _ _ _)
+
+theorem cfX_getP (o L : ℕ) (dst : Fin 256) : (getP o L dst).CoinFree := by
+  have h := coinFree_tailsP (102 : Fin 256) o
+  refine XProg.coinFree_seq ?_ (XProg.coinFree_seq (cfX_prefP _ _ _ _ _) rfl)
+  simp only [XProg.CoinFree, XProg.coinFreeB]
+  simp only [CoinFree] at h
+  simp [coinFreeB, h]
+
+theorem cfX_decFinB : (decFinB hk c).CoinFree := by
+  unfold decFinB
+  repeat' first
+    | exact cfX_getP _ _ _ | exact cfX_putW _ _ | exact cfX_tmplP _ _ | exact cfX_prefP _ _ _ _ _
+    | exact cfX_clearL _ | apply XProg.coinFree_seq | apply XProg.coinFree_ifBit
+  all_goals first
+    | exact coinFree_noGrowP _ ProgKeyR.noGrow_decFP
+    | exact coinFree_noGrowP _ (NoGrow.map noGrow_ballP)
+    | rfl
+
+end AdvancedEncryption.DualUse.Prog
