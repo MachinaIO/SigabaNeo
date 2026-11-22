@@ -49,6 +49,7 @@ import PE.Impl.DualUse.Params.Advantage
 import PE.Impl.DualUse.Algo.KeyMatrix
 import PE.Impl.DualUse.Algo.KeyCoins
 import PE.Impl.DualUse.Algo.SimKey
+import PE.Impl.DualUse.Prog.SimKeyStore
 import PE.Impl.DualUse.Algo.Gates
 import PE.Impl.DualUse.Algo.KeyWords
 import PE.Impl.DualUse.Algo.KeyTry
