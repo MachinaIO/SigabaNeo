@@ -1196,4 +1196,138 @@ theorem exec_modSubC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
   simp only [modSubV]
   rw [constV_sub, ← hs₁, ← hs₂, ← hs₃]
 
+/-! ### A term of a coefficient -/
+
+theorem andLV_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {one d : List Bool} : ∀ (as : List (List Bool)), ∀ x ∈ andLV one (fV V f) d as, x.length = V
+  | [], x, hx => by simp [andLV] at hx
+  | a :: as, x, hx => by
+    simp only [andLV, List.mem_cons] at hx
+    rcases hx with rfl | hx
+    · exact hf _ _ (by simp) (by simp)
+    · exact andLV_len hf as x hx
+
+theorem length_andLV {α : Type*} (one : α) (step : α → α → α) (d : α) :
+    ∀ as : List α, (andLV one step d as).length = as.length
+  | [] => rfl
+  | a :: as => by simp [andLV, length_andLV one step d as]
+
+theorem constV_zero {α : Type*} (one zv : α) : ∀ n, constV one zv n 0 = List.replicate n zv
+  | 0 => rfl
+  | n + 1 => by simp [constV, constV_zero one zv n, List.replicate_succ]
+
+/-- The operands of a term: `Y := andLV (DIG, COEF)`, `X := zv^k` (`COEF = 30`, `DIG = 31`). -/
+def term1 : Code := ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10, zipC andG 12 14,
+  .cp 25 NC, .cp NC 14, constC 11 12, .cp 24 NC]
+
+theorem exec_term1 (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (cs : List (List Bool)) (hcv : ∀ x ∈ cs, x.length = V) (h10 : (w 10).length = V)
+    (h11 : (w 11).length = V) (hC : w 30 = cs.flatten) (hk : (w 12).length = cs.length)
+    (hb : (w 14).length = cs.length * V) :
+    exec V f term1 w 25 = (andLV (w 10) (fV V f) (w 31) cs).flatten ∧
+      exec V f term1 w 24 = (List.replicate cs.length (w 11)).flatten ∧
+      ∀ j : Fin 40, j ∉ wr term1 → exec V f term1 w j = w j := by
+  refine ⟨?_, ?_, fun j hj => exec_not_mem term1 w j hj⟩
+  · rw [show term1 = ofList ([.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10] ++
+      [zipC andG 12 14, .cp 25 NC, .cp NC 14, constC 11 12, .cp 24 NC]) from rfl, exec_ofList_append]
+    set w1 := Function.update (Function.update (Function.update (Function.update (Function.update w
+      NA (w 30)) NB (w 30)) 9 (w 31)) 0 (w 10)) 1 (w 10) with hw1
+    have hpre : exec V f (ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10]) w = w1 := by
+      simp (config := {decide := true}) only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp',
+        Function.update_apply, if_true, if_false, hw1]
+    rw [hpre]
+    rw [show [zipC andG 12 14, .cp 25 NC, .cp NC 14, constC 11 12, .cp 24 NC] =
+      [zipC andG 12 14, .cp 25 NC] ++ [.cp NC 14, constC 11 12, .cp 24 NC] from rfl,
+      exec_ofList_append, exec_not_mem (ofList [.cp NC 14, constC 11 12, .cp 24 NC]) _ 25 (by decide)]
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp', Function.update_self]
+    rw [(exec_zipC (V := V) (f := f) (gOk_andG hf) (tk := 12) (tb := 14)
+      (by simp (config := {decide := true}) [rippleW]) (by simp (config := {decide := true}) [rippleW])
+      cs cs w1 rfl hcv hcv (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+      (by simp (config := {decide := true}) [w1, Function.update_apply, h10]) [] []
+      (by simp (config := {decide := true}) [w1, Function.update_apply, hC])
+      (by simp (config := {decide := true}) [w1, Function.update_apply, hC])
+      (by simp (config := {decide := true}) [w1, Function.update_apply, hk])
+      (by simp (config := {decide := true}) [w1, Function.update_apply, hb])).1, andLV_eq_zipWith]
+    simp (config := {decide := true}) [w1, Function.update_apply]
+  · rw [show term1 = ofList ([.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10, zipC andG 12 14,
+      .cp 25 NC] ++ [.cp NC 14, constC 11 12, .cp 24 NC]) from rfl, exec_ofList_append]
+    have e : ∀ j : Fin 40, j ∉ wr (ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10,
+        zipC andG 12 14, .cp 25 NC]) → exec V f (ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10,
+          .cp 1 10, zipC andG 12 14, .cp 25 NC]) w j = w j := fun j hj => exec_not_mem _ w j hj
+    generalize exec V f (ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10,
+      zipC andG 12 14, .cp 25 NC]) w = u at e ⊢
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp', Function.update_self]
+    obtain ⟨c1, -⟩ := exec_constC (V := V) (f := f) (src := 11) (tk := 12) (by decide) (by decide)
+      (by decide) (by decide) (w := Function.update u NC (u 14))
+      (by simp (config := {decide := true}) [Function.update_apply, e 11 (by decide), h11])
+    rw [c1]
+    simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+    rw [e 14 (by decide), e 12 (by decide), e 11 (by decide), hk, List.drop_left' (by rw [hb])]
+
+/-- **A subtracted term** `Z := modSubV (zv^k, andLV (DIG, COEF))`. -/
+def termSubC : Code := .seq term1 modSubC
+/-- **An added term** `Z := modAddV (zv^k, andLV (DIG, COEF))`. -/
+def termAddC : Code := .seq term1 modAddC
+
+/-- The templates and constants of the modular arithmetic, for `k = K + 1`. -/
+structure Tmpl (V K : ℕ) (w : St) : Prop where
+  h10 : (w 10).length = V
+  h11 : (w 11).length = V
+  h12 : (w 12).length = K + 1
+  h13 : (w 13).length = K + 2
+  h14 : (w 14).length = (K + 1) * V
+  h15 : (w 15).length = (K + 2) * V
+  h16 : (w 16).length = (K + 3) * V
+  h20 : (w 20).length = K
+  h27 : (w 27).length = 2
+  h29 : (w 29).length = 1
+
+theorem Tmpl.of_eq {K : ℕ} {w w' : St} (h : Tmpl V K w)
+    (e : ∀ j : Fin 40, j ∈ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 40)) → w' j = w j) :
+    Tmpl V K w' :=
+  ⟨by rw [e 10 (by decide)]; exact h.h10, by rw [e 11 (by decide)]; exact h.h11,
+    by rw [e 12 (by decide)]; exact h.h12, by rw [e 13 (by decide)]; exact h.h13,
+    by rw [e 14 (by decide)]; exact h.h14, by rw [e 15 (by decide)]; exact h.h15,
+    by rw [e 16 (by decide)]; exact h.h16, by rw [e 20 (by decide)]; exact h.h20,
+    by rw [e 27 (by decide)]; exact h.h27, by rw [e 29 (by decide)]; exact h.h29⟩
+
+theorem Tmpl.exec {K : ℕ} {w : St} (h : Tmpl V K w) (c : Code)
+    (hc : ∀ j ∈ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 40)), j ∉ wr c) :
+    Tmpl V K (exec V f c w) :=
+  h.of_eq fun j hj => exec_not_mem c w j (hc j hj)
+
+theorem exec_termSubC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (K : ℕ) (ht : Tmpl V K w) (cs : List (List Bool)) (hcl : cs.length = K + 1)
+    (hcv : ∀ x ∈ cs, x.length = V) (hC : w 30 = cs.flatten) :
+    exec V f termSubC w 26 = (modSubV (w 10) (fV V f) (w 11) (2 ^ K) (K + 1)
+      (List.replicate (K + 1) (w 11)) (andLV (w 10) (fV V f) (w 31) cs)).flatten := by
+  obtain ⟨e25, e24, e⟩ := exec_term1 hf w cs hcv ht.h10 ht.h11 hC (by rw [ht.h12, hcl])
+    (by rw [ht.h14, hcl])
+  have ht' : Tmpl V K (exec V f term1 w) := ht.exec term1 (by decide)
+  have := exec_modSubC (V := V) (f := f) hf (exec V f term1 w) K (List.replicate (K + 1) (w 11))
+    (andLV (w 10) (fV V f) (w 31) cs) (by simp) (by
+      rw [length_andLV, hcl]) (fun x hx => by rw [List.eq_of_mem_replicate hx]; exact ht.h11)
+    (andLV_len hf cs) ht'.h10 ht'.h11 (by rw [e24, hcl]) e25 ht'.h12 ht'.h14
+    ht'.h15 ht'.h20 ht'.h29
+  rw [show termSubC = .seq term1 modSubC from rfl]
+  show exec V f modSubC (exec V f term1 w) 26 = _
+  rw [this, e 10 (by decide), e 11 (by decide)]
+
+theorem exec_termAddC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (K : ℕ) (ht : Tmpl V K w) (cs : List (List Bool)) (hcl : cs.length = K + 1)
+    (hcv : ∀ x ∈ cs, x.length = V) (hC : w 30 = cs.flatten) :
+    exec V f termAddC w 26 = (modAddV (w 10) (fV V f) (w 11) (2 ^ K) (K + 1)
+      (List.replicate (K + 1) (w 11)) (andLV (w 10) (fV V f) (w 31) cs)).flatten := by
+  obtain ⟨e25, e24, e⟩ := exec_term1 hf w cs hcv ht.h10 ht.h11 hC (by rw [ht.h12, hcl])
+    (by rw [ht.h14, hcl])
+  have ht' : Tmpl V K (exec V f term1 w) := ht.exec term1 (by decide)
+  have := exec_modAddC (V := V) (f := f) hf (exec V f term1 w) K (List.replicate (K + 1) (w 11))
+    (andLV (w 10) (fV V f) (w 31) cs) (by simp) (by
+      rw [length_andLV, hcl]) (fun x hx => by rw [List.eq_of_mem_replicate hx]; exact ht.h11)
+    (andLV_len hf cs) ht'.h10 ht'.h11 (by rw [e24, hcl]) e25 ht'.h12 ht'.h13
+    ht'.h14 ht'.h15 ht'.h16 ht'.h20 ht'.h27
+  rw [show termAddC = .seq term1 modAddC from rfl]
+  show exec V f modAddC (exec V f term1 w) 26 = _
+  rw [this, e 10 (by decide), e 11 (by decide)]
+
 end ValVM
