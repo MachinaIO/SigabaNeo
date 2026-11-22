@@ -1101,6 +1101,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     no rejection loop. The two 646 calls also total 2^794.98.
     * The model is a word-RAM with words wide enough to address ≈ 2^782 words (sample arithmetic < 2^63).
     * This settles Part 140's real-RAM caveat for these lattices. General integral bases are still open there.
+  * **Lean (started).** GaussianSmoothing1D.lean (axiom-clean) proves:
+    * `theta1_poisson`: one-dimensional Poisson summation, from Mathlib's Jacobi transform.
+    * `abs_theta1_div_sub_one_le` / `tau_le`: |ρ_s(Z+c)/s − 1| ≤ τ(s) ≤ 2e^{−πs²}/(1 − e^{−3πs²}).
+    * `thetaQ_ratio_mem`: the qZ + c coset version.
+    * `klein_ratio_bounds` / `klein_sd_le`: the Klein-vs-D_{L,s} ratio and SD bounds, in factorized form.
+    * `tau_lt_of_ge`: τ < 2^{−6678} at s/q ≥ 38.39.
+    Still open: the Lemma 1 factorization on L_M (a Fubini step plus products of sums over Z^r).
   * **Rigorous cost frontier (Nov 2026).** Recovering the secret of plain LWE (511, 512, 3329), CBD(3) with probability ≥
     99.5% costs ≤ 2^795 word operations, fully explicit. The previous explicit bound was 2^1253.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
