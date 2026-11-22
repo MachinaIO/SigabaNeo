@@ -1488,6 +1488,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     Babai sum alone does not help.
   * The Part 120/147–170 terminal-ratio analysis uses Part 94 directly and is unaffected. With the unrounded constants,
     Part 151's allowance becomes 0.0001977086810795.
+* **Part 172 (audited, minor caveats).** [transference](research/wall1_transference.md): primal–dual constraints on the
+  selected window.
+  * **Dual exit sharpened by 10 orders.** Counting opposite pairs with inward half-cubes, the simultaneous failure of Part
+    142's dual floors R0(t) over all 408 indices has probability < 8.147·10⁻¹⁴ (< 4.592·10⁻¹⁵ at draw 406), down from 10⁻³.
+  * A deterministic area bound follows from the rank-503 complementary dual section.
+  * **Scalar dual floors cannot exclude plane hits.** An explicit rank-506 Euclidean lattice has dual minimum > 1/2, two
+    unique successive shortest lines and a strict plane hit in the band. Per the audit it has transcendental covolume, so it
+    is not itself a restart window; the restart mass of such configurations is open.
+  * **Remaining.** The joint hit mass on draw-406 dual-good designs must be ≤ 0.000197708679995408.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1497,7 +1506,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–171 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–172 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
