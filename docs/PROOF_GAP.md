@@ -1588,6 +1588,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     all theta data, and only one wins under the signed tie rule.
   * An exact telescoping identity shows that earlier drift slack cannot cancel a terminal majorant's overestimate.
   * The factor 4 is a toy figure. The bound at width 506 is open.
+* **Part 179 (audited, SOUND).** [invariant_majorant](research/wall1_invariant_majorant.md): isometry-invariant majorants of
+  the selected indicator.
+  * The least isometry-invariant majorant can exceed the signed-tie probability by exactly 2^r on a uniform orbit of r
+    reflected old axes. A rank-22 integer graph realizes this with factor 2^20 = 1,048,576, keeping the normalized band and
+    both quotient gates. So the toy factors 4 and 2 are not width-independent.
+  * The excess is at most the probability that different shortest-line choices change the test outcome. How often that
+    happens, or reflection orbits arise, under the restart law is unknown.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1597,7 +1604,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–178 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–179 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
