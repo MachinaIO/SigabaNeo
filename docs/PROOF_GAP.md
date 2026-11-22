@@ -1043,6 +1043,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * Recorded joint bounds were reproduced: 0.014905 / 0.005908 / 0.003682 for 1/2/3 blocks. At most 3 blocks fit in
       511 rows.
   * Conjectures A–C are open.
+  * **Lean.** CoordinateListMoment / Rank / Oracle / Decoding (axiom-clean, 21 declarations) formalize:
+    * Thm 5: per-vector membership probabilities from the deleted-column rank law, giving exact expected counts in any
+      finite window;
+    * Thm 6: failure ≤ Pr[‖plant‖ > ϱ] + (q^j − 1)/((q−1)q^r) + E[C]·(7/q)^v, with the rank term dropping for a full-rank
+      lift;
+    * Thm 7: the joint bound for overlapping blocks with shared reserved rows, and the audited converse.
+    Every exact enumeration oracle is covered, and one exists. Output-sensitive enumeration cost is open.
+
 * **Part 138 (audited, minor caveats; the proof of Theorem B is repaired in the note's Audit section).**
   [reducer_variants](research/wall1_reducer_variants.md): block-reduction variants whose output might be analyzable.
   * **Gap, w.p. > 98.5%:** λ2 ≥ 440 and ‖plant‖ ∈ (36.76, 41.73], so λ2/λ1 ∈ [10.545, 17.234].
