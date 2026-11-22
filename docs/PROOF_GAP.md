@@ -1657,6 +1657,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Not formalized: equation (1), the height-2–30 charges, smoothError ≤ 0.006269755, and the `restartCount_lwe` corollary.
   The delegate declined these because the combined certificate would validate a concrete LWE key-recovery procedure, the
   same scope line as Part 140's numeric instance.
+* **Part 183 (audited, SOUND).** [terminal_tail_047](research/wall1_terminal_tail_047.md): the terminal-minimum lower tail
+  at ratio ≈ 0.47·GH.
+  * **Removing the last draw.** Uniformly over histories through draw 406, the terminal event "λ1 ≤ 26" agrees with the
+    old-witness event "projecting the penultimate lattice M off its designated shortest vector gives a nonzero vector of
+    length ≤ 26", up to error < 3.210·10⁻¹⁴. Projection-shortened witnesses and ties are covered.
+  * Outside probability < 4.249·10⁻¹², every raw lift of such a witness has length > 250 and loses > 98.9184% of its
+    squared length.
+  * **Remaining.** The probability of that penultimate-projection event. It is still a property of the reduction chain.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1666,7 +1674,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–182 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–183 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
