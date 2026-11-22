@@ -5,6 +5,7 @@ import PE.Impl.RingBTVW
 import PE.Impl.Gates.Eval
 import PE.Impl.Gates.DateWindow
 import PE.Impl.Gates.WindowTest
+import PE.Impl.Gates.ProgWindow
 import PE.Impl.DualUse.Scheme
 import PE.Impl.DualUse.KeyGen
 import PE.Impl.DualUse.Noise
@@ -52,6 +53,8 @@ import PE.Impl.DualUse.Algo.KeyMatrix
 import PE.Impl.DualUse.Algo.KeyCoins
 import PE.Impl.DualUse.Algo.SimKey
 import PE.Impl.DualUse.Prog.SimKeyStore
+import PE.Impl.DualUse.Prog.KeyFront
+import PE.Impl.DualUse.Prog.PsiBits
 import PE.Impl.DualUse.Algo.Gates
 import PE.Impl.DualUse.Algo.KeyWords
 import PE.Impl.DualUse.Algo.KeyTry
