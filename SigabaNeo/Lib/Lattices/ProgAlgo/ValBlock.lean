@@ -55,27 +55,27 @@ theorem flatten_drop_cons {L : List (List Bool)} {c : ℕ} (hc : c < L.length) :
 
 /-! ### Small instructions -/
 
-theorem exec_drop' {t c : Fin 128} (h : t ≠ c) (w : St) :
+theorem exec_drop' {t c : Fin 120} (h : t ≠ c) (w : St) :
     exec V f (.drop t c) w = Function.update w t ((w t).drop (w c).length) := by
   simp [exec, h]
 
-theorem exec_tl' {t : Fin 128} (w : St) : exec V f (.tl t) w = Function.update w t (w t).tail := rfl
+theorem exec_tl' {t : Fin 120} (w : St) : exec V f (.tl t) w = Function.update w t (w t).tail := rfl
 
-theorem exec_clr' {t : Fin 128} (w : St) : exec V f (.clr t) w = Function.update w t [] := rfl
+theorem exec_clr' {t : Fin 120} (w : St) : exec V f (.clr t) w = Function.update w t [] := rfl
 
 theorem exec_seq' {p q : Code} (w : St) : exec V f (.seq p q) w = exec V f q (exec V f p w) := rfl
 
-theorem exec_ifb' {t : Fin 128} {p q : Code} (w : St) :
+theorem exec_ifb' {t : Fin 120} {p q : Code} (w : St) :
     exec V f (.ifb t p q) w = if hd (w t) = true then exec V f p w else exec V f q w := rfl
 
 /-! ### The column loop -/
 
 /-- One round: move a value from the stream `Z` into `OUT` (through `Y`, reset from the `V`-bit
 word `10`), skip `|TS|` bits. -/
-def colBodyC (Z Y O TS : Fin 128) : Code := ofList [.cp Y 10, .mvV Y Z, .mvV O Y, .drop Z TS]
+def colBodyC (Z Y O TS : Fin 120) : Code := ofList [.cp Y 10, .mvV Y Z, .mvV O Y, .drop Z TS]
 
 /-- `|CR|` rounds. -/
-def colLoopC (Z Y O TS CR : Fin 128) : Code := .rep CR (colBodyC Z Y O TS)
+def colLoopC (Z Y O TS CR : Fin 120) : Code := .rep CR (colBodyC Z Y O TS)
 
 /-- The column `c` of a row-major list with `C` columns: its first `r` entries. -/
 def colOf (L : List (List Bool)) (C c r : ℕ) : List (List Bool) :=
@@ -94,14 +94,14 @@ theorem UV.colOf {L : List (List Bool)} (h : UV V L) {C c r : ℕ}
   exact h _ (List.getElem_mem _)
 
 /-- The invariant of the column loop after `r` rounds. -/
-structure ColInv (V : ℕ) (Z Y O TS CR : Fin 128) (L : List (List Bool)) (C c : ℕ) (w₀ : St)
+structure ColInv (V : ℕ) (Z Y O TS CR : Fin 120) (L : List (List Bool)) (C c : ℕ) (w₀ : St)
     (r : ℕ) (w : St) : Prop where
   z : w Z = (L.drop (c + r * C)).flatten
   o : w O = (w₀ O ++ (colOf L C c r).flatten).drop (r * V)
   hi : ∀ j, j ≠ Z → j ≠ Y → j ≠ O → j ≠ CR → w j = w₀ j
 
 /-- Distinct words of the column loop. -/
-structure ColRegs (Z Y O TS CR : Fin 128) : Prop where
+structure ColRegs (Z Y O TS CR : Fin 120) : Prop where
   zy : Z ≠ Y
   zo : Z ≠ O
   zt : Z ≠ TS
@@ -112,12 +112,12 @@ structure ColRegs (Z Y O TS CR : Fin 128) : Prop where
   ot : O ≠ TS
   oc : O ≠ CR
   tc : TS ≠ CR
-  ty : (10 : Fin 128) ≠ Y
-  tz : (10 : Fin 128) ≠ Z
-  tO : (10 : Fin 128) ≠ O
-  tcr : (10 : Fin 128) ≠ CR
+  ty : (10 : Fin 120) ≠ Y
+  tz : (10 : Fin 120) ≠ Z
+  tO : (10 : Fin 120) ≠ O
+  tcr : (10 : Fin 120) ≠ CR
 
-theorem colInv_step {Z Y O TS CR : Fin 128} (hr : ColRegs Z Y O TS CR) {L : List (List Bool)}
+theorem colInv_step {Z Y O TS CR : Fin 120} (hr : ColRegs Z Y O TS CR) {L : List (List Bool)}
     (hL : UV V L) {C c : ℕ} (hC : 0 < C) {w₀ : St} (hTS : (w₀ TS).length = (C - 1) * V)
     (h10 : (w₀ 10).length = V) {r : ℕ} (hlt : c + r * C < L.length) {w : St} (h : ColInv V Z Y O TS CR L C c w₀ r w) :
     ColInv V Z Y O TS CR L C c w₀ (r + 1)
@@ -152,7 +152,7 @@ theorem colInv_step {Z Y O TS CR : Fin 128} (hr : ColRegs Z Y O TS CR) {L : List
     exact h.hi j h1 h2 h3 h4
 
 /-- **The column loop**: `|CR| = R` rounds move the column `c` of `L` into `O`. -/
-theorem exec_colLoop {Z Y O TS CR : Fin 128} (hr : ColRegs Z Y O TS CR) {L : List (List Bool)}
+theorem exec_colLoop {Z Y O TS CR : Fin 120} (hr : ColRegs Z Y O TS CR) {L : List (List Bool)}
     (hL : UV V L) {C c : ℕ} (hC : 0 < C) (w : St) (hTS : (w TS).length = (C - 1) * V)
     (hZ : w Z = (L.drop c).flatten) (h10 : (w 10).length = V)
     (hlt : ∀ i < (w CR).length, c + i * C < L.length) :
@@ -176,15 +176,15 @@ theorem colOf_len {L : List (List Bool)} (hL : UV V L) {C c r : ℕ}
 
 /-! ### The reversed transposed rows of a block -/
 
-abbrev RASB : Fin 128 := 65
-abbrev rX : Fin 128 := 77
-abbrev rZ : Fin 128 := 78
-abbrev rY : Fin 128 := 79
-abbrev CMV : Fin 128 := 80
-abbrev CNM : Fin 128 := 81
-abbrev CR : Fin 128 := 82
-abbrev TN : Fin 128 := 92
-abbrev TN1V : Fin 128 := 94
+abbrev RASB : Fin 120 := 65
+abbrev rX : Fin 120 := 77
+abbrev rZ : Fin 120 := 78
+abbrev rY : Fin 120 := 79
+abbrev CMV : Fin 120 := 80
+abbrev CNM : Fin 120 := 81
+abbrev CR : Fin 120 := 82
+abbrev TN : Fin 120 := 92
+abbrev TN1V : Fin 120 := 94
 
 /-- One column of the block on `X` (from the last), shifted into `RASB`. -/
 def rrBody : Code :=
@@ -296,11 +296,11 @@ theorem exec_rrC {L : List (List Bool)} (hL : UV V L) {N R : ℕ} (hN : 0 < N)
 
 /-! ### The transpose of the outputs -/
 
-abbrev RES : Fin 128 := 63
-abbrev OUTB : Fin 128 := 76
-abbrev ZM : Fin 128 := 83
-abbrev CI : Fin 128 := 84
-abbrev TKV : Fin 128 := 95
+abbrev RES : Fin 120 := 63
+abbrev OUTB : Fin 120 := 76
+abbrev ZM : Fin 120 := 83
+abbrev CI : Fin 120 := 84
+abbrev TKV : Fin 120 := 95
 
 /-- One column of the block on `ZM` (its first `i` values dropped), shifted into `RES`. -/
 def trBody : Code := ofList [.cp rZ ZM, .cp CR TN, colLoopC rZ rY RES TKV CR, .drop ZM 10]

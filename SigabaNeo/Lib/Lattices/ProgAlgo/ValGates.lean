@@ -31,21 +31,21 @@ variable {V : ℕ} {f : List Bool → List Bool → List Bool}
 
 /-! ### Registers -/
 
-abbrev GST : Fin 128 := 100
-abbrev GS : Fin 128 := 101
-abbrev GCNT : Fin 128 := 102
-abbrev PADS : Fin 128 := 103
-abbrev GD : Fin 128 := 104
-abbrev GX : Fin 128 := 105
-abbrev JW : Fin 128 := 106
-abbrev JB : Fin 128 := 107
-abbrev CJW : Fin 128 := 108
-abbrev OUTW : Fin 128 := 109
-abbrev TSl : Fin 128 := 110
-abbrev TST : Fin 128 := 111
-abbrev TD2 : Fin 128 := 112
-abbrev TW : Fin 128 := 113
-abbrev TPAD : Fin 128 := 114
+abbrev GST : Fin 120 := 100
+abbrev GS : Fin 120 := 101
+abbrev GCNT : Fin 120 := 102
+abbrev PADS : Fin 120 := 103
+abbrev GD : Fin 120 := 104
+abbrev GX : Fin 120 := 105
+abbrev JW : Fin 120 := 106
+abbrev JB : Fin 120 := 107
+abbrev CJW : Fin 120 := 108
+abbrev OUTW : Fin 120 := 109
+abbrev TSl : Fin 120 := 110
+abbrev TST : Fin 120 := 111
+abbrev TD2 : Fin 120 := 112
+abbrev TW : Fin 120 := 113
+abbrev TPAD : Fin 120 := 114
 
 /-! ### Reading an operand -/
 
@@ -54,7 +54,7 @@ def jdBody : Code := ofList [.ifb JB (.drop GD TSl) .nop, .tl JB]
 
 /-- **Read an operand** into `dst`: `GD := GST ++ GST`, skip the padding `|PADS|` and `j` slots
 (the unary word `JW`), take one slot. -/
-def rdC (dst : Fin 128) : Code :=
+def rdC (dst : Fin 120) : Code :=
   ofList [.cp GD TD2, .cp GX GST, .mv GD GX TST, .cp GX GST, .mv GD GX TST, .drop GD PADS,
     .cp JB JW, .cp CJW TW, .rep CJW jdBody, .cp dst TSl, .mv dst GD TSl]
 
@@ -103,7 +103,7 @@ theorem jdBody_step {S W j : ℕ} (hj : j ≤ W) {L : List (List Bool)} (hL : UV
 
 /-- **Reading an operand**: from the store `R` (`W + 1` slots of `S` bits), the padding `p` and the
 operand `j ≤ W`, `dst` gets the slot `p + j` of `R ++ R`. -/
-theorem exec_rdC {dst : Fin 128} (hd : dst = IA ∨ dst = IB) {S W : ℕ} {R : List (List Bool)}
+theorem exec_rdC {dst : Fin 120} (hd : dst = IA ∨ dst = IB) {S W : ℕ} {R : List (List Bool)}
     (hR : UV S R) (hRl : R.length = W + 1) (w : St) (hG : w GST = R.flatten)
     (hTD2 : (w TD2).length = 2 * ((W + 1) * S)) (hTST : (w TST).length = (W + 1) * S) {p j : ℕ}
     (hP : (w PADS).length = p * S) (hJ : w JW = unaryW W j) (hj : j ≤ W)
@@ -192,7 +192,7 @@ structure BlockSpec (V : ℕ) (f : List Bool → List Bool → List Bool) (blk :
     exec V f blk w RES = F (w IA) (w IB)
   len : ∀ a b, a.length = S → b.length = S → (F a b).length = S
   ctx : ∀ w, Ctx w → Ctx (exec V f blk w)
-  frame : ∀ w w', Ctx w → (∀ j : Fin 128, j.val < 100 → j ≠ IA → j ≠ IB → j ≠ RES → w' j = w j) →
+  frame : ∀ w w', Ctx w → (∀ j : Fin 120, j.val < 100 → j ≠ IA → j ≠ IB → j ≠ RES → w' j = w j) →
     Ctx w'
   wr : ∀ j ∈ wr blk, j.val < 100
 
@@ -333,7 +333,7 @@ theorem gInv_step {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List
   have hu1 := length_unaryW hgb.1
   have hu2 := length_unaryW hgb.2
   -- reading an operand
-  have RD : ∀ (dst : Fin 128), (dst = IA ∨ dst = IB) → ∀ (u : St) (j : ℕ) (rest : List Bool),
+  have RD : ∀ (dst : Fin 120), (dst = IA ∨ dst = IB) → ∀ (u : St) (j : ℕ) (rest : List Bool),
       j ≤ W → u GS = unaryW W j ++ rest → (u JW).length = W → u GST = R.flatten →
       (u PADS).length = p * S → (∀ x, x = TSl ∨ x = TST ∨ x = TD2 ∨ x = TW → u x = w₀ x) →
       exec V f (ofList [.mv JW GS TW, rdC dst]) u dst = slotOf C ins rs j ∧
@@ -414,12 +414,12 @@ theorem gInv_step {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List
     (by rw [Function.update_of_ne (by decide), b1, hsl])
     (by rw [Function.update_self, tm2 TSl (by decide), hD.tsl])
   rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide), w2IA, b1, ← hr] at hb
-  have hbo : ∀ j : Fin 128, 100 ≤ j.val → exec V f blk (Function.update w2 RES (w2 TSl)) j =
+  have hbo : ∀ j : Fin 120, 100 ≤ j.val → exec V f blk (Function.update w2 RES (w2 TSl)) j =
       Function.update w2 RES (w2 TSl) j :=
     fun j hj => exec_not_mem _ _ _ (fun hm => by have := hB.wr j hm; omega)
   have c4 := hB.ctx _ c3
   generalize exec V f blk (Function.update w2 RES (w2 TSl)) = w4 at hb hbo c4
-  have w4o : ∀ j : Fin 128, 100 ≤ j.val → j ≠ GS → j ≠ JW → w4 j = w2 j := fun j hj h1 h2 => by
+  have w4o : ∀ j : Fin 120, 100 ≤ j.val → j ≠ GS → j ≠ JW → w4 j = w2 j := fun j hj h1 h2 => by
     rw [hbo j hj, Function.update_of_ne (by rintro rfl; simp at hj)]
   rw [exec_mv_push (by decide) (by
     simp (config := {decide := true}) only [Function.update_apply, if_false, if_true]

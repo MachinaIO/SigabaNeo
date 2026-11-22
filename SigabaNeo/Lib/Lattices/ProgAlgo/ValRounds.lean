@@ -22,14 +22,14 @@ open SigabaNeo.Lattices SigabaNeo.Lattices.SLP SigabaNeo.Lattices.Algo
 
 variable {V : ℕ} {f : List Bool → List Bool → List Bool}
 
-abbrev LS : Fin 128 := 35
-abbrev RB : Fin 128 := 36
-abbrev CN : Fin 128 := 37
-abbrev CN' : Fin 128 := 38
-abbrev CTP : Fin 128 := 39
-abbrev PAR : Fin 128 := 40
-abbrev OB : Fin 128 := 41
-abbrev ZB : Fin 128 := 42
+abbrev LS : Fin 120 := 35
+abbrev RB : Fin 120 := 36
+abbrev CN : Fin 120 := 37
+abbrev CN' : Fin 120 := 38
+abbrev CTP : Fin 120 := 39
+abbrev PAR : Fin 120 := 40
+abbrev OB : Fin 120 := 41
+abbrev ZB : Fin 120 := 42
 
 /-- One element of a round. -/
 def prBody : Code :=
@@ -71,12 +71,12 @@ structure PInv (V K : ℕ) (f : List Bool → List Bool → List Bool) (w₀ : S
   par : hd (w PAR) = decide (i % 2 = 1)
   cn : (w CN').length = (w₀ CN).length - i / 2
   tm : Tmpl V K w
-  hi : ∀ j : Fin 128, 41 ≤ j.val → j ≠ CN' → w j = w₀ j
+  hi : ∀ j : Fin 120, 41 ≤ j.val → j ≠ CN' → w j = w₀ j
   one : w 10 = w₀ 10
   zv : w 11 = w₀ 11
 
-theorem Tmpl.upd {K : ℕ} {w : St} (h : Tmpl V K w) (x : Fin 128)
-    (hx : x ∉ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 128))) (v : List Bool) :
+theorem Tmpl.upd {K : ℕ} {w : St} (h : Tmpl V K w) (x : Fin 120)
+    (hx : x ∉ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 120))) (v : List Bool) :
     Tmpl V K (Function.update w x v) :=
   h.of_eq fun j hj => Function.update_of_ne (fun e => hx (by rw [← e]; exact hj)) _ _
 
@@ -182,17 +182,17 @@ theorem pinv_step (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
       obtain ⟨l, v⟩ := modAddV_shape hf (one := w₀ 10) (zv := w₀ 11) (by rw [← h.one]; exact h.tm.h10)
         (by rw [← h.zv]; exact h.tm.h11) (2 ^ K) (K + 1) L[2 * p] L[i] hx0 hx
       rw [length_flatten_of v, l]
-    have u2_ : ∀ j : Fin 128, j ∉ wr modAddC → exec V f modAddC u1 j = u1 j :=
+    have u2_ : ∀ j : Fin 120, j ∉ wr modAddC → exec V f modAddC u1 j = u1 j :=
       fun j hj => exec_not_mem modAddC u1 j hj
     have tm2 : Tmpl V K (exec V f modAddC u1) := tm1.exec modAddC (by decide)
     simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
     generalize exec V f modAddC u1 = u2 at hadd u2_ tm2
     rw [exec_mv_push (by decide) (by rw [hadd, hZl, tm2.h14])]
-    have u2hi : ∀ j : Fin 128, 27 ≤ j.val → u2 j = u1 j := fun j hj =>
+    have u2hi : ∀ j : Fin 120, 27 ≤ j.val → u2 j = u1 j := fun j hj =>
       u2_ j (fun hm => by
         have : ∀ x ∈ wr modAddC, x.val < 27 := by decide
         have := this j hm; omega)
-    simp only [exec, show ¬ (RB = (14 : Fin 128)) by decide, if_false, Function.update_self]
+    simp only [exec, show ¬ (RB = (14 : Fin 120)) by decide, if_false, Function.update_self]
     have hi2 : (i + 1) / 2 = p + 1 := by omega
     have hil : 2 * p + 1 < L.length := by omega
     obtain ⟨hx1, hxv1⟩ := hL L[2 * p + 1] (List.getElem_mem hil)
@@ -251,7 +251,7 @@ theorem exec_prC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length
       (exec V f prC w CN').length = (L.length + 1) / 2 ∧
       Tmpl V K (exec V f prC w) ∧ ((exec V f prC w) 24).length = (K + 1) * V ∧
       ((exec V f prC w) 25).length = (K + 1) * V ∧
-      ∀ j : Fin 128, 41 ≤ j.val → j ≠ CN' → exec V f prC w j = w j := by
+      ∀ j : Fin 120, 41 ≤ j.val → j ≠ CN' → exec V f prC w j = w j := by
   rw [show prC = ofList ([.cp RB LS, .cp CN' CN, .cp PAR ZB, .cp CTP CN] ++
     [.rep CTP prBody, .ifb PAR (ofList [.cp 26 24, .mv RB 26 14]) .nop]) from rfl, exec_ofList_append]
   set w1 := Function.update (Function.update (Function.update (Function.update w RB (w LS)) CN'
@@ -322,8 +322,8 @@ theorem exec_prC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length
       exact hP.hi j hj hjc
 
 /-- The counter of the rounds and its template. -/
-abbrev CTH : Fin 128 := 43
-abbrev TH : Fin 128 := 44
+abbrev CTH : Fin 120 := 43
+abbrev TH : Fin 120 := 44
 
 /-- **The rounds**: `|TH|` rounds of `prC`, each round's sums becoming the next round's stream. -/
 def roundsC : Code := ofList [.cp CTH TH, .rep CTH (ofList [prC, .cp LS RB, .cp CN CN'])]
@@ -367,7 +367,7 @@ structure RInv (V K : ℕ) (f : List Bool → List Bool → List Bool) (w₀ : S
   tm : Tmpl V K w
   c24 : (w 24).length = (K + 1) * V
   c25 : (w 25).length = (K + 1) * V
-  hi : ∀ j : Fin 128, 41 ≤ j.val → j ≠ CTH → w j = w₀ j
+  hi : ∀ j : Fin 120, 41 ≤ j.val → j ≠ CTH → w j = w₀ j
   one : w 10 = w₀ 10
   zv : w 11 = w₀ 11
 

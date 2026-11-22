@@ -86,27 +86,27 @@ theorem shift_val {L : List (List Bool)} (hL : UV V L) {v : List Bool} (hv : v.l
 
 /-! ### Registers of the block level -/
 
-abbrev IA : Fin 128 := 61
-abbrev IB : Fin 128 := 62
-abbrev SA : Fin 128 := 64
-abbrev SB0 : Fin 128 := 66
-abbrev SB1 : Fin 128 := 67
-abbrev DSSB : Fin 128 := 68
-abbrev EC : Fin 128 := 69
-abbrev FT : Fin 128 := 70
-abbrev DG : Fin 128 := 71
-abbrev CA : Fin 128 := 72
-abbrev C1 : Fin 128 := 73
-abbrev C2 : Fin 128 := 74
-abbrev CT : Fin 128 := 75
-abbrev CQ : Fin 128 := 85
-abbrev CC2 : Fin 128 := 86
-abbrev TT2 : Fin 128 := 90
-abbrev TTk : Fin 128 := 91
-abbrev TN1 : Fin 128 := 93
-abbrev T2kNV : Fin 128 := 97
-abbrev T2kkNV : Fin 128 := 98
-abbrev ZKV : Fin 128 := 99
+abbrev IA : Fin 120 := 61
+abbrev IB : Fin 120 := 62
+abbrev SA : Fin 120 := 64
+abbrev SB0 : Fin 120 := 66
+abbrev SB1 : Fin 120 := 67
+abbrev DSSB : Fin 120 := 68
+abbrev EC : Fin 120 := 69
+abbrev FT : Fin 120 := 70
+abbrev DG : Fin 120 := 71
+abbrev CA : Fin 120 := 72
+abbrev C1 : Fin 120 := 73
+abbrev C2 : Fin 120 := 74
+abbrev CT : Fin 120 := 75
+abbrev CQ : Fin 120 := 85
+abbrev CC2 : Fin 120 := 86
+abbrev TT2 : Fin 120 := 90
+abbrev TTk : Fin 120 := 91
+abbrev TN1 : Fin 120 := 93
+abbrev T2kNV : Fin 120 := 97
+abbrev T2kkNV : Fin 120 := 98
+abbrev ZKV : Fin 120 := 99
 
 /-! ### The constant of a column -/
 
@@ -285,7 +285,7 @@ structure NCtx (V K N : ℕ) (one zv : List Bool) (w : St) : Prop where
   zkv : w ZKV = (List.replicate (K + 1) zv).flatten
 
 /-- The words of `NCtx`. -/
-def nctxW : List (Fin 128) := [10, 11, 12, 13, 14, 15, 16, 20, 27, 29, OB, ZB, TNV, TNKV, T2K, TLB,
+def nctxW : List (Fin 120) := [10, 11, 12, 13, 14, 15, 16, 20, 27, 29, OB, ZB, TNV, TNKV, T2K, TLB,
   TCNT, TH, TT2, TTk, TN, TN1, TN1V, TKV, T2kNV, T2kkNV, ZKV]
 
 theorem NCtx.of_eq {K N : ℕ} {one zv : List Bool} {w w' : St} (h : NCtx V K N one zv w)
@@ -316,7 +316,7 @@ theorem NCtx.exec {K N : ℕ} {one zv : List Bool} {w : St} (h : NCtx V K N one 
     (hc : ∀ j ∈ nctxW, j ∉ wr c) : NCtx V K N one zv (exec V f c w) :=
   h.of_eq fun j hj => exec_not_mem c w j (hc j hj)
 
-theorem NCtx.upd {K N : ℕ} {one zv : List Bool} {w : St} (h : NCtx V K N one zv w) (j : Fin 128)
+theorem NCtx.upd {K N : ℕ} {one zv : List Bool} {w : St} (h : NCtx V K N one zv w) (j : Fin 120)
     (hj : j ∉ nctxW) (x : List Bool) : NCtx V K N one zv (Function.update w j x) :=
   h.of_eq fun i hi => Function.update_of_ne (by rintro rfl; exact hj hi) _ _
 
@@ -414,11 +414,11 @@ theorem tInv_step (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
       DSS (w' DSSB)) RAS (w' RASB) with hu
   have cu : NCtx V K N one zv u := by
     refine c0.of_eq fun j hj => ?_
-    have : j ≠ TT1 ∧ j ≠ CW ∧ j ≠ (30 : Fin 128) ∧ j ≠ (31 : Fin 128) ∧ j ≠ DSS ∧ j ≠ RAS := by
+    have : j ≠ TT1 ∧ j ≠ CW ∧ j ≠ (30 : Fin 120) ∧ j ≠ (31 : Fin 120) ∧ j ≠ DSS ∧ j ≠ RAS := by
       revert j; decide
     simp [hu, Function.update_apply, this.1, this.2.1, this.2.2.1, this.2.2.2.1, this.2.2.2.2.1,
       this.2.2.2.2.2]
-  have uo : ∀ j, j ≠ TT1 → j ≠ CW → j ≠ (30 : Fin 128) → j ≠ (31 : Fin 128) → j ≠ DSS →
+  have uo : ∀ j, j ≠ TT1 → j ≠ CW → j ≠ (30 : Fin 120) → j ≠ (31 : Fin 120) → j ≠ DSS →
       j ≠ RAS → u j = w' j := fun j h1 h2 h3 h4 h5 h6 => by
     simp [hu, Function.update_apply, h1, h2, h3, h4, h5, h6]
   have tmu : (u TM0).length = N - 1 - tt.val := by
@@ -451,7 +451,7 @@ theorem tInv_step (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
       (by revert j hj; decide) (by revert j hj; decide) (by revert j hj; decide)
       (by revert j hj; decide)]
   have cv : NCtx V K N one zv v := c0.of_eq v_
-  have vo : ∀ j, j ∉ wr coefC → j ≠ TT1 → j ≠ CW → j ≠ (30 : Fin 128) → j ≠ (31 : Fin 128) →
+  have vo : ∀ j, j ∉ wr coefC → j ≠ TT1 → j ≠ CW → j ≠ (30 : Fin 120) → j ≠ (31 : Fin 120) →
       j ≠ DSS → j ≠ RAS → v j = w' j := fun j h0 h1 h2 h3 h4 h5 h6 => by
     rw [hwr j h0, uo j h1 h2 h3 h4 h5 h6]
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
@@ -675,7 +675,7 @@ theorem nandV_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
 
 /-! ### One column -/
 
-theorem exec_mv_shift {d s c : Fin 128} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St} {x L : List Bool}
+theorem exec_mv_shift {d s c : Fin 120} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St} {x L : List Bool}
     (hx : x.length = (w c).length) (hs : w s = x ++ L) :
     exec V f (.mv d s c) w = Function.update (Function.update w s L) d ((w d ++ x).drop x.length) := by
   simp only [exec, if_neg h, hs, shiftIn]

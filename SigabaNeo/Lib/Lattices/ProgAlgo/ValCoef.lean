@@ -24,11 +24,11 @@ open SigabaNeo.Lattices SigabaNeo.Lattices.SLP SigabaNeo.Lattices.Algo
 
 variable {V : ℕ} {f : List Bool → List Bool → List Bool}
 
-abbrev ROW : Fin 128 := 46
-abbrev CM : Fin 128 := 47
-abbrev TM0 : Fin 128 := 48
-abbrev TT1 : Fin 128 := 49
-abbrev CJ : Fin 128 := 50
+abbrev ROW : Fin 120 := 46
+abbrev CM : Fin 120 := 47
+abbrev TM0 : Fin 120 := 48
+abbrev TT1 : Fin 120 := 49
+abbrev CJ : Fin 120 := 50
 
 /-- **A block of terms**: with the digits on `SD` and the reversed row on `ROW`, the `t + 1`
 subtracted terms, then the `N − 1 − t` added terms, shifted into `LB`. -/
@@ -49,7 +49,7 @@ theorem exec_dropLoop (w : St) :
       simp only [Function.iterate_zero, id, Nat.zero_mul, List.drop_zero, Function.update_eq_self]
     | succ m ih =>
       rw [Function.iterate_succ_apply', ih]
-      simp only [exec, show SC ≠ (14 : Fin 128) by decide, if_false]
+      simp only [exec, show SC ≠ (14 : Fin 120) by decide, if_false]
       funext j
       by_cases hc : j = CM
       · subst hc; simp (config := {decide := true}) [Function.update_apply, List.drop_tail]
@@ -78,7 +78,7 @@ theorem exec_cblockC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
       exec V f cblockC w SD = rd ∧ Tmpl V K (exec V f cblockC w) ∧
       (exec V f cblockC w 30).length = (K + 1) * V ∧ (exec V f cblockC w 31).length = V ∧
       exec V f cblockC w 10 = w 10 ∧ exec V f cblockC w 11 = w 11 ∧
-      ∀ j : Fin 128, 32 ≤ j.val → j ≠ LB → j ≠ SD → j ≠ SC → j ≠ CM → j ≠ CJ →
+      ∀ j : Fin 120, 32 ≤ j.val → j ≠ LB → j ≠ SD → j ≠ SC → j ≠ CM → j ≠ CJ →
         exec V f cblockC w j = w j := by
   have hrows : ∀ cs ∈ rows, cs.flatten.length = (K + 1) * V := fun cs hcs => by
     rw [length_flatten_of (hrv cs hcs).2, (hrv cs hcs).1]
@@ -169,12 +169,12 @@ theorem exec_cblockC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
 
 /-! ### The loop over the columns -/
 
-abbrev DSS : Fin 128 := 51
-abbrev RAS : Fin 128 := 52
-abbrev TNV : Fin 128 := 53
-abbrev TNKV : Fin 128 := 54
-abbrev CC : Fin 128 := 55
-abbrev T2K : Fin 128 := 56
+abbrev DSS : Fin 120 := 51
+abbrev RAS : Fin 120 := 52
+abbrev TNV : Fin 120 := 53
+abbrev TNKV : Fin 120 := 54
+abbrev CC : Fin 120 := 55
+abbrev T2K : Fin 120 := 56
 
 /-- One column: load its `N` digits into `SD` and its reversed row into `ROW`, then the terms. -/
 def colBody : Code := ofList [.cp SD TNV, .mv SD DSS TNV, .cp ROW TNKV, .mv ROW RAS TNKV, cblockC]
@@ -201,7 +201,7 @@ structure CInv (V K : ℕ) (f : List Bool → List Bool → List Bool) (w₀ : S
   c31 : (w 31).length = V
   one : w 10 = w₀ 10
   zv : w 11 = w₀ 11
-  hi : ∀ j : Fin 128, 35 ≤ j.val → j ≠ ROW → j ≠ CM → j ≠ CJ → j ≠ DSS → j ≠ RAS → j ≠ CC →
+  hi : ∀ j : Fin 120, 35 ≤ j.val → j ≠ ROW → j ≠ CM → j ≠ CJ → j ≠ DSS → j ≠ RAS → j ≠ CC →
     w j = w₀ j
 
 theorem colTerms_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {K : ℕ}
@@ -266,7 +266,7 @@ theorem cinv_step (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
   rw [e2]
   set s4 := Function.update (Function.update s3 RAS ((rss.drop (c + 1)).map fl).flatten) ROW
     (fl rss[c]) with hs4
-  have s4_ : ∀ j : Fin 128, j ≠ ROW → j ≠ RAS → j ≠ SD → j ≠ DSS → j ≠ CC → s4 j = w j :=
+  have s4_ : ∀ j : Fin 120, j ≠ ROW → j ≠ RAS → j ≠ SD → j ≠ DSS → j ≠ CC → s4 j = w j :=
     fun j h1 h2 h3 h4 h5 => by
       simp [s4, s3, s2, s1, Function.update_of_ne h1, Function.update_of_ne h2,
         Function.update_of_ne h3, Function.update_of_ne h4, u0_ j h5]
