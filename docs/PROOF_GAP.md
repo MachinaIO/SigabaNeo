@@ -722,6 +722,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   with the projected lattice kept in the integrand. The Haar integral of Σ_v F(gv, π_{(gv)⊥}gℤⁿ) equals an integral over
   U = ⋃_v D·A_v, and the first-column marginal is dx/ζ(n). Both are accepted on Prove2Me. The missing step for Part 105's
   sharp bound is to disintegrate over the first column and identify the normalized transverse lattice with Haar on X_{n−1}.
+  TransverseHaar.lean (`normalizedProjection_disintegration`) proves the disintegration of the unfolded measure over the
+  marked first column. A single Markov kernel K_x gives (1/μ(D))∫_U F(x, P_g) dμ = (1/ζ(n))∫∫ F(x,p) K_x(dp) dx for every
+  nonnegative measurable F. It is accepted on Prove2Me. Still open: identifying the law induced by K_x on the unlabelled
+  transverse lattice with Haar on X_{n−1}.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
