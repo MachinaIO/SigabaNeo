@@ -101,6 +101,44 @@ theorem exec_out_t : ∀ (c : Code), NoNand c → ∀ (σ : St) (o : List Bool) 
 theorem exec_mk_noNand (c : Code) (hc : NoNand c) (P : SLP ι) (σ : St) :
     exec E c (mk E ix P σ) = mk E ix P (exec E c σ) := exec_out_t c hc σ _ _
 
+/-! ### Constant lists -/
+
+/-- `σ` with new registers and lists. -/
+def setSL (σ : St) (sc : SR → ℕ) (ls : LR → List ℕ) : St := { σ with sc := sc, ls := ls }
+
+/-- `l :=` the list of `f 0, …, f (|cnt| - 1)`, the body pushing `f i` with the index `i` in the
+register `42`. -/
+def constC (cnt : SR) (l : LR) (body : Code) : Code :=
+  .seq (.lnil l) (.seq (.zero 42) (.rep cnt (.seq body (.inc 42))))
+
+theorem iter_const {body : Code} {l : LR} {f : ℕ → ℕ} {Q : St → Prop}
+    (hQ : ∀ σ : St, Q σ → ∀ v ls', Q (setSL σ (Function.update σ.sc 42 v) ls'))
+    (hb : ∀ (σ : St) (i : ℕ), Q σ → σ.sc 42 = i → (σ.ls l).length < E.C →
+      exec E body σ = { σ with ls := Function.update σ.ls l (σ.ls l ++ [f i]) }) :
+    ∀ (j : ℕ) (σ : St) (i : ℕ), Q σ → σ.sc 42 = i → i + j ≤ E.M → (σ.ls l).length + j ≤ E.C →
+      (exec E (.seq body (.inc 42)))^[j] σ = setSL σ (Function.update σ.sc 42 (i + j))
+        (Function.update σ.ls l (σ.ls l ++ (List.range j).map (fun x => f (i + x))))
+  | 0, σ, i, _, hi, _, _ => by
+    simp only [Function.iterate_zero, id, Nat.add_zero, List.range_zero, List.map_nil,
+      List.append_nil, Function.update_eq_self, setSL]
+    rw [← hi]; simp
+  | j + 1, σ, i, hq, hi, hM, hC => by
+    rw [Function.iterate_succ_apply, exec_seq, hb σ i hq hi (by omega)]
+    set σ1 : St := { σ with ls := Function.update σ.ls l (σ.ls l ++ [f i]) }
+    have e2 : exec E (.inc 42) σ1 = setSL σ (Function.update σ.sc 42 (i + 1))
+        (Function.update σ.ls l (σ.ls l ++ [f i])) := by
+      simp only [exec, σ1, hi, setSL]; rw [min_eq_left (by omega)]
+    rw [e2]
+    rw [iter_const hQ hb j _ (i + 1) (hQ σ hq _ _) (by simp [setSL]) (by omega)
+      (by simp [setSL]; omega)]
+    simp only [setSL, Function.update_idem, Function.update_self, List.append_assoc]
+    have e3 : (List.range (j + 1)).map (fun x => f (i + x)) =
+        f i :: (List.range j).map (fun x => f (i + 1 + x)) := by
+      rw [List.range_succ_eq_map]; simp only [List.map_cons, List.map_map]
+      congr 1; apply List.map_congr_left; intro x _; simp only [Function.comp]; congr 1; omega
+    rw [e3, show i + 1 + j = i + (j + 1) by omega]
+    rfl
+
 end FhatGen
 
 end SigabaNeo.Lattices
