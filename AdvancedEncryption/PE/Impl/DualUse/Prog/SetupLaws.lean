@@ -180,4 +180,40 @@ theorem rmLaw_eq (hN : 0 < N) (hK : 0 < K) :
   exact pi_map_flatMap (α := Fin c.d) (PMF.uniformOfFintype Bool)
     (fun b => (ringEnc N K).enc (bitVal (R := Rg N K) b))
 
+/-- The word of the flooding errors from their coefficients `T`. -/
+theorem eEnc_flood (T : JC (Sdw (N := N) hk) × Fin N → Fin (2 ^ c.w)) :
+    (eEnc (N := N) hk).enc (fun j => Matrix.of fun _ col =>
+      Negacyclic.ofCoeffs (fun n => ((T ((j, col), n) : ℕ) : ZMod (2 ^ K)))) =
+      ((Enum.list (α := JC (Sdw (N := N) hk) × Fin N)).map T).flatMap (gF K c.w) := by
+  refine Eq.trans ?_ (flatMap_map_product _ _ T _).symm
+  refine Eq.trans ?_ (Algo.flatMap_product _ _ _).symm
+  refine Eq.trans (List.flatMap_map (l := Enum.list) (f := fun j => Matrix.of fun _ col =>
+      Negacyclic.ofCoeffs (fun n => ((T ((j, col), n) : ℕ) : ZMod (2 ^ K))))
+    (g := (matEnc (N := N) (K := K) (Fin 1) (Col k)).enc)) ?_
+  refine List.flatMap_congr fun j _ => ?_
+  show (FixedEnc.fun (α := Col k) (ringEnc N K)).enc (fun col =>
+      Negacyclic.ofCoeffs (fun n => ((T ((j, col), n) : ℕ) : ZMod (2 ^ K)))) ++ [] = _
+  rw [List.append_nil]
+  refine Eq.trans (List.flatMap_map _ _ _) ?_
+  refine List.flatMap_congr fun col _ => ?_
+  refine (ringEnc_flatMap' N K _).trans ?_
+  rw [List.flatMap_map]
+  rfl
+
+/-- **The flooding errors**: independent flooding coefficients. -/
+theorem eLaw_eq [NeZero c.d] :
+    (lawEc hk c).map (eEnc (N := N) hk).enc =
+      catPow (μF K c.w) (Enum.list (α := JC (Sdw (N := N) hk) × Fin N)).length := by
+  have : NeZero (2 ^ c.w) := ⟨by positivity⟩
+  have h1 : lawEc hk c = (PMF.uniformOfFintype (JC (Sdw (N := N) hk) × Fin N → Fin (2 ^ c.w))).map
+      (fun T j => Matrix.of fun _ col =>
+        Negacyclic.ofCoeffs (fun n => ((T ((j, col), n) : ℕ) : ZMod (2 ^ K)))) := by
+    unfold lawEc floodRows floodLaw
+    rw [PMF.map_comp]
+    rfl
+  rw [h1, PMF.map_comp]
+  refine (congrArg (fun f => PMF.map f (PMF.uniformOfFintype
+    (JC (Sdw (N := N) hk) × Fin N → Fin (2 ^ c.w)))) (funext (eEnc_flood hk c))).trans ?_
+  rw [← Cslib.Probability.PMF.pi_uniformOfFintype, pi_map_flatMap, coefF_eq]
+
 end AdvancedEncryption.DualUse.Prog
