@@ -1,6 +1,7 @@
 import PE.Impl.DualUse.Prog.WfB2
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValCost
 import SigabaNeo.Lib.Machines.Prog.PhaseB
+import SigabaNeo.Lib.Lattices.ProgAlgo.SimStepGT
 
 /-!
 # The time of the block-structured `W_f` block
@@ -179,6 +180,44 @@ theorem ph_prepT (β0 : Fin 256 → ℕ) (M31 : ℕ)
   exact (ph_prog _ β0).seq <| (ph_cnt W _).seq <| (ph_prog _ _).seq <| (ph_prog _ _).seq <|
     (ph_tmplP tX0 _ _ k31).seq <| (ph_tm c M31 _ hin htop).seq <| (ph_prog _ _).seq <|
     (ph_tmplP tX0 _ _ kT).seq <| (ph_prog _ _).seq <| (ph_putW _ _ _).seq (ph_putW _ _ _)
+
+end WB2
+
+/-! ### The runs of the machine -/
+
+namespace WB2
+
+open SigabaNeo.Tape.ValVM SigabaNeo.Tape.Prog SigabaNeo.Tape.Prog.StepT
+
+/-- The bounds of the step's tapes for the run of `f̂` (`σSt2` at `N K k d`). -/
+def bsT (N K k d : ℕ) : Fin 132 → ℕ := Sym.bnd [0, N, K, k, d] σSt2
+
+/-- The bounds of the step's tapes for the predicate's run. -/
+def bsG (N K k d : ℕ) : Fin 132 → ℕ := Sym.bnd [0, N, K, k, d] σStG2
+
+/-- **The phase of the run of `f̂`**, from the abstract interpreter. -/
+theorem ph_runT (N K k d Ms fuel : ℕ) (L L' : List ℕ) (T : ℕ) (hL : L.length = 120)
+    (hV1 : VT N K k d ≤ bsT N K k d 1) (hV2 : VT N K k d ≤ bsT N K k d 2)
+    (hbs : ∀ t, bsT N K k d t ≤ Ms) (hVM : VT N K k d ≤ Ms)
+    (habs : absC (bsT N K k d) (VT N K k d) (Sym.pEval [0, N, K, k, d] cStep2) Ms fuel fhatFullC L =
+      some (L', T)) :
+    Ph runT (encB (bsT N K k d) (VT N K k d) (gB L)) T (encB (bsT N K k d) (VT N K k d) (gB L')) := by
+  have hx := xsound_simStepP [0, N, K, k, d] trivial
+  exact absC_sound (nocert _) _ _ _ _ hV1 hV2 (fun ℓ hℓ => (hx ℓ hℓ).2)
+    (fun ℓ hℓ => (hx ℓ hℓ).1.trans fun t => Sym.aLe_spec _ aLe_out_top t.val)
+    hbs hVM fuel fhatFullC L L' T hL habs
+
+/-- **The phase of the predicate's run.** -/
+theorem ph_runG (N K k d Ms fuel : ℕ) (L L' : List ℕ) (T : ℕ) (hL : L.length = 120)
+    (hV1 : VG N K k d ≤ bsG N K k d 1) (hV2 : VG N K k d ≤ bsG N K k d 2)
+    (hbs : ∀ t, bsG N K k d t ≤ Ms) (hVM : VG N K k d ≤ Ms)
+    (habs : absC (bsG N K k d) (VG N K k d) (Sym.pEval [0, N, K, k, d] cStepG2) Ms fuel gswFullC L =
+      some (L', T)) :
+    Ph runG (encB (bsG N K k d) (VG N K k d) (gB L)) T (encB (bsG N K k d) (VG N K k d) (gB L')) := by
+  have hx := xsound_simStepG [0, N, K, k, d] trivial
+  exact absC_sound (nocert _) _ _ _ _ hV1 hV2 (fun ℓ hℓ => (hx ℓ hℓ).2)
+    (fun ℓ hℓ => (hx ℓ hℓ).1.trans fun t => Sym.aLe_spec _ aLe_out_gsw t.val)
+    hbs hVM fuel gswFullC L L' T hL habs
 
 end WB2
 
