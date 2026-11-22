@@ -15,9 +15,8 @@ import SigabaNeo.Lib.Machines.Prog.LoadB
 2. the input is parsed (`unfrP` three times): `msk` on tape `0`, `C` on tape `1`;
 3. the front end `frontP c.L W` (`PE.Gates.DateWindow`): `true :: gsW W (parse C)` for a window
    predicate, `[false]` for another short one, `[]` for a long one;
-4. **window predicates**: the key row `B_f̂` (the block `bfX`, a parameter meeting `BfSpec`; one
-   instance is `bfB`, `PE.Impl.DualUse.Prog.BfB`), then one try of box rejection with the real
-   trapdoor and fresh coins (`ProgKeyR.keyTryRCoinsP`), and the output framed (`frP`);
+4. **window predicates**: the key row `B_f̂` (the block `bfX`, a parameter meeting `BfSpec`), then
+   one try of box rejection with the real trapdoor and fresh coins (`ProgKeyR.keyTryRCoinsP`), and the output framed (`frP`);
    **other short predicates**: the framed dummy key; **long predicates**: the empty tuple;
 5. every tape but `0` cleared.
 -/
