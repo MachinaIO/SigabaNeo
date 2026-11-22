@@ -1902,6 +1902,49 @@ theorem key_run (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : Bnd
   · simp only [hr]; rw [show oK2 89 = ms 89 from rfl]; exact L _ _ (by simp [keyT])
   · simp only [hr]; rw [show oK2 90 = ms 90 from rfl]; exact L _ _ (by simp [keyT])
 
+/-- The store after the body, before the cleanup. -/
+noncomputable def S6 (C : List Bool) : Store 256 :=
+  Function.update (S5 N K (K + 1) c.d (S4 hk c W (parse C) sd)) 255 (colsW N K (K + 1) c.d (simW sd C))
+
+/-- **The law of the body.** -/
+theorem law_wfBody (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W (parse C))
+    (hgs : (parse C).length + 10 ≤ W) (hne : parse C ≠ []) :
+    (wfBody hk c W).law (S0 W ((sdEnc hk c).enc sd) (parse C)) =
+      PMF.pure (fun t => if t ∈ finClr then [] else S6 hk c W sd C t) := by
+  obtain ⟨tG, tA, tO, tS, tX0', tX1', tX2'⟩ := T3_facts hk c W (parse C) sd hW hb
+  rw [wfBody, XProg.law_seq, law_prepT, PMF.pure_bind, XProg.law_seq,
+    law_runT hk c W (parse C) sd hW hb, PMF.pure_bind,
+    show ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) (parse C)) (VT N K (K + 1) c.d)
+      (w3 hk c W (parse C) sd) = T3 hk c W (parse C) sd from rfl,
+    XProg.law_seq, law_prepG hk c W _ tX0', PMF.pure_bind, XProg.law_seq,
+    law_runG hk c W (parse C) _ hW hb tG tS tX0' tX1' tX2', PMF.pure_bind,
+    show ValVM.enc (s3 hk c W (T3 hk c W (parse C) sd)) (VG N K (K + 1) c.d)
+      (w6 hk c W (T3 hk c W (parse C) sd)) = S4 hk c W (parse C) sd from rfl,
+    XProg.law_seq, law_keyPrep _ _ _ _ _ (by simp [S4]), PMF.pure_bind, XProg.law_seq,
+    law_keyF _ _ (key_run hk c W sd C hN hK hW hb hgs hne), PMF.pure_bind, law_clrsP]
+  rfl
+
+theorem mem_finClr (t : Fin 256) : t ∈ finClr ↔ t ≠ mw SDW ∧ t ≠ 255 := by
+  simp [finClr]
+
+/-- **The final store**: `sdEnc sd` on its word, `W_f` on the scratch tape `255`. -/
+theorem final_eq (C : List Bool) (hW : 0 < W) (hb : BndG W (parse C)) :
+    (fun t => if t ∈ finClr then [] else S6 hk c W sd C t) = fun t =>
+      if t = mw SDW then (sdEnc hk c).enc sd else if t = 255 then colsW N K (K + 1) c.d (simW sd C)
+      else [] := by
+  obtain ⟨-, tA, -⟩ := T3_facts hk c W (parse C) sd hW hb
+  funext t
+  by_cases h1 : t = mw SDW
+  · subst h1
+    rw [if_neg (by rw [mem_finClr]; simp), if_pos rfl, S6, Function.update_of_ne (by decide),
+      S5_not _ _ _ _ _ (by rw [keys_keyT]; decide) (by decide), if_neg (by decide), S4,
+      ValVM.enc_tWd, w6_frame _ _ _ _ _ (by decide +kernel), w4,
+      S3_eq_T _ _ _ _ (by decide) (by decide) (by decide), tA]
+  · by_cases h2 : t = 255
+    · subst h2
+      rw [if_neg (by rw [mem_finClr]; simp), if_neg h1, if_pos rfl, S6, Function.update_self]
+    · rw [if_pos ((mem_finClr t).mpr ⟨h1, h2⟩), if_neg h1, if_neg h2]
+
 end Final
 
 end WB2
