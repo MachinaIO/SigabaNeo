@@ -112,3 +112,4 @@ import PE.Impl.DualUse.Prog.Sd3
 import PE.Impl.DualUse.Prog.Flip
 import PE.Impl.DualUse.Prog.Chal3
 import PE.Impl.DualUse.Prog.Pub5
+import PE.Impl.DualUse.Prog.Chal5
