@@ -28,8 +28,8 @@ Conventions (those of the codec `PE.Impl.DualUse.Codec`):
 |---|---|---|
 | hybrid 3 / ideal instance `(a, b)` | `inst3Enc` | `a`, `b` (rows `1 × Col k`) |
 | hybrid 5 instance `(P, P')` | `inst5Enc` | `pubEnc P`, `pubEnc P'`; `pubEnc (B₀, a, z, p)` = `B₀` (`1 × Fin d`), `a`, `z`, `p` |
-| `Sec3` | `sec3Enc` | `x`, `B₀`, `w`, `p`, `rest = (s, e₀, e₁, Rm, e')`, `e` |
-| `Sec5` | `sec5Enc` | `x`, `u₀`, `w`, `Rm`, `e` |
+| `Sec3` | `sec3Enc` (the `Rᵢ` column-major, `rmTEnc`) | `x`, `B₀`, `w`, `p`, `rest = (s, e₀, e₁, Rm, e')`, `e` |
+| `Sec5` | `sec5Enc` (the `Rᵢ` column-major) | `x`, `u₀`, `w`, `Rm`, `e` |
 | `SecI` | `secIEnc` | `x`, `B₀`, `w`, `p`, `r = (s, e₀, e₁, Rm, ej, e')`, `ct` (`ctEnc`) |
 | `SimData` | `sdEnc` | `mpk` (`pkEnc`), `c₀`, `Rm`, `W`, `Ψ`, `x` |
 
@@ -92,6 +92,14 @@ def wEnc := FixedEnc.fun (α := JC (Sdw (N := N) hk)) (FixedEnc.fun (α := Fin c
 /-- The matrices `Rᵢ` (or the `Wⱼ`) as ring matrices `Fin d × Col k`. -/
 def rmEnc := FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin c.d) (Col k))
 
+/-- A matrix by its columns (column-major): the transpose's row-major word. -/
+def matTEnc (r s : Type) [Enum r] [Enum s] :=
+  (matEnc (N := N) (K := K) s r).comap Matrix.transpose Matrix.transpose_injective
+
+/-- **The matrices `Rᵢ` in the secrets**: column-major (`i`, then the column `c`, then the row
+`a`), the order of the coins of `lawRmBin`. -/
+def rmTEnc := FixedEnc.fun (α := Fin 10) (matTEnc (N := N) (K := K) (Fin c.d) (Col k))
+
 /-- The errors of the encodings, `e : Attr × Index → 1 × Col k`. -/
 def eEnc := FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
   (matEnc (N := N) (K := K) (Fin 1) (Col k))
@@ -99,7 +107,7 @@ def eEnc := FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBi
 /-- The coins other than the encodings' errors: `(s, e₀, e₁, Rm, e')`. -/
 def restEnc :=
   (ringEnc N K).prod ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod
-    ((matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).prod ((rmEnc c).prod (ringEnc N K))))
+    ((matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).prod ((rmTEnc c).prod (ringEnc N K))))
 
 /-- The coins of `Enc` as a tuple. -/
 def coinsTuple (r : EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)) :=
@@ -115,7 +123,7 @@ theorem coinsTuple_injective : Function.Injective (coinsTuple hk c) := by
 /-- **The coins of `Enc`**: `s`, `e₀`, `e₁`, `Rm`, `ej`, `e'`. -/
 def coinsEnc :=
   ((ringEnc N K).prod ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod
-    ((matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).prod ((rmEnc c).prod ((eEnc (N := N) hk).prod (ringEnc N K)))))).comap
+    ((matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).prod ((rmTEnc c).prod ((eEnc (N := N) hk).prod (ringEnc N K)))))).comap
     (coinsTuple hk c) (coinsTuple_injective hk c)
 
 /-! ### The secrets of the reductions -/
@@ -127,7 +135,7 @@ def sec3Enc :=
 
 /-- **The secret of hybrid 5**: `x`, `u₀`, `w`, `Rm`, `e`. -/
 def sec5Enc :=
-  dateEnc.prod ((ringEnc N K).prod ((wEnc hk c).prod ((rmEnc c).prod (eEnc (N := N) hk))))
+  dateEnc.prod ((ringEnc N K).prod ((wEnc hk c).prod ((rmTEnc c).prod (eEnc (N := N) hk))))
 
 /-- **The secret of the ideal side**: `x`, `B₀`, `w`, `p`, the coins, the uniform challenge. -/
 def secIEnc :=
