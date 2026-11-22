@@ -1518,6 +1518,64 @@ theorem length_valueOf_fV {V : ℕ} {f : List Bool → List Bool → List Bool}
       exact hf _ _ (by rw [takeD_of_length' ha]; exact ha)
         (by rw [takeD_of_length' hb]; exact hb)) p w
 
+section IdT
+
+variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (sd : SimData hk c)
+
+/-- **The inputs of the run of `f̂` are the inputs of the simulation.** -/
+theorem inBW_eq (hN : 0 < N) (hK : 0 < K) (i : Fin 10) (b : BI N (K + 1)) :
+    ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd) i b =
+      (insTW sd).getD (ixT N K (K + 1) hk (i, b)) [] := by
+  rw [ixT, insTW]
+  erw [getD_enumIx (α := JT N K (K + 1) hk)]
+  obtain ⟨a, ⟨c₁, c₂⟩, i', t⟩ := b
+  simp only [ValVM.inBW, ValVM.jw, jointW, Algo.psiBitsW, bitsW, constW_bitW _ hN hK, getD_block]
+  rfl
+
+theorem length_inBW (hN : 0 < N) (hK : 0 < K) (i : Fin 10) (b : BI N (K + 1)) :
+    (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd) i b).length = VT N K (K + 1) c.d := by
+  rw [inBW_eq hk c sd hN hK]
+  have hl : ixT N K (K + 1) hk (i, b) < (insTW sd).length := by
+    rw [length_insTW]; exact enumIx_lt (α := JT N K (K + 1) hk) _
+  rw [List.getD_eq_getElem _ _ hl]
+  exact length_mem_insTW sd _ (List.getElem_mem _)
+
+/-- **The output bundle of the machine's run of `f̂` is read from the store of the simulation.** -/
+theorem fhatOut_eq (C : List Bool) (hN : 0 < N) (hK : 0 < K) (b : BI N (K + 1)) :
+    fhatV (oneT N K c.d) (ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d))
+        (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1))
+        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 (parse C)).1 (predOf 10 (parse C)).2 b =
+      (storeT N K (K + 1) c.d (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C) (insTW sd)
+        (ixT N K (K + 1) hk)).getD (wireIx (ixT N K (K + 1) hk)
+          (Enum.list (α := JT N K (K + 1) hk)).length
+          (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1.length
+          ((fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).2 b)) [] := by
+  set inp : Fin 10 × BI N (K + 1) → List Bool := fun ib =>
+    ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd) ib.1 ib.2 with hinp
+  have hin : ∀ ib, (inp ib).length = VT N K (K + 1) c.d := fun ib => length_inBW hk c sd hN hK _ _
+  have h1 : (oneT N K c.d).length = VT N K (K + 1) c.d := by
+    simp [oneT, length_gadW, length_oneW, VT, lenA]; ring
+  have e1 := valueOf_fhatSLPL (inp := inp) (one := oneT N K c.d)
+    (step := ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d)) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 (parse C)).1
+    (predOf 10 (parse C)).2 b
+  refine e1.symm.trans ?_
+  rw [ValVM.valueOf_fV (vstepT N K c.d).len inp _ hin h1]
+  obtain ⟨h, e⟩ := getElem_wireIx (ixT N K (K + 1) hk) (insTW sd) (length_insTW sd)
+    (fun j => enumIx_lt (α := JT N K (K + 1) hk) j) (simOneW N K (K + 1) c.d (gadW N K (K + 1)))
+    (SLP.values (fun j => (insTW sd).getD (ixT N K (K + 1) hk j) []) (simOneW N K (K + 1) c.d
+      (gadW N K (K + 1))) (fT N K c.d) (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1)
+    ((fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).2 b)
+  rw [← SLP.length_values (fun j => (insTW sd).getD (ixT N K (K + 1) hk j) [])
+    (simOneW N K (K + 1) c.d (gadW N K (K + 1))) (fT N K c.d)
+    (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1, storeT,
+    List.getD_eq_getElem _ _ h, e]
+  have hi : inp = fun j => (insTW sd).getD (ixT N K (K + 1) hk j) [] := by
+    funext ib; exact inBW_eq hk c sd hN hK ib.1 ib.2
+  rw [hi]
+  rfl
+
+end IdT
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
