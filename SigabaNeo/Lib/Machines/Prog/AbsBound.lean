@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Machines.Prog.BoundsT
+import SigabaNeo.Lib.Machines.Prog.Frame
 import SigabaNeo.Lib.Machines.Prog.Det
 
 /-!
@@ -49,11 +49,15 @@ def mEval : List ℕ → Mono → ℕ
   | _, [] => 1
   | ρ, e :: es => ρ.headD 0 ^ e * mEval ρ.tail es
 
+/-- All exponents are zero. -/
+def mZero : Mono → Bool
+  | [] => true
+  | a :: as => a.beq 0 && mZero as
+
 /-- Equality of monomials (up to trailing zero exponents). -/
 def mBeq : Mono → Mono → Bool
-  | [], [] => true
-  | [], b :: bs => b.beq 0 && mBeq [] bs
-  | a :: as, [] => a.beq 0 && mBeq as []
+  | [], bs => mZero bs
+  | a :: as, [] => a.beq 0 && mZero as
   | a :: as, b :: bs => a.beq b && mBeq as bs
 
 /-- The product of monomials. -/
@@ -64,18 +68,17 @@ def mMul : Mono → Mono → Mono
 
 theorem mEval_nil (ρ : List ℕ) : mEval ρ [] = 1 := by cases ρ <;> rfl
 
+theorem mEval_of_mZero : ∀ {m : Mono}, mZero m = true → ∀ ρ, mEval ρ m = 1
+  | [], _, ρ => mEval_nil ρ
+  | a :: as, h, ρ => by
+    simp only [mZero, Bool.and_eq_true] at h
+    rw [mEval, Nat.eq_of_beq_eq_true h.1, pow_zero, one_mul, mEval_of_mZero h.2]
+
 theorem mEval_of_mBeq : ∀ {m m' : Mono}, mBeq m m' = true → ∀ ρ, mEval ρ m = mEval ρ m'
-  | [], [], _, _ => rfl
-  | [], b :: bs, h, ρ => by
-    simp only [mBeq, Bool.and_eq_true] at h
-    rw [Nat.eq_of_beq_eq_true h.1]
-    simp only [mEval, pow_zero, one_mul]
-    rw [← mEval_of_mBeq h.2, mEval_nil]
+  | [], bs, h, ρ => by rw [mEval_nil, mEval_of_mZero h]
   | a :: as, [], h, ρ => by
     simp only [mBeq, Bool.and_eq_true] at h
-    rw [Nat.eq_of_beq_eq_true h.1]
-    simp only [mEval, pow_zero, one_mul]
-    rw [mEval_of_mBeq h.2, mEval_nil]
+    rw [mEval_nil, mEval, Nat.eq_of_beq_eq_true h.1, pow_zero, one_mul, mEval_of_mZero h.2]
   | a :: as, b :: bs, h, ρ => by
     simp only [mBeq, Bool.and_eq_true] at h
     rw [mEval, mEval, Nat.eq_of_beq_eq_true h.1, mEval_of_mBeq h.2]
@@ -319,6 +322,7 @@ def absRun (fuel : ℕ) : Prog k → Asg → Option (Asg × Poly)
   | .loop i body, σ => match fixIter (absRun fuel body) fuel σ with
     | none => none
     | some (σi, _, wb) => some (σi, pAdd (pMul (aGet σ i.val) (pAdd wb (pC 2))) (pC 1))
+  termination_by structural p => p
 
 /-! ### Soundness -/
 
@@ -369,96 +373,435 @@ theorem absPrim_sound (ρ : List ℕ) (p : Prim k) {σ σ' : Asg} (h : absPrim p
     exact update_le_update ((tailB_le i ℓ).trans hℓ) j (by simp)
   | eq | cons | snoc | consHead | snocHead => simp [absPrim] at h
 
-/-- **Soundness of the abstract interpreter.** For a program of the fragment, from every per-tape
-bound `ℓ ≤ bnd ρ σ` with entries at most `M`: the bound afterwards is at most `bnd ρ σ'`, and the
-time at most `(2 M + 3)` times the sweeps `w`. -/
-theorem absRun_sound (ρ : List ℕ) (M fuel : ℕ) :
-    ∀ (p : Prog k), p.NoGrow → ∀ (σ σ' : Asg) (w : Poly), absRun fuel p σ = some (σ', w) →
-      ∀ ℓ : Fin k → ℕ, ℓ ≤ bnd ρ σ → (∀ t, ℓ t ≤ M) →
-        lenBoundT p ℓ ≤ bnd ρ σ' ∧ timeBoundT p ℓ ≤ (2 * M + 3) * pEval ρ w := by
+theorem noGrowB_of_absPrim {p : Prim k} {σ σ' : Asg} (h : absPrim p σ = some σ') :
+    p.noGrowB = true := by
+  cases p <;> simp_all [absPrim, Prim.noGrowB]
+
+/-! ### Relabelling -/
+
+theorem _root_.SigabaNeo.Tape.Prim.map_map {m n : ℕ} (v : Fin m → Fin n) (u : Fin n → Fin k)
+    (p : Prim m) : (p.map v).map u = p.map (u ∘ v) := by
+  cases p <;> rfl
+
+theorem _root_.SigabaNeo.Tape.Prim.map_id (p : Prim k) : p.map id = p := by cases p <;> rfl
+
+theorem _root_.SigabaNeo.Tape.Prog.map_map {m n : ℕ} (v : Fin m → Fin n) (u : Fin n → Fin k) :
+    ∀ p : Prog m, map u (map v p) = map (u ∘ v) p
+  | .prim p => congrArg Prog.prim (Prim.map_map v u p)
+  | .coin _ => rfl
+  | .seq p q => by simp only [map, Prog.map_map v u p, Prog.map_map v u q]
+  | .ifBlank _ p q => by simp only [map, Prog.map_map v u p, Prog.map_map v u q]; rfl
+  | .ifBit _ p q => by simp only [map, Prog.map_map v u p, Prog.map_map v u q]; rfl
+  | .loop _ b => by simp only [map, Prog.map_map v u b]; rfl
+
+theorem _root_.SigabaNeo.Tape.Prog.map_id : ∀ p : Prog k, map id p = p
+  | .prim p => congrArg Prog.prim (Prim.map_id p)
+  | .coin _ => rfl
+  | .seq p q => by simp only [map, Prog.map_id p, Prog.map_id q]
+  | .ifBlank _ p q => by simp only [map, Prog.map_id p, Prog.map_id q]; rfl
+  | .ifBit _ p q => by simp only [map, Prog.map_id p, Prog.map_id q]; rfl
+  | .loop _ b => by simp only [map, Prog.map_id b]; rfl
+
+theorem lenT_map {n : ℕ} {u : Fin n → Fin k} (hu : Function.Injective u) (p : Prim n)
+    (ℓ : Fin k → ℕ) (j : Fin n) : (p.map u).lenT ℓ (u j) = p.lenT (ℓ ∘ u) j := by
+  cases p <;> simp [Prim.map, Prim.lenT, Function.update_apply, hu.eq_iff]
+
+/-! ### Sound summaries
+
+`Sound p σ σ' w`: wherever `p` is placed (`map u p`, `u` injective) in a store whose tapes are all
+at most `M` and whose tapes `u j` are at most `bnd ρ σ j`, its tapes `u j` end at most
+`bnd ρ σ' j` and it runs within `(2 M + 3) · pEval ρ w` steps, for all values `ρ` of the
+variables. Summaries compose (`Sound.seq`, `Sound.ifBit`, `Sound.loop`, `Sound.call`), so a
+subprogram is analysed once and its summary reused wherever it is placed. -/
+
+/-- The value of the variable `0`, the **top** size: it bounds every tape, and a summary charges
+`2 · top + 3` steps per primitive. -/
+def top (ρ : List ℕ) : ℕ := ρ.headD 0
+
+/-- The polynomial `X₀`, standing for the top size. -/
+def pTop : Poly := [([1], 1)]
+
+/-- `p` is literally `pTop`. -/
+def isTop : Poly → Bool
+  | [([1], 1)] => true
+  | _ => false
+
+theorem pEval_of_isTop {p : Poly} (h : isTop p = true) (ρ : List ℕ) : pEval ρ p = top ρ := by
+  match p, h with
+  | [([1], 1)], _ => simp [pEval, mEval, mEval_nil, top]
+
+/-- A sound summary of a program: abstract input store, abstract output store, sweeps. -/
+def Sound {n : ℕ} (p : Prog n) (σ σ' : Asg) (w : Poly) : Prop :=
+  ∀ (ρ : List ℕ) (k : ℕ) (u : Fin n → Fin k), Function.Injective u → ∀ ℓ : Fin k → ℕ,
+    (∀ j, ℓ (u j) ≤ bnd ρ σ j) → (∀ t, ℓ t ≤ top ρ) →
+      (∀ j, lenBoundT (map u p) ℓ (u j) ≤ bnd ρ σ' j) ∧
+        timeBoundT (map u p) ℓ ≤ (2 * top ρ + 3) * pEval ρ w
+
+variable {n : ℕ}
+
+theorem Sound.prim {p : Prim n} {σ σ' : Asg} (h : absPrim p σ = some σ') :
+    Sound (.prim p) σ σ' (pC 1) := by
+  intro ρ k u hu ℓ hℓ hM
+  refine ⟨fun j => ?_, ?_⟩
+  · show (p.map u).lenT ℓ (u j) ≤ _
+    rw [lenT_map hu]
+    exact absPrim_sound ρ p h (ℓ := ℓ ∘ u) hℓ j
+  · have := supB_le_const hM
+    show 2 * (supB ℓ + (p.map u).pad) + 3 ≤ _
+    rw [Prim.pad_map, Prim.pad_of_noGrowB (noGrowB_of_absPrim h), pEval_pC]
+    omega
+
+theorem Sound.seq {p q : Prog n} (hp : p.NoGrow) {σ σ₁ σ₂ : Asg} {w₁ w₂ : Poly}
+    (h₁ : Sound p σ σ₁ w₁) (h₂ : Sound q σ₁ σ₂ w₂) : Sound (.seq p q) σ σ₂ (pAdd w₁ w₂) := by
+  intro ρ k u hu ℓ hℓ hM
+  obtain ⟨a₁, b₁⟩ := h₁ ρ k u hu ℓ hℓ hM
+  obtain ⟨a₂, b₂⟩ := h₂ ρ k u hu _ a₁ (lenBoundT_le_const _ (hp.map u) hM)
+  refine ⟨a₂, ?_⟩
+  show timeBoundT (map u p) ℓ + timeBoundT (map u q) (lenBoundT (map u p) ℓ) ≤ _
+  rw [pEval_pAdd, Nat.mul_add]
+  omega
+
+theorem Sound.branch {p q : Prog n} {σ σ₁ σ₂ : Asg} {w₁ w₂ : Poly}
+    (h₁ : Sound p σ σ₁ w₁) (h₂ : Sound q σ σ₂ w₂) (ρ : List ℕ) (k : ℕ) (u : Fin n → Fin k)
+    (hu : Function.Injective u) (ℓ : Fin k → ℕ) (hℓ : ∀ j, ℓ (u j) ≤ bnd ρ σ j)
+    (hM : ∀ t, ℓ t ≤ top ρ) :
+    (∀ j, max (lenBoundT (map u p) ℓ (u j)) (lenBoundT (map u q) ℓ (u j)) ≤
+      bnd ρ (aJoin σ₁ σ₂) j) ∧
+      max (timeBoundT (map u p) ℓ) (timeBoundT (map u q) ℓ) + 1 ≤
+        (2 * top ρ + 3) * pEval ρ (pAdd (pJoin w₁ w₂) (pC 1)) := by
+  obtain ⟨a₁, b₁⟩ := h₁ ρ k u hu ℓ hℓ hM
+  obtain ⟨a₂, b₂⟩ := h₂ ρ k u hu ℓ hℓ hM
+  obtain ⟨hj₁, hj₂⟩ := le_pEval_pJoin ρ w₁ w₂
+  refine ⟨fun j => max_le ((a₁ j).trans (le_aJoin ρ σ₁ σ₂ j).1)
+    ((a₂ j).trans (le_aJoin ρ σ₁ σ₂ j).2), ?_⟩
+  simp only [pEval_pAdd, pEval_pC, Nat.mul_add, Nat.mul_one]
+  have := Nat.mul_le_mul_left (2 * (top ρ) + 3) hj₁
+  have := Nat.mul_le_mul_left (2 * (top ρ) + 3) hj₂
+  omega
+
+theorem Sound.ifBit {p q : Prog n} (i : Fin n) {σ σ₁ σ₂ : Asg} {w₁ w₂ : Poly}
+    (h₁ : Sound p σ σ₁ w₁) (h₂ : Sound q σ σ₂ w₂) :
+    Sound (.ifBit i p q) σ (aJoin σ₁ σ₂) (pAdd (pJoin w₁ w₂) (pC 1)) :=
+  fun ρ k u hu ℓ hℓ hM => Sound.branch h₁ h₂ ρ k u hu ℓ hℓ hM
+
+theorem Sound.ifBlank {p q : Prog n} (i : Fin n) {σ σ₁ σ₂ : Asg} {w₁ w₂ : Poly}
+    (h₁ : Sound p σ σ₁ w₁) (h₂ : Sound q σ σ₂ w₂) :
+    Sound (.ifBlank i p q) σ (aJoin σ₁ σ₂) (pAdd (pJoin w₁ w₂) (pC 1)) :=
+  fun ρ k u hu ℓ hℓ hM => Sound.branch h₁ h₂ ρ k u hu ℓ hℓ hM
+
+/-- **A loop analysed at an invariant abstract store** `σi` (above the entry store `σ`, and above
+one round from it) is charged the entry bound of its counter. -/
+theorem Sound.loop {body : Prog n} (i : Fin n) (hb : body.NoGrow) {σ σi σb : Asg} {wb : Poly}
+    (h : Sound body σi σb wb) (hle : aLe σb σi = true)
+    (hge : ∀ ρ (j : ℕ), pEval ρ (aGet σ j) ≤ pEval ρ (aGet σi j)) :
+    Sound (.loop i body) σ σi (pAdd (pMul (aGet σ i.val) (pAdd wb (pC 2))) (pC 1)) := by
+  intro ρ k u hu ℓ hℓ hM
+  set g : Fin n → ℕ := fun j => min (bnd ρ σi j) (top ρ)
+  set ℓ' : Fin k → ℕ := Function.extend u g ℓ
+  have hu' : ∀ j, ℓ' (u j) = g j := fun j => hu.extend_apply g ℓ j
+  have ho : ∀ t, (∀ j, u j ≠ t) → ℓ' t = ℓ t := fun t ht =>
+    Function.extend_apply' _ _ _ fun ⟨j, hj⟩ => ht j hj
+  have h0 : ℓ ≤ ℓ' := by
+    intro t
+    by_cases ht : ∃ j, u j = t
+    · obtain ⟨j, rfl⟩ := ht
+      rw [hu']; exact le_min ((hℓ j).trans (hge ρ j)) (hM _)
+    · push Not at ht; rw [ho t ht]
+  have hℓ'M : ∀ t, ℓ' t ≤ (top ρ) := by
+    intro t
+    by_cases ht : ∃ j, u j = t
+    · obtain ⟨j, rfl⟩ := ht; rw [hu']; exact min_le_right _ _
+    · push Not at ht; rw [ho t ht]; exact hM t
+  obtain ⟨hlb, htb⟩ := h ρ k u hu ℓ' (fun j => by rw [hu']; exact min_le_left _ _) hℓ'M
+  have hb' : (map u body).NoGrow := hb.map u
+  have hinv : loopStepT (u i) (map u body) ℓ' ≤ ℓ' := by
+    intro t
+    by_cases ht : ∃ j, u j = t
+    · obtain ⟨j, rfl⟩ := ht
+      rw [hu']
+      refine le_min ?_ (lenBoundT_le_const _ hb'
+        (fun t => (tailB_le (u i) ℓ' t).trans (hℓ'M t)) _)
+      exact ((lenBoundT_mono _ (tailB_le (u i) ℓ')) (u j)).trans
+        ((hlb j).trans (aLe_spec ρ hle j))
+    · push Not at ht
+      rw [loopStepT, lenBoundT_of_preserves t _ (preserves_map_of_not_mem ht _), tailB,
+        Function.update_of_ne (ht i).symm]
+  refine ⟨fun j => ((lenBoundT_loop_le_of_inv (u i) _ h0 hinv) (u j)).trans
+    (by rw [hu']; exact min_le_left _ _), ?_⟩
+  have ht := timeBoundT_loop_le_of_inv (u i) _ h0 hinv
+  have hr := roundTimeT_le (map u body) (u i) ℓ'
+  have hs := supB_le_const hℓ'M
+  have hi : ℓ (u i) ≤ pEval ρ (aGet σ i.val) := hℓ i
+  simp only [pEval_pAdd, pEval_pMul, pEval_pC]
+  set A := pEval ρ (aGet σ i.val)
+  set W := pEval ρ wb
+  set c := 2 * (top ρ) + 3
+  have hround : roundTimeT (timeBoundT (map u body)) (u i) ℓ' + 1 ≤ c * (W + 2) := by
+    have : 2 * supB ℓ' + 3 ≤ c := by omega
+    rw [Nat.mul_add]; omega
+  calc timeBoundT (map u (.loop i body)) ℓ
+      ≤ ℓ (u i) * (roundTimeT (timeBoundT (map u body)) (u i) ℓ' + 1) + 2 := ht
+    _ ≤ A * (c * (W + 2)) + c := Nat.add_le_add (Nat.mul_le_mul hi hround) (by omega)
+    _ = c * (A * (W + 2) + 1) := by ring
+
+/-- Write the abstract outputs `τ' j` on the tapes `v j`. -/
+def setMany {m : ℕ} (v : Fin m → Fin n) (τ' : Asg) : Asg → List (Fin m) → Asg
+  | σ, [] => σ
+  | σ, j :: js => setMany v τ' (aSet σ (v j).val (aGet τ' j.val)) js
+
+theorem aGet_setMany_of_not_mem {m : ℕ} (v : Fin m → Fin n) (τ' : Asg) (t : ℕ) :
+    ∀ (js : List (Fin m)) (σ : Asg), (∀ j ∈ js, (v j).val ≠ t) →
+      aGet (setMany v τ' σ js) t = aGet σ t
+  | [], σ, _ => rfl
+  | j :: js, σ, h => by
+    rw [setMany, aGet_setMany_of_not_mem v τ' t js _ (fun j' hj' => h j' (by simp [hj'])),
+      aGet_aSet, if_neg (Ne.symm (h j (by simp)))]
+
+theorem aGet_setMany_of_mem {m : ℕ} {v : Fin m → Fin n} (hv : Function.Injective v)
+    (τ' : Asg) : ∀ (js : List (Fin m)) (σ : Asg) (j : Fin m), j ∈ js →
+      aGet (setMany v τ' σ js) (v j).val = aGet τ' j.val
+  | [], σ, j, h => by simp at h
+  | a :: js, σ, j, h => by
+    rw [setMany]
+    by_cases hj : j ∈ js
+    · exact aGet_setMany_of_mem hv τ' js _ j hj
+    · have hja : j = a := by simpa [hj] using h
+      subst hja
+      rw [aGet_setMany_of_not_mem v τ' _ js _ (fun j' hj' he => hj
+        (by rw [← hv (Fin.val_injective he)]; exact hj')), aGet_aSet, if_pos rfl]
+
+/-- **A placed subprogram with a sound summary.** -/
+theorem Sound.call {m : ℕ} {v : Fin m → Fin n} (hv : Function.Injective v) {p : Prog m}
+    {τ τ' : Asg} {w : Poly} (hS : Sound p τ τ' w) {σ : Asg}
+    (hin : ∀ j : Fin m,
+      (pLe (aGet σ (v j).val) (aGet τ j.val) || isTop (aGet τ j.val)) = true) :
+    Sound (map v p) σ (setMany v τ' σ (List.finRange m)) w := by
+  intro ρ k u hu ℓ hℓ hM
+  have hin' : ∀ j, ℓ ((u ∘ v) j) ≤ bnd ρ τ j := by
+    intro j
+    rcases Bool.or_eq_true_iff.mp (hin j) with h | h
+    · exact (hℓ (v j)).trans (pEval_le_of_pLe ρ h)
+    · exact (hM _).trans (pEval_of_isTop h ρ).ge
+  rw [Prog.map_map]
+  have huv : Function.Injective (u ∘ v) := hu.comp hv
+  obtain ⟨a, b⟩ := hS ρ k (u ∘ v) huv ℓ (fun j => hin' j) hM
+  refine ⟨fun t => ?_, b⟩
+  by_cases ht : ∃ j, v j = t
+  · obtain ⟨j, rfl⟩ := ht
+    show _ ≤ pEval ρ (aGet (setMany v τ' σ (List.finRange m)) (v j).val)
+    rw [aGet_setMany_of_mem hv τ' _ σ j (List.mem_finRange j)]
+    exact a j
+  · push Not at ht
+    rw [lenBoundT_of_preserves (u t) _ (preserves_map_of_not_mem (u := u ∘ v)
+      (fun j h => ht j (hu h)) p) ℓ]
+    refine (hℓ t).trans (le_of_eq ?_)
+    show pEval ρ (aGet σ t.val) = pEval ρ (aGet (setMany v τ' σ (List.finRange m)) t.val)
+    rw [aGet_setMany_of_not_mem v τ' _ _ σ (fun j _ he => ht j (Fin.val_injective he))]
+
+theorem noGrow_of_absRun (fuel : ℕ) : ∀ (p : Prog n) {σ σ' : Asg} {w : Poly},
+    absRun fuel p σ = some (σ', w) → p.NoGrow := by
   intro p
   induction p with
   | prim p =>
-    intro hp σ σ' w h ℓ hℓ hM
+    intro σ σ' w h
+    rcases hq : absPrim p σ with _ | σ₁
+    · simp [absRun, hq] at h
+    · exact noGrowB_of_absPrim hq
+  | coin i => intro σ σ' w h; simp [absRun] at h
+  | seq p q ihp ihq =>
+    intro σ σ' w h
+    rcases h₁ : absRun fuel p σ with _ | ⟨σ₁, w₁⟩
+    · simp [absRun, h₁] at h
+    rcases h₂ : absRun fuel q σ₁ with _ | ⟨σ₂, w₂⟩
+    · simp [absRun, h₁, h₂] at h
+    show (p.noGrowB && q.noGrowB) = true
+    rw [ihp h₁, ihq h₂]; rfl
+  | ifBlank i p q ihp ihq | ifBit i p q ihp ihq =>
+    intro σ σ' w h
+    rcases h₁ : absRun fuel p σ with _ | ⟨σ₁, w₁⟩
+    · simp [absRun, h₁] at h
+    rcases h₂ : absRun fuel q σ with _ | ⟨σ₂, w₂⟩
+    · simp [absRun, h₁, h₂] at h
+    show (p.noGrowB && q.noGrowB) = true
+    rw [ihp h₁, ihq h₂]; rfl
+  | loop i body ih =>
+    intro σ σ' w h
+    rcases hf : fixIter (absRun fuel body) fuel σ with _ | ⟨σi, σb, wb⟩
+    · simp [absRun, hf] at h
+    exact ih (fixIter_spec [] _ fuel σ σi σb wb hf).1
+
+/-- **Soundness of the abstract interpreter**: its result is a sound summary. -/
+theorem absRun_sound (fuel : ℕ) : ∀ (p : Prog n) {σ σ' : Asg} {w : Poly},
+    absRun fuel p σ = some (σ', w) → Sound p σ σ' w := by
+  intro p
+  induction p with
+  | prim p =>
+    intro σ σ' w h
     rcases hq : absPrim p σ with _ | σ₁
     · simp [absRun, hq] at h
     · simp only [absRun, hq, Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨rfl, rfl⟩ := h
-      refine ⟨absPrim_sound ρ p hq hℓ, ?_⟩
-      have := supB_le_const hM
-      simp only [timeBoundT, Prim.pad_of_noGrowB (p := p) hp, pEval_pC]
-      omega
-  | coin i => intro hp; exact absurd hp (by simp [NoGrow, noGrowB])
+      exact Sound.prim hq
+  | coin i => intro σ σ' w h; simp [absRun] at h
   | seq p q ihp ihq =>
-    intro hp σ σ' w h ℓ hℓ hM
-    simp only [NoGrow, noGrowB, Bool.and_eq_true] at hp
+    intro σ σ' w h
     rcases h₁ : absRun fuel p σ with _ | ⟨σ₁, w₁⟩
     · simp [absRun, h₁] at h
     rcases h₂ : absRun fuel q σ₁ with _ | ⟨σ₂, w₂⟩
     · simp [absRun, h₁, h₂] at h
     simp only [absRun, h₁, h₂, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    obtain ⟨hl₁, ht₁⟩ := ihp hp.1 σ σ₁ w₁ h₁ ℓ hℓ hM
-    obtain ⟨hl₂, ht₂⟩ := ihq hp.2 σ₁ _ w₂ h₂ _ hl₁ (lenBoundT_le_const p hp.1 hM)
-    refine ⟨hl₂, ?_⟩
-    rw [timeBoundT_seq, pEval_pAdd, Nat.mul_add]
-    omega
-  | ifBlank i p q ihp ihq | ifBit i p q ihp ihq =>
-    intro hp σ σ' w h ℓ hℓ hM
-    simp only [NoGrow, noGrowB, Bool.and_eq_true] at hp
+    exact Sound.seq (noGrow_of_absRun fuel p h₁) (ihp h₁) (ihq h₂)
+  | ifBlank i p q ihp ihq =>
+    intro σ σ' w h
     rcases h₁ : absRun fuel p σ with _ | ⟨σ₁, w₁⟩
     · simp [absRun, h₁] at h
     rcases h₂ : absRun fuel q σ with _ | ⟨σ₂, w₂⟩
     · simp [absRun, h₁, h₂] at h
     simp only [absRun, h₁, h₂, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    obtain ⟨hl₁, ht₁⟩ := ihp hp.1 σ σ₁ w₁ h₁ ℓ hℓ hM
-    obtain ⟨hl₂, ht₂⟩ := ihq hp.2 σ σ₂ w₂ h₂ ℓ hℓ hM
-    obtain ⟨hj₁, hj₂⟩ := le_pEval_pJoin ρ w₁ w₂
-    refine ⟨fun t => max_le ((hl₁ t).trans (le_aJoin ρ σ₁ σ₂ t).1)
-      ((hl₂ t).trans (le_aJoin ρ σ₁ σ₂ t).2), ?_⟩
-    simp only [timeBoundT, pEval_pAdd, pEval_pC, Nat.mul_add, Nat.mul_one]
-    have := Nat.mul_le_mul_left (2 * M + 3) hj₁
-    have := Nat.mul_le_mul_left (2 * M + 3) hj₂
-    omega
+    exact Sound.ifBlank i (ihp h₁) (ihq h₂)
+  | ifBit i p q ihp ihq =>
+    intro σ σ' w h
+    rcases h₁ : absRun fuel p σ with _ | ⟨σ₁, w₁⟩
+    · simp [absRun, h₁] at h
+    rcases h₂ : absRun fuel q σ with _ | ⟨σ₂, w₂⟩
+    · simp [absRun, h₁, h₂] at h
+    simp only [absRun, h₁, h₂, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact Sound.ifBit i (ihp h₁) (ihq h₂)
   | loop i body ih =>
-    intro hp σ σ' w h ℓ hℓ hM
-    have hb : body.NoGrow := hp
+    intro σ σ' w h
     rcases hf : fixIter (absRun fuel body) fuel σ with _ | ⟨σi, σb, wb⟩
     · simp [absRun, hf] at h
     simp only [absRun, hf, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    obtain ⟨hrun, hle, hge⟩ := fixIter_spec ρ _ fuel σ σi σb wb hf
-    set ℓ' : Fin k → ℕ := fun t => min (bnd ρ σi t) M with hℓ'
-    have h0 : ℓ ≤ ℓ' := fun t => le_min ((hℓ t).trans (hge t)) (hM t)
-    have hℓ'M : ∀ t, ℓ' t ≤ M := fun t => min_le_right _ _
-    obtain ⟨hlb, htb⟩ := ih hb σi σb wb hrun ℓ' (fun t => min_le_left _ _) hℓ'M
-    have hinv : loopStepT i body ℓ' ≤ ℓ' := by
-      intro t
-      refine le_min ?_ (lenBoundT_le_const body hb (fun t => (tailB_le i ℓ' t).trans (hℓ'M t)) t)
-      exact ((lenBoundT_mono body (tailB_le i ℓ')) t).trans ((hlb t).trans (aLe_spec ρ hle t))
-    refine ⟨(lenBoundT_loop_le_of_inv i body h0 hinv).trans fun t => min_le_left _ _, ?_⟩
-    have ht := timeBoundT_loop_le_of_inv i body h0 hinv
-    have hr := roundTimeT_le body i ℓ'
-    have hs := supB_le_const hℓ'M
-    have hi : ℓ i ≤ pEval ρ (aGet σ i.val) := hℓ i
-    simp only [pEval_pAdd, pEval_pMul, pEval_pC]
-    set A := pEval ρ (aGet σ i.val)
-    set W := pEval ρ wb
-    set c := 2 * M + 3
-    have hround : roundTimeT (timeBoundT body) i ℓ' + 1 ≤ c * (W + 2) := by
-      have : 2 * supB ℓ' + 3 ≤ c := by omega
-      rw [Nat.mul_add]; omega
-    calc timeBoundT (loop i body) ℓ ≤ ℓ i * (roundTimeT (timeBoundT body) i ℓ' + 1) + 2 := ht
-      _ ≤ A * (c * (W + 2)) + c := Nat.add_le_add (Nat.mul_le_mul hi hround) (by omega)
-      _ = c * (A * (W + 2) + 1) := by ring
+    obtain ⟨hrun, hle, -⟩ := fixIter_spec [] _ fuel σ σi σb wb hf
+    exact Sound.loop i (noGrow_of_absRun fuel body hrun) (ih hrun) hle
+      (fun ρ j => (fixIter_spec ρ _ fuel σ σi σb wb hf).2.2 j)
 
-/-- **The per-tape bounds from the abstract interpreter**, at the abstract input store itself
-(all of whose entries are at most `M`). -/
-theorem bounds_of_absRun (ρ : List ℕ) (fuel : ℕ) (p : Prog k) (hp : p.NoGrow) {σ σ' : Asg}
-    {w : Poly} (h : absRun fuel p σ = some (σ', w)) {M : ℕ} (hM : ∀ t : Fin k, bnd ρ σ t ≤ M) :
-    lenBoundT p (bnd ρ σ) ≤ bnd ρ σ' ∧ timeBoundT p (bnd ρ σ) ≤ (2 * M + 3) * pEval ρ w :=
-  absRun_sound ρ M fuel p hp σ σ' w h _ le_rfl hM
+/-! ### Programs with summarised subprograms
+
+An `Ast` is a program in which some placed subprograms `map v p` are replaced by a summary of `p`
+(`call`), so the interpreter does not re-analyse them: a large program is certified bottom-up, one
+definition at a time. -/
+
+/-- Programs with summarised calls. -/
+inductive Ast (n : ℕ) : Type
+  /-- A plain program, analysed by `absRun`. -/
+  | prog (p : Prog n) : Ast n
+  /-- The program `map v p`, with a sound summary of `p`. -/
+  | call {m : ℕ} (v : Fin m → Fin n) (p : Prog m) (τ τ' : Asg) (w : Poly)
+      (hv : Function.Injective v) (hp : p.NoGrow) (hS : Sound p τ τ' w) : Ast n
+  | seq (a b : Ast n) : Ast n
+  | ifBit (i : Fin n) (a b : Ast n) : Ast n
+  | loop (i : Fin n) (a : Ast n) : Ast n
+
+namespace Ast
+
+/-- The program an `Ast` stands for. -/
+def toProg : Ast n → Prog n
+  | prog p => p
+  | call v p _ _ _ _ _ _ => map v p
+  | seq a b => .seq a.toProg b.toProg
+  | ifBit i a b => .ifBit i a.toProg b.toProg
+  | loop i a => .loop i a.toProg
+
+/-- The abstract interpreter on an `Ast`. -/
+def abs (fuel : ℕ) : Ast n → Asg → Option (Asg × Poly)
+  | prog p, σ => absRun fuel p σ
+  | @call _ m v _ τ τ' w _ _ _, σ =>
+    if (List.finRange m).all fun j => pLe (aGet σ (v j).val) (aGet τ j.val) || isTop (aGet τ j.val)
+    then
+      some (setMany v τ' σ (List.finRange m), w)
+    else none
+  | seq a b, σ => match abs fuel a σ with
+    | none => none
+    | some (σ₁, w₁) => match abs fuel b σ₁ with
+      | none => none
+      | some (σ₂, w₂) => some (σ₂, pAdd w₁ w₂)
+  | ifBit _ a b, σ => match abs fuel a σ, abs fuel b σ with
+    | some (σ₁, w₁), some (σ₂, w₂) => some (aJoin σ₁ σ₂, pAdd (pJoin w₁ w₂) (pC 1))
+    | _, _ => none
+  | loop i a, σ => match fixIter (abs fuel a) fuel σ with
+    | none => none
+    | some (σi, _, wb) => some (σi, pAdd (pMul (aGet σ i.val) (pAdd wb (pC 2))) (pC 1))
+  termination_by structural a => a
+
+/-- **Soundness of the interpreter on an `Ast`.** -/
+theorem abs_sound (fuel : ℕ) : ∀ (a : Ast n) {σ σ' : Asg} {w : Poly},
+    abs fuel a σ = some (σ', w) → a.toProg.NoGrow ∧ Sound a.toProg σ σ' w := by
+  intro a
+  induction a with
+  | prog p =>
+    intro σ σ' w h
+    exact ⟨noGrow_of_absRun fuel p h, absRun_sound fuel p h⟩
+  | call v p τ τ' w hv hp hS =>
+    intro σ σ' w' h
+    simp only [abs] at h
+    split_ifs at h with hc
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨hp.map v, Sound.call hv hS fun j => List.all_eq_true.mp hc j (List.mem_finRange j)⟩
+  | seq a b iha ihb =>
+    intro σ σ' w h
+    rcases h₁ : abs fuel a σ with _ | ⟨σ₁, w₁⟩
+    · simp [abs, h₁] at h
+    rcases h₂ : abs fuel b σ₁ with _ | ⟨σ₂, w₂⟩
+    · simp [abs, h₁, h₂] at h
+    simp only [abs, h₁, h₂, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    obtain ⟨ga, sa⟩ := iha h₁
+    obtain ⟨gb, sb⟩ := ihb h₂
+    refine ⟨?_, Sound.seq ga sa sb⟩
+    show (a.toProg.noGrowB && b.toProg.noGrowB) = true
+    rw [ga, gb]; rfl
+  | ifBit i a b iha ihb =>
+    intro σ σ' w h
+    rcases h₁ : abs fuel a σ with _ | ⟨σ₁, w₁⟩
+    · simp [abs, h₁] at h
+    rcases h₂ : abs fuel b σ with _ | ⟨σ₂, w₂⟩
+    · simp [abs, h₁, h₂] at h
+    simp only [abs, h₁, h₂, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    obtain ⟨ga, sa⟩ := iha h₁
+    obtain ⟨gb, sb⟩ := ihb h₂
+    refine ⟨?_, Sound.ifBit i sa sb⟩
+    show (a.toProg.noGrowB && b.toProg.noGrowB) = true
+    rw [ga, gb]; rfl
+  | loop i a ih =>
+    intro σ σ' w h
+    rcases hf : fixIter (abs fuel a) fuel σ with _ | ⟨σi, σb, wb⟩
+    · simp [abs, hf] at h
+    simp only [abs, hf, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    obtain ⟨hrun, hle, -⟩ := fixIter_spec [] _ fuel σ σi σb wb hf
+    obtain ⟨ga, sa⟩ := ih hrun
+    exact ⟨ga, Sound.loop i ga sa hle fun ρ j => (fixIter_spec ρ _ fuel σ σi σb wb hf).2.2 j⟩
+
+end Ast
+
+/-! ### Using a summary -/
+
+/-- **The per-tape bounds from a summary**, for the program on its own tapes: from any per-tape
+bound `ℓ ≤ bnd ρ σ` with entries at most `top ρ` (the value of the variable `0`). -/
+theorem Sound.bounds {p : Prog n} {σ σ' : Asg} {w : Poly} (h : Sound p σ σ' w) (ρ : List ℕ)
+    {ℓ : Fin n → ℕ} (hℓ : ℓ ≤ bnd ρ σ) (hM : ∀ t, ℓ t ≤ top ρ) :
+    lenBoundT p ℓ ≤ bnd ρ σ' ∧ timeBoundT p ℓ ≤ (2 * top ρ + 3) * pEval ρ w := by
+  have := h ρ n id Function.injective_id ℓ hℓ hM
+  rw [Prog.map_id] at this
+  exact ⟨this.1, this.2⟩
+
+/-- **A summarised program framed inside a larger store** (`XProg.frame`): its cost depends only on
+the framed tapes, which must fit `bnd ρ σ` and be at most `top ρ`; the other tapes may be
+arbitrarily long, and keep their bounds. -/
+theorem Sound.frame {p : Prog n} {σ σ' : Asg} {w : Poly} (h : Sound p σ σ' w) (ρ : List ℕ)
+    {k : ℕ} (e : Fin n ↪ Fin k) {ℓ : Fin k → ℕ} (hℓ : ∀ j, ℓ (e j) ≤ bnd ρ σ j)
+    (hM : ∀ j, ℓ (e j) ≤ top ρ) :
+    XProg.timeBoundT (.frame e (.prog p)) ℓ ≤ (2 * top ρ + 3) * pEval ρ w ∧
+      XProg.lenBoundT (.frame e (.prog p)) ℓ ≤ embedF e ℓ (bnd ρ σ') := by
+  obtain ⟨h1, h2⟩ := h.bounds ρ (ℓ := fun j => ℓ (e j)) hℓ hM
+  exact ⟨h2, embedF_mono e le_rfl h1⟩
 
 end Sym
 
