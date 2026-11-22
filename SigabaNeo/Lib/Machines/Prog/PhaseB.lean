@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Machines.Prog.SampleTime
+import SigabaNeo.Lib.Machines.Prog.AbsBound
 
 /-!
 # Per-tape bounds of program phases
@@ -59,6 +60,27 @@ theorem ph_of_ub {X : XProg k} {β : Fin k → ℕ} {M T M' : ℕ} (hM : ∀ i, 
     (h : ∀ ℓ : Fin k → ℕ, (∀ i, ℓ i ≤ M) → timeBoundT X ℓ ≤ T ∧ ∀ i, lenBoundT X ℓ i ≤ M') :
     Ph X β T (fun _ => M') := fun ℓ hℓ =>
   ⟨(h ℓ fun i => (hℓ i).trans (hM i)).1, (h ℓ fun i => (hℓ i).trans (hM i)).2⟩
+
+/-- A plain program, from its own per-tape bounds. -/
+theorem ph_prog (p : Prog k) (β : Fin k → ℕ) :
+    Ph (.prog p) β (Prog.timeBoundT p β) (Prog.lenBoundT p β) := fun ℓ hℓ =>
+  ⟨Prog.timeBoundT_mono p hℓ, Prog.lenBoundT_mono p hℓ⟩
+
+/-- **A framed checked program**: its tapes below the claims, the others unchanged. -/
+theorem ph_frame_check {m fuel : ℕ} {p : Prog m} {σ claim : Sym.Asg} {w : Sym.Poly}
+    (h : Sym.check fuel p σ claim w = true) (ρ : List ℕ) (e : Fin m ↪ Fin k) (β βo : Fin k → ℕ)
+    (hin : (fun j => β (e j)) ≤ Sym.bnd ρ σ) (htop : ∀ j, β (e j) ≤ Sym.top ρ)
+    (hl : claim.length = m) (hout : ∀ j : Fin m, Sym.pEval ρ (Sym.aGet claim j.val) ≤ βo (e j))
+    (hrest : ∀ t, (∀ j, e j ≠ t) → β t ≤ βo t) :
+    Ph (.frame e (.prog p)) β ((2 * Sym.top ρ + 3) * Sym.pEval ρ w) βo := fun ℓ hℓ => by
+  obtain ⟨t1, t2, t3⟩ := Sym.frame_of_check h ρ e (ℓ := ℓ) (fun j => (hℓ (e j)).trans (hin j))
+    (fun j => (hℓ (e j)).trans (htop j))
+  refine ⟨t1, fun t => ?_⟩
+  by_cases ht : ∃ j, e j = t
+  · obtain ⟨j, rfl⟩ := ht
+    exact (t2 j (by rw [hl]; exact j.isLt)).trans (hout j)
+  · push_neg at ht
+    rw [t3 t ht]; exact (hℓ t).trans (hrest t ht)
 
 end XProg
 
