@@ -206,6 +206,73 @@ theorem iter_pairBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
     · rw [d']; simp [pairRound, flatPos, r, List.append_assoc]
     · rw [c']; simp [pairRound, r]; omega
 
+theorem pairRound_lengths {k K : ℕ} : ∀ (P : SLP ι) (L : List (List (Wire ι))),
+    (∀ a ∈ L, a.length = k) → ∀ x ∈ (pairRound (.gate 0) (2 ^ K) k P L).2, x.length = k
+  | P, [], _ => by simp [pairRound]
+  | P, [a], h => by simpa [pairRound] using h
+  | P, a :: b :: rest, h => by
+    intro x hx
+    simp only [pairRound, List.mem_cons] at hx
+    rcases hx with rfl | hx
+    · exact length_modAdd_eq _ _ _ _ _ _ (h a (by simp)) (h b (by simp))
+    · exact pairRound_lengths _ rest (fun y hy => h y (by simp [hy])) x hx
+
+theorem length_pairRound_le {k K : ℕ} : ∀ (P : SLP ι) (L : List (List (Wire ι))),
+    (pairRound (.gate 0) (2 ^ K) k P L).2.length ≤ L.length
+  | P, [] => by simp [pairRound]
+  | P, [a] => by simp [pairRound]
+  | P, a :: b :: rest => by
+    have := length_pairRound_le (k := k) (K := K) (modAdd (.gate 0) (2 ^ K) k P a b).1 rest
+    simp [pairRound]; omega
+
+/-- One round of `pairRound` on the list `12` of `|54|` numbers. -/
+def pairRoundC : Code :=
+  .seq (.lnil 13) (.seq (.mov 55 54) (.seq (.zero 56) (.seq (.rep 54 pairBody)
+    (.seq (.lmov 12 13) (.mov 54 56)))))
+
+theorem exec_pairRoundC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n)
+    {k K : ℕ} (hK : K ≤ k + 1) (L : List (List (Wire ι))) (P : SLP ι) (σ : St)
+    (hL : ∀ a ∈ L, a.length = k) (hc : CstR (E := E) k K σ) (hI : Inv E σ) (hS : ScOK E σ)
+    (h12 : σ.ls 12 = flatPos (E := E) (ix := ix) L) (h54 : σ.sc 54 = L.length)
+    (hcap : L.length * k ≤ E.C) (hcap' : k + 3 ≤ E.C) (hkM : k + 2 ≤ E.M) (hLM : L.length ≤ E.M)
+    (hM : E.n + (exec E pairRoundC (mk E ix P σ)).t ≤ E.M) :
+    ∃ sc' ls', exec E pairRoundC (mk E ix P σ) =
+        mk E ix (pairRound (.gate 0) (2 ^ K) k P L).1 (setSL σ sc' ls') ∧
+      ls' 12 = flatPos (E := E) (ix := ix) (pairRound (.gate 0) (2 ^ K) k P L).2 ∧
+      sc' 54 = (pairRound (.gate 0) (2 ^ K) k P L).2.length ∧
+      (∀ r : SR, r.val < 16 ∨ (42 < r.val ∧ r.val < 54) ∨ 56 < r.val → sc' r = σ.sc r) ∧
+      (∀ l : LR, (8 < l.val ∧ l.val < 12) ∨ 13 < l.val → ls' l = σ.ls l) := by
+  have hnM' : E.n ≤ E.M := by omega
+  set σ0 := setSL σ (Function.update (Function.update σ.sc 55 L.length) 56 0)
+    (Function.update σ.ls 13 [])
+  have e0 : exec E (.zero 56) (exec E (.mov 55 54) (exec E (.lnil 13) (mk E ix P σ))) =
+      mk E ix P σ0 := by
+    simp [exec, mk, σ0, setSL, h54]
+  have hIS0 := is_exec hnM' hWM (c := .seq (.lnil 13) (.seq (.mov 55 54) (.zero 56))) e0 ⟨hI, hS⟩
+  have hs0 : ∀ x : SR, x ≠ 55 → x ≠ 56 → σ0.sc x = σ.sc x := fun x h1 h2 => by
+    simp [σ0, setSL, Function.update_of_ne h1, Function.update_of_ne h2]
+  unfold pairRoundC at hM ⊢
+  simp only [exec_seq] at hM ⊢
+  rw [e0, exec_rep, show (mk E ix P σ0).sc 54 = L.length by
+    rw [mk_sc, hs0 54 (by decide) (by decide), h54]] at hM ⊢
+  obtain ⟨sc1, ls1, h1, d1, c1, f1, g1⟩ := iter_pairBody hnM hWM hix hK L.length L P σ0 [] 0
+    (by omega) hL (cstR_of hc (fun x hx => hs0 x (by rintro rfl; revert hx; decide)
+      (by rintro rfl; revert hx; decide))) hIS0.1 hIS0.2
+    (by simp [σ0, setSL, h12]) (by simp [σ0, setSL]) (by simp [σ0, setSL])
+    (by simp [σ0, setSL]) (by simpa using hcap) hcap' hkM (by omega)
+    (le_trans (Nat.add_le_add_left (by
+      exact le_trans (t_le_exec E (.lmov 12 13) _) (t_le_exec E (.mov 54 56) _)) _) hM)
+  rw [h1]
+  refine ⟨Function.update sc1 54 (sc1 56), Function.update ls1 12 (ls1 13), ?_, ?_, ?_,
+    fun x hx => ?_, fun l hl => ?_⟩
+  · rw [exec_mk_noNand (.lmov 12 13) trivial, exec_mk_noNand (.mov 54 56) trivial]; rfl
+  · simp [d1]
+  · simp [c1]
+  · rw [Function.update_of_ne (by rintro rfl; revert hx; decide),
+      f1 x (by omega), hs0 x (by rintro rfl; revert hx; decide) (by rintro rfl; revert hx; decide)]
+  · rw [Function.update_of_ne (by rintro rfl; revert hl; decide), g1 l hl]
+    simp [σ0, setSL, Function.update_of_ne (show l ≠ 13 by rintro rfl; revert hl; decide)]
+
 end FhatGen
 
 end SigabaNeo.Lattices
