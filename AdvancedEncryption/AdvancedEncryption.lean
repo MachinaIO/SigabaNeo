@@ -42,8 +42,12 @@ import PE.Impl.DualUse.SimGame5
 import PE.Impl.DualUse.ReductionMachine
 import PE.Impl.DualUse.ReductionOracle
 import PE.Impl.DualUse.Prog.Post
+import PE.Impl.DualUse.Prog.PostSize
 import PE.Impl.DualUse.ReductionPerQuery
 import PE.Impl.DualUse.ReductionComps
+import PE.Impl.DualUse.ReductionSteps
+import PE.Impl.DualUse.AHComps
+import PE.Impl.DualUse.ReductionCompsBound
 import PE.Impl.DualUse.GameChain
 import PE.Impl.DualUse.Params.SimTrapNorm
 import PE.Impl.DualUse.Params.Sizes
@@ -74,6 +78,7 @@ import PE.Impl.Game.HandlersCost
 import PE.Impl.Game.HandlersDate
 import PE.Impl.Game.HandlersP
 import PE.Impl.Game.HandlersPCost
+import PE.Impl.Game.HandlersPSize
 import PE.Impl.DualUse.Prog.Layout
 import PE.Impl.DualUse.Prog.SetupLaws
 import PE.Impl.DualUse.Prog.Setup5
