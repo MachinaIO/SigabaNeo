@@ -290,6 +290,42 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
         (by decide), Z1]⟩, e⟩
   obtain ⟨c1, e1⟩ := P1
   generalize exec V f (ofList [Code.gate 11 10 10, zkvC, ttkC, tt2C]) w = w1 at c1 e1
+  have E1 : ∀ j, j.val ≥ 61 → j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → j ≠ CQ → w1 j = w j :=
+    fun j hj a2 a3 a4 a5 a6 => e1 j (by rintro rfl; simp at hj) a2 a3 a4 a5 a6
+  -- the inputs
+  have hIT : ITmpl V A1 Ad N K w1 := ⟨c1.tm.h10, h.hV,
+    by rw [E1 TA1 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.ta1],
+    by rw [E1 TAd (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tad],
+    by rw [E1 TK1 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tk1],
+    by rw [E1 ZNK1 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.znk1],
+    c1.tm.h29, h.hNK, h.hK⟩
+  obtain ⟨I1, -, -, -, -, I6⟩ := exec_insC (V := V) (f := f) w1 hIT c1.tn c1.tm.h20
+    (by rw [E1 TNK (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tnk])
+    (by rw [E1 T4k (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.t4k])
+    (by rw [E1 T10 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.t10])
+    bW wW hb hx ent he
+    (by rw [E1 BSt (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.bst])
+    (by rw [E1 WSt (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.wst])
+    (by rw [E1 PSt (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.pst])
+  have hIW : (insWords bW wW ent).flatten.length = 10 * S := by
+    rw [length_flatten_of (V := V) (fun y hy => by
+      simp only [insWords, List.mem_map] at hy
+      obtain ⟨j, -, rfl⟩ := hy
+      simp [jw, hb, hx, h.hV]; have := h.hNK; omega), insWords, List.length_map]
+    rw [show (Enum.list (α := Fin 10 × BI N (K + 1))).length =
+      10 * (Enum.list (α := BI N (K + 1))).length by
+        show (List.finRange 10 ×ˢ Enum.list (α := BI N (K + 1))).length = _
+        rw [List.length_product, List.length_finRange], hS]; ring
+  rw [E1 INSW (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+    List.drop_left' (by rw [h.insw, hIW])] at I1
+  have c2 : NCtx V K N one zv (exec V f (ofList [insC]) w1) := by
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil]
+    exact c1.exec _ (by decide +kernel)
+  have e2 : ∀ j ∉ wr insC, exec V f (ofList [insC]) w1 j = w1 j := fun j hj => by
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil]; exact I6 j hj
+  have I1' : exec V f (ofList [insC]) w1 INSW = (insWords bW wW ent).flatten := by
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil]; exact I1
+  generalize exec V f (ofList [insC]) w1 = w2 at c2 e2 I1'
   sorry
 
 end ValVM
