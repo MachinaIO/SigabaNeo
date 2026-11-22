@@ -19,6 +19,9 @@ needed for soundness. Both bounds are monotone in `ℓ` (`lenBoundT_mono`, `time
 gives the invariant forms `timeBoundT_loop_le_of_inv`, `lenBoundT_loop_le_of_inv`: a loop over a
 counter of length at most `ℓ i` whose rounds stay below an invariant bound `ℓ'` costs at most
 `ℓ i · (roundTimeT … ℓ' + 1) + 2`.
+
+From the constant bound `fun _ => L` the per-tape bounds refine the global ones
+(`lenBoundT_const_le`, `timeBoundT_const_le`).
 -/
 
 namespace SigabaNeo.Tape
@@ -342,6 +345,70 @@ theorem loopStepT_le_of_preserves (i : Fin k) (body : Prog k) (hb : body.Preserv
     rw [loopStepT, lenBoundT_of_preserves t body hb, tailB, Function.update_self]
     exact Nat.sub_le _ _
   · exact hinv t ht
+
+/-! ### Comparison with the global bounds -/
+
+theorem _root_.SigabaNeo.Tape.Prim.lenT_const_le (p : Prim k) (L : ℕ) :
+    p.lenT (fun _ => L) ≤ fun _ => L + p.grow := by
+  intro t
+  cases p <;> simp only [Prim.lenT, Prim.grow, Function.update_apply] <;> (try split_ifs) <;> omega
+
+/-- From the constant bound `L`, the per-tape bound is at most the global one. -/
+theorem lenBoundT_const_le (p : Prog k) :
+    ∀ L : ℕ, lenBoundT p (fun _ => L) ≤ fun _ => lenBound p L := by
+  induction p with
+  | prim p => exact p.lenT_const_le
+  | coin i =>
+    intro L t
+    simp only [lenBoundT, lenBound, Function.update_apply]
+    split_ifs <;> omega
+  | seq p q ihp ihq =>
+    exact fun L => ((lenBoundT_mono q) (ihp L)).trans (ihq _)
+  | ifBlank _ p q ihp ihq | ifBit _ p q ihp ihq =>
+    exact fun L t => max_le_max (ihp L t) (ihq L t)
+  | loop i body ih =>
+    intro L
+    have hj : ∀ j, (loopStepT i body)^[j] (fun _ => L) ≤ fun _ => (lenBound body)^[j] L := by
+      intro j
+      induction j with
+      | zero => exact le_rfl
+      | succ j ihj =>
+        rw [Function.iterate_succ_apply', Function.iterate_succ_apply']
+        exact (loopStepT_mono i body ihj).trans
+          (((lenBoundT_mono body) (tailB_le i _)).trans (ih _))
+    exact iterSupT_le fun j hjL t => (hj j t).trans (le_iterMax _ hjL)
+
+/-- **The per-tape time bound refines the global one**: from the constant bound `L` it is at most
+`timeBound p L`. -/
+theorem timeBoundT_const_le (p : Prog k) :
+    ∀ L : ℕ, timeBoundT p (fun _ => L) ≤ timeBound p L := by
+  induction p with
+  | prim p => intro L; have := supB_const_le (k := k) L; simp only [timeBoundT, timeBound]; omega
+  | coin i => intro L; have := supB_const_le (k := k) L; simp only [timeBoundT, timeBound]; omega
+  | seq p q ihp ihq =>
+    intro L
+    exact Nat.add_le_add (ihp L) (((timeBoundT_mono q) (lenBoundT_const_le p L)).trans (ihq _))
+  | ifBlank _ p q ihp ihq | ifBit _ p q ihp ihq =>
+    exact fun L => Nat.add_le_add_right (max_le_max (ihp L) (ihq L)) 1
+  | loop i body ih =>
+    intro L
+    have hj : ∀ j, (loopStepT i body)^[j] (fun _ => L) ≤ fun _ => (lenBound body)^[j] L := by
+      intro j
+      induction j with
+      | zero => exact le_rfl
+      | succ j ihj =>
+        rw [Function.iterate_succ_apply', Function.iterate_succ_apply']
+        exact (loopStepT_mono i body ihj).trans
+          (((lenBoundT_mono body) (tailB_le i _)).trans (lenBoundT_const_le body _))
+    simp only [timeBoundT, timeBound]
+    refine Nat.add_le_add_right (Nat.mul_le_mul_left _ (Nat.add_le_add_right ?_ 1)) 2
+    refine Finset.sup_mono_fun fun j _ => ?_
+    have h1 := roundTimeT_le body i ((loopStepT i body)^[j] fun _ => L)
+    have h2 := supB_mono (hj j)
+    have h3 := supB_const_le (k := k) ((lenBound body)^[j] L)
+    have h4 := (timeBoundT_mono body (hj j)).trans (ih ((lenBound body)^[j] L))
+    simp only [roundTime]
+    omega
 
 end Prog
 
