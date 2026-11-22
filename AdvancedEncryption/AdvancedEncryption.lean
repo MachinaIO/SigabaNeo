@@ -47,6 +47,7 @@ import PE.Impl.DualUse.Prog.UBLoop
 import PE.Impl.DualUse.Prog.SetupP
 import PE.Impl.DualUse.Prog.EncPsi
 import PE.Impl.DualUse.Prog.EncBits
+import PE.Impl.DualUse.Prog.EncCore
 import PE.Impl.DualUse.ReductionPerQuery
 import PE.Impl.DualUse.ReductionComps
 import PE.Impl.DualUse.ReductionSteps
