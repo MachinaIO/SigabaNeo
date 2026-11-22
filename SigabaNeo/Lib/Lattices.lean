@@ -26,6 +26,7 @@ import SigabaNeo.Lib.Lattices.Algo.RingWords
 import SigabaNeo.Lib.Lattices.Algo.MatWords
 import SigabaNeo.Lib.Lattices.Algo.SLPWords
 import SigabaNeo.Lib.Lattices.Algo.FhatLoop
+import SigabaNeo.Lib.Lattices.Algo.FhatShadow
 import SigabaNeo.Lib.Lattices.Algo.FhatGates
 import SigabaNeo.Lib.Lattices.Algo.Coins
 import SigabaNeo.Lib.Lattices.Algo.SimWords
