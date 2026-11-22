@@ -230,6 +230,18 @@ theorem handles (A : Machine 3) (W L : ℕ) (hpubL : ∀ σ, Ok σ → (sp.pub �
     exact hr
   inv o b st hb h := inv_oracleW cs hpubL hkeyL hchalL o b st hb h
 
+/-- **Inlining the handlers.** With the instance word `w` as the initial state tape, the inlined
+machine runs `A` against the oracle with the instance word `w`, from the initial state. -/
+theorem run_inlineOracle_handlers (A : Machine 3) (W L : ℕ)
+    (hpubL : ∀ σ, Ok σ → (sp.pub σ).length ≤ L)
+    (hkeyL : ∀ σ C, Ok σ → C.length ≤ A.time → ∀ sk ∈ (sp.key σ C).support, sk.length ≤ L)
+    (hchalL : ∀ σ μ, Ok σ → ∀ ct ∈ (sp.chal σ μ).support, ct.length ≤ L)
+    (w : List Bool) (hw : IW w) (hwl : w.length ≤ W) (hwh : w.head? ≠ some false) (x : List Bool) :
+    (A.inlineOracle (handlers cd cs A.time W) w (handlerTime cd cs A.time W) L).run x =
+      (A.runWith (oracleW sp setupW) x (w, {})).map Prod.fst :=
+  A.run_inlineOracle _ _ cd.encState (InvS IW W Ok) _ L (handles cs A W L hpubL hkeyL hchalL)
+    (w, {}) ⟨hw, hwl, hwh, Or.inl rfl⟩ x
+
 end Main
 
 end AdvancedEncryption.PE.Generic
