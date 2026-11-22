@@ -319,6 +319,130 @@ theorem exec_prC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length
         if_neg (fun e => by subst e; simp at hj)]
       exact hP.hi j hj hjc
 
+/-- The counter of the rounds and its template. -/
+abbrev CTH : Fin 64 := 43
+abbrev TH : Fin 64 := 44
+
+/-- **The rounds**: `|TH|` rounds of `prC`, each round's sums becoming the next round's stream. -/
+def roundsC : Code := ofList [.cp CTH TH, .rep CTH (ofList [prC, .cp LS RB, .cp CN CN'])]
+
+theorem roundsV_eq_iterate {α : Type*} (one : α) (step : α → α → α) (zv : α) (q k : ℕ) :
+    ∀ (h : ℕ) (L : List (List α)),
+      roundsV one step zv q k h L = (pairRoundV one step zv q k)^[h] L
+  | 0, L => rfl
+  | h + 1, L => by
+    rw [roundsV, roundsV_eq_iterate one step zv q k h, Function.iterate_succ_apply]
+
+theorem pairRoundV_shape (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {one zv : List Bool} (h1 : one.length = V) (hz : zv.length = V) (K : ℕ) :
+    ∀ L : List (List (List Bool)), (∀ x ∈ L, x.length = K + 1 ∧ ∀ y ∈ x, y.length = V) →
+      ∀ x ∈ pairRoundV one (fV V f) zv (2 ^ K) (K + 1) L, x.length = K + 1 ∧ ∀ y ∈ x, y.length = V
+  | [], _, x, hx => by simp [pairRoundV] at hx
+  | [a], hL, x, hx => by simp [pairRoundV] at hx; subst hx; exact hL _ (by simp)
+  | a :: b :: rest, hL, x, hx => by
+    simp only [pairRoundV, List.mem_cons] at hx
+    rcases hx with rfl | hx
+    · obtain ⟨l, v⟩ := modAddV_shape hf h1 hz (2 ^ K) (K + 1) a b (hL a (by simp)).1
+        (hL b (by simp)).1
+      exact ⟨l, v⟩
+    · exact pairRoundV_shape hf h1 hz K rest (fun y hy => hL y (by simp [hy])) x hx
+
+theorem iterate_pairRoundV_shape (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {one zv : List Bool} (h1 : one.length = V) (hz : zv.length = V) (K : ℕ) :
+    ∀ (h : ℕ) (L : List (List (List Bool))), (∀ x ∈ L, x.length = K + 1 ∧ ∀ y ∈ x, y.length = V) →
+      ∀ x ∈ (pairRoundV one (fV V f) zv (2 ^ K) (K + 1))^[h] L,
+        x.length = K + 1 ∧ ∀ y ∈ x, y.length = V
+  | 0, L, hL => hL
+  | h + 1, L, hL => by
+    rw [Function.iterate_succ_apply']
+    exact pairRoundV_shape hf h1 hz K _ (iterate_pairRoundV_shape hf h1 hz K h L hL)
+
+/-- The invariant of the rounds. -/
+structure RInv (V K : ℕ) (f : List Bool → List Bool → List Bool) (w₀ : St)
+    (L : List (List (List Bool))) (h : ℕ) (w : St) : Prop where
+  ls : w LS = fl ((pairRoundV (w₀ 10) (fV V f) (w₀ 11) (2 ^ K) (K + 1))^[h] L)
+  cn : (w CN).length = ((pairRoundV (w₀ 10) (fV V f) (w₀ 11) (2 ^ K) (K + 1))^[h] L).length
+  tm : Tmpl V K w
+  c24 : (w 24).length = (K + 1) * V
+  c25 : (w 25).length = (K + 1) * V
+  hi : ∀ j : Fin 64, 41 ≤ j.val → j ≠ CTH → w j = w₀ j
+  one : w 10 = w₀ 10
+  zv : w 11 = w₀ 11
+
+theorem exec_roundsC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {K : ℕ}
+    (w : St) (L : List (List (List Bool)))
+    (hL : ∀ x ∈ L, x.length = K + 1 ∧ ∀ y ∈ x, y.length = V)
+    (htm : Tmpl V K w) (hOB : w OB = [true]) (hZB : w ZB = [false]) (hLS : w LS = fl L)
+    (hCN : (w CN).length = L.length) (h24 : (w 24).length = (K + 1) * V)
+    (h25 : (w 25).length = (K + 1) * V) :
+    RInv V K f w L (w TH).length (exec V f roundsC w) := by
+  have hone := htm.h10
+  have hzv := htm.h11
+  simp only [roundsC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  have h0 : RInv V K f w L 0 (Function.update w CTH (w TH)) := by
+    refine ⟨?_, ?_, htm.upd CTH (by decide) _, ?_, ?_, fun j hj hjc => ?_, ?_, ?_⟩
+    · simp (config := {decide := true}) [Function.update_apply, hLS]
+    · simp (config := {decide := true}) [Function.update_apply, hCN]
+    · simp (config := {decide := true}) [Function.update_apply, h24]
+    · simp (config := {decide := true}) [Function.update_apply, h25]
+    · simp [Function.update_of_ne hjc]
+    · simp (config := {decide := true}) [Function.update_apply]
+    · simp (config := {decide := true}) [Function.update_apply]
+  have := exec_rep_inv (V := V) (f := f) (c := CTH) (B := ofList [prC, .cp LS RB, .cp CN CN'])
+    (fun h w' => RInv V K f w L h w')
+    (fun h w' ih => by
+      set u0 := Function.update w' CTH (w' CTH).tail
+      have u0_ : ∀ j, j ≠ CTH → u0 j = w' j := fun j hj => by simp [u0, Function.update_of_ne hj]
+      set Lh := (pairRoundV (w 10) (fV V f) (w 11) (2 ^ K) (K + 1))^[h] L
+      have hLh : ∀ x ∈ Lh, x.length = K + 1 ∧ ∀ y ∈ x, y.length = V :=
+        iterate_pairRoundV_shape hf hone hzv K h L hL
+      obtain ⟨e1, e2, e3, e4, e5, e6⟩ := exec_prC hf u0 Lh hLh
+        (ih.tm.upd CTH (by decide) _)
+        (by rw [u0_ OB (by decide), ih.hi OB (by decide) (by decide), hOB])
+        (by rw [u0_ ZB (by decide), ih.hi ZB (by decide) (by decide), hZB])
+        (by rw [u0_ LS (by decide), ih.ls]) (by rw [u0_ CN (by decide), ih.cn])
+        (by rw [u0_ 24 (by decide), ih.c24]) (by rw [u0_ 25 (by decide), ih.c25])
+      simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+      have v10 : u0 10 = w 10 := by rw [u0_ 10 (by decide), ih.one]
+      have v11 : u0 11 = w 11 := by rw [u0_ 11 (by decide), ih.zv]
+      rw [v10, v11] at e1
+      refine ⟨?_, ?_, ?_, ?_, ?_, fun j hj hjc => ?_, ?_, ?_⟩
+      · simp (config := {decide := true}) only [Function.update_apply, if_false, if_true]
+        rw [e1, Function.iterate_succ_apply']
+      · simp (config := {decide := true}) [Function.update_apply]
+        rw [e2, ← Function.iterate_succ_apply, Function.iterate_succ_apply', length_pairRoundV]
+      · exact (e3.upd LS (by decide) _).upd CN (by decide) _
+      · simp (config := {decide := true}) only [Function.update_apply, if_false]; exact e4
+      · simp (config := {decide := true}) only [Function.update_apply, if_false]; exact e5
+      · simp only [Function.update_apply]
+        rw [if_neg (fun e => by subst e; simp at hj), if_neg (fun e => by subst e; simp at hj),
+          e6 j hj (fun e => by subst e; simp at hj), u0_ j hjc, ih.hi j hj hjc]
+      · simp (config := {decide := true}) only [Function.update_apply, if_false]
+        rw [exec_not_mem prC u0 10 (by decide), v10]
+      · simp (config := {decide := true}) only [Function.update_apply, if_false]
+        rw [exec_not_mem prC u0 11 (by decide), v11])
+    _ h0
+  simpa using this
+
+/-- **After enough rounds one number is left**: from `n ≤ 2^h` numbers (`n ≥ 1`), `h` rounds leave
+exactly one, and `foldSumV` of it is that number. -/
+theorem iterate_pairRoundV_single {α : Type*} (one : α) (step : α → α → α) (zv : α) (q k : ℕ) :
+    ∀ (h : ℕ) (L : List (List α)), 1 ≤ L.length → L.length ≤ 2 ^ h →
+      ((pairRoundV one step zv q k)^[h] L).length = 1
+  | 0, L, h1, h2 => by simp at h2 ⊢; omega
+  | h + 1, L, h1, h2 => by
+    rw [Function.iterate_succ_apply]
+    refine iterate_pairRoundV_single one step zv q k h _ ?_ ?_ <;>
+      rw [length_pairRoundV]
+    · omega
+    · rw [pow_succ] at h2; omega
+
+theorem foldSumV_single {α : Type*} (one : α) (step : α → α → α) (zv : α) (q k : ℕ)
+    (L : List (List α)) (h : L.length = 1) : foldSumV one step zv q k L = L.head (by
+      intro e; rw [e] at h; simp at h) := by
+  match L, h with
+  | [a], _ => rfl
+
 end ValVM
 
 end SigabaNeo.Tape
