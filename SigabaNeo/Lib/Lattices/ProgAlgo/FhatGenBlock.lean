@@ -99,6 +99,44 @@ theorem exec_odoO {N k : ℕ} (σ : St) (a c1 c2 t : ℕ) (h2 : σ.sc 2 = k) (h5
           min_eq_left hM, ht', hc2', setSL]
         funext r; simp only [Function.update_apply]; split_ifs <;> simp_all
 
+/-! ### The loop over the output positions -/
+
+/-- One output position: `coefC`, append the coefficient to `21`, advance the odometer. -/
+def blockBody : Code := .seq coefC (.seq (takeC 2 16 21) odoO)
+
+/-- The state of the NAND block after the first `i` output positions. -/
+def bst {N k K : ℕ} (repA repB : BI N k → Wire ι) (P : SLP ι) (i : ℕ) :
+    SLP ι × (OI N k → List (Wire ι)) :=
+  ((enumO N k).take i).foldl (blockStepL (ordT₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K) repA repB)
+    (P, fun _ => [])
+
+/-- The list of the coefficients of the first `i` output positions. -/
+def bList {N k K : ℕ} (repA repB : BI N k → Wire ι) (P : SLP ι) (i : ℕ) : List ℕ :=
+  (((enumO N k).take i).map fun o => ((bst (K := K) repA repB P i).2 o).map (pos E ix)).flatten
+
+theorem bst_succ {N k K : ℕ} (repA repB : BI N k → Wire ι) (P : SLP ι) (i : ℕ) (o : OI N k)
+    (ho : (enumO N k)[i]? = some o) :
+    bst (K := K) repA repB P (i + 1) = blockStepL (ordT₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K)
+      repA repB (bst (K := K) repA repB P i) o := by
+  simp only [bst, List.take_succ, ho, Option.toList_some, List.foldl_append, List.foldl_cons,
+    List.foldl_nil]
+
+theorem bList_succ {N k K : ℕ} (repA repB : BI N k → Wire ι) (P : SLP ι) (i : ℕ) (o : OI N k)
+    (ho : (enumO N k)[i]? = some o) :
+    bList (E := E) (ix := ix) (K := K) repA repB P (i + 1) =
+      bList (E := E) (ix := ix) (K := K) repA repB P i ++
+        (coefCircuitL (ordT₀ N k) (.gate 0) (2 ^ K) repA repB (gvExp (2 ^ K) o) o.1 o.2.1 o.2.2
+          (bst (K := K) repA repB P i).1).2.map (pos E ix) := by
+  have hnd : ((enumO N k).take (i + 1)).Nodup := (nodup_enumO N k).sublist (List.take_sublist _ _)
+  rw [List.take_succ, ho, Option.toList_some] at hnd
+  have hno : o ∉ (enumO N k).take i := fun h => (List.nodup_append.mp hnd).2.2 o h o (by simp) rfl
+  simp only [bList, bst_succ repA repB P i o ho, blockStepL, List.take_succ, ho,
+    Option.toList_some, List.map_append, List.map_singleton, List.flatten_append,
+    List.flatten_singleton, Function.update_self]
+  congr 2
+  apply List.map_congr_left; intro x hx
+  rw [Function.update_of_ne (fun h => hno (by rw [← h]; exact hx))]
+
 end FhatGen
 
 end SigabaNeo.Lattices
