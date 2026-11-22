@@ -83,6 +83,14 @@ theorem run_countP {m g : ℕ} (hm : 0 < m) (s : Store 5) (h0 : (s 0).length = m
   simp only [Function.update_apply, hs1]
   fin_cases t <;> simp [h2, h3, h4]
 
+theorem coinFree_countP (m : ℕ) : (countP m).CoinFree := by
+  have h := coinFree_putW (3 : Fin 5) (List.replicate (m - 1) false)
+  simp only [CoinFree] at h ⊢
+  simp [countP, forN, countBody, coinFreeB, h]
+
+theorem wf_countP (m : ℕ) : (countP m).WF :=
+  ⟨wf_putW _ _, ⟨⟨trivial, wf_of_wfB rfl, preserves_of_preservesB rfl⟩, trivial⟩⟩
+
 /-! ### Per-tape bounds -/
 
 theorem supB_le_of' {ℓ : Fin k → ℕ} {M : ℕ} (h : ∀ i, ℓ i ≤ M) : supB ℓ ≤ M :=
