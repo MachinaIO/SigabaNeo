@@ -247,4 +247,99 @@ theorem setup5_enc [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (x : Date) :
   refine Eq.trans ?_ (PMF.map_comp _ _ _).symm
   rfl
 
+/-! ### The coins `rest` (hybrid 3, ideal side) -/
+
+/-- The word of the `Rᵢ`, typed on the attributes of the setting. -/
+def rmW (Rm : (Sdw (N := N) hk).Attr → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) : List Bool :=
+  (rmTEnc c).enc Rm
+
+theorem rmW_law (hN : 0 < N) (hK : 0 < K) :
+    (lawRmBin (S := Sdw (N := N) hk) (Wd := Fin c.d) (k := k)).map (rmW hk c) =
+      catPow (μB N K) ((Enum.list (α := (Sdw (N := N) hk).Attr × RingBTVW.Col k)).length *
+        (List.finRange c.d).length) := rmLaw_eq hk c hN hK
+
+/-- The word of a χ coefficient. -/
+noncomputable def μχ : PMF (List Bool) := c.χc.map (zmodEnc K).enc
+
+theorem χR_enc : (χR c).map (ringEnc N K).enc = catPow (μχ c) N := ofCoeffs_pi_ringEnc N K c.χc
+
+/-- A row with independent entries, encoded. -/
+theorem rowLaw_enc (χ : PMF (Rg N K)) (ι : Type) [Fintype ι] [DecidableEq ι] [Enum ι] :
+    (rowLaw χ ι).map (matEnc (N := N) (K := K) (Fin 1) ι).enc =
+      catPow (χ.map (ringEnc N K).enc) (Enum.list (α := ι)).length := by
+  rw [rowLaw, PMF.map_comp, ← fun_enc_pi (ringEnc N K) χ]
+  congr 1
+  funext v
+  exact List.append_nil _
+
+/-- The word of the error row `[σ | ea | ez]`. -/
+theorem trapRow_enc (σ : Rg N K) (ea ez : Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) :
+    (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (trapRowU' σ ea ez) =
+      (ringEnc N K).enc σ ++ ((matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ea ++
+        (matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ez) := by
+  show (FixedEnc.fun (α := TrapCol k) (ringEnc N K)).enc (fun col => trapRowU' σ ea ez 0 col) ++ [] =
+    (ringEnc N K).enc σ ++ ((FixedEnc.fun (α := RingBTVW.Col k) (ringEnc N K)).enc (ea 0) ++ [] ++
+      ((FixedEnc.fun (α := RingBTVW.Col k) (ringEnc N K)).enc (ez 0) ++ []))
+  simp only [List.append_nil, fun_enc_eq]
+  show (((Enum.list (α := Fin 1)).map Sum.inl ++ ((Enum.list (α := RingBTVW.Col k)).map Sum.inl ++
+    (Enum.list (α := RingBTVW.Col k)).map Sum.inr).map Sum.inr).map _).flatMap _ = _
+  simp [List.flatMap_append, List.map_append, List.flatMap_map, Enum.list, trapRowU',
+    List.finRange_succ]
+
+/-- The coins `rest` with the uniform `s = u₀ − σ` drawn first. -/
+theorem lawRestC_eq [NeZero c.d] : lawRestC hk c =
+    (PMF.uniformOfFintype (Rg N K)).bind fun s => (rowLaw (χR c) (Fin c.d)).bind fun e₀ =>
+      (χR c).bind fun σ => (rowLaw (χR c) (RingBTVW.Col k)).bind fun ea =>
+        (rowLaw (χR c) (RingBTVW.Col k)).bind fun ez =>
+          (lawRmBin (S := Sdw (N := N) hk) (Wd := Fin c.d) (k := k)).bind fun Rm =>
+            (χR c).bind fun e' => PMF.pure (s, e₀, trapRowU' σ ea ez, Rm, e') := by
+  unfold lawRestC lawRestNF
+  simp only [Cslib.Probability.PMF.monad_bind_eq_bind, Cslib.Probability.PMF.monad_pure_eq_pure]
+  have h1 : ∀ σ : Rg N K, ((PMF.uniformOfFintype (Rg N K)).bind fun u₀ =>
+      (rowLaw (χR c) (Fin c.d)).bind fun e₀ => (rowLaw (χR c) (RingBTVW.Col k)).bind fun ea =>
+        (rowLaw (χR c) (RingBTVW.Col k)).bind fun ez =>
+          (lawRmBin (S := Sdw (N := N) hk) (Wd := Fin c.d) (k := k)).bind fun Rm =>
+            (χR c).bind fun e' => PMF.pure (u₀ - σ, e₀, trapRowU' σ ea ez, Rm, e')) =
+      (PMF.uniformOfFintype (Rg N K)).bind fun s =>
+      (rowLaw (χR c) (Fin c.d)).bind fun e₀ => (rowLaw (χR c) (RingBTVW.Col k)).bind fun ea =>
+        (rowLaw (χR c) (RingBTVW.Col k)).bind fun ez =>
+          (lawRmBin (S := Sdw (N := N) hk) (Wd := Fin c.d) (k := k)).bind fun Rm =>
+            (χR c).bind fun e' => PMF.pure (s, e₀, trapRowU' σ ea ez, Rm, e') := fun σ =>
+    bind_uniform_equiv (Equiv.subRight σ) (fun s =>
+      (rowLaw (χR c) (Fin c.d)).bind fun e₀ => (rowLaw (χR c) (RingBTVW.Col k)).bind fun ea =>
+        (rowLaw (χR c) (RingBTVW.Col k)).bind fun ez =>
+          (lawRmBin (S := Sdw (N := N) hk) (Wd := Fin c.d) (k := k)).bind fun Rm =>
+            (χR c).bind fun e' => PMF.pure (s, e₀, trapRowU' σ ea ez, Rm, e'))
+  simp only [h1]
+  rw [PMF.bind_comm]
+  refine congrArg (PMF.bind _) (funext fun s => ?_)
+  rw [PMF.bind_comm]
+
+/-- **The word of the coins `rest`**: `N · K` fair bits (`s`), then χ coefficients for `e₀`,
+`e₁ = [σ | ea | ez]`, the binary `Rᵢ`, and χ coefficients for `e'`. -/
+theorem restLaw_enc [NeZero c.d] (hN : 0 < N) (hK : 0 < K) :
+    (lawRestC hk c).map (restEnc c).enc =
+      cat (BitString.uniformList (N * K)) (cat (catPow (catPow (μχ c) N) (Enum.list (α := Fin c.d)).length)
+        (cat (cat (catPow (μχ c) N) (cat (catPow (catPow (μχ c) N) (Enum.list (α := RingBTVW.Col k)).length)
+          (catPow (catPow (μχ c) N) (Enum.list (α := RingBTVW.Col k)).length)))
+        (cat (catPow (μB N K) ((Enum.list (α := (Sdw (N := N) hk).Attr × RingBTVW.Col k)).length *
+          (List.finRange c.d).length)) (catPow (μχ c) N)))) := by
+  rw [lawRestC_eq, ← χR_enc, ← rowLaw_enc (χR c) (Fin c.d), ← rowLaw_enc (χR c) (RingBTVW.Col k),
+    ← rmW_law hk c hN hK, ← unif_ring, cat_assoc, cat_assoc]
+  simp only [cat_map_left, PMF.map_bind, PMF.map_comp, Function.comp_def, bind_pure_eq_map]
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun s => ?_))
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun e₀ => ?_))
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun σ => ?_))
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun ea => ?_))
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun ez => ?_))
+  refine Eq.trans (PMF.map_bind _ _ _) (congrArg (PMF.bind _) (funext fun Rm => ?_))
+  refine Eq.trans (PMF.map_comp _ _ _) ?_
+  congr 1
+  funext e'
+  show (ringEnc N K).enc s ++ ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc e₀ ++
+    ((matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (trapRowU' σ ea ez) ++
+      ((rmTEnc c).enc Rm ++ (ringEnc N K).enc e'))) = _
+  rw [trapRow_enc]
+  simp only [rmW, List.append_assoc]
+
 end AdvancedEncryption.DualUse.Prog
