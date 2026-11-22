@@ -1610,6 +1610,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     whenever it accepts (Las Vegas).
   * **Remaining (the core, restated).** δ = Pr[the reducer's output fails (i)–(iii)], i.e. how often a reducer-selected
     width-506 block is near-GSA with λ1 ≥ 0.998·GH and passes (iii). Equivalently, the runtime of the Las Vegas algorithm.
+* **Part 181 (audited, minor caveats).** [test_acceptance](research/wall1_test_acceptance.md): which Part 180 condition binds,
+  and a revised test.
+  * (iii) has acceptance exactly 0 on Part 108's forward pass: a frozen coordinate axis violates the height-5 dual minimum
+    for every witness.
+  * (i) at floor 54.82 rejects 13.73% of Haar lattices (16.63% at 0.998h). Lowering the floor to 52.20 keeps the 0.006269755
+    bound.
+  * (ii) asks for more than the Chen–Nguyen tail model gives (last GS ≈ 62.73% of GSA) [model comparison].
+  * **Revised score test.** Accept on a computable bound for the expected number of nonzero horizontal competitors in the
+    capped, shifted balls.
+    * Every accepted plant-independent block has terminal failure < 0.000607731, ties included.
+    * An independent Haar lattice at the model determinant is rejected with probability < 4.193·10⁻¹²² for any fixed
+      orientation.
+  * **Lean gap.** `restartCount_lwe` needs MinFloor plus a bound on smoothError, so the score needs a small adapter
+    theorem.
+  * **Remaining.** The probability that the reducer's output meets both the score and lift budgets on the same prefix.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1619,7 +1634,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–180 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–181 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
