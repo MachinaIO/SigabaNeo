@@ -431,6 +431,156 @@ theorem timeBoundT_cutX (n : ℕ) (ℓ : Fin 5 → ℕ) {M : ℕ} (hM : ∀ t, �
   rw [h]
   exact Nat.add_le_add h1 h2
 
+/-! ### Length bounds of loop-free programs -/
+
+/-- **Per-tape length bound of a loop-free program**: every tape grows by at most `pcount p`. -/
+theorem lenBoundT_le_pcount (p : Prog k) (hp : p.LoopFree) (ℓ : Fin k → ℕ) {M : ℕ}
+    (hM : ∀ t, ℓ t ≤ M) (t : Fin k) : lenBoundT p ℓ t ≤ M + pcount p :=
+  ((lenBoundT_mono p (fun t => hM t)) t).trans
+    ((lenBoundT_const_le p M t).trans (lenBound_le_pcount p hp M))
+
+/-! ### The front end on eight tapes
+
+`cutLook n m tbl dv long : XProg 8` (tapes `0`, `1` the inputs `C` and `y`, `2 … 7` scratch, as a
+component on `io2`): cut `C` at `n + 1` bits (`cutX n` on the tapes `0 2 3 4 5`), append the first
+`m` bits of `y` to the key, then write on tape `0` the lookup of the key in `tbl` (default `dv`)
+when `|C| ≤ n`, and `long` otherwise; all other tapes end blank (`law_cutLook`). Its time is
+`20 |C|` plus a constant (`timeBoundT_cutLook`). -/
+
+/-- The tapes of the cut. -/
+def e5 : Fin 5 ↪ Fin 8 := ⟨![0, 2, 3, 4, 5], by decide⟩
+
+theorem embedF_e5 {α : Type} (f : Fin 8 → α) (g : Fin 5 → α) :
+    embedF e5 f g = ![g 0, f 1, g 1, g 2, g 3, g 4, f 6, f 7] := by
+  funext l
+  rcases embedF_cases e5 f g l with ⟨hl, h⟩ | ⟨j, hj, h⟩
+  · rw [h]
+    have hne : ∀ j, e5 j ≠ l := fun j e => by
+      have := partialInv_self e5 j; rw [e, hl] at this; cases this
+    fin_cases l
+    · exact absurd rfl (hne 0)
+    · rfl
+    · exact absurd rfl (hne 1)
+    · exact absurd rfl (hne 2)
+    · exact absurd rfl (hne 3)
+    · exact absurd rfl (hne 4)
+    · rfl
+    · rfl
+  · rw [h, ← hj]
+    fin_cases j <;> rfl
+
+/-- Clear the tapes `1 … 7`. -/
+def clearAll : Prog 8 :=
+  seq (prim (.clear 1)) (seq (prim (.clear 2)) (seq (prim (.clear 3)) (seq (prim (.clear 4))
+    (seq (prim (.clear 5)) (seq (prim (.clear 6)) (prim (.clear 7)))))))
+
+/-- After the cut. -/
+def lookTail (m : ℕ) (tbl : List (List Bool × List Bool)) (dv long : List Bool) : Prog 8 :=
+  seq (appendP 5 1 m) (seq (ifBit 4 (lookupP 5 6 7 0 tbl dv) (putW 0 long)) clearAll)
+
+/-- **The front end**: cut, then look up. -/
+def cutLook (n m : ℕ) (tbl : List (List Bool × List Bool)) (dv long : List Bool) : XProg 8 :=
+  .seq (.frame e5 (cutX n)) (.prog (lookTail m tbl dv long))
+
+/-- Its output: the lookup of the key `padW n C ++ y.take m` when `|C| ≤ n`, else `long`. -/
+def cutLookV (n m : ℕ) (tbl : List (List Bool × List Bool)) (dv long C y : List Bool) :
+    List Bool :=
+  if C.length ≤ n then lookupV tbl dv (padW n C ++ y.take m) else long
+
+theorem coinFree_lookTail (m : ℕ) (tbl : List (List Bool × List Bool)) (dv long : List Bool) :
+    (lookTail m tbl dv long).CoinFree := by
+  simp only [CoinFree, lookTail, coinFreeB, Bool.and_eq_true]
+  exact ⟨coinFree_appendP _ _ m, ⟨coinFree_lookupP tbl dv, coinFree_putW _ long⟩, rfl⟩
+
+theorem loopFree_lookTail (m : ℕ) (tbl : List (List Bool × List Bool)) (dv long : List Bool) :
+    (lookTail m tbl dv long).LoopFree :=
+  ⟨loopFree_appendP _ _ m, ⟨loopFree_lookupP tbl dv, loopFree_putW _ long⟩,
+    by simp [clearAll, LoopFree]⟩
+
+theorem wf_cutLook (n m : ℕ) (tbl : List (List Bool × List Bool)) (dv long : List Bool) :
+    (cutLook n m tbl dv long).WF :=
+  ⟨wf_cutX n, wf_appendP _ _ m, ⟨wf_lookupP tbl dv, wf_putW _ long⟩, by simp [clearAll, Prog.WF]⟩
+
+theorem pcount_lookTail (m : ℕ) (tbl : List (List Bool × List Bool)) (dv long : List Bool) :
+    pcount (lookTail m tbl dv long) = 2 * m + lookCount tbl dv + long.length + 12 := by
+  simp only [lookTail, pcount, pcount_appendP, pcount_lookupP, pcount_putW, clearAll]; omega
+
+/-- **The law of the front end.** -/
+theorem law_cutLook (n m : ℕ) (tbl : List (List Bool × List Bool)) (dv long C y : List Bool)
+    (hy : y.length ≤ m) :
+    (cutLook n m tbl dv long).law (io2 (R := 6) C y []) =
+      PMF.pure (io2 (R := 6) (cutLookV n m tbl dv long C y) [] []) := by
+  rw [cutLook, XProg.law_seq, XProg.law_frame, law_cutX, PMF.pure_map, PMF.pure_bind,
+    XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_lookTail m tbl dv long)]
+  congr 1
+  rw [embedF_e5, show io2 (R := 6) C y [] (e5 0) = C from rfl]
+  simp only [lookTail, run_seq]
+  rw [run_appendP (by decide), run_ifBit]
+  have hdr : List.drop m y = [] := List.drop_eq_nil_of_le hy
+  split_ifs with h4
+  · have hC : C.length ≤ n := by
+      by_contra hC
+      simp [Function.update_apply, cutOut, hC, io2, List.replicate_succ] at h4
+    rw [run_lookupP (by decide) (by decide) (by decide) (by decide) (by decide)]
+    funext t
+    fin_cases t <;> simp [clearAll, run_seq, run_prim, Prim.apply, Function.update_apply, io2,
+      cutOut, cutLookV, hC, hdr]
+  · have hC : ¬ C.length ≤ n := by
+      intro hC
+      simp [Function.update_apply, cutOut, hC, io2, List.replicate_succ] at h4
+    rw [run_putW]
+    funext t
+    fin_cases t <;> simp [clearAll, run_seq, run_prim, Prim.apply, Function.update_apply, io2,
+      cutOut, cutLookV, hC, hdr]
+
+/-- The bounds after the cut. -/
+theorem lenBoundT_frame_cutX (n T Y : ℕ) :
+    XProg.lenBoundT (.frame e5 (cutX n)) (io2 (R := 6) T Y 0) = ![0, Y, 0, 0, n + 1, n + 1, 0, 0] := by
+  show embedF e5 _ (XProg.lenBoundT (cutX n) _) = _
+  rw [lenBoundT_cutX, embedF_e5]
+  funext t
+  fin_cases t <;> rfl
+
+/-- **The time of the front end**: `20 T` for an input of at most `T` bits, plus a constant. -/
+theorem timeBoundT_cutLook (n m : ℕ) (tbl : List (List Bool × List Bool)) (dv long : List Bool)
+    (T Y : ℕ) :
+    (cutLook n m tbl dv long).timeBoundT (io2 (R := 6) T Y 0) ≤
+      20 * T + ((n + 2) * (2 * (n + 2) + 5) + 10 * (2 * (n + 11) + 5) +
+        (2 * m + lookCount tbl dv + long.length + 12) *
+          (2 * (n + 1 + Y + (2 * m + lookCount tbl dv + long.length + 12)) + 5)) := by
+  show XProg.timeBoundT (cutX n) _ + XProg.timeBoundT (.prog (lookTail m tbl dv long))
+    (XProg.lenBoundT (.frame e5 (cutX n)) (io2 (R := 6) T Y 0)) ≤ _
+  rw [lenBoundT_frame_cutX]
+  have h1 := timeBoundT_cutX n (fun j => io2 (R := 6) T Y 0 (e5 j)) (M := T + n + 1)
+    (fun t => by fin_cases t <;> simp [io2, e5] <;> omega) (by omega)
+  have h1' : io2 (R := 6) T Y 0 (e5 2) = 0 := rfl
+  rw [h1'] at h1
+  have h2 := timeBoundT_le_pcount (lookTail m tbl dv long) (loopFree_lookTail m tbl dv long)
+    ![0, Y, 0, 0, n + 1, n + 1, 0, 0] (M := n + 1 + Y) (fun t => by fin_cases t <;> simp <;> omega)
+  rw [pcount_lookTail] at h2
+  show _ + timeBoundT (lookTail m tbl dv long) _ ≤ _
+  nlinarith
+
+/-- **The length bound of the front end**: the output tape at most a constant, the others blank. -/
+theorem lenBoundT_cutLook (n m : ℕ) (tbl : List (List Bool × List Bool)) (dv long : List Bool)
+    (T Y : ℕ) :
+    (cutLook n m tbl dv long).lenBoundT (io2 (R := 6) T Y 0) ≤
+      io2 (R := 6) (n + 1 + Y + (2 * m + lookCount tbl dv + long.length + 12)) 0 0 := by
+  show XProg.lenBoundT (.prog (lookTail m tbl dv long))
+    (XProg.lenBoundT (.frame e5 (cutX n)) (io2 (R := 6) T Y 0)) ≤ _
+  rw [lenBoundT_frame_cutX]
+  intro t
+  have h := lenBoundT_le_pcount (lookTail m tbl dv long) (loopFree_lookTail m tbl dv long)
+    ![0, Y, 0, 0, n + 1, n + 1, 0, 0] (M := n + 1 + Y) (fun t => by fin_cases t <;> simp <;> omega)
+  rw [pcount_lookTail] at h
+  show lenBoundT (lookTail m tbl dv long) _ t ≤ _
+  by_cases h0 : t = 0
+  · subst h0; exact h 0
+  · have hz : lenBoundT (lookTail m tbl dv long) ![0, Y, 0, 0, n + 1, n + 1, 0, 0] t = 0 := by
+      simp only [lookTail, lenBoundT, clearAll, Prim.lenT]
+      fin_cases t <;> simp at h0 ⊢
+    rw [hz]; exact Nat.zero_le _
+
 end Prog
 
 end SigabaNeo.Tape
