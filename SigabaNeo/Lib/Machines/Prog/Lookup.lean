@@ -216,6 +216,16 @@ theorem timeBoundT_lookupP (tbl : List (List Bool × List Bool)) (dv : List Bool
 
 end Lookup
 
+/-- **The size of a lookup table's program**, entries of at most `B` bits. -/
+theorem lookCount_le {B : ℕ} : ∀ (tbl : List (List Bool × List Bool)) (dv : List Bool),
+    (∀ e ∈ tbl, e.1.length + e.2.length ≤ B) → lookCount tbl dv ≤ tbl.length * (B + 4) + dv.length + 1
+  | [], dv, _ => by simp [lookCount]
+  | e :: tb, dv, h => by
+    have h1 := lookCount_le tb dv (fun x hx => h x (by simp [hx]))
+    have h2 := h e (by simp)
+    simp only [lookCount, List.length_cons, Nat.succ_mul]
+    omega
+
 /-! ### Appending a prefix of a tape -/
 
 /-- Append the first `m` bits of tape `j` to tape `i`, dropping them from `j`. -/
