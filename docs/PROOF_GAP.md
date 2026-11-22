@@ -931,6 +931,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     405), against a budget of 23.78. The worst case is attained on hexagonal planes through the winner.
   * **Conjecture R1 (open).** The relaxed Part 120 plane count is ≤ 0.05. Of the Part 123 data, only the 3/48 sample weighs
     against a 1% rate.
+  * **Lean (Nov 2026).** PlantBlindRestart.lean formalizes Theorem 1 abstractly. It is axiom-clean, with no sorry, axiom
+    or native_decide.
+    * `failProb_eq` gives the exact law: failure = ∏δᵢ + Σᵢ (∏_{j<i} δⱼ)·Pr[accᵢ ∧ Fᵢ].
+    * `restart_le` / `restart_le_avg` / `restart_le_lift` give failure ≤ ∏δᵢ + ε (+ ℓ). `restart_le_pow` gives δ^k + ε.
+    * `restart_le_lwe` instantiates the plant as iid (s, e).
+    * Still open: connecting the abstract acc and F to the concrete GS/minimum test, `uniquenessProbability` and the Babai
+      lift bound.
 * **Part 135 (audited, minor caveats; the corrections are in the note's Audit section).**
   [plant_symmetry](research/wall1_plant_symmetry.md): what averaging over the plant can and cannot do.
   * A lattice containing the plant determines it: a second admissible solution exists with probability < 2^−3107.2. So
@@ -947,6 +954,28 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     K = 1 / 10 / 1000.
   * Part 101 certifies only 8.1588. Sufficiency (per the audit) needs L ≥ 35.112 at β = 506 (32.145 at β = 406), so the
     rigorous gap is about a factor of 2 in the threshold. Conjectures 5.1–5.3 are open.
+* **Part 136 (audited, minor caveats with one substantive correction; see the note's Audit section).**
+  [restart_certificate](research/wall1_restart_certificate.md): what "non-rare acceptance" has to mean.
+  * **Monte Carlo certificate.** Run the fixed decoupled pipeline on simulated CBD plants. The certificate is sound: there is
+    no stopping-time bias, since the true plant is independent of everything the rule reads. It is complete up to
+    ≈ 4.2·10⁻⁹ / 9.4·10⁻¹⁰, at a cost of 10⁵ extra SVP calls per trial.
+  * **Restart failure.** With a shared design, restart failure is E_A[(1−α(A))^T]. So 99% needs α(A) ≳ 1/T on 98–99% of
+    designs; a non-rare mean acceptance proves nothing.
+  * **Randomizations.**
+    * Fresh disjoint rows give exact independence, but at most 2–3 blocks fit, so each block needs ᾱ ≈ 0.82–0.92.
+    * Overlapping row subsets give at least a K-fold amplification, K = ⌊m/m′⌋.
+    * Canonicalizing or equivariant reducers gain nothing from basis or symmetry randomization.
+    * Prefixes independent of A need ≥ 2^678 trials at β = 406.
+    * Re-choosing the last vector gains at most 2/√3.
+  * **Counting certificates.** Relaxing the per-trial failure budget to 1 − 1/poly moves any first-moment radius by at most
+    100^{1/D} ≈ 1.01.
+  * **Theorem 8.** It uses the Lean results `primitiveBallPairs_hit_lower` and `part105`. On a Haar window, picking a short
+    primitive vector whose quotient passes fails with probability < 1.371·10⁻⁵ at rank 506, ratio 0.954. This certifies
+    λ1(H) ≥ 27.484. Per the audit, that matches only the *necessary* floor 27.4538 (Part 103); sufficiency is not implied,
+    and height-zero success at that floor is ≈ 47%.
+  * **Remaining.**
+    * Gaps A and B are lower tails of the per-design acceptance.
+    * Gap R (window statistics within a constant factor of Haar, Conjecture R) closes only the necessary-side statement.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
