@@ -496,6 +496,55 @@ theorem law_appendTapeP {r a S c : Fin k} (hra : r ≠ a) (hrS : r ≠ S) (hrc :
     by_cases h1 : t = a <;> by_cases h2 : t = S <;> by_cases h3 : t = r <;> by_cases h4 : t = c <;>
       simp_all
 
+
+/-! ### Well-formedness -/
+
+theorem wf_forN {c t : Fin k} {body : XProg k} (hb : body.WF) (hc : body.Preserves c) :
+    (forN c t body).WF := ⟨trivial, hb, hc⟩
+
+theorem wf_coinAp (r b : Fin k) : (coinAp r b).WF := ⟨trivial, trivial, trivial⟩
+
+theorem preserves_coinAp {r b i : Fin k} (hr : r ≠ i) (hb : b ≠ i) : (coinAp r b).Preserves i :=
+  ⟨hb, by simp [Prog.Preserves, Prim.writes, Ne.symm hr], by simp [Prog.Preserves, Prim.writes, Ne.symm hb]⟩
+
+theorem wf_bitAp (r : Fin k) (v : Bool) : (bitAp r v).WF := trivial
+
+theorem preserves_bitAp {r i : Fin k} (v : Bool) (hr : r ≠ i) : (bitAp r v).Preserves i := by
+  simp [bitAp, Preserves, Prog.Preserves, Prim.writes, Ne.symm hr]
+
+theorem wf_natP {t c : Fin k} (hct : c ≠ t) : ∀ n, (natP t c n).WF
+  | 0 => by rw [natP]; trivial
+  | n + 1 => by
+    have ih := wf_natP hct ((n + 1) / 2)
+    have hd : (dblP t c).WF := wf_forN (wf_bitAp t false) (preserves_bitAp false hct.symm)
+    rw [natP]
+    split_ifs
+    · exact ⟨ih, hd⟩
+    · exact ⟨⟨ih, hd⟩, wf_bitAp t false⟩
+
+theorem preserves_natP {t c i : Fin k} (hti : t ≠ i) (hci : c ≠ i) : ∀ n, (natP t c n).Preserves i
+  | 0 => by rw [natP]; simp [Preserves, Prog.Preserves, Prim.writes, Ne.symm hti]
+  | n + 1 => by
+    have ih := preserves_natP hti hci ((n + 1) / 2)
+    have hd : (dblP t c).Preserves i := ⟨by simp [Preserves, Prog.Preserves, Prim.writes, Ne.symm hci], hci,
+      preserves_bitAp false hti⟩
+    rw [natP]
+    split_ifs
+    · exact ⟨ih, hd⟩
+    · exact ⟨⟨ih, hd⟩, preserves_bitAp false hti⟩
+
+theorem wf_withCount {t c : Fin k} (hct : c ≠ t) {n : ℕ} {body : XProg k} (hb : body.WF) :
+    (withCount t c n body).WF := ⟨wf_natP hct n, hb, trivial⟩
+
+theorem preserves_withCount {t c i : Fin k} (hti : t ≠ i) (hci : c ≠ i) {n : ℕ} {body : XProg k}
+    (hb : body.Preserves i) : (withCount t c n body).Preserves i :=
+  ⟨preserves_natP hti hci n, hb, by simp [Preserves, Prog.Preserves, Prim.writes, Ne.symm hti]⟩
+
+theorem wf_appendTapeP {r a S c : Fin k} (hrc : r ≠ c) (hSc : S ≠ c) :
+    (appendTapeP r a S c).WF :=
+  ⟨trivial, ⟨trivial, ⟨trivial, trivial⟩, by simp [Preserves, Prog.Preserves, Prim.writes, Ne.symm hrc],
+    by simp [Preserves, Prog.Preserves, Prim.writes, Ne.symm hSc]⟩, trivial, trivial⟩
+
 end XProg
 
 end SigabaNeo.Tape
