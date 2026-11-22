@@ -15,7 +15,7 @@ namespace SigabaNeo.Tape
 
 namespace ValVM
 
-open SigabaNeo.Lattices SigabaNeo.Lattices.SLP SigabaNeo.Lattices.Algo SigabaNeo.Encode
+open SigabaNeo.Lattices SigabaNeo.Lattices.SLP SigabaNeo.Lattices.Algo SigabaNeo.Encode SigabaNeo.Tape.Prog
 
 set_option maxRecDepth 8192
 set_option linter.unusedSimpArgs false
@@ -135,6 +135,69 @@ theorem exec_stC {S W : ℕ} (hW : 10 ≤ W) (w : St) {C : List Bool} (hC : w CB
     rw [← List.flatten_append, show W - 9 = (W - 10) + 1 by omega, List.replicate_succ',
       List.append_assoc, List.singleton_append]
   · rw [Function.update_of_ne a1, Function.update_of_ne a4, R2 j a1 a3 a2, e1 j a1 a2]
+
+/-- The bundle of the input `i` of `f̂`. -/
+def inBW {N K : ℕ} (bW wW : Fin 10 × BI N (K + 1) → List Bool)
+    (ent : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) (i : Fin 10) (b : BI N (K + 1)) :
+    List Bool :=
+  jw (bW (i, b)) (wW (i, b)) (bitE K (ent i (b.1, b.2.1)) b.2.2.1.val b.2.2.2.val) N K
+
+theorem insWords_flatten {N K : ℕ} (bW wW : Fin 10 × BI N (K + 1) → List Bool)
+    (ent : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) :
+    (insWords bW wW ent).flatten = ((List.finRange 10).map fun i => bw (inBW bW wW ent i)).flatten := by
+  have h : (Enum.list (α := Fin 10 × BI N (K + 1))) =
+      List.finRange 10 ×ˢ (Enum.list (α := BI N (K + 1))) := rfl
+  rw [insWords, h, product_def', List.map_flatMap, flatten_flatMap']
+  congr 1
+  apply List.map_congr_left
+  intro i _
+  rw [List.map_map, bw]
+  rfl
+
+/-- **The initial words of the run of `f̂`.** -/
+structure FInit (V K N W A1 Ad : ℕ) (one : List Bool) (gs : GateList)
+    (bW wW : Fin 10 × BI N (K + 1) → List Bool)
+    (ent : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) (RB RW RP : List Bool) (w : St) :
+    Prop where
+  tm : Tmpl V K w
+  vone : w 10 = one
+  ob : w OB = [true]
+  zb : w ZB = [false]
+  nv : (w TNV).length = N * V
+  nkv : (w TNKV).length = N * ((K + 1) * V)
+  t2k : (w T2K).length = 2 * (K + 1)
+  tlb : (w TLB).length = (2 * (K + 1) * N + 1) * ((K + 1) * V)
+  tcnt : (w TCNT).length = 2 * (K + 1) * N + 1
+  th : (w TH).length = treeHeight N (K + 1)
+  tn : (w TN).length = N
+  tn1 : (w TN1).length = N - 1
+  tn1v : (w TN1V).length = (N - 1) * V
+  tkv : (w TKV).length = K * V
+  t2knv : (w T2kNV).length = 2 * (N * ((K + 1) * V))
+  t2kknv : (w T2kkNV).length = 2 * (K + 1) * (N * ((K + 1) * V))
+  ta1 : (w TA1).length = A1
+  tad : (w TAd).length = Ad
+  tk1 : (w TK1).length = K - 1
+  znk1 : w ZNK1 = List.replicate (N * K - 1) false
+  hV : V = A1 + Ad + N * K
+  hNK : 0 < N * K
+  hK : 0 < K
+  tnk : (w TNK).length = N * K
+  t4k : (w T4k).length = 2 * (2 * (K + 1))
+  t10 : (w T10).length = 10
+  bst : w BSt = ((Enum.list (α := Fin 10 × BI N (K + 1))).map bW).flatten ++ RB
+  wst : w WSt = ((Enum.list (α := Fin 10 × BI N (K + 1))).map wW).flatten ++ RW
+  pst : w PSt = ((List.finRange 10).flatMap fun i => (qsL (K + 1)).map (ent i)).flatten ++ RP
+  insw : (w INSW).length = 10 * ((Enum.list (α := BI N (K + 1))).length * V)
+  tsl : (w TSl).length = (Enum.list (α := BI N (K + 1))).length * V
+  tst : (w TST).length = (W + 1) * ((Enum.list (α := BI N (K + 1))).length * V)
+  td2 : (w TD2).length = 2 * ((W + 1) * ((Enum.list (α := BI N (K + 1))).length * V))
+  tw : (w TW).length = W
+  tpad : (w TPAD).length = (W - 10) * ((Enum.list (α := BI N (K + 1))).length * V)
+  tw9 : (w TW9).length = W - 9
+  tins : (w TINS).length = 10 * ((Enum.list (α := BI N (K + 1))).length * V)
+  gsw : w GS = gsW W gs
+  gcnt : (w GCNT).length = gs.length
 
 end ValVM
 
