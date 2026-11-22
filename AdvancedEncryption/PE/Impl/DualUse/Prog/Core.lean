@@ -175,15 +175,15 @@ def timePsiCore (N K k d M : ℕ) : ℕ :=
 theorem ub_psiCore (N K k d M : ℕ) (hM : sizePsiCore N K k d ≤ M) :
     UB (psiCore N K k d) M (timePsiCore N K k d M) M := by
   unfold sizePsiCore at hM
-  exact (ub_frameX _ (ub_joinB _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_mmB _ _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_gadB _ _ _ M (by omega)) le_rfl).seq <|
+  exact (ub_frameB _ (ub_joinB _ _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_mmB _ _ _ _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_gadB _ _ _ M (by omega)) le_rfl).seq <|
     (ub_copy _ _ M).seq <|
-    (ub_frameX _ (ub_joinB _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_selB _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_addB _ _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_joinB _ _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_selB _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_addB _ _ _ M (by omega)) le_rfl).seq <|
     (ub_clear _ M).seq <| (ub_clear _ M).seq <| (ub_clear _ M).seq <| ub_clear _ M
 
 /-- The sizes of the templates of `bjCore`. -/
@@ -202,10 +202,10 @@ def timeBjCore (N K k d M : ℕ) : ℕ :=
 theorem ub_bjCore (N K k d M : ℕ) (hM : sizeBjCore N K k d ≤ M) :
     UB (bjCore N K k d) M (timeBjCore N K k d M) M := by
   unfold sizeBjCore at hM
-  exact (ub_frameX _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_gadB _ _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_selB _ _ M (by omega)) le_rfl).seq <|
-    (ub_frameX _ (ub_hashB _ _ _ _ M (by omega)) le_rfl).seq <|
+  exact (ub_frameB _ (ub_trB _ _ _ _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_gadB _ _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_selB _ _ M (by omega)) le_rfl).seq <|
+    (ub_frameB _ (ub_hashB _ _ _ _ M (by omega)) le_rfl).seq <|
     (ub_clear _ M).seq <| (ub_clear _ M).seq <| ub_clear _ M
 
 end AdvancedEncryption.DualUse.Prog

@@ -9,9 +9,9 @@ Programs of the fragment `NoGrow` (sizes from templates).
   `s`, `m`, `Z` and `m · (s · (r · B) + Z)`; scratch `8 … 19`): the word `u` holds `m` matrices of
   `r × s` blocks of `B` bits, row-major; the output holds their transposes (`s × r`, row-major),
   each followed by `Z` zero bits (`trW`, `run_trP`).
-* `selP : Prog 13` (tapes `0` output, `1` a bit stream `x`, `2` `3` words `X`, `Y`, templates `4`
+* `bitSelP : Prog 13` (tapes `0` output, `1` a bit stream `x`, `2` `3` words `X`, `Y`, templates `4`
   `5` `6` of lengths `B`, `n`, `n · B`; scratch `7 … 12`): for each of the first `n` bits of `x`,
-  the first `B` bits of `X` if the bit is set, of `Y` otherwise (`selW`, `run_selP`).
+  the first `B` bits of `X` if the bit is set, of `Y` otherwise (`selW`, `run_bitSelP`).
 -/
 
 namespace SigabaNeo.Tape
@@ -228,39 +228,39 @@ def svM : Fin 5 → Fin 13 := ![10, 0, 11, 12, 4]
 theorem svM_inj : Function.Injective svM := by decide
 
 /-- A bit: pop it, shift the selected block into the output. -/
-def selBody : Prog 13 := pp 7 8 ⨾ ifBit 8 (cp 10 2) (cp 10 3) ⨾ map svM mvP ⨾ clr 10 ⨾ clr 8
+def bitSelBody : Prog 13 := pp 7 8 ⨾ ifBit 8 (cp 10 2) (cp 10 3) ⨾ map svM mvP ⨾ clr 10 ⨾ clr 8
 
 /-- **Blocks selected by bits.** -/
-def selP : Prog 13 := cp 0 6 ⨾ cp 7 1 ⨾ forN 9 5 selBody ⨾ clr 7
+def bitSelP : Prog 13 := cp 0 6 ⨾ cp 7 1 ⨾ forN 9 5 bitSelBody ⨾ clr 7
 
 def selG (S : Store 13) : List Bool × List Bool → Store 13
   | (xs, out) => Function.update (Function.update S 7 xs) 0 out
 
 set_option linter.unusedSimpArgs false in
-theorem run_selBody {B : ℕ} (S : Store 13) (h8 : S 8 = []) (h10 : S 10 = []) (h11 : S 11 = [])
+theorem run_bitSelBody {B : ℕ} (S : Store 13) (h8 : S 8 = []) (h10 : S 10 = []) (h11 : S 11 = [])
     (h12 : S 12 = []) (hB : (S 4).length = B) (a) (w : List Bool) :
-    run selBody (Function.update (selG S a) 9 w) =
+    run bitSelBody (Function.update (selG S a) 9 w) =
       Function.update (selG S ((fun a : List Bool × List Bool => (a.1.drop 1,
         (a.2 ++ takeD B (if hd a.1 then S 2 else S 3)).drop B)) a)) 9 w := by
   obtain ⟨xs, out⟩ := a
   have hh : ∀ l : List Bool, hd (l.take 1) = hd l := by intro l; cases l <;> rfl
-  simp only [selBody, run_seq, run_copy, run_clear, run_pop, run_ifBit, selG]
+  simp only [bitSelBody, run_seq, run_copy, run_clear, run_pop, run_ifBit, selG]
   split_ifs with h <;>
     rw [run_mvP_map svM_inj _ (by simp [svM, h11]) (by simp [svM, h12])] <;>
     funext t <;> fin_cases t <;> simp_all [svM, List.drop_one]
 
 set_option linter.unusedSimpArgs false in
 /-- **Blocks selected by bits.** -/
-theorem run_selP {B n : ℕ} (S : Store 13) (hS : ∀ i : Fin 13, 7 ≤ i.val → S i = [])
+theorem run_bitSelP {B n : ℕ} (S : Store 13) (hS : ∀ i : Fin 13, 7 ≤ i.val → S i = [])
     (hB : (S 4).length = B) (hn : (S 5).length = n) (hT : (S 6).length = n * B) :
-    run selP S = Function.update S 0 (selW n B (S 1) (S 2) (S 3)) := by
+    run bitSelP S = Function.update S 0 (selW n B (S 1) (S 2) (S 3)) := by
   set S1 := Function.update (Function.update S 0 (S 6)) 7 (S 1)
-  have hloop := run_forN 9 5 selBody (selG S1) _
-    (fun a w => run_selBody (B := B) S1 (by simp [S1, hS]) (by simp [S1, hS]) (by simp [S1, hS])
+  have hloop := run_forN 9 5 bitSelBody (selG S1) _
+    (fun a w => run_bitSelBody (B := B) S1 (by simp [S1, hS]) (by simp [S1, hS]) (by simp [S1, hS])
       (by simp [S1, hS]) (by simp [S1, hB]) a w)
     (S 1, S 6) S1 (by funext t; fin_cases t <;> simp [S1, selG])
-  have hsplit : run selP S = run (clr 7) (run (forN 9 5 selBody) S1) := by
-    simp only [selP, run_seq, run_copy]
+  have hsplit : run bitSelP S = run (clr 7) (run (forN 9 5 bitSelBody) S1) := by
+    simp only [bitSelP, run_seq, run_copy]
     rw [show Function.update S 0 (S 6) 1 = S 1 by simp]
   have h5 : S1 5 = S 5 := by simp [S1]
   have h2 : S1 2 = S 2 := by simp [S1]
@@ -273,14 +273,14 @@ theorem run_selP {B n : ℕ} (S : Store 13) (hS : ∀ i : Fin 13, 7 ≤ i.val �
   simp only [selG, S1, selW]
   fin_cases t <;> simp [hS]
 
-theorem run_selP_map {u : Fin 13 → Fin k} (hu : Function.Injective u) {B n : ℕ} (S : Store k)
+theorem run_bitSelP_map {u : Fin 13 → Fin k} (hu : Function.Injective u) {B n : ℕ} (S : Store k)
     (hS : ∀ i : Fin 13, 7 ≤ i.val → S (u i) = []) (hB : (S (u 4)).length = B)
     (hn : (S (u 5)).length = n) (hT : (S (u 6)).length = n * B) :
-    run (map u selP) S = Function.update S (u 0) (selW n B (S (u 1)) (S (u 2)) (S (u 3))) :=
-  run_map_eq_update hu _ S 0 _ (run_selP _ hS hB hn hT)
+    run (map u bitSelP) S = Function.update S (u 0) (selW n B (S (u 1)) (S (u 2)) (S (u 3))) :=
+  run_map_eq_update hu _ S 0 _ (run_bitSelP _ hS hB hn hT)
 
-theorem noGrow_selP : selP.NoGrow := rfl
-theorem wf_selP : selP.WF := wf_of_wfB (by decide)
+theorem noGrow_bitSelP : bitSelP.NoGrow := rfl
+theorem wf_bitSelP : bitSelP.WF := wf_of_wfB (by decide)
 
 end Prog
 

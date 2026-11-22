@@ -61,7 +61,7 @@ theorem ub_progMap (u : Fin n → Fin k) (p : Prog n) (hp : p.NoGrow) (M : ℕ) 
     rwa [Prog.lenBound_eq _ (hp.map u)] at this
 
 /-- **A uniform bound of a framed block.** -/
-theorem ub_frameX (e : Fin n ↪ Fin k) {p : XProg n} {M T M' : ℕ} (h : UB p M T M') (hM : M ≤ M') :
+theorem ub_frameB (e : Fin n ↪ Fin k) {p : XProg n} {M T M' : ℕ} (h : UB p M T M') (hM : M ≤ M') :
     UB (frame e p) M T M' := by
   intro ℓ hℓ
   have hc : ∀ j, (fun j => ℓ (e j)) j ≤ M := fun j => hℓ (e j)
@@ -142,11 +142,11 @@ theorem selU_inj : Function.Injective selU := by decide
 /-- **Blocks selected by bits** (`selW`), with their templates. -/
 def selB (n B : ℕ) : XProg 14 :=
   seq (natP 4 13 B) <| seq (natP 5 13 n) <| seq (natP 6 13 (n * B)) <|
-  seq (prog (Prog.map selU Prog.selP)) <| clearL [4, 5, 6]
+  seq (prog (Prog.map selU Prog.bitSelP)) <| clearL [4, 5, 6]
 
 theorem wf_selB (n B : ℕ) : (selB n B).WF :=
   ⟨wf_natP (by decide) _, wf_natP (by decide) _, wf_natP (by decide) _,
-    wf_progMap selU_inj Prog.wf_selP, wf_clearL _⟩
+    wf_progMap selU_inj Prog.wf_bitSelP, wf_clearL _⟩
 
 set_option maxHeartbeats 1000000 in
 theorem law_selB (n B : ℕ) (S : Store 14) (hS : ∀ i : Fin 14, 4 ≤ i.val → S i = []) :
@@ -155,7 +155,7 @@ theorem law_selB (n B : ℕ) (S : Store 14) (hS : ∀ i : Fin 14, 4 ≤ i.val �
   rw [law_seq, law_natP (by decide) _ _ (hS 13 (by decide)), PMF.pure_bind]
   rw [law_seq, law_natP (by decide) _ _ (by simp [hS]), PMF.pure_bind]
   rw [law_seq, law_natP (by decide) _ _ (by simp [hS]), PMF.pure_bind]
-  rw [law_seq, law_progMap selU_inj _ Prog.noGrow_selP _ 0 _ (Prog.run_selP (B := B) (n := n)
+  rw [law_seq, law_progMap selU_inj _ Prog.noGrow_bitSelP _ 0 _ (Prog.run_bitSelP (B := B) (n := n)
     _ (fun i hi => by fin_cases i <;> first | (simp at hi; done) | simp [selU, hS])
     (by simp [selU]) (by simp [selU]) (by simp [selU])), PMF.pure_bind, law_clearL]
   congr 1
@@ -166,14 +166,14 @@ def sizeSelB (n B : ℕ) : ℕ := B + n + n * B
 
 def timeSelB (n B M : ℕ) : ℕ :=
   (2 * B + 1) * (4 * M + 12) + (2 * n + 1) * (4 * M + 12) + (2 * (n * B) + 1) * (4 * M + 12) +
-    Prog.timeBound Prog.selP M + ([4, 5, 6].length * (2 * (M + 1) + 3) + (2 * (M + 1) + 3))
+    Prog.timeBound Prog.bitSelP M + ([4, 5, 6].length * (2 * (M + 1) + 3) + (2 * (M + 1) + 3))
 
 theorem ub_selB (n B M : ℕ) (hM : sizeSelB n B ≤ M) : UB (selB n B) M (timeSelB n B M) M := by
   unfold sizeSelB at hM
   have u := (ub_natP (t := (4 : Fin 14)) (c := 13) (by decide) (n := B) (M := M) (by omega)).seq <|
     (ub_natP (t := (5 : Fin 14)) (c := 13) (by decide) (n := n) (M := M) (by omega)).seq <|
     (ub_natP (t := (6 : Fin 14)) (c := 13) (by decide) (n := n * B) (M := M) (by omega)).seq <|
-    (ub_progMap selU _ Prog.noGrow_selP M).seq <| ub_clearL M [4, 5, 6]
+    (ub_progMap selU _ Prog.noGrow_bitSelP M).seq <| ub_clearL M [4, 5, 6]
   refine u.mono (le_of_eq ?_) le_rfl
   simp only [timeSelB, Nat.add_assoc, List.length_cons, List.length_nil]
 
