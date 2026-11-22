@@ -41,15 +41,15 @@ theorem exec_ofList (l : List Code) (w : St) :
   | nil => rfl
   | cons c l ih => simp only [ofList, exec, ih, List.foldl_cons]
 
-theorem exec_cp' {d s : Fin 40} {w : St} : exec V f (.cp d s) w = Function.update w d (w s) := rfl
-theorem exec_rep' {c : Fin 40} {b : Code} {w : St} :
+theorem exec_cp' {d s : Fin 64} {w : St} : exec V f (.cp d s) w = Function.update w d (w s) := rfl
+theorem exec_rep' {c : Fin 64} {b : Code} {w : St} :
     exec V f (.rep c b) w =
       (fun w' => exec V f b (Function.update w' c (w' c).tail))^[(w c).length] w := rfl
 
 /-! ### The words a code writes -/
 
 /-- The words a code may write. -/
-def wr : Code → List (Fin 40)
+def wr : Code → List (Fin 64)
   | .gate d _ _ => [d]
   | .mvV d s => [d, s]
   | .mv d s _ => [d, s]
@@ -62,7 +62,7 @@ def wr : Code → List (Fin 40)
   | .nop => []
 
 /-- **A code leaves the words it does not write.** -/
-theorem exec_not_mem : ∀ (c : Code) (w : St) (j : Fin 40), j ∉ wr c → exec V f c w j = w j
+theorem exec_not_mem : ∀ (c : Code) (w : St) (j : Fin 64), j ∉ wr c → exec V f c w j = w j
   | .gate d a b, w, j, h => by simp only [wr, List.mem_singleton] at h; simp [exec, Function.update_of_ne h]
   | .mvV d s, w, j, h => by
     simp only [wr, List.mem_cons, List.not_mem_nil, or_false, not_or] at h
@@ -106,14 +106,14 @@ theorem shiftIn_val {r v L : List Bool} (hr : r.length = V) (hv : v.length = V) 
   simp [hr]
 
 /-- Pop a value from a stream into a register of `V` bits. -/
-theorem exec_mvV_pop {d s : Fin 40} (hds : d ≠ s) {w : St} {v L : List Bool} (hd : (w d).length = V)
+theorem exec_mvV_pop {d s : Fin 64} (hds : d ≠ s) {w : St} {v L : List Bool} (hd : (w d).length = V)
     (hv : v.length = V) (hs : w s = v ++ L) :
     exec V f (.mvV d s) w = Function.update (Function.update w s L) d v := by
   simp only [exec, if_neg hds, hs, shiftIn_val hd hv]
   rw [List.drop_left' hv]
 
 /-- Push a register of `V` bits into a buffer (shifted in at the end). -/
-theorem exec_mvV_push {d s : Fin 40} (hds : d ≠ s) {w : St} (hs : (w s).length = V) :
+theorem exec_mvV_push {d s : Fin 64} (hds : d ≠ s) {w : St} (hs : (w s).length = V) :
     exec V f (.mvV d s) w = Function.update (Function.update w s []) d ((w d ++ w s).drop V) := by
   simp only [exec, if_neg hds, shiftIn, takeD_of_length' hs]
   rw [List.drop_eq_nil_of_le (by omega)]
@@ -140,7 +140,7 @@ def faC : Code := ofList [.gate 4 0 1, .gate 5 0 4, .gate 6 1 4, .gate 7 5 6, .g
 
 theorem exec_faC (w : St) :
     (exec V f faC w 3, exec V f faC w 2) = fullAddV (w 10) (fV V f) (w 0) (w 1) (w 2) ∧
-      ∀ j : Fin 40, (j.val < 2 ∨ 8 < j.val) → exec V f faC w j = w j := by
+      ∀ j : Fin 64, (j.val < 2 ∨ 8 < j.val) → exec V f faC w j = w j := by
   refine ⟨?_, fun j hj => ?_⟩
   · simp [faC, exec_ofList, exec, Function.update_apply, fullAddV, xorV, orV, fV]
   · have h2 : j ≠ 2 := fun e => by subst e; simp at hj
@@ -193,20 +193,20 @@ theorem rippleL_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).len
     · exact rippleL_len hf as bs _ x hx
 
 /-- Stream registers of the arithmetic. -/
-abbrev NA : Fin 40 := 17
-abbrev NB : Fin 40 := 18
-abbrev NC : Fin 40 := 19
-abbrev CT0 : Fin 40 := 22
+abbrev NA : Fin 64 := 17
+abbrev NB : Fin 64 := 18
+abbrev NC : Fin 64 := 19
+abbrev CT0 : Fin 64 := 22
 
 /-- One round of the ripple adder: pop `a`, `b`, add with the carry `R2`, push the sum. -/
 def rippleBody : Code := ofList [.mvV 0 NA, .mvV 1 NB, faC, .mvV NC 3]
 
 /-- **The ripple adder**: `NC := rippleV (NA, NB, R2)` (the buffer from the template `tb`, the
 rounds counted by the template `tk`). -/
-def rippleC (tk tb : Fin 40) : Code := ofList [.cp NC tb, .cp CT0 tk, .rep CT0 rippleBody, .mvV NC 2]
+def rippleC (tk tb : Fin 64) : Code := ofList [.cp NC tb, .cp CT0 tk, .rep CT0 rippleBody, .mvV NC 2]
 
 /-- The words the ripple adder may write. -/
-def rippleW (j : Fin 40) : Prop := j.val ≤ 8 ∨ j = NA ∨ j = NB ∨ j = NC ∨ j = CT0
+def rippleW (j : Fin 64) : Prop := j.val ≤ 8 ∨ j = NA ∨ j = NB ∨ j = NC ∨ j = CT0
 
 theorem fV_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (a b : List Bool) :
     (fV V f a b).length = V := hf _ _ (by simp) (by simp)
@@ -299,7 +299,7 @@ theorem iter_rippleBody (hf : ∀ a b, a.length = V → b.length = V → (f a b)
 the counter template `tk` of `n` bits and the buffer template `tb` of `(n + 1) V` bits, `NC` ends
 with the flattened `rippleV` of the values (`R10` the constant `1`, `R2` the carry). -/
 theorem exec_rippleC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
-    {tk tb : Fin 40} (htk : ¬ rippleW tk) (htb : ¬ rippleW tb)
+    {tk tb : Fin 64} (htk : ¬ rippleW tk) (htb : ¬ rippleW tb)
     (as bs : List (List Bool)) (w : St) (hl : as.length = bs.length)
     (hav : ∀ x ∈ as, x.length = V) (hbv : ∀ x ∈ bs, x.length = V) (h0 : (w 0).length = V)
     (h1 : (w 1).length = V) (h2 : (w 2).length = V) (hA : w NA = as.flatten)
@@ -354,14 +354,14 @@ def GOk (V : ℕ) (f : List Bool → List Bool → List Bool) (G : Code)
     (F : List Bool → List Bool → List Bool → List Bool → List Bool) : Prop :=
   ∀ w, (w 0).length = V → (w 1).length = V →
     exec V f G w 3 = F (w 9) (w 10) (w 0) (w 1) ∧ (exec V f G w 3).length = V ∧
-    ∀ j : Fin 40, (j.val < 3 ∨ 8 < j.val) → exec V f G w j = w j
+    ∀ j : Fin 64, (j.val < 3 ∨ 8 < j.val) → exec V f G w j = w j
 
 /-- One round: pop `a`, `b`, compute `G`, push `R3`. -/
 def zipBody (G : Code) : Code := ofList [.mvV 0 NA, .mvV 1 NB, G, .mvV NC 3]
 
 /-- **A zip of two streams**: `NC := zipWith F (NA, NB)` (buffer template `tb`, counter template
 `tk`). -/
-def zipC (G : Code) (tk tb : Fin 40) : Code := ofList [.cp NC tb, .cp CT0 tk, .rep CT0 (zipBody G)]
+def zipC (G : Code) (tk tb : Fin 64) : Code := ofList [.cp NC tb, .cp CT0 tk, .rep CT0 (zipBody G)]
 
 theorem iter_zipBody {G : Code} {F : List Bool → List Bool → List Bool → List Bool → List Bool}
     (hG : GOk V f G F) :
@@ -447,7 +447,7 @@ theorem iter_zipBody {G : Code} {F : List Bool → List Bool → List Bool → L
 
 /-- **A zip of two streams**: `NC` ends with the flattened `zipWith`. -/
 theorem exec_zipC {G : Code} {F : List Bool → List Bool → List Bool → List Bool → List Bool}
-    (hG : GOk V f G F) {tk tb : Fin 40} (htk : ¬ rippleW tk) (htb : ¬ rippleW tb)
+    (hG : GOk V f G F) {tk tb : Fin 64} (htk : ¬ rippleW tk) (htb : ¬ rippleW tb)
     (as bs : List (List Bool)) (w : St) (hl : as.length = bs.length)
     (hav : ∀ x ∈ as, x.length = V) (hbv : ∀ x ∈ bs, x.length = V) (h0 : (w 0).length = V)
     (h1 : (w 1).length = V) (ra rb : List Bool) (hA : w NA = as.flatten ++ ra)
@@ -551,12 +551,12 @@ theorem notLV_eq_zipWith {α : Type*} (one : α) (step : α → α → α) :
 /-! ### Constants -/
 
 /-- Push `|tk|` copies of the register `src` into `NC`. -/
-def constC (src tk : Fin 40) : Code := ofList [.cp CT0 tk, .rep CT0 (ofList [.cp 3 src, .mvV NC 3])]
+def constC (src tk : Fin 64) : Code := ofList [.cp CT0 tk, .rep CT0 (ofList [.cp 3 src, .mvV NC 3])]
 
 /-- Push the register `src` into `NC`. -/
-def pushC (src : Fin 40) : Code := ofList [.cp 3 src, .mvV NC 3]
+def pushC (src : Fin 64) : Code := ofList [.cp 3 src, .mvV NC 3]
 
-theorem exec_pushC {src : Fin 40} (h3 : src ≠ 3) (hNC : src ≠ NC) {w : St}
+theorem exec_pushC {src : Fin 64} (h3 : src ≠ 3) (hNC : src ≠ NC) {w : St}
     (hs : (w src).length = V) :
     exec V f (pushC src) w = Function.update (Function.update (Function.update w 3 (w src)) 3 [])
       NC ((w NC ++ w src).drop V) := by
@@ -564,7 +564,7 @@ theorem exec_pushC {src : Fin 40} (h3 : src ≠ 3) (hNC : src ≠ NC) {w : St}
   rw [exec_mvV_push (by decide) (by simp [hs])]
   simp (config := {decide := true}) [Function.update_apply]
 
-theorem iter_constBody {src : Fin 40} (h3 : src ≠ 3) (hNC : src ≠ NC) (hCT : src ≠ CT0) :
+theorem iter_constBody {src : Fin 64} (h3 : src ≠ 3) (hNC : src ≠ NC) (hCT : src ≠ CT0) :
     ∀ (n : ℕ) (w : St), (w src).length = V →
       let g := fun w' => exec V f (ofList [.cp 3 src, .mvV NC 3])
         (Function.update w' CT0 (w' CT0).tail)
@@ -592,7 +592,7 @@ theorem iter_constBody {src : Fin 40} (h3 : src ≠ 3) (hNC : src ≠ NC) (hCT :
     · rw [Function.iterate_succ_apply, i3 j hj3 hjN hjC, hg]
       simp [Function.update_of_ne hj3, Function.update_of_ne hjN, Function.update_of_ne hjC]
 
-theorem exec_constC {src tk : Fin 40} (h3 : src ≠ 3) (hNC : src ≠ NC) (hCT : src ≠ CT0)
+theorem exec_constC {src tk : Fin 64} (h3 : src ≠ 3) (hNC : src ≠ NC) (hCT : src ≠ CT0)
     (htkC : tk ≠ CT0) {w : St} (hs : (w src).length = V) :
     exec V f (constC src tk) w NC =
         (w NC ++ (List.replicate (w tk).length (w src)).flatten).drop ((w tk).length * V) ∧
@@ -678,9 +678,9 @@ theorem flatten_replicate_len {v : List Bool} (hv : v.length = V) (n : ℕ) :
     List.length_replicate]
 
 /-- Two constants: `|t1|` copies of `s1`, then `|t2|` copies of `s2`, into `NC`. -/
-def const2C (s1 t1 s2 t2 : Fin 40) : Code := .seq (constC s1 t1) (constC s2 t2)
+def const2C (s1 t1 s2 t2 : Fin 64) : Code := .seq (constC s1 t1) (constC s2 t2)
 
-theorem exec_const2C {s1 t1 s2 t2 : Fin 40} (h1 : s1.val ≥ 9 ∧ s1 ≠ NC ∧ s1 ≠ CT0)
+theorem exec_const2C {s1 t1 s2 t2 : Fin 64} (h1 : s1.val ≥ 9 ∧ s1 ≠ NC ∧ s1 ≠ CT0)
     (h2 : s2.val ≥ 9 ∧ s2 ≠ NC ∧ s2 ≠ CT0) (ht1 : t1.val ≥ 9 ∧ t1 ≠ NC ∧ t1 ≠ CT0)
     (ht2 : t2.val ≥ 9 ∧ t2 ≠ NC ∧ t2 ≠ CT0) {w : St} (hs1 : (w s1).length = V)
     (hs2 : (w s2).length = V) (hNC : (w t1).length * V ≤ (w NC).length) :
@@ -689,7 +689,7 @@ theorem exec_const2C {s1 t1 s2 t2 : Fin 40} (h1 : s1.val ≥ 9 ∧ s1 ≠ NC ∧
           List.replicate (w t2).length (w s2)).flatten).drop
           (((w t1).length + (w t2).length) * V) ∧
       ∀ j, j ≠ 3 → j ≠ NC → j ≠ CT0 → exec V f (const2C s1 t1 s2 t2) w j = w j := by
-  have n3 : ∀ x : Fin 40, x.val ≥ 9 → x ≠ 3 := fun x hx e => by subst e; simp at hx
+  have n3 : ∀ x : Fin 64, x.val ≥ 9 → x ≠ 3 := fun x hx e => by subst e; simp at hx
   obtain ⟨c1, c2⟩ := exec_constC (V := V) (f := f) (n3 s1 h1.1) h1.2.1 h1.2.2 ht1.2.2 (w := w) hs1
   set w1 := exec V f (constC s1 t1) w
   have e1 : w1 s2 = w s2 := c2 _ (n3 s2 h2.1) h2.2.1 h2.2.2
@@ -740,9 +740,9 @@ theorem exec_madd2 (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
     h16, hC, hsl]
 
 /-- A high word (not a register of the gadgets, not a stream of the loops). -/
-def Hi (j : Fin 40) : Prop := 11 ≤ j.val ∧ j ≠ NA ∧ j ≠ NB ∧ j ≠ NC ∧ j ≠ CT0
+def Hi (j : Fin 64) : Prop := 11 ≤ j.val ∧ j ≠ NA ∧ j ≠ NB ∧ j ≠ NC ∧ j ≠ CT0
 
-theorem Hi.ne {j : Fin 40} (h : Hi j) (c : Fin 40) (hc : c.val < 11 ∨ c = NA ∨ c = NB ∨ c = NC ∨
+theorem Hi.ne {j : Fin 64} (h : Hi j) (c : Fin 64) (hc : c.val < 11 ∨ c = NA ∨ c = NB ∨ c = NC ∨
     c = CT0) : j ≠ c := by
   rintro rfl
   rcases hc with hc | hc | hc | hc | hc
@@ -752,16 +752,16 @@ theorem Hi.ne {j : Fin 40} (h : Hi j) (c : Fin 40) (hc : c.val < 11 ∨ c = NA �
   · exact h.2.2.2.1 hc
   · exact h.2.2.2.2 hc
 
-theorem Hi.not_rippleW {j : Fin 40} (h : Hi j) : ¬ rippleW j := by
+theorem Hi.not_rippleW {j : Fin 64} (h : Hi j) : ¬ rippleW j := by
   simp only [rippleW, not_or]
   exact ⟨by have := h.1; omega, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2⟩
 
 /-- Split the `m + 1` values of `NC`: the first `m` into `dst` (counter template `tk` of `m` bits,
 buffer template `tb` of `m V` bits), the last into `R9`. -/
-def splitC (tk tb dst : Fin 40) : Code :=
+def splitC (tk tb dst : Fin 64) : Code :=
   ofList [.cp NA NC, .cp NB NC, .cp 0 10, .cp 1 10, zipC idG tk tb, .cp 9 10, .mvV 9 NA, .cp dst NC]
 
-theorem exec_splitC {tk tb dst : Fin 40} (htk : Hi tk) (htb : Hi tb) (hd : Hi dst)
+theorem exec_splitC {tk tb dst : Fin 64} (htk : Hi tk) (htb : Hi tb) (hd : Hi dst)
     (w : St) (vs : List (List Bool)) (v : List Bool) (hvs : ∀ x ∈ vs, x.length = V)
     (hv : v.length = V) (h10 : (w 10).length = V) (hNC : w NC = (vs ++ [v]).flatten)
     (hk : (w tk).length = vs.length) (hb : (w tb).length = vs.length * V) :
@@ -891,7 +891,7 @@ theorem exec_modAddC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
   -- phase 1
   have u1_21 := exec_madd1 hf w xs ys (by rw [hxl, hyl]) hxv hyv h10 h11 hX hY
     (by rw [h12, hxl]) (by rw [h15, hxl])
-  have u1_ : ∀ j : Fin 40, j ∉ wr madd1 → exec V f madd1 w j = w j :=
+  have u1_ : ∀ j : Fin 64, j ∉ wr madd1 → exec V f madd1 w j = w j :=
     fun j hj => exec_not_mem madd1 w j hj
   generalize exec V f madd1 w = u1 at u1_21 u1_ ⊢
   -- phase 2
@@ -900,7 +900,7 @@ theorem exec_modAddC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
     (by rw [u1_ 27 (by decide)]; exact h27) (by rw [u1_ 15 (by decide)]; exact h15)
     (by rw [u1_ 13 (by decide)]; exact h13) (by rw [u1_ 16 (by decide)]; exact h16)
   rw [u1_ 10 (by decide), u1_ 11 (by decide)] at u2_NC
-  have u2_ : ∀ j : Fin 40, j ∉ wr madd2 → exec V f madd2 u1 j = u1 j :=
+  have u2_ : ∀ j : Fin 64, j ∉ wr madd2 → exec V f madd2 u1 j = u1 j :=
     fun j hj => exec_not_mem madd2 u1 j hj
   generalize exec V f madd2 u1 = u2 at u2_NC u2_ ⊢
   -- phase 3
@@ -913,7 +913,7 @@ theorem exec_modAddC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
     (by rw [u2_ 10 (by decide), u1_ 10 (by decide)]; exact h10) (by rw [u2_NC, ← hsplit])
     (by rw [u2_ 13 (by decide), u1_ 13 (by decide), h13]; simp [l₂])
     (by rw [u2_ 15 (by decide), u1_ 15 (by decide), h15]; simp [l₂])
-  have u3_n : ∀ j : Fin 40, j ∉ wr (splitC 13 15 23) → exec V f (splitC 13 15 23) u2 j = u2 j :=
+  have u3_n : ∀ j : Fin 64, j ∉ wr (splitC 13 15 23) → exec V f (splitC 13 15 23) u2 j = u2 j :=
     fun j hj => exec_not_mem _ u2 j hj
   generalize exec V f (splitC 13 15 23) u2 = u3 at u3_23 u3_9 u3_ u3_n ⊢
   have u3_10 : u3 10 = one := by rw [u3_n 10 (by decide), u2_ 10 (by decide), u1_ 10 (by decide)]
@@ -928,7 +928,7 @@ theorem exec_modAddC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
     (by rw [u3_n 13 (by decide), u2_ 13 (by decide), u1_ 13 (by decide), h13]; simp [l₂])
     (by rw [u3_n 15 (by decide), u2_ 15 (by decide), u1_ 15 (by decide), h15]; simp [l₂])
   rw [u3_10, u3_9, ← hs₃] at u4_NC
-  have u4_ : ∀ j : Fin 40, j ∉ wr madd4 → exec V f madd4 u3 j = u3 j :=
+  have u4_ : ∀ j : Fin 64, j ∉ wr madd4 → exec V f madd4 u3 j = u3 j :=
     fun j hj => exec_not_mem madd4 u3 j hj
   generalize exec V f madd4 u3 = u4 at u4_NC u4_ ⊢
   -- phase 5
@@ -1115,7 +1115,7 @@ theorem exec_modSubC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
   simp only [modSubC, exec_ofList, List.foldl_cons, List.foldl_nil]
   -- phase 1
   have u1_21 := exec_msub1 hf w ys hyv h10 hY (by rw [h12, hyl]) (by rw [h14, hyl])
-  have u1_ : ∀ j : Fin 40, j ∉ wr msub1 → exec V f msub1 w j = w j :=
+  have u1_ : ∀ j : Fin 64, j ∉ wr msub1 → exec V f msub1 w j = w j :=
     fun j hj => exec_not_mem msub1 w j hj
   generalize exec V f msub1 w = u1 at u1_21 u1_ ⊢
   -- phase 2
@@ -1123,7 +1123,7 @@ theorem exec_modSubC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
     (by rw [u1_ 10 (by decide)]; exact h10) (by rw [u1_ 24 (by decide)]; exact hX) u1_21
     (by rw [u1_ 12 (by decide), h12, hxl]) (by rw [u1_ 15 (by decide), h15, hxl])
   rw [u1_ 10 (by decide)] at u2_NC
-  have u2_ : ∀ j : Fin 40, j ∉ wr msub2 → exec V f msub2 u1 j = u1 j :=
+  have u2_ : ∀ j : Fin 64, j ∉ wr msub2 → exec V f msub2 u1 j = u1 j :=
     fun j hj => exec_not_mem msub2 u1 j hj
   generalize exec V f msub2 u1 = u2 at u2_NC u2_ ⊢
   -- phase 3
@@ -1136,7 +1136,7 @@ theorem exec_modSubC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
     (by rw [u2_ 10 (by decide), u1_ 10 (by decide)]; exact h10) (by rw [u2_NC, ← hsplit])
     (by rw [u2_ 12 (by decide), u1_ 12 (by decide), h12]; simp [l₂])
     (by rw [u2_ 14 (by decide), u1_ 14 (by decide), h14]; simp [l₂])
-  have u3_n : ∀ j : Fin 40, j ∉ wr (splitC 12 14 23) → exec V f (splitC 12 14 23) u2 j = u2 j :=
+  have u3_n : ∀ j : Fin 64, j ∉ wr (splitC 12 14 23) → exec V f (splitC 12 14 23) u2 j = u2 j :=
     fun j hj => exec_not_mem _ u2 j hj
   generalize exec V f (splitC 12 14 23) u2 = u3 at u3_23 u3_9 u3_ u3_n ⊢
   -- save the selector
@@ -1159,7 +1159,7 @@ theorem exec_modSubC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
   have e11 : u3' 11 = zv := by
     rw [u3'_ 11 (by decide), u3_n 11 (by decide), u2_ 11 (by decide), u1_ 11 (by decide)]
   rw [e10, e11, ← hs₃] at u4_NC
-  have u4_ : ∀ j : Fin 40, j ∉ wr msub4 → exec V f msub4 u3' j = u3' j :=
+  have u4_ : ∀ j : Fin 64, j ∉ wr msub4 → exec V f msub4 u3' j = u3' j :=
     fun j hj => exec_not_mem msub4 u3' j hj
   generalize exec V f msub4 u3' = u4 at u4_NC u4_ ⊢
   -- phase 5
@@ -1174,7 +1174,7 @@ theorem exec_modSubC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
       u1_ 12 (by decide), h12]; simp [l₃])
     (by rw [u4_ 14 (by decide), u3'_ 14 (by decide), u3_n 14 (by decide), u2_ 14 (by decide),
       u1_ 14 (by decide), h14]; simp [l₃])
-  have u5_n : ∀ j : Fin 40, j ∉ wr (splitC 12 14 21) → exec V f (splitC 12 14 21) u4 j = u4 j :=
+  have u5_n : ∀ j : Fin 64, j ∉ wr (splitC 12 14 21) → exec V f (splitC 12 14 21) u4 j = u4 j :=
     fun j hj => exec_not_mem _ u4 j hj
   generalize exec V f (splitC 12 14 21) u4 = u5 at u5_21 u5_ u5_n ⊢
   -- phase 6
@@ -1226,7 +1226,7 @@ theorem exec_term1 (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
     (hb : (w 14).length = cs.length * V) :
     exec V f term1 w 25 = (andLV (w 10) (fV V f) (w 31) cs).flatten ∧
       exec V f term1 w 24 = (List.replicate cs.length (w 11)).flatten ∧
-      ∀ j : Fin 40, j ∉ wr term1 → exec V f term1 w j = w j := by
+      ∀ j : Fin 64, j ∉ wr term1 → exec V f term1 w j = w j := by
   refine ⟨?_, ?_, fun j hj => exec_not_mem term1 w j hj⟩
   · rw [show term1 = ofList ([.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10] ++
       [zipC andG 12 14, .cp 25 NC, .cp NC 14, constC 11 12, .cp 24 NC]) from rfl, exec_ofList_append]
@@ -1251,7 +1251,7 @@ theorem exec_term1 (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
     simp (config := {decide := true}) [w1, Function.update_apply]
   · rw [show term1 = ofList ([.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10, zipC andG 12 14,
       .cp 25 NC] ++ [.cp NC 14, constC 11 12, .cp 24 NC]) from rfl, exec_ofList_append]
-    have e : ∀ j : Fin 40, j ∉ wr (ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10,
+    have e : ∀ j : Fin 64, j ∉ wr (ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10,
         zipC andG 12 14, .cp 25 NC]) → exec V f (ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10,
           .cp 1 10, zipC andG 12 14, .cp 25 NC]) w j = w j := fun j hj => exec_not_mem _ w j hj
     generalize exec V f (ofList [.cp NA 30, .cp NB 30, .cp 9 31, .cp 0 10, .cp 1 10,
@@ -1283,7 +1283,7 @@ structure Tmpl (V K : ℕ) (w : St) : Prop where
   h29 : (w 29).length = 1
 
 theorem Tmpl.of_eq {K : ℕ} {w w' : St} (h : Tmpl V K w)
-    (e : ∀ j : Fin 40, j ∈ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 40)) → w' j = w j) :
+    (e : ∀ j : Fin 64, j ∈ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 64)) → w' j = w j) :
     Tmpl V K w' :=
   ⟨by rw [e 10 (by decide)]; exact h.h10, by rw [e 11 (by decide)]; exact h.h11,
     by rw [e 12 (by decide)]; exact h.h12, by rw [e 13 (by decide)]; exact h.h13,
@@ -1292,7 +1292,7 @@ theorem Tmpl.of_eq {K : ℕ} {w w' : St} (h : Tmpl V K w)
     by rw [e 27 (by decide)]; exact h.h27, by rw [e 29 (by decide)]; exact h.h29⟩
 
 theorem Tmpl.exec {K : ℕ} {w : St} (h : Tmpl V K w) (c : Code)
-    (hc : ∀ j ∈ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 40)), j ∉ wr c) :
+    (hc : ∀ j ∈ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 64)), j ∉ wr c) :
     Tmpl V K (exec V f c w) :=
   h.of_eq fun j hj => exec_not_mem c w j (hc j hj)
 
