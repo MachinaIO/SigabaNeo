@@ -1456,6 +1456,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     are functions of the finite state and that one draw.
   * **Remaining.** The history average of the fraction of marks that pass the geometric tests. P + p_a ≤ 0.00019770868 is
     open.
+  * **Lean.** ProjectionDual / AppendDual / MarkedIntegerSection / VerticalWinnerIsometry (axiom-clean, 24 declarations)
+    formalize:
+    * (P_S L)* = L* ∩ S, and P_{v⊥}L is a full lattice;
+    * λ1(Λ'*) ≥ min(λ1(Λ*), 1) for every append-and-project step, with ≥ λ1(Λ*) when the winner is vertical (Part 139
+      Thm 4(d));
+    * L_H = P_E Z^N and H^⊥ = Z^N ∩ E, which is integral with minimum ≥ 1, plus the coset-label homomorphism with kernel
+      H^⊥ (Part 142 Thm A);
+    * the vertical-winner isometry onto A_v(Λ + Z(l/k)) (Part 139 Thm 4(a)).
+    Still open: the index/covolume formulas and the character-transport, lineage and theta statements.
+
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
