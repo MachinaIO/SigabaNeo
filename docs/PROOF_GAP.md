@@ -1171,6 +1171,20 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Consequence.** Bounds that hold uniformly over histories are impossible, even with maximal marks. The remaining
     obligations are history-averaged: the averaged horizontal charge, the positive-height charge, and the late-state upper
     tail of λ1/GH.
+* **Part 145 (audited, minor caveats).** [averaged_charge](research/wall1_averaged_charge.md): history-averaged horizontal
+  charge.
+  * **Sharp transition.** At width 506 the expected horizontal charge is > 1 − 6.05·10⁻¹⁵ on graph draw 102 and
+    < 2.05·10⁻¹¹ on draw 103; width 406 behaves the same on draws 75/76. The cause is that the old-plane cutoff crosses the
+    length q of a second old axis. Part 120 imposes the charge only at the terminal draw, so this is consistent. The
+    budget 0.00977696 cannot be imposed draw by draw.
+  * **Moment barrier.** Two modular competitor families have identical singleton and pair probabilities, but their void
+    probabilities are 3328/11082241 and 1664/3329. Second-order moment data alone cannot certify the target for general
+    modular lists.
+  * **No negative dependence.** An exhaustive check of 16,384 small graph designs found that the joint
+    old-plane/horizontal-win probability exceeds the marginal product by 14175/16777216.
+  * **Positive height.** On one explicit terminal family the positive-height contribution is < 1.364·10⁻¹⁰·Q^{−407}.
+  * The full width-506 terminal budget (0.00977696) remains open. Per the audit, deleting competitors can improve a
+    Cauchy–Schwarz bound even though it enlarges the void event.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1180,7 +1194,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–144 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–145 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
