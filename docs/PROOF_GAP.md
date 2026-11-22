@@ -1117,11 +1117,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * CDT inversion: SD ≤ (N−1)·2^{-w} + μ;
     * the shifted discrete-Gaussian tail ≤ 2e^{−πR²/s²}/[(1 − e^{−2πR/s²})·b];
     * the fixed-point recurrence error ≤ x(x+3)/2·(δ_E + 2^{-F}).
+    KleinProcedure / GaussianCDT / GaussianCDTBounds (axiom-clean) prove:
+    * the Klein procedure's output law equals `kleinLaw` pointwise;
+    * SD(A, D) ≤ tη_T + rη_H + SD(K, D), with the event transfer;
+    * the constructed CDT tables (P = 960, F = 1024, R = 2^22 − 1) have per-draw SD ≤ 2^−930 at both recorded dimensions
+      and all four run widths;
+    * so SD(A, D) ≤ d·2^−930 + SD(K, D) for d ∈ {646, 647}.
+    These hold under the §3.3 accuracy contract for the two input constants E₁ ≈ e^{−π/s²} and E₂ ≈ e^{−2π/s²}.
     Still open in Lean:
-    * connecting these to the constructed tables ((3.1), Lemma 5);
-    * Lemma 6(a);
-    * identifying K with the Klein procedure's output law;
-    * the end-to-end word-operation count.
+    * the §3.3 routine that computes those constants;
+    * the word-operation count;
+    * the ADRS combiner analysis itself (Part 140).
   * **Rigorous cost frontier (Nov 2026).** Recovering the secret of plain LWE (511, 512, 3329), CBD(3) with probability ≥
     99.5% costs ≤ 2^795 word operations, fully explicit. The previous explicit bound was 2^1253.
 * **Part 142 (audited, minor caveats with one substantive correction to F3/DS; see the note's Audit section).**
