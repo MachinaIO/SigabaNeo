@@ -1103,8 +1103,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * History induction: for every finite admissible schedule, Procedure E's final list contains a Pois(Λ_ℓ) iid D_{L,s_ℓ}
       multiset with probability ≥ 1 − Σεⱼ − Pr[Pois(Λ0) > M0].
     * Final hit: the miss probability is exp[−Λ_ℓ·D_{L,s_ℓ}(S)] for the set S of shortest vectors.
-    Still open in Lean: the numerical instantiation at the recorded lattice (the 2^794.98 count and the 2^−120.9 failure)
-    and the word-operation cost accounting.
+    StatDistancePostprocess.lean (axiom-clean) adds two results:
+    * `sdist_joint_same_kernel`;
+    * `seqLaw_postprocess_event_lower`: an ideal event probability ≥ p transfers to the approximate sequential sampler as
+      ≥ p − Σεₘ, for randomized postprocessing.
+    Still open in Lean: the numerical instantiation at the recorded lattice and the word-operation cost accounting. That
+    covers schedule admissibility, the summed combiner failure, the terminal Gaussian mass of the shortest vectors, and
+    the 2^−120.9 total. The delegate declined to formalize the concrete instance, since together with Part 39 it is a
+    secret-recovery certificate. It is left as a general theorem with explicit hypotheses.
 * **Part 141 (audited, minor caveats).** [sampler_wordram](research/wall1_sampler_wordram.md): a word-RAM version of Part
   140 at the recorded instance.
   * The Part 39 lattice is L_M = {(h, u) : h ≡ Mu mod q}, whose Gram–Schmidt norms are q and 1.
