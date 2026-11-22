@@ -1358,6 +1358,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     of positive-height candidates in (1.004, 1.097) GH exceeds 74.85561, so shortest-vector selection must be used.
   * An exact joint count keeps shorter competitors and ties. In the toys, every forced hit also satisfied the 0.97-GH void,
     so the product of the two probabilities underestimates their intersection.
+* **Part 162 (audited, minor caveats).** [upper_band_quotient](research/wall1_upper_band_quotient.md): upper-band plane hits
+  as a short line in the rank-504 quotient after two projections. Rank and determinant normalizations match the restart
+  window.
+  * Counting every primitive first line in the band gives a Haar mean > 0.00152687791836, which is 7.72× the shared
+    allowance 0.00019770868.
+  * **If the first line must also be shortest, the joint Haar probability (band + both gates) is < 4.361·10⁻¹¹.** This
+    follows from primitive incidence plus the rank-506 empty-ball estimate.
+  * The exact conditional restart count separates the overcount from losing first candidates. In the toys, selection cuts
+    24 forced hits to 2 and 48 to 4, and losing candidates account for all of the excess.
+  * **Consequence.** A restart-to-Haar ratio ≲ 4.5·10⁶ for this one event (less (a)'s share) would close the upper band.
+    That ratio is open, and per the audit it needs its own upper-band conjecture.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1367,7 +1378,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–161 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–162 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
