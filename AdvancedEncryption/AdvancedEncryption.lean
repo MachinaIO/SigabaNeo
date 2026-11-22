@@ -54,3 +54,8 @@ import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad
 import PE.Impl.Game.Assembly
+import PE.Impl.Game.Handlers
+import PE.Impl.Game.HandlersLaw
+import PE.Impl.Game.HandlersMain
+import PE.Impl.Game.HandlersCost
+import PE.Impl.Game.HandlersDate
