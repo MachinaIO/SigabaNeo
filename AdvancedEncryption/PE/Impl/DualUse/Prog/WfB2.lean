@@ -904,6 +904,56 @@ theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) :
     gsw := by rw [o2 _ (by decide)]; exact g1
     gcnt := by rw [o2 _ (by decide), g2, List.length_replicate] }
 
+theorem vstepT (N K d : ℕ) : VStep (simStepP ginvTopP) (VT N K (K + 1) d) (fT N K d)
+    (SimPre N K (K + 1) 1 d (gadW N K (K + 1)) (GPreTop N K (K + 1))) :=
+  let h := stepSpec_simTop N K (K + 1) d
+  ⟨h.noGrow, h.pre_upd, h.run_eq, h.len⟩
+
+/-- The words after the run of `f̂`. -/
+def w3 : St := exec (VT N K (K + 1) c.d) (fT N K c.d) fhatFullC (w1 hk c W ((sdEnc hk c).enc sd) gs)
+
+/-- **The law of the run of `f̂`.** -/
+theorem law_runT (hW : 0 < W) (hb : BndG W gs) :
+    runT.law (S1 hk c W ((sdEnc hk c).enc sd) gs) =
+      PMF.pure (ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) gs) (VT N K (K + 1) c.d)
+        (w3 hk c W gs sd)) := by
+  rw [S1_enc]
+  exact law_compileA (nocert _) (vstepT N K c.d) (s1_simPre hk c W _ gs hW hb)
+    (s1_blank hk c W _ gs 0 (by decide)) (s1_blank hk c W _ gs 1 (by decide))
+    (s1_blank hk c W _ gs 2 (by decide)) _ _
+
+theorem w3_eq : w3 hk c W gs sd = exec (VT N K (K + 1) c.d) (fT N K c.d) (ofList [fhatC, .cp FOUT OUTW])
+    (w2 hk c W gs sd) := by
+  rw [w3, w2, fhatFullC, show [streamsT, oneC, fhatC, Code.cp FOUT OUTW] =
+    [streamsT, oneC] ++ [fhatC, Code.cp FOUT OUTW] from rfl, exec_ofList_append]
+
+theorem w3_frame (x : Fin 120) (hx : x ∉ wr fhatFullC) :
+    w3 hk c W gs sd x = w1 hk c W ((sdEnc hk c).enc sd) gs x :=
+  exec_not_mem _ _ _ hx
+
+/-- **The output bundle of `f̂`.** -/
+theorem w3_FOUT (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) (hgs : gs.length + 10 ≤ W)
+    (hne : gs ≠ []) :
+    w3 hk c W gs sd FOUT = bw (fhatV (oneT N K c.d) (fV (VT N K (K + 1) c.d) (fT N K c.d))
+      (inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1 (predOf 10 gs).2) := by
+  rw [w3_eq]
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp', Function.update_self]
+  exact exec_fhatC (vstepT N K c.d).len hN hgs hb hne (fun j => length_rowW' _)
+    (fun j => length_colsW' _ _) (fun i q => by
+      simp only [entS, entQ, rget]
+      exact length_block (N := 2 * (2 * (K + 1))) (by rw [length_colsW'])
+        (by have := q.1.isLt; have := q.2.1.isLt; have := q.2.2.isLt; nlinarith))
+    _ (fInit_w2 hk c W gs sd hN hK hW hb)
+
+theorem w1_GSC (hW : 0 < W) (hb : BndG W gs) (a : List Bool) :
+    w1 hk c W a gs GSC = gsW W gs := by
+  rw [w1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
+  simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
+  rw [X4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K (K + 1) c.d) (by decide))]
+  simp (config := {decide := true}) only [Function.update_apply, if_true, if_false,
+    X2_apply W a gs hW hb]
+
 end RunT
 
 end WB2
