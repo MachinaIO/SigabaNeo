@@ -6,6 +6,7 @@ import PE.Impl.Gates.Eval
 import PE.Impl.Gates.DateWindow
 import PE.Impl.Gates.WindowTest
 import PE.Impl.Gates.ProgWindow
+import PE.Impl.Gates.WindowBound
 import PE.Impl.DualUse.Scheme
 import PE.Impl.DualUse.KeyGen
 import PE.Impl.DualUse.Noise
@@ -56,6 +57,8 @@ import PE.Impl.DualUse.ReductionComps
 import PE.Impl.DualUse.ReductionSteps
 import PE.Impl.DualUse.AHComps
 import PE.Impl.DualUse.ReductionCompsBound
+import PE.Impl.DualUse.AHConcrete
+import PE.Impl.DualUse.AHFinal
 import PE.Impl.DualUse.GameChain
 import PE.Impl.DualUse.Params.SimTrapNorm
 import PE.Impl.DualUse.Params.Sizes
@@ -116,6 +119,9 @@ import PE.Impl.DualUse.Prog.UBound
 import PE.Impl.DualUse.Prog.KeyP
 import PE.Impl.DualUse.Prog.KeyCfgP
 import PE.Impl.DualUse.Prog.KeyPTime
+import PE.Impl.DualUse.Prog.KeyPTimeT
+import PE.Impl.DualUse.Prog.KeyCostC
+import PE.Impl.DualUse.Prog.KeyCostP
 import PE.Impl.DualUse.Prog.KeyWfWords
 import PE.Impl.DualUse.Prog.WfLib
 import PE.Impl.DualUse.Prog.WfPred

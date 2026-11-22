@@ -1,0 +1,313 @@
+import PE.Impl.DualUse.Prog.KeyPTime
+import PE.Impl.Gates.WindowBound
+import SigabaNeo.Lib.Machines.Prog.MacroSize
+import SigabaNeo.Lib.Machines.Prog.VecBound
+
+/-!
+# The key component with a per-tape bound of the `W_f` block
+
+`time_keyP` bounds the `W_f` block by a uniform bound `∀ M, UB wfB M (Twf M) (Gwf M)`: every tape
+charged as the longest. **`time_keyPT`** asks instead for the bounds of `wfB` at the one input it
+gets inside the key component: the word of the simulation data on tape `0` (at most `Lsd` bits),
+the gate list of the query on tape `1` (at most `frontL c.L W` bits), every other tape blank
+(`wfIn`). With `timeBoundT wfB (wfIn …) ≤ Tw` and every tape after `wfB` at most `Gw ≥ keyM …`,
+the rest of the window branch is bounded uniformly from `Gw` (`ub_winRest`), the other branches
+as before.
+
+Also: the constants of the key try (`tbD_keyTrySim = 8`, `tbC_keyTrySim_le`) and the states of the
+key component (`size_keyP_le`).
+-/
+
+namespace AdvancedEncryption.DualUse.Prog
+
+open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
+  SigabaNeo.Tape.XProg Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
+  AdvancedEncryption.DualUse.Algo
+open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.DateWindow
+open scoped SigabaNeo.Tape.Prog
+
+/-! ### The constants of the key try -/
+
+section KeyTry
+
+open SigabaNeo.Tape.Prog AdvancedEncryption.DualUse.ProgKey
+
+theorem tbD_keyTrySim : tbD (keyTrySimP ⨾ clr 3) = 8 := by
+  have h1 : mvP.tbD = 2 := by decide +kernel
+  have h2 : dropP.tbD = 2 := by decide +kernel
+  have h3 : embP.tbD = 3 := by decide +kernel
+  have h4 : matMulP.tbD = 8 := by decide +kernel
+  have h5 : addRWP.tbD = 3 := by decide +kernel
+  have h6 : subRWP.tbD = 3 := by decide +kernel
+  have h7 : decP.tbD = 4 := by decide +kernel
+  have h8 : ballP.tbD = 3 := by decide +kernel
+  have h9 : (nop 0 : Prog 90).tbD = 1 := by decide +kernel
+  simp only [keyTrySimP, ph1, ph2, ph3, ph4, clrWork, tbD, tbD_map, h1, h2, h3, h4, h5, h6, h7, h8,
+    h9]
+  rfl
+
+theorem tbC_keyTrySim_le : tbC (keyTrySimP ⨾ clr 3) ≤ 20000 := by
+  have h1 : mvP.tbC = 20 := by decide +kernel
+  have h2 : dropP.tbC = 10 := by decide +kernel
+  have h3 : embP.tbC = 204 := by decide +kernel
+  have h4 : matMulP.tbC = 1716 := by decide +kernel
+  have h5 : addRWP.tbC = 210 := by decide +kernel
+  have h6 : subRWP.tbC = 210 := by decide +kernel
+  have h7 : decP.tbC = 385 := by decide +kernel
+  have h8 : ballP.tbC = 419 := by decide +kernel
+  have h9 : (nop 0 : Prog 90).tbC = 3 := by decide +kernel
+  simp only [keyTrySimP, ph1, ph2, ph3, ph4, clrWork, tbC, tbC_map, h1, h2, h3, h4, h5, h6, h7, h8,
+    h9]
+  norm_num
+
+set_option maxRecDepth 100000 in
+theorem size_keyTrySimCoinsP_le : keyTrySimCoinsP.size ≤ 2 ^ 17 := by
+  have h0 : (coinsAt (3 : Fin 90) 25 41 42).size = 257 := by decide +kernel
+  have h1 : mvP.size = 220 := by decide +kernel
+  have h2 : dropP.size = 111 := by decide +kernel
+  have h3 : embP.size = 2293 := by decide +kernel
+  have h4 : matMulP.size = 19366 := by decide +kernel
+  have h5 : addRWP.size = 2365 := by decide +kernel
+  have h6 : subRWP.size = 2365 := by decide +kernel
+  have h7 : decP.size = 4338 := by decide +kernel
+  have h8 : ballP.size = 4719 := by decide +kernel
+  have h9 : (nop 0 : Prog 90).size = 36 := by decide +kernel
+  simp only [keyTrySimCoinsP, keyTrySimP, ph1, ph2, ph3, ph4, clrWork, Prog.size, size_map, h0, h1,
+    h2, h3, h4, h5, h6, h7, h8, h9, Prim.pad]
+  norm_num
+
+end KeyTry
+
+/-- The time of the key try, with its constants. -/
+theorem keyTryT_le (M : ℕ) : keyTryT M ≤ 23 * (M + 1) ^ 2 + 20000 * (2 * M + 1) ^ 8 := by
+  unfold keyTryT
+  rw [tbD_keyTrySim]
+  have := Nat.mul_le_mul_right ((2 * M + 1) ^ 8) tbC_keyTrySim_le
+  omega
+
+/-! ### The window branch after the `W_f` block -/
+
+variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
+
+variable (hk c) in
+/-- The bound after the prefix of the public key, from `G`. -/
+def winR1 (G : ℕ) : ℕ := G + 1 + lenPK hk c
+
+variable (hk c) in
+/-- The bound before the templates, from `G`. -/
+def winR3 (G : ℕ) (cf : KeyCfg) : ℕ :=
+  winR1 hk c G + cf.sW.length + 1 + (powW K (cf.B - 1)).length + 1
+
+variable (hk c) in
+/-- **The time of the window branch after the `W_f` block**, from tapes below `G`. -/
+def winRT (G : ℕ) (cf : KeyCfg) : ℕ :=
+  prefT (lenPK hk c) G + putT cf.sW.length (winR1 hk c G) +
+    putT (powW K (cf.B - 1)).length (winR1 hk c G + cf.sW.length + 1) +
+    tmplT (keyTmpl hk c cf) (winR3 hk c G cf) + keyTryT (winR3 hk c G cf) +
+    (keyClr.length * (2 * (2 * winR3 hk c G cf + 1) + 3) + (2 * (2 * winR3 hk c G cf + 1) + 3))
+
+variable (hk c) in
+/-- The window branch after the `W_f` block. -/
+noncomputable def winRest (cf : KeyCfg) : XProg 256 :=
+  seq (prefP (lenPK hk c) 0 1 100 101) <| seq (putW 4 cf.sW) <| seq (putW 5 (powW K (cf.B - 1))) <|
+  seq (tmplP 120 (keyTmpl hk c cf)) <| seq (frame eKT (prog ProgKey.keyTrySimCoinsP)) (clearL keyClr)
+
+theorem winB_eq (wfB : XProg 256) (cf : KeyCfg) :
+    winB hk c wfB cf = seq (prog (.prim (.tail 1))) (seq wfB (winRest hk c cf)) := rfl
+
+variable (hk c) in
+theorem ub_winRest (cf : KeyCfg) {G : ℕ} (hG : tmplMax (keyTmpl hk c cf) ≤ G) :
+    UB (winRest hk c cf) G (winRT hk c G cf) (2 * winR3 hk c G cf) := by
+  have hT : ∀ x ∈ keyTmpl hk c cf, x.2 ≤ winR3 hk c G cf := fun x hx =>
+    (le_tmplMax _ x hx).trans (hG.trans (by simp only [winR3, winR1]; omega))
+  have u := (ub_prefP (lenPK hk c) 0 1 100 101 G).seq <| (ub_putW 4 cf.sW _).seq <|
+    (ub_putW 5 (powW K (cf.B - 1)) _).seq <|
+    (ub_tmplP 120 (keyTmpl hk c cf) (winR3 hk c G cf) hT
+      (keyTmpl_ne (Or.inr (Or.inr rfl)))).seq <|
+    (ub_keyTry _).seq (ub_clearL _ keyClr)
+  refine u.mono (le_of_eq ?_) le_rfl
+  simp only [winRT, winR1, Nat.add_assoc]
+
+variable (hk c) in
+/-- **The window branch with a per-tape bound of the `W_f` block** at the input bound `ι`. -/
+theorem tt_winB {wfB : XProg 256} {Tw Gw : ℕ} (cf : KeyCfg) {ℓ ι : Fin 256 → ℕ} {M : ℕ}
+    (hℓι : ℓ ≤ ι) (hℓM : ∀ t, ℓ t ≤ M) (hwT : timeBoundT wfB ι ≤ Tw)
+    (hwL : ∀ i, lenBoundT wfB ι i ≤ Gw) (hG : tmplMax (keyTmpl hk c cf) ≤ Gw) :
+    timeBoundT (winB hk c wfB cf) ℓ ≤ (2 * (M + 1) + 3) + Tw + winRT hk c Gw cf ∧
+      ∀ i, lenBoundT (winB hk c wfB cf) ℓ i ≤ 2 * winR3 hk c Gw cf := by
+  set ℓ1 := lenBoundT (prog (.prim (.tail (1 : Fin 256)))) ℓ with hℓ1
+  have h1 : ℓ1 ≤ ι := fun t => le_trans (by
+    show Function.update ℓ 1 (ℓ 1 - 1) t ≤ ℓ t
+    rw [Function.update_apply]; split_ifs with h
+    · subst h; omega
+    · exact le_rfl) (hℓι t)
+  have t1 := (ub_prim (Prim.tail (1 : Fin 256)) M ℓ hℓM).1
+  have t2 := (timeBoundT_mono wfB h1).trans hwT
+  have l2 : ∀ i, lenBoundT wfB ℓ1 i ≤ Gw := fun i => (lenBoundT_mono wfB h1 i).trans (hwL i)
+  have r := ub_winRest hk c cf hG (lenBoundT wfB ℓ1) l2
+  refine ⟨?_, r.2⟩
+  rw [winB_eq]
+  show timeBoundT (prog _) ℓ + (timeBoundT wfB ℓ1 + timeBoundT (winRest hk c cf) (lenBoundT wfB ℓ1)) ≤ _
+  have := r.1
+  omega
+
+variable (hk c) in
+/-- **The time of the branches** with the per-tape bound of the `W_f` block. -/
+def branchTT (Tw Gw : ℕ) (cf : KeyCfg) (M : ℕ) : ℕ :=
+  max ((2 * (M + 1) + 3) + Tw + winRT hk c Gw cf) (max (longT M) (dumT hk c M) + 1) + 1
+
+variable (hk c) in
+/-- **The length bound after the branches** with the per-tape bound of the `W_f` block. -/
+def branchLT (Gw : ℕ) (cf : KeyCfg) (M : ℕ) : ℕ :=
+  max (2 * winR3 hk c Gw cf) (max M (dumD hk c M + 1))
+
+variable (hk c) in
+theorem tt_branchB {wfB : XProg 256} {Tw Gw : ℕ} (cf : KeyCfg) {ℓ ι : Fin 256 → ℕ} {M : ℕ}
+    (hℓι : ℓ ≤ ι) (hℓM : ∀ t, ℓ t ≤ M) (hwT : timeBoundT wfB ι ≤ Tw)
+    (hwL : ∀ i, lenBoundT wfB ι i ≤ Gw) (hG : tmplMax (keyTmpl hk c cf) ≤ Gw) :
+    timeBoundT (branchB hk c wfB cf) ℓ ≤ branchTT hk c Tw Gw cf M ∧
+      ∀ i, lenBoundT (branchB hk c wfB cf) ℓ i ≤ branchLT hk c Gw cf M := by
+  have w := tt_winB hk c cf hℓι hℓM hwT hwL hG
+  have u := ub_ifBlank (i := (1 : Fin 256)) (ub_longB M) (ub_dumB hk c M) ℓ hℓM
+  refine ⟨?_, fun t => ?_⟩
+  · show max _ _ + 1 ≤ _
+    unfold branchTT
+    have := w.1; have := u.1
+    omega
+  · show max _ _ ≤ _
+    exact max_le_max (w.2 t) (u.2 t)
+
+/-! ### The key component -/
+
+/-- **The input bound of the `W_f` block** inside the key component: the word of the simulation
+data (at most `Lsd` bits) on tape `0`, the gate list of the query (at most `LF` bits) on tape `1`. -/
+abbrev wfIn (Lsd LF : ℕ) : Fin 256 → ℕ := io2 (R := 254) Lsd LF 0
+
+variable (hk c) in
+/-- **The time and length bounds of the key component with a per-tape bound of the `W_f` block**:
+with the SimData block bounded by `Ts`, `io2 Lsd 0 0` on secrets of at most `Ls` bits, and the
+`W_f` block taking at most `Tw` steps on `wfIn Lsd (frontL c.L W)` and leaving every tape at most
+`Gw ≥ keyM …` bits, on queries of at most `K₀` bits the key component takes at most
+`Ts + frontT c.L W K₀ + branchTT … + clrT (branchLT …)` steps and leaves at most `branchLT …` bits on
+tape `0`, the other tapes blank. -/
+theorem time_keyPT {sdP : XProg 82} {Ls Ts Lsd : ℕ}
+    (hsT : timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
+    (hsL : lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0)
+    {wfB : XProg 256} {Tw Gw : ℕ} (W : ℕ) (cf : KeyCfg) (K₀ : ℕ)
+    (hwT : timeBoundT wfB (wfIn Lsd (frontL c.L W)) ≤ Tw)
+    (hwL : ∀ i, lenBoundT wfB (wfIn Lsd (frontL c.L W)) i ≤ Gw)
+    (hG : keyM hk c Lsd W cf ≤ Gw) :
+    timeBoundT (keyP hk c sdP wfB W cf) (io2 (R := 254) Ls K₀ 0) ≤
+        Ts + frontT c.L W K₀ + branchTT hk c Tw Gw cf (keyM hk c Lsd W cf) +
+          clrT (branchLT hk c Gw cf (keyM hk c Lsd W cf)) ∧
+      lenBoundT (keyP hk c sdP wfB W cf) (io2 (R := 254) Ls K₀ 0) ≤
+        io2 (branchLT hk c Gw cf (keyM hk c Lsd W cf)) 0 0 := by
+  set M := keyM hk c Lsd W cf with hMdef
+  -- the SimData block
+  have e1 : (fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) = io2 (R := 80) Ls 0 0 := io2_eSd Ls K₀ 0
+  have l1 : lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ io2 (R := 254) Lsd K₀ 0 := by
+    show embedF eSd _ (lenBoundT sdP fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) ≤ _
+    rw [e1, ← embedF_eSd Ls K₀ Lsd 0]
+    exact embedF_mono _ le_rfl hsL
+  have t1 : timeBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ Ts := by
+    rw [timeBoundT_frame, e1]; exact hsT
+  -- the front end
+  set ℓ1 := lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) with hℓ1
+  have v1 : (fun j => ℓ1 (eFr j)) ≤ io2 (R := 6) K₀ 0 0 := by
+    rw [← io2_eFr Lsd K₀ 0]; exact fun j => l1 (eFr j)
+  have t2 : timeBoundT (frame eFr (frontP c.L W)) ℓ1 ≤ frontT c.L W K₀ := by
+    rw [timeBoundT_frame]
+    exact (timeBoundT_mono _ v1).trans (timeBoundT_frontP c.L W K₀)
+  have l2 : lenBoundT (frame eFr (frontP c.L W)) ℓ1 ≤ io2 (R := 254) Lsd (frontL c.L W) 0 := by
+    show embedF eFr ℓ1 (lenBoundT (frontP c.L W) fun j => ℓ1 (eFr j)) ≤ _
+    rw [← embedF_eFr Lsd K₀ (frontL c.L W) 0]
+    exact embedF_mono _ l1 ((lenBoundT_mono _ v1).trans (lenBoundT_frontP c.L W K₀))
+  -- the branches
+  set ℓ2 := lenBoundT (frame eFr (frontP c.L W)) ℓ1 with hℓ2
+  have hℓ2M : ∀ t, ℓ2 t ≤ M := fun t => (l2 t).trans (by
+    simp only [io2, hMdef, keyM]; split_ifs <;> omega)
+  have ub := tt_branchB hk c cf l2 hℓ2M hwT hwL ((le_max_right _ _).trans hG)
+  have hc := ub_clearL (branchLT hk c Gw cf M) clrAll _ ub.2
+  have hlen : clrAll.length * (2 * (branchLT hk c Gw cf M + 1) + 3) ≤
+      256 * (2 * (branchLT hk c Gw cf M + 1) + 3) := Nat.mul_le_mul_right _ length_clrAll_le
+  refine ⟨?_, fun t => ?_⟩
+  · show timeBoundT (frame eSd sdP) _ + (timeBoundT (frame eFr (frontP c.L W)) ℓ1 +
+      (timeBoundT (branchB hk c wfB cf) ℓ2 +
+        timeBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2))) ≤ _
+    have := ub.1
+    have := hc.1
+    simp only [clrT]
+    omega
+  · show lenBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2) t ≤ _
+    refine (lenBoundT_clearL_le clrAll _ t).trans ?_
+    simp only [mem_clrAll]
+    by_cases h : t = 0
+    · subst h; simp [io2, ub.2 0]
+    · have : t.val ≠ 0 := fun e => h (Fin.ext e)
+      simp [h, io2, this]
+
+/-! ### The states of the key component -/
+
+section Size
+
+variable {n : ℕ}
+
+theorem size_putWX (t : Fin n) : ∀ w : List Bool, (putW t w).size ≤ 60 * (w.length + 1)
+  | [] => by simp [putW, Prim.pad]
+  | b :: w => by
+    have := size_putWX t w
+    simp only [putW, size_seq, size_prog, Prog.size_prim, Prim.pad, List.length_cons]
+    omega
+
+theorem size_prefP (P : ℕ) (src dst a b : Fin n) : (prefP P src dst a b).size ≤ 132 * P + 108 := by
+  simp [prefP, Prim.pad]; omega
+
+theorem size_clearL_le [NeZero n] : ∀ l : List (Fin n), (clearL l).size ≤ 36 * (l.length + 1)
+  | [] => by simp [clearL, Prim.pad]
+  | t :: l => by
+    have := size_clearL_le l
+    simp only [clearL, size_seq, size_prog, Prog.size_prim, Prim.pad, List.length_cons]
+    omega
+
+theorem size_tmplP_le (c : Fin n) (m : ℕ) : ∀ l : List (Fin n × ℕ), (∀ x ∈ l, x.2 < 2 ^ m) →
+    (tmplP c l).size ≤ l.length * (195 * m + 36) + 36
+  | [], _ => by simp [tmplP, Prim.pad]
+  | x :: l, h => by
+    have h1 := size_natP_le x.1 c x.2 m (h x (by simp))
+    have h2 := size_tmplP_le c m l (fun y hy => h y (by simp [hy]))
+    simp only [tmplP, size_seq, List.length_cons]
+    rw [Nat.succ_mul]
+    omega
+
+end Size
+
+variable (hk c) in
+/-- **The states of the key component**: those of the SimData block, of the front end and of the
+`W_f` block, plus the prefixes of the public key, the constant words and the templates. -/
+theorem size_keyP_le (sdP : XProg 82) (wfB : XProg 256) (W : ℕ) (cf : KeyCfg) (m : ℕ)
+    (hm : ∀ x ∈ keyTmpl hk c cf, x.2 < 2 ^ m) :
+    (keyP hk c sdP wfB W cf).size ≤ sdP.size + (frontP c.L W).size + wfB.size +
+      264 * lenPK hk c + 60 * (cf.sW.length + (powW K (cf.B - 1)).length +
+        ((keyEnc (N := N) (K := K) c).enc (dummyKey c)).length) + 20 * (195 * m + 36) + 2 ^ 18 := by
+  have h1 := size_prefP (n := 256) (lenPK hk c) 0 1 100 101
+  have h2 := size_prefP (n := 256) (lenPK hk c) 0 2 100 101
+  have h3 := size_putWX (4 : Fin 256) cf.sW
+  have h4 := size_putWX (5 : Fin 256) (powW K (cf.B - 1))
+  have h5 := size_putWX (2 : Fin 256) ((keyEnc (N := N) (K := K) c).enc (dummyKey c))
+  have h6 := size_tmplP_le (120 : Fin 256) m (keyTmpl hk c cf) hm
+  have h7 := size_keyTrySimCoinsP_le
+  have h8 := size_clearL_le keyClr
+  have h9 := size_clearL_le clrAll
+  have h10 := size_clearL_le ([0] : List (Fin 256))
+  have hl : (keyTmpl hk c cf).length = 20 := rfl
+  have hc : keyClr.length = 25 := rfl
+  have hA := length_clrAll_le
+  rw [hl] at h6
+  rw [hc] at h8
+  simp only [keyP, branchB, winB, dumB, longB, size_seq, size_frame, size_ifBit, size_ifBlank,
+    size_prog, Prog.size_prim, Prim.pad] at *
+  simp only [List.length_singleton] at h10
+  omega
+
+end AdvancedEncryption.DualUse.Prog

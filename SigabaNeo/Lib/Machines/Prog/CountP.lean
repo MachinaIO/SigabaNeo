@@ -150,7 +150,7 @@ theorem run_capP (w g : ℕ) (s : Store 5) (h0 : s 0 = List.replicate g false) (
 
 /-! ### Per-tape bounds -/
 
-theorem supB_le_of' {ℓ : Fin k → ℕ} {M : ℕ} (h : ∀ i, ℓ i ≤ M) : supB ℓ ≤ M :=
+theorem supB_le_ofC {ℓ : Fin k → ℕ} {M : ℕ} (h : ∀ i, ℓ i ≤ M) : supB ℓ ≤ M :=
   Finset.sup_le fun i _ => h i
 
 /-- The bound of the rounds' iterates of `countP`. -/
@@ -207,7 +207,7 @@ theorem bounds_countP (m S O Y Z Q : ℕ) (ℓ : Fin 5 → ℕ) (hℓ : ℓ ≤ 
       have := hit j t
       fin_cases t <;> simp [countV] at this ⊢ <;> omega
     simp only [roundTimeT]
-    have hs := supB_le_of' hb
+    have hs := supB_le_ofC hb
     have hbody := timeBoundT_le_pcount countBody ⟨⟨trivial, trivial⟩, trivial⟩
       (tailB 4 ((loopStepT 4 countBody)^[j] ℓ2)) (M := Mx)
       (fun t => (tailB_le 4 _ t).trans (hb t))
@@ -232,9 +232,9 @@ theorem bounds_countP (m S O Y Z Q : ℕ) (ℓ : Fin 5 → ℕ) (hℓ : ℓ ≤ 
     have t1 := timeBoundT_le_pcount (putW 3 (List.replicate (m - 1) false)) (loopFree_putW _ _) ℓ
       (M := Mx) (fun t => by fin_cases t <;> simp <;> omega)
     rw [pcount_putW, List.length_replicate] at t1
-    have s1 : supB ℓ1 ≤ Mx := supB_le_of' fun t => by
+    have s1 : supB ℓ1 ≤ Mx := supB_le_ofC fun t => by
       rw [e1]; fin_cases t <;> simp [Function.update_apply] <;> omega
-    have s3 : supB (lenBoundT (loop 4 countBody) ℓ2) ≤ Mx := supB_le_of' fun t => by
+    have s3 : supB (lenBoundT (loop 4 countBody) ℓ2) ≤ Mx := supB_le_ofC fun t => by
       have := hlenloop t; fin_cases t <;> simp [countV] at this ⊢ <;> omega
     have hS2 : ℓ2 4 ≤ S := by have := h2v 4; simp [countV] at this; omega
     have tl' : timeBoundT (loop 4 countBody) ℓ2 ≤ S * (2 * Mx + 3 + 4 * (2 * (Mx + 4) + 5) + 1) + 2 :=
@@ -303,7 +303,7 @@ theorem bounds_capP (w S O X Z Q : ℕ) (ℓ : Fin 5 → ℕ) (hℓ : ℓ ≤ ![
       have := hit j t
       fin_cases t <;> simp [capV] at this ⊢ <;> omega
     simp only [roundTimeT]
-    have hs := supB_le_of' hb
+    have hs := supB_le_ofC hb
     have hbody := timeBoundT_le_pcount capBody ⟨trivial, ⟨trivial, trivial, trivial⟩⟩
       (tailB 4 ((loopStepT 4 capBody)^[j] ℓ2)) (M := Mx)
       (fun t => (tailB_le 4 _ t).trans (hb t))
@@ -331,7 +331,7 @@ theorem bounds_capP (w S O X Z Q : ℕ) (ℓ : Fin 5 → ℕ) (hℓ : ℓ ≤ ![
     have t1 := timeBoundT_le_pcount (putW 3 (List.replicate w false)) (loopFree_putW _ _) ℓ
       (M := Mx) (fun t => by fin_cases t <;> simp <;> omega)
     rw [pcount_putW, List.length_replicate] at t1
-    have s1 : supB ℓ1 ≤ Mx := supB_le_of' fun t => by
+    have s1 : supB ℓ1 ≤ Mx := supB_le_ofC fun t => by
       rw [e1]; fin_cases t <;> simp [Function.update_apply] <;> omega
     have hb3 : ∀ t, lenBoundT (loop 4 capBody) ℓ2 t ≤ Mx := fun t => by
       have := hlenloop t; fin_cases t <;> simp [capV] at this ⊢ <;> omega

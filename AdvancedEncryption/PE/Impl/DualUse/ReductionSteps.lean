@@ -62,7 +62,7 @@ theorem reduces3_of_comps {R : ℕ} {sig : FixedEnc (Inst3T N K k × Sec3 hk c) 
     (fun w _ => ⟨(hIW _).1, (hIW _).2, by simp⟩) (fun w _ => ⟨(hIW _).1, (hIW _).2, by simp⟩)
     (by rw [hcomp, realLaw_map_inst3Of, hχ]) (by rw [hcomp, idealLaw_map_inst3Of])
     (F3 hk c) hdec hL hcov (fun x ab => F3_eq hk c x ab) (fun _ _ => rfl)
-    (fun _ x σ hσ => setup3_x hk c x σ hσ) (fun ab _ σ _ => sd3_valid hk c ab σ) C hC A D
+    (fun _ x σ hσ => setup3_x hk c x σ hσ) (fun ab x σ hσ => sd3_valid hk c ab x σ hσ) C hC A D
 
 /-- **The reduction of hybrid 5 from its components.** -/
 theorem reduces5_of_comps {R : ℕ}
@@ -99,7 +99,7 @@ theorem reduces5_of_comps {R : ℕ}
     (fun w _ => ⟨(hIW _).1, (hIW _).2, by simp⟩) (fun w _ => ⟨(hIW _).1, (hIW _).2, by simp⟩)
     (by rw [hcomp, realLaw_map_inst5Of, hχ]) (by rw [hcomp, idealLaw_map_inst5Of])
     (F5 hk c) hdec hL hcov (fun x i => F5_eq hk c x i) (fun _ _ => rfl)
-    (fun _ x σ hσ => setup5_x hk c x σ hσ) (fun i _ σ _ => sd5_valid hk c i σ) C hC A D
+    (fun _ x σ hσ => setup5_x hk c x σ hσ) (fun i x σ hσ => sd5_valid hk c i x σ hσ) C hC A D
 
 /-- **The reduction of the ideal side from its components.** -/
 theorem reducesI_of_comps {R : ℕ} {sig : FixedEnc (Inst3T N K k × SecI hk c) nS}
@@ -131,6 +131,6 @@ theorem reducesI_of_comps {R : ℕ} {sig : FixedEnc (Inst3T N K k × SecI hk c) 
     (fun w _ => ⟨(hIW _).1, (hIW _).2, by simp⟩) (fun w _ => ⟨(hIW _).1, (hIW _).2, by simp⟩)
     (by rw [hcomp, realLaw_map_inst3Of, hχ]) (by rw [hcomp, idealLaw_map_inst3Of])
     (FI hk c) hdec hL hcov (fun x ab => FI_eq hk c x ab) (fun _ _ => rfl)
-    (fun _ x σ hσ => setupI_x hk c x σ hσ) (fun ab _ σ _ => sdI_valid hk c ab σ) C hC A D
+    (fun _ x σ hσ => setupI_x hk c x σ hσ) (fun ab x σ hσ => sdI_valid hk c ab x σ hσ) C hC A D
 
 end AdvancedEncryption.DualUse

@@ -66,8 +66,12 @@ theorem F5_eq (x : Date) (i) : F5 hk c x i = (setup5 hk c x).map (view5 hk c i) 
     PMF.map_bind, PMF.pure_map, PMF.pure_bind]
   rfl
 
-theorem sd5_valid (i) (σ : Sec5 hk c) : SimValid (sd5 hk c i σ) :=
-  ⟨fun _ => rfl, fun _ => rfl⟩
+theorem sd5_valid (i) (x : Date) (σ : Sec5 hk c) (hσ : σ ∈ (setup5 hk c x).support) :
+    SimValid (sd5 hk c i σ) := by
+  refine ⟨fun _ => rfl, fun _ => rfl, ?_, fun j a b => cnorm_wMat _ j a b⟩
+  simp only [setup5, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hσ
+  obtain ⟨_, _, _, _, Rm, hRm, _, _, rfl⟩ := hσ
+  exact cnorm_of_lawRmBin hRm
 
 theorem setup5_x (x : Date) : ∀ σ ∈ (setup5 hk c x).support, σ.1 = x := by
   intro σ hσ
@@ -86,7 +90,7 @@ theorem accept5 (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
         (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
   accOn_sim hdec hL hcov A D inst (F5 hk c) (fun _ => setup5 hk c) (view5 hk c) (sd5 hk c)
     (fun x i => F5_eq hk c x i) (fun _ _ => rfl) (fun _ x σ hσ => setup5_x hk c x σ hσ)
-    (fun i _ σ _ => sd5_valid hk c i σ)
+    (fun i x σ hσ => sd5_valid hk c i x σ hσ)
 
 /-! ### The ideal side -/
 
@@ -122,12 +126,19 @@ theorem FI_eq (x : Date) (ab) : FI hk c x ab = (setupI hk c x).map (viewI hk c a
   rw [Cslib.Probability.PMF.pi_map, PMF.bind_map]
   rfl
 
-theorem sdI_valid (ab) (σ : SecI hk c) : SimValid (sdI hk c ab σ) := by
-  refine ⟨fun i => rfl, fun j => ?_⟩
-  show bjOf σ.2.1 (bitsOf σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
-  unfold bjOf
-  rw [of_hashCols]
-  rfl
+theorem sdI_valid (ab) (x : Date) (σ : SecI hk c) (hσ : σ ∈ (setupI hk c x).support) :
+    SimValid (sdI hk c ab σ) := by
+  refine ⟨fun i => rfl, fun j => ?_, ?_, fun j a b => cnorm_wMat _ j a b⟩
+  · show bjOf σ.2.1 (bitsOf σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
+    unfold bjOf
+    rw [of_hashCols]
+    rfl
+  · simp only [setupI, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hσ
+    obtain ⟨_, _, _, _, _, _, r, hr, _, _, rfl⟩ := hσ
+    unfold lawCoinsC lawCoins at hr
+    simp only [PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hr
+    obtain ⟨rest, hrest, e, -, rfl⟩ := hr
+    exact cnorm_of_lawRestC hrest
 
 theorem setupI_x (x : Date) : ∀ σ ∈ (setupI hk c x).support, σ.1 = x := by
   intro σ hσ
@@ -144,6 +155,6 @@ theorem acceptI (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
         (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
   accOn_sim hdec hL hcov A D inst (FI hk c) (fun _ => setupI hk c) (viewI hk c) (sdI hk c)
     (fun x ab => FI_eq hk c x ab) (fun _ _ => rfl) (fun _ x σ hσ => setupI_x hk c x σ hσ)
-    (fun ab _ σ _ => sdI_valid hk c ab σ)
+    (fun ab x σ hσ => sdI_valid hk c ab x σ hσ)
 
 end AdvancedEncryption.DualUse
