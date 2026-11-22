@@ -1118,6 +1118,142 @@ theorem law_prepG (hX : T tX0 = []) : (prepG hk c W).law T = PMF.pure (S3 hk c W
     law_tmplP _ _ _ (by exact Z5_tX0 c W T hX) (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide))]
   rfl
 
+/-! #### Lookups of `S3` -/
+
+abbrev keysG : List (Fin 256) :=
+  [ms 3, ms 4, ms 5, ms 6, ms 7, ms 8, ms 9, ms 10, ms 11, ms 12, ms 13, ms 14, ms 15, ms 16,
+    ms 17, ms 86, ms 87, ms 88, ms 89, ms 90, ms 91, ms 93, ms 94, ValVM.tTV, mw 10, mw TA1,
+    mw TAd, mw TK1, mw ZNK1, mw 29, mw T10, mw INSW, mw TSl, mw TST, mw TD2, mw TW, mw TPAD,
+    mw TW9, mw TINS, mw 61, mw 62, mw 63, mw 73, mw 74, mw 75]
+
+theorem tm31_mem : ∀ j, tm31 j ∈ lowW := by decide
+
+theorem cm13_mem : ∀ j, cm13 j ∈ lowW ∨ cm13 j = mw GS := by decide
+
+theorem S3_key {t : Fin 256} {n : ℕ}
+    (h : (t, n) ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) :
+    S3 hk c W T t = List.replicate n false :=
+  tmplS_mem _ (nodup_G _ _ _ _ _ _ _ _) (t, n) h _
+
+theorem S3_not {t : Fin 256} (h : t ∉ keysG) : S3 hk c W T t = Z5 c W T t :=
+  tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) h)
+
+theorem S3_eq_T {t : Fin 256} (h1 : t ∉ keysG)
+    (h2 : t ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS]) (h3 : t ∉ lowW) :
+    S3 hk c W T t = T t := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at h2
+  obtain ⟨a1, a2, a3, a4, a5, a6, a7⟩ := h2
+  rw [S3_not hk c W T h1, Z5_apply]
+  simp only [if_neg a1, if_neg a2, if_neg a3, if_neg a4, if_neg a5, if_neg a6]
+  rw [run_map_apply_not tm31_inj _ _ _ (fun j e => h3 (by rw [← e]; exact tm31_mem j)), Z4,
+    tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (fun hm => h3 (by
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
+      rcases hm with e | e | e | e | e | e | e | e <;> rw [e] <;> decide))),
+    Function.update_of_ne a7, Z2, run_map_apply_not cm13_inj _ _ _ (fun j e => by
+      rcases cm13_mem j with m | m
+      · exact h3 (by rw [← e]; exact m)
+      · exact a7 (by rw [← e]; exact m)), Z1_apply, if_neg a7, if_neg h3]
+
+theorem S3_GS (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
+    S3 hk c W T (mw GS) = gsW W gs ∧ S3 hk c W T (mw GSC) = gsW W gs ∧
+      S3 hk c W T (mw GCNT) = List.replicate gs.length false := by
+  refine ⟨?_, ?_, ?_⟩ <;>
+  · rw [S3_not hk c W T (by decide), Z5_apply]
+    simp (config := {decide := true}) only [Y4G_apply c W gs T hW hb hT, if_true, if_false]
+    rw [Z4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide))]
+    simp (config := {decide := true}) only [Function.update_apply, if_true, if_false,
+      Z2_apply W gs T hW hb hT, Z1_apply, hT]
+
+theorem S3_content (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
+    S3 hk c W T (ms 19) = gswGadW N K k ∧ S3 hk c W T (ms 20) = zeroW (lenA N K k c.d) ∧
+      S3 hk c W T (ms 21) = oneW N K ∧ S3 hk c W T (mw GADW) = gswGadW N K k ∧
+      S3 hk c W T (mw ZEROW) = zeroW (lenA N K k c.d) ∧ S3 hk c W T (mw ONEW) = oneW N K := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+  · rw [S3_not hk c W T (by decide), Z5_apply]
+    simp (config := {decide := true}) only [Y4G_apply c W gs T hW hb hT, if_true, if_false]
+
+/-- The step's store prepared for the predicate. -/
+def s3 : Store 132 := fun j => S3 hk c W T (ms j)
+
+/-- The words prepared for the predicate. -/
+def w4 : ValVM.St := fun x => S3 hk c W T (mw x)
+
+theorem S3_enc (hX0 : T tX0 = []) (hX1 : T tX1 = []) (hX2 : T tX2 = []) :
+    S3 hk c W T = ValVM.enc (s3 hk c W T) (VG N K k c.d) (w4 hk c W T) := by
+  refine ValVM.enc_ext (fun j => ?_) ?_ (fun x => ?_) ?_ ?_ ?_
+  · simp [s3]
+  · rw [ValVM.enc_tTV, S3_key hk c W T (n := VG N K k c.d) (by simp [stepG, wordsG])]
+  · simp [w4]
+  · rw [S3_eq_T hk c W T (by decide) (by decide) (by decide), hX0]; simp
+  · rw [S3_eq_T hk c W T (by decide) (by decide) (by decide), hX1]; simp
+  · rw [S3_eq_T hk c W T (by decide) (by decide) (by decide), hX2]; simp
+
+theorem s3_tmpl {j : Fin 132} {n : ℕ}
+    (h : (ms j, n) ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) :
+    (s3 hk c W T j).length = n := by
+  rw [s3, S3_key hk c W T h, List.length_replicate]
+
+/-- The written step's tapes of `prepG`. -/
+abbrev wrG : List ℕ :=
+  [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 86, 87, 88, 89, 90, 91, 93, 94]
+
+theorem s3_blank (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) (j : Fin 132) (hj : j.val ∉ wrG) :
+    s3 hk c W T j = [] := by
+  have key : ∀ j : Fin 132, j.val ∉ wrG → ms j ∉ keysG ∧
+      ms j ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS] ∧ ms j ∉ lowW := by
+    decide +kernel
+  obtain ⟨b1, b2, b3⟩ := key j hj
+  rw [s3, S3_eq_T hk c W T b1 b2 b3, hS j hj]
+
+/-- **The step's store prepared for the predicate meets `SimPre`.** -/
+theorem s3_simPre (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs)
+    (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) :
+    SimPre N K k 2 c.d (gswGadW N K k) (GPreGsw N K k) (s3 hk c W T) where
+  blank i h h' := s3_blank hk c W T hS i (by simp; omega)
+  h3 := s3_tmpl hk c W T (by simp [stepG])
+  h4 := s3_tmpl hk c W T (by simp [stepG])
+  h5 := s3_tmpl hk c W T (by simp [stepG])
+  h6 := s3_tmpl hk c W T (by simp [stepG])
+  h7 := s3_tmpl hk c W T (by simp [stepG])
+  h8 := s3_tmpl hk c W T (by simp [stepG])
+  h9 := s3_tmpl hk c W T (by simp [stepG])
+  h10 := s3_tmpl hk c W T (by simp [stepG])
+  h11 := s3_tmpl hk c W T (by simp [stepG])
+  h12 := s3_tmpl hk c W T (by simp [stepG])
+  h13 := s3_tmpl hk c W T (by simp [stepG])
+  h14 := s3_tmpl hk c W T (by simp [stepG])
+  h15 := s3_tmpl hk c W T (by simp [stepG])
+  h16 := s3_tmpl hk c W T (by simp [stepG])
+  h17 := s3_tmpl hk c W T (by simp [stepG])
+  h19 := (S3_content hk c W gs T hW hb hT).1
+  h20 := (S3_content hk c W gs T hW hb hT).2.1
+  h21 := (S3_content hk c W gs T hW hb hT).2.2.1
+  g := by
+    unfold GPreGsw
+    refine ⟨fun i h h' => ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [Function.comp_apply]
+      exact s3_blank hk c W T hS _ (by
+        have : ∀ i : Fin 48, 12 ≤ i.val → i.val < 46 → (vG i).val ∉ wrG := by decide +kernel
+        exact this i h h')
+    · rw [Function.comp_apply, show vG 8 = 92 from rfl]
+      exact s3_blank hk c W T hS _ (by decide)
+    · rw [Function.comp_apply, show vG 2 = 86 from rfl]
+      exact s3_tmpl hk c W T (by simp [stepG])
+    · rw [Function.comp_apply, show vG 3 = 87 from rfl]
+      exact s3_tmpl hk c W T (by simp [stepG])
+    · rw [Function.comp_apply, show vG 4 = 88 from rfl]
+      exact s3_tmpl hk c W T (by simp [stepG])
+    · rw [Function.comp_apply, show vG 5 = 89 from rfl]
+      exact s3_tmpl hk c W T (by simp [stepG])
+    · rw [Function.comp_apply, show vG 6 = 90 from rfl]
+      exact s3_tmpl hk c W T (by simp [stepG])
+    · rw [Function.comp_apply, show vG 7 = 91 from rfl]
+      exact s3_tmpl hk c W T (by simp [stepG])
+    · rw [Function.comp_apply, show vG 9 = 93 from rfl]
+      exact s3_tmpl hk c W T (by simp [stepG])
+    · rw [Function.comp_apply, show vG 10 = 94 from rfl]
+      exact s3_tmpl hk c W T (by simp [stepG])
+
 end PrepG
 
 end WB2
