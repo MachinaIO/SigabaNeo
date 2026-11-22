@@ -311,4 +311,167 @@ theorem law_dumB (sd : SimData hk c) :
         have : t.val ≠ 1 := fun h' => h1 (Fin.ext h')
         simp [h0, h1, h2, io2, *]
 
+/-! ### The window branch -/
+
+variable (hk c) in
+/-- The store before the key try. -/
+def winS (sdw wfw : List Bool) (cf : KeyCfg) : Store 256 :=
+  tmplS (keyTmpl hk c cf) (Function.update (Function.update (Function.update (Function.update
+    (io2 (R := 254) sdw [] []) 2 wfw) 1 (sdw.take (lenPK hk c))) 4 cf.sW) 5 (powW K (cf.B - 1)))
+
+theorem keyTmpl_ne {cf : KeyCfg} {t : Fin 256} (ht : 26 ≤ t.val ∨ t.val ≤ 5 ∨ t.val = 120) :
+    ∀ x ∈ keyTmpl hk c cf, x.1 ≠ t := by
+  intro x hx
+  simp only [keyTmpl, List.mem_cons, List.not_mem_nil, or_false] at hx
+  rcases hx with h | h | h | h | h | h | h | h | h | h | h | h | h | h | h | h | h | h | h | h <;>
+    (rw [h]; intro e; rw [← e] at ht; simp at ht)
+
+theorem winS_ge {sdw wfw : List Bool} {cf : KeyCfg} (t : Fin 256) (ht : 26 ≤ t.val) :
+    winS hk c sdw wfw cf t = [] := by
+  rw [winS, tmplS_apply_of_not_mem _ _ _ (keyTmpl_ne (Or.inl ht))]
+  have h0 : t.val ≠ 0 := by omega
+  have h1 : t ≠ 1 := fun e => by rw [e] at ht; revert ht; decide
+  have h2 : t ≠ 2 := fun e => by rw [e] at ht; revert ht; decide
+  have h4 : t ≠ 4 := fun e => by rw [e] at ht; revert ht; decide
+  have h5 : t ≠ 5 := fun e => by rw [e] at ht; revert ht; decide
+  have h1' : t.val ≠ 1 := fun e => h1 (Fin.ext e)
+  simp [Function.update_apply, h1, h2, h4, h5, io2, h0, h1']
+
+theorem winS_low {sdw wfw : List Bool} {cf : KeyCfg} (t : Fin 256) (ht : t.val ≤ 5) :
+    winS hk c sdw wfw cf t = Function.update (Function.update (Function.update (Function.update
+      (io2 (R := 254) sdw [] []) 2 wfw) 1 (sdw.take (lenPK hk c))) 4 cf.sW) 5 (powW K (cf.B - 1))
+      t := by
+  rw [winS, tmplS_apply_of_not_mem _ _ _ (keyTmpl_ne (Or.inr (Or.inl ht)))]
+
+theorem winS_tmpl {sdw wfw : List Bool} {cf : KeyCfg} :
+    let s := winS hk c sdw wfw cf
+    (s 6).length = K ∧ (s 7).length = N ∧ (s 8).length = N * K ∧ (s 9).length = cf.B ∧
+    (s 10).length = (c.d + nT k) * N ∧ (s 11).length = (c.d + nT k) * N * K ∧
+    (s 12).length = k ∧ (s 13).length = 2 * k ∧ (s 14).length = 1 ∧ (s 15).length = 1 ∧
+    (s 16).length = c.d ∧ (s 17).length = nT k ∧ (s 18).length = c.d * (N * K) ∧
+    (s 19).length = nT k * (N * K) ∧ (s 20).length = 2 * k * (N * K) ∧ (s 21).length = c.d * N ∧
+    (s 22).length = lenPK hk c - N * K ∧ (s 23).length = lenPK hk c ∧
+    (s 24).length = lenPK hk c + (c.d + nT k) * N * K + 2 * k * (N * K) ∧
+    (s 25).length = cf.m := by
+  intro s
+  simp only [s, winS, keyTmpl, tmplS, List.foldl_cons, List.foldl_nil, Function.update_apply]
+  simp
+
+theorem winS_120 {sdw wfw : List Bool} {cf : KeyCfg} : winS hk c sdw wfw cf 120 = [] := by
+  rw [winS, tmplS_apply_of_not_mem _ _ _ (keyTmpl_ne (Or.inr (Or.inr rfl)))]
+  simp [Function.update_apply, io2]
+
+/-- The inputs and templates of the key try. -/
+theorem law_prep (sdw wfw : List Bool) (cf : KeyCfg) (X : XProg 256) :
+    (seq (prefP (lenPK hk c) 0 1 100 101) <| seq (putW 4 cf.sW) <|
+      seq (putW 5 (powW K (cf.B - 1))) <| seq (tmplP 120 (keyTmpl hk c cf)) X).law
+        (Function.update (io2 (R := 254) sdw [] []) 2 wfw) = X.law (winS hk c sdw wfw cf) := by
+  rw [law_seq_pure (law_prefP _ (by decide) (by decide) (by decide) (by decide) _
+      (by simp [Function.update_apply, io2]) (by simp [Function.update_apply, io2])),
+    law_seq_pure (law_putW _ _ _), law_seq_pure (law_putW _ _ _),
+    law_seq_pure (law_tmplP _ _ _ (by simp [Function.update_apply, io2])
+      (keyTmpl_ne (Or.inr (Or.inr rfl))))]
+  congr 2
+
+theorem view_eKT (s : Store 256) (j : Fin 90) : (fun j => s (eKT j)) j = s ⟨j.val, by omega⟩ := rfl
+
+theorem clear_final (s : Store 256) (w : List Bool) (hs : ∀ t : Fin 256, 26 ≤ t.val → s t = []) :
+    (fun t => if t ∈ keyClr then [] else Function.update s 0 w t) = io2 (R := 254) w [] [] := by
+  funext t
+  by_cases h0 : t = 0
+  · subst h0; simp [keyClr, io2]
+  · have h0' : t.val ≠ 0 := fun e => h0 (Fin.ext e)
+    simp only [io2, h0', ite_false, Function.update_of_ne h0]
+    split_ifs with hm <;> first | rfl | (rw [mem_keyClr] at hm; exact hs t (by omega))
+
+variable (hk c) in
+theorem law_winB (wfB : XProg 256) {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg)
+    (hcf : cf.Valid hk c) (sd : SimData hk c) (C : List Bool) (hL : C.length ≤ c.L)
+    (hC : ∃ w : Window, winWord w = C) :
+    (winB hk c wfB cf).law
+        (io2 (R := 254) ((sdEnc hk c).enc sd) (true :: SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
+      (KGsim sd C).map fun w => io2 (R := 254) w [] [] := by
+  have e1 : (Prim.tail 1).apply
+      (io2 (R := 254) ((sdEnc hk c).enc sd) (true :: SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
+      io2 (R := 254) ((sdEnc hk c).enc sd) (SigabaNeo.Tape.Prog.gsW W (parse C)) [] := by
+    funext t
+    simp only [Prim.apply, Function.update_apply, io2]
+    split_ifs <;> first | rfl | (exfalso; simp_all [Fin.ext_iff])
+  rw [winB, law_seq_pure (law_prim _ _), e1, law_seq_pure (hwf.law sd C hL hC), law_prep, law_seq,
+    law_frame, law_prog]
+  set s := winS hk c ((sdEnc hk c).enc sd) (colsW N K k c.d (simW sd C)) cf with hs
+  have hlow := fun t ht => winS_low (hk := hk) (c := c) (sdw := (sdEnc hk c).enc sd)
+    (wfw := colsW N K k c.d (simW sd C)) (cf := cf) t ht
+  obtain ⟨t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23,
+    t24, t25⟩ := winS_tmpl (hk := hk) (c := c) (sdw := (sdEnc hk c).enc sd)
+    (wfw := colsW N K k c.d (simW sd C)) (cf := cf)
+  have s1 : s 1 = (pkEnc hk c).enc sd.mpk := by
+    rw [hs, hlow 1 (by decide)]; simp [Function.update_apply, sdEnc_take]
+  have s2 : s 2 = colsW N K k c.d (simW sd C) := by
+    rw [hs, hlow 2 (by decide)]; simp [Function.update_apply]
+  have s3 : s 3 = [] := by rw [hs, hlow 3 (by decide)]; simp [Function.update_apply, io2]
+  have s4 : s 4 = cf.sW := by rw [hs, hlow 4 (by decide)]; simp [Function.update_apply]
+  have s5 : s 5 = powW K (cf.B - 1) := by rw [hs, hlow 5 (by decide)]; simp
+  rw [ProgKey.law_keyTrySimCoinsP_KGsim hk hcf.h0 hcf.hK0 cf.B hcf.hB cf.m hcf.hm hcf.hBig hcf.hsl
+    rfl hcf.hSmall hcf.hdec sd C hL hC (P := lenPK hk c) (fun j => s (eKT j))
+    (fun j hj => winS_ge _ (by rw [eKT_val]; exact hj)) (by exact s3) (by exact s1) (by exact s2)
+    (by exact s4) (by show (s 1).length = _; rw [s1]; exact length_enc_fixLen _ _) (by exact s5)
+    (by exact t6) (by exact t7) (by exact t8) (by exact t9) (by exact t10) (by exact t11)
+    (by exact t12) (by exact t13) (by exact t14) (by exact t15) (by exact t16) (by exact t17)
+    (by exact t18) (by exact t19) (by exact t20) (by exact t21) (by exact t22) (by exact t23)
+    (by exact t24) (by exact t25), PMF.map_comp, PMF.bind_map]
+  rw [← PMF.bind_pure_comp]
+  congr 1
+  funext w
+  simp only [Function.comp_apply]
+  have e0 : eKT 0 = 0 := rfl
+  rw [embedF_upd, embedF_comp, law_clearL, e0, clear_final s w (fun t ht => by rw [hs]; exact winS_ge t ht)]
+
+/-! ### The law of the key component -/
+
+variable (hk c) in
+/-- **The law of the key component**: for every query `C`, the image of the simulated key oracle
+`KGsim (sdOf p) C` of the simulation data of the packed secret. -/
+theorem law_keyP {Sig : Type} {sdP : XProg 82} {encS : Sig → List Bool}
+    {sdOf : Sig → SimData hk c} {Ok : Sig → Prop} (hsd : SdSpec hk c sdP encS sdOf Ok)
+    {wfB : XProg 256} {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg) (hcf : cf.Valid hk c)
+    (p : Sig) (hp : Ok p) (C : List Bool) :
+    (keyP hk c sdP wfB W cf).law (io2 (R := 254) (encS p) C []) =
+      (KGsim (sdOf p) C).map fun w => io2 (R := 254) w [] [] := by
+  rw [keyP, law_seq_pure (by rw [law_frame, io2_eSd, hsd.law p hp, PMF.pure_map, embedF_eSd]),
+    law_seq_pure (by rw [law_frame, io2_eFr, law_frontP, PMF.pure_map, embedF_eFr]), law_ifBit]
+  by_cases hl : C.length ≤ c.L
+  · by_cases hw : ∃ w : Window, winWord w = C
+    · rw [frontV_win hl hw, if_pos (by simp [io2])]
+      exact law_winB hk c wfB hwf cf hcf (sdOf p) C hl hw
+    · unfold KGsim
+      rw [if_pos hl, frontV_short_not hl hw, if_neg hw, if_neg (by simp [io2]), law_ifBlank,
+        if_neg (by simp [io2]), law_dumB, PMF.pure_map]
+  · unfold KGsim
+    rw [frontV_long hl, if_neg hl, if_neg (by simp [io2]), law_ifBlank, if_pos (by simp [io2]),
+      law_longB, PMF.pure_map]
+
+theorem wf_keyP {sdP : XProg 82} (hsd : sdP.WF) {wfB : XProg 256} (hwf : wfB.WF) (W : ℕ)
+    (cf : KeyCfg) : (keyP hk c sdP wfB W cf).WF :=
+  ⟨hsd, wf_frontP _ _,
+    ⟨trivial, hwf, wf_prefP _ _ _ _ _, wf_putW _ _, wf_putW _ _,
+      wf_tmplP _ _ (keyTmpl_ne (Or.inr (Or.inr rfl))), ProgKey.wf_keyTrySimCoinsP, wf_clearL _⟩,
+    wf_clearL _, trivial, wf_prefP _ _ _ _ _, wf_putW _ _, trivial, trivial⟩
+
+/-! ### The packed challenger -/
+
+variable {Sec Inst : Type}
+
+/-- **The key component of the packed challenger** (`Comps.law_key` for `spPack`, `R = 254`): the
+secret word `encS (inst, σ)` of the codes. -/
+theorem law_keyP_spPack [NeZero c.d] (st : dateUniverse.Attr → PMF (Inst × Sec))
+    (viewI : Inst → Sec → PK hk c × CT hk c) (sdI : Inst → Sec → SimData hk c)
+    {sdP : XProg 82} {encS : Inst × Sec → List Bool} {Ok : Inst × Sec → Prop}
+    (hsd : SdSpec hk c sdP encS (fun p => sdI p.1 p.2) Ok)
+    {wfB : XProg 256} {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg) (hcf : cf.Valid hk c)
+    (p : Inst × Sec) (hp : Ok p) (C : List Bool) :
+    (keyP hk c sdP wfB W cf).law (io2 (R := 254) (encS p) C []) =
+      ((spPack st viewI sdI).key p C).map fun sk => io2 (R := 254) sk [] [] :=
+  law_keyP hk c hsd hwf cf hcf p hp C
+
 end AdvancedEncryption.DualUse.Prog
