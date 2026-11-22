@@ -266,6 +266,121 @@ theorem pfix_repList {ι : Type*} (ix : ι → ℕ) (hix : ∀ i, ix i < E.n) (t
   | one => simp only [h, hw, pos, Tape.Prog.wireIx]; split_ifs <;> omega
   | gate m => simp only [h, hw, pos, Tape.Prog.wireIx]; split_ifs <;> omega
 
+/-! ### The position phase -/
+
+/-- **The position phase**: the threshold gate, the positions, their emission in pairs. -/
+def posC : Code :=
+  .seq (.nand 58 0 0) (.seq (.lnil 19) (.seq (.zero 47) (.seq (.zero 48) (.seq (.zero 49)
+    (.seq (.rep 15 (.seq posBody odoC)) (.seq (.mov 54 2) (.seq (maddC 54 2 7 53)
+      (.seq (maddC 54 5 7 53) (.rep 54 pairE)))))))))
+
+theorem noNand_out_t (c : Code) (hc : NoNand c) (σ : St) :
+    (exec E c σ).out = σ.out ∧ (exec E c σ).t = σ.t := by
+  have h := exec_out_t (E := E) c hc σ σ.out σ.t
+  have e : ({ σ with out := σ.out, t := σ.t } : St) = σ := rfl
+  rw [e] at h
+  rw [h]; exact ⟨rfl, rfl⟩
+
+theorem noNand_iter_out_t (c : Code) (hc : NoNand c) : ∀ (x : ℕ) (σ : St),
+    ((exec E c)^[x] σ).out = σ.out ∧ ((exec E c)^[x] σ).t = σ.t
+  | 0, _ => ⟨rfl, rfl⟩
+  | x + 1, σ => by
+    rw [Function.iterate_succ_apply]
+    obtain ⟨a, b⟩ := noNand_iter_out_t c hc x (exec E c σ)
+    obtain ⟨a', b'⟩ := noNand_out_t (E := E) c hc σ
+    exact ⟨a.trans a', b.trans b'⟩
+
+theorem noNand_posLoop : NoNand (.seq posBody odoC) := by
+  simp [NoNand, posBody, odoC, maddC, fetchC, dropC]
+
+theorem src_iter (c : Code) (hc : NoRd c) : ∀ (x : ℕ) (σ : St), ((exec E c)^[x] σ).src = σ.src
+  | 0, _ => rfl
+  | x + 1, σ => by
+    rw [Function.iterate_succ_apply, src_iter c hc x, src_exec c hc]
+
+set_option maxHeartbeats 2000000 in
+theorem exec_posC {N k : ℕ} (hk : 0 < k) (hN : 0 < N) (σ : St) (R : List ℕ)
+    (h0 : σ.sc 0 = E.n) (h2 : σ.sc 2 = k) (h5 : σ.sc 5 = N) (h7 : σ.sc 7 = 0)
+    (h15 : σ.sc 15 = 2 * k * k * N) (h23 : σ.ls 23 = R) (hR : ∀ x ∈ R, x ≤ E.M)
+    (hthr : E.n + 1 + σ.t ≤ E.M) (hbM : 4 * k * N * k + 2 ≤ E.M) (hC : 2 * k * k * N ≤ E.C) :
+    (exec E posC σ).out = σ.out ++ uw E.W E.n ++ uw E.W E.n ++
+        (((List.range (2 * k * k * N)).map (pAt E.n (E.n + 1 + σ.t) N k R)).map (uw E.W)).flatten ∧
+      (exec E posC σ).t = σ.t + 1 + k * k * N ∧ (exec E posC σ).src = σ.src ∧
+      ∀ r : SR, r.val < 16 → (exec E posC σ).sc r = σ.sc r := by
+  have hb := pos_bounds hk hN
+  have fn : fixv E σ.t E.n = E.n := by unfold fixv; split_ifs <;> rfl
+  set thr := E.n + 1 + σ.t with hthr_def
+  -- the threshold gate and the digits
+  set σ1 : St := { σ with out := σ.out ++ uw E.W E.n ++ uw E.W E.n, t := σ.t + 1, sc := Function.update (Function.update (Function.update (Function.update σ.sc 58 thr) 47 0) 48 0) 49 0, ls := Function.update σ.ls 19 [] }
+  have e1 : exec E (.zero 49) (exec E (.zero 48) (exec E (.zero 47) (exec E (.lnil 19)
+      (exec E (.nand 58 0 0) σ)))) = σ1 := by
+    simp only [exec, h0, fn, σ1]; rw [min_eq_left (hthr : E.n + 1 + σ.t ≤ E.M)]
+  have hs1 : ∀ r : SR, r ≠ 58 → r ≠ 47 → r ≠ 48 → r ≠ 49 → σ1.sc r = σ.sc r := fun r a b c d => by
+    simp [σ1, Function.update_of_ne a, Function.update_of_ne b, Function.update_of_ne c,
+      Function.update_of_ne d]
+  have hq1 : PQ (E := E) N k thr R σ1 := ⟨by rw [hs1 2 (by decide) (by decide) (by decide)
+    (by decide), h2], by rw [hs1 5 (by decide) (by decide) (by decide) (by decide), h5],
+    by rw [hs1 0 (by decide) (by decide) (by decide) (by decide), h0], by simp [σ1],
+    by simp [σ1, h23]⟩
+  have hnM : E.n ≤ E.M := by omega
+  obtain ⟨hq2, hl2, hf2, hg2, -⟩ := iter_posBody hk hN thr R hR hnM (by omega) (2 * k * k * N) σ1 []
+    0 0 0 le_rfl hq1 (by simp [σ1]) (by simp [σ1]) (by simp [σ1]) hk hN (by ring) (by simp [σ1])
+    (by simpa using hC)
+  set σ2 := (exec E (.seq posBody odoC))^[2 * k * k * N] σ1
+  have h15' : σ1.sc 15 = 2 * k * k * N := by
+    rw [hs1 15 (by decide) (by decide) (by decide) (by decide), h15]
+  obtain ⟨ho2, ht2⟩ := noNand_iter_out_t (E := E) _ noNand_posLoop (2 * k * k * N) σ1
+  -- the pair count
+  have h2' : σ2.sc 2 = k := hq2.1
+  have h5' : σ2.sc 5 = N := hq2.2.1
+  have h7' : σ2.sc 7 = 0 := by
+    rw [hf2 7 (by decide), hs1 7 (by decide) (by decide) (by decide) (by decide), h7]
+  set σ3 := setSL σ2 (Function.update σ2.sc 54 k) σ2.ls
+  have e3 : exec E (.mov 54 2) σ2 = σ3 := by simp [exec, σ3, setSL, h2']
+  have e4 := exec_maddC (E := E) 54 2 7 53 (by decide) (by decide) (by decide) (by decide)
+    (by decide) σ3 (by simp [σ3, setSL, h2', h7']; nlinarith)
+  set σ4 := setSL σ3 (Function.update (Function.update σ3.sc 53 (σ3.sc 54)) 54
+    (σ3.sc 54 * σ3.sc 2 + σ3.sc 7)) σ3.ls
+  have e5 := exec_maddC (E := E) 54 5 7 53 (by decide) (by decide) (by decide) (by decide)
+    (by decide) σ4 (by simp [σ4, σ3, setSL, h2', h5', h7']; nlinarith)
+  set σ5 := setSL σ4 (Function.update (Function.update σ4.sc 53 (σ4.sc 54)) 54
+    (σ4.sc 54 * σ4.sc 5 + σ4.sc 7)) σ4.ls
+  have h54 : σ5.sc 54 = k * k * N := by simp [σ5, σ4, σ3, setSL, h2', h5', h7']
+  have eAll : exec E posC σ = (exec E pairE)^[k * k * N] σ5 := by
+    simp only [posC, exec_seq]
+    rw [e1, exec_rep (15 : SR), h15', e3, e4, e5, exec_rep (54 : SR), h54]
+  have hl5 : σ5.ls 19 = (List.range (2 * k * k * N)).map (pAt E.n thr N k R) := by
+    simp only [σ5, σ4, σ3, setSL]; rw [hl2]; simp [σ1]
+  have ht5 : σ5.t = σ.t + 1 := by simp only [σ5, σ4, σ3, setSL]; rw [ht2]
+  have ho5 : σ5.out = σ.out ++ uw E.W E.n ++ uw E.W E.n := by
+    simp only [σ5, σ4, σ3, setSL]; rw [ho2]
+  have hv : ∀ v ∈ σ5.ls 19, v < min (E.n + 1 + σ5.t) E.M := by
+    intro v hv
+    rw [hl5] at hv
+    obtain ⟨x, -, rfl⟩ := List.mem_map.mp hv
+    rw [ht5]
+    have : pAt E.n thr N k R x < thr := by
+      unfold pAt pfix; split_ifs <;> omega
+    omega
+  obtain ⟨o6, t6, -, -, f6, -⟩ := iter_pairE (k * k * N) σ5 _ rfl
+    (by rw [hl5]; simp; ring_nf; rfl) hv
+  have hsrc : (exec E posC σ).src = σ.src :=
+    src_exec posC (by simp [NoRd, posC, posBody, odoC, maddC, fetchC, dropC, pairE]) σ
+  rw [eAll] at hsrc ⊢
+  refine ⟨?_, by rw [t6, ht5], hsrc, fun r hr => ?_⟩
+  · rw [o6, ho5, hl5, show 2 * (k * k * N) = 2 * k * k * N by ring, List.take_of_length_le
+      (by simp)]
+  · have n55 : r ≠ 55 := by rintro rfl; revert hr; decide
+    have n56 : r ≠ 56 := by rintro rfl; revert hr; decide
+    have n57 : r ≠ 57 := by rintro rfl; revert hr; decide
+    have n53 : r ≠ 53 := by rintro rfl; revert hr; decide
+    have n54 : r ≠ 54 := by rintro rfl; revert hr; decide
+    rw [f6 r n55 n56 n57]
+    simp only [σ5, σ4, σ3, setSL, Function.update_of_ne n53, Function.update_of_ne n54]
+    rw [hf2 r (Or.inl (by omega)), hs1 r (by rintro rfl; revert hr; decide)
+      (by rintro rfl; revert hr; decide) (by rintro rfl; revert hr; decide)
+      (by rintro rfl; revert hr; decide)]
+
 end FhatGen
 
 end SigabaNeo.Lattices
