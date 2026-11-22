@@ -692,6 +692,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   FiniteRankLaw.lean (`mul_surjective`, `card_mul_fiber`, `card_fullRank`, `prob_mul_fullRank`) proves the finite-field rank
   law behind Parts 101/104(d). For F of rank t, A ↦ AF is uniform with fibers of size q^{m(n−t)}, and
   Pr[rank AF = t] = ∏_{i<t}(1 − q^{i−m}). All four are accepted on Prove2Me.
+  QuotientMinimum.lean (`haar_secondMinimum_upper/lower`, `quotientMinimum_gap`, `haar_quotientMinimum_upper`) proves a
+  Haar second-minimum bound, Pr[λ2 < r] ≤ vol(B_r)²/8, via Rogers independent pairs. It also proves that if λ2 ≥ r, the
+  projection off ANY shortest vector has minimum ≥ (√3/2)r. Together: Pr[some shortest-vector quotient has physical minimum
+  < c] ≤ vol(B_{2c/√3})²/8. This is a weaker, Lean-verified form of Part 105. All four are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
