@@ -1049,6 +1049,23 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
       exit.
     * Horizontal steps still face the Part 120/126 obstruction.
   * **Prop 7 (corrected).** The Rankin skeleton gives only ≈ 10^{-1412}·GH, not a Part 109/110-type floor.
+* **Part 140 (audited, minor caveats; see the note's Audit section).** [adrs_explicit](research/wall1_adrs_explicit.md): an
+  explicit version of the ADRS/ASD18 provable exact-SVP algorithm.
+  * **Theorem E.** For every rank-n lattice with an integral basis whose entries are ≤ B, the ASD18 pair-and-average
+    algorithm (constants fixed: θ = 1/8, 4 runs, K₀ = 800) outputs an exact shortest vector. Its operation count and failure
+    probability are closed formulas with no O or o terms.
+  * **Part 39 instance (n = 647, B = 3329).** 2^799.23 operations (2^799.81 with the literal 6d sampler recursion), with
+    failure < 2^−120.9 and space 2^781.98. **This is in a real-RAM model for the initial BLP13 sampler**, which is the
+    note's own idealization, not BLP13's. A word-RAM bound is estimated at ≤ 2^840 but not proved.
+  * **Combined with Part 39.** Secret recovery with probability ≥ 99.51664% − 2^−120.9 within that cost. The previous best
+    explicit bound was the brute-force 2^1253.4 (Part 133); Micciancio–Voulgaris gives 2^1294·poly.
+  * **New lemmas, re-derived and numerically tested by the audit.**
+    * Lemma 4.3a/b: a coupling replacing the square sampler.
+    * Lemma 4.6: Banaszczyk tail after cancellation.
+    * Lemma 4.5: preservation of domination under pair-and-average. ASD18's Def 2.2 (upper-orthant order) is NOT preserved;
+      the audit gives an explicit counterexample. Their theorems survive via Lemma 4.5.
+  * **Open.** A proven word-RAM sampler cost. A Lean formalization is estimated at 4–8 months; Gaussian Poisson summation on
+    lattices is missing.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
