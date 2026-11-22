@@ -1647,6 +1647,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
       are < 2.23332·10⁻¹³⁸.
   * `failure_lt_score506`: score(1919/2) ≤ 0.00012938 implies terminal failure < 0.000607731.
   The remaining per-block obligation is the explicit nonintegral-class sum R (Part 180 bounds it under (i)–(iii)).
+* **Lean (Part 180 lattice estimates).** SphericalPacking / GaussianPackingIntegral / GaussianPacking505 / GaussianGramPivots /
+  ProjectionThetaBound / LogThetaConvex (axiom-clean) formalize:
+  * the packing bound (3) for nonzero Gaussian mass under a minimum;
+  * the height-one bound: λ1 ≥ 54.82 at rank 505 gives oneTheta and oneCharge ≤ 3.635·10⁻²⁶, with no outstanding
+    hypothesis;
+  * the Gram-pivot theta bound (2), the uniform-projection bound (4), and the projection-test predicate (5), with global
+    convexity of log θ(e^x).
+  Not formalized: equation (1), the height-2–30 charges, smoothError ≤ 0.006269755, and the `restartCount_lwe` corollary.
+  The delegate declined these because the combined certificate would validate a concrete LWE key-recovery procedure, the
+  same scope line as Part 140's numeric instance.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
