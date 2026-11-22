@@ -1,6 +1,4 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.SimJoint
-import SigabaNeo.Lib.Lattices.ProgAlgo.Spec
-import SigabaNeo.Lib.Machines.Prog.Split
+import SigabaNeo.Lib.Lattices.ProgAlgo.SimGinv
 
 /-!
 # The step of the simulation on joint words as a gate program
@@ -29,16 +27,6 @@ open SigabaNeo.Lattices SigabaNeo.Lattices.Algo
 namespace Prog
 
 open scoped Prog
-
-/-- **A program of `G⁻¹`** on words of `Lin` bits: tape `0` the value, `1` the input; the
-precondition `GPre` only looks at the tapes `2 … 47`. -/
-structure GinvSpec (G : Prog 48) (Lin Lout : ℕ) (ginv : List Bool → List Bool)
-    (GPre : Store 48 → Prop) : Prop where
-  noGrow : G.NoGrow
-  wf : G.WF
-  pre_congr : ∀ s s' : Store 48, (∀ i : Fin 48, 2 ≤ i.val → s i = s' i) → GPre s → GPre s'
-  run_eq : ∀ s, GPre s → (s 1).length = Lin → run G s = Function.update s 0 (ginv (s 1))
-  len : ∀ a, a.length = Lin → (ginv a).length = Lout
 
 def sU : Fin 10 → Fin 132 := ![22, 23, 24, 1, 13, 14, 5, 37, 38, 39]
 def sV : Fin 10 → Fin 132 := ![25, 26, 27, 2, 13, 14, 5, 37, 38, 39]
@@ -162,6 +150,86 @@ theorem run_simPost {N K k r d : ℕ} (t : Store 132)
     | (simp [mP1, sO1, mP2, mS, aSum, sO2, mM3, sO3, jO, hbs, h3, h4, h5, h6, h7, h8, h9, h10, h11,
         h12, h13, h14, h15, h16, h17, h19, h20, h21, h22, h23, h24, h26, h27, h28, length_matMulW,
         length_matSubW, length_mulRW, length_matAddW]; try ring)
+
+/-- The program `G` on its tapes. -/
+theorem run_vG {G : Prog 48} {Lin Lout : ℕ} {ginv : List Bool → List Bool}
+    {GPre : Store 48 → Prop} (hG : GinvSpec G Lin Lout ginv GPre) (s : Store 132)
+    (hp : GPre (s ∘ vG)) (hl : (s 25).length = Lin) :
+    run (map vG G) s = Function.update s 28 (ginv (s 25)) :=
+  run_map_eq_update vG_inj G s 0 _ (hG.run_eq _ hp hl)
+
+/-- **The precondition of `simStepP`**: the templates, the gadget word, the zero and one words,
+blank registers and scratch, and the precondition of `G` on its tapes. -/
+structure SimPre (N K k r d : ℕ) (gad : List Bool) (GPre : Store 48 → Prop) (s : Store 132) :
+    Prop where
+  blank : ∀ i : Fin 132, 22 ≤ i.val → i.val < 86 → s i = []
+  h3 : (s 3).length = K
+  h4 : (s 4).length = N
+  h5 : (s 5).length = N * K
+  h6 : (s 6).length = r
+  h7 : (s 7).length = 2 * k
+  h8 : (s 8).length = 2 * k
+  h9 : (s 9).length = d * (2 * k)
+  h10 : (s 10).length = 1
+  h11 : (s 11).length = 1
+  h12 : (s 12).length = d
+  h13 : (s 13).length = lenA N K k r
+  h14 : (s 14).length = lenA N K k d
+  h15 : (s 15).length = lenA N K k r + lenA N K k d + N * K
+  h16 : (s 16).length = r * (2 * k) * N
+  h17 : (s 17).length = d * (2 * k) * N
+  h19 : s 19 = gad
+  h20 : s 20 = zeroW (lenA N K k d)
+  h21 : s 21 = oneW N K
+  g : GPre (s ∘ vG)
+
+theorem length_oneW (N K : ℕ) : (oneW N K).length = N * K := length_constW (length_bitW K true)
+
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSimpArgs false in
+/-- **`simStepP` computes the step of the simulation on joint words.** -/
+theorem run_simStepP {G : Prog 48} {N K k r d : ℕ} {ginv : List Bool → List Bool}
+    {GPre : Store 48 → Prop} (hG : GinvSpec G (lenA N K k r) (2 * k * (2 * k * (N * K))) ginv GPre)
+    {gad : List Bool} (hg : gad.length = lenA N K k r) (s : Store 132)
+    (hp : SimPre N K k r d gad GPre s)
+    (h1 : (s 1).length = lenA N K k r + lenA N K k d + N * K)
+    (h2 : (s 2).length = lenA N K k r + lenA N K k d + N * K) :
+    run (simStepP G) s = Function.update s 0 (simStepJW N K k r d gad ginv (s 1) (s 2)) := by
+  have hb := hp.blank
+  rw [simStepP, run_seq, run_seq, run_simPre s (hb 37 (by decide) (by decide))
+    (hb 38 (by decide) (by decide)) (hb 39 (by decide) (by decide)) hp.h13 hp.h14 hp.h5]
+  rw [run_vG hG _ (hG.pre_congr _ _ (fun i hi => by fin_cases i <;> simp [vG] at hi ⊢) hp.g)
+    (by simp)]
+  have hl := hG.len (takeD (lenA N K k r) (s 2)) (by simp)
+  rw [run_simPost (N := N) (K := K) (k := k) (r := r) (d := d) _ (fun i h h' => by
+      fin_cases i <;> simp at h h' ⊢ <;> exact hb _ (by simp) (by simp))
+    (by simp [hp.h3]) (by simp [hp.h4]) (by simp [hp.h5]) (by simp [hp.h6]) (by simp [hp.h7])
+    (by simp [hp.h8]) (by simp [hp.h9]) (by simp [hp.h10]) (by simp [hp.h11]) (by simp [hp.h12])
+    (by simp [hp.h13]) (by simp [hp.h14]) (by simp [hp.h15]) (by simp [hp.h16])
+    (by simp [hp.h17]) (by simp [hp.h19, hg]) (by simp [hp.h20]) (by simp [hp.h21, length_oneW])
+    (by simp) (by simp) (by simp) (by simp) (by simp) (by simp [hl])]
+  have ea : takeD (lenA N K k r) (s 1) = (splitJ (lenA N K k r) (lenA N K k d) (s 1)).1 :=
+    takeD_eq_take (by omega)
+  have ew : takeD (lenA N K k d) ((s 1).drop (lenA N K k r)) =
+      (splitJ (lenA N K k r) (lenA N K k d) (s 1)).2.1 := takeD_eq_take (by simp; omega)
+  have ex : takeD (N * K) ((s 1).drop (lenA N K k r + lenA N K k d)) =
+      (splitJ (lenA N K k r) (lenA N K k d) (s 1)).2.2 := takeD_of_length' (by simp; omega)
+  have ea' : takeD (lenA N K k r) (s 2) = (splitJ (lenA N K k r) (lenA N K k d) (s 2)).1 :=
+    takeD_eq_take (by omega)
+  have ew' : takeD (lenA N K k d) ((s 2).drop (lenA N K k r)) =
+      (splitJ (lenA N K k r) (lenA N K k d) (s 2)).2.1 := takeD_eq_take (by simp; omega)
+  have ex' : takeD (N * K) ((s 2).drop (lenA N K k r + lenA N K k d)) =
+      (splitJ (lenA N K k r) (lenA N K k d) (s 2)).2.2 := takeD_of_length' (by simp; omega)
+  have hval : simParts N K k r d gad (zeroW (lenA N K k d)) (oneW N K)
+      (takeD (lenA N K k r) (s 1)) (takeD (lenA N K k d) ((s 1).drop (lenA N K k r)))
+      (takeD (N * K) ((s 1).drop (lenA N K k r + lenA N K k d)))
+      (takeD (lenA N K k d) ((s 2).drop (lenA N K k r)))
+      (takeD (N * K) ((s 2).drop (lenA N K k r + lenA N K k d)))
+      (ginv (takeD (lenA N K k r) (s 2))) = simStepJW N K k r d gad ginv (s 1) (s 2) := by
+    rw [ea, ew, ex, ea', ew', ex', simParts, simStepJW, simStepW,
+      matMulW_one_one _ (by simp [splitJ]; omega), negMatW]
+  funext i
+  fin_cases i <;> simp [hp.h19, hp.h20, hp.h21, hval] <;> first | (apply hb <;> decide) | (symm; apply hb <;> decide)
 
 end Prog
 
