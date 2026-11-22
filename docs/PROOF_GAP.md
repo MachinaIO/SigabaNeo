@@ -1380,6 +1380,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     caused by the tie rule.
   * The Haar bound is < 4.36018·10⁻¹¹. A hypothetical 4.5·10⁶ factor would leave 1.50058·10⁻⁶ for residual (a).
   * **Remaining.** A direct bound on the history average of the exact finite-recursion selected-hit fraction.
+* **Part 164 (audited, minor caveats).** [selected_hit_direct](research/wall1_selected_hit_direct.md): a direct
+  (Mecke-type exchange) bound on the upper-band selected-hit fraction.
+  * **Conditioning is degenerate.** Given the history, a positive-height band candidate fixes the mark and the whole window.
+    So the signed-void probability given a compatible witness is exactly 0 or 1.
+  * Averaged over histories, the probability is a ratio of prefix weights, each weighted by its fraction of winning marks.
+    The rank-506 Haar empty-ball estimate applies only before incidence conditioning, so it does not bound this ratio.
+  * In the toys, all 24 gated candidates had an empty open ball, yet only 2 won the signed tie rule (selected mass 2/4913).
+  * **Remaining.** The history-averaged weight of gated candidates that beat all smaller-key competitors at width 506, plus
+    residual (a), within 0.00019770868.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1389,7 +1398,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–163 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–164 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
