@@ -429,3 +429,167 @@ theorem lenBoundT_consN (n : ℕ) (i : Fin k) (b : Bool) (ℓ : Fin k → ℕ) :
     split_ifs <;> omega
 
 end SigabaNeo.Tape.Prog
+
+/-! ### Sizes of loop-free programs -/
+
+namespace SigabaNeo.Tape.Prog
+
+variable {k : ℕ}
+
+/-- The number of primitives and branchings of a program (loops count `0`). -/
+def size : Prog k → ℕ
+  | prim _ | coin _ => 1
+  | seq p q => size p + size q
+  | ifBlank _ p q | ifBit _ p q => size p + size q + 1
+  | loop _ _ => 0
+
+/-- The program has no loop. -/
+def LoopFree : Prog k → Prop
+  | prim _ | coin _ => True
+  | seq p q | ifBlank _ p q | ifBit _ p q => p.LoopFree ∧ q.LoopFree
+  | loop _ _ => False
+
+theorem lenBound_le_size (p : Prog k) (hp : p.LoopFree) (L : ℕ) : lenBound p L ≤ L + size p := by
+  induction p generalizing L with
+  | prim q => cases q <;> simp [lenBound, size, Prim.grow]
+  | coin i => simp [lenBound, size]
+  | seq p q ihp ihq =>
+    have h1 := ihp hp.1 L
+    have h2 := ihq hp.2 (lenBound p L)
+    simp only [lenBound, size]; omega
+  | ifBlank i p q ihp ihq | ifBit i p q ihp ihq =>
+    have h1 := ihp hp.1 L
+    have h2 := ihq hp.2 L
+    simp only [lenBound, size]; omega
+  | loop i b ih => exact hp.elim
+
+/-- **The time of a loop-free program**: at most `size · (2 (L + size) + 5)`. -/
+theorem timeBound_le_size (p : Prog k) (hp : p.LoopFree) (L : ℕ) :
+    timeBound p L ≤ size p * (2 * (L + size p) + 5) := by
+  induction p generalizing L with
+  | prim q => cases q <;> simp [timeBound, size, Prim.pad] <;> omega
+  | coin i => simp [timeBound, size]; omega
+  | seq p q ihp ihq =>
+    have h1 := ihp hp.1 L
+    have h2 := ihq hp.2 (lenBound p L)
+    have h3 := lenBound_le_size p hp.1 L
+    simp only [timeBound, size]
+    have h4 : size q * (2 * (lenBound p L + size q) + 5) ≤
+        size q * (2 * (L + size p + size q) + 5) := Nat.mul_le_mul_left _ (by omega)
+    have h5 : size p * (2 * (L + size p) + 5) ≤ size p * (2 * (L + (size p + size q)) + 5) :=
+      Nat.mul_le_mul_left _ (by omega)
+    have h6 : size p * (2 * (L + (size p + size q)) + 5) +
+        size q * (2 * (L + size p + size q) + 5) =
+        (size p + size q) * (2 * (L + (size p + size q)) + 5) := by ring
+    omega
+  | ifBlank i p q ihp ihq | ifBit i p q ihp ihq =>
+    have h1 := ihp hp.1 L
+    have h2 := ihq hp.2 L
+    simp only [timeBound, size]
+    have h4 : size q * (2 * (L + size q) + 5) ≤
+        size q * (2 * (L + (size p + size q + 1)) + 5) := Nat.mul_le_mul_left _ (by omega)
+    have h5 : size p * (2 * (L + size p) + 5) ≤
+        size p * (2 * (L + (size p + size q + 1)) + 5) := Nat.mul_le_mul_left _ (by omega)
+    have h6 : size p * (2 * (L + (size p + size q + 1)) + 5) +
+        size q * (2 * (L + (size p + size q + 1)) + 5) + 1 ≤
+        (size p + size q + 1) * (2 * (L + (size p + size q + 1)) + 5) := by ring_nf; omega
+    have := max_le_add_of_nonneg (Nat.zero_le (timeBound p L)) (Nat.zero_le (timeBound q L))
+    omega
+  | loop i b ih => exact hp.elim
+
+/-- The per-tape time of a loop-free program. -/
+theorem timeBoundT_le_size (p : Prog k) (hp : p.LoopFree) (ℓ : Fin k → ℕ) {M : ℕ}
+    (hM : ∀ t, ℓ t ≤ M) : timeBoundT p ℓ ≤ size p * (2 * (M + size p) + 5) := by
+  refine (timeBoundT_le_timeBound p ℓ).trans ((timeBound_le_size p hp _).trans ?_)
+  have : supB ℓ ≤ M := Finset.sup_le fun t _ => hM t
+  exact Nat.mul_le_mul_left _ (by omega)
+
+theorem size_iter (z : Fin k) (p : Prog k) (n : ℕ) : size (iter z p n) = n * size p + 1 := by
+  induction n with
+  | zero => simp [iter, size]
+  | succ n ih => simp only [iter, size, ih]; ring
+
+theorem loopFree_iter (z : Fin k) (p : Prog k) (hp : p.LoopFree) : ∀ n, (iter z p n).LoopFree
+  | 0 => trivial
+  | n + 1 => ⟨hp, loopFree_iter z p hp n⟩
+
+@[simp] theorem size_moveFront (n : ℕ) (src dst tmp : Fin k) :
+    size (moveFront n src dst tmp) = 3 * n + 1 := by
+  rw [moveFront, size_iter]; simp [stepF, size]; ring
+
+@[simp] theorem size_moveRev (n : ℕ) (src dst tmp : Fin k) :
+    size (moveRev n src dst tmp) = 3 * n + 1 := by
+  rw [moveRev, size_iter]; simp [stepR, size]; ring
+
+@[simp] theorem size_prependN (n : ℕ) (src dst t₁ t₂ : Fin k) :
+    size (prependN n src dst t₁ t₂) = 6 * n + 2 := by
+  simp [prependN, size]; ring
+
+@[simp] theorem size_dropN (n : ℕ) (i : Fin k) : size (dropN n i) = n + 1 := by
+  rw [dropN, size_iter]; simp [size]
+
+@[simp] theorem size_consN (n : ℕ) (i : Fin k) (b : Bool) : size (consN n i b) = n + 1 := by
+  rw [consN, size_iter]; simp [size]
+
+theorem loopFree_moveFront (n : ℕ) (src dst tmp : Fin k) : (moveFront n src dst tmp).LoopFree :=
+  loopFree_iter _ _ (by simp [stepF, LoopFree]) n
+
+theorem loopFree_moveRev (n : ℕ) (src dst tmp : Fin k) : (moveRev n src dst tmp).LoopFree :=
+  loopFree_iter _ _ (by simp [stepR, LoopFree]) n
+
+theorem loopFree_prependN (n : ℕ) (src dst t₁ t₂ : Fin k) : (prependN n src dst t₁ t₂).LoopFree :=
+  ⟨loopFree_moveRev _ _ _ _, loopFree_moveRev _ _ _ _⟩
+
+theorem loopFree_dropN (n : ℕ) (i : Fin k) : (dropN n i).LoopFree :=
+  loopFree_iter _ _ (by simp [LoopFree]) n
+
+theorem loopFree_consN (n : ℕ) (i : Fin k) (b : Bool) : (consN n i b).LoopFree :=
+  loopFree_iter _ _ (by simp [LoopFree]) n
+
+/-! ### Exact per-tape bounds -/
+
+section Exact
+
+variable {src dst tmp : Fin k}
+
+theorem lenBoundT_moveFront (n : ℕ) (h1 : src ≠ dst) (h2 : src ≠ tmp) (h3 : dst ≠ tmp)
+    (ℓ : Fin k → ℕ) (hℓ : ℓ tmp = 0) : lenBoundT (moveFront n src dst tmp) ℓ =
+      Function.update (Function.update ℓ src (ℓ src - n)) dst (ℓ dst + n) := by
+  rw [moveFront, lenBoundT_iter]
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [Function.iterate_succ_apply', ih]
+    funext t
+    simp only [stepF, lenBoundT, Prim.lenT, Function.update_apply]
+    by_cases ht1 : t = tmp <;> by_cases ht2 : t = dst <;> by_cases ht3 : t = src <;>
+      (simp_all [Ne.symm h1, Ne.symm h2, Ne.symm h3]; try omega)
+
+theorem lenBoundT_moveRev (n : ℕ) (h1 : src ≠ dst) (h2 : src ≠ tmp) (h3 : dst ≠ tmp)
+    (ℓ : Fin k → ℕ) (hℓ : ℓ tmp = 0) : lenBoundT (moveRev n src dst tmp) ℓ =
+      Function.update (Function.update ℓ src (ℓ src - n)) dst (ℓ dst + n) := by
+  rw [moveRev, lenBoundT_iter]
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [Function.iterate_succ_apply', ih]
+    funext t
+    simp only [stepR, lenBoundT, Prim.lenT, Function.update_apply]
+    by_cases ht1 : t = tmp <;> by_cases ht2 : t = dst <;> by_cases ht3 : t = src <;>
+      (simp_all [Ne.symm h1, Ne.symm h2, Ne.symm h3]; try omega)
+
+theorem lenBoundT_prependN (n : ℕ) {t₁ t₂ : Fin k} (h12 : src ≠ dst) (h13 : src ≠ t₁)
+    (h14 : src ≠ t₂) (h23 : dst ≠ t₁) (h24 : dst ≠ t₂) (h34 : t₁ ≠ t₂) (ℓ : Fin k → ℕ)
+    (hℓ : ℓ t₂ = 0) : lenBoundT (prependN n src dst t₁ t₂) ℓ =
+      Function.update (Function.update ℓ src (ℓ src - n)) dst (ℓ dst + n) := by
+  simp only [prependN, lenBoundT]
+  rw [lenBoundT_moveRev n h13 h14 h34 ℓ hℓ,
+    lenBoundT_moveRev n (Ne.symm h23) h34 h24 _ (by simp [Ne.symm h14, Ne.symm h34, hℓ])]
+  funext t
+  simp only [Function.update_apply]
+  by_cases ht1 : t = t₁ <;> by_cases ht2 : t = dst <;> by_cases ht3 : t = src <;>
+    simp_all [Ne.symm h12, Ne.symm h13, Ne.symm h23]
+
+end Exact
+
+end SigabaNeo.Tape.Prog

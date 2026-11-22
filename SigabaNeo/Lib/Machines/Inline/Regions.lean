@@ -248,4 +248,59 @@ theorem lenBoundT_comp_le (p q : Fin 8) (hpq : p ≠ q) (c : XProg (R + 2)) (u :
   rw [comp_restrict, ← embedF_comp p q hpq u C 0 0]
   exact embedF_mono _ le_rfl ((XProg.lenBoundT_mono c (io2_mono hA hB)).trans hc)
 
+/-! ### A calculus of time bounds -/
+
+/-- `p` started within the bounds `ext8 u 0` costs at most `t` steps (`XProg.timeBoundT`). -/
+def TT (p : XProg (R + 8)) (u : Fin 8 → ℕ) (t : ℕ) : Prop :=
+  XProg.timeBoundT p (ext8 u 0) ≤ t
+
+namespace TT
+
+variable {p q r : XProg (R + 8)} {u : Fin 8 → ℕ} {t t₁ t₂ : ℕ}
+
+theorem mono (h : TT p u t) (ht : t ≤ t₁) : TT p u t₁ := le_trans h ht
+
+theorem glue' (P : Prog 8) (u : Fin 8 → ℕ) : TT (glue (R := R) P) u (P.timeBoundT u) :=
+  (timeBoundT_glue P u).le
+
+theorem seq_glue (P : Prog 8) (h : TT q (P.lenBoundT u) t) :
+    TT (.seq (glue P) q) u (P.timeBoundT u + t) := by
+  show XProg.timeBoundT (glue P) (ext8 u 0) +
+    XProg.timeBoundT q (XProg.lenBoundT (glue P) (ext8 u 0)) ≤ _
+  rw [timeBoundT_glue, lenBoundT_glue]
+  exact Nat.add_le_add_left h _
+
+theorem seq_comp (p' q' : Fin 8) (hpq : p' ≠ q') (c : XProg (R + 2)) {A B C : ℕ}
+    (hA : u p' ≤ A) (hB : u q' ≤ B) (hc : XProg.lenBoundT c (io2 A B 0) ≤ io2 C 0 0)
+    (h : TT q (Function.update (Function.update u q' 0) p' C) t) :
+    TT (.seq (comp p' q' hpq c) q) u (XProg.timeBoundT c (io2 A B 0) + t) := by
+  show XProg.timeBoundT (comp p' q' hpq c) (ext8 u 0) +
+    XProg.timeBoundT q (XProg.lenBoundT (comp p' q' hpq c) (ext8 u 0)) ≤ _
+  exact Nat.add_le_add (timeBoundT_comp_le p' q' hpq c u hA hB)
+    ((XProg.timeBoundT_mono q (lenBoundT_comp_le p' q' hpq c u hA hB hc)).trans h)
+
+theorem ifBlank (i : Fin (R + 8)) (h1 : TT p u t₁) (h2 : TT q u t₂) :
+    TT (.ifBlank i p q) u (max t₁ t₂ + 1) :=
+  Nat.add_le_add_right (max_le_max h1 h2) 1
+
+theorem ifBit (i : Fin (R + 8)) (h1 : TT p u t₁) (h2 : TT q u t₂) :
+    TT (.ifBit i p q) u (max t₁ t₂ + 1) :=
+  Nat.add_le_add_right (max_le_max h1 h2) 1
+
+theorem seq_ifBit_glue (i : Fin (R + 8)) (P₁ P₂ : Prog 8)
+    (h : TT r (P₁.lenBoundT u ⊔ P₂.lenBoundT u) t) :
+    TT (.seq (.ifBit i (glue P₁) (glue P₂)) r) u
+      (max (P₁.timeBoundT u) (P₂.timeBoundT u) + 1 + t) := by
+  show max (XProg.timeBoundT (glue P₁) (ext8 u 0)) (XProg.timeBoundT (glue P₂) (ext8 u 0)) + 1 +
+    XProg.timeBoundT r (fun l => max (XProg.lenBoundT (glue P₁) (ext8 u 0) l)
+      (XProg.lenBoundT (glue P₂) (ext8 u 0) l)) ≤ _
+  rw [timeBoundT_glue, timeBoundT_glue, lenBoundT_glue, lenBoundT_glue]
+  refine Nat.add_le_add_left (le_of_eq_of_le ?_ h) _
+  congr 1
+  funext l
+  simp only [ext8, Pi.sup_apply]
+  split_ifs <;> simp
+
+end TT
+
 end SigabaNeo.Tape
