@@ -215,6 +215,30 @@ theorem wf_compile : ∀ (c : Code) (j : ℕ), j + depth c ≤ nD → (compile c
   | .lpush _ _, _, _ | .lpop _ _, _, _ | .lmov _ _, _, _ | .rdsrc _, _, _
   | .skip, _, _ => wf_of_wfB (by unfold_instr; simp [wfB, preservesB, Prim.writes])
 
+/-! ### Time -/
+
+theorem tb_compile : ∀ (c : Code) (j : ℕ),
+    tbC (compile c j) ≤ 210 * size c ∧ tbD (compile c j) ≤ depth c + 2
+  | .seq p q, j => by
+      have hp := tb_compile p j; have hq := tb_compile q j
+      simp only [compile, tbC, tbD, size, depth]; constructor <;> omega
+  | .ifLt a b p q, j => by
+      have hp := tb_compile p j; have hq := tb_compile q j
+      simp only [compile, tbC, tbD, size, depth, ltTestP, dropBy]; constructor <;> omega
+  | .rep a body, j => by
+      have hb := tb_compile body (j + 1)
+      simp only [compile, tbC, tbD, size, depth]; constructor <;> omega
+  | .nand _ _ _, _ | .one _, _ | .zero _, _ | .mov _ _, _ | .inc _, _ | .add _ _, _
+  | .sub _ _, _ | .lnil _, _ | .lpush _ _, _ | .lpop _ _, _ | .lmov _ _, _ | .rdsrc _, _
+  | .skip, _ => by unfold_instr; simp [tbC, tbD, size, depth]
+
+/-- **Time of the compiled program** on words at most `L` long. -/
+theorem timeBound_compile (c : Code) (j L : ℕ) :
+    timeBound (compile c j) L ≤ 210 * size c * (L + 1) ^ (depth c + 2) := by
+  obtain ⟨hC, hD⟩ := tb_compile c j
+  refine (timeBound_le _ (noGrow_compile c j) L).trans ?_
+  exact Nat.mul_le_mul hC (Nat.pow_le_pow_right (by omega) hD)
+
 end RegVM
 
 end SigabaNeo.Tape

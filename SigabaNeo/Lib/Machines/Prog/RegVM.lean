@@ -157,6 +157,19 @@ def depth : Code → ℕ
   | .rep _ body => depth body + 1
   | _ => 0
 
+/-- The number of instructions of a code. -/
+def size : Code → ℕ
+  | .seq p q => size p + size q
+  | .ifLt _ _ p q => size p + size q + 1
+  | .rep _ body => size body + 1
+  | _ => 1
+
+theorem one_le_size : ∀ c : Code, 1 ≤ size c
+  | .seq p _ => (one_le_size p).trans (Nat.le_add_right _ _)
+  | .ifLt _ _ _ _ | .rep _ _ => Nat.le_add_left _ _
+  | .nand _ _ _ | .one _ | .zero _ | .mov _ _ | .inc _ | .add _ _ | .sub _ _ | .lnil _
+  | .lpush _ _ | .lpop _ _ | .lmov _ _ | .rdsrc _ | .skip => le_rfl
+
 /-! ### The tape encoding -/
 
 /-- A list element: a marker bit, then the value in unary on `M` bits. -/
