@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Machines.Prog.WordBlocks
+import SigabaNeo.Lib.Machines.Prog.BoundsT
 import SigabaNeo.Lib.Lattices.Homomorphic.SLP
 
 /-!
@@ -669,6 +670,29 @@ theorem law_slpEvalP {ι : Type*} (hpl : Placed u v) (hP : StepSpec P V f Pre) (
       (v 2) []) := by
   rw [law_eq_run _ (noGrow_slpEvalP hP),
     run_slpEvalP hpl hP s hclean hPre hV hW hins hone hn hix p hWg padW hpad hst hgs hpc]
+
+
+theorem tbC_preG : tbC preG = 192 := by decide
+theorem tbD_preG : tbD preG = 3 := by decide
+theorem tbC_postG : tbC postG = 29 := by decide
+theorem tbD_postG : tbD postG = 2 := by decide
+
+/-- **Time of the evaluator**, from the syntactic constants of the gate program: on stores whose
+words are at most `L` long, at most `(228 + tbC P) · (L + 1) ^ (max 3 (tbD P) + 1)` steps
+(`L` bounds in particular the store, `(g + n + 1) V` bits). The per-tape bound at the constant
+vector `L` is below it (`timeBoundT_const_le`). -/
+theorem timeBound_slpEvalP (hP : StepSpec P V f Pre) (L : ℕ) :
+    timeBound (slpEvalP u v P) L ≤ (228 + tbC P) * (L + 1) ^ (max 3 (tbD P) + 1) ∧
+      timeBoundT (slpEvalP u v P) (fun _ => L) ≤
+        (228 + tbC P) * (L + 1) ^ (max 3 (tbD P) + 1) := by
+  have h := timeBound_le _ (noGrow_slpEvalP (u := u) (v := v) hP) L
+  have hC : tbC (slpEvalP u v P) = 228 + tbC P := by
+    simp only [slpEvalP, forN, slpBody, tbC, tbC_map, tbC_preG, tbC_postG]; omega
+  have hD : tbD (slpEvalP u v P) = max 3 (tbD P) + 1 := by
+    simp only [slpEvalP, forN, slpBody, tbD, tbD_map, tbD_preG, tbD_postG]
+    have := one_le_tbD P; omega
+  rw [hC, hD] at h
+  exact ⟨h, (timeBoundT_const_le _ L).trans h⟩
 
 end Placed
 

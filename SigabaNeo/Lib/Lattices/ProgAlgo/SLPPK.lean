@@ -85,6 +85,14 @@ theorem slpPKW_block {ι : Type*} (N K k' : ℕ) {ins : List (List Bool)} {n : �
   simp only [hlen] at this
   exact this
 
+/-- **Time of `EvalF` on tapes**: at most `2919 · (L + 1) ^ 9` steps on words at most `L` long. -/
+theorem timeBound_slpPK {N K k' : ℕ} (u : Fin 65 → Fin k) (v : Fin 15 → Fin k) (L : ℕ) :
+    timeBound (slpEvalP u v nandP) L ≤ 2919 * (L + 1) ^ 9 := by
+  have h := (timeBound_slpEvalP (u := u) (v := v) (stepSpec_nandP N K k') L).1
+  have hC : tbC nandP = 2691 := rfl
+  have hD : tbD nandP = 8 := rfl
+  rwa [hC, hD] at h
+
 end Prog
 
 end SigabaNeo.Tape
