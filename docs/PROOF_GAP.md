@@ -709,6 +709,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   MinkowskiBound.lean (`minkowski_covolume_eq_abs_det`, `minkowski_short_vector_det`, `minkowski_short_vector_gram`) proves
   Minkowski's first-minimum bound: some nonzero v ∈ L has ‖v‖ⁿ·V_n ≤ 2ⁿ·|det b| = 2ⁿ·√det Gram(b). This is the elementary
   Hermite cap. All three are accepted on Prove2Me.
+  RetainedCovolume.lean (`shortest_norm_le_minkowski`, `projected_tail_covolume`, `retained_log_covolume_lower_bound`) chains
+  three facts: the Minkowski cap s ≤ 2V_b^{−1/b}·covol^{1/b}, covol(π_{v⊥}W) = covol(W)/‖v‖, and the recurrence. The result is
+  Part 114's deterministic retained-covolume lower bound with the elementary constant, with the reducer's window-structure
+  facts as explicit hypotheses. All three are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
