@@ -23,4 +23,5 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Prog.Columns", "SigabaNeo.Lib.Machines.Prog.Prims",
   "SigabaNeo.Lib.Machines.Prog.Basic", "SigabaNeo.Lib.Machines.Prog.Compile",
   "SigabaNeo.Lib.Machines.Prog.Machine", "SigabaNeo.Lib.Machines.Prog.Arith",
-  "SigabaNeo.Lib.Machines.Prog.BoundsT", "SigabaNeo.Lib.Machines.Prog.CompileT"]
+  "SigabaNeo.Lib.Machines.Prog.BoundsT", "SigabaNeo.Lib.Machines.Prog.CompileT",
+  "SigabaNeo.Lib.Machines.Prog.Frame"]
