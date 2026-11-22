@@ -24,7 +24,8 @@ The variable `0` is the **top** size `top ρ`, a bound on every tape (`pTop` sta
 placed (`map u p`, `u` injective, in a store of any size) with all tapes at most `top ρ` and its
 tapes `u j` at most `bnd ρ σ j`:
 
-  `lenBoundT (map u p) ℓ (u j) ≤ bnd ρ σ' j`  and  `timeBoundT (map u p) ℓ ≤ (2·top ρ + 3) · pEval ρ w`.
+  `lenBoundT (map u p) ℓ (u j) ≤ bnd ρ σ' j`  and
+  `timeBoundT (map u p) ℓ ≤ (2·top ρ + 3) · pEval ρ w`.
 
 Here `2·top ρ + 3` is the cost of one primitive (its column machine sweeps every tape, so it is
 charged the longest word), and `w` the number of primitives executed, loops multiplied by their
@@ -563,7 +564,7 @@ theorem aGet_setMany_of_not_mem {m : ℕ} (v : Fin m → Fin n) (τ' : Asg) (t :
   | [], σ, _ => rfl
   | j :: js, σ, h => by
     rw [setMany, aGet_setMany_of_not_mem v τ' t js _ (fun j' hj' => h j' (by simp [hj'])),
-      aGet_aSet, if_neg (Ne.symm (h j (by simp)))]
+      aGet_aSet, ite_eq_right (Ne.symm (h j (by simp)))]
 
 theorem aGet_setMany_of_mem {m : ℕ} {v : Fin m → Fin n} (hv : Function.Injective v)
     (τ' : Asg) : ∀ (js : List (Fin m)) (σ : Asg) (j : Fin m), j ∈ js →
@@ -576,7 +577,7 @@ theorem aGet_setMany_of_mem {m : ℕ} {v : Fin m → Fin n} (hv : Function.Injec
     · have hja : j = a := by simpa [hj] using h
       subst hja
       rw [aGet_setMany_of_not_mem v τ' _ js _ (fun j' hj' he => hj
-        (by rw [← hv (Fin.val_injective he)]; exact hj')), aGet_aSet, if_pos rfl]
+        (by rw [← hv (Fin.val_injective he)]; exact hj')), aGet_aSet, ite_eq_left rfl]
 
 /-- **A placed subprogram with a sound summary.** -/
 theorem Sound.call {m : ℕ} {v : Fin m → Fin n} (hv : Function.Injective v) {p : Prog m}
@@ -821,7 +822,7 @@ def check (fuel : ℕ) (p : Prog n) (σ claim : Asg) (w : Poly) : Bool :=
   | none => false
 
 theorem aGet_take (σ : Asg) {L t : ℕ} (ht : t < L) : aGet (σ.take L) t = aGet σ t := by
-  simp only [aGet, List.getD_eq_getElem?_getD, List.getElem?_take, if_pos ht]
+  simp only [aGet, List.getD_eq_getElem?_getD, List.getElem?_take, ite_eq_left ht]
 
 theorem le_bnd_of {ρ : List ℕ} {σ : Asg} {ℓ : Fin n → ℕ}
     (h : ∀ t : Fin n, t.val < σ.length → ℓ t ≤ pEval ρ (aGet σ t.val))
