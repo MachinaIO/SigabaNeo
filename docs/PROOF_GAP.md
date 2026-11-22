@@ -751,7 +751,20 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   (Achlioptas), revealment (OSSS), Wormald, stochastic approximation, packing, Grassmann walks, Poisson limits. None supplies the
   history-averaged bound. Exact limitation: a fixed coprime-height mark determines the fresh displacement, so any gain must come
   from excluding witnesses or earlier histories. A two-winner rank-3 survival test is proposed and is unverified.
-* **Frontier after Parts 1–127 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 128 (audited, minor caveats).** [two_winner](research/wall1_two_winner.md): the two-winner rank-3 survival test is a
+  valid conditional upper bound. It is nearly tight at b = n = 3 (0.4608 vs 0.4168), but ≥ 1 at b = 4, n = 10. After averaging
+  the two fresh draws, a survival-weighted count of old incident flags remains, so it gives only the trivial bound 1 at width 506.
+* **Status of the direct output-law program after Parts 105–128.** About twenty routes were tried; all reduce to
+  history-averaged short-sublattice statistics of the old retained lattice under greedy SVP selection. Established:
+  * an exact first-pass recursion (108);
+  * the one-step law (105);
+  * the reductions to the ratio target (114), a 105-step freeze (117) and a last-step split (120);
+  * empirical satisfaction of the physical floor for n ≥ 20 (123);
+  * Lean formalizations of the uniqueness criterion, the necessary and sufficient certificates, CBD tails and moments, q-ary
+    membership, and Haar λ1 tails.
+
+  The core probability estimate is an open problem beyond current tools.
+* **Frontier after Parts 1–128 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
