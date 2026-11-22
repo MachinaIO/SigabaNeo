@@ -730,7 +730,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   7/512 runs at n = 30 and 3/48 at n = 36. The PHYSICAL height-zero floor fails in 389/512, 187/512, 36/512 and 2/512 runs at
   n = 10, 12, 14, 16, and in 0 runs at every n from 20 to 36 (0/48 at 36). This is empirical support for the necessary
   condition in the proportional regime. It is not a proof, and the floor is only necessary.
-* **Frontier after Parts 1–123 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 124 (audited).** [moment_closure](research/wall1_moment_closure.md): an averaged sublattice-moment class compared
+  with Haar at every rank and every cutoff fails before the suffix starts. Zero restart columns give unit lines, a factor
+  10^375 above Haar at cutoffs near 1. The linear unmarked recursion amplifies by ≥ q^504 per step. On the relevant GH band,
+  however, the restart comparison is benign: the rank-1 ratio is < 5.803 for 0.954·GH ≤ x ≤ q. Propagating a GH-band comparison
+  through the suffix is open.
+* **Frontier after Parts 1–124 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
