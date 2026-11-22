@@ -232,3 +232,25 @@ theorem size_sd5P_conf : (sd5P hkp confP).size ≤ 2 ^ 25 := by
 end States
 
 end AdvancedEncryption.DualUse.Prog
+
+namespace AdvancedEncryption.DualUse.Prog
+
+open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
+
+theorem size_chalBodyP (D P : ℕ) (hD : D < 2 ^ 240) (hP : P < 2 ^ 240) :
+    (chalBodyP D P).size ≤ 2 * 46836 + 2000 := by
+  have h1 := size_natP_le (k := 7) 3 4 D 240 hD
+  have h2 := size_natP_le (k := 7) 3 4 P 240 hP
+  simp only [chalBodyP, dropF, flipP, withCount, XProg.forN, flipHead, appendTapeP, clrS, nopX,
+    size_seq, size_loop, size_ifBit, size_prog, Prog.size, Prim.pad]
+  omega
+
+set_option maxRecDepth 100000 in
+set_option exponentiation.threshold 1000 in
+theorem size_chalIL2_conf : (chalIL2 hkp confP).size ≤ 2 ^ 17 := by
+  rw [chalIL2, lift256, liftP, size_frame, chalIL, lift82, liftP, size_frame, chalIP]
+  have h := lenChalI_conf
+  simp only [sChalI] at h
+  exact (size_chalBodyP _ _ (by omega) (by omega)).trans (by norm_num)
+
+end AdvancedEncryption.DualUse.Prog

@@ -444,3 +444,149 @@ theorem nS5_conf :
 end Words
 
 end AdvancedEncryption.DualUse.Prog
+
+namespace AdvancedEncryption.DualUse.Prog
+
+open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
+open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+
+/-! ### State counts of the setups -/
+
+section SetupSizes
+
+variable {M : ℕ}
+
+theorem sz_withCount {t c : Fin 7} {n : ℕ} (hn : n ≤ M) (hB : M < 2 ^ 240) {body : XProg 7}
+    {a : ℕ} (hb : SZ body a) : SZ (withCount t c n body) (46836 + (a + 60)) :=
+  (sz_natP hn hB).seq (hb.seq (sz_prim _))
+
+theorem sz_forN {c t : Fin 7} {body : XProg 7} {a : ℕ} (hb : SZ body a) :
+    SZ (forN c t body) (60 + (a + 39)) :=
+  (sz_prim _).seq (show (body.size + 39) ≤ a + 39 by have := hb; unfold SZ at this; omega)
+
+theorem sz_coinAp (r b : Fin 7) : SZ (coinAp r b) 200 := by
+  show (prog (.coin b)).size + (prog (.seq (.prim (.snocHead r b)) (.prim (.clear b)))).size ≤ 200
+  simp [Prog.size, Prim.pad]
+
+theorem sz_bitAp (r : Fin 7) (b : Bool) : SZ (bitAp r b) 60 := sz_prim _
+
+theorem sz_nopX : SZ nopX 60 := sz_prim _
+
+theorem sz_coinsF {n : ℕ} (hn : n ≤ M) (hB : M < 2 ^ 240) :
+    SZ (coinsF n) (46836 + ((60 + (200 + 39)) + 60)) :=
+  sz_withCount hn hB (sz_forN (sz_coinAp 0 2))
+
+theorem sz_zerosF {n : ℕ} (hn : n ≤ M) (hB : M < 2 ^ 240) :
+    SZ (zerosF n) (46836 + ((60 + (60 + 39)) + 60)) :=
+  sz_withCount hn hB (sz_forN (sz_bitAp 0 false))
+
+theorem sz_repF {n : ℕ} (hn : n ≤ M) (hB : M < 2 ^ 240) {body : XProg 7} {a : ℕ}
+    (hb : SZ body a) : SZ (repF n body) (46836 + ((60 + (a + 39)) + 60)) :=
+  sz_withCount hn hB (sz_forN hb)
+
+theorem sz_repX {p : XProg 7} {a : ℕ} (hp : SZ p a) : ∀ n, SZ (repX p n) (n * a + 60)
+  | 0 => by show SZ nopX (0 * a + 60); simpa using sz_nopX
+  | n + 1 => ((hp.seq (sz_repX hp n))).mono (by ring_nf; omega)
+
+theorem sz_wordAp (r : Fin 7) : ∀ w : List Bool, SZ (wordAp r w) (60 * (w.length + 1))
+  | [] => sz_nopX.mono (by simp)
+  | b :: w => ((sz_bitAp r b).seq (sz_wordAp r w)).mono (by simp; ring_nf; omega)
+
+theorem sz_leafP {K L : ℕ} (v : ℤ) (hK : K ≤ M) (hB : M < 2 ^ 240) :
+    SZ (leafP K L v) (60 + (60 * (L + 1) + (46836 + ((60 + (60 + 39)) + 60)))) := by
+  have hw := sz_wordAp 0 ((zmodEnc L).enc (v : ZMod (2 ^ L)))
+  rw [(zmodEnc L).length] at hw
+  exact (sz_prim _).seq (hw.seq (sz_withCount (by omega) hB (sz_forN (sz_bitAp _ _))))
+
+theorem sz_chainP {K L η : ℕ} (hK : K ≤ M) (hB : M < 2 ^ 240) :
+    ∀ f j, SZ (chainP K L η f j) ((f + 1) * (60 * L + 47300))
+  | 0, j => (sz_leafP _ hK hB).mono (by ring_nf; omega)
+  | f + 1, j => by
+    have h1 := sz_leafP (L := L) ((j : ℤ) - η) hK hB
+    have h2 := sz_chainP (L := L) (η := η) hK hB f (j + 1)
+    show (leafP K L _).size + ((prog (.prim (.tail 3))).size + (chainP K L η f (j + 1)).size) + 1 ≤ _
+    have h3 := sz_prim (k := 7) (.tail 3)
+    unfold SZ at h1 h2 h3
+    nlinarith
+
+theorem sz_upStep : SZ upStep 300 := by
+  unfold SZ upStep bitAp nopX; simp [Prog.size, Prim.pad]
+
+theorem sz_downStep : SZ downStep 300 := by
+  unfold SZ downStep nopX; simp [Prog.size, Prim.pad]
+
+theorem sz_chiP : SZ chiP (2 ^ 21) := by
+  have hK : Kp ≤ 2 ^ 25 := by rw [Kp_def]
+  have hB : (2 : ℕ) ^ 25 < 2 ^ 240 := by norm_num
+  unfold chiP cbdP
+  exact ((sz_repX (sz_coinAp 2 4) (16 + 16)).seq ((sz_repX (sz_bitAp 3 true) 16).seq
+    ((sz_repX sz_upStep 16).seq ((sz_repX sz_downStep 16).seq
+      (sz_chainP (η := 16) (L := 6) hK hB (16 + 16) 0))))).mono (by norm_num)
+
+theorem sz_appendTapeP : SZ (appendTapeP (k := 7) 0 1 3 4) 1000 := by
+  unfold SZ appendTapeP XProg.forN; simp [Prog.size, Prim.pad]
+
+theorem sz_entB {N K : ℕ} (h : N * K ≤ M) (hB : M < 2 ^ 240) :
+    SZ (entB N K) (200 + (46836 + ((60 + (60 + 39)) + 60))) :=
+  (sz_coinAp 0 2).seq (sz_zerosF (by omega) hB)
+
+theorem sz_entF {K w : ℕ} (h : K + w ≤ M) (hB : M < 2 ^ 240) :
+    SZ (entF K w) (46836 + ((60 + (200 + 39)) + 60) + (46836 + ((60 + (60 + 39)) + 60))) :=
+  (sz_coinsF (by omega) hB).seq (sz_zerosF (by omega) hB)
+
+theorem sz_clrS : SZ clrS 360 := by
+  unfold SZ clrS; simp [Prog.size, Prim.pad]
+
+theorem counts_le : (Encode.Enum.list (α := Fin 1)).length *
+      ((Encode.Enum.list (α := Fin confP.d)).length * (Np * Kp)) ≤ 2 ^ 181 ∧
+    nW hkp confP ≤ 2 ^ 181 ∧ Np * Kp ≤ 2 ^ 181 ∧
+    (Encode.Enum.list (α := Fin confP.d)).length * Np ≤ 2 ^ 181 ∧ Np ≤ 2 ^ 181 ∧
+    (Encode.Enum.list (α := RingBTVW.Col kp)).length * Np ≤ 2 ^ 181 ∧ nR hkp confP ≤ 2 ^ 181 ∧
+    nE (N := Np) hkp ≤ 2 ^ 181 ∧ Kp + confP.w ≤ 2 ^ 181 ∧ nPsi (N := Np) hkp ≤ 2 ^ 181 ∧
+    nC0 (N := Np) (K := Kp) confP ≤ 2 ^ 181 ∧ nC1 (N := Np) (K := Kp) (k := kp) ≤ 2 ^ 181 ∧
+    nCj (N := Np) hkp ≤ 2 ^ 181 := by
+  have h := cntSum_conf
+  simp only [cntSum] at h
+  omega
+
+theorem size_setup3D_conf : setup3D.size ≤ 2 ^ 25 := by
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, -, -, -, -⟩ := counts_le
+  have hB : (2 : ℕ) ^ 181 < 2 ^ 240 := by norm_num
+  have hR : SZ (restP hkp confP chiP) _ :=
+    (sz_coinsF h3 hB).seq ((sz_repF h4 hB sz_chiP).seq
+      (((sz_repF h5 hB sz_chiP).seq ((sz_repF h6 hB sz_chiP).seq (sz_repF h6 hB sz_chiP))).seq
+        ((sz_repF h7 hB (sz_entB h3 hB)).seq (sz_repF h5 hB sz_chiP))))
+  have hT : SZ (tail3P hkp confP chiP) _ :=
+    (sz_coinsF h1 hB).seq ((sz_coinsF h2 hB).seq ((sz_coinsF h3 hB).seq
+      (hR.seq (sz_repF h8 hB (sz_entF h9 hB)))))
+  rw [setup3D, liftP, size_frame]
+  exact ((sz_prim _).seq ((sz_appendTapeP.seq hT).seq sz_clrS)).mono (by norm_num)
+
+theorem size_setupID_conf : setupID.size ≤ 2 ^ 25 := by
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13⟩ := counts_le
+  have hB : (2 : ℕ) ^ 181 < 2 ^ 240 := by norm_num
+  have hE : SZ (encCoinsP hkp confP chiP) _ :=
+    (sz_coinsF h3 hB).seq ((sz_repF h4 hB sz_chiP).seq
+      (((sz_repF h5 hB sz_chiP).seq ((sz_repF h6 hB sz_chiP).seq (sz_repF h6 hB sz_chiP))).seq
+        ((sz_repF h7 hB (sz_entB h3 hB)).seq ((sz_repF h8 hB (sz_entF h9 hB)).seq
+          (sz_repF h5 hB sz_chiP)))))
+  have hC : SZ (ctP hkp confP) _ :=
+    (sz_coinsF h10 hB).seq ((sz_coinsF h11 hB).seq ((sz_coinsF h12 hB).seq
+      ((sz_coinsF h13 hB).seq (sz_coinsF h3 hB))))
+  have hT : SZ (tailIP hkp confP chiP) _ :=
+    (sz_coinsF h1 hB).seq ((sz_coinsF h2 hB).seq ((sz_coinsF h3 hB).seq (hE.seq hC)))
+  rw [setupID, liftP, size_frame]
+  exact ((sz_prim _).seq ((sz_appendTapeP.seq hT).seq sz_clrS)).mono (by norm_num)
+
+theorem size_setup5D_conf : setup5D.size ≤ 2 ^ 25 := by
+  obtain ⟨-, h2, h3, -, -, -, h7, h8, h9, -, -, -, -⟩ := counts_le
+  have hB : (2 : ℕ) ^ 181 < 2 ^ 240 := by norm_num
+  have hT : SZ (tail5P hkp confP) _ :=
+    (sz_coinsF h3 hB).seq ((sz_coinsF h2 hB).seq
+      ((sz_repF h7 hB (sz_entB h3 hB)).seq (sz_repF h8 hB (sz_entF h9 hB))))
+  rw [setup5D, liftP, size_frame]
+  exact ((sz_prim _).seq ((sz_appendTapeP.seq hT).seq sz_clrS)).mono (by norm_num)
+
+end SetupSizes
+
+end AdvancedEncryption.DualUse.Prog
