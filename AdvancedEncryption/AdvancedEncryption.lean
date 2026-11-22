@@ -93,4 +93,9 @@ import PE.Impl.DualUse.Prog.UBound
 import PE.Impl.DualUse.Prog.KeyP
 import PE.Impl.DualUse.Prog.KeyPTime
 import PE.Impl.DualUse.Prog.KeyWfWords
+import PE.Impl.DualUse.Prog.WfLib
+import PE.Impl.DualUse.Prog.WfPred
+import PE.Impl.DualUse.Prog.WfIns
+import PE.Impl.DualUse.Prog.WfB
+import PE.Impl.DualUse.Prog.WfTime
 import PE.Impl.DualUse.Prog.C0
