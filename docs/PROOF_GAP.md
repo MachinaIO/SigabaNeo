@@ -1300,6 +1300,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Pr[inherited event ∧ the minimum has an old raw lift ≤ 6t/5] < 2.450981·10⁻⁶.
   * The rest (every raw lift shrinks substantially, plus an old plane witness) has only the vacuous bound 1 − 2^−4435.956.
     The shared 0.0089999976 allowance for (a) + (b) remains open.
+* **Part 156 (audited, minor caveats).** [gibbs_selection](research/wall1_gibbs_selection.md): BKZ with Gibbs (discrete
+  Gaussian) selection.
+  * The exact first-pass law holds. Per the audit, the height-one kernel assumes all horizontal qI axes have already entered.
+  * **The theta normalizers do not telescope.** Two histories with the same endpoints, frozen plane and energy have
+    probability ratio Z_s/Z_r > 1.
+  * **Selection bias survives smoothing.** In a rank-4 example, conditioning on the Gaussian-selected vector raises the
+    expected short quotient-pair count from 9/4 to 3.53303625362… (exact rational bounds). Lexicographic and uniform-tie SVP
+    give 4.
+  * As σ → 0, a fixed finite pass converges in TV to uniform shortest-tie selection. This gives no finite-temperature
+    terminal guarantee and no transfer of F_rem.
+  * So the Part 106/112 obstructions are not an artefact of deterministic selection.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1309,7 +1320,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–155 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–156 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
