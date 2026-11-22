@@ -1514,6 +1514,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     unique successive shortest lines and a strict plane hit in the band. Per the audit it has transcendental covolume, so it
     is not itself a restart window; the restart mass of such configurations is open.
   * **Remaining.** The joint hit mass on draw-406 dual-good designs must be ≤ 0.000197708679995408.
+* **Part 173 (audited, SOUND).** [gated_theta](research/wall1_gated_theta.md): the gated average of per-mark theta ratios.
+  * The step-405 dual exit at R = 0.2018 is < 1.539·10⁻¹¹, simultaneously for every next mark.
+  * **Cap saturation.** Whenever Θ_{1/(2t)}(W_u*) ≤ 2^134, every gated upper-band candidate keeps capped weight exactly 1.
+    So bounds on the dual Gaussian mass cannot shrink the gated weight.
+  * A distinct-mark count gives only P < 1 − 1.5325·10⁻⁸⁵, and P + p_a < 1 − 2^−4435.956.
+  * The target 0.00019770868 remains open.
+* **Lean (Parts 139/142 remainder).** VerticalRefinement / ProjectedCovolume / RankinSaturation / RankinWindow /
+  CharacterTransport / MarkedLineage / MarkedTheta / VoronoiMarkLaw (axiom-clean, 34 declarations) formalize:
+  * the exact index k and the retained covolume covol(Λ)/‖v‖;
+  * the Rankin recursion and its pathwise bound;
+  * the kick law t ≡ −⟨z,a⟩/q, unique dual lineage, and inheritance of short vectors;
+  * θ_{H_t^⊥}(s) ≤ θ_Z(s)^{n+h_t};
+  * the uniform push-forward of uniform marks to Voronoi representatives (Part 142 Thm B).
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1523,7 +1536,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–172 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–173 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
