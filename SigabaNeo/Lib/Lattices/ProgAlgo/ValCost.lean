@@ -726,6 +726,146 @@ theorem absC_len (fuel : ℕ) : ∀ (c : Code) (L L' : List ℕ) (T : ℕ), L.le
 
 end Abs
 
+/-! ### Soundness of `absC` -/
+
+theorem ph_loop {X : XProg 256} {β0 β : Fin 256 → ℕ} {T : ℕ} (i : Fin 256) (h0 : β0 ≤ β)
+    (hX : Inv X β T) :
+    XProg.Ph (.loop i X) β0 (β0 i * (2 * supB β + 3 + T + 1) + 2) β := fun ℓ hℓ => by
+  have hinv : XProg.loopStepT i X β ≤ β := (hX _ (tailB_le i β)).2
+  refine ⟨(XProg.timeBoundT_loop_le_of_inv i X (hℓ.trans h0) hinv).trans ?_,
+    XProg.lenBoundT_loop_le_of_inv i X (hℓ.trans h0) hinv⟩
+  have := (hX _ (tailB_le i β)).1
+  have h1 : Prog.roundTimeT (XProg.timeBoundT X) i β ≤ 2 * supB β + 3 + T := by
+    simp only [Prog.roundTimeT]; omega
+  exact Nat.add_le_add_right (Nat.mul_le_mul (hℓ i) (by omega)) 2
+
+theorem ph_ifBit {X Y : XProg 256} {β β1 β2 : Fin 256 → ℕ} {T U : ℕ} (i : Fin 256)
+    (hX : XProg.Ph X β T β1) (hY : XProg.Ph Y β U β2) :
+    XProg.Ph (.ifBit i X Y) β (max T U + 1) (fun t => max (β1 t) (β2 t)) := fun ℓ hℓ =>
+  ⟨Nat.add_le_add_right (max_le_max (hX ℓ hℓ).1 (hY ℓ hℓ).1) 1,
+    fun t => max_le_max ((hX ℓ hℓ).2 t) ((hY ℓ hℓ).2 t)⟩
+
+section AbsSound
+
+variable {H : List ℕ → Prop} {P : Prog 132} (cert : StepCert H P) (bs : Fin 132 → ℕ) (V Tst Ms : ℕ)
+
+/-- **Soundness of the abstract interpreter**: from bounds below `encB bs V (gB L)`, the compiled
+code takes at most the steps found and leaves the bounds found. -/
+theorem absC_sound (hV1 : V ≤ bs 1) (hV2 : V ≤ bs 2)
+    (htime : ∀ ℓ ≤ bs, Prog.timeBoundT P ℓ ≤ Tst) (hlen : ∀ ℓ ≤ bs, Prog.lenBoundT P ℓ ≤ bs)
+    (hbs : ∀ t, bs t ≤ Ms) (hVM : V ≤ Ms) (fuel : ℕ) :
+    ∀ (c : Code) (L L' : List ℕ) (T : ℕ), L.length = 120 →
+      absC bs V Tst Ms fuel c L = some (L', T) →
+      XProg.Ph (compileA cert c).toX (encB bs V (gB L)) T (encB bs V (gB L'))
+  | .gate d a b, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    rw [← encB_update bs V hL]
+    exact ((inv_inP bs V (gB L) 1 a hV1).ph.seq ((inv_inP bs V (gB L) 2 b hV2).ph.seq
+      ((inv_step bs V (gB L) htime hlen).ph.seq (ph_outP bs V (gB L) d))))
+  | .mvV d s, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp only [compileA]
+    split_ifs with hds
+    · exact (inv_nopX bs V (gB L)).ph
+    · exact (inv_mvPc bs V (gB L) d s tTV _ V (encB_tTV _ _ _)).ph
+  | .mv d s c, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp only [compileA]
+    split_ifs with hds
+    · exact (inv_nopX bs V (gB L)).ph
+    · exact (inv_mvPc bs V (gB L) d s (tWd c) _ (gB L c) (encB_tWd _ _ _ c)).ph
+  | .cp d s, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp only [compileA]
+    split_ifs with hds
+    · exact (inv_nopX bs V (gB L)).ph
+    · rw [← encB_update bs V hL]
+      exact ph_cp bs V (gB L) d s _ hds
+  | .drop t c, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp only [compileA]
+    split_ifs with hds
+    · exact (inv_nopX bs V (gB L)).ph
+    · exact (inv_dropPc bs V (gB L) t c _).ph
+  | .clr t, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    rw [← encB_update bs V hL]
+    exact ph_clr bs V (gB L) t
+  | .tl t, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have := inv_one bs V (gB L) check_tl rfl (Or.inr rfl) (tWd t)
+    rw [encB_tWd] at this
+    exact this.ph
+  | .rep c b, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hI : findInv (absC bs V Tst Ms fuel b) fuel L with _ | I
+    · rw [hI] at h; simp at h
+    rw [hI] at h
+    simp only at h
+    rcases hb : absC bs V Tst Ms fuel b I with _ | ⟨I', T'⟩
+    · rw [hb] at h; simp at h
+    rw [hb] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    obtain ⟨hIl, hLI, I'', T'', hb', hle⟩ := findInv_spec _
+      (fun I I' T hI h => absC_len bs V Tst Ms fuel b I I' T hI h) fuel L I hL hI
+    rw [hb] at hb'
+    cases hb'
+    have hX := absC_sound hV1 hV2 htime hlen hbs hVM fuel b I I' T' hIl hb
+    have hinv : Inv (compileA cert b).toX (encB bs V (gB I)) T' := fun ℓ hℓ =>
+      ⟨(hX ℓ hℓ).1, (hX ℓ hℓ).2.trans (encB_mono bs V (le_of_leB hle))⟩
+    refine (ph_loop (tWd c) (encB_mono bs V hLI) hinv).mono le_rfl ?_ le_rfl
+    rw [encB_tWd]
+    have := supB_encB_le bs V I Ms hbs hVM
+    exact Nat.add_le_add_right (Nat.mul_le_mul_left _ (by omega)) 2
+  | .seq p q, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hp : absC bs V Tst Ms fuel p L with _ | ⟨L1, T1⟩
+    · rw [hp] at h; simp at h
+    rw [hp] at h
+    simp only at h
+    rcases hq : absC bs V Tst Ms fuel q L1 with _ | ⟨L2, T2⟩
+    · rw [hq] at h; simp at h
+    rw [hq] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact (absC_sound hV1 hV2 htime hlen hbs hVM fuel p L L1 T1 hL hp).seq
+      (absC_sound hV1 hV2 htime hlen hbs hVM fuel q L1 L2 T2
+        (absC_len bs V Tst Ms fuel p L L1 T1 hL hp) hq)
+  | .ifb t p q, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hp : absC bs V Tst Ms fuel p L with _ | ⟨L1, T1⟩
+    · rw [hp] at h; simp at h
+    rcases hq : absC bs V Tst Ms fuel q L with _ | ⟨L2, T2⟩
+    · rw [hp, hq] at h; simp at h
+    rw [hp, hq] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have h1 := absC_len bs V Tst Ms fuel p L L1 T1 hL hp
+    have h2 := absC_len bs V Tst Ms fuel q L L2 T2 hL hq
+    refine (ph_ifBit (tWd t) (absC_sound hV1 hV2 htime hlen hbs hVM fuel p L L1 T1 hL hp)
+      (absC_sound hV1 hV2 htime hlen hbs hVM fuel q L L2 T2 hL hq)).mono le_rfl le_rfl
+      (fun u => ?_)
+    simp only [encB]
+    split_ifs
+    · exact max_le le_rfl le_rfl
+    · exact max_le le_rfl le_rfl
+    · rw [gB_jB h1 h2]
+    · exact max_le le_rfl le_rfl
+  | .nop, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact (inv_nopX bs V (gB L)).ph
+
+end AbsSound
+
 end ValVM
 
 end SigabaNeo.Tape
