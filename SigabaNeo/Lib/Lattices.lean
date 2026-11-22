@@ -56,6 +56,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.KeySumT
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimStepT
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValArith
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValLeaves
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValRounds
 import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenTape
 
 /-!
