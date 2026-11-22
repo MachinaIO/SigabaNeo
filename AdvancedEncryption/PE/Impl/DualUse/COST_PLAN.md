@@ -110,3 +110,15 @@ Remaining (in order):
   block `gate` (a second instance of the machine, step `simStepP ginvGswP`).
 * Program sizes: every template comes from `natP` (doubling, `O(log n)` states), every input from
   loops of the machine over the word `sdEnc sd` (no unrolled `itemsP` over `Enum.list`).
+* **Width**: the machine has 120 words (256 tapes, the width of the key component); its run is
+  framed into `keyP` by a permutation of the 256 tapes.
+* **Done** (Lib/Lattices/ProgAlgo): `ValBlock` (column loop, `rrC`, `trC`), `ValNand`
+  (**`exec_nandC`**: a NAND block, `RES = bw (nandV … A B)`), `ValGates` (**`exec_gloopC`**: the
+  gates of a predicate over the rotated store, generic in the block `BlockSpec`), `ValFhat`
+  (`blockSpec_nandC`, `blockSpec_gate`, **`getLast_gl_nandW`**: the last result is
+  `bw (fhatV …)` at the output wire; **`valueOf_fV`**: item 4).
+* **Cost plan for the machine** (replacing `xcheck`): every instruction will clear its scratch tapes
+  (`X0 … X2`) at its end, so each instruction's frame is charged only its own words; then
+  `timeBoundT (compileA c) ≤ costC B c` by structural recursion with the static bounds `B`.
+  Estimated totals at `confP`: arithmetic ≈ 2^536, block moves ≈ 2^528, transposes ≈ 2^475,
+  store reads ≈ 2^488, `simKeyP` on the output bundle ≈ 2^547, setup ≈ 2^500: ≈ 2^547.2.
