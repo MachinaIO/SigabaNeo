@@ -68,6 +68,39 @@ def aStepG : XAst (fun _ => True) 132 :=
 def σStG2 : Asg := (List.range 132).map fun j =>
   if j < 22 ∨ (86 ≤ j ∧ j < 95) then aGet σStG j else qTG
 
+/-- The store after the step (all its tapes). -/
+def σStGOut : Asg := ((xabs 8 aStepG σStG2).map Prod.fst).getD []
+
+/-- The steps of the step, from `σStG2`. -/
+def cStepG2 : Poly := ((xabs 8 aStepG σStG2).map Prod.snd).getD []
+
+theorem xabs_aStepG2 : xabs 8 aStepG σStG2 = some (σStGOut, cStepG2) := by decide +kernel
+
+theorem map_vG_ginvGswP : map vG ginvGswP =
+    map (vG ∘ gsS) splitP ⨾ (map (vG ∘ gi0) ginvP ⨾ (map (vG ∘ gi1) ginvP ⨾
+      (map (vG ∘ gjJ) joinP ⨾ map vG (clr 12 ⨾ clr 13 ⨾ clr 14 ⨾ clr 15 ⨾ clr 16)))) := by
+  simp only [ginvGswP, Prog.map, Prog.map_map]
+
+theorem timeBoundT_toX_aStepG (ℓ : Fin 132 → ℕ) :
+    XProg.timeBoundT aStepG.toX ℓ = Prog.timeBoundT (simStepP ginvGswP) ℓ := by
+  rw [simStepP, map_vG_ginvGswP]; rfl
+
+theorem lenBoundT_toX_aStepG (ℓ : Fin 132 → ℕ) :
+    XProg.lenBoundT aStepG.toX ℓ = Prog.lenBoundT (simStepP ginvGswP) ℓ := by
+  rw [simStepP, map_vG_ginvGswP]; rfl
+
+/-- **The summary of the Ring-GSW step at every value of `N, K, k, d`.** -/
+theorem xsound_simStepG :
+    XSound (fun _ => True) (.prog (simStepP ginvGswP)) σStG2 σStGOut cStepG2 := by
+  intro ρ _ ℓ hℓ
+  have h := xabs_sound 8 aStepG xabs_aStepG2 ρ trivial ℓ hℓ
+  rw [timeBoundT_toX_aStepG, lenBoundT_toX_aStepG] at h
+  exact h
+
+/-- The outputs of the steps stay below their inputs. -/
+theorem aLe_out_top : aLe σStOut σSt2 = true := by decide +kernel
+theorem aLe_out_gsw : aLe σStGOut σStG2 = true := by decide +kernel
+
 end StepT
 
 end Prog
