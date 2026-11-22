@@ -26,6 +26,7 @@ import SigabaNeo.Lib.Lattices.Algo.RingWords
 import SigabaNeo.Lib.Lattices.Algo.MatWords
 import SigabaNeo.Lib.Lattices.Algo.SLPWords
 import SigabaNeo.Lib.Lattices.Algo.FhatLoop
+import SigabaNeo.Lib.Lattices.Algo.FhatShadow
 import SigabaNeo.Lib.Lattices.Algo.FhatGates
 import SigabaNeo.Lib.Lattices.Algo.Coins
 import SigabaNeo.Lib.Lattices.Algo.SimWords
@@ -52,6 +53,12 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.BoxProgs
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimTmpl
 import SigabaNeo.Lib.Lattices.ProgAlgo.KeySum
 import SigabaNeo.Lib.Lattices.ProgAlgo.KeySumT
+import SigabaNeo.Lib.Lattices.ProgAlgo.SimStepT
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValArith
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValLeaves
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValRounds
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoef
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoefFull
 import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenTape
 
 /-!

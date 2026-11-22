@@ -16,6 +16,7 @@ import SigabaNeo.Lib.Lattices.Homomorphic.BoolBuild
 import SigabaNeo.Lib.Lattices.Homomorphic.BoolArith
 import SigabaNeo.Lib.Lattices.Homomorphic.BoolCompare
 import SigabaNeo.Lib.Lattices.Homomorphic.GSWCircuit
+import SigabaNeo.Lib.Lattices.Homomorphic.SLPShadow
 import SigabaNeo.Lib.Lattices.Homomorphic.GSWGates
 
 /-!

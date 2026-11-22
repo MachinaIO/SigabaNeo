@@ -50,3 +50,53 @@ are proven; their clocks are `timeBoundT` terms, not yet closed. To close them:
 3. Pieces: key try `23(M+1)² + 11494·(2M+1)^8`, `putT`/`prefT`/`tmplT`, `ub_clearL`, `ubp_tailsP`;
    `tbC`/`tbD` of `decFP`/`ballP` by `decide +kernel`; `bfX`/`cfX` through `∀ M, UB … M (T M) (L M)`.
 The `BfSpec`/`CfSpec` instances come from the generic two-level evaluator (WS-T1).
+
+## Status of the block-structured `W_f` (branch `t3/wfb2-block-structured`, 2026-11-23)
+
+Design actually taken (it replaces steps 1–2 above by a cheaper route with the same costs):
+
+* **Shadows instead of relocated local SLPs** (`Lib/Lattices/Homomorphic/SLPShadow.lean`,
+  `Lib/Lattices/Algo/FhatShadow.lean`): under any semantics `valueOf inp one step`, every builder's
+  output wires evaluate to a fixed function of the values it reads (`sh_addNand … sh_modAdd`,
+  `sh_modSub`, `sh_coefCircuitL`, `sh_nandBlockL`), and `valueOf_fhatSLPL`: the output wires of
+  `fhatSLPL` evaluate to `fhatV` (one `nandV` per predicate gate, `coefV` per output coefficient).
+  No local gate streams are needed: the machine evaluates the shadows directly.
+* **Framed abstract interpreter** (`Lib/Machines/Prog/XAbs.lean`): `XAst H n` (leaves, frames,
+  branches, loops, calls of certified `Sound` summaries at substituted variables `pSubst`, framed
+  calls with summaries valid under a hypothesis `H` — e.g. a step whose cost is a variable),
+  `xabs_sound`: absolute per-tape time bounds charging each frame only its own tapes.
+  `XFlat.lean`: frames are semantically relabellings (`law_eq_run_flat`).
+* **The step**: `Lib/Lattices/ProgAlgo/SimStepT.lean`, `xsound_simStepP` (top-gadget simulation
+  step on joint words, `≈ (2V+3)·(matMul sweeps)`, every primitive charged `qT ≈ V`).
+* **Word machine** `Lib/Machines/Prog/ValVM.lean`: 64 word tapes + a generic framed step
+  (`VStep`, `StepCert`), codes `gate/mvV/mv/cp/drop/clr/tl/rep/seq/ifb/nop`, total semantics
+  `exec`, compiler `compileA` to `XAst` (each instruction framed on its own tapes),
+  `law_compileA` (correctness). Certificates of machine code evaluate fast (e.g. `modAddC`:
+  `≈ 47 K · C_step + O(V² K²)`).
+* **Arithmetic on the machine**, each proven equal to its shadow for the step `fV`:
+  `ValArith.lean` (full adder, `rippleC`, zips `zipC` with mux/and/not/copy, constants,
+  `modAddC = modAddV`, `modSubC = modSubV` for `q = 2^K`, `k = K + 1`, terms `termSubC/termAddC`),
+  `ValLeaves.lean` (`exec_jloopC`, a loop of terms into the leaves buffer), `ValRounds.lean`
+  (`exec_prC` = `pairRoundV` with odd carries, `exec_roundsC`, one number after `clog₂ n` rounds),
+  `ValCoef.lean` (`exec_cblockC`: the terms of one column `c'`, the coefficients read from the
+  reversed row without a rotation buffer; `terms_column`; `exec_colC`, the `2k` columns;
+  `fl_leavesV`), `ValCoefFull.lean` (**`exec_coefC`**: an output coefficient of a NAND block,
+  `OUT = flatten (coefV … (enumT N k) … A B Gv a col t)`, from the column digits
+  `digitsOf B col c'` and the reversed rows `rowRev A a c'`; constant `CW` supplied).
+
+Remaining (in order):
+1. The constant `constV zv k (gvExp q o)` on `CW` per `o` (one `one` at bit `col.2` iff
+   `t = 0 ∧ a = col.1 ∧ col.2 < K`), the templates `TM0 = N−1−t`, `TT1 = t+1` per `t`.
+2. Block level: per predicate gate, loops over `(a, col, t)` in `enumO` order; per gate and `a` the
+   reversed coefficient-major rows `R_{a,c'}` of the operand bundle `A` (transposition of the
+   `k × N` blocks, O(N² k) value moves per row, ≈ 2^465 per gate), per `col` the digit stream
+   `B(0,col,·,·) ++ B(1,col,·,·)` (contiguous in BI order); outputs per `(a, col)` transposed back to
+   BI order ⇒ `nandV`.
+3. Gate loop over `parse C` with bundle selection (`repV`: input bundles from `sdEnc sd` in BI order,
+   the constant bundle `constRepVV`, earlier blocks), the predicate's Ring-GSW simulation
+   (`slpEvalP … ginvGswP`, needs a per-tape bound), `simKeyP` on the output bundle (identity
+   positions), templates by doubling loops (`V`, `kV`, `NkV`, `(2kN+1)kV`, …).
+4. `valueOf_congr_step`: shadows over `fV` equal shadows over the step on `V`-bit values.
+5. Assembly `wfB2`, `wfSpec_wfB2`, its certificate (`xcheck` by `decide +kernel`, symbolic in
+   `N, K, k, d, C_step`), `time_keyP` with per-tape hypotheses for the `W_f` block, size bound,
+   numerics at `confP`.
