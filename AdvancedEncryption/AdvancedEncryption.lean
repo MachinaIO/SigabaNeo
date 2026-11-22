@@ -55,3 +55,4 @@ import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad
 import PE.Impl.Game.Assembly
 import PE.Impl.DualUse.Prog.Layout
+import PE.Impl.DualUse.Prog.SetupLaws

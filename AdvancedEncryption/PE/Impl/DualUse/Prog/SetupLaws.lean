@@ -216,4 +216,35 @@ theorem eLaw_eq [NeZero c.d] :
     (JC (Sdw (N := N) hk) × Fin N → Fin (2 ^ c.w)))) (funext (eEnc_flood hk c))).trans ?_
   rw [← Cslib.Probability.PMF.pi_uniformOfFintype, pi_map_flatMap, coefF_eq]
 
+theorem cat_map_left {α : Type} (μ : PMF α) (f : α → List Bool) (ν : PMF (List Bool)) :
+    cat (μ.map f) ν = μ.bind fun a => ν.map (f a ++ ·) := by
+  rw [cat, PMF.bind_map]; rfl
+
+theorem bind_pure_eq_map {α β : Type} (μ : PMF α) (f : α → β) :
+    (μ.bind fun a => PMF.pure (f a)) = μ.map f := PMF.bind_pure_comp f μ
+
+/-! ### The secret of hybrid 5 -/
+
+/-- **The word of the secret of hybrid 5**: `encDate x`, then `N · K` fair bits (`u₀`), the fair
+bits of `w`, the binary ring elements of the `Rᵢ` (column-major), the flooding coefficients. -/
+theorem setup5_enc [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (x : Date) :
+    (setup5 hk c x).map (sec5Enc hk c).enc =
+      cat (PMF.pure (encDate x)) (cat (BitString.uniformList (N * K))
+        (cat (BitString.uniformList ((Enum.list (α := JC (Sdw (N := N) hk))).length *
+          ((Enum.list (α := Fin c.d)).length * 1)))
+        (cat (catPow (μB N K) ((Enum.list (α := (Sdw (N := N) hk).Attr × Col k)).length *
+          (List.finRange c.d).length))
+          (catPow (μF K c.w) (Enum.list (α := JC (Sdw (N := N) hk) × Fin N)).length)))) := by
+  rw [← unif_ring, ← wLaw_eq hk c, ← rmLaw_eq hk c hN hK, ← eLaw_eq hk c, cat_pure_left,
+    cat_map_left, cat_map_left]
+  erw [cat_map_left]
+  rw [setup5]
+  simp only [PMF.map_bind, bind_pure_eq_map, PMF.map_comp, Function.comp_def]
+  refine congrArg (PMF.bind _) (funext fun a => ?_)
+  refine congrArg (PMF.bind _) (funext fun a₁ => ?_)
+  refine Eq.trans ?_ (PMF.map_bind _ _ _).symm
+  refine congrArg (PMF.bind _) (funext fun a₂ => ?_)
+  refine Eq.trans ?_ (PMF.map_comp _ _ _).symm
+  rfl
+
 end AdvancedEncryption.DualUse.Prog
