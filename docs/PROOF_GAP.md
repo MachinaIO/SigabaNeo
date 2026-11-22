@@ -914,6 +914,23 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Rigorous BKZ tour bounds exist only for modified variants (HPS11 BKZ', Li–Nguyen, Li–Walter). The original BKZ has only
     O(β)^n. None of these certifies success for β < 647.
   * Next step: make ADRS/ASD18's constants explicit at D = 647.
+* **Part 134 (audited, minor caveats; the corrections are in the note's Audit section).**
+  [breakthrough_r1](research/wall1_breakthrough_r1.md): a restart theorem and three reductions to Part 120.
+  * **Theorem 1 (sound).** Split the rows into k disjoint blocks. On each block run the reducer and a plant-blind acceptance
+    test: minimum ≥ L, GS floor ≥ g, and a prefix floor for the Babai lift. Decode the first accepted block. Then
+    failure ≤ ∏δᵢ + ε* + ℓ*.
+    * The reducer and the test read only the plant-free lattice of each block, which depends on A alone, so no
+      conditioning on s is needed. Selecting a block by acceptance does not bias the plant.
+    * The rejection allowed per block rises from 0.009 to 0.0949 (k = 2), 0.208 (k = 3) and 0.308 (k = 4), at the cost of
+      fewer rows per block. Whether those row counts still work was not evaluated.
+    * Retrying with fresh randomness on the same rows cannot replace splitting the rows (Prop 1.2).
+  * **Theorem 2.** For any plant-blind reducer, failure of all-heights uniqueness ≥ Pr[λ1(H)² ≤ μ − t] · t²/(v + t²). So
+    a lower-tail bound on λ1(H) is unavoidable: at d = 505, Pr[λ1 ≤ 26.66] ≤ 2% and Pr[λ1 ≤ 24.81] ≤ 1.11% are needed.
+  * **Theorem 3 (near-tautological, per the audit).** Change-of-measure accounting reduces to Part 120's last-step split.
+  * **Prop 4.** In the worst case, the theta potential loses up to 23.50·(s/GH)² nats per step at rank 505 (18.89 at rank
+    405), against a budget of 23.78. The worst case is attained on hexagonal planes through the winner.
+  * **Conjecture R1 (open).** The relaxed Part 120 plane count is ≤ 0.05. Of the Part 123 data, only the 3/48 sample weighs
+    against a 1% rate.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
