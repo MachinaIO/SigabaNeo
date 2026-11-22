@@ -88,4 +88,30 @@ theorem attributeHiding_of_comps
         reducesI_of_comps BI.cs BI.cb BI.L BI.hpubL BI.hkeyL BI.hchalL BI.hinv BI.hIW err hχ hdec
           hL hscov C hCI A D⟩
 
+/-- **Attribute hiding from the component programs and the registry's decision Ring-LWE** at
+the parameters of hybrids 3 and 5 (`params3`, `params5`) with `kb` bits: the premises
+`(RingLWE.decision, params3 …, kb)` and `(RingLWE.decision, params5 …, kb)`. -/
+theorem attributeHiding_of_comps_rlwe
+    (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u) (hcov : RealCovered hk c)
+    (hL : dateBound ≤ c.L) (hscov : SimCovered hk c)
+    {ε : ℝ≥0∞}
+    (hflood : ∀ rest ∈ (lawRestC hk c).support, ∀ w : JC (Sdw (N := N) hk) → (Fin c.d → Bool),
+      CloseTo ((lawEc hk c).map fun e j => e j + rest.2.1 * wMat w j) (lawEc hk c) ε)
+    (hS : statTerm c hk ε ≠ ⊤)
+    (hstat : 4 * (2 : ℝ) ^ params.secBits * (statTerm c hk ε).toReal ^ 2 ≤ 1)
+    (err : SecretDist) (hχ : χR c = polyOf (N := N) (ModuleLWE.coeffLaw (2 ^ K) err))
+    (B3 : Bundle hk c (inst3Enc (N := N) (K := K) (k := k)) (setup3 hk c) (view3 hk c) (sd3 hk c))
+    (B5 : Bundle hk c (inst5Enc (N := N) (K := K) (k := k) c.d) (setup5 hk c) (view5 hk c)
+      (sd5 hk c))
+    (BI : Bundle hk c (inst3Enc (N := N) (K := K) (k := k)) (setupI hk c) (viewI hk c) (sdI hk c))
+    (kb : ℕ) (C : ℝ) (hC : 0 < C)
+    (hC3 : (B3.const (dec3M N K k) : ℝ) ≤ C) (hC5 : (B5.const (dec5M N K k c.d) : ℝ) ≤ C)
+    (hCI : (BI.const (dec3M N K k) : ℝ) ≤ C)
+    (hk64 : 64 * ((2 : ℝ) ^ params.secBits) ^ 2 * C ≤ (2 : ℝ) ^ kb)
+    (hard3 : RingLWE.decision.HardAt (params3 N (2 ^ K) k err) kb)
+    (hard5 : RingLWE.decision.HardAt (params5 N (2 ^ K) k (Fin c.d) err) kb) :
+    AttributeHiding dateUniverse params (impl hk c) :=
+  attributeHiding_of_comps hdec hcov hL hscov hflood hS hstat err hχ B3 B5 BI kb C hC hC3 hC5 hCI
+    hk64 hard3 hard5
+
 end AdvancedEncryption.DualUse
