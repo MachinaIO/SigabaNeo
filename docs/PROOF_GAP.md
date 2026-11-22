@@ -1139,6 +1139,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     bound on λ1/GH on reachable states plus a discrete/continuous transfer.
   * **Conditional.** C1′(a) and C1′(b), both conjectures, would give failure ≤ 1.7·10⁻³ (1.9·10⁻³ with Part 117) for the
     34.0992 floor.
+* **Part 143 (audited, minor caveats).** [slide_route](research/wall1_slide_route.md): the Q actually selected by ALNS20
+  slide reduction (exact oracle, strict-improvement convention).
+  * From the qI-first basis, the minimum physical covolume of Q is 1. It is attained exactly when A = 0, with probability
+    3329^{−511·512}, for every tie rule. How the remaining mass 1 − p is distributed over larger covolumes is open.
+  * Prefix covolumes strictly decrease and extension covolumes weakly decrease. A rank-5 example reaches terminal covolumes
+    90 and 100 from the same start with the same prefix-potential history (exact rerun). So potential monotonicity does not
+    determine Q.
+  * **Correction to Part 138 S2(c).** A densest Q always admits a passing flag, but it can violate S2(b)'s side condition.
+  * **Correction to Part 138's cost framing.** With a rank-511 prefix, the null quotient has rank 512, but Part 47's final
+    SVP on the same prefix has rank 513, because the height direction survives projection. "Oracle rank ≤ 512 for the
+    whole procedure" is therefore wrong by one. Part 47 and the Lean chain are consistent: J + d = N counts horizontal
+    dimensions, and the decoder runs SVP on the full projected lattice.
+  * The 1% quantile at ρ = 0.954 remains open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
