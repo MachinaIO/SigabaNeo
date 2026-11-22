@@ -24,4 +24,4 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Prog.Basic", "SigabaNeo.Lib.Machines.Prog.Compile",
   "SigabaNeo.Lib.Machines.Prog.Machine", "SigabaNeo.Lib.Machines.Prog.Arith",
   "SigabaNeo.Lib.Machines.Prog.Det", "SigabaNeo.Lib.Machines.Prog.Serial", "SigabaNeo.Lib.Machines.Prog.Stream",
-  "SigabaNeo.Lib.Machines.Prog.Words"]
+  "SigabaNeo.Lib.Machines.Prog.Words", "SigabaNeo.Lib.Machines.Prog.WordBlocks"]
