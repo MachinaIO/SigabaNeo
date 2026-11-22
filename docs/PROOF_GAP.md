@@ -931,6 +931,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     405), against a budget of 23.78. The worst case is attained on hexagonal planes through the winner.
   * **Conjecture R1 (open).** The relaxed Part 120 plane count is ≤ 0.05. Of the Part 123 data, only the 3/48 sample weighs
     against a 1% rate.
+  * **Lean.** PlantAveragingNecessity.lean (axiom-clean) formalizes Theorem 2.
+    * `plantAveraging_lower`: Pr_A[λ1(H_A)² ≤ μ − t] · t²/(v + t²) ≤ Pr[all-heights uniqueness fails].
+    * `plantAveraging_tail_necessary`: average success ≥ 1 − θ implies Pr_A[λ1² ≤ μ − t] ≤ θ(v + t²)/t².
   * **Lean (Nov 2026).** PlantBlindRestart.lean formalizes Theorem 1 abstractly. It is axiom-clean, with no sorry, axiom
     or native_decide.
     * `failProb_eq` gives the exact law: failure = ∏δᵢ + Σᵢ (∏_{j<i} δⱼ)·Pr[accᵢ ∧ Fᵢ].
@@ -997,6 +1000,8 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     primitive vector whose quotient passes fails with probability < 1.371·10⁻⁵ at rank 506, ratio 0.954. This certifies
     λ1(H) ≥ 27.484. Per the audit, that matches only the *necessary* floor 27.4538 (Part 103); sufficiency is not implied,
     and height-zero success at that floor is ≈ 47%.
+  * **Lean.** HaarWindowTemplate.lean (axiom-clean) formalizes Theorem 8 generally. `haarWindowTemplate_mu` bounds the
+    rule's failure on a Haar window by 1/(1+μ) + μ·c^m V_m/ζ(m). The numeric instance is not formalized.
   * **Remaining.**
     * Gaps A and B are lower tails of the per-design acceptance.
     * Gap R (window statistics within a constant factor of Haar, Conjecture R) closes only the necessary-side statement.
