@@ -273,6 +273,39 @@ theorem exec_pairRoundC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i
   · rw [Function.update_of_ne (by rintro rfl; revert hl; decide), g1 l hl]
     simp [σ0, setSL, Function.update_of_ne (show l ≠ 13 by rintro rfl; revert hl; decide)]
 
+theorem iter_rounds (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n)
+    {k K : ℕ} (hK : K ≤ k + 1) (hcap' : k + 3 ≤ E.C) (hkM : k + 2 ≤ E.M) :
+    ∀ (h : ℕ) (L : List (List (Wire ι))) (P : SLP ι) (σ : St),
+      (∀ a ∈ L, a.length = k) → CstR (E := E) k K σ → Inv E σ → ScOK E σ →
+      σ.ls 12 = flatPos (E := E) (ix := ix) L → σ.sc 54 = L.length →
+      L.length * k ≤ E.C → L.length ≤ E.M →
+      E.n + ((exec E pairRoundC)^[h] (mk E ix P σ)).t ≤ E.M →
+      ∃ sc' ls', (exec E pairRoundC)^[h] (mk E ix P σ) =
+          mk E ix (rounds (.gate 0) (2 ^ K) k h P L).1 (setSL σ sc' ls') ∧
+        ls' 12 = flatPos (E := E) (ix := ix) (rounds (.gate 0) (2 ^ K) k h P L).2 ∧
+        sc' 54 = (rounds (.gate 0) (2 ^ K) k h P L).2.length ∧
+        (∀ a ∈ (rounds (.gate 0) (2 ^ K) k h P L).2, a.length = k) ∧
+        (∀ r : SR, r.val < 16 ∨ (42 < r.val ∧ r.val < 54) ∨ 56 < r.val → sc' r = σ.sc r) ∧
+        (∀ l : LR, (8 < l.val ∧ l.val < 12) ∨ 13 < l.val → ls' l = σ.ls l)
+  | 0, L, P, σ, hL, _, _, _, h12, h54, _, _, _ =>
+    ⟨σ.sc, σ.ls, by simp [setSL, rounds], by simp [rounds, h12], by simp [rounds, h54],
+      by simpa [rounds] using hL, fun _ _ => rfl, fun _ _ => rfl⟩
+  | h + 1, L, P, σ, hL, hc, hI, hS, h12, h54, hcap, hLM, hM => by
+    rw [Function.iterate_succ_apply] at hM ⊢
+    obtain ⟨sc1, ls1, h1, d1, c1, f1, g1⟩ := exec_pairRoundC hnM hWM hix hK L P σ hL hc hI hS h12
+      h54 hcap hcap' hkM hLM (le_trans (Nat.add_le_add_left (t_le_iter E _ h _) _) hM)
+    have hIS1 := is_exec (by omega) hWM h1 ⟨hI, hS⟩
+    rw [h1] at hM ⊢
+    have hl := length_pairRound_le (k := k) (K := K) P L
+    obtain ⟨sc', ls', h', d', c', l', f', g'⟩ := iter_rounds hnM hWM hix hK hcap' hkM h _ _
+      (setSL σ sc1 ls1) (pairRound_lengths P L hL) (cstR_of hc (fun x hx => f1 x (by omega)))
+      hIS1.1 hIS1.2 d1 c1 (le_trans (Nat.mul_le_mul_right _ hl) hcap) (by omega) hM
+    exact ⟨sc', ls', h', d', c', l', fun x hx => (f' x hx).trans (f1 x hx),
+      fun l hl' => (g' l hl').trans (g1 l hl')⟩
+
+/-- `h = |11|` rounds. -/
+def roundsC : Code := .rep 11 pairRoundC
+
 end FhatGen
 
 end SigabaNeo.Lattices
