@@ -10,6 +10,8 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoef
 orders `enumT`), for the bundles `A`, `B` given by their columns' digits and reversed rows.
 -/
 
+set_option maxRecDepth 8192
+
 namespace SigabaNeo.Tape
 
 namespace ValVM
@@ -18,10 +20,10 @@ open SigabaNeo.Lattices SigabaNeo.Lattices.SLP SigabaNeo.Lattices.Algo
 
 variable {V : ℕ} {f : List Bool → List Bool → List Bool}
 
-abbrev CW : Fin 64 := 57
-abbrev TLB : Fin 64 := 58
-abbrev TCNT : Fin 64 := 59
-abbrev OUT : Fin 64 := 60
+abbrev CW : Fin 120 := 57
+abbrev TLB : Fin 120 := 58
+abbrev TCNT : Fin 120 := 59
+abbrev OUT : Fin 120 := 60
 
 /-- **An output coefficient.** -/
 def coefC : Code := ofList [.cp LB TLB, .mv LB CW 14, colC, .cp LS LB, .cp CN TCNT, .cp 24 14,
@@ -94,7 +96,7 @@ theorem exec_coefC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
   rw [e1]
   set s2 := Function.update (Function.update s1 CW []) LB ((s1 LB ++ s1 CW).drop (s1 14).length)
     with hs2
-  have s2_ : ∀ j : Fin 64, j ≠ LB → j ≠ CW → s2 j = w j := fun j h1 h2 => by
+  have s2_ : ∀ j : Fin 120, j ≠ LB → j ≠ CW → s2 j = w j := fun j h1 h2 => by
     simp [s2, s1, Function.update_of_ne h1, Function.update_of_ne h2]
   have hs2LB : s2 LB = (w TLB ++ Cl.flatten).drop ((K + 1) * V) := by
     simp (config := {decide := true}) [s2, s1, Function.update_apply, hCW, htm.h14]
@@ -163,7 +165,7 @@ theorem exec_coefC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
     simp only [coefV]
     rw [roundsV_eq_iterate, ← hCl, ← hL, hx]
     simp [fl, foldSumV]
-  have uhi : ∀ j : Fin 64, 35 ≤ j.val → j ≠ ROW → j ≠ CM → j ≠ CJ → j ≠ DSS → j ≠ RAS → j ≠ CC →
+  have uhi : ∀ j : Fin 120, 35 ≤ j.val → j ≠ ROW → j ≠ CM → j ≠ CJ → j ≠ DSS → j ≠ RAS → j ≠ CC →
       j ≠ CW → u j = w j := fun j hj h1 h2 h3 h4 h5 h6 h7 => by
     rw [C.hi j hj h1 h2 h3 h4 h5 h6]
     exact s2_ j (fun e => by subst e; simp at hj) h7

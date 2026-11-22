@@ -19,7 +19,7 @@ open SigabaNeo.Lattices SigabaNeo.Lattices.SLP
 variable {V : ℕ} {f : List Bool → List Bool → List Bool}
 
 /-- **Loops under an invariant.** -/
-theorem exec_rep_inv {c : Fin 64} {B : Code} (I : ℕ → St → Prop)
+theorem exec_rep_inv {c : Fin 120} {B : Code} (I : ℕ → St → Prop)
     (hstep : ∀ n w, I n w → I (n + 1) (exec V f B (Function.update w c (w c).tail))) :
     ∀ w, I 0 w → I (w c).length (exec V f (.rep c B) w) := by
   intro w h0
@@ -30,9 +30,9 @@ theorem exec_rep_inv {c : Fin 64} {B : Code} (I : ℕ → St → Prop)
   | succ m ih => rw [Function.iterate_succ_apply']; exact hstep m _ ih
 
 /-- Words of the leaves: `LB = 32` the buffer, `SD = 33` the digits, `SC = 34` the coefficients. -/
-abbrev LB : Fin 64 := 32
-abbrev SD : Fin 64 := 33
-abbrev SC : Fin 64 := 34
+abbrev LB : Fin 120 := 32
+abbrev SD : Fin 120 := 33
+abbrev SC : Fin 120 := 34
 
 /-- A term code: `Z := F (DIG, COEF)` for the coefficient of `k V` bits, writing only words below
 `32` and not `COEF`, `DIG`, nor the templates. -/
@@ -42,18 +42,18 @@ structure TermOk (V K : ℕ) (f : List Bool → List Bool → List Bool) (one zv
     (∀ x ∈ cs, x.length = V) → w 30 = cs.flatten → exec V f T w 26 = F (w 31) cs
   len : ∀ d cs, cs.length = K + 1 → (∀ x ∈ cs, x.length = V) → (F d cs).length = (K + 1) * V
   wr32 : ∀ j ∈ wr T, j.val < 32
-  wr30 : (30 : Fin 64) ∉ wr T
-  wr31 : (31 : Fin 64) ∉ wr T
-  wrT : ∀ j ∈ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 64)), j ∉ wr T
+  wr30 : (30 : Fin 120) ∉ wr T
+  wr31 : (31 : Fin 120) ∉ wr T
+  wrT : ∀ j ∈ ([10, 11, 12, 13, 14, 15, 16, 20, 27, 29] : List (Fin 120)), j ∉ wr T
 
 /-- One round: pop the digit and the coefficient, compute the term, push it. -/
 def jBody (T : Code) : Code := ofList [.mvV 31 SD, .mv 30 SC 14, T, .mv LB 26 14]
 
 /-- `|ctr|` rounds. -/
-def jloopC (T : Code) (ctr : Fin 64) : Code := .rep ctr (jBody T)
+def jloopC (T : Code) (ctr : Fin 120) : Code := .rep ctr (jBody T)
 
 /-- Move a block of `|c|` bits from a stream into a register of that width. -/
-theorem exec_mv_pop {d s c : Fin 64} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St} {x L : List Bool}
+theorem exec_mv_pop {d s c : Fin 120} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St} {x L : List Bool}
     (hd : (w d).length = (w c).length) (hx : x.length = (w c).length) (hs : w s = x ++ L) :
     exec V f (.mv d s c) w = Function.update (Function.update w s L) d x := by
   simp only [exec, if_neg h, hs]
@@ -61,7 +61,7 @@ theorem exec_mv_pop {d s c : Fin 64} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St
     List.drop_left' hd]
 
 /-- Shift a register of `|c|` bits into a buffer. -/
-theorem exec_mv_push {d s c : Fin 64} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St}
+theorem exec_mv_push {d s c : Fin 120} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St}
     (hs : (w s).length = (w c).length) :
     exec V f (.mv d s c) w = Function.update (Function.update w s [])
       d ((w d ++ w s).drop (w c).length) := by
@@ -69,7 +69,7 @@ theorem exec_mv_push {d s c : Fin 64} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : S
   rw [List.drop_eq_nil_of_le (by omega)]
 
 theorem Tmpl.of_low {K : ℕ} {w w' : St} (h : Tmpl V K w)
-    (e : ∀ j : Fin 64, j.val < 30 → w' j = w j) : Tmpl V K w' :=
+    (e : ∀ j : Fin 120, j.val < 30 → w' j = w j) : Tmpl V K w' :=
   h.of_eq fun j hj => e j (by
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hj
     rcases hj with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide)
@@ -79,7 +79,7 @@ theorem constV_len {α : Type*} (one zv : α) : ∀ w m, (constV one zv w m).len
   | w + 1, m => by simp [constV, constV_len one zv w (m / 2)]
 
 /-- The invariant of the rounds of `jloopC`. -/
-structure JInv (V K : ℕ) (F : List Bool → List (List Bool) → List Bool) (ctr : Fin 64) (w₀ : St)
+structure JInv (V K : ℕ) (F : List Bool → List (List Bool) → List Bool) (ctr : Fin 120) (w₀ : St)
     (ds : List (List Bool)) (css : List (List (List Bool))) (rd rc : List Bool) (m : ℕ) (w : St) :
     Prop where
   sd : w SD = (ds.drop m).flatten ++ rd
@@ -88,13 +88,13 @@ structure JInv (V K : ℕ) (F : List Bool → List (List Bool) → List Bool) (c
   tm : Tmpl V K w
   c30 : (w 30).length = (K + 1) * V
   c31 : (w 31).length = V
-  hi : ∀ j : Fin 64, 32 ≤ j.val → j ≠ LB → j ≠ SD → j ≠ SC → j ≠ ctr → w j = w₀ j
+  hi : ∀ j : Fin 120, 32 ≤ j.val → j ≠ LB → j ≠ SD → j ≠ SC → j ≠ ctr → w j = w₀ j
   one : w 10 = w₀ 10
   zv : w 11 = w₀ 11
 
 theorem jinv_step {K : ℕ} {one zv : List Bool} {T : Code}
     {F : List Bool → List (List Bool) → List Bool}
-    (hT : TermOk V K f one zv T F) {ctr : Fin 64} (hctr : 35 ≤ ctr.val) {w₀ : St}
+    (hT : TermOk V K f one zv T F) {ctr : Fin 120} (hctr : 35 ≤ ctr.val) {w₀ : St}
     (h10 : w₀ 10 = one) (h11 : w₀ 11 = zv)
     {ds : List (List Bool)} {css : List (List (List Bool))} {rd rc : List Bool}
     (hl : ds.length = css.length) (hdv : ∀ x ∈ ds, x.length = V)
@@ -106,7 +106,7 @@ theorem jinv_step {K : ℕ} {one zv : List Bool} {T : Code}
   have cLB : ctr ≠ LB := fun e => by subst e; simp at hctr
   have cSD : ctr ≠ SD := fun e => by subst e; simp at hctr
   have cSC : ctr ≠ SC := fun e => by subst e; simp at hctr
-  have cl : ∀ j : Fin 64, j.val < 35 → j ≠ ctr := fun j hj e => by subst e; omega
+  have cl : ∀ j : Fin 120, j.val < 35 → j ≠ ctr := fun j hj e => by subst e; omega
   set d := ds[m]
   set cs := css[m]
   have hd : d.length = V := hdv d (List.getElem_mem hm)
@@ -133,7 +133,7 @@ theorem jinv_step {K : ℕ} {one zv : List Bool} {T : Code}
         List.append_assoc]
   set u2 := Function.update (Function.update u1 SC
       (((css.drop (m + 1)).map List.flatten).flatten ++ rc)) 30 cs.flatten with hu2
-  have u2_ : ∀ j : Fin 64, j ≠ 30 → j ≠ SC → j ≠ 31 → j ≠ SD → j ≠ ctr → u2 j = w j :=
+  have u2_ : ∀ j : Fin 120, j ≠ 30 → j ≠ SC → j ≠ 31 → j ≠ SD → j ≠ ctr → u2 j = w j :=
     fun j h30 hSC h31 hSD hc => by
       simp [u2, u1, Function.update_of_ne h30, Function.update_of_ne hSC, Function.update_of_ne h31,
         Function.update_of_ne hSD, u0_ j hc]
@@ -148,8 +148,8 @@ theorem jinv_step {K : ℕ} {one zv : List Bool} {T : Code}
     (by rw [u2_ 11 (by decide) (by decide) (by decide) (by decide) (cl 11 (by decide)), h.zv, h11])
     hcl hcsv u2_30
   rw [u2_31] at e3
-  have u3_ : ∀ j : Fin 64, j ∉ wr T → exec V f T u2 j = u2 j := fun j hj => exec_not_mem T u2 j hj
-  have u3hi : ∀ j : Fin 64, 32 ≤ j.val → exec V f T u2 j = u2 j := fun j hj =>
+  have u3_ : ∀ j : Fin 120, j ∉ wr T → exec V f T u2 j = u2 j := fun j hj => exec_not_mem T u2 j hj
+  have u3hi : ∀ j : Fin 120, 32 ≤ j.val → exec V f T u2 j = u2 j := fun j hj =>
     u3_ j (fun hm => by have := hT.wr32 j hm; omega)
   have tm3 : Tmpl V K (exec V f T u2) := tm2.of_eq fun j hj => u3_ j (hT.wrT j hj)
   have hbody0 : exec V f (jBody T) u0 = exec V f (.mv LB 26 14) (exec V f T u2) := by
@@ -163,7 +163,7 @@ theorem jinv_step {K : ℕ} {one zv : List Bool} {T : Code}
   have e4 : exec V f (.mv LB 26 14) u3 = Function.update (Function.update u3 26 []) LB
       ((u3 LB ++ u3 26).drop (u3 14).length) := exec_mv_push (by decide) hz
   rw [e4]
-  have v : ∀ j : Fin 64, j ≠ LB → j ≠ 26 → Function.update (Function.update u3 26 []) LB
+  have v : ∀ j : Fin 120, j ≠ LB → j ≠ 26 → Function.update (Function.update u3 26 []) LB
       ((u3 LB ++ u3 26).drop (u3 14).length) j = u3 j := fun j h1 h2 => by
     simp [Function.update_of_ne h1, Function.update_of_ne h2]
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
@@ -208,7 +208,7 @@ theorem jinv_step {K : ℕ} {one zv : List Bool} {T : Code}
 `F d cs` shifted in, the streams with their remainders. -/
 theorem exec_jloopC {K : ℕ} {one zv : List Bool} {T : Code}
     {F : List Bool → List (List Bool) → List Bool}
-    (hT : TermOk V K f one zv T F) {ctr : Fin 64} (hctr : 35 ≤ ctr.val) (w : St)
+    (hT : TermOk V K f one zv T F) {ctr : Fin 120} (hctr : 35 ≤ ctr.val) (w : St)
     (h10 : w 10 = one) (h11 : w 11 = zv)
     (ds : List (List Bool)) (css : List (List (List Bool))) (rd rc : List Bool)
     (hl : ds.length = css.length) (hdv : ∀ x ∈ ds, x.length = V)
@@ -272,10 +272,10 @@ theorem termOk_sub (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
       (andLV one (fV V f) d cs) (by simp) (by rw [length_andLV, hcl])
     unfold Fsub
     rw [length_flatten_of v, l]
-  wr32 := by decide
-  wr30 := by decide
-  wr31 := by decide
-  wrT := by decide
+  wr32 := by decide +kernel
+  wr30 := by decide +kernel
+  wr31 := by decide +kernel
+  wrT := by decide +kernel
 
 theorem modAddV_shape (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
     {one zv : List Bool} (h1 : one.length = V) (hz : zv.length = V) (q w : ℕ)
@@ -302,10 +302,10 @@ theorem termOk_add (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
       (andLV one (fV V f) d cs) (by simp) (by rw [length_andLV, hcl])
     unfold Fadd
     rw [length_flatten_of v, l]
-  wr32 := by decide
-  wr30 := by decide
-  wr31 := by decide
-  wrT := by decide
+  wr32 := by decide +kernel
+  wr30 := by decide +kernel
+  wr31 := by decide +kernel
+  wrT := by decide +kernel
 
 end ValVM
 
