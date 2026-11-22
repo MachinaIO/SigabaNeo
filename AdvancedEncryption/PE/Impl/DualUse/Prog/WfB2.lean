@@ -95,7 +95,12 @@ section Tmpl
 variable (N K k d W : ℕ)
 
 /-- The number of values of a bundle. -/
-abbrev nBI : ℕ := (Enum.list (α := BI N (K + 1))).length
+def nBI : ℕ := 2 * (2 * (K + 1) * ((K + 1) * N))
+
+theorem length_enum_BI : (Enum.list (α := BI N (K + 1))).length = nBI N K := by
+  show (List.finRange 2 ×ˢ ((List.finRange 2 ×ˢ List.finRange (K + 1)) ×ˢ
+    (List.finRange (K + 1) ×ˢ List.finRange N))).length = _
+  simp only [List.length_product, List.length_finRange, nBI]
 
 /-- The templates of `simTmplP` (on the words `4 … 11`). -/
 def tmpl31 : List (Fin 256 × ℕ) :=
@@ -933,14 +938,14 @@ theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) :
       rw [oP, sd_dropPsi, flatten_flatMap]
       refine congrArg (· ++ dateEnc.enc sd.x) (List.flatMap_congr fun i _ => ?_)
       exact (qsL_entries N K (K + 1) _ (by rw [length_colsW'])).symm)
-    insw := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
-    tsl := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
-    tst := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
-    td2 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    insw := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tsl := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tst := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    td2 := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     tw := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
-    tpad := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tpad := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     tw9 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
-    tins := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tins := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     gsw := by rw [o2 _ (by decide)]; exact g1
     gcnt := by rw [o2 _ (by decide), g2, List.length_replicate] }
 
