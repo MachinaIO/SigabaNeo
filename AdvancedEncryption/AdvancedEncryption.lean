@@ -50,6 +50,7 @@ import PE.Impl.DualUse.Prog.EncBits
 import PE.Impl.DualUse.Prog.EncCore
 import PE.Impl.DualUse.Prog.EncSem
 import PE.Impl.DualUse.Prog.EncP
+import PE.Impl.DualUse.Prog.SetupEncCost
 import PE.Impl.DualUse.ReductionPerQuery
 import PE.Impl.DualUse.ReductionComps
 import PE.Impl.DualUse.ReductionSteps
