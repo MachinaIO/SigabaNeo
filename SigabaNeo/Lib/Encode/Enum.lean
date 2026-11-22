@@ -152,4 +152,62 @@ theorem fun_block {α β : Type} [Enum α] {n : ℕ} (e : FixedEnc β n) (f : α
 
 end FixedEnc
 
+/-! ### Positions in the enumerations -/
+
+namespace Enum
+
+theorem getElem_fin {n : ℕ} (i : ℕ) (hi : i < (Enum.list (α := Fin n)).length) :
+    (Enum.list (α := Fin n))[i] = ⟨i, by simpa [Enum.list] using hi⟩ := by
+  simp [Enum.list]
+
+theorem length_prod {α β : Type} [Enum α] [Enum β] :
+    (Enum.list (α := α × β)).length = (Enum.list (α := α)).length * (Enum.list (α := β)).length := by
+  exact List.length_product _ _
+
+theorem getElem_product {α β : Type} (la : List α) (lb : List β) (i j : ℕ) (hi : i < la.length)
+    (hj : j < lb.length) (h : i * lb.length + j < (la.product lb).length) :
+    (la.product lb)[i * lb.length + j] = (la[i], lb[j]) := by
+  induction la generalizing i with
+  | nil => simp at hi
+  | cons a la ih =>
+    have hc : (a :: la).product lb = lb.map (Prod.mk a) ++ la.product lb := List.product_cons a la lb
+    simp only [hc] at h ⊢
+    cases i with
+    | zero =>
+      simp only [zero_mul, zero_add, List.getElem_cons_zero]
+      rw [List.getElem_append_left (by simpa using hj)]
+      simp
+    | succ i =>
+      have hlen : (lb.map (Prod.mk a)).length ≤ (i + 1) * lb.length + j := by
+        simp only [List.length_map]
+        exact Nat.le_add_right_of_le (by rw [Nat.succ_mul]; exact Nat.le_add_left _ _)
+      rw [List.getElem_append_right hlen]
+      simp only [List.length_map, List.getElem_cons_succ]
+      have e : (i + 1) * lb.length + j - lb.length = i * lb.length + j := by
+        rw [Nat.succ_mul]; omega
+      simp only [e]
+      exact ih i (by simpa using hi) _
+
+/-- **The element at `i · |β| + j`** of the enumeration of `α × β` is the pair of the `i`-th and
+the `j`-th elements. -/
+theorem getElem_prod {α β : Type} [Enum α] [Enum β] (i j : ℕ) (hi : i < (Enum.list (α := α)).length)
+    (hj : j < (Enum.list (α := β)).length)
+    (h : i * (Enum.list (α := β)).length + j < (Enum.list (α := α × β)).length) :
+    (Enum.list (α := α × β))[i * (Enum.list (α := β)).length + j] =
+      ((Enum.list (α := α))[i], (Enum.list (α := β))[j]) :=
+  getElem_product _ _ i j hi hj h
+
+/-- The position of an element in the enumeration. -/
+def index {α : Type} [Enum α] [DecidableEq α] (a : α) : ℕ := (Enum.list (α := α)).idxOf a
+
+theorem index_lt {α : Type} [Enum α] [DecidableEq α] (a : α) :
+    index a < (Enum.list (α := α)).length :=
+  List.idxOf_lt_length_iff.mpr (Enum.complete a)
+
+theorem getElem_index {α : Type} [Enum α] [DecidableEq α] (a : α) :
+    (Enum.list (α := α))[index a]'(index_lt a) = a :=
+  List.getElem_idxOf _
+
+end Enum
+
 end SigabaNeo.Encode

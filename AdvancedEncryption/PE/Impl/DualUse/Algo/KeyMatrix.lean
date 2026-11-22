@@ -147,4 +147,14 @@ theorem pkEnc_Bj (hk : 2 ^ K < 2 ^ k) (c : DualUse.Conf N K k) (m : DualUse.PK h
   rw [he]
   rw [FixedEnc.prod_drop, FixedEnc.prod_drop, FixedEnc.prod_take, FixedEnc.fun_block, matEnc_row]
 
-end AdvancedEncryption.DualUse.Algo
+/-- **The word of `B_j` at its position** in the public key's word. -/
+theorem pkEnc_Bj_index (hk : 2 ^ K < 2 ^ k) (c : DualUse.Conf N K k) (m : DualUse.PK hk c)
+    (j : (DualUse.Sdw (N := N) hk).Attr × (DualUse.Sdw (N := N) hk).ctBits.Index) :
+    (((((DualUse.pkEnc hk c).enc m).drop
+        ((Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin c.d)).length * (N * K)))).drop
+        ((Enum.list (α := Fin 1)).length * ((Enum.list (α := DualUse.TrapCol k)).length * (N * K))) |>.take
+        ((Enum.list (α := (DualUse.Sdw (N := N) hk).Attr ×
+          (DualUse.Sdw (N := N) hk).ctBits.Index)).length * rowLen N K k)).drop
+        (Enum.index j * rowLen N K k)).take (rowLen N K k) = rowW N K k (m.Bj j) := by
+  rw [pkEnc_Bj hk c m _ (Enum.index_lt j), Enum.getElem_index]
+
