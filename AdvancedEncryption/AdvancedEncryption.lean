@@ -108,3 +108,4 @@ import PE.Impl.DualUse.Prog.Core
 import PE.Impl.DualUse.Prog.Fields
 import PE.Impl.DualUse.Prog.Finish
 import PE.Impl.DualUse.Prog.Pub3
+import PE.Impl.DualUse.Prog.Sd3
