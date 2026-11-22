@@ -65,6 +65,10 @@ theorem eval_runClosed_of_runsWordsU {S : Type} {M : MultiTapePTM k Bool S Empty
   rw [Prog.eval_runClosed_of_runsWords h']
   simp
 
+/-- The description length of a machine does not depend on its clock. -/
+theorem descLen_ofPTM {S : Type} [Finite S] (m : MultiTapePTM k Bool S) (t t' : ℕ) :
+    (Machine.ofPTM m t).descLen = (Machine.ofPTM m t').descLen := rfl
+
 /-! ### Embedded stores -/
 
 /-- An embedded phase that changes only its tape `j`. -/

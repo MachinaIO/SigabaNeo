@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.ReductionMachine
+import PE.Impl.Game.HandlersDate
 import SigabaNeo.Lib.Machines.Prog.Pass
 
 /-!
@@ -415,5 +416,149 @@ theorem run_Post_word (n E nA nM : ℕ) (x : List Bool) (hx : x.length ≤ n + 2
     omega
   rw [Post, Machine.run_ofPTM]
   exact eval_runClosed_of_runsWordsU (h.mono hT)
+
+/-! ### Frames -/
+
+/-- The frame of a word (`Turing.MultiTapeTM.frame`). -/
+def fr (l : List Bool) : List Bool := l.flatMap (fun b => [true, b]) ++ [false]
+
+theorem frame_eq_fr (l : List Bool) : MultiTapeTM.frame l = fr l := rfl
+
+theorem encodeTuple_three (a b c : List Bool) : encodeTuple [a, b, c] = fr a ++ fr b ++ fr c := by
+  simp [encodeTuple, frame_eq_fr]
+
+theorem reverse_flatMap_ct : ∀ l : List Bool,
+    (l.flatMap (fun c => [c, true])).reverse = l.reverse.flatMap (fun c => [true, c])
+  | [] => rfl
+  | c :: l => by simp [reverse_flatMap_ct l]
+
+theorem reverse_rfr (l : List Bool) : (rfr l).reverse = fr (true :: l) := by
+  simp [rfr, fr, reverse_flatMap_ct]
+
+theorem reverse_body (o : List Bool) :
+    (false :: o.reverse.flatMap (fun c => [c, true])).reverse = fr o := by
+  simp [fr, reverse_flatMap_ct]
+
+theorem length_dbl : ∀ u : List Bool, (dbl u).length = 2 * u.length
+  | [] => rfl
+  | b :: u => by simp [length_dbl u]; ring
+
+/-! ### The post-processing of a run -/
+
+variable {U : Universe} {Sig : Type}
+
+/-- **The word of the post-processing**: `[false]` when the flag is up, otherwise `true` and the
+view `encodeTuple [encOpt attr, encOpt msg, o]`. -/
+def postG (ob : List Bool × Option U.Attr × Option U.Msg × Bool) : List Bool :=
+  if ob.2.2.2 then [false] else
+    true :: encodeTuple [encOpt U.encAttr ob.2.1, encOpt U.encMsg ob.2.2.1, ob.1]
+
+/-- The states the post-processing reads: the instance word does not start with `false`, the
+experiment state is the initial or a selected one, and the encoded state has at most `E` bits.
+The invariant `InvS` of the handlers gives the first two (`postOK_of_invS`). -/
+def PostOK (cd : Codes U Sig) (E : ℕ) (st : List Bool × GState U Sig) : Prop :=
+  st.1.head? ≠ some false ∧ (st.2 = {} ∨ ∃ x σ, st.2.attr = some x ∧ st.2.sec = some σ) ∧
+    (cd.encState st).length ≤ E
+
+theorem postOK_of_invS (cd : Codes U Sig) {IW : List Bool → Prop} {W : ℕ} {Ok : Sig → Prop}
+    {E : ℕ} {st : List Bool × GState U Sig} (h : InvS IW W Ok st)
+    (hE : (cd.encState st).length ≤ E) : PostOK cd E st := by
+  refine ⟨h.2.2.1, ?_, hE⟩
+  rcases h.2.2.2 with h | ⟨x, σ, hx, hσ, -⟩
+  · exact Or.inl h
+  · exact Or.inr ⟨x, σ, hx, hσ⟩
+
+/-- **The post-processing machine computes `postG`** on `A`'s output (at most `n` bits) paired with
+the encoded state. -/
+theorem run_post (cd : Codes U Sig) (n E : ℕ) (o : List Bool) (st : List Bool × GState U Sig)
+    (ho : o.length ≤ n) (hst : PostOK cd E st) :
+    (Post n E cd.nA cd.nM).run (pairOut o (cd.encState st)) = PMF.pure (postG (obs (o, st.2))) := by
+  obtain ⟨hw, hsh, hE⟩ := hst
+  set u := cd.encState st with hu
+  have hx : (pairOut o u).length ≤ n + 2 + 2 * E := by
+    simp only [pairOut, List.length_append, List.length_cons, length_dbl]; omega
+  rw [run_Post_word _ _ _ _ _ hx]
+  congr 1
+  set R := false :: o.reverse.flatMap (fun c => [c, true])
+  have h1 : postS (pairOut o u) 1 = u.reverse.flatMap (fun b => [true, b]) ++ false :: R := by
+    simp only [postS, Function.update_self]; exact sepT_run_pairOut o u
+  rw [run_postProg E cd.nA cd.nM _ u R h1 (by simp [postS]) (by simp [postS]) hE]
+  set t := Function.update (Function.update (postS (pairOut o u)) 1 R) 3 u
+  have t1 : t 1 = R := by simp [t]
+  have t3 : t 3 = u := by simp [t]
+  have t4 : t 4 = [] := by simp [t, postS]
+  have t5 : t 5 = [] := by simp [t, postS]
+  have t6 : t 6 = [] := by simp [t, postS]
+  obtain ⟨w, g⟩ := st
+  rcases hsh with hg | ⟨x, σ, hx, hσ⟩
+  · -- before the selection
+    simp only at hg
+    subst hg
+    have hu' : u = w := rfl
+    have hA : Prog.run (.ifBlank 3 caseA (.ifBit 3 caseA (caseB cd.nA cd.nM))) t 1 =
+        R ++ [false, false, true] := by
+      by_cases hw0 : w = []
+      · simp only [Prog.run_ifBlank, t3, hu', hw0, ite_true]; rw [run_caseA, t1]
+      · obtain ⟨b, w', rfl⟩ := List.exists_cons_of_ne_nil hw0
+        cases b
+        · exact absurd rfl hw
+        · simp only [Prog.run_ifBlank, Prog.run_ifBit, t3, hu', reduceCtorEq, ite_false, hd_cons,
+            ite_true]
+          rw [run_caseA, t1]
+    rw [hA]
+    simp [postG, obs, encOpt, encodeTuple_three, R, fr, reverse_flatMap_ct]
+  · -- after the selection
+    simp only at hx hσ
+    have hu' : u = cd.selWord g.bad g.msg x σ := by
+      simp [hu, Codes.encState, hx, hσ]
+    have hB : Prog.run (.ifBlank 3 caseA (.ifBit 3 caseA (caseB cd.nA cd.nM))) t 1 =
+        Prog.run (caseB cd.nA cd.nM) t 1 := by
+      rw [Prog.run_ifBlank, t3, hu']
+      simp [Codes.selWord, Prog.run_ifBit, t3, hu']
+    rw [hB]
+    cases hb : g.bad
+    · -- the flag is down
+      rcases hm : g.msg with _ | μ
+      · have h3 : t 3 = false :: false :: false ::
+            (List.replicate cd.nM false ++ (U.encAttr x ++ cd.sig.enc σ)) := by
+          rw [t3, hu']; simp [Codes.selWord, Codes.msgWord, hb, hm]
+        rw [run_caseB_good cd.nA cd.nM t (by simp) (cd.len_attr x) h3 t4 t5 t6, t1]
+        simp [postG, obs, encOpt, encodeTuple_three, R, reverse_rfr, hb, hm, hx, fr,
+          reverse_flatMap_ct]
+      · have h3 : t 3 = false :: false :: true :: (U.encMsg μ ++ (U.encAttr x ++ cd.sig.enc σ)) := by
+          rw [t3, hu']; simp [Codes.selWord, Codes.msgWord, hb, hm]
+        rw [run_caseB_good cd.nA cd.nM t (cd.len_msg μ) (cd.len_attr x) h3 t4 t5 t6, t1]
+        simp [postG, obs, encOpt, encodeTuple_three, R, reverse_rfr, hb, hm, hx, fr,
+          reverse_flatMap_ct]
+    · -- the flag is up
+      have h3 : t 3 = false :: true :: (cd.msgWord g.msg ++ (U.encAttr x ++ cd.sig.enc σ)) := by
+        rw [t3, hu']; simp [Codes.selWord, hb]
+      rw [run_caseB_bad cd.nA cd.nM t h3]
+      simp [postG, obs, hb]
+
+/-! ### Cost -/
+
+/-- The slope of the clock in `n`. -/
+def postA (E nA nM : ℕ) : ℕ := 13 + 4 * postPc E nA nM
+
+/-- The clock for `n = 0`. -/
+def postB (E nA nM : ℕ) : ℕ := postClock 0 E nA nM
+
+/-- **The time of the post-processing** is affine in the bound `n` on `A`'s output. -/
+theorem time_post (n E nA nM : ℕ) : (Post n E nA nM).time = postA E nA nM * n + postB E nA nM := by
+  show postClock n E nA nM = _
+  simp only [postClock, postA, postB]
+  ring
+
+theorem time_post_le (n E nA nM c : ℕ) (hn : n ≤ c) (hc : 1 ≤ c) :
+    (Post n E nA nM).time ≤ (postA E nA nM + postB E nA nM) * c := by
+  rw [time_post]
+  have h1 : postA E nA nM * n ≤ postA E nA nM * c := Nat.mul_le_mul_left _ hn
+  have h2 : postB E nA nM ≤ postB E nA nM * c := Nat.le_mul_of_pos_right _ hc
+  nlinarith
+
+/-- **The description length does not depend on `n`.** -/
+theorem descLen_post (n n' E nA nM : ℕ) : (Post n E nA nM).descLen = (Post n' E nA nM).descLen :=
+  descLen_ofPTM _ _ _
 
 end AdvancedEncryption.PE.Generic
