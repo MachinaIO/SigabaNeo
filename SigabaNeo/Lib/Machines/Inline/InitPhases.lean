@@ -123,4 +123,176 @@ theorem lawM_clock :
 
 end Clock
 
+/-! ### The copy -/
+
+section Copy
+
+/-- The tapes of the copy phase: a clock of `c` cells and the word `u` on `st`. -/
+def cpF (c : ℕ) (u : List Bool) : Tape kA ops m → ℤ → Option Bool
+  | .clock => tapeOfList (List.replicate c true)
+  | .st => tapeOfList u
+  | _ => fun _ => none
+
+/-- The heads of the copy phase. -/
+def cpP (pc ps : ℤ) : Tape kA ops m → ℤ
+  | .clock => pc
+  | .st => ps
+  | _ => 0
+
+/-- A configuration of the copy phase. -/
+abbrev cpCfg (q : Option CStep) (ip : Fin (x.length + 2)) (c : ℕ) (u : List Bool) (pc ps : ℤ) :
+    Config (nTapes kA ops m) Bool CStep (Fin 0) x :=
+  mkR q ip (cpF c u) (cpP pc ps) []
+
+theorem cp_lF (T : ℕ) : lF (kA := kA) (ops := ops) (m := m) [] (T + 1) = cpF (T + 1) [] := by
+  funext t
+  rcases t with i | o | o | _ | _ | j <;> simp [lF, cpF]
+
+theorem cp_lP (p : ℤ) : lP (kA := kA) (ops := ops) (m := m) 0 p = cpP p 0 := by
+  funext t
+  rcases t with i | o | o | _ | _ | j <;> rfl
+
+theorem cp_mv_clock (c : ℕ) (u : List Bool) (pc ps : ℤ) (d : SignType) :
+    (fun t => wr (cpF (kA := kA) (ops := ops) (m := m) c u t) (cpP pc ps t)
+      (mv1 .clock none d t).1) = cpF c u ∧
+    (fun t => cpP (kA := kA) (ops := ops) (m := m) pc ps t + ((mv1 .clock none d t).2 : ℤ)) =
+      cpP (pc + d) ps := by
+  constructor <;> funext t <;> rcases t with i | o | o | _ | _ | j <;> simp [mv1, cpP]
+
+theorem cp_mv_st (c : ℕ) (u : List Bool) (pc ps : ℤ) (d : SignType) :
+    (fun t => wr (cpF (kA := kA) (ops := ops) (m := m) c u t) (cpP pc ps t)
+      (mv1 .st none d t).1) = cpF c u ∧
+    (fun t => cpP (kA := kA) (ops := ops) (m := m) pc ps t + ((mv1 .st none d t).2 : ℤ)) =
+      cpP pc (ps + d) := by
+  constructor <;> funext t <;> rcases t with i | o | o | _ | _ | j <;> simp [mv1, cpP]
+
+theorem cp_write (c : ℕ) (u : List Bool) (pc : ℤ) (b : Bool) :
+    (fun t => wr (cpF (kA := kA) (ops := ops) (m := m) c u t) (cpP pc u.length t)
+      (mv1 .st (some (some b)) 1 t).1) = cpF c (u ++ [b]) := by
+  funext t
+  rcases t with i | o | o | _ | _ | j <;> simp [mv1, cpF, cpP, wr, tapeOfList_append_single]
+
+theorem mip_eq {n : ℕ} (p : Fin (n + 2)) (d : SignType) (q : Fin (n + 2))
+    (h : (q.val : ℤ) = p.val + d) : moveInputPos p d = q := by
+  apply Fin.ext
+  have := val_moveInputPos_eq p d
+  have := q.isLt
+  omega
+
+variable (T : ℕ)
+
+/-- The configuration after the copy: the clock of `T` cells, `x` on `st`, the heads back. -/
+abbrev cpEnd : Config (nTapes kA ops m) Bool CStep (Fin 0) x :=
+  cpCfg none 1 T x ((T : ℤ) - 1) 0
+
+theorem copyM_tr (q : CStep) inp work ans bit :
+    (copyM (kA := kA) (ops := ops) (m := m)).tr q inp work ans bit = stepR (cpAct q inp work) :=
+  rfl
+
+/-- Rewinding `st` and the input head. -/
+theorem lawM_rew (N : ℕ) : ∀ j (hj : j ≤ x.length),
+    lawM (copyM (kA := kA) (ops := ops) (m := m)) (N + j + 1)
+      (cpCfg (x := x) (some .rew) ⟨j, by omega⟩ T x ((T : ℤ) - 1) ((j : ℤ) - 1)) =
+      lawM copyM N (cpEnd T) := by
+  intro j
+  induction j with
+  | zero =>
+    intro _
+    have hst : cpF (kA := kA) (ops := ops) (m := m) T x .st (cpP (kA := kA) (ops := ops) (m := m) ((T : ℤ) - 1) (((0 : ℕ) : ℤ) - 1) .st)
+        = none := by simp [cpF, cpP, tapeOfList_eq_none_iff]
+    rw [Nat.add_zero, lawM_det _ N _ _ _ _ [] 1 (mv1 .st none 1) none none (fun bit => by
+      rw [copyM_tr]; simp only [cpAct, kind_idx, hst])]
+    obtain ⟨h1, h2⟩ := cp_mv_st (kA := kA) (ops := ops) (m := m) T x ((T : ℤ) - 1) (((0 : ℕ) : ℤ) - 1) 1
+    rw [h1, h2]
+    congr 3
+  | succ j ih =>
+    intro hj
+    have hst : cpF (kA := kA) (ops := ops) (m := m) T x .st (cpP (kA := kA) (ops := ops) (m := m) ((T : ℤ) - 1) (((j + 1 : ℕ) : ℤ) - 1) .st)
+        = some x[j] := by simp [cpF, cpP]
+    rw [show N + (j + 1) + 1 = (N + j + 1) + 1 by omega,
+      lawM_det _ _ _ _ _ _ [] (-1) (mv1 .st none (-1)) none (some .rew) (fun bit => by
+      rw [copyM_tr]; simp only [cpAct, kind_idx, hst])]
+    obtain ⟨h1, h2⟩ := cp_mv_st (kA := kA) (ops := ops) (m := m) T x ((T : ℤ) - 1)
+      (((j + 1 : ℕ) : ℤ) - 1) (-1)
+    rw [h1, h2, ← ih (by omega)]
+    congr 3
+    · exact mip_eq _ _ _ (by simp)
+    · simp; ring
+
+/-- Copying the input onto `st`. -/
+theorem lawM_cp (N : ℕ) : ∀ k i (hk : i + k = x.length),
+    lawM (copyM (kA := kA) (ops := ops) (m := m)) (N + k)
+      (cpCfg (x := x) (some .copy) ⟨1 + i, by omega⟩ T (x.take i) ((T : ℤ) - 1) i) =
+      lawM copyM N (cpCfg (x := x) (some .copy) ⟨x.length + 1, by omega⟩ T x ((T : ℤ) - 1) x.length) := by
+  intro k
+  induction k with
+  | zero =>
+    intro i hk
+    obtain rfl : i = x.length := by omega
+    rw [List.take_length, Nat.add_zero]
+    congr 3
+    omega
+  | succ k ih =>
+    intro i hk
+    have hi : i < x.length := by omega
+    have hinp : (cpCfg (kA := kA) (ops := ops) (m := m) (x := x) (some .copy) ⟨1 + i, by omega⟩ T
+        (x.take i) ((T : ℤ) - 1) i).tapes.inputSymbol = some x[i] :=
+      inputSymbolInner i rfl hi
+    rw [show N + (k + 1) = (N + k) + 1 by omega,
+      lawM_det _ _ _ _ _ _ [] 1 (mv1 .st (some (some x[i])) 1) none (some .copy) (fun bit => by
+      rw [copyM_tr, hinp]; rfl)]
+    have hlen : (x.take i).length = i := by simp; omega
+    have hw := cp_write (kA := kA) (ops := ops) (m := m) T (x.take i) ((T : ℤ) - 1) x[i]
+    rw [hlen, ← List.take_succ_eq_append_getElem hi] at hw
+    have h2' : (fun t => cpP (kA := kA) (ops := ops) (m := m) ((T : ℤ) - 1) i t +
+        ((mv1 .st (some (some x[i])) 1 t).2 : ℤ)) = cpP ((T : ℤ) - 1) (i + 1) := by
+      funext t; rcases t with i' | o | o | _ | _ | j <;> simp [mv1, cpP]
+    rw [hw, h2', ← ih (i + 1) (by omega)]
+    congr 3
+    exact mip_eq _ _ _ (by simp; ring)
+
+/-- **The copy phase**: from the end of the first phase, the clock of `T` cells, `x` on `st`,
+within `2 |x| + 4` steps. -/
+theorem lawM_copy {S : Type} (N : ℕ) :
+    lawM (copyM (kA := kA) (ops := ops) (m := m)) (2 * x.length + 4 + N)
+      (Sequential.start copyM (clkCfg (x := x) (S := S) T)) =
+      lawM copyM N (cpEnd T) := by
+  rw [start_mkR, cp_lF, cp_lP]
+  -- step onto the extra cell
+  rw [show 2 * x.length + 4 + N = (2 * x.length + 3 + N) + 1 by omega,
+    lawM_det _ _ _ _ _ _ [] 0 (mv1 .clock none 1) none (some .clkE) (fun bit => rfl)]
+  obtain ⟨h1, h2⟩ := cp_mv_clock (kA := kA) (ops := ops) (m := m) (T + 1) [] ((T : ℤ) - 1) 0 1
+  rw [h1, h2, moveInputPos_zero, Option.toList_none, List.append_nil]
+  -- erase it
+  rw [show 2 * x.length + 3 + N = (2 * x.length + 2 + N) + 1 by omega,
+    lawM_det _ _ _ _ _ _ [] 0 (mv1 .clock (some none) (-1)) none (some .copy) (fun bit => rfl)]
+  have hF : (fun t => wr (cpF (kA := kA) (ops := ops) (m := m) (T + 1) [] t)
+      (cpP ((T : ℤ) - 1 + ((1 : SignType) : ℤ)) 0 t) (mv1 .clock (some none) (-1) t).1) =
+      cpF T (x.take 0) := by
+    funext t
+    rcases t with i | o | o | _ | _ | j <;> simp [mv1, cpF, cpP, wr]
+    rw [List.replicate_succ', ← tapeOfList_erase_last (List.replicate T true) true]
+    simp
+  have hP : (fun t => cpP (kA := kA) (ops := ops) (m := m) ((T : ℤ) - 1 + ((1 : SignType) : ℤ)) 0 t +
+      ((mv1 .clock (some none) (-1) t).2 : ℤ)) = cpP ((T : ℤ) - 1) ((0 : ℕ) : ℤ) := by
+    funext t
+    rcases t with i | o | o | _ | _ | j <;> simp [mv1, cpP, sub_eq_add_neg]
+  rw [hF, hP, moveInputPos_zero, Option.toList_none, List.append_nil]
+  -- copy
+  rw [show 2 * x.length + 2 + N = ((N + x.length + 1) + 1) + x.length by omega]
+  have h1 : (1 : Fin (x.length + 2)) = ⟨1 + 0, by omega⟩ := Fin.ext (by simp)
+  rw [h1, lawM_cp T _ x.length 0 (by omega)]
+  -- the end of the input
+  have hinp : (cpCfg (kA := kA) (ops := ops) (m := m) (x := x) (some .copy)
+      ⟨x.length + 1, by omega⟩ T x ((T : ℤ) - 1) x.length).tapes.inputSymbol = none :=
+    inputSymbol_eq_none_of_boundary (Or.inr rfl)
+  rw [lawM_det _ _ _ _ _ _ [] (-1) (mv1 .st none (-1)) none (some .rew) (fun bit => by
+    rw [copyM_tr, hinp]; rfl)]
+  obtain ⟨h1, h2⟩ := cp_mv_st (kA := kA) (ops := ops) (m := m) T x ((T : ℤ) - 1) x.length (-1)
+  rw [h1, h2, Option.toList_none, List.append_nil, ← lawM_rew T N x.length le_rfl]
+  congr 3
+  · exact mip_eq _ _ _ (by simp)
+
+end Copy
+
 end SigabaNeo.Inline
