@@ -581,6 +581,43 @@ theorem lenBoundT_cutLook (n m : ℕ) (tbl : List (List Bool × List Bool)) (dv 
       fin_cases t <;> simp at h0 ⊢
     rw [hz]; exact Nat.zero_le _
 
+/-! ### Reading one bit of a long word -/
+
+/-- `o := (s src).drop P |>.take 1 ++ replicate m false` (the bit at position `P`, then `m`
+zeros), with the scratch tape `tmp`. -/
+def bitAtP (src tmp o : Fin k) (P m : ℕ) : Prog k :=
+  seq (prim (.copy tmp src)) (seq (iter tmp (prim (.tail tmp)) P)
+    (seq (putW o (List.replicate m false)) (seq (prim (.consHead o tmp)) (prim (.clear tmp)))))
+
+theorem run_tail_iter (i : Fin k) : ∀ (P : ℕ) (s : Store k),
+    (run (prim (.tail i)))^[P] s = Function.update s i ((s i).drop P)
+  | 0, s => by simp
+  | P + 1, s => by
+    rw [Function.iterate_succ_apply, run_prim, run_tail_iter i P]
+    simp [Prim.apply, List.drop_tail, Nat.add_comm]
+
+theorem run_bitAtP {src tmp o : Fin k} (h1 : tmp ≠ src) (h2 : o ≠ tmp) (P m : ℕ) (s : Store k) :
+    run (bitAtP src tmp o P m) s =
+      Function.update (Function.update s o (((s src).drop P).take 1 ++ List.replicate m false))
+        tmp [] := by
+  simp only [bitAtP, run_seq, run_prim, Prim.apply, run_iter, run_tail_iter, run_putW]
+  funext t
+  simp only [Function.update_apply]
+  split_ifs <;> simp_all
+
+theorem coinFree_bitAtP (src tmp o : Fin k) (P m : ℕ) : (bitAtP src tmp o P m).CoinFree := by
+  simp only [CoinFree, bitAtP, coinFreeB, Bool.and_eq_true]
+  exact ⟨trivial, coinFree_iter tmp (prim (.tail tmp)) rfl P, coinFree_putW _ _, trivial, trivial⟩
+
+theorem loopFree_bitAtP (src tmp o : Fin k) (P m : ℕ) : (bitAtP src tmp o P m).LoopFree :=
+  ⟨trivial, loopFree_iter tmp (prim (.tail tmp)) trivial P, loopFree_putW _ _, trivial, trivial⟩
+
+theorem wf_bitAtP (src tmp o : Fin k) (P m : ℕ) : (bitAtP src tmp o P m).WF :=
+  ⟨trivial, wf_iter tmp (prim (.tail tmp)) trivial P, wf_putW _ _, trivial, trivial⟩
+
+theorem pcount_bitAtP (src tmp o : Fin k) (P m : ℕ) : pcount (bitAtP src tmp o P m) = P + m + 5 := by
+  simp only [bitAtP, pcount, pcount_iter, pcount_putW, List.length_replicate]; ring
+
 end Prog
 
 end SigabaNeo.Tape
