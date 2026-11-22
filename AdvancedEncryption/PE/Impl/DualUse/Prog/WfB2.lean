@@ -212,9 +212,7 @@ def oK2 : Fin 94 → Fin 256 := fun j =>
 theorem oK2_inj : Function.Injective oK2 := by decide
 
 /-- The step's tapes cleared before the key sum. -/
-def keyClr : List (Fin 256) :=
-  (List.finRange 19).map (fun j => ⟨j.val + 3, by omega⟩) ++
-    (List.finRange 9).map (fun j => ⟨j.val + 86, by omega⟩)
+def keyClr : List (Fin 256) := (List.finRange 92).map (fun j => ⟨j.val + 3, by omega⟩)
 
 /-- The preparation of the key sum. -/
 def keyPrep (N K k d : ℕ) : XProg 256 :=
@@ -1850,7 +1848,7 @@ theorem oK2_lo : ∀ t : Fin 94, 18 ≤ t.val → t.val < 86 → oK2 t ∉ [ms 3
     ms 8, ms 9, ms 10, ms 11, ms 12, ms 13, ms 14, ms 15, ms 16, ms 17, ms 88, ms 89, ms 90] ∧
     oK2 t ≠ ms 87 := by decide
 
-theorem oK2_lo_clr : ∀ t : Fin 94, 18 ≤ t.val → t.val < 22 → oK2 t ∈ keyClr := by decide
+theorem oK2_lo_clr : ∀ t : Fin 94, 18 ≤ t.val → t.val < 86 → oK2 t ∈ keyClr := by decide
 
 theorem oK2_lo_ms : ∀ t : Fin 94, 22 ≤ t.val → t.val < 86 →
     oK2 t = ms ⟨t.val, Nat.lt_of_lt_of_le t.isLt (by decide)⟩ := by decide
@@ -1945,12 +1943,7 @@ theorem key_run (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : Bnd
   · intro t h h'
     simp only [hr]
     obtain ⟨a1, a2⟩ := oK2_lo t h h'
-    rw [S5_not _ _ _ _ _ (by rw [keys_keyT]; exact a1) a2]
-    by_cases h22 : t.val < 22
-    · rw [if_pos (oK2_lo_clr t h h22)]
-    · split_ifs
-      · rfl
-      · rw [oK2_lo_ms t (by omega) h']; exact blank _ (oK2_wrG t (by omega) h')
+    rw [S5_not _ _ _ _ _ (by rw [keys_keyT]; exact a1) a2, if_pos (oK2_lo_clr t h h')]
   · intro t h
     simp only [hr]
     obtain ⟨a1, a2, a3⟩ := oK2_top t h
