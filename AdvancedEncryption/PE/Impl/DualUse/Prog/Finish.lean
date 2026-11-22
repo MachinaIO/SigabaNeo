@@ -85,4 +85,25 @@ theorem time_comp {body : XProg 82} {M T M' : ℕ} (hb : UB body M T M') (o : Fi
 theorem io2_le (a b : ℕ) (i : Fin 82) : io2 (R := 80) a b 0 i ≤ max a b := by
   simp only [io2]; split_ifs <;> omega
 
+/-- **A uniform bound of the word of `1`** that keeps the bound `M`. -/
+theorem ub_oneB' (N K M : ℕ) (hM : N * K ≤ M) (h1 : 1 ≤ M) : UB (oneB N K) M (timeOneB N K M) M := by
+  intro ℓ hℓ
+  obtain ⟨hl, ht⟩ := natP_bounds (t := (0 : Fin 2)) (c := 1) (by decide) (N * K - 1) ℓ M hℓ (by omega)
+  have hl' : ∀ i, lenBoundT (natP (0 : Fin 2) 1 (N * K - 1)) ℓ i ≤ M := fun i => by
+    have := hl i
+    simp only [natB] at this
+    split_ifs at this <;> first | omega | (have := hℓ i; omega) | (have := hℓ 1; omega)
+  refine ⟨?_, fun i => ?_⟩
+  · show timeBoundT (natP (0 : Fin 2) 1 (N * K - 1)) ℓ + timeBoundT (prog (.prim (.cons 0 true)))
+      (lenBoundT (natP (0 : Fin 2) 1 (N * K - 1)) ℓ) ≤ _
+    exact Nat.add_le_add ht ((ub_prim _ M) _ hl').1
+  · show (Prim.cons (0 : Fin 2) true).lenT (lenBoundT (natP (0 : Fin 2) 1 (N * K - 1)) ℓ) i ≤ M
+    simp only [Prim.lenT, Function.update_apply]
+    split_ifs with h
+    · subst h
+      have := hl 0
+      simp only [natB, if_true] at this
+      omega
+    · exact hl' i
+
 end AdvancedEncryption.DualUse.Prog
