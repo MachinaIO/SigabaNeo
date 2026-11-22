@@ -775,7 +775,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Deferring 256 columns gives an exact conditional first moment for fresh competitors (R < q). It leaves the rank-249 old
     part's minimum and counts open.
   * None of the five gives a 99% certificate.
-* **Frontier after Parts 1–129 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 130 (audited).** [recursive_deferral](research/wall1_recursive_deferral.md): recursive deferral cannot close 506
+  with first moments.
+  * The old lattice embeds isometrically, so the requirement stays at the physical radius 27.4538 at every level.
+  * With a fixed prefix all batches share one displacement group: 451 total deferred columns force a collision, and 417 exhaust
+    the budget.
+  * The smallest surviving leaf has rank 89, with a pathwise floor of 1.095, a factor 25 short.
+  * Part 39's 647 is minimal within its certificate family (failure 0.0149 at 646, 0.00483 at 647).
+* **Frontier after Parts 1–130 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
