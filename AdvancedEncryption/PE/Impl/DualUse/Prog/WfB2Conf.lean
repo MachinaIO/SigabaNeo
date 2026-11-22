@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Prog.WfB2Time
+import PE.Impl.DualUse.Prog.KeyPTime2
 
 /-!
 # The numbers of the block-structured `W_f` block at `confP`
@@ -346,6 +347,25 @@ theorem time_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K +
       ⟨_, h⟩ | ⟨j, _, h⟩
     · rw [h]; simp only [io2]; split_ifs <;> simp only [Mall, Lb, Lgc] at * <;> omega
     · rw [h]; exact hf j
+
+/-- **The key component with the block-structured `W_f` block at the sizes of `confP`**:
+`time_keyP2` with `time_wfB2_conf`, when the SimData word and the front end's output are below
+`2^234` and `2^64` bits. -/
+theorem time_keyP_wfB2 {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (hN : N = Nc)
+    (hK : K = Kc) (hd : c.d = dc) (hth : treeHeight N (K + 1) ≤ 64)
+    (hoB : offB c ≤ Lb) (hoW : offW hk c ≤ Lb) (hoP : offPsi hk c ≤ Lb) (hoR : offR hk c ≤ Lb)
+    (hoX : offPsi hk c + 10 * lenPsi N K (K + 1) ≤ Lb)
+    {sdP : XProg 82} {Ls Ts Lsd : ℕ} (hsT : XProg.timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
+    (hsL : XProg.lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0) (hLsd : Lsd ≤ Lb)
+    (hF : frontL c.L Wc ≤ Lgc) (cf : KeyCfg) (K₀ : ℕ) :
+    XProg.timeBoundT (keyP hk c sdP (wfB2 hk c Wc) Wc cf) (io2 (R := 254) Ls K₀ 0) ≤
+        Ts + frontT c.L Wc K₀ + branchT hk c (fun _ => 2 ^ 549) (fun _ => Mall) cf
+          (keyM hk c Lsd Wc cf) + clrT (branchL hk c (fun _ => Mall) cf (keyM hk c Lsd Wc cf)) ∧
+      XProg.lenBoundT (keyP hk c sdP (wfB2 hk c Wc) Wc cf) (io2 (R := 254) Ls K₀ 0) ≤
+        io2 (branchL hk c (fun _ => Mall) cf (keyM hk c Lsd Wc cf)) 0 0 := by
+  obtain ⟨hwT, hwL⟩ := time_wfB2_conf hk c hN hK hd hth hoB hoW hoP hoR hoX Lsd (frontL c.L Wc)
+    hLsd hF
+  exact time_keyP2 hsT hsL Wc hwT hwL cf K₀
 
 end WB2
 
