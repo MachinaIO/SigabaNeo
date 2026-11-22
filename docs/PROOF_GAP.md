@@ -1625,6 +1625,18 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Lean gap.** `restartCount_lwe` needs MinFloor plus a bound on smoothError, so the score needs a small adapter
     theorem.
   * **Remaining.** The probability that the reducer's output meets both the score and lift budgets on the same prefix.
+* **Part 182 (audited, minor caveats).** [restart_passes_test](research/wall1_restart_passes_test.md): does the restart's
+  terminal block pass the score test?
+  * Via Markov, δ ≤ 0.005 would need E[score] ≤ 6.469·10⁻⁷, which already requires Pr[λ1(H_terminal) ≤ 26] < 4.318·10⁻⁷.
+    Here 26 ≈ 0.47·GH, a much milder ratio than 0.954.
+  * Existing first moments do not give this. Part 151 controls only the penultimate minimum, and Part 161's pre-projection
+    count misses inherited horizontal vectors and projection-shortened vectors.
+  * Part 117 transfers the exact-score rejection between the first pass and the marginal restart, with error
+    < 0.00022304.
+* **Lean (score test, Part 181).** FixedBlockScore / FixedBlockScoreRestart (axiom-clean):
+  * 1 − success ≤ capTail(a) + score(a), with no MinFloor needed;
+  * `restartScore_lwe`: with acceptance score ≤ s ∧ (prefix Babai sum) ≤ ℓ on the same prefix,
+    Pr[wrong secret] ≤ ∏δᵢ + (c + s) + ℓ.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1634,7 +1646,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–181 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–182 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
