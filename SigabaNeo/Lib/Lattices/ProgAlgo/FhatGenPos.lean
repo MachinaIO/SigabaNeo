@@ -1,5 +1,6 @@
 import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenCompile
 import SigabaNeo.Lib.Lattices.ProgAlgo.KeySum
+import SigabaNeo.Lib.Lattices.ProgAlgo.MatAdd
 
 /-!
 # Generating gate tapes: the positions of the output wires
@@ -229,6 +230,41 @@ theorem iter_pairE : ∀ (x : ℕ) (σ : St) (L : List ℕ), σ.ls 19 = L → 2 
       fun r h1 h2 h3 => by rw [f2 r h1 h2 h3, f1 r h1 h2 h3], fun l h => by rw [g2 l h, g1 l h]⟩
     rw [o2, o1, show 2 * (x + 1) = 2 * x + 2 by ring]
     simp [List.append_assoc]
+
+/-! ### The position stream as `posW` -/
+
+theorem flatten_range_map (f : ℕ → List Bool) : ∀ n : ℕ,
+    ((List.range n).map f).flatten = concatN n f
+  | 0 => rfl
+  | n + 1 => by rw [List.range_succ, List.map_append, List.flatten_append, flatten_range_map f n]; simp [concatN]
+
+theorem uw_eq_unaryW (W j : ℕ) : uw W j = Tape.Prog.unaryW W j := rfl
+
+theorem posList_eq (W n thr N k : ℕ) (R : List ℕ) :
+    (((List.range (2 * k * k * N)).map (pAt n thr N k R)).map (uw W)).flatten =
+      Tape.Prog.posW W N k (fun c i j => pfix n thr N k R c i j) := by
+  rw [List.map_map, flatten_range_map, concatN_mul, concatN_mul]
+  unfold Tape.Prog.posW
+  refine concatN_congr fun c _ => concatN_congr fun i hi => concatN_congr fun j hj => ?_
+  simp only [Function.comp, uw_eq_unaryW, pAt_idx R hi hj]
+
+theorem pfix_repList {ι : Type*} (ix : ι → ℕ) (hix : ∀ i, ix i < E.n) (t : ℕ)
+    (rep : BI N k → Wire ι) {c i j : ℕ} (hc : c < 2 * k) (hi : i < k) (hj : j < N) :
+    pfix E.n (E.n + 1 + t) N k (repList E ix rep) c i j =
+      Tape.Prog.wireIx ix E.n t (rep (0, colE k ⟨c, hc⟩, ⟨i, hi⟩, ⟨j, hj⟩)) := by
+  have ho : oIdx ((0, colE k ⟨c, hc⟩, ⟨j, hj⟩) : OI N k) = c * N + j := by
+    simp only [oIdx, colE_apply]
+    have := Nat.div_add_mod c k
+    simp only [Fin.val_zero, zero_mul, zero_add]
+    rw [Nat.mul_comm (c / k) k, this]
+  have h := repList_getD E ix rep ((0, colE k ⟨c, hc⟩, ⟨j, hj⟩) : OI N k) ⟨i, hi⟩
+  rw [ho] at h
+  simp only at h
+  unfold pfix
+  cases hw : rep (0, colE k ⟨c, hc⟩, ⟨i, hi⟩, ⟨j, hj⟩) with
+  | input a => have := hix a; simp only [h, hw, pos, Tape.Prog.wireIx]; split_ifs <;> omega
+  | one => simp only [h, hw, pos, Tape.Prog.wireIx]; split_ifs <;> omega
+  | gate m => simp only [h, hw, pos, Tape.Prog.wireIx]; split_ifs <;> omega
 
 end FhatGen
 
