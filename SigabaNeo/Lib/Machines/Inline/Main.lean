@@ -40,6 +40,17 @@ def projA {σ : Type} (enc : σ → List Bool) (r : Config kA Bool SA (Fin ops) 
     List Bool × (ℤ → Option Bool) :=
   (r.1.tapes.output, tapeOfList (enc r.2))
 
+/-- The output, the `st` tape and the `st` head of the inlined machine. -/
+def projRP {S : Type} (r : Config (nTapes kA ops m) Bool S (Fin 0) x × Unit) :
+    List Bool × (ℤ → Option Bool) × ℤ :=
+  (r.1.tapes.output, r.1.tapes.workTapes (Tape.st (kA := kA) (ops := ops) (m := m)).idx,
+    r.1.tapes.workTapePos (Tape.st (kA := kA) (ops := ops) (m := m)).idx)
+
+/-- The output and the encoded handler state of the oracle machine, the `st` head at `0`. -/
+def projAP {σ : Type} (enc : σ → List Bool) (r : Config kA Bool SA (Fin ops) x × σ) :
+    List Bool × (ℤ → Option Bool) × ℤ :=
+  (r.1.tapes.output, tapeOfList (enc r.2), 0)
+
 /-- The invariant of the simulation. -/
 structure Good {σ : Type} (L : ℕ) (InvS : σ → Prop) (n : ℕ) (c : Config kA Bool SA (Fin ops) x)
     (s : σ) (fl : Fin ops → AFlag) : Prop where
@@ -96,6 +107,10 @@ theorem projR_embA (c : Config kA Bool SA (Fin ops) x) (fl : Fin ops → AFlag) 
     (n : ℕ) : projR (embA H T w c fl s n, ()) = (c.tapes.output, tapeOfList s) := by
   simp [projR, embA, mkR_workTapes, frameF]
 
+theorem projRP_embA (c : Config kA Bool SA (Fin ops) x) (fl : Fin ops → AFlag) (s : List Bool)
+    (n : ℕ) : projRP (embA H T w c fl s n, ()) = (c.tapes.output, tapeOfList s, 0) := by
+  simp [projRP, embA, frameF, mkR, frameP]
+
 theorem lawR_of_halted (cfg : Config (nTapes kA ops m) Bool (RState SA H T w) (Fin 0) x)
     (h : cfg.tapes.state = none) (N : ℕ) : lawR H M T w N cfg = PMF.pure (cfg, ()) :=
   law_halted _ _ _ _ _ h
@@ -105,8 +120,8 @@ theorem lawR_embA_halted (c : Config kA Bool SA (Fin ops) x) (hc : c.tapes.state
     lawR H M T w N (embA H T w c fl s n) = PMF.pure (embA H T w c fl s n, ()) :=
   law_halted _ _ _ _ _ (by simp [embA, hc])
 
-/-- **Correctness of the simulation.** -/
-theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (List Bool))
+/-- **Correctness of the simulation**, with the position of the `st` head (back at `0`). -/
+theorem lawR_embA' {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (List Bool))
     (enc : σ → List Bool) (InvS : σ → Prop) (L Q : ℕ) (hQ : ∀ o, (H o).time ≤ Q)
     (hH : ∀ o b s, b.length ≤ T → InvS s → (H o).Runs (layout b [] (enc s))
       ((oracle (o, b) s).map (fun r => layout b r.1 (enc r.2))))
@@ -115,8 +130,8 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
     ∀ n (c : Config kA Bool SA (Fin ops) x) s fl, Good T L InvS n c s fl →
       ∀ N, n * (Q + 2 * L + 4 * ops + 9) + pot c + 1 ≤ N →
       (∀ g ∈ (lawR H M T w N (embA H T w c fl (enc s) n)).support, g.1.tapes.state = none) ∧
-      (lawR H M T w N (embA H T w c fl (enc s) n)).map projR =
-        (lawA M oracle n c s).map (projA enc) := by
+      (lawR H M T w N (embA H T w c fl (enc s) n)).map projRP =
+        (lawA M oracle n c s).map (projAP enc) := by
   intro n
   induction n with
   | zero =>
@@ -125,7 +140,7 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
     rw [law_zero, PMF.pure_map]
     cases hc : c.tapes.state with
     | none =>
-      rw [lawR_embA_halted H M T w c hc, PMF.pure_map, projR_embA]
+      rw [lawR_embA_halted H M T w c hc, PMF.pure_map, projRP_embA]
       refine ⟨fun g hg' => ?_, rfl⟩
       rw [PMF.mem_support_pure_iff] at hg'; subst hg'; simp [embA, hc]
     | some q =>
@@ -145,14 +160,14 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
           simp)]
       rw [hstep, lawR_of_halted H M T w _ rfl, PMF.pure_map]
       refine ⟨fun g hg' => by rw [PMF.mem_support_pure_iff] at hg'; subst hg'; rfl, ?_⟩
-      simp [projR, projA, mkR_workTapes, noop, frameF]
+      simp [projRP, projAP, noop, frameF, mkR, frameP]
   | succ n ih =>
     intro c s fl hg N hN
     cases hc : c.tapes.state with
     | none =>
       unfold lawA
       rw [lawR_embA_halted H M T w c hc, law_halted _ _ _ _ _ hc, PMF.pure_map, PMF.pure_map,
-        projR_embA]
+        projRP_embA]
       refine ⟨fun g hg' => ?_, rfl⟩
       rw [PMF.mem_support_pure_iff] at hg'; subst hg'; simp [embA, hc]
     | some q =>
@@ -195,10 +210,10 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
           (lawR H M T w N' ((embA H T w c fl (enc s) (n + 1)).step
               (simAct H M T w q fl (embA H T w c fl (enc s) (n + 1)).tapes.inputSymbol
                 (embA H T w c fl (enc s) (n + 1)).tapes.workTapeSymbols bit)
-              (fun _ => none) (fun _ => 0))).map projR =
+              (fun _ => none) (fun _ => 0))).map projRP =
             (stepLaw M oracle n c s
               (M.tr q c.tapes.inputSymbol c.tapes.workTapeSymbols c.answerSymbols bit)).map
-              (projA enc) := by
+              (projAP enc) := by
         intro bit
         simp only [simAct, hclock, ne_eq, not_true_eq_false, ite_false, hinp]
         rw [hwork, hans]
@@ -298,5 +313,24 @@ theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (
         congr 1
         funext bit
         exact (hbit bit).2
+
+/-- **Correctness of the simulation.** -/
+theorem lawR_embA {σ : Type} (oracle : Fin ops × List Bool → StateT σ PMF (List Bool))
+    (enc : σ → List Bool) (InvS : σ → Prop) (L Q : ℕ) (hQ : ∀ o, (H o).time ≤ Q)
+    (hH : ∀ o b s, b.length ≤ T → InvS s → (H o).Runs (layout b [] (enc s))
+      ((oracle (o, b) s).map (fun r => layout b r.1 (enc r.2))))
+    (hInv : ∀ o b s, b.length ≤ T → InvS s → ∀ r ∈ (oracle (o, b) s).support,
+      InvS r.2 ∧ r.1.length ≤ L) :
+    ∀ n (c : Config kA Bool SA (Fin ops) x) s fl, Good T L InvS n c s fl →
+      ∀ N, n * (Q + 2 * L + 4 * ops + 9) + pot c + 1 ≤ N →
+      (∀ g ∈ (lawR H M T w N (embA H T w c fl (enc s) n)).support, g.1.tapes.state = none) ∧
+      (lawR H M T w N (embA H T w c fl (enc s) n)).map projR =
+        (lawA M oracle n c s).map (projA enc) := by
+  intro n c s fl hg N hN
+  obtain ⟨h1, h2⟩ := lawR_embA' H M T w oracle enc InvS L Q hQ hH hInv n c s fl hg N hN
+  refine ⟨h1, ?_⟩
+  have := congrArg (PMF.map (fun t : List Bool × (ℤ → Option Bool) × ℤ => (t.1, t.2.1))) h2
+  rw [PMF.map_comp, PMF.map_comp] at this
+  exact this
 
 end SigabaNeo.Inline
