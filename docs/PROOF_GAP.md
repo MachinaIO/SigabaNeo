@@ -689,6 +689,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Pr_CBD[all-heights uniqueness] ≥ 1 − (v/(v+a²) + T(1) + Σ_{k=2}^{⌊√(9N+1)⌋} T(k)), with v = (9/2)d and
   T(k) = (Σ_m e^{−g²m²/(12k²)})^d − 1. Heights ≥ 2 reduce deterministically to ⟨y,h⟩ ≤ −‖h‖²/(2k). It is accepted on Prove2Me.
   What remains for Wall 1 is to show that the reducer-selected H satisfies these hypotheses with high probability.
+  FiniteRankLaw.lean (`mul_surjective`, `card_mul_fiber`, `card_fullRank`, `prob_mul_fullRank`) proves the finite-field rank
+  law behind Parts 101/104(d). For F of rank t, A ↦ AF is uniform with fibers of size q^{m(n−t)}, and
+  Pr[rank AF = t] = ∏_{i<t}(1 − q^{i−m}). All four are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
