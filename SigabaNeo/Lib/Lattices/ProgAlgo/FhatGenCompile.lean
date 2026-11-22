@@ -204,6 +204,82 @@ theorem exec_compileStepC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : �
     show sc5 x = _
     rw [f5 x (by omega), hs4 x (by omega)]
 
+/-! ### All the source gates -/
+
+/-- The wire indices of a gate list, two per gate (`gsSrc`). -/
+def srcOf (gs : GateList) : List ℕ := gs.flatMap fun g => [g.1, g.2]
+
+/-- The compiler state after the first `j` source gates. -/
+def cst {N k K : ℕ} (gs : GateList) (j : ℕ) :
+    SLP (Fin 10 × BI N k) × List (BI N k → Wire (Fin 10 × BI N k)) :=
+  ((fromGates 10 gs).take j).foldl
+    (compileStepL (ordT₀ N k) (ordO₀ N k) (gvExp (2 ^ K)) (.gate 0) (2 ^ K)) ([⟨.one, .one⟩], [])
+
+theorem length_cst {N k K : ℕ} (gs : GateList) : ∀ j, j ≤ gs.length →
+    (cst (N := N) (k := k) (K := K) gs j).2.length = j
+  | 0, _ => rfl
+  | j + 1, hj => by
+    have hlt : j < (fromGates 10 gs).length := by simp [fromGates]; omega
+    simp only [cst, List.take_succ, List.getElem?_eq_getElem hlt, Option.toList_some,
+      List.foldl_append, List.foldl_cons, List.foldl_nil]
+    simp only [compileStepL, List.length_append, List.length_singleton]
+    have := length_cst (N := N) (k := k) (K := K) gs j (by omega)
+    simp only [cst] at this; rw [this]
+
+theorem cst_succ {N k K : ℕ} (gs : GateList) (j : ℕ) (hj : j < gs.length) :
+    cst (N := N) (k := k) (K := K) gs (j + 1) = compileStepL (ordT₀ N k) (ordO₀ N k)
+      (gvExp (2 ^ K)) (.gate 0) (2 ^ K) (cst (K := K) gs j) ⟨ofIdx 10 gs[j].1, ofIdx 10 gs[j].2⟩ := by
+  have hlt : j < (fromGates 10 gs).length := by simp [fromGates]; omega
+  simp only [cst, List.take_succ, List.getElem?_eq_getElem hlt, Option.toList_some,
+    List.foldl_append, List.foldl_cons, List.foldl_nil]
+  simp [fromGates]
+
+theorem srcOf_drop (gs : GateList) (j : ℕ) (hj : j < gs.length) :
+    srcOf (gs.drop j) = gs[j].1 :: gs[j].2 :: srcOf (gs.drop (j + 1)) := by
+  rw [List.drop_eq_getElem_cons hj]; rfl
+
+set_option maxHeartbeats 4000000 in
+theorem iter_compile (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) {N k K : ℕ} (hK : K ≤ k + 1)
+    (ix' : Fin 10 × BI N k → ℕ) (hix : ∀ i b, ix' (i, b) = i.val * (4 * k * N * k) + codec b)
+    (hixn : ∀ j, ix' j < E.n) (gs : GateList) (hb : StepB E N k gs.length) (σ : St)
+    (hc : AllC (E := E) N k K σ) (hI : Inv E σ) (hS : ScOK E σ) (hsrc : σ.src = srcOf gs)
+    (h59 : σ.sc 59 = 0) (h22 : σ.ls 22 = []) :
+    ∀ j, j ≤ gs.length →
+      E.n + ((exec E compileStepC)^[j] (mk E ix' [⟨.one, .one⟩] σ)).t ≤ E.M →
+      ∃ sc' ls', (exec E compileStepC)^[j] (mk E ix' [⟨.one, .one⟩] σ) =
+          mk E ix' (cst (N := N) (k := k) (K := K) gs j).1 (setSLS σ sc' ls' (srcOf (gs.drop j))) ∧
+        ls' 22 = ((cst (N := N) (k := k) (K := K) gs j).2.map (repList E ix')).flatten ∧
+        (0 < j → ls' 23 = repList E ix' ((cst (N := N) (k := k) (K := K) gs j).2.getLast?.getD
+          fun _ => .one)) ∧
+        sc' 59 = j ∧ (∀ r : SR, r.val < 16 ∨ r.val = 63 → sc' r = σ.sc r) ∧
+        Inv E (setSLS σ sc' ls' (srcOf (gs.drop j))) ∧ ScOK E (setSLS σ sc' ls' (srcOf (gs.drop j)))
+  | 0, _, _ => by
+    have e : setSLS σ σ.sc σ.ls (srcOf (gs.drop 0)) = σ := by rw [List.drop_zero, ← hsrc]; rfl
+    exact ⟨σ.sc, σ.ls, by rw [e]; rfl, by simp [cst, h22], fun h => absurd h (by omega), h59,
+      fun _ _ => rfl, by rw [e]; exact hI, by rw [e]; exact hS⟩
+  | j + 1, hj, hM => by
+    rw [Function.iterate_succ_apply'] at hM ⊢
+    obtain ⟨sc1, ls1, h1, d1, -, c1, f1, hI1, hS1⟩ := iter_compile hnM hWM hK ix' hix hixn gs hb σ hc
+      hI hS hsrc h59 h22 j (by omega) (le_trans (Nat.add_le_add_left (t_le_exec E _ _) _) hM)
+    rw [h1] at hM ⊢
+    have hlen := length_cst (N := N) (k := k) (K := K) gs j (by omega)
+    obtain ⟨sc2, ls2, h2, d2, e2, c2, f2⟩ := exec_compileStepC (E := E) hnM hWM hK ix' hix hixn hb
+      (cst (N := N) (k := k) (K := K) gs j).2 (by omega) (cst gs j).1 gs[j].1 gs[j].2
+      (srcOf (gs.drop (j + 1))) (setSLS σ sc1 ls1 (srcOf (gs.drop j)))
+      (allC_of hc (fun r hr => f1 r (by omega))) hI1 hS1 (by simp [setSLS, srcOf_drop gs j hj])
+      (by simp [setSLS, c1, hlen]) d1 hM
+    rw [h2]
+    have hstep := cst_succ (N := N) (k := k) (K := K) gs j hj
+    have hbody := exec_compileStepC (E := E) hnM hWM hK ix' hix hixn hb
+    refine ⟨sc2, ls2, by rw [hstep]; rfl, by rw [hstep, d2], fun _ => by rw [hstep, e2],
+      by rw [c2, hlen], fun r hr => (f2 r hr).trans (f1 r hr), ?_, ?_⟩
+    · have := inv_exec E compileStepC (mk E ix' (cst (N := N) (k := k) (K := K) gs j).1
+        (setSLS σ sc1 ls1 (srcOf (gs.drop j)))) hI1
+      rw [h2] at this; exact this
+    · have := scOK_exec E (by omega) hWM compileStepC (mk E ix' (cst (N := N) (k := k) (K := K) gs j).1
+        (setSLS σ sc1 ls1 (srcOf (gs.drop j)))) hI1 hS1
+      rw [h2] at this; exact this
+
 end FhatGen
 
 end SigabaNeo.Lattices
