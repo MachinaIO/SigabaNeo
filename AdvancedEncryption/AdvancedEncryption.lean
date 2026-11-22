@@ -69,7 +69,6 @@ import PE.Impl.DualUse.Prog.KeyTrySim
 import PE.Impl.DualUse.Prog.KeyTrySimLaw
 import PE.Impl.DualUse.Prog.KeyTryReal
 import PE.Impl.DualUse.Prog.KeyTryRealLaw
-import PE.Impl.DualUse.Prog.BfB
 import PE.Impl.DualUse.Prog.KeyGenP
 import PE.Impl.DualUse.Algo.DecWords
 import PE.Impl.DualUse.Prog.DecFin
