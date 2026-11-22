@@ -1949,4 +1949,73 @@ end Final
 
 end WB2
 
+/-! ### Well-formedness -/
+
+namespace WB2
+
+open SigabaNeo.Tape.ValVM
+
+theorem wf_copiesP (g : Fin 120) : (copiesP g).WF := wf_of_wfB rfl
+
+theorem wf_wfBody {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) :
+    (wfBody hk c W).WF := by
+  have hT : runT.WF := wf_compileA _ (stepSpec_simTop N K k 1).wf fhatFullC (by decide +kernel)
+  have hG : runG.WF := wf_compileA _ (stepSpec_simGsw N K k 1).wf gswFullC (by decide +kernel)
+  refine ⟨⟨wf_of_wfB rfl, WF.map cm13_inj (wf_convP W), wf_of_wfB rfl,
+    wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
+    ⟨WF.map tm31_inj wf_simTmplP, wf_copiesP 0⟩,
+    wf_tmplP _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)), wf_putW _ _, wf_putW _ _⟩,
+    hT, ⟨⟨wf_clrsP _, wf_of_wfB rfl⟩, WF.map cm13_inj (wf_convP W), wf_of_wfB rfl,
+    wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
+    ⟨WF.map tm31_inj wf_simTmplP, wf_copiesP 1⟩,
+    wf_tmplP _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide))⟩, hG,
+    ⟨wf_clrsP _, wf_tmplP _ _ (ne_of_keys (keys_keyT N K k c.d) (by decide)), wf_putW _ _⟩,
+    wf_simKeyP, wf_clrsP _⟩
+
+theorem swp_eq : ∀ t : Fin 256, ((swp t).val = 0 ↔ t = mw SDW) ∧ ((swp t).val = 1 ↔ t = mw GS) ∧
+    (swp t = mw SDW ↔ t.val = 0) ∧ (swp t = 255 ↔ t.val = 2) := by decide
+
+theorem swp_swp (t : Fin 256) : swp (swp t) = t := by
+  revert t; decide
+
+end WB2
+
+open WB2 in
+/-- **The block-structured `W_f` block meets `WfSpec`**, for every window predicate whose gate
+list is nonempty, fits `W` with its `10` inputs and has its operands below `W`. -/
+theorem wfSpec_wfB2 {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ)
+    (hN : 0 < N) (hK : 0 < K)
+    (hP : ∀ C : List Bool, C.length ≤ c.L → (∃ w : Window, winWord w = C) →
+      parse C ≠ [] ∧ (parse C).length + 10 ≤ W ∧ BndG W (parse C)) :
+    WfSpec hk c (wfB2 hk c W) W where
+  wf := wf_wfBody hk c W
+  law := by
+    intro sd C hL hC
+    obtain ⟨hne, hgs, hb⟩ := hP C hL hC
+    have hW : 0 < W := by omega
+    have hin : (fun j => io2 (R := 254) ((sdEnc hk c).enc sd) (gsW W (parse C)) [] (eW j)) =
+        S0 W ((sdEnc hk c).enc sd) (parse C) := by
+      funext t
+      obtain ⟨e0, e1, -, -⟩ := swp_eq t
+      show io2 (R := 254) ((sdEnc hk c).enc sd) (gsW W (parse C)) [] (swp t) = _
+      simp only [io2, S0, e0, e1]
+    rw [wfB2, XProg.law_frame, hin, law_wfBody hk c W sd C hN hK hW hb hgs hne,
+      final_eq hk c W sd C hW hb, PMF.pure_map]
+    congr 1
+    funext t
+    have ht : t = eW (swp t) := by simp [eW, swp_swp]
+    rw [ht, embedF_apply_self]
+    obtain ⟨-, -, e2, e3⟩ := swp_eq t
+    show (if swp t = mw SDW then _ else if swp t = 255 then _ else []) =
+      Function.update (io2 (R := 254) ((sdEnc hk c).enc sd) [] []) 2 _ (eW (swp t))
+    rw [show eW (swp t) = t from swp_swp t]
+    simp only [e2, e3, io2, Function.update_apply]
+    by_cases h0 : t.val = 0
+    · have : t ≠ 2 := fun e => by rw [e] at h0; exact absurd h0 (by decide)
+      simp [h0, this]
+    · by_cases h2 : t.val = 2
+      · simp [h0, h2, Fin.ext_iff]
+      · have : t ≠ 2 := fun e => h2 (by rw [e]; rfl)
+        simp [h0, h2, this]
+
 end AdvancedEncryption.DualUse.Prog
