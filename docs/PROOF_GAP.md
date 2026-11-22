@@ -1112,7 +1112,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * `discGauss_eq_kleinLaw_mul`: D(y) = K(y)·g(u)/E_p[g];
     * `sdist_kleinLaw_discGauss_le`: SD(K, D_{L_M,s}) ≤ ½(((1+τ)/(1−τ))^r − 1) for every integer M;
     * instances at s/q ≥ 38.39: SD < 2^−6671 for r ≤ 134, and < 2^−6669 for r ≤ 512.
-    Still open: identifying K with the Klein procedure's output law, and the table-sampler lemmas (Part 141 Lemmas 3–6).
+    StatDistance / CDTInversion / DiscreteGaussianTail / FixedPointGaussian (axiom-clean) prove:
+    * SD basics, sum bounds for products and sequential laws, data processing, and P(E) ≤ Q(E) + SD;
+    * CDT inversion: SD ≤ (N−1)·2^{-w} + μ;
+    * the shifted discrete-Gaussian tail ≤ 2e^{−πR²/s²}/[(1 − e^{−2πR/s²})·b];
+    * the fixed-point recurrence error ≤ x(x+3)/2·(δ_E + 2^{-F}).
+    Still open in Lean:
+    * connecting these to the constructed tables ((3.1), Lemma 5);
+    * Lemma 6(a);
+    * identifying K with the Klein procedure's output law;
+    * the end-to-end word-operation count.
   * **Rigorous cost frontier (Nov 2026).** Recovering the secret of plain LWE (511, 512, 3329), CBD(3) with probability ≥
     99.5% costs ≤ 2^795 word operations, fully explicit. The previous explicit bound was 2^1253.
 * **Part 142 (audited, minor caveats with one substantive correction to F3/DS; see the note's Audit section).**
