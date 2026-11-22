@@ -116,8 +116,24 @@ def candidate(p, se, b, steps, lq):
     return bits,F.ceil(rounded)
 
 
+def huge_modulus_infinite(p):
+    """`Bkw.cost_eq_none`: at `q = 2^e`, `e >= 1024`, every candidate pays for a table of `q^b`
+    entries and exceeds the 2^1024 cap (no need to evaluate it)."""
+    q = p.q
+    if q <= 0 or q & (q - 1) or q.bit_length() - 1 < 1024:
+        return False
+    if p.Xs.stddev > p.Xe.stddev:
+        return False
+    z = width(p.Xs)
+    if p.Xs.is_gaussian_like:
+        z = min(z, 6*p.Xs.stddev+F.ONE)
+    return z >= 0 and erf(F.div(z, F.sqrt(2*p.Xe.stddev))) == F.ONE
+
+
 def cost(params):
     p = params.normalize()
+    if huge_modulus_infinite(p):
+        return None
     se,m = p.Xe.stddev,p.m
     lq = F.log2_nat(p.q)
     while True:

@@ -9,6 +9,7 @@ import SigabaNeo.Lib.Lattices.Reduction.BKZ
 import SigabaNeo.Lib.Lattices.LWE
 import SigabaNeo.Lib.Lattices.RingLWE
 import SigabaNeo.Lib.Lattices.ModuleLWE
+import SigabaNeo.Lib.Lattices.Estimator.Bound.Cbd
 import SigabaNeo.Lib.Lattices.Trapdoor
 import SigabaNeo.Lib.Lattices.Trapdoor.Family
 import SigabaNeo.Lib.Lattices.Homomorphic

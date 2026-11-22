@@ -9,8 +9,8 @@ from math import comb
 from . import fx
 from . import num_primal as num
 from .params import LWE
-from .reduction import log2_delta, matzov_bits
-from .usvp import MAX_BETA, cost_gsa, log2_xi
+from .reduction import MAX_BETA, log2_delta, matzov_bits
+from .usvp import cost_gsa, log2_xi
 
 
 def estimate(params: LWE, mitm: bool, plain: bool = False):
@@ -21,8 +21,9 @@ def estimate(params: LWE, mitm: bool, plain: bool = False):
     if m is not None and p.Xs.stddev <= p.Xe.stddev:
         m += p.n
     upper = min(MAX_BETA, m) if m is not None else MAX_BETA
+    l2q = fx.log2(fx.of_int(p.q))
     baseline_beta, baseline = num.local_minimum(
-        40, max(45, upper), 5, lambda beta: cost_gsa(beta, p, m))
+        40, max(45, upper), 5, lambda beta: cost_gsa(beta, p, m, l2q))
     max_beta = upper if baseline is None else baseline_beta
     log_q, log_xi = fx.log2_nat(p.q), log2_xi(p)
     log_sigma = fx.log2(p.Xe.stddev)
@@ -62,7 +63,7 @@ def estimate(params: LWE, mitm: bool, plain: bool = False):
                 lift = d
                 svp = 2 * fx.log2_nat(d)
             else:
-                lo, hi = 0, min(d, 1754) if d > 4096 else d
+                lo, hi = 0, min(d, MAX_BETA) if d > 4096 else d
                 while lo < hi:
                     k = (lo + hi + 1) // 2
                     if avg - (d - k) * delta < num.threshold(k):

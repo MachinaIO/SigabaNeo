@@ -6,7 +6,7 @@ for enumeration and FFT dimensions, unit stride for the FFT modulus). -/
 namespace SigabaNeo.Lattices.Estimator.DualHybrid
 open Fx Reduction NumDual
 
-private def localMin (f : ℕ → Cost) (stop : ℕ) : Cost := Id.run do
+def localMin (f : ℕ → Cost) (stop : ℕ) : Cost := Id.run do
   let mut lo := 40
   let mut hi := stop-1
   let mut x := hi
@@ -42,7 +42,7 @@ private def localMin (f : ℕ → Cost) (stop : ℕ) : Cost := Id.run do
       x := (lo+hi)/2
   return best
 
-private def candidate (d k t : ℕ) (base extra fft coeff enumCost : Fx) (b : ℕ) : Cost := do
+def candidate (d k t : ℕ) (base extra fft coeff enumCost : Fx) (b : ℕ) : Cost := do
   let v := base + (log2Nat b - log2TwoPiE)/2 + ((d : ℤ)-b)*log2Delta b
   if v > 10*ONE then none else
     let count := mul (4*mul PI PI) (mul LOG2E (exp2 (2*v))) + extra
@@ -50,6 +50,28 @@ private def candidate (d k t : ℕ) (base extra fft coeff enumCost : Fx) (b : �
     let table := log2Nat 640 + count
     let guess := coeff + k*enumCost + (if t == 0 then table else log2Add table fft)
     return log2Add red guess
+
+/-- `α = (π s)²` of the secret's standard deviation `s`. -/
+def alphaOf (s : Fx) : Fx := mul (mul PI s) (mul PI s)
+
+/-- `e^{−2α}` (`0` when it underflows). -/
+def minusOf (s : Fx) : Fx := if alphaOf s > 17*ONE then 0 else exp (-2*alphaOf s)
+
+/-- `tanh α`. -/
+def tanhOf (s : Fx) : Fx := div (ONE-minusOf s) (ONE+minusOf s)
+
+/-- The entropy term of one guessed coordinate. -/
+def hOf (s : Fx) : Fx := LOG2E/2 + log2 SQRT2PI + log2 s - log2 (tanhOf s)
+
+/-- The enumeration cost per guessed coordinate. -/
+def enumCostOf (s : Fx) : Fx :=
+  ONE - LOG2E/2 + mul (8*mul (mul (alphaOf s) (minusOf s)) (tanhOf s)) LOG2E + hOf s
+
+/-- The coefficient of the guessing cost. -/
+def coeffOf (s : Fx) : Fx :=
+  let u := div ONE (2*mul s s)
+  let den := if mul s s == 0 || u > 34*ONE then ONE else ONE-exp (-u)
+  if den == 0 then ONE + 2*log2 s else -(log2 den)
 
 def cost (params : LWEParams) : Cost := Id.run do
   let p := params.normalize
@@ -59,15 +81,11 @@ def cost (params : LWEParams) : Cost := Id.run do
   let ls := log2 s
   let le := log2 e
   let lq := log2Nat p.q
-  let alpha := mul (mul PI s) (mul PI s)
-  let minus := if alpha > 17*ONE then 0 else exp (-2*alpha)
-  let tanh := div (ONE-minus) (ONE+minus)
-  if tanh == 0 then return none
-  let h := LOG2E/2 + log2 SQRT2PI + ls - log2 tanh
-  let enumCost := ONE - LOG2E/2 + mul (8*mul (mul alpha minus) tanh) LOG2E + h
-  let u := div ONE (2*mul s s)
-  let den := if mul s s == 0 || u > 34*ONE then ONE else ONE-exp (-u)
-  let coeff := if den == 0 then ONE + 2*ls else -(log2 den)
+  let alpha := alphaOf s
+  if tanhOf s == 0 then return none
+  let h := hOf s
+  let enumCost := enumCostOf s
+  let coeff := coeffOf s
   let mut best : Cost := none
   for modulus in [2:p.q] do
     let lp := log2Nat modulus
@@ -82,7 +100,7 @@ def cost (params : LWEParams) : Cost := Id.run do
         let base := (p.n*le + lat*(ls+lq))/d-lq + log2 (ofRat 4 3)/2
         let extra := mul (t*alpha/(3*modulus*modulus : ℤ)) LOG2E + log2 (k*h+mul (t*lp) LN2+LN2)
         let fft := 10*ONE + log2Nat t + (t+1 : ℕ)*lp
-        let stop := max 41 (min 1754 ((p.m.map (fun m ↦ m-k-t)).getD 1754))
+        let stop := max 41 (min maxBeta ((p.m.map (fun m ↦ m-k-t)).getD maxBeta))
         let val := localMin (candidate d k t base extra fft coeff enumCost) stop
         if ¬Cost.le val bt then break
         bt := val

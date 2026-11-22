@@ -76,7 +76,7 @@ def cost(params):
                     guess = coeff+k*enum+(fx.log2_add(table,fft) if t else table)
                     return fx.log2_add(red,guess)
 
-                stop = max(41,min(1754,1754 if p.m is None else p.m-k-t))
+                stop = max(41,min(r.MAX_BETA,r.MAX_BETA if p.m is None else p.m-k-t))
                 val = local(candidate,stop)
                 if bt is not None and (val is None or val > bt):
                     break

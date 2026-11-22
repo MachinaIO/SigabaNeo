@@ -61,6 +61,7 @@ import PE.Impl.DualUse.Params.SimTrapNorm
 import PE.Impl.DualUse.Params.Sizes
 import PE.Impl.DualUse.Params.Conf
 import PE.Impl.DualUse.Params.Stat
+import PE.Impl.DualUse.Params.Strength
 import PE.Impl.DualUse.Params.Advantage
 import PE.Impl.DualUse.Algo.KeyMatrix
 import PE.Impl.DualUse.Algo.KeyCoins

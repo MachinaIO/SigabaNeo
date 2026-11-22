@@ -21,12 +21,11 @@ def exhaustiveCost (params : LWEParams) : Cost := do
   guard (p.mGe (ceil m).toNat && bits ≤ 10000 * ONE)
   return bits
 
-def mitmCost (params : LWEParams) : Cost := do
-  let p := params.normalize
-  let err := width p.Xe
+/-- `mitm`, given whether the error width is below `q` and the width divided by `q`. -/
+def mitmCostW (p : LWEParams) (errLtQ : Bool) (errDivQ : Fx) : Cost := do
   let sec := width p.Xs
-  guard (err < ofInt p.q)
-  let den := 2 * ONE - err / p.q
+  guard errLtQ
+  let den := 2 * ONE - errDivQ
   let k := (floor (div (ofInt p.n) den + ONE/2)).toNat
   let mut prob := (p.n : Int) * log2 (tail p.Xs)
   let mut t := (k : Int) * log2 sec
@@ -40,4 +39,9 @@ def mitmCost (params : LWEParams) : Cost := do
   let m := if t > 0 then max 1 (floor (t + log2 t + ONE/2)) else 1
   guard (p.mGe m.toNat)
   return ofInt m + repeatBits (prob + m * log2 (tail p.Xe))
+
+/-- The analytical MITM. The modulus enters only through the comparison and the division. -/
+def mitmCost (params : LWEParams) : Cost :=
+  let p := params.normalize
+  mitmCostW p (decide (width p.Xe < ofInt p.q)) (width p.Xe / p.q)
 end SigabaNeo.Lattices.Estimator.Guess

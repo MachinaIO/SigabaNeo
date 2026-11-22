@@ -6,6 +6,9 @@ from .num_misc import width, tail, repeat_bits
 
 def exhaustive_cost(params):
     p = params.normalize()
+    if p.Xs.kind != "gauss" and F.floor(width(p.Xs)) >= 2 and p.n >= 10050:
+        # `Guess.exhaustiveCost_eq_none`: more than 2^10049 candidates, above the 2^10000 cap.
+        return None
     prob = F.sqrt(F.of_rat(99, 100))
     if p.Xs.kind == "gauss":
         if p.n * F.log2(tail(p.Xs)) < F.log2(prob):

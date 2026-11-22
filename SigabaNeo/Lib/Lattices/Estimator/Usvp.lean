@@ -6,8 +6,8 @@ import SigabaNeo.Lib.Lattices.Estimator.Reduction
 
 `primal_usvp` of the estimator with the GSA shape model (`PrimalUSVP.cost_gsa`): the 2016 estimate
 [ADPS16, AGVW17] for the embedding of the (normal-form) instance with the Bai–Galbraith scaling
-of a small secret. The estimator's local search over `β ∈ [40, max_beta)` is an exhaustive scan
-here, so the result is at most the estimator's. `python/lwemodel/usvp.py` is the mirror.
+of a small secret. The estimator's local search over `β ∈ [40, max_beta)` (`maxBeta`) is an
+exhaustive scan here, so the result is at most the estimator's. `python/lwemodel/usvp.py` is the mirror.
 
 **Heuristics.** The geometric series assumption, and the 2016 estimate for when BKZ-`β` finds the
 unique shortest vector.
@@ -18,8 +18,6 @@ namespace SigabaNeo.Lattices.Estimator
 namespace Usvp
 
 open Fx
-
-def maxBeta : ℕ := 1754
 
 def log2Xi (p : LWEParams) : Fx :=
   if p.Xs.stddev < p.Xe.stddev then log2 p.Xe.stddev - log2 p.Xs.stddev else 0
@@ -43,12 +41,11 @@ def solveForD (p : LWEParams) (m : Option ℕ) (β : ℕ) (x log2tau l2xi l2q : 
         some (match m with | none => dd | some m => Min.min m dd)
       else none
 
-/-- `PrimalUSVP.cost_gsa`. -/
-def costGsa (β : ℕ) (p : LWEParams) (m : Option ℕ) : Cost :=
+/-- `PrimalUSVP.cost_gsa`, given `l2q = log₂ q`. -/
+def costGsaQ (l2q : Fx) (β : ℕ) (p : LWEParams) (m : Option ℕ) : Cost :=
   let x := Reduction.log2Delta β
   let l2xi := log2Xi p
   let log2tau := log2 p.Xe.stddev
-  let l2q := log2 (ofInt p.q)
   match solveForD p m β x log2tau l2xi l2q with
   | none => none
   | some d =>
@@ -60,12 +57,24 @@ def costGsa (β : ℕ) (p : LWEParams) (m : Option ℕ) : Cost :=
     let rhs := x * (2 * (β : ℤ) - d - 1) + idiv (log2tau + l2xi * p.n + l2q * ((d : ℤ) - p.n - 1)) d
     if rhs < lhs then none else some (Reduction.matzovBits β d)
 
-/-- `primal_usvp` (GSA). -/
-def cost (params : LWEParams) : Cost :=
+/-- `PrimalUSVP.cost_gsa`. -/
+def costGsa (β : ℕ) (p : LWEParams) (m : Option ℕ) : Cost := costGsaQ (log2 (ofInt p.q)) β p m
+
+/-- The sample bound of the embedding: Bai–Galbraith adds `n` rows for a small secret. -/
+def embedM (p : LWEParams) : Option ℕ :=
+  if p.Xs.stddev ≤ p.Xe.stddev then p.m.map (· + p.n) else p.m
+
+/-- The end of the block-size scan. -/
+def scanEnd (m : Option ℕ) : ℕ := match m with | none => maxBeta | some m => Max.max (Min.min maxBeta m) 45
+
+/-- `primal_usvp` (GSA), given `l2q = log₂ q`. -/
+def costQ (l2q : Fx) (params : LWEParams) : Cost :=
   let p := params.normalize
-  let m := if p.Xs.stddev ≤ p.Xe.stddev then p.m.map (· + p.n) else p.m
-  let mb := match m with | none => maxBeta | some m => Max.max (Min.min maxBeta m) 45
-  (List.range' 40 (mb - 40)).foldl (fun best β => Cost.min best (costGsa β p m)) none
+  (List.range' 40 (scanEnd (embedM p) - 40)).foldl
+    (fun best β => Cost.min best (costGsaQ l2q β p (embedM p))) none
+
+/-- `primal_usvp` (GSA). The modulus enters only through `log₂ q`, computed once. -/
+def cost (params : LWEParams) : Cost := costQ (log2 (ofInt params.q)) params
 
 end Usvp
 

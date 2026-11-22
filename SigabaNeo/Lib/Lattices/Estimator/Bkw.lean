@@ -5,7 +5,7 @@ uses Brent interpolation followed by an integer scan. Erf uses the A&S five-term
 namespace SigabaNeo.Lattices.Estimator.Bkw
 open Fx NumMisc
 
-private def erf (x : Fx) : Fx :=
+def erf (x : Fx) : Fx :=
   if x ≥ 7*ONE then ONE else
   let t := div ONE (ONE+mul (ofRat 3275911 (10^7)) x)
   let a := ([1061405429,-1453152027,1421413741,-284496736,254829592] : List Int).foldl
@@ -13,7 +13,7 @@ private def erf (x : Fx) : Fx :=
   ONE-mul a (exp (-(mul x x)))
 
 /-- Brent interpolation with the 10% relative tolerance of upstream ntest. -/
-private def testDim (rem t : Nat) (code : Nat → Fx → Nat) : Nat := Id.run do
+def testDim (rem t : Nat) (code : Nat → Fx → Nat) : Nat := Id.run do
   if rem == 0 then return 0
   let residual := fun x ↦ ofInt ((rem : Int)-
     ((List.range t).foldl (fun a i ↦ a+code (i+1) x) 0 : Nat)) - x
@@ -65,9 +65,48 @@ private def testDim (rem t : Nat) (code : Nat → Fx → Nat) : Nat := Id.run do
     best := v
   return best
 
-private abbrev Estimate := Option (Fx × Nat)
+abbrev Estimate := Option (Fx × Nat)
 
-private def candidate (p : LWEParams) (se lq : Fx) (b steps : Nat) : Estimate := do
+/-- The number of samples for the final distinguisher, given the noise `u`. -/
+def samplesNeeded (u : Fx) : Int :=
+  if u ≤ -2*ln (ofRat 99 100) then 1 else if mul u LOG2E > 25*ONE then
+    let exponent := mul u LOG2E
+    let prec := max 53 (2*ceil (exponent/2)).toNat
+    let mant := floor (exp2 (ofInt prec-exponent)+ONE/2)
+    ceil ((-2*ln (ofRat 1 50)*2^prec)/mant)
+    else ceil (div (2*ln (ofRat 1 50)) (ln (ONE-exp (-u))))
+
+/-- The operation count of the reduction steps and of the code steps. -/
+def accum (p : LWEParams) (se : Fx) (b n t1 top x : Nat) (codes : List Nat) (m half samples : Int) :
+    Int := Id.run do
+  let mut c := if p.Xs.stddev > se then (samples-ofInt n)*(p.n+1)*((n+b-2)/(b-1)) else 0
+  for i in [1:t1+1] do
+    c := c + (p.n+1-i*b)*(samples-i*half)
+  let mut coords := top+x
+  for (v,i) in codes.zipIdx do
+    coords := coords+v
+    c := c + 4*(ofInt m+(i+1)*half)*v + coords*(ofInt m+i*half)
+  return c
+
+/-- The bound on a guessed secret coordinate. -/
+def zOf (p : LWEParams) : Fx :=
+  if p.Xs.isGaussianLike then min (width p.Xs) (6*p.Xs.stddev+ONE) else width p.Xs
+
+/-- The guessing step and the total, in bits, with the rounded sample count. -/
+def finish (p : LWEParams) (se lq : Fx) (b top x : Nat) (m table samples c : Int) : Estimate := do
+  let z := zOf p
+  let guesses := if top == 0 then ONE else (2*z+ONE)^top / ONE^(top-1)
+  let c := c + guesses*m*top + ofInt (4*m*x) + mul guesses (table*(b*lq+ONE))
+  let bits := if top == 0 || se == 0 then log2 c else log2 c - top*log2 (erf (div z (Fx.sqrt (2*se))))
+  guard (bits < 1024*ONE)
+  let unit : Int := 2^(samples.toNat.log2+1-53)
+  let a := samples/unit
+  let r := samples%unit
+  let rounded := (a + if 2*r > unit || (2*r == unit && a%2 == 1) then 1 else 0)*unit
+  return (bits,(ceil rounded).toNat)
+
+
+def candidate (p : LWEParams) (se lq : Fx) (b steps : Nat) : Estimate := do
   let code := fun (i : Nat) (x : Fx) ↦ (2*b*lq*x / (2*(b-1)*lq*ONE+i*x*ONE)).toNat
   let x := testDim p.n steps code
   let t1 := min (p.n/b) ((List.range steps).countP (fun i ↦ code (i+1) (ofInt x) ≤ b))
@@ -82,34 +121,13 @@ private def candidate (p : LWEParams) (se lq : Fx) (b steps : Nat) : Estimate :=
   let quant := mul (mul p.Xs.stddev p.Xs.stddev) (exp2 (-2*(b-1)*lq/x))*ntot/12
   let u := mul (4*mul PI PI) (noise+quant)
   guard (u ≤ 1020*LN2)
-  let m := if u ≤ -2*ln (ofRat 99 100) then 1 else if mul u LOG2E > 25*ONE then
-    let exponent := mul u LOG2E
-    let prec := max 53 (2*ceil (exponent/2)).toNat
-    let mant := floor (exp2 (ofInt prec-exponent)+ONE/2)
-    ceil ((-2*ln (ofRat 1 50)*2^prec)/mant)
-    else ceil (div (2*ln (ofRat 1 50)) (ln (ONE-exp (-u))))
+  let m := samplesNeeded u
   let table : Int := (p.q : Int)^b
   let half := (table-1)*ONE/2
   let samples := steps*half+ofInt m
-  let mut c := if p.Xs.stddev > se then (samples-ofInt n)*(p.n+1)*((n+b-2)/(b-1)) else 0
-  for i in [1:t1+1] do
-    c := c + (p.n+1-i*b)*(samples-i*half)
-  let mut coords := top+x
-  for (v,i) in codes.zipIdx do
-    coords := coords+v
-    c := c + 4*(ofInt m+(i+1)*half)*v + coords*(ofInt m+i*half)
-  let z := if p.Xs.isGaussianLike then min (width p.Xs) (6*p.Xs.stddev+ONE) else width p.Xs
-  let guesses := if top == 0 then ONE else (2*z+ONE)^top / ONE^(top-1)
-  c := c + guesses*m*top + ofInt (4*m*x) + mul guesses (table*(b*lq+ONE))
-  let bits := if top == 0 || se == 0 then log2 c else log2 c - top*log2 (erf (div z (Fx.sqrt (2*se))))
-  guard (bits < 1024*ONE)
-  let unit : Int := 2^(samples.toNat.log2+1-53)
-  let a := samples/unit
-  let r := samples%unit
-  let rounded := (a + if 2*r > unit || (2*r == unit && a%2 == 1) then 1 else 0)*unit
-  return (bits,(ceil rounded).toNat)
+  finish p se lq b top x m table samples (accum p se b n t1 top x codes m half samples)
 
-private def smaller (budget : Option Nat) (a b : Estimate) : Bool :=
+def smaller (budget : Option Nat) (a b : Estimate) : Bool :=
   match a,b with
   | _,none => true
   | none,_ => false

@@ -106,14 +106,21 @@ theorem minCost_attained {as : List AttackModel} {p : LWEParams} {c : Fx}
     · obtain ⟨a, ha, hc⟩ := ih h1
       exact ⟨a, List.mem_cons_of_mem _ ha, hc⟩
 
-/-- No claim above this many bits (used when every attack is infinite). -/
-def bitsCap : ℕ := 1024
+/-- The claim when every attack is infinite: `⌊log₂ RC.MATZOV(maxBeta, maxBeta)⌋` (4673).
+
+A lattice attack is infinite when no block size `β < maxBeta` of its scan succeeds; a successful
+attack would then need `β ≥ maxBeta`, which costs at least the reduction cost at `maxBeta`. The
+claim is that cost, not more. Of the other attacks, exhaustive search is infinite above
+`2^10000` (the estimator's `Cost.sanity_check`), which is above this value; coded-BKW is infinite
+above `2^1024` (the estimator's binary64 cost overflows) and when its noise is too large;
+Arora–GB, MITM and exhaustive search are also infinite when they lack samples. -/
+def fallbackBits : ℕ := (Fx.floor (Reduction.matzovBits maxBeta maxBeta)).toNat
 
 /-- The floor of the minimum over `as`, in bits. -/
 def floorBits (as : List AttackModel) (p : LWEParams) : ℕ :=
   match minCost as p with
   | some c => (Fx.floor c).toNat
-  | none => bitsCap
+  | none => fallbackBits
 
 /-- **Not refuted**: every attack in `as` costs at least `2^{floorBits}`. -/
 theorem floorBits_le {as : List AttackModel} {a : AttackModel} (ha : a ∈ as) {p : LWEParams}

@@ -27,10 +27,13 @@ The errors are centered binomial of width `16` (`σ = 2√2`), and the secret fo
   every modelled attack costs more than `2^{1024}`. Hence `N = 2^33`.
 * **The registry's `RingLWE.H`** is `ModuleLWE.H`, the floor of the minimum over the formalized
   attacks of the lattice estimator (`SigabaNeo/Lib/Lattices/Estimator`, mirror
-  `python/lwemodel`), not `Hardness.securityBits`. Its value at these sizes is not computed here.
-  The mirror does not finish at `N = 2^33`: BDD, the dual hybrid, BKW and exhaustive search run
-  for over two minutes each there, and Arora–Ge and the primal hybrids already take over 40 s
-  each at `N = 2^15`, `q = 2^{1024}`. Nothing is proved about it here (`Params/Strength.lean`).
+  `python/lwemodel`), not `Hardness.securityBits`. It cannot be evaluated at these sizes (the
+  hybrids, Arora–GB and the dual hybrid search spaces of size `N`), but it is bounded from below
+  without evaluation (`Estimator.cbd16_estimatorBits_ge`, `docs/LWE_ESTIMATOR.md`). At ring degree
+  `N = 2^34`: **`2650 ≤ RingLWE.H`** at both instances (`Params/Strength.lean`:
+  `ringLWE_H_registry3`, `ringLWE_H_registry5`, at explicit parameters independent of `confP`);
+  the mirror gives about `2691` (`bdd`, `β ≈ 9400`). At `N = 2^33` the uSVP estimate is about
+  `1193` bits (`β ≈ 4041`), not certified here.
 
 Heuristically, the root Hermite factor a BKZ attack must reach is about `δ` with
 `log₂ δ ≈ log₂ q / (4 n)` (distinguishing attack, `q ≫ σ`): here
