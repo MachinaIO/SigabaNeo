@@ -677,6 +677,111 @@ theorem run_decodeM (neg : Bool) (K T n : ℕ) (w : List Bool) (hw : w.length �
     (decodeM neg K T n).run w = PMF.pure (decodeW neg K T w) := by
   rw [decodeM, run_toMachine _ (wf_decodeP neg K T) 0 2 n w hw, law_decodeP]
 
+/-! #### Bounds -/
+
+theorem setConst_cons (i : Fin k) (b : Bool) (w : List Bool) :
+    setConst i (b :: w) = seq (setConst i w) (prim (.cons i b)) := rfl
+
+theorem lenBound_setConst (i : Fin k) (w : List Bool) (L : ℕ) :
+    lenBound (setConst i w) L = L + w.length := by
+  induction w with
+  | nil => rfl
+  | cons b w ih =>
+    rw [setConst_cons, lenBound, ih, lenBound]
+    simp [Prim.grow]; omega
+
+theorem timeBound_setConst (i : Fin k) (w : List Bool) (L : ℕ) :
+    timeBound (setConst i w) L ≤ (w.length + 1) * (2 * (L + w.length) + 5) := by
+  induction w with
+  | nil => simp [setConst, timeBound, Prim.pad]
+  | cons b w ih =>
+    rw [setConst_cons, timeBound, lenBound_setConst, timeBound]
+    simp only [Prim.pad, List.length_cons]
+    nlinarith
+
+theorem size_setConst (i : Fin k) (w : List Bool) : size (setConst i w) = 36 + 60 * w.length := by
+  induction w with
+  | nil => rfl
+  | cons b w ih => rw [setConst_cons, size, ih, size]; simp [Prim.pad]; ring
+
+theorem lenBound_setupP (K T n : ℕ) : lenBound (setupP K T) n = n + K + T + 8 := by
+  simp only [setupP, lenBound, lenBound_setConst, List.length_replicate, List.length_cons,
+    List.length_nil]
+  omega
+
+theorem timeBound_setupP (K T n : ℕ) :
+    timeBound (setupP K T) n ≤ (K + T + 17) * (2 * (n + K + T + 8) + 5) := by
+  simp only [setupP, timeBound, lenBound_setConst, List.length_replicate,
+    List.length_cons, List.length_nil]
+  have B := fun (i : Fin 13) (w : List Bool) (L : ℕ) (h : L + w.length ≤ n + K + T + 8) =>
+    (timeBound_setConst i w L).trans (Nat.mul_le_mul_left (w.length + 1)
+      (show 2 * (L + w.length) + 5 ≤ 2 * (n + K + T + 8) + 5 by omega))
+  have h1 := B 4 (List.replicate K false) n (by simp; omega)
+  have h2 := B 2 (List.replicate (T + 1) false) (n + K) (by simp; omega)
+  have h3 := B 6 [false] (n + K + (T + 1)) (by simp; omega)
+  have h4 := B 7 [false] (n + K + (T + 1) + 1) (by simp; omega)
+  have h5 := B 8 [false] (n + K + (T + 1) + 1 + 1) (by simp; omega)
+  have h6 := B 9 [false] (n + K + (T + 1) + 1 + 1 + 1) (by simp; omega)
+  have h7 := B 10 [false] (n + K + (T + 1) + 1 + 1 + 1 + 1) (by simp; omega)
+  have h8 := B 11 [true] (n + K + (T + 1) + 1 + 1 + 1 + 1 + 1) (by simp; omega)
+  have h9 := B 12 [false] (n + K + (T + 1) + 1 + 1 + 1 + 1 + 1 + 1) (by simp; omega)
+  simp only [List.length_replicate, List.length_cons, List.length_nil] at h1 h2 h3 h4 h5 h6 h7 h8 h9
+  nlinarith
+
+theorem tbC_coreP (neg : Bool) : tbC (coreP neg) = 439 := by cases neg <;> rfl
+theorem tbD_coreP (neg : Bool) : tbD (coreP neg) = 3 := by cases neg <;> rfl
+theorem size_coreP (neg : Bool) : size (coreP neg) = 4710 := by cases neg <;> rfl
+
+theorem size_decodeP (neg : Bool) (K T : ℕ) : size (decodeP neg K T) = 60 * (K + T) + 5514 := by
+  simp only [decodeP, setupP, size, size_setConst, size_coreP, List.length_replicate,
+    List.length_cons, List.length_nil]
+  ring
+
+/-- **The clock of the parsing machine**: cubic in the input bound, the width and the length of
+the output. (Every primitive of the tape language sweeps its tapes, so even one pass over the input
+costs quadratic time; the bound of the deterministic fragment charges every loop the longest word.) -/
+theorem totalTime_decodeP_le (neg : Bool) (K T n : ℕ) :
+    totalTime (decodeP neg K T) n ≤ 500 * (n + K + T + 9) ^ 3 := by
+  have hc := timeBound_le (coreP neg) (noGrow_coreP neg) (n + K + T + 8)
+  rw [tbC_coreP, tbD_coreP] at hc
+  have hs := timeBound_setupP K T n
+  have hl : lenBound (decodeP neg K T) n = n + K + T + 8 := by
+    rw [decodeP, lenBound, lenBound_setupP, lenBound_eq _ (noGrow_coreP neg)]
+  have ht : timeBound (decodeP neg K T) n =
+      timeBound (setupP K T) n + timeBound (coreP neg) (n + K + T + 8) := by
+    rw [decodeP, timeBound, lenBound_setupP]
+  rw [totalTime, ht, hl]
+  set B := n + K + T + 9
+  have hB : 1 ≤ B := by omega
+  have e1 : (K + T + 17) * (2 * (n + K + T + 8) + 5) ≤ 45 * B ^ 3 := by
+    have : (K + T + 17) * (2 * (n + K + T + 8) + 5) ≤ (9 * B) * (5 * B) :=
+      Nat.mul_le_mul (by omega) (by omega)
+    nlinarith
+  have e2 : (n + K + T + 8 + 1) ^ 3 = B ^ 3 := rfl
+  have e3 : 4 * B + 4 ≤ 8 * B ^ 3 := by
+    have : B ≤ B ^ 3 := Nat.le_self_pow (by norm_num) B
+    omega
+  rw [e2] at hc
+  omega
+
+/-- **The cost of the parsing machine**: its clock plus the description of `13` tapes and
+`60 (K + T) + 5518` states. -/
+theorem cost_decodeM_le (neg : Bool) (K T n : ℕ) :
+    (decodeM neg K T n).cost ≤
+      500 * (n + K + T + 9) ^ 3 + 6 * 3 ^ 13 * (60 * (K + T) + 5518) * (60 * (K + T) + 5574) := by
+  rw [decodeM, cost_toMachine, size_decodeP]
+  have h1 := totalTime_decodeP_le neg K T n
+  have h2 : Machine.entryBits 13 (60 * (K + T) + 5514 + 4) 0 ≤ 60 * (K + T) + 5574 := by
+    unfold Machine.entryBits
+    have : Nat.size (60 * (K + T) + 5514 + 4) ≤ 60 * (K + T) + 5514 + 4 :=
+      Nat.size_le.mpr (Nat.lt_two_pow_self)
+    simp only [Nat.size_zero]
+    omega
+  have h3 := Nat.mul_le_mul_left (6 * (60 * (K + T) + 5514 + 4) * 3 ^ 13 * 3 ^ 0) h2
+  have e : 6 * (60 * (K + T) + 5514 + 4) * 3 ^ 13 * 3 ^ 0 * (60 * (K + T) + 5574) =
+      6 * 3 ^ 13 * (60 * (K + T) + 5518) * (60 * (K + T) + 5574) := by ring
+  omega
+
 end Prog
 
 end SigabaNeo.Tape
