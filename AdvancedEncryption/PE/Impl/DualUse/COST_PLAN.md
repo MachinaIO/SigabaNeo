@@ -1,7 +1,7 @@
 # Cost budget of the reductions (plan, 2026-11-22)
 
 ## Budget
-`attributeHiding_of_comps_rlwe` needs `64 · 2^256 · C ≤ 2^kb` with `kb ≤ H ≈ 991` (N = 2^33).
+`attributeHiding_of_comps_rlwe` needs `64 · 2^256 · C ≤ 2^kb`; since plan B (below) `kb ≤ 2650 ≤ H` at N = 2^34 (`Params/Strength.lean`; was 991 at N = 2^33).
 `C ≤ 2^(r+g+11+65k'/41) + 2^(t+6)` (`compConst_le_two_pow`): `2^t` bounds the per-query handler
 time (dominated by the key component), `2^r` the states (program sizes `≤ 2^s`, `s + 30 ≤ r`),
 `k' ≥ P.tapes + R + 30` the tapes (≈ 304 at R = 254, i.e. 2^482 from `3^tapes`).
