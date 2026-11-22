@@ -29,4 +29,4 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Inline.Sim", "SigabaNeo.Lib.Machines.Inline.Main",
   "SigabaNeo.Lib.Machines.Inline.Prep", "SigabaNeo.Lib.Machines.Inline.Oracle",
   "SigabaNeo.Lib.Machines.Inline.LinSim", "SigabaNeo.Lib.Machines.Inline.LinDefs",
-  "SigabaNeo.Lib.Machines.Inline.LinPrep"]
+  "SigabaNeo.Lib.Machines.Inline.LinPrep", "SigabaNeo.Lib.Machines.Inline.LinMain"]
