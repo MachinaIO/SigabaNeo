@@ -1369,6 +1369,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     24 forced hits to 2 and 48 to 4, and losing candidates account for all of the excess.
   * **Consequence.** A restart-to-Haar ratio ≲ 4.5·10⁶ for this one event (less (a)'s share) would close the upper band.
     That ratio is open, and per the audit it needs its own upper-band conjecture.
+* **Part 163 (audited, minor caveats).** [restart_haar_ratio](research/wall1_restart_haar_ratio.md): the restart-to-Haar ratio
+  for the upper-band event.
+  * **One draw, not two.** Both selections use draw 406. A positive-height candidate fixes the mark and both gates
+    (assuming eg < 3329), so squaring Part 105's density bound does not apply.
+  * **Singularity.** On every positive-probability set of histories, even the normalized first selected length has a
+    restart law singular to Haar. Density bounds on good histories cannot give the ratio; an inequality for this one event
+    is still possible.
+  * Two reflected toy prefixes with the same unmarked geometry have selected-hit probabilities 0 and 2/17, a difference
+    caused by the tie rule.
+  * The Haar bound is < 4.36018·10⁻¹¹. A hypothetical 4.5·10⁶ factor would leave 1.50058·10⁻⁶ for residual (a).
+  * **Remaining.** A direct bound on the history average of the exact finite-recursion selected-hit fraction.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1378,7 +1389,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–162 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–163 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
