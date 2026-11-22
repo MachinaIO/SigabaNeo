@@ -417,7 +417,7 @@ def tmOutN (N K k d M31 : ℕ) (β : Fin 256 → ℕ) : Fin 256 → ℕ :=
     Sym.pEval (tmVars M31 N K k (lenA N K k d)) (Sym.aGet σTmF' j.val)
 
 /-- The bounds after `prepT` with explicit parameters (`oB oW oP` the stream offsets). -/
-def vTn (N K k d W oB oW oP : ℕ) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
+def vTn (N K k d W : ℕ) (lw : List (Fin 256 × ℕ)) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v1 := Prog.lenBoundT (cp (mw GSC) (mw GS)) β0
   let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
   let v3 := Prog.lenBoundT (clr (mw 12)) v2
@@ -425,13 +425,13 @@ def vTn (N K k d W oB oW oP : ℕ) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256
   let v5 := tmplB tX0 (tmpl31 N K k d) v4
   let v6 := tmOutN N K k d M31 v5
   let v7 := Prog.lenBoundT (copiesP 0) v6
-  let v8 := tmplB tX0 (stepT N K k d ++ wordsT N K k d W oB oW oP) v7
+  let v8 := tmplB tX0 (stepT N K k d ++ lw) v7
   let v9 := Prog.lenBoundT (clr tX0) v8
   let v10 := Function.update v9 (mw OB) (v9 (mw OB) + 1)
   Function.update v10 (mw ZB) (v10 (mw ZB) + 1)
 
 /-- The bounds after `prepG` with explicit parameters. -/
-def vGn (N K k d W oP oR oX : ℕ) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
+def vGn (N K k d W : ℕ) (lw : List (Fin 256 × ℕ)) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v1 := Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0
   let v2 := embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)
   let v3 := Prog.lenBoundT (clr (mw 12)) v2
@@ -439,7 +439,7 @@ def vGn (N K k d W oP oR oX : ℕ) (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256
   let v5 := tmplB tX0 (tmpl31 N K k d) v4
   let v6 := tmOutN N K k d M31 v5
   let v7 := Prog.lenBoundT (copiesP 1) v6
-  let v8 := tmplB tX0 (stepG N K k d ++ wordsG N K k d W oP oR oX) v7
+  let v8 := tmplB tX0 (stepG N K k d ++ lw) v7
   Prog.lenBoundT (clr tX0) v8
 
 theorem TLe_refl {n : ℕ} : ∀ l : List (Fin n × ℕ), TLe l l
@@ -464,11 +464,11 @@ theorem TLe_wordsG (N K k d W : ℕ) {oP oR oX oP' oR' oX' : ℕ} (h1 : oP ≤ o
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ)
 
 /-- `vT` below its version at upper bounds of the offsets. -/
-theorem vT_le (β0 : Fin 256 → ℕ) (M31 oB oW oP : ℕ) (h1 : offB c ≤ oB) (h2 : offW hk c ≤ oW)
-    (h3 : offPsi hk c ≤ oP) : vT hk c W β0 M31 ≤ vTn N K k c.d W oB oW oP β0 M31 := by
+theorem vT_le (β0 : Fin 256 → ℕ) (M31 : ℕ) (lw : List (Fin 256 × ℕ))
+    (hl : TLe (wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) lw) :
+    vT hk c W β0 M31 ≤ vTn N K k c.d W lw β0 M31 := by
   simp only [vT, vTn]
-  have hm := tmplB_mono tX0 _ _ (TLe_append (TLe_refl (stepT N K k c.d)) (TLe_wordsT N K k c.d W
-    h1 h2 h3)) (le_refl (Prog.lenBoundT (copiesP 0) (tmOut c M31 (tmplB tX0 (tmpl31 N K k c.d)
+  have hm := tmplB_mono tX0 _ _ (TLe_append (TLe_refl (stepT N K k c.d)) hl) (le_refl (Prog.lenBoundT (copiesP 0) (tmOut c M31 (tmplB tX0 (tmpl31 N K k c.d)
       (Prog.lenBoundT (cp (mw GS) (mw GSC)) (Prog.lenBoundT (clr (mw 12))
         (embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)
           (cntOut W (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0)))))))))
@@ -488,12 +488,11 @@ theorem vT_le (β0 : Fin 256 → ℕ) (M31 oB oW oP : ℕ) (h1 : offB c ≤ oB) 
       exact h9 t
 
 /-- `vG` below its version at upper bounds of the offsets. -/
-theorem vG_le (β0 : Fin 256 → ℕ) (M31 oP oR oX : ℕ) (h1 : offPsi hk c ≤ oP) (h2 : offR hk c ≤ oR)
-    (h3 : offPsi hk c + 10 * lenPsi N K k ≤ oX) :
-    vG hk c W β0 M31 ≤ vGn N K k c.d W oP oR oX β0 M31 := by
+theorem vG_le (β0 : Fin 256 → ℕ) (M31 : ℕ) (lw : List (Fin 256 × ℕ))
+    (hl : TLe (wordsG N K k c.d W (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) lw) :
+    vG hk c W β0 M31 ≤ vGn N K k c.d W lw β0 M31 := by
   simp only [vG, vGn]
-  exact Prog.lenBoundT_mono _ (tmplB_mono tX0 _ _ (TLe_append (TLe_refl _) (TLe_wordsG N K k c.d W
-    h1 h2 h3)) le_rfl)
+  exact Prog.lenBoundT_mono _ (tmplB_mono tX0 _ _ (TLe_append (TLe_refl _) hl) le_rfl)
 
 end WB2
 
