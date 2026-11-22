@@ -78,6 +78,15 @@ def o3R : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLe
   (fR N K + (fR N K + (fD N K c.d + (fencLen (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)) +
     0))))))))
 
+def o3e1 : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+  (fR N K + (fR N K + (fD N K c.d + 0)))))))
+def o3e' : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+  (fR N K + (fR N K + (fD N K c.d + (fencLen (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)) +
+    (fencLen (rmTEnc c) + 0)))))))))
+def o3e : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+  (fR N K + (fR N K + (fD N K c.d + (fencLen (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)) +
+    (fencLen (rmTEnc c) + (fR N K + 0))))))))))
+
 /-- The packed secret of hybrid 3. -/
 abbrev W3 (ab : Inst3T N K k) (σ : Sec3 hk c) : List Bool :=
   ((inst3Enc (N := N) (K := K) (k := k)).prod (sec3Enc hk c)).enc (ab, σ)
@@ -131,6 +140,17 @@ theorem f3_e0 : takeD (fD N K c.d) ((W3 hk c ab σ).drop (o3e0 hk c)) =
 theorem f3_R : takeD (fencLen (rmTEnc c)) ((W3 hk c ab σ).drop (o3R hk c)) =
     (rmTEnc c).enc σ.2.2.2.2.1.2.2.2.1 := by
   rw [W3_eq, o3R]; simp only [drop_enc]; exact takeD_enc_app _ _ _
+
+theorem f3_e1 : takeD (fencLen (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)))
+    ((W3 hk c ab σ).drop (o3e1 hk c)) =
+    (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc σ.2.2.2.2.1.2.2.1 := by
+  rw [W3_eq, o3e1]; simp only [drop_enc]; exact takeD_enc_app _ _ _
+theorem f3_e' : takeD (fR N K) ((W3 hk c ab σ).drop (o3e' hk c)) =
+    (ringEnc N K).enc σ.2.2.2.2.1.2.2.2.2 := by
+  rw [W3_eq, o3e']; simp only [drop_enc]; erw [drop_enc]; exact takeD_enc_app _ _ _
+theorem f3_e : takeD (fencLen (eEnc (N := N) hk)) ((W3 hk c ab σ).drop (o3e hk c)) =
+    (eEnc (N := N) hk).enc σ.2.2.2.2.2 := by
+  rw [W3_eq, o3e]; simp only [drop_enc]; erw [drop_enc]; simp only [drop_enc]; exact takeD_enc _ _
 
 end F3
 

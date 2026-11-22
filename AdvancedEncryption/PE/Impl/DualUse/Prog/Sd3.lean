@@ -126,7 +126,7 @@ theorem wf_sdIP : (sdIP hk c).WF := wf_sd3P hk c
 theorem law_sd3P (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : Sec3 hk c) :
     (sd3P hk c).law (ioS (R := 80) (W3 hk c ab σ) [] []) =
       PMF.pure (ioS (R := 80) ((sdEnc hk c).enc (sd3 hk c ab σ)) [] []) := by
-  obtain ⟨S, hS, hb, -, h3, h4, h5, h6, h8, h19, h15⟩ := law_pub3Body hk c hN hK (W3 hk c ab σ) [] ab
+  obtain ⟨S, hS, hb, -, -, h3, h4, h5, h6, h8, h19, -, -, -, h15⟩ := law_pub3Body hk c hN hK (W3 hk c ab σ) [] ab
     σ.2.1 σ.2.2.2.2.1.2.1 σ.2.2.2.2.1.1 σ.2.2.2.1 σ.2.2.2.2.1.2.2.2.1 σ.1 σ.2.2.1
     (f3_a hk c ab σ) (f3_b hk c ab σ) (f3_x hk c ab σ) (f3_B hk c ab σ) (f3_w hk c ab σ)
     (f3_p hk c ab σ) (f3_s hk c ab σ) (f3_e0 hk c ab σ) (f3_R hk c ab σ)
@@ -139,7 +139,7 @@ theorem law_sd3P (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : Sec3 hk c) 
 theorem law_sdIP (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : SecI hk c) :
     (sdIP hk c).law (ioS (R := 80) (WI hk c ab σ) [] []) =
       PMF.pure (ioS (R := 80) ((sdEnc hk c).enc (sdI hk c ab σ)) [] []) := by
-  obtain ⟨S, hS, hb, -, h3, h4, h5, h6, h8, h19, h15⟩ := law_pub3Body hk c hN hK (WI hk c ab σ) [] ab
+  obtain ⟨S, hS, hb, -, -, h3, h4, h5, h6, h8, h19, -, -, -, h15⟩ := law_pub3Body hk c hN hK (WI hk c ab σ) [] ab
     σ.2.1 σ.2.2.2.2.1.e₀ σ.2.2.2.2.1.s σ.2.2.2.1 σ.2.2.2.2.1.Rm σ.1 σ.2.2.1
     (fI_a hk c ab σ) (fI_b hk c ab σ) (fI_x hk c ab σ) (fI_B hk c ab σ) (fI_w hk c ab σ)
     (fI_p hk c ab σ) (fI_s hk c ab σ) (fI_e0 hk c ab σ) (fI_R hk c ab σ)

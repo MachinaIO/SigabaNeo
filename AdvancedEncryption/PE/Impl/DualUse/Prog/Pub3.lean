@@ -215,11 +215,14 @@ theorem law_pub3Body (hN : 0 < N) (hK : 0 < K) (W m : List Bool) (ab : Inst3T N 
     (he : takeD (fD N K c.d) (W.drop (o3e0 hk c)) =
       (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc e₀)
     (hR : takeD (fencLen (rmTEnc c)) (W.drop (o3R hk c)) = (rmTEnc c).enc Rm) :
-    ∃ S, (pub3Body hk c).law (ioS (R := 80) W m []) = PMF.pure S ∧ Blank20 S ∧ S 1 = m ∧
+    ∃ S, (pub3Body hk c).law (ioS (R := 80) W m []) = PMF.pure S ∧ Blank20 S ∧ S 1 = m ∧ S 0 = W ∧
       S 3 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc (RingBTVW.scalar s * B₀ + e₀) ∧
       S 4 = (rmTEnc c).enc Rm ∧ S 5 = encDate x ∧ S 6 = (wEnc hk c).enc w ∧
       S 8 = (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
         (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x) ∧ S 19 = [] ∧
+      S 7 = (ringEnc N K).enc s ∧
+      S 17 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (toB₁ (Sdw (N := N) hk) ab) ∧
+      S 18 = (ringEnc N K).enc p ∧
       S 15 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀ ++
         (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (toB₁ (Sdw (N := N) hk) ab) ++
         bjW hk c B₀ w (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x) ++ (ringEnc N K).enc p := by
@@ -260,14 +263,14 @@ theorem law_pub3Body (hN : 0 < N) (hK : 0 < K) (W m : List Bool) (ab : Inst3T N 
       bjW hk c B₀ w (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x))
       (by simp only [List.length_append, length_enc, length_bjW, fD, fT] <;> omega)
       (length_enc _ p))]
-  exact ⟨_, rfl, by bl20, by simp [ioS], by simp, by simp, by simp, by simp, by simp,
-    by simp [ioS], by simp⟩
+  exact ⟨_, rfl, by bl20, by simp [ioS], by simp [ioS], by simp, by simp, by simp, by simp, by simp,
+    by simp [ioS], by simp, by simp, by simp, by simp⟩
 
 /-- **The law of the public-key component of hybrid 3.** -/
 theorem law_pub3P (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : Sec3 hk c) :
     (pub3P hk c).law (ioS (R := 80) (W3 hk c ab σ) [] []) =
       PMF.pure (ioS (R := 80) ((pkEnc hk c).enc (view3 hk c ab σ).1) [] []) := by
-  obtain ⟨S, hS, -, -, -, -, -, -, -, -, h15⟩ := law_pub3Body hk c hN hK (W3 hk c ab σ) [] ab σ.2.1
+  obtain ⟨S, hS, -, -, -, -, -, -, -, -, -, -, -, -, h15⟩ := law_pub3Body hk c hN hK (W3 hk c ab σ) [] ab σ.2.1
     σ.2.2.2.2.1.2.1 σ.2.2.2.2.1.1 σ.2.2.2.1 σ.2.2.2.2.1.2.2.2.1 σ.1 σ.2.2.1
     (f3_a hk c ab σ) (f3_b hk c ab σ) (f3_x hk c ab σ) (f3_B hk c ab σ) (f3_w hk c ab σ)
     (f3_p hk c ab σ) (f3_s hk c ab σ) (f3_e0 hk c ab σ) (f3_R hk c ab σ)
@@ -319,7 +322,7 @@ theorem pkI_word (ab : Inst3T N K k) (σ : SecI hk c) :
 theorem law_pubIP (hN : 0 < N) (hK : 0 < K) (ab : Inst3T N K k) (σ : SecI hk c) :
     (pubIP hk c).law (ioS (R := 80) (WI hk c ab σ) [] []) =
       PMF.pure (ioS (R := 80) ((pkEnc hk c).enc (viewI hk c ab σ).1) [] []) := by
-  obtain ⟨S, hS, -, -, -, -, -, -, -, -, h15⟩ := law_pub3Body hk c hN hK (WI hk c ab σ) [] ab σ.2.1
+  obtain ⟨S, hS, -, -, -, -, -, -, -, -, -, -, -, -, h15⟩ := law_pub3Body hk c hN hK (WI hk c ab σ) [] ab σ.2.1
     σ.2.2.2.2.1.e₀ σ.2.2.2.2.1.s σ.2.2.2.1 σ.2.2.2.2.1.Rm σ.1 σ.2.2.1
     (fI_a hk c ab σ) (fI_b hk c ab σ) (fI_x hk c ab σ) (fI_B hk c ab σ) (fI_w hk c ab σ)
     (fI_p hk c ab σ) (fI_s hk c ab σ) (fI_e0 hk c ab σ) (fI_R hk c ab σ)
