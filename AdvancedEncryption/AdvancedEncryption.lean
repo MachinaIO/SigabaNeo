@@ -57,3 +57,4 @@ import PE.Impl.Game.Assembly
 import PE.Impl.DualUse.Prog.Layout
 import PE.Impl.DualUse.Prog.SetupLaws
 import PE.Impl.DualUse.Prog.Setup5
+import PE.Impl.DualUse.Prog.Setup3
