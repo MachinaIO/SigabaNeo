@@ -67,12 +67,14 @@ Design actually taken (it replaces steps 1–2 above by a cheaper route with the
   `ValLeaves.lean` (`exec_jloopC`, a loop of terms into the leaves buffer), `ValRounds.lean`
   (`exec_prC` = `pairRoundV` with odd carries, `exec_roundsC`, one number after `clog₂ n` rounds),
   `ValCoef.lean` (`exec_cblockC`: the terms of one column `c'`, the coefficients read from the
-  reversed row without a rotation buffer; `terms_column`: equal to the shadow's `termV` list).
+  reversed row without a rotation buffer; `terms_column`; `exec_colC`, the `2k` columns;
+  `fl_leavesV`), `ValCoefFull.lean` (**`exec_coefC`**: an output coefficient of a NAND block,
+  `OUT = flatten (coefV … (enumT N k) … A B Gv a col t)`, from the column digits
+  `digitsOf B col c'` and the reversed rows `rowRev A a c'`; constant `CW` supplied).
 
 Remaining (in order):
-1. Column loop over `c'` (`2k` blocks: load `N` digits into `SD`, `N` reversed coefficient blocks
-   into `ROW`, `cblockC`), push of the constant `constV zv k (gvExp q o)` first, `roundsC` with the
-   count `2kN + 1`, extraction of the single number ⇒ `coefV` (`FhatShadow`).
+1. The constant `constV zv k (gvExp q o)` on `CW` per `o` (one `one` at bit `col.2` iff
+   `t = 0 ∧ a = col.1 ∧ col.2 < K`), the templates `TM0 = N−1−t`, `TT1 = t+1` per `t`.
 2. Block level: per predicate gate, loops over `(a, col, t)` in `enumO` order; per gate and `a` the
    reversed coefficient-major rows `R_{a,c'}` of the operand bundle `A` (transposition of the
    `k × N` blocks, O(N² k) value moves per row, ≈ 2^465 per gate), per `col` the digit stream
