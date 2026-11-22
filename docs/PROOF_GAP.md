@@ -1637,6 +1637,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * 1 − success ≤ capTail(a) + score(a), with no MinFloor needed;
   * `restartScore_lwe`: with acceptance score ≤ s ∧ (prefix Babai sum) ≤ ℓ on the same prefix,
     Pr[wrong secret] ≤ ∏δᵢ + (c + s) + ℓ.
+* **Lean (Part 177 bounds, width 506).** FixedBlockCap506 / Height506 / Packing / Fourier / DualCharge / IntegralAliases /
+  Model506 / Aliasing506 / Score506 (axiom-clean, kernel-checked numerics) formalize:
+  * `smoothError506_projected_null`: for the projected integer null lattice at rank 505 with λ1 ≥ 54.82 and the model
+    covolume, smoothError ≤ 0.000478351 + 6.44·10⁻¹⁴ + 2.24·10⁻¹³⁸ + R.
+    * The cap bound uses Taylor enclosures.
+    * Height one uses a two-shell inequality plus packing.
+    * The higher heights use an exact Poisson identity grouped by dual class with CBD weight ∏cos⁶, and integral aliases
+      are < 2.23332·10⁻¹³⁸.
+  * `failure_lt_score506`: score(1919/2) ≤ 0.00012938 implies terminal failure < 0.000607731.
+  The remaining per-block obligation is the explicit nonintegral-class sum R (Part 180 bounds it under (i)–(iii)).
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
