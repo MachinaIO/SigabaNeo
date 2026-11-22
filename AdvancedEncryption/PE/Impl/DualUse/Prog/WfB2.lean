@@ -238,6 +238,26 @@ noncomputable def wfBody (W : ℕ) : XProg 256 :=
   .seq (keyPrep N K k c.d) <| .seq (.frame (ValVM.mkE oK2 oK2_inj) (.prog simKeyP))
     (.prog (clrsP finClr))
 
+/-! ### Lookups -/
+
+theorem tmplS_mem {n : ℕ} : ∀ (l : List (Fin n × ℕ)), (l.map Prod.fst).Nodup → ∀ x ∈ l,
+    ∀ s : Store n, tmplS l s x.1 = List.replicate x.2 false
+  | [], _, _, hx, _ => absurd hx (by simp)
+  | y :: l, hn, x, hx, s => by
+    simp only [List.map_cons, List.nodup_cons, List.mem_map] at hn
+    rw [tmplS, List.foldl_cons, ← tmplS]
+    rcases List.mem_cons.mp hx with rfl | hx
+    · rw [tmplS_apply_of_not_mem l _ _ (fun z hz e => hn.1 ⟨z, hz, e⟩), Function.update_self]
+    · exact tmplS_mem l hn.2 x hx _
+
+theorem run_map_apply {n m : ℕ} {u : Fin n → Fin m} (hu : Function.Injective u) (p : Prog n)
+    (s : Store m) (j : Fin n) : run (Prog.map u p) s (u j) = run p (s ∘ u) j := by
+  rw [run_map hu, hu.extend_apply]
+
+theorem run_map_apply_not {n m : ℕ} {u : Fin n → Fin m} (hu : Function.Injective u) (p : Prog n)
+    (s : Store m) (t : Fin m) (ht : ∀ j, u j ≠ t) : run (Prog.map u p) s t = s t := by
+  rw [run_map hu, Function.extend_apply' _ _ _ (fun ⟨j, hj⟩ => ht j hj)]
+
 end WB2
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
@@ -246,5 +266,89 @@ open WB2 in
 /-- **The block-structured `W_f` block.** -/
 noncomputable def wfB2 (W : ℕ) : XProg 256 := .frame eW (wfBody hk c W)
 
+
+namespace WB2
+
+open SigabaNeo.Tape.ValVM
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+
+/-! ### The preparation of the run of `f̂` -/
+
+section PrepT
+
+variable (W : ℕ) (a : List Bool) (gs : GateList)
+
+/-- The input, in the machine's coordinates. -/
+def S0 : Store 256 := fun t => if t = mw SDW then a else if t = mw GS then gsW W gs else []
+
+def X2 : Store 256 :=
+  run (Prog.map cm13 (convP W)) (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS)))
+
+def X4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (X2 W a gs) (mw GS) (X2 W a gs (mw GSC)))
+
+def X5 : Store 256 := run (Prog.map tm31 simTmplP ⨾ copiesP 0) (X4 c W a gs)
+
+def X6 : Store 256 :=
+  tmplS (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) (X5 c W a gs)
+
+/-- The store after `prepT`. -/
+def S1 : Store 256 := Function.update (Function.update (X6 hk c W a gs) (mw OB)
+  (X6 hk c W a gs (mw OB) ++ [true])) (mw ZB)
+  (Function.update (X6 hk c W a gs) (mw OB) (X6 hk c W a gs (mw OB) ++ [true]) (mw ZB) ++ [false])
+
+theorem coinFree_copiesP (g : Fin 120) : (copiesP g).CoinFree := rfl
+
+theorem ne_of_keys {l : List (Fin 256 × ℕ)} {ks : List (Fin 256)} (hks : l.map Prod.fst = ks)
+    {t : Fin 256} (ht : t ∉ ks) : ∀ x ∈ l, x.1 ≠ t := fun x hx e =>
+  ht (hks ▸ e ▸ List.mem_map_of_mem hx)
+
+theorem keys_tmpl31 (N K k d : ℕ) : (tmpl31 N K k d).map Prod.fst =
+    [mw 4, mw 5, mw 6, mw 7, mw 8, mw 9, mw 10, mw 11] := rfl
+
+theorem keys_T (N K k d W oB oW oP : ℕ) :
+    (stepT N K k d ++ wordsT N K k d W oB oW oP).map Prod.fst =
+      [ms 3, ms 4, ms 5, ms 6, ms 7, ms 8, ms 9, ms 10, ms 11, ms 12, ms 13, ms 14, ms 15, ms 16,
+        ms 17, ms 86, ms 87, ms 88, ms 89, ValVM.tTV, mw 10, mw 11, mw 12, mw 13, mw 14, mw 15, mw 16,
+        mw 20, mw 27, mw 29, mw TNV, mw TNKV, mw T2K, mw TLB, mw TCNT, mw TH, mw TN, mw TN1, mw TN1V,
+        mw TKV, mw T2kNV, mw T2kkNV, mw TA1, mw TAd, mw TK1, mw ZNK1, mw TNK, mw T4k, mw T10,
+        mw INSW, mw TSl, mw TST, mw TD2, mw TW, mw TPAD, mw TW9, mw TINS, mw 61, mw 62, mw 63] := rfl
+
+theorem X2_tX0 : X2 W a gs tX0 = [] := by
+  rw [X2, run_map_apply_not cm13_inj _ _ _ (by decide), Function.update_of_ne (by decide)]
+  simp (config := {decide := true}) [S0]
+
+theorem X4_tX0 : X4 c W a gs tX0 = [] := by
+  rw [X4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
+    Function.update_of_ne (by decide), X2_tX0]
+
+theorem X5_tX0 : X5 c W a gs tX0 = [] := by
+  rw [X5, run_seq]
+  simp only [copiesP, run_seq, run_copy]
+  simp (config := {decide := true}) only [Function.update_apply, if_false]
+  rw [run_map_apply_not tm31_inj _ _ _ (by decide), X4_tX0]
+
+theorem law_prepT : (prepT hk c W).law (S0 W a gs) = PMF.pure (S1 hk c W a gs) := by
+  have hc1 : (Prog.map cm13 (convP W)).CoinFree := coinFree_map _ (coinFree_convP W)
+  have hc2 : (Prog.map tm31 simTmplP ⨾ copiesP 0).CoinFree := by
+    have h1 := coinFree_map tm31 (coinFree_of_noGrow _ noGrow_simTmplP)
+    simp only [CoinFree] at h1 ⊢
+    simp [coinFreeB, h1, show (copiesP 0).coinFreeB = true from rfl]
+  rw [prepT, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind,
+    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc1, PMF.pure_bind,
+    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
+  simp only [run_copy]
+  rw [XProg.law_seq, law_tmplP _ _ _ (by
+      rw [Function.update_of_ne (by decide)]; exact X2_tX0 W a gs)
+      (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
+    PMF.pure_bind, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc2, PMF.pure_bind,
+    XProg.law_seq, law_tmplP _ _ _ (by exact X5_tX0 c W a gs)
+      (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)),
+    PMF.pure_bind, XProg.law_seq, law_putW, PMF.pure_bind, law_putW]
+  rfl
+
+end PrepT
+
+end WB2
 
 end AdvancedEncryption.DualUse.Prog
