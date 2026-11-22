@@ -931,6 +931,22 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     405), against a budget of 23.78. The worst case is attained on hexagonal planes through the winner.
   * **Conjecture R1 (open).** The relaxed Part 120 plane count is ≤ 0.05. Of the Part 123 data, only the 3/48 sample weighs
     against a 1% rate.
+* **Part 135 (audited, minor caveats; the corrections are in the note's Audit section).**
+  [plant_symmetry](research/wall1_plant_symmetry.md): what averaging over the plant can and cannot do.
+  * A lattice containing the plant determines it: a second admissible solution exists with probability < 2^−3107.2. So
+    "plant-independent" can only mean that decisions depend on A and the coins alone.
+  * The planted and null laws are almost singular: TV ≥ 1 − 2^−3107.2 and KL ≥ 3592 bits. The decoupled reducer has the same
+    δ under both, so contiguity and low-degree transfer have nothing to work with.
+  * Symmetrizing over the signed row/column permutations leaves δ unchanged.
+  * A plant-last BKZ follows the plant-free run until the plant first becomes strictly shortest in some window. The rank-2
+    window becomes visible early whenever the last horizontal GS length exceeds 2/√3.
+  * A fork reducer with K looks satisfies two bounds:
+    * failure ≤ δ_𝒯 + ε + ε_lift + 2^−3107.2, where δ_𝒯 is the probability that no checkpoint has a good block;
+    * success ≤ Pr[max λ1 > ℓ] + K·τ(ℓ)·Pr[max λ1 ≤ ℓ].
+  * So a 99% proof at β = 506 needs Pr[max_t λ1(H_t) ≤ ℓ_K] ≤ 1/99, with ℓ_K = 16.857 / 13.174 / 9.591 for
+    K = 1 / 10 / 1000.
+  * Part 101 certifies only 8.1588. Sufficiency (per the audit) needs L ≥ 35.112 at β = 506 (32.145 at β = 406), so the
+    rigorous gap is about a factor of 2 in the threshold. Conjectures 5.1–5.3 are open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
