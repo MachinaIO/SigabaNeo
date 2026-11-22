@@ -199,6 +199,99 @@ structure FInit (V K N W A1 Ad : ℕ) (one : List Bool) (gs : GateList)
   gsw : w GS = gsW W gs
   gcnt : (w GCNT).length = gs.length
 
+theorem flatten_replicate_single (n : ℕ) (b : Bool) :
+    (List.replicate n [b]).flatten = List.replicate n b := by
+  induction n with
+  | zero => rfl
+  | succ n ih => rw [List.replicate_succ, List.flatten_cons, ih]; rfl
+
+/-- **The run of `f̂` on the machine**: `OUTW` ends with the word of the output bundle of `f̂`
+(`fhatV` at the orders `enumT`, `enumO`, the coefficients `gvExp q`, the step `fV V f`), for the
+input bundles `inBW` built from the streams. -/
+theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {N K W A1 Ad : ℕ} (hN : 0 < N) {one : List Bool} {gs : GateList} (hgs : gs.length + 10 ≤ W)
+    (hbnd : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W) (hne : gs ≠ [])
+    {bW wW : Fin 10 × BI N (K + 1) → List Bool} (hb : ∀ j, (bW j).length = A1)
+    (hx : ∀ j, (wW j).length = Ad) {ent : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool}
+    (he : ∀ i q, (ent i q).length = N * K) {RB RW RP : List Bool} (w : St)
+    (h : FInit V K N W A1 Ad one gs bW wW ent RB RW RP w) :
+    exec V f fhatC w OUTW = bw (fhatV one (fV V f) (inBW bW wW ent) (enumT N (K + 1))
+      (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1 (predOf 10 gs).2) := by
+  set S := (Enum.list (α := BI N (K + 1))).length * V with hS
+  have h1 : one.length = V := by rw [← h.vone]; exact h.tm.h10
+  set zv := fV V f one one with hzv
+  have hz : zv.length = V := by rw [hzv, fV]; exact hf _ _ (by simp) (by simp)
+  have hin : ∀ i b, (inBW bW wW ent i b).length = V := fun i b => by
+    simp [inBW, jw, hb, hx, h.hV]; have := h.hNK; omega
+  rw [fhatC, show [Code.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC,
+    gloopC nandC] = [Code.gate 11 10 10, zkvC, ttkC, tt2C] ++ ([insC] ++ ([.cp RES TSl, cbC,
+    .cp CBW RES] ++ ([stC] ++ [gloopC nandC]))) from rfl, exec_ofList_append, exec_ofList_append,
+    exec_ofList_append, exec_ofList_append]
+  -- `zv`, `zv^k`, `true^k`, `[true, true]`
+  have P1 : NCtx V K N one zv (exec V f (ofList [Code.gate 11 10 10, zkvC, ttkC, tt2C]) w) ∧
+      ∀ j, j ≠ 11 → j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → j ≠ CQ →
+        exec V f (ofList [Code.gate 11 10 10, zkvC, ttkC, tt2C]) w j = w j := by
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil, zkvC, ttkC, tt2C]
+    have g1 : exec V f (.gate 11 10 10) w = Function.update w 11 zv := by
+      simp [exec, fV, hzv, h.vone]
+    rw [g1]
+    have tm1 : Tmpl V K (Function.update w 11 zv) := by
+      refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+        simp (config := {decide := true}) [Function.update_apply, hz, h.tm.h10, h.tm.h12,
+          h.tm.h13, h.tm.h14, h.tm.h15, h.tm.h16, h.tm.h20, h.tm.h27, h.tm.h29]
+    obtain ⟨Z1, Z2⟩ := exec_fillC (V := V) (f := f) (dst := ZKV) (src := 11) (cl := 10) (tD := 14)
+      (tC := 12) (by decide) (by decide) (by decide) (by decide) (Function.update w 11 zv)
+      (by rw [tm1.h11, tm1.h10]) (by rw [tm1.h14, tm1.h12, tm1.h10])
+    rw [tm1.h12, show Function.update w 11 zv 11 = zv by simp] at Z1
+    generalize exec V f (fillC ZKV 11 10 14 12) (Function.update w 11 zv) = w2 at Z1 Z2
+    have tm2 : Tmpl V K w2 := tm1.of_eq fun j hj => Z2 j (by revert j hj; decide)
+      (by revert j hj; decide) (by revert j hj; decide)
+    have hOB2 : w2 OB = [true] := by
+      rw [Z2 OB (by decide) (by decide) (by decide), Function.update_of_ne (by decide), h.ob]
+    obtain ⟨T1, T2⟩ := exec_fillC (V := V) (f := f) (dst := TTk) (src := OB) (cl := 29) (tD := 12)
+      (tC := 12) (by decide) (by decide) (by decide) (by decide) w2
+      (by rw [hOB2, tm2.h29]; rfl) (by rw [tm2.h12, tm2.h29, Nat.mul_one])
+    rw [tm2.h12, hOB2, flatten_replicate_single] at T1
+    generalize exec V f (fillC TTk OB 29 12 12) w2 = w3 at T1 T2
+    have tm3 : Tmpl V K w3 := tm2.of_eq fun j hj => T2 j (by revert j hj; decide)
+      (by revert j hj; decide) (by revert j hj; decide)
+    have hOB3 : w3 OB = [true] := by rw [T2 OB (by decide) (by decide) (by decide), hOB2]
+    obtain ⟨U1, U2⟩ := exec_fillC (V := V) (f := f) (dst := TT2) (src := OB) (cl := 29) (tD := 27)
+      (tC := 27) (by decide) (by decide) (by decide) (by decide) w3
+      (by rw [hOB3, tm3.h29]; rfl) (by rw [tm3.h27, tm3.h29])
+    rw [tm3.h27, hOB3, flatten_replicate_single] at U1
+    generalize exec V f (fillC TT2 OB 29 27 27) w3 = w4 at U1 U2
+    have e : ∀ j, j ≠ 11 → j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → j ≠ CQ → w4 j = w j :=
+      fun j a1 a2 a3 a4 a5 a6 => by
+        rw [U2 j a4 a5 a6, T2 j a3 a5 a6, Z2 j a2 a5 a6, Function.update_of_ne a1]
+    refine ⟨⟨tm3.of_eq fun j hj => U2 j (by revert j hj; decide) (by revert j hj; decide)
+        (by revert j hj; decide), by rw [e 10 (by decide) (by decide) (by decide) (by decide)
+        (by decide) (by decide), h.vone],
+      by rw [U2 11 (by decide) (by decide) (by decide), T2 11 (by decide) (by decide) (by decide),
+        Z2 11 (by decide) (by decide) (by decide)]; simp,
+      by rw [e OB (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.ob],
+      by rw [e ZB (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.zb],
+      by rw [e TNV (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.nv],
+      by rw [e TNKV (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.nkv],
+      by rw [e T2K (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.t2k],
+      by rw [e TLB (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tlb],
+      by rw [e TCNT (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tcnt],
+      by rw [e TH (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.th],
+      U1, by rw [U2 TTk (by decide) (by decide) (by decide), T1],
+      by rw [e TN (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tn],
+      by rw [e TN1 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tn1],
+      by rw [e TN1V (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tn1v],
+      by rw [e TKV (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tkv],
+      by rw [e T2kNV (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+        h.t2knv],
+      by rw [e T2kkNV (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
+        h.t2kknv],
+      by rw [U2 ZKV (by decide) (by decide) (by decide), T2 ZKV (by decide) (by decide)
+        (by decide), Z1]⟩, e⟩
+  obtain ⟨c1, e1⟩ := P1
+  generalize exec V f (ofList [Code.gate 11 10 10, zkvC, ttkC, tt2C]) w = w1 at c1 e1
+  sorry
+
 end ValVM
 
 end SigabaNeo.Tape
