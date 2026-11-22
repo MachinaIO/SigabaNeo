@@ -264,7 +264,7 @@ def preC : XProg 256 :=
 variable (hk c) in
 /-- **Reading `sk ++ ct` and `c_f̂` back**, framed off tape `1`. -/
 def postC : XProg 256 :=
-  XProg.frame (eLo 64 eLo64) (postCoreC (lenPK hk c) (lenKA hk c) (N * K) (offW hk c)
+  XProg.frame (eLo 64 eLo64) (postCoreC (lenPK hk c) (lenKA hk c) (N * K) (offWk hk c)
     (nJ (N := N) hk * (lenZ c + DualUse.rowL N K k)) (lenZ c) N K k (lenZ c) (DualUse.rowL N K k)
     (nJ (N := N) hk))
 
@@ -283,12 +283,12 @@ def wKA (sk : SK hk c) (ct : CT hk c) : List Bool :=
       (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc ct.c₁))
 
 /-- The rows `c_j`. -/
-def cjRows (ct : CT hk c) : List (List Bool) :=
+def cjRowsC (ct : CT hk c) : List (List Bool) :=
   (Enum.list (α := JIx (N := N) hk)).map
     fun j => (matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc (ct.cj j)
 
 /-- The rows `Ψᵢ`. -/
-def psiRows (ct : CT hk c) : List (List Bool) :=
+def psiRowsC (ct : CT hk c) : List (List Bool) :=
   (List.finRange 10).map fun i => (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (ct.Ψ i)
 
 theorem length_wKA (sk : SK hk c) (ct : CT hk c) : (wKA sk ct).length = lenKA hk c := by
@@ -296,24 +296,24 @@ theorem length_wKA (sk : SK hk c) (ct : CT hk c) : (wKA sk ct).length = lenKA hk
     length_enc_fixLen, FixedEnc.length, FixedEnc.length]
   rfl
 
-theorem length_cjRows (ct : CT hk c) : ∀ r ∈ cjRows ct, r.length = DualUse.rowL N K k := by
+theorem length_cjRows (ct : CT hk c) : ∀ r ∈ cjRowsC ct, r.length = DualUse.rowL N K k := by
   intro r hr
   obtain ⟨j, -, rfl⟩ := List.mem_map.mp hr
   exact length_row1 _
 
-theorem length_psiRows (ct : CT hk c) : ∀ r ∈ psiRows ct, r.length = 2 * DualUse.rowL N K k := by
+theorem length_psiRows (ct : CT hk c) : ∀ r ∈ psiRowsC ct, r.length = 2 * DualUse.rowL N K k := by
   intro r hr
   obtain ⟨i, -, rfl⟩ := List.mem_map.mp hr
   rw [FixedEnc.length, len_matEnc_col]
 
 theorem flatten_cjRows (ct : CT hk c) :
-    (cjRows ct).flatten =
+    (cjRowsC ct).flatten =
       (FixedEnc.fun (α := JIx (N := N) hk) (matEnc (N := N) (K := K) (Fin 1)
         (RingBTVW.Col k))).enc ct.cj := by
-  rw [fun_enc_eq, flatMap_eq_flatten, cjRows, List.map_map]; rfl
+  rw [fun_enc_eq, flatMap_eq_flatten, cjRowsC, List.map_map]; rfl
 
 theorem flatten_psiRows10 (ct : CT hk c) :
-    (psiRows ct).flatten =
+    (psiRowsC ct).flatten =
       (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc ct.Ψ := by
   show _ = ((Enum.list (α := Fin 10)).map ct.Ψ).flatMap
     (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc
@@ -322,7 +322,7 @@ theorem flatten_psiRows10 (ct : CT hk c) :
     (RingBTVW.Col k)).enc) (f := ct.Ψ) (l := List.finRange 10)).symm
 
 theorem flatten_psiRows (ct : CT hk c) :
-    (psiRows ct).flatten =
+    (psiRowsC ct).flatten =
       (FixedEnc.fun (α := (Sdw (N := N) hk).Attr) (matEnc (N := N) (K := K) (Fin 2)
         (RingBTVW.Col k))).enc ct.Ψ :=
   flatten_psiRows10 ct
@@ -339,15 +339,15 @@ theorem length_flatten {rows : List (List Bool)} {R : ℕ} (hr : ∀ r ∈ rows,
 /-- **The data word of `Dec`**: `pk`, the key, `Ψ`, `c₀`, `c₁`, the `c_j`, `κ`. -/
 theorem data_split (sk : SK hk c) (ct : CT hk c) :
     (skEnc hk c).enc sk ++ (ctEnc hk c).enc ct =
-      (pkEnc hk c).enc sk.1 ++ (wKA sk ct ++ ((cjRows ct).flatten ++ (ringEnc N K).enc ct.κ)) := by
+      (pkEnc hk c).enc sk.1 ++ (wKA sk ct ++ ((cjRowsC ct).flatten ++ (ringEnc N K).enc ct.κ)) := by
   rw [flatten_cjRows]
   show (pkEnc hk c).enc sk.1 ++ (keyEnc (N := N) (K := K) c).enc sk.2 ++ _ = _
   simp only [wKA, List.append_assoc]
   rfl
 
-theorem length_cj (ct : CT hk c) : (cjRows ct).flatten.length = lenCj (N := N) hk := by
+theorem length_cj (ct : CT hk c) : (cjRowsC ct).flatten.length = lenCj (N := N) hk := by
   rw [length_flatten (length_cjRows ct)]
-  simp [cjRows, lenCj, nJ]
+  simp [cjRowsC, lenCj, nJ]
 
 theorem wPart_same (Y : List Bool) : ∀ rows : List (List Bool),
     wPart Y Y rows = rows.flatMap (fun r => Y ++ r)
@@ -380,11 +380,11 @@ theorem sdEnc_sdC (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) (sk : SK
     (sdEnc hk c).enc (sdC hk c sk.1 ct (stashC hk c sk ct)) =
       (pkEnc hk c).enc sk.1 ++ List.replicate (c.d * (N * K)) false ++
         wPart (List.replicate ((c.d - 2) * DualUse.rowL N K k) false)
-          (List.replicate ((c.d - 2) * DualUse.rowL N K k) false) (psiRows ct) ++
+          (List.replicate ((c.d - 2) * DualUse.rowL N K k) false) (psiRowsC ct) ++
         wPart (wKA sk ct ++ (ringEnc N K).enc ct.κ ++
             List.replicate (lenZ c - (lenKA hk c + N * K)) false)
-          (List.replicate (lenZ c) false) (cjRows ct) ++
-        (psiRows ct).flatten ++ List.replicate 10 false := by
+          (List.replicate (lenZ c) false) (cjRowsC ct) ++
+        (psiRowsC ct).flatten ++ List.replicate 10 false := by
   have h := sdEnc_sdOf (hk := hk) (c := c) sk.1 (rmW := fun i =>
       List.replicate ((c.d - 2) * DualUse.rowL N K k) false ++
         (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (ct.Ψ i)) (fun i => by
@@ -419,18 +419,18 @@ theorem D_kappa : (((skEnc hk c).enc sk ++ (ctEnc hk c).enc ct).drop
     List.take_of_length_le (le_of_eq (length_kappa ct))]
 
 theorem D_cj : (((skEnc hk c).enc sk ++ (ctEnc hk c).enc ct).drop
-    (lenPK hk c + lenKA hk c)).take (lenCj (N := N) hk) = (cjRows ct).flatten := by
+    (lenPK hk c + lenKA hk c)).take (lenCj (N := N) hk) = (cjRowsC ct).flatten := by
   rw [data_split, ← List.drop_drop, List.drop_left' (lenPK_eq_pk sk),
     List.drop_left' (length_wKA sk ct), List.take_left' (length_cj ct)]
 
 theorem D_psi : (((skEnc hk c).enc sk ++ (ctEnc hk c).enc ct).drop
     (lenPK hk c + fixLen (keyEnc (N := N) (K := K) c))).take (lPsi (N := N) (K := K) hk) =
-      (psiRows ct).flatten := by
+      (psiRowsC ct).flatten := by
   rw [data_split, ← List.drop_drop, List.drop_left' (lenPK_eq_pk sk), wKA, List.append_assoc,
     List.drop_left' (length_enc_fixLen _ _), flatten_psiRows, List.append_assoc,
     List.take_left' (length_enc_fixLen _ _)]
 
-theorem length_psi : (psiRows ct).flatten.length = lPsi (N := N) (K := K) hk := by
+theorem length_psi : (psiRowsC ct).flatten.length = lPsi (N := N) (K := K) hk := by
   rw [flatten_psiRows, length_enc_fixLen]
 
 end Data
@@ -442,9 +442,9 @@ theorem law_preC (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) (sk : SK 
     (preC hk c).law (io2 (R := 254) ((skEnc hk c).enc sk ++ (ctEnc hk c).enc ct) g []) =
       PMF.pure (io2 (R := 254) ((sdEnc hk c).enc (sdC hk c sk.1 ct (stashC hk c sk ct))) g []) := by
   rw [preC, XProg.law_frame, io2_eLo, ← io1_sto,
-    law_preCoreC _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ (psiRows ct) (D_psi sk ct) (length_psiRows ct)
-      (by unfold psiRows; exact (List.length_map _).trans (List.length_finRange))
-      (cjRows ct) (D_cj sk ct) (length_cjRows ct) (by simp [cjRows, nJ])
+    law_preCoreC _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ (psiRowsC ct) (D_psi sk ct) (length_psiRows ct)
+      (by unfold psiRowsC; exact (List.length_map _).trans (List.length_finRange))
+      (cjRowsC ct) (D_cj sk ct) (length_cjRows ct) (by simp [cjRowsC, nJ])
       (by rw [D_KA, D_kappa, List.length_append, length_wKA, length_kappa]; omega)
       (le_of_eq (length_psi ct)),
     PMF.pure_map, io1_sto, embedF_eLo, sdEnc_sdC hd hS, D_pk, D_KA, D_kappa]
@@ -469,25 +469,25 @@ theorem law_postC (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) (sk : SK
   congr 2
   have hS' := length_stashC hS sk ct
   have hZ2 : (wPart (List.replicate ((c.d - 2) * DualUse.rowL N K k) false)
-      (List.replicate ((c.d - 2) * DualUse.rowL N K k) false) (psiRows ct)).length =
+      (List.replicate ((c.d - 2) * DualUse.rowL N K k) false) (psiRowsC ct)).length =
         10 * (c.d * DualUse.rowL N K k) := by
     rw [length_wPart (Z := (c.d - 2) * DualUse.rowL N K k) (by simp) (by simp) _ (length_psiRows ct)]
-    simp only [psiRows, List.length_map, List.length_finRange]
+    simp only [psiRowsC, List.length_map, List.length_finRange]
     congr 1
     rw [← Nat.add_mul]
     congr 1
     omega
-  have hW : (wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRows ct)).length =
+  have hW : (wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRowsC ct)).length =
       nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) := by
     rw [length_wPart (Z := lenZ c) hS' (by simp) _ (length_cjRows ct)]
-    simp [cjRows, nJ]
-  have hne : cjRows ct ≠ [] := by
-    simpa [cjRows] using enum_JIx_ne_nil hk c.hN
+    simp [cjRowsC, nJ]
+  have hne : cjRowsC ct ≠ [] := by
+    simpa [cjRowsC] using enum_JIx_ne_nil hk c.hN
   obtain ⟨r0, rs, hrs⟩ := List.exists_cons_of_ne_nil hne
-  have hsd : ((sdEnc hk c).enc (sdC hk c sk.1 ct (stashC hk c sk ct))).drop (offW hk c) =
-      wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRows ct) ++
-        ((psiRows ct).flatten ++ List.replicate 10 false) := by
-    rw [sdEnc_sdC hd hS, offW]
+  have hsd : ((sdEnc hk c).enc (sdC hk c sk.1 ct (stashC hk c sk ct))).drop (offWk hk c) =
+      wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRowsC ct) ++
+        ((psiRowsC ct).flatten ++ List.replicate 10 false) := by
+    rw [sdEnc_sdC hd hS, offWk]
     simp only [List.append_assoc]
     rw [← List.drop_drop, ← List.drop_drop, List.drop_left' (lenPK_eq_pk sk),
       List.drop_left' (by simp), List.drop_left' hZ2]
@@ -495,17 +495,17 @@ theorem law_postC (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) (sk : SK
   have hpk : ((sdEnc hk c).enc (sdC hk c sk.1 ct (stashC hk c sk ct))).take (lenPK hk c) =
       (pkEnc hk c).enc sk.1 := by
     rw [sdEnc_sdC hd hS]; simp only [List.append_assoc]; rw [List.take_left' (lenPK_eq_pk sk)]
-  have hit := iterate_skStep (lenZ c) (DualUse.rowL N K k) (cjRows ct) (length_cjRows ct) []
+  have hit := iterate_skStep (lenZ c) (DualUse.rowL N K k) (cjRowsC ct) (length_cjRows ct) []
     (stashC hk c sk ct) [] hS'
-  have hlen : (cjRows ct).length = nJ (N := N) hk := by simp [cjRows, nJ]
+  have hlen : (cjRowsC ct).length = nJ (N := N) hk := by simp [cjRowsC, nJ]
   rw [List.append_nil, hlen] at hit
   rw [← List.drop_drop, hsd, hpk, List.take_left' hW, hlen] at *
   rw [hit, List.nil_append, List.take_of_length_le (le_of_eq (length_cj ct))]
-  have e1 : (wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRows ct) ++
-      ((psiRows ct).flatten ++ List.replicate 10 false)).take (lenKA hk c) = wKA sk ct := by
+  have e1 : (wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRowsC ct) ++
+      ((psiRowsC ct).flatten ++ List.replicate 10 false)).take (lenKA hk c) = wKA sk ct := by
     rw [hrs, wPart, stashC]; simp only [List.append_assoc]; rw [List.take_left' (length_wKA sk ct)]
-  have e2 : ((wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRows ct) ++
-      ((psiRows ct).flatten ++ List.replicate 10 false)).drop (lenKA hk c)).take (N * K) =
+  have e2 : ((wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRowsC ct) ++
+      ((psiRowsC ct).flatten ++ List.replicate 10 false)).drop (lenKA hk c)).take (N * K) =
         (ringEnc N K).enc ct.κ := by
     rw [hrs, wPart, stashC]; simp only [List.append_assoc]
     rw [List.drop_left' (length_wKA sk ct), List.take_left' (length_kappa ct)]

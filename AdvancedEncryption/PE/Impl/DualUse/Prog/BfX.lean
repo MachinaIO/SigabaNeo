@@ -184,7 +184,7 @@ variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
 abbrev lenT (N K k : ℕ) : ℕ := DualUse.rowL N K k + N * K
 
 /-- The offset of the rows `B_j` in the word of a public key. -/
-def offB (c : Conf N K k) : ℕ :=
+def offBk (c : Conf N K k) : ℕ :=
   (Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin c.d)).length * (N * K)) +
     (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K))
 
@@ -197,7 +197,7 @@ abbrev lenZ (c : Conf N K k) : ℕ := (c.d - 1) * DualUse.rowL N K k
 
 variable (hk c) in
 /-- The offset of the `W_j` in the word of the simulation data. -/
-def offW : ℕ := lenPK hk c + c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k)
+def offWk : ℕ := lenPK hk c + c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k)
 
 theorem eLo18 : 18 + 1 ≤ 256 := by norm_num
 theorem eLo54 : 54 + 1 ≤ 256 := by norm_num
@@ -205,14 +205,14 @@ theorem eLo54 : 54 + 1 ≤ 256 := by norm_num
 variable (hk c) in
 /-- **The crafted data of `KeyGen`**, framed off tape `1`. -/
 def preB : XProg 256 :=
-  XProg.frame (eLo 18 eLo18) (preCoreB (lenPK hk c) (lenT N K k) (offB c) (nJ (N := N) hk * DualUse.rowL N K k)
+  XProg.frame (eLo 18 eLo18) (preCoreB (lenPK hk c) (lenT N K k) (offBk c) (nJ (N := N) hk * DualUse.rowL N K k)
     (lenZ c) (DualUse.rowL N K k) (nJ (N := N) hk) (c.d * (N * K)) (10 * (c.d * DualUse.rowL N K k))
     (10 * (2 * DualUse.rowL N K k)) (lenZ c - lenT N K k))
 
 variable (hk c) in
 /-- **Reading the key row back**, framed off tape `1`. -/
 def postB : XProg 256 :=
-  XProg.frame (eLo 54 eLo54) (postCoreB (lenPK hk c) (lenT N K k) (offW hk c) (lenZ c) N K k)
+  XProg.frame (eLo 54 eLo54) (postCoreB (lenPK hk c) (lenT N K k) (offWk hk c) (lenZ c) N K k)
 
 variable (hk c) in
 /-- **The key-row block of `KeyGen`** around a `W_f` block `wfB`. -/
@@ -228,7 +228,7 @@ theorem flatMap_eq_flatten {α : Type*} (l : List α) (f : α → List Bool) :
 
 /-- The word of the rows `B_j`, in the master key's word. -/
 theorem msk_rows (msk : SKey hk c) :
-    ((((mskEnc hk c).enc msk).drop (offB c)).take (nJ (N := N) hk * DualUse.rowL N K k)) =
+    ((((mskEnc hk c).enc msk).drop (offBk c)).take (nJ (N := N) hk * DualUse.rowL N K k)) =
       ((Enum.list (α := JIx (N := N) hk)).map
         fun j => (matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc (msk.1.Bj j)).flatten := by
   have hfam : ((FixedEnc.fun (α := JIx (N := N) hk) (matEnc (N := N) (K := K) (Fin 1)
@@ -245,7 +245,7 @@ theorem msk_rows (msk : SKey hk c) :
           (RingBTVW.Col k))).enc msk.1.Bj ++ (ringEnc N K).enc msk.1.p)) := rfl
     rw [this]; simp only [List.append_assoc]
   have hl : ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc msk.1.B₀ ++
-      (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc msk.1.B₁).length = offB c := by
+      (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc msk.1.B₁).length = offBk c := by
     rw [List.length_append, FixedEnc.length, FixedEnc.length]; rfl
   rw [e, ← List.append_assoc, List.drop_left' hl, List.take_left' hfam, fun_enc_eq,
     flatMap_eq_flatten]
@@ -354,7 +354,7 @@ theorem law_postB (hd : 3 ≤ c.d) (msk : SKey hk c) (wf : List Bool)
   simp only [List.append_assoc]
   rw [List.take_left' hp]
   congr 1
-  rw [offW, show lenPK hk c + c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k) =
+  rw [offWk, show lenPK hk c + c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k) =
     lenPK hk c + (c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k)) by ring, ← List.drop_drop,
     List.drop_left' hp, ← List.drop_drop, List.drop_left' (by simp), List.drop_left' (by simp),
     List.take_left' (length_mskT msk)]
