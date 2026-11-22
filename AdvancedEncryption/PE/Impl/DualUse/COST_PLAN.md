@@ -165,3 +165,17 @@ Remaining (in order):
 * `costC`: structural recursion over a code from static word bounds `B` (closed under `cp`, `gate`),
   the step's bound `Tst` (from `xsound_simStepP`; the Ring-GSW step needs its own certificate),
   `V`, `M`; per instruction the closed-form bounds of `inP`, `outP`, `mvPc`, `dropPc`.
+* **Done** (`Lib/Lattices/ProgAlgo/ValCost.lean`): certificates of the instruction programs
+  (`inP`: `7 + 6V` sweeps, `mvPc`: `4 + 6|c|`, `dropPc`: `3 + 3|c|`, `outP`: `4`, `cp`/`clr`/`tl`/`nop`:
+  `1`), each charged its own frame (`frame_of_check`); `Inv X β T`; **`inv_compileA`**: from bounds
+  below `encB bs V B`, a code with `validB` (gate results and copies fit their words) takes at most
+  `costC bs V Tst M B c` steps and keeps the bounds, given the step's per-tape summary below `bs`.
+  `costC` evaluates in the kernel in seconds (`decide +kernel`); the word bounds `B` must be tight
+  (a uniform `2^240` gives `2^2315` through the nested loop counters).
+* Ring-GSW step: `Lib/Lattices/ProgAlgo/SimStepGT.lean` (`aStepG`, the certificate of
+  `simStepP ginvGswP`: split, two `ginvP` calls, join, `simPost` with `r = 2`).
+* Phases (to do): `Ph X βin T βout`; `prepT`/`prepG` per-tape (`natP_bounds`: exact templates;
+  `convP` framed on small tapes, `Prog.timeBound` at the gate list's size; `boundsT_simTmplP`); the
+  counter `tX0` of `tmplP` gets the largest template as abstract bound, so `prepT`/`prepG` end with
+  `clr tX0` (the run needs blank scratch); `keyPrep` → `boundsT_simKeyP`; the final clear; the frame
+  `eW`; then `time_keyP` with a per-tape hypothesis at the call of the block (`io2 Lsd (frontL …) 0`).
