@@ -355,6 +355,103 @@ theorem inv_step {P : Prog 132} {Tst : ℕ} (htime : ∀ ℓ ≤ bs, Prog.timeBo
 
 end Inst2
 
+/-! ### The cost of a code -/
+
+/-- **The cost of a code** from the bounds `bs` of the step's tapes, `V`, the step's steps `Tst`,
+the longest bound `M` and the word bounds `B`. -/
+def costC (bs : Fin 132 → ℕ) (V Tst M : ℕ) (B : Fin 120 → ℕ) : Code → ℕ
+  | .gate d a b => (2 * max (bs 1) (max V (B a)) + 3) * (7 + 6 * V) +
+      ((2 * max (bs 2) (max V (B b)) + 3) * (7 + 6 * V) +
+        (Tst + (2 * max (max (bs 0) (bs 1)) (max (bs 2) (B d)) + 3) * 4))
+  | .mvV d s => if d = s then 3 else (2 * max (max (B s) (B d)) V + 3) * (4 + 6 * V)
+  | .mv d s c => if d = s ∨ d = c ∨ s = c then 3 else
+      (2 * max (max (B s) (B d)) (B c) + 3) * (4 + 6 * B c)
+  | .cp d s => if d = s then 3 else (2 * max (B d) (B s) + 3) * 1
+  | .drop t c => if t = c then 3 else (2 * max (B t) (B c) + 3) * (3 + 3 * B c)
+  | .clr t => (2 * B t + 3) * 1
+  | .tl t => (2 * B t + 3) * 1
+  | .rep c b => B c * (2 * M + 3 + costC bs V Tst M B b + 1) + 2
+  | .seq p q => costC bs V Tst M B p + costC bs V Tst M B q
+  | .ifb _ p q => max (costC bs V Tst M B p) (costC bs V Tst M B q) + 1
+  | .nop => 3
+
+/-- **The static bounds are respected**: the result of a `gate` fits its word, a `cp` copies into a
+word of a larger bound. -/
+def validB (bs0 : ℕ) (B : Fin 120 → ℕ) : Code → Bool
+  | .gate d _ _ => decide (bs0 ≤ B d)
+  | .cp d s => decide (B s ≤ B d)
+  | .rep _ b => validB bs0 B b
+  | .seq p q => validB bs0 B p && validB bs0 B q
+  | .ifb _ p q => validB bs0 B p && validB bs0 B q
+  | _ => true
+
+section Main
+
+variable {H : List ℕ → Prop} {P : Prog 132} (cert : StepCert H P) (bs : Fin 132 → ℕ) (V Tst M : ℕ)
+  (B : Fin 120 → ℕ)
+
+theorem encB_tX0 : encB bs V B tX0 = 0 := encB_hi _ _ _ _ (by decide)
+
+theorem inv_nopX : Inv (.frame (mkE (f1 tX0) (f1_inj _)) (.prog (Prog.nop 0))) (encB bs V B) 3 := by
+  have := inv_one bs V B check_nop rfl (Or.inr rfl) tX0
+  rwa [encB_tX0] at this
+
+/-- **The cost of a compiled code**: from bounds below `encB bs V B`, a valid code takes at most
+`costC` steps and keeps the bounds. -/
+theorem inv_compileA (hV1 : V ≤ bs 1) (hV2 : V ≤ bs 2)
+    (htime : ∀ ℓ ≤ bs, Prog.timeBoundT P ℓ ≤ Tst) (hlen : ∀ ℓ ≤ bs, Prog.lenBoundT P ℓ ≤ bs)
+    (hM : supB (encB bs V B) ≤ M) :
+    ∀ c : Code, validB (bs 0) B c = true →
+      Inv (compileA cert c).toX (encB bs V B) (costC bs V Tst M B c)
+  | .gate d a b, h => by
+    simp only [validB, decide_eq_true_eq] at h
+    exact (inv_inP bs V B 1 a hV1).seq ((inv_inP bs V B 2 b hV2).seq
+      ((inv_step bs V B htime hlen).seq (inv_outP bs V B d h)))
+  | .mvV d s, _ => by
+    simp only [compileA, costC]
+    split_ifs with hds
+    · exact inv_nopX bs V B
+    · exact inv_mvPc bs V B d s tTV _ V (encB_tTV _ _ _)
+  | .mv d s c, _ => by
+    simp only [compileA, costC]
+    split_ifs with hds
+    · exact inv_nopX bs V B
+    · exact inv_mvPc bs V B d s (tWd c) _ (B c) (encB_tWd _ _ _ c)
+  | .cp d s, h => by
+    simp only [validB, decide_eq_true_eq] at h
+    simp only [compileA, costC]
+    split_ifs with hds
+    · exact inv_nopX bs V B
+    · exact inv_cp bs V B d s _ h
+  | .drop t c, _ => by
+    simp only [compileA, costC]
+    split_ifs with hds
+    · exact inv_nopX bs V B
+    · exact inv_dropPc bs V B t c _
+  | .clr t, _ => by
+    have := inv_one bs V B check_clr rfl (Or.inl rfl) (tWd t)
+    rwa [encB_tWd] at this
+  | .tl t, _ => by
+    have := inv_one bs V B check_tl rfl (Or.inr rfl) (tWd t)
+    rwa [encB_tWd] at this
+  | .rep c b, h => by
+    simp only [validB] at h
+    have := Inv.loop (tWd c) (inv_compileA hV1 hV2 htime hlen hM b h)
+    rw [encB_tWd] at this
+    refine this.mono ?_
+    simp only [costC]
+    exact Nat.add_le_add_right (Nat.mul_le_mul_left _ (by omega)) 2
+  | .seq p q, h => by
+    simp only [validB, Bool.and_eq_true] at h
+    exact (inv_compileA hV1 hV2 htime hlen hM p h.1).seq (inv_compileA hV1 hV2 htime hlen hM q h.2)
+  | .ifb t p q, h => by
+    simp only [validB, Bool.and_eq_true] at h
+    exact Inv.ifBit (tWd t) (inv_compileA hV1 hV2 htime hlen hM p h.1)
+      (inv_compileA hV1 hV2 htime hlen hM q h.2)
+  | .nop, _ => inv_nopX bs V B
+
+end Main
+
 end ValVM
 
 end SigabaNeo.Tape
