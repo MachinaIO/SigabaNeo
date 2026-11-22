@@ -179,3 +179,17 @@ Remaining (in order):
   counter `tX0` of `tmplP` gets the largest template as abstract bound, so `prepT`/`prepG` end with
   `clr tX0` (the run needs blank scratch); `keyPrep` → `boundsT_simKeyP`; the final clear; the frame
   `eW`; then `time_keyP` with a per-tape hypothesis at the call of the block (`io2 Lsd (frontL …) 0`).
+* **Flow-sensitive bounds** (`absC`, `absC_sound` in `ValCost.lean`): a single static bound per
+  word is too coarse (word `72` is a 2-round counter of `nandC` and carries `2^233` bits in
+  `insC`: `costC` gives `2^799`). `absC` tracks a list of 120 word bounds through the code (copies,
+  results, clears as strong updates, loops at a joined invariant `findInv`, branches joined) and
+  `absC_sound` proves `Ph (compileA cert c).toX (encB bs V (gB L)) T (encB bs V (gB L'))`.
+* **Numbers at `confP`** (`N = 2^33`, `K = 2^25`, `k = K + 1`, `d = 2^60`, `W = 512`,
+  `|sdEnc| ≤ 2^233`, gate list `≤ 2^20` bits): `pEval ρ cStep2 ≤ 2^379` (kernel), the Ring-GSW step
+  `≤ 2^380`; `absC` on `fhatFullC`: `2^543`; on `gswFullC`: `2^470`; `simKeyP`:
+  `(2·2^229 + 3) · simKeySweeps ≈ 2^229 · 2^316`; total ≈ `2^547`.
+* `prepT`/`prepG` frame `convP` (charged its small tapes) and `simTmplP`, clear word `12` after
+  `convP` (its abstract bound would exceed `simTmplP`'s input bounds) and the counter `tX0` after the
+  templates. `XProg.Ph` (`Lib/Machines/Prog/PhaseB.lean`), `ph_tmplP`, `ph_putW`.
+* `W = 512` covers the window predicates (`length_winGates`: ≤ 375 gates); `BndG 512` and
+  `parse C ≠ []` for window words remain to be shown for the instance at `confP`.
