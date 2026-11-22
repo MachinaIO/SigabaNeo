@@ -730,6 +730,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   replacing g by ag preserves the unfolded integral of every test of (marked column, unlabelled normalized projected
   lattice). It is accepted on Prove2Me. Still open: a measurable realization of the transverse lattice in X_{n−1}, and
   stabilizer invariance on almost every fiber.
+  TransverseCoordinates.lean / TransverseCount.lean give the following (nine theorems accepted on Prove2Me):
+  * a measurable determinant-one transverse frame, and a probability kernel K_x on X_{n−1};
+  * the exact count identity E_Haar[#{v ∈ W : λ1(normalized π_{v⊥}L) < c}] = ζ(n)⁻¹ ∫_W K_x{λ1 < c} dx;
+  * fiberwise transport: every h ∈ SL_{n−1}(ℝ) is realized by a mark-fixing parent matrix;
+  * the Haar calibration Pr_{X_m}[λ1 < c] ≤ c^m·V_m/(2ζ(m));
+  * the product law for n = 2.
+
+  Still open for n ≥ 3: K_x-a.e. invariance, i.e. a measure argument that transfers the bound to K_x.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
