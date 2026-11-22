@@ -295,6 +295,207 @@ theorem exec_rippleC (hf : ∀ a b, a.length = V → b.length = V → (f a b).le
     simp only [rippleW, not_or] at hj
     simp (config := {decide := true}) [w1, Function.update_apply, hj.2.2.2.1, hj.2.2.2.2]
 
+/-! ### Loops zipping two streams -/
+
+/-- `G` computes `R3 := F (R9, R10, R0, R1)` on registers, writing only `R3 … R8`. -/
+def GOk (V : ℕ) (f : List Bool → List Bool → List Bool) (G : Code)
+    (F : List Bool → List Bool → List Bool → List Bool → List Bool) : Prop :=
+  ∀ w, (w 0).length = V → (w 1).length = V →
+    exec V f G w 3 = F (w 9) (w 10) (w 0) (w 1) ∧ (exec V f G w 3).length = V ∧
+    ∀ j : Fin 40, (j.val < 3 ∨ 8 < j.val) → exec V f G w j = w j
+
+/-- One round: pop `a`, `b`, compute `G`, push `R3`. -/
+def zipBody (G : Code) : Code := ofList [.mvV 0 NA, .mvV 1 NB, G, .mvV NC 3]
+
+/-- **A zip of two streams**: `NC := zipWith F (NA, NB)` (buffer template `tb`, counter template
+`tk`). -/
+def zipC (G : Code) (tk tb : Fin 40) : Code := ofList [.cp NC tb, .cp CT0 tk, .rep CT0 (zipBody G)]
+
+theorem iter_zipBody {G : Code} {F : List Bool → List Bool → List Bool → List Bool → List Bool}
+    (hG : GOk V f G F) :
+    ∀ (as bs : List (List Bool)) (w : St), as.length = bs.length →
+      (∀ x ∈ as, x.length = V) → (∀ x ∈ bs, x.length = V) → (w 0).length = V →
+      (w 1).length = V → ∀ ra rb, w NA = as.flatten ++ ra → w NB = bs.flatten ++ rb →
+      let g := fun w' => exec V f (zipBody G) (Function.update w' CT0 (w' CT0).tail)
+      (g^[as.length] w) NC =
+          (w NC ++ (List.zipWith (F (w 9) (w 10)) as bs).flatten).drop (as.length * V) ∧
+        (g^[as.length] w) NA = ra ∧ (g^[as.length] w) NB = rb ∧
+        ((g^[as.length] w) 0).length = V ∧ ((g^[as.length] w) 1).length = V ∧
+        ∀ j, ¬ rippleW j → (g^[as.length] w) j = w j
+  | [], bs, w, hl, _, _, h0, h1, ra, rb, hA, hB => by
+    have : bs = [] := List.eq_nil_of_length_eq_zero (by simpa using hl.symm)
+    subst this; simp [hA, hB, h0, h1]
+  | _ :: _, [], w, hl, _, _, _, _, _, _, _, _ => by simp at hl
+  | a :: as, b :: bs, w, hl, hav, hbv, h0, h1, ra, rb, hA, hB => by
+    intro g
+    have ha : a.length = V := hav a (by simp)
+    have hb : b.length = V := hbv b (by simp)
+    set w1 := Function.update w CT0 (w CT0).tail
+    have e2 : exec V f (.mvV 0 NA) w1 =
+        Function.update (Function.update w1 NA (as.flatten ++ ra)) 0 a :=
+      exec_mvV_pop (by decide) (by simp (config := {decide := true}) [w1, Function.update_apply, h0])
+        ha (by simp (config := {decide := true}) [w1, Function.update_apply, hA])
+    set w2 := Function.update (Function.update w1 NA (as.flatten ++ ra)) 0 a
+    have e3 : exec V f (.mvV 1 NB) w2 =
+        Function.update (Function.update w2 NB (bs.flatten ++ rb)) 1 b :=
+      exec_mvV_pop (by decide) (by simp (config := {decide := true}) [w2, w1, Function.update_apply, h1])
+        hb (by simp (config := {decide := true}) [w2, w1, Function.update_apply, hB])
+    set w3 := Function.update (Function.update w2 NB (bs.flatten ++ rb)) 1 b
+    obtain ⟨efa, l3, eo⟩ := hG w3 (by simp (config := {decide := true}) [w3, w2, Function.update_apply, ha])
+      (by simp (config := {decide := true}) [w3, Function.update_apply, hb])
+    set w4 := exec V f G w3
+    have e5 : exec V f (.mvV NC 3) w4 = Function.update (Function.update w4 3 []) NC
+        ((w4 NC ++ w4 3).drop V) := exec_mvV_push (by decide) l3
+    have hg : g w = Function.update (Function.update w4 3 []) NC ((w4 NC ++ w4 3).drop V) := by
+      show exec V f (zipBody G) w1 = _
+      rw [zipBody, exec_ofList]
+      simp only [List.foldl_cons, List.foldl_nil]
+      rw [e2, e3, e5]
+    have v9 : w3 9 = w 9 := by simp (config := {decide := true}) [w3, w2, w1, Function.update_apply]
+    have v10 : w3 10 = w 10 := by simp (config := {decide := true}) [w3, w2, w1, Function.update_apply]
+    have v0 : w3 0 = a := by simp (config := {decide := true}) [w3, w2, Function.update_apply]
+    have v1 : w3 1 = b := by simp (config := {decide := true}) [w3, Function.update_apply]
+    rw [v9, v10, v0, v1] at efa
+    have ih := iter_zipBody hG as bs (g w) (by simpa using hl)
+      (fun x hx => hav x (by simp [hx])) (fun x hx => hbv x (by simp [hx]))
+      (by rw [hg]; simp (config := {decide := true}) [Function.update_apply]; rw [eo 0 (by decide)]; simp (config := {decide := true}) [w3, w2, Function.update_apply, ha])
+      (by rw [hg]; simp (config := {decide := true}) [Function.update_apply]; rw [eo 1 (by decide)]; simp (config := {decide := true}) [w3, Function.update_apply, hb])
+      ra rb
+      (by rw [hg]; simp (config := {decide := true}) [Function.update_apply]; rw [eo NA (by decide)]; simp (config := {decide := true}) [w3, w2, Function.update_apply])
+      (by rw [hg]; simp (config := {decide := true}) [Function.update_apply]; rw [eo NB (by decide)]; simp (config := {decide := true}) [w3, Function.update_apply])
+    have g9 : g w 9 = w 9 := by
+      rw [hg]; simp (config := {decide := true}) [Function.update_apply]; rw [eo 9 (by decide), v9]
+    have g10 : g w 10 = w 10 := by
+      rw [hg]; simp (config := {decide := true}) [Function.update_apply]; rw [eo 10 (by decide), v10]
+    have gNC : g w NC = (w4 NC ++ w4 3).drop V := by rw [hg]; simp (config := {decide := true}) [Function.update_apply]
+    have w4NC : w4 NC = w NC := by
+      rw [eo NC (by decide)]; simp (config := {decide := true}) [w3, w2, w1, Function.update_apply]
+    obtain ⟨i1, iA, iB, i0, i1', i5⟩ := ih
+    rw [g9, g10, gNC, w4NC] at i1
+    refine ⟨?_, by rw [List.length_cons, Function.iterate_succ_apply]; exact iA,
+      by rw [List.length_cons, Function.iterate_succ_apply]; exact iB,
+      by rw [List.length_cons, Function.iterate_succ_apply]; exact i0,
+      by rw [List.length_cons, Function.iterate_succ_apply]; exact i1', fun j hj => ?_⟩
+    · rw [List.length_cons, Function.iterate_succ_apply, i1, List.zipWith_cons_cons,
+        List.flatten_cons, ← efa]
+      rw [← List.drop_append_of_le_length (show V ≤ (w NC ++ w4 3).length by simp [l3]),
+        List.drop_drop, List.append_assoc]
+      congr 1; ring
+    · rw [List.length_cons, Function.iterate_succ_apply, i5 j hj, hg]
+      have hj3 : j ≠ 3 := fun e => hj (by subst e; left; decide)
+      have hjNC : j ≠ NC := fun e => hj (by subst e; right; right; right; left; rfl)
+      simp only [Function.update_of_ne hj3, Function.update_of_ne hjNC]
+      rw [eo j (by
+        simp only [rippleW, not_or] at hj
+        have := hj.1; omega)]
+      simp only [rippleW, not_or] at hj
+      have hj0 : j ≠ 0 := fun e => by subst e; simp at hj
+      have hj1 : j ≠ 1 := fun e => by subst e; simp at hj
+      simp [Function.update_apply, w3, w2, w1, hj.2.1, hj.2.2.1, hj.2.2.2.2, hj0, hj1]
+
+/-- **A zip of two streams**: `NC` ends with the flattened `zipWith`. -/
+theorem exec_zipC {G : Code} {F : List Bool → List Bool → List Bool → List Bool → List Bool}
+    (hG : GOk V f G F) {tk tb : Fin 40} (htk : ¬ rippleW tk) (htb : ¬ rippleW tb)
+    (as bs : List (List Bool)) (w : St) (hl : as.length = bs.length)
+    (hav : ∀ x ∈ as, x.length = V) (hbv : ∀ x ∈ bs, x.length = V) (h0 : (w 0).length = V)
+    (h1 : (w 1).length = V) (ra rb : List Bool) (hA : w NA = as.flatten ++ ra)
+    (hB : w NB = bs.flatten ++ rb)
+    (hk : (w tk).length = as.length) (hb : (w tb).length = as.length * V) :
+    exec V f (zipC G tk tb) w NC = (List.zipWith (F (w 9) (w 10)) as bs).flatten ∧
+      exec V f (zipC G tk tb) w NA = ra ∧ exec V f (zipC G tk tb) w NB = rb ∧
+      (exec V f (zipC G tk tb) w 0).length = V ∧ (exec V f (zipC G tk tb) w 1).length = V ∧
+      ∀ j, ¬ rippleW j → exec V f (zipC G tk tb) w j = w j := by
+  have tkNC : tk ≠ NC := fun e => htk (by subst e; right; right; right; left; rfl)
+  set w1 := Function.update (Function.update w NC (w tb)) CT0 (w tk) with hw1
+  have hex : exec V f (zipC G tk tb) w =
+      (fun w' => exec V f (zipBody G) (Function.update w' CT0 (w' CT0).tail))^[(w tk).length] w1 := by
+    simp only [zipC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp', exec_rep',
+      Function.update_self, Function.update_of_ne tkNC, w1]
+  have it := iter_zipBody hG as bs w1 hl hav hbv
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h0])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h1]) ra rb
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hA])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hB])
+  rw [hk] at hex
+  obtain ⟨i1, iA, iB, i0, i1', i5⟩ := it
+  have v9 : w1 9 = w 9 := by simp (config := {decide := true}) [w1, Function.update_apply]
+  have v10 : w1 10 = w 10 := by simp (config := {decide := true}) [w1, Function.update_apply]
+  have vNC : w1 NC = w tb := by simp (config := {decide := true}) [w1, Function.update_apply]
+  rw [v9, v10, vNC] at i1
+  rw [hex]
+  refine ⟨?_, iA, iB, i0, i1', fun j hj => ?_⟩
+  · rw [i1, List.drop_left' hb]
+  · rw [i5 j hj]
+    simp only [rippleW, not_or] at hj
+    simp [w1, Function.update_apply, hj.2.2.2.1, hj.2.2.2.2]
+
+/-! ### The register codes of the zips -/
+
+/-- `R3 := muxV (R9, R0, R1)` (the constant `1` on `R10`). -/
+def muxG : Code := ofList [.gate 4 9 0, .gate 5 10 9, .gate 6 5 1, .gate 3 4 6]
+/-- `R3 := andV (R9, R0)`. -/
+def andG : Code := ofList [.gate 4 9 0, .gate 3 10 4]
+/-- `R3 := notV R0`. -/
+def notG : Code := ofList [.gate 3 10 0]
+/-- `R3 := R0`. -/
+def idG : Code := .cp 3 0
+
+theorem gOk_muxG (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) :
+    GOk V f muxG fun s one a b => muxV one (fV V f) s a b := by
+  intro w _ _
+  refine ⟨?_, ?_, fun j hj => ?_⟩
+  · simp [muxG, exec_ofList, exec, muxV, fV]
+  · simp only [muxG, exec_ofList, exec, List.foldl_cons, List.foldl_nil, Function.update_self]
+    exact hf _ _ (by simp) (by simp)
+  · have h3 : j ≠ 3 := fun e => by subst e; simp at hj
+    have h4 : j ≠ 4 := fun e => by subst e; simp at hj
+    have h5 : j ≠ 5 := fun e => by subst e; simp at hj
+    have h6 : j ≠ 6 := fun e => by subst e; simp at hj
+    simp [muxG, exec_ofList, exec, h3, h4, h5, h6]
+
+theorem gOk_andG (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) :
+    GOk V f andG fun d one a _ => andV one (fV V f) d a := by
+  intro w _ _
+  refine ⟨?_, ?_, fun j hj => ?_⟩
+  · simp [andG, exec_ofList, exec, andV, fV]
+  · simp only [andG, exec_ofList, exec, List.foldl_cons, List.foldl_nil, Function.update_self]
+    exact hf _ _ (by simp) (by simp)
+  · have h3 : j ≠ 3 := fun e => by subst e; simp at hj
+    have h4 : j ≠ 4 := fun e => by subst e; simp at hj
+    simp [andG, exec_ofList, exec, h3, h4]
+
+theorem gOk_notG (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) :
+    GOk V f notG fun _ one a _ => notV one (fV V f) a := by
+  intro w _ _
+  refine ⟨?_, ?_, fun j hj => ?_⟩
+  · simp [notG, exec_ofList, exec, notV, fV]
+  · simp only [notG, exec_ofList, exec, List.foldl_cons, List.foldl_nil, Function.update_self]
+    exact hf _ _ (by simp) (by simp)
+  · have h3 : j ≠ 3 := fun e => by subst e; simp at hj
+    simp [notG, exec_ofList, exec, h3]
+
+theorem gOk_idG : GOk V f idG fun _ _ a _ => a := by
+  intro w h0 _
+  refine ⟨by simp [idG, exec], by simp [idG, exec, h0], fun j hj => ?_⟩
+  have h3 : j ≠ 3 := fun e => by subst e; simp at hj
+  simp [idG, exec, h3]
+
+theorem muxLV_eq_zipWith {α : Type*} (one : α) (step : α → α → α) (s : α) :
+    ∀ as bs : List α, muxLV one step s as bs = List.zipWith (muxV one step s) as bs
+  | [], _ => rfl
+  | _ :: _, [] => rfl
+  | a :: as, b :: bs => by rw [muxLV, List.zipWith_cons_cons, muxLV_eq_zipWith one step s as bs]
+
+theorem andLV_eq_zipWith {α : Type*} (one : α) (step : α → α → α) (d : α) :
+    ∀ as : List α, andLV one step d as = List.zipWith (fun a _ => andV one step d a) as as
+  | [] => rfl
+  | a :: as => by rw [andLV, List.zipWith_cons_cons, andLV_eq_zipWith one step d as]
+
+theorem notLV_eq_zipWith {α : Type*} (one : α) (step : α → α → α) :
+    ∀ as : List α, notLV one step as = List.zipWith (fun a _ => notV one step a) as as
+  | [] => rfl
+  | a :: as => by rw [notLV, List.zipWith_cons_cons, notLV_eq_zipWith one step as]
+
 end ValVM
 
 end SigabaNeo.Tape
