@@ -1398,6 +1398,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     > 2^−3,020,328 (506).
   * **No advantage.** Guessing zero already succeeds with probability (5/16)^512 = 2^−859.17. Inverse-polynomial success at
     β ≤ 506 is open, and needs control of plant-aware BKZ beyond the first pass, which is the same core.
+* **Part 166 (audited, SOUND).** [random_order](research/wall1_random_order.md): randomizing the graph-column order.
+  * **Processing-order ties.** Every fixed permutation preserves the joint law of the marked path, so random order leaves
+    Part 164's weighted ratio, P and p_a unchanged.
+  * **Original-coordinate ties.** An exact check over 29,478 design–order pairs shows random order raises selected hits by
+    4/3 (12 → 16). So random ordering is not a universal improvement.
+  * P + p_a ≤ 0.00019770868 at width 506 remains open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1407,7 +1413,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–165 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–166 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
