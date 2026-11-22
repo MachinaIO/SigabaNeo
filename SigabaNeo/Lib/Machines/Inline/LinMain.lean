@@ -14,6 +14,8 @@ linear in that of `A`.
 
 * `Machine.law_inlineOracleLin`, `Machine.run_inlineOracleLin`: the laws, as for
   `Machine.inlineOracle`, when the initial handler state is encoded by the empty word;
+In `Inline.LinCost`:
+
 * `Machine.tapes_inlineOracleLin`, `Machine.states_inlineOracleLin`, `Machine.time_inlineOracleLin`:
   `A.tapes + 2 ops + 2 + m` tapes, `h + 4 + A.states * 3 ^ ops * (1 + ∑ o, (9 + (H o).states))`
   states with `h ≤ Nat.size A.time` (`clockDigits_length_le_size`), the clock

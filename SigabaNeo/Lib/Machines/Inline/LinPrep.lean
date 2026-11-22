@@ -126,7 +126,7 @@ theorem tW_erase (u : List ℕ) (e c : ℕ) (pc : ℤ) (d s : SignType) :
   funext t
   rcases t with i | o | o | _ | _ | j <;> simp only [lF, tW, lP, wr, Option.map_some,
     Option.map_none, List.map_append, List.map_cons, List.map_nil] <;>
-    first | rfl | (rw [show (u.length : ℤ) = ((u.map _).length : ℤ) by simp]; exact tapeOfList_erase_last _ _)
+    (try (rw [show (u.length : ℤ) = ((u.map _).length : ℤ) by simp]; exact tapeOfList_erase_last _ _))
 
 /-! ### Reading the tracks -/
 
@@ -270,7 +270,7 @@ theorem lawM_decScan (rest : List ℕ) (c N : ℕ) :
         intro inp ans bit
         rw [tr_lSt]
         simp only [lAct]
-        rw [ite_eq_right (by simp only [kind_idx, lP]; rw [lF_st_none]; push_cast; omega),
+        rw [ite_eq_right (by simp only [kind_idx, lP]; rw [lF_st_none]; omega),
           ite_eq_left (by rw [readDigit_lF l c pre hlen _ (by rw [hget]; positivity), hget])]),
       tW_set l c pre hlen]
     have := ih (pre + 1)
@@ -297,12 +297,11 @@ theorem lawM_decHit (pre d : ℕ) (rest : List ℕ) (hd : d + 1 < baseB kA) (c N
         intro inp ans bit
         rw [tr_lSt]
         simp only [lAct]
-        rw [ite_eq_right (by simp only [kind_idx, lP]; rw [lF_st_none]; push_cast; omega),
+        rw [ite_eq_right (by simp only [kind_idx, lP]; rw [lF_st_none]; omega),
           ite_eq_right (by rw [readDigit_lF l c pre hlen _ (by rw [hget]; exact hd), hget]; omega),
           readDigit_lF l c pre hlen _ (by rw [hget]; exact hd), hget, Nat.add_sub_cancel]),
     tW_set_clock l c pre hlen, hl, set_replicate_append]
-  congr 3 <;> simp only [SignType.coe_neg, SignType.coe_one, SignType.coe_zero, add_zero] <;>
-    push_cast <;> ring
+  congr 3
 
 /-- The borrow runs past the last digit. -/
 theorem lawM_decEnd (l : List ℕ) (c N : ℕ) :
@@ -313,8 +312,7 @@ theorem lawM_decEnd (l : List ℕ) (c N : ℕ) :
         rw [tr_lSt]
         simp only [lAct]
         rw [ite_eq_left (by simp only [kind_idx, lP]; rw [lF_st_none]; right; rfl)]), tW_none]
-  congr 3 <;> simp only [SignType.coe_neg, SignType.coe_one, SignType.coe_zero, add_zero] <;>
-    push_cast <;> ring
+  congr 3
 
 /-- The configuration after the preparation: the clock of `c` cells with its head on its last cell,
 the start of the simulation. -/
@@ -337,8 +335,7 @@ theorem lawM_erase (c N : ℕ) : ∀ n (u : List ℕ), u.length = n →
         rw [tr_lSt]
         simp only [lAct]
         rw [ite_eq_left (by simp only [kind_idx, lP]; rw [lF_st_none]; left; simp)]), tW_none]
-    congr 3 <;> simp only [SignType.coe_neg, SignType.coe_one, SignType.coe_zero, add_zero] <;>
-      push_cast <;> ring
+    congr 3
   | succ n ih =>
     intro u hu
     have hne : u ≠ [] := by rintro rfl; simp at hu
@@ -353,8 +350,7 @@ theorem lawM_erase (c N : ℕ) : ∀ n (u : List ℕ), u.length = n →
       show ((n + 1 : ℕ) : ℤ) - 1 = (u.dropLast.length : ℤ) by rw [hlen]; push_cast; ring,
       tW_erase]
     rw [← ih _ hlen]
-    congr 3 <;> simp only [SignType.coe_neg, SignType.coe_one, SignType.coe_zero, add_zero, hlen] <;>
-      push_cast <;> ring
+    congr 3; simp only [SignType.coe_neg, SignType.coe_one, hlen]; ring
 
 end Steps
 
@@ -427,7 +423,7 @@ theorem lawM_loop : ∀ n (l : List ℕ) (c : ℕ), Nat.ofDigits (baseB kA) l = 
     refine ⟨2 * l.length + 2, by rw [hrep]; simp, fun N => ?_⟩
     have h1 := lawM_decScan (x := x) H M T [] c (N + l.length + 1 + 1) l.length 0
     simp only [List.replicate_zero, List.nil_append, List.append_nil, Nat.cast_zero,
-      Nat.zero_add, zero_add] at h1
+      zero_add] at h1
     rw [← hrep] at h1
     rw [show 2 * l.length + 2 + N = N + l.length + 1 + 1 + l.length by ring, h1]
     have h2 := lawM_decEnd (x := x) H M T (List.replicate l.length (baseB kA - 1)) c
@@ -468,7 +464,7 @@ theorem lawM_loop : ∀ n (l : List ℕ) (c : ℕ), Nat.ofDigits (baseB kA) l = 
       rw [hc2]
       omega
     · have h1 := lawM_decScan (x := x) H M T ((d + 1) :: rest) c (t' + N + z + 1 + 1) z 0
-      simp only [List.replicate_zero, List.nil_append, Nat.cast_zero, Nat.zero_add, zero_add] at h1
+      simp only [List.replicate_zero, List.nil_append, Nat.cast_zero, zero_add] at h1
       rw [show z + 1 + (z + 1) + t' + N = t' + N + z + 1 + 1 + z by ring, h1,
         lawM_decHit H M T z d rest hd c (t' + N + z + 1),
         lawM_back H M T l' (c + 1) (t' + N) z (by simp [hl']), hlaw]
@@ -506,7 +502,7 @@ theorem lawM_write (N : ℕ) : ∀ k j (hj : j + k = (clockDigits kA T).length),
       (clockDigits kA T)[j] 1 0
     rw [hlen] at this
     rw [Nat.cast_zero, this, ← take_succ_eq' _ _ hjl, ← ih (j + 1) (by omega)]
-    congr 3 <;> simp
+    congr 3
 
 theorem initialConfig_lin :
     (machineLin H M T).initialConfig x =
@@ -546,7 +542,7 @@ theorem lawLin_prep : ∃ t, t ≤ 4 * T + 4 * (clockDigits kA T).length + 4 ∧
   have := lawM_back (x := x) H M T (clockDigits kA T) 0 (t + N) _ le_rfl
   rw [Nat.zero_add] at hlaw
   rw [← hlaw, ← this]
-  congr 3 <;> simp
+  congr 3
 
 end Loop
 
