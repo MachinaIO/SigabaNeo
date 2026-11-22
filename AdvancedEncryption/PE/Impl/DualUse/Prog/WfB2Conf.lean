@@ -243,6 +243,40 @@ theorem chk_sk : (fun j => v5c (oK2 j)) ≤ ℓSK Msk Nc Kc dc kc (nPos Nc kc) (
 theorem chk_skT : (2 * Msk + 3) * simKeySweeps Nc Kc dc kc (nPos Nc kc) (VT Nc Kc kc dc)
     (lenA Nc Kc kc 1) 1 (VG Nc Kc kc dc) (lenA Nc Kc kc 2) ≤ 2 ^ 548 := by decide +kernel
 
+/-! ### The small checks of the preparations -/
+
+/-- The bounds after the framed `simKeyP`. -/
+def v6c : Fin 256 → ℕ := embedF (ValVM.mkE oK2 oK2_inj) v5c
+  fun j => if j = 0 then dc * (2 * kc) * (Nc * Kc) else Msk
+
+theorem chk_small :
+    (∀ t, β0c t ≤ Mall) ∧
+    (∀ t, embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)
+      (cntOut Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)) t ≤ Mall) ∧
+    (∀ t, tmOutN Nc Kc kc dc M31c (tmplB tX0 (tmpl31 Nc Kc kc dc) (Prog.lenBoundT (cp (mw GS) (mw GSC))
+      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
+        (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)
+        (cntOut Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c)))))) t ≤ Mall) ∧
+    (∀ x ∈ tmpl31 Nc Kc kc dc, x.2 ≤ Mall) ∧
+    (∀ x ∈ stepT Nc Kc kc dc ++ wTc, x.2 ≤ Mall) ∧
+    (∀ t, β1c t ≤ Mall) ∧
+    (∀ t, embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)
+      (cntOut Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)) t ≤ Mall) ∧
+    (∀ t, tmOutN Nc Kc kc dc M31c (tmplB tX0 (tmpl31 Nc Kc kc dc) (Prog.lenBoundT (cp (mw GS) (mw GSC))
+      (Prog.lenBoundT (clr (mw 12)) (embedF (ValVM.mkE cntE cntE_inj)
+        (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)
+        (cntOut Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c)))))) t ≤ Mall) ∧
+    (∀ x ∈ stepG Nc Kc kc dc ++ wGc, x.2 ≤ Mall) ∧
+    (∀ t, β4c t ≤ Mall) ∧ (∀ x ∈ keyT Nc Kc kc dc, x.2 ≤ Mall) ∧ (∀ t, v6c t ≤ Mall) := by
+  decide +kernel
+
+theorem chk_sum :
+    cntT Wc (Prog.lenBoundT (cp (mw GSC) (mw GS)) β0c) + (2 * M31c + 3) * simTmplSweeps Nc Kc kc +
+      90 * uT (Mall + 6) + (2 ^ 554 + (cntT Wc (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β1c) +
+      (2 * M31c + 3) * simTmplSweeps Nc Kc kc + 120 * uT (Mall + 40) + (2 ^ 480 +
+      (120 * uT (Mall + 100) + (2 ^ 548 + 256 * (2 * (Mall + 256) + 5)))))) ≤ 2 ^ 555 := by
+  decide +kernel
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
