@@ -1190,6 +1190,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Positive height.** On one explicit terminal family the positive-height contribution is < 1.364·10⁻¹⁰·Q^{−407}.
   * The full width-506 terminal budget (0.00977696) remains open. Per the audit, deleting competitors can improve a
     Cauchy–Schwarz bound even though it enlarges the void event.
+* **Part 146 (audited, SOUND).** [subspace_void](research/wall1_subspace_void.md): an exact horizontal void formula.
+  * Conditional on the history, each feasible competitor excludes one displacement. Grouping the excluded displacements by
+    projective line splits the horizontal charge exactly into three parts: histories with old minimum t ≤ 1, entirely
+    uncovered lines, and uncovered scalars on partially covered lines. Signed ties are handled.
+  * A Möbius formula (Gaussian binomials over the subspace lattice) holds for fixed raw graph constraints.
+  * **Span dimension is insufficient.** In a reachable width-506 terminal family, the 803 beating displacements span all
+    400 mark dimensions. The family's exact contribution is < Q^{−510}, where Q = 3329^400.
+  * **Remaining.** The history average, over states passing the old-plane test, of the uncovered lines and scalars. The
+    positive-height plane multiplicity at budget 0.00977696.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1199,7 +1208,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–145 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–146 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
