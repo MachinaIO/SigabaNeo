@@ -708,6 +708,40 @@ theorem exec_oneC (w : St) {g z o : List Bool} (h10 : w 10 = List.replicate V fa
 
 end Streams
 
+/-! ### The words prepared for `f̂` -/
+
+section W1
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) (a : List Bool) (gs : GateList)
+
+theorem w1_key {x : Fin 120} {n : ℕ}
+    (h : (mw x, n) ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c))
+    (h1 : x ≠ OB) (h2 : x ≠ ZB) : w1 hk c W a gs x = List.replicate n false :=
+  S1_key hk c W a gs h (fun e => h1 (ValVM.tWd_inj e)) (fun e => h2 (ValVM.tWd_inj e))
+
+theorem w1_SDW : w1 hk c W a gs SDW = a := by
+  rw [w1, S1_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide)]
+  simp [S0]
+
+theorem w1_content (hW : 0 < W) (hb : BndG W gs) :
+    w1 hk c W a gs GADW = gadW N K k ∧ w1 hk c W a gs ZEROW = zeroW (lenA N K k c.d) ∧
+      w1 hk c W a gs ONEW = oneW N K := by
+  refine ⟨?_, ?_, ?_⟩ <;>
+  · rw [w1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
+    simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
+
+theorem w1_GS (hW : 0 < W) (hb : BndG W gs) :
+    w1 hk c W a gs GS = gsW W gs ∧ w1 hk c W a gs GCNT = List.replicate gs.length false := by
+  refine ⟨?_, ?_⟩ <;>
+  · rw [w1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
+    simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
+    rw [X4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide))]
+    simp (config := {decide := true}) only [Function.update_apply, if_true, if_false,
+      X2_apply W a gs hW hb]
+
+end W1
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
