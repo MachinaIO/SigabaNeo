@@ -42,8 +42,8 @@ The leading terms are the algorithms' true costs: `mulRWP` is Horner's rule over
 `y`, each round a block-wise product of `N` shift-and-add multiplications of `K`-bit words (`K`
 conditional additions of `K` sweeps each), so `N · N · K · K` sweeps; `matMulP` performs `m n l`
 ring products (and as many ring additions and block moves); `nandP` multiplies a `1 × 2k'` by a
-`2k' × 2k'` matrix of ring elements. With `N = 2^33`, `K = 2^25`, a ring product costs at most
-`(2 · 2^58 + 3) · 2^121` steps, about `2^180`.
+`2k' × 2k'` matrix of ring elements. With `N = 2^34`, `K = 2^25`, a ring product costs at most
+`(2 · 2^59 + 3) · 2^123` steps, about `2^183`.
 -/
 
 namespace SigabaNeo.Tape
@@ -483,11 +483,11 @@ end Frame
 
 /-! ### The concrete instance
 
-`N = 2^33`, `K = 2^25`: a ring word has `2^58` bits, and a ring product, alone or framed, costs
-fewer than `2^180` steps. -/
+`N = 2^34`, `K = 2^25`: a ring word has `2^59` bits, and a ring product, alone or framed, costs
+fewer than `2^183` steps. -/
 
-theorem timeBoundT_mulRWP_concrete {ℓ : Fin 38 → ℕ} (hℓ : ℓ ≤ ℓRing (2 ^ 58) (2 ^ 33) (2 ^ 25))
-    (hM : ∀ t, ℓ t ≤ 2 ^ 58) : timeBoundT mulRWP ℓ < 2 ^ 180 := by
+theorem timeBoundT_mulRWP_concrete {ℓ : Fin 38 → ℕ} (hℓ : ℓ ≤ ℓRing (2 ^ 59) (2 ^ 34) (2 ^ 25))
+    (hM : ∀ t, ℓ t ≤ 2 ^ 59) : timeBoundT mulRWP ℓ < 2 ^ 183 := by
   have h := (boundsT_mulRWP hℓ hM).2.2
   refine lt_of_le_of_lt h ?_
   norm_num

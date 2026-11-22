@@ -4,9 +4,9 @@ import PE.Impl.DualUse.Params.Conf
 /-!
 # The public-key, challenge and simulation-data components at the concrete parameters
 
-At `confP` (`N = 2^33`, `K = 2^25`, `k = K + 1`, `d = 2^60`), on inputs of at most `2^180` bits
+At `confP` (`N = 2^34`, `K = 2^25`, `k = K + 1`, `d = 2^61`), on inputs of at most `2^180` bits
 (every secret word of the three reductions is shorter, `PE.Impl.DualUse.Prog.CompBounds`), the
-lifted components `pub3L`, `pubIL`, `pub5L`, `chal3L`, `chal5L` cost at most `2^419`
+lifted components `pub3L`, `pubIL`, `pub5L`, `chal3L`, `chal5L` cost at most `2^423`
 (public keys), `2^430` (`chal3L`) and `2^440` (`chal5L`) steps, and their outputs have at most
 `2^181` bits. The bounds are those of `PE.Impl.DualUse.Prog.Blocks` (`UBZ`: every
 loop is charged the length of its own counter), evaluated by `norm_num`.
@@ -25,7 +25,7 @@ theorem len_Index {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) :
   show (Enum.list (α := Fin 2 × (RingBTVW.Col k × (Fin k × Fin N)))).length = _
   simp only [Enum.length_prod, len_fin, len_col]
 
-theorem confP_d : confP.d = 2 ^ 60 := dp_def
+theorem confP_d : confP.d = 2 ^ 61 := dp_def
 
 theorem scrL_length : scrL.length = 81 := rfl
 
@@ -54,7 +54,7 @@ set_option exponentiation.threshold 1000
 
 theorem timepub3_conf :
     timepub3 hkp confP (2 ^ 180 + sizepub3 hkp confP) + timeFin (2 ^ 180 + sizepub3 hkp confP) ≤
-      2 ^ 419 := by
+      2 ^ 423 := by
   comp_unfold; norm_num
 
 theorem sizepub3_conf : sizepub3 hkp confP ≤ 2 ^ 180 := by comp_unfold; norm_num
@@ -64,11 +64,11 @@ theorem timeChal3_conf :
       2 ^ 430 := by
   comp_unfold; norm_num
 
-theorem sizeChal3_conf : sizeChal3 hkp confP ≤ 2 ^ 178 := by comp_unfold; norm_num
+theorem sizeChal3_conf : sizeChal3 hkp confP ≤ 2 ^ 180 := by comp_unfold; norm_num
 
 theorem timepub5_conf :
     timepub5 hkp confP (2 ^ 180 + sizepub5 hkp confP) + timeFin (2 ^ 180 + sizepub5 hkp confP) ≤
-      2 ^ 419 := by
+      2 ^ 423 := by
   comp_unfold; norm_num
 
 theorem sizepub5_conf : sizepub5 hkp confP ≤ 2 ^ 180 := by comp_unfold; norm_num
@@ -78,7 +78,7 @@ theorem timeChal5_conf :
       2 ^ 440 := by
   comp_unfold; norm_num
 
-theorem sizeChal5_conf : sizeChal5 hkp confP ≤ 2 ^ 178 := by comp_unfold; norm_num
+theorem sizeChal5_conf : sizeChal5 hkp confP ≤ 2 ^ 180 := by comp_unfold; norm_num
 
 theorem timeChalI_conf : timeChalI hkp confP (2 ^ 180) (2 ^ 180) ≤ 2 ^ 380 := by
   simp only [timeChalI, tChal, tFlip, tFH, tMv, countT, tApp, tBit, sChalI, preI, coinsEnc,
@@ -108,13 +108,8 @@ theorem pow180_add {s : ℕ} (h : s ≤ 2 ^ 180) : 2 ^ 180 + s ≤ 2 ^ 181 := by
   have : (2 : ℕ) ^ 181 = 2 ^ 180 + 2 ^ 180 := by norm_num
   omega
 
-theorem pow178_add {s : ℕ} (h : s ≤ 2 ^ 178) : 2 ^ 180 + s ≤ 2 ^ 181 := by
-  have : (2 : ℕ) ^ 181 = 2 ^ 180 + 2 ^ 180 := by norm_num
-  have : (2 : ℕ) ^ 178 ≤ 2 ^ 180 := by norm_num
-  omega
-
 theorem time_pub3L_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
-    timeBoundT (pub3L hkp confP) (io2 a b 0) ≤ 2 ^ 419 :=
+    timeBoundT (pub3L hkp confP) (io2 a b 0) ≤ 2 ^ 423 :=
   (timeBoundT_mono _ (io2_mono ha hb)).trans
     ((time_pub3L hkp confP _ _).trans (by rw [max_self]; exact timepub3_conf))
 
@@ -125,7 +120,7 @@ theorem len_pub3L_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
       le_rfl))
 
 theorem time_pubIL_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
-    timeBoundT (pubIL hkp confP) (io2 a b 0) ≤ 2 ^ 419 :=
+    timeBoundT (pubIL hkp confP) (io2 a b 0) ≤ 2 ^ 423 :=
   (timeBoundT_mono _ (io2_mono ha hb)).trans
     ((time_pubIL hkp confP _ _).trans (by rw [max_self]; exact timepub3_conf))
 
@@ -136,7 +131,7 @@ theorem len_pubIL_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
       le_rfl))
 
 theorem time_pub5L_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
-    timeBoundT (pub5L hkp confP) (io2 a b 0) ≤ 2 ^ 419 :=
+    timeBoundT (pub5L hkp confP) (io2 a b 0) ≤ 2 ^ 423 :=
   (timeBoundT_mono _ (io2_mono ha hb)).trans
     ((time_pub5L hkp confP _ _).trans (by rw [max_self]; exact timepub5_conf))
 
@@ -154,7 +149,7 @@ theorem time_chal3L_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
 theorem len_chal3L_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
     lenBoundT (chal3L hkp confP) (io2 a b 0) ≤ io2 (2 ^ 181) 0 0 :=
   (lenBoundT_mono _ (io2_mono ha hb)).trans
-    ((len_chal3L hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow178_add sizeChal3_conf)
+    ((len_chal3L hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow180_add sizeChal3_conf)
       le_rfl))
 
 theorem time_chal5L_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
@@ -165,7 +160,7 @@ theorem time_chal5L_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
 theorem len_chal5L_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
     lenBoundT (chal5L hkp confP) (io2 a b 0) ≤ io2 (2 ^ 181) 0 0 :=
   (lenBoundT_mono _ (io2_mono ha hb)).trans
-    ((len_chal5L hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow178_add sizeChal5_conf)
+    ((len_chal5L hkp confP _ _).trans (io2_mono (by rw [max_self]; exact pow180_add sizeChal5_conf)
       le_rfl))
 
 theorem time_chalIL2_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :

@@ -189,8 +189,8 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option exponentiation.threshold 1000
 
-theorem lbTail3_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 33)
-    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 60) (hw : c.w = 512) {A : ℕ}
+theorem lbTail3_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 34)
+    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 61) (hw : c.w = 512) {A : ℕ}
     (hA : A = 2 ^ 25) :
     (lbTail3 hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).w ≤ 2 ^ 200 ∧
       (lbTail3 hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).E ≤ 2 ^ 200 := by
@@ -200,8 +200,8 @@ theorem lbTail3_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N 
   subst hN hK hk' hA
   norm_num
 
-theorem lbTailI_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 33)
-    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 60) (hw : c.w = 512) {A : ℕ}
+theorem lbTailI_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 34)
+    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 61) (hw : c.w = 512) {A : ℕ}
     (hA : A = 2 ^ 25) :
     (lbTailI hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).w ≤ 2 ^ 200 ∧
       (lbTailI hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).E ≤ 2 ^ 200 := by
@@ -247,8 +247,8 @@ theorem bTailI_as {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (Bχ : Bnd
     bCoin]
   exact ⟨trivial, trivial⟩
 
-theorem bTail3_as_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 33)
-    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 60) (hw : c.w = 512) {A : ℕ}
+theorem bTail3_as_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 34)
+    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 61) (hw : c.w = 512) {A : ℕ}
     (hA : A = 2 ^ 25) :
     (bTail3 hk c (Bnd.prim A 64)).a ≤ 2 ^ 181 ∧ (bTail3 hk c (Bnd.prim A 64)).s ≤ 2 ^ 181 := by
   simp only [bTail3, bRest, Bnd.seq, Bnd.count, Bnd.prim, bCoins, bZeros, bEntB, bEntF, bCoin,
@@ -256,8 +256,8 @@ theorem bTail3_as_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : 
   subst hN hK hk' hA
   norm_num
 
-theorem bTailI_as_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 33)
-    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 60) (hw : c.w = 512) {A : ℕ}
+theorem bTailI_as_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 34)
+    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 61) (hw : c.w = 512) {A : ℕ}
     (hA : A = 2 ^ 25) :
     (bTailI hk c (Bnd.prim A 64)).a ≤ 2 ^ 181 ∧ (bTailI hk c (Bnd.prim A 64)).s ≤ 2 ^ 181 := by
   simp only [bTailI, bEncCoins, bCt, Bnd.seq, Bnd.count, Bnd.prim, bCoins, bZeros, bEntB, bEntF,

@@ -38,7 +38,7 @@ selection ≈ 2^765, unframed `simStepP` ≈ 2^700. Uniform bounds `tbC·(L+1)^t
 8. **Per-tape bounds for setup/pub/chal/sd and the decoder**: their uniform bounds on 2^234-bit
    states give ≥ 2^936; honest ≈ 2^470. Use `timeBoundT`/AbsBound with frames.
    **Status (steps 7, 8 done except the key component)**, at `confP`, query/state inputs ≤ 2^180:
-   setup3D/5D/ID ≤ 2^403 steps, outputs ≤ 2^182, ≤ 2^25 states (`SetupL`); pub3/pubI/pub5 ≤ 2^419,
+   setup3D/5D/ID ≤ 2^403 steps, outputs ≤ 2^182, ≤ 2^25 states (`SetupL`); pub3/pubI/pub5 ≤ 2^423,
    chal3 ≤ 2^430, chal5 ≤ 2^440, chalIL2 ≤ 2^380 (outputs ≤ 2^182), all ≤ 2^25 states, sd3/sdI/sd5
    ≤ 2^25 states (`CompCost`); decoders ≤ 2^350 steps, ≤ 2^16 states, 14 tapes (`DecodeCost`);
    auth (`authL`, a search over valid date pairs with a gate generator) ≤ 2^275 steps for queries
