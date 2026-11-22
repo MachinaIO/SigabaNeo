@@ -246,6 +246,16 @@ theorem run_iter (z : Fin k) (p : Prog k) : ∀ n s, run (iter z p n) s = (run p
   | n + 1, s => by
     rw [iter, run_seq, run_iter z p n, Function.iterate_succ_apply]
 
+theorem preserves_iter (z : Fin k) (p : Prog k) {i : Fin k} (hz : z ≠ i) (hp : p.Preserves i) :
+    ∀ n, (iter z p n).Preserves i
+  | 0 => by simp [iter, Preserves, Prim.writes, Ne.symm hz]
+  | n + 1 => ⟨hp, preserves_iter z p hz hp n⟩
+
+/-- A coin-free program leaves the tapes it never writes alone. -/
+theorem run_eq_of_preserves (p : Prog k) (hc : p.CoinFree) {i : Fin k} (hp : p.Preserves i)
+    (s : Store k) : run p s i = s i :=
+  preserves_spec i p hp s _ (by rw [law_eq_run_of_coinFree p hc s]; simp)
+
 /-- **The compiled machine of a coin-free program**, as a deterministic phase. -/
 theorem compile_runsWordsU (p : Prog k) (hp : p.WF) (hc : p.CoinFree) (x : List Bool) (L : ℕ)
     (s : Store k) (out₀ : List Bool) (hs : maxLen s ≤ L) :
