@@ -65,7 +65,7 @@ theorem wf_getAt (o L : ℕ) (src dst tmp a b : Fin n) : (getAt o L src dst tmp 
 
 /-- One round on (output, rows, stash): the stash, then the next row; the stash becomes `Z` zeros. -/
 def wStep (Z R : ℕ) (a : List Bool × List Bool × List Bool) : List Bool × List Bool × List Bool :=
-  (a.1 ++ a.2.2.take Z ++ a.2.1.take R, a.2.1.drop R, a.2.2.drop Z ++ List.replicate Z false)
+  (a.1 ++ a.2.2.take Z ++ a.2.1.take R, a.2.1.drop R, List.replicate Z false)
 
 theorem iterate_wStep (Z R : ℕ) : ∀ (rows : List (List Bool)), (∀ r ∈ rows, r.length = R) →
     ∀ (O X rest : List Bool), X.length = Z →
@@ -79,8 +79,7 @@ theorem iterate_wStep (Z R : ℕ) : ∀ (rows : List (List Bool)), (∀ r ∈ ro
     have e : wStep Z R (O, (r :: rs).flatten ++ rest, X) =
         (O ++ X ++ r, rs.flatten ++ rest, List.replicate Z false) := by
       simp only [wStep, List.flatten_cons, List.append_assoc]
-      rw [List.take_of_length_le (le_of_eq hX), List.drop_of_length_le (le_of_eq hX),
-        List.take_left' hr0, List.drop_left' hr0, List.nil_append]
+      rw [List.take_of_length_le (le_of_eq hX), List.take_left' hr0, List.drop_left' hr0]
     rw [e]
     obtain ⟨h1, h2⟩ := iterate_wStep Z R rs (fun r' hr' => hr r' (by simp [hr'])) (O ++ X ++ r)
       (List.replicate Z false) rest (by simp)
@@ -91,8 +90,8 @@ theorem iterate_wStep (Z R : ℕ) : ∀ (rows : List (List Bool)), (∀ r ∈ ro
 /-- **The `W`-part loop**: `|tn|` rounds of: move the stash `x` (`|tz|` bits) to `out`, refill it
 with `|tz|` zeros, move `|tr|` bits of `f` to `out` (counters `c`, `c'`). -/
 def wLoopP (out f x c c' tn tz tr : Fin n) : XProg n :=
-  XProg.forN c tn (XProg.seq (XProg.moveP out x c' tz)
-    (XProg.seq (XProg.zerosP x c' tz) (XProg.moveP out f c' tr)))
+  XProg.forN c tn (XProg.seq (XProg.moveP out x c' tz) (XProg.seq (XProg.prog (.prim (.clear x)))
+    (XProg.seq (XProg.zerosP x c' tz) (XProg.moveP out f c' tr))))
 
 theorem law_wLoopP {out f x c c' tn tz tr : Fin n} (hd : [out, f, x, c, c', tn, tz, tr].Nodup)
     (s : Store n) (hc : s c = []) (hc' : s c' = []) :
@@ -146,11 +145,13 @@ theorem law_wLoopP {out f x c c' tn tz tr : Fin n} (hd : [out, f, x, c, c', tn, 
       Function.update_of_ne h _ _
     generalize Function.update (G a) c w = S1 at e1 so sf sx sz sr sc sO
     rw [XProg.law_seq_pure (XProg.law_moveP h02 h04 h24 h46 _ e1),
+      XProg.law_seq_pure (XProg.law_prim _ _), Prim.apply,
       XProg.law_seq_pure (XProg.law_zerosP h24 h46 _ (by
-        rw [Function.update_of_ne (Ne.symm h24), Function.update_of_ne (Ne.symm h04)]; exact e1)),
+        rw [Function.update_of_ne (Ne.symm h24), Function.update_of_ne (Ne.symm h24),
+          Function.update_of_ne (Ne.symm h04)]; exact e1)),
       XProg.law_moveP h01 h04 h14 h47 _ (by
         rw [Function.update_of_ne (Ne.symm h24), Function.update_of_ne (Ne.symm h24),
-          Function.update_of_ne (Ne.symm h04)]; exact e1)]
+          Function.update_of_ne (Ne.symm h24), Function.update_of_ne (Ne.symm h04)]; exact e1)]
     congr 1
     funext t
     have hz' : (S1 tz).length = Z := by rw [sz]
@@ -180,7 +181,7 @@ theorem law_wLoopP {out f x c c' tn tz tr : Fin n} (hd : [out, f, x, c, c', tn, 
 theorem wf_wLoopP {out f x c c' tn tz tr : Fin n} (h1 : out ≠ c') (h2 : x ≠ c') (h3 : f ≠ c')
     (h4 : out ≠ c) (h5 : x ≠ c) (h6 : f ≠ c) (h7 : c' ≠ c) :
     (wLoopP out f x c c' tn tz tr).WF := by
-  refine ⟨trivial, ⟨XProg.wf_moveP h1 h2, XProg.wf_zerosP h2, XProg.wf_moveP h1 h3⟩, ?_⟩
+  refine ⟨trivial, ⟨XProg.wf_moveP h1 h2, trivial, XProg.wf_zerosP h2, XProg.wf_moveP h1 h3⟩, ?_⟩
   simp [wLoopP, XProg.moveP, XProg.zerosP, XProg.forN, XProg.Preserves, Prog.Preserves,
     Prim.writes, Ne.symm h4, Ne.symm h5, Ne.symm h6, Ne.symm h7, h7]
 
@@ -293,5 +294,107 @@ def eLo (m : ℕ) (hm : m + 1 ≤ 256) : Fin m ↪ Fin 256 :=
 
 theorem eLo_val {m : ℕ} {hm : m + 1 ≤ 256} (j : Fin m) :
     (eLo m hm j).val = if j.val = 0 then 0 else j.val + 1 := rfl
+
+/-! ### Stores as association lists -/
+
+/-- The store of an association list (the first entry of a tape wins, blank by default). -/
+def sto {m : ℕ} (l : List (Fin m × List Bool)) : Store m :=
+  fun t => ((l.find? fun x => x.1 = t).map Prod.snd).getD []
+
+@[simp] theorem sto_nil {m : ℕ} (t : Fin m) : sto [] t = [] := rfl
+
+@[simp] theorem sto_cons {m : ℕ} (a : Fin m) (v : List Bool) (l : List (Fin m × List Bool))
+    (t : Fin m) : sto ((a, v) :: l) t = if a = t then v else sto l t := by
+  by_cases h : a = t <;> simp [sto, List.find?, h]
+
+theorem update_sto {m : ℕ} (l : List (Fin m × List Bool)) (a : Fin m) (v : List Bool) :
+    Function.update (sto l) a v = sto ((a, v) :: l) := by
+  funext t
+  by_cases h : t = a
+  · subst h; simp
+  · simp [Function.update_apply, h, Ne.symm h]
+
+theorem tmplS_sto {m : ℕ} : ∀ (tl : List (Fin m × ℕ)) (l : List (Fin m × List Bool)),
+    tmplS tl (sto l) = sto ((tl.reverse.map fun x => (x.1, List.replicate x.2 false)) ++ l)
+  | [], l => rfl
+  | x :: tl, l => by
+    rw [tmplS, List.foldl_cons, ← tmplS, update_sto, tmplS_sto tl]
+    simp
+
+theorem io1_sto {m : ℕ} [NeZero m] (w : List Bool) : io1 (m := m) w = sto [(0, w)] := by
+  rw [io1, ← update_sto]; rfl
+
+theorem clear_sto {m : ℕ} (cl : List (Fin m)) (l : List (Fin m × List Bool)) :
+    (fun t => if t ∈ cl then [] else sto l t) = sto ((cl.map fun t => (t, [])) ++ l) := by
+  funext t
+  induction cl with
+  | nil => simp
+  | cons a cl ih =>
+    simp only [List.mem_cons, List.map_cons, List.cons_append, sto_cons] at ih ⊢
+    by_cases h : a = t
+    · subst h; simp
+    · simp [h, Ne.symm h, ih]
+
+/-! ### The frame `eLo` on the stores of the blocks -/
+
+theorem io2_eLo {m : ℕ} [NeZero m] {hm : m + 1 ≤ 256} (a b : List Bool) :
+    (fun j => io2 (R := 254) a b [] (eLo m hm j)) = sto [(0, a)] := by
+  funext j
+  simp only [io2, eLo_val, sto_cons, sto_nil]
+  by_cases h : j.val = 0
+  · have : (0 : Fin m) = j := Fin.ext (by simp [h])
+    simp [h, this]
+  · have : (0 : Fin m) ≠ j := fun e => h (by rw [← e]; simp)
+    simp [h, this]
+
+theorem embedF_eLo {m : ℕ} [NeZero m] {hm : m + 1 ≤ 256} (a b a' : List Bool) :
+    embedF (eLo m hm) (io2 (R := 254) a b []) (sto [(0, a')]) = io2 (R := 254) a' b [] := by
+  refine embedF_eq_of _ _ _ _ (fun j => ?_) (fun t ht => ?_)
+  · simp only [io2, eLo_val, sto_cons, sto_nil]
+    by_cases h : j.val = 0
+    · have : (0 : Fin m) = j := Fin.ext (by simp [h])
+      simp [h, this]
+    · have : (0 : Fin m) ≠ j := fun e => h (by rw [← e]; simp)
+      simp [h, this]
+  · have h0 : t.val ≠ 0 := fun h => ht 0 (Fin.ext (by rw [eLo_val]; simp [h]))
+    simp only [io2, h0, if_false]
+
+theorem eLo_eq_two {m : ℕ} {hm : m + 1 ≤ 256} (j : Fin m) : eLo m hm j = 2 ↔ j.val = 1 := by
+  rw [Fin.ext_iff, eLo_val]
+  constructor
+  · intro h; split_ifs at h <;> simp at h <;> omega
+  · intro h; simp [h]
+
+theorem upd_eLo {m : ℕ} [NeZero m] {hm : m + 1 ≤ 256} (h1 : 1 < m) (a v : List Bool) :
+    (fun j => Function.update (io2 (R := 254) a [] []) 2 v (eLo m hm j)) =
+      sto [(⟨1, h1⟩, v), (0, a)] := by
+  funext j
+  rw [Function.update_apply, sto_cons, sto_cons, sto_nil]
+  by_cases h' : j.val = 1
+  · have e1 : (⟨1, h1⟩ : Fin m) = j := Fin.ext (by simp [h'])
+    rw [if_pos ((eLo_eq_two j).mpr h'), if_pos e1]
+  · have e1 : (⟨1, h1⟩ : Fin m) ≠ j := fun e => h' (by rw [← e])
+    rw [if_neg (fun e => h' ((eLo_eq_two j).mp e)), if_neg e1]
+    simp only [io2, eLo_val]
+    by_cases h : j.val = 0
+    · have e0 : (0 : Fin m) = j := Fin.ext (by simp [h])
+      simp [h, e0]
+    · have e0 : (0 : Fin m) ≠ j := fun e => h (by rw [← e]; simp)
+      simp [h, e0]
+
+theorem embedF_eLo_upd {m : ℕ} [NeZero m] {hm : m + 1 ≤ 256} (h1 : 1 < m) (a v a' v' : List Bool) :
+    embedF (eLo m hm) (Function.update (io2 (R := 254) a [] []) 2 v) (sto [(⟨1, h1⟩, v'), (0, a')]) =
+      Function.update (io2 (R := 254) a' [] []) 2 v' := by
+  refine embedF_eq_of _ _ _ _ (fun j => ?_) (fun t ht => ?_)
+  · rw [← upd_eLo (hm := hm) h1 a' v']
+  · have h0 : t.val ≠ 0 := fun h => ht 0 (Fin.ext (by rw [eLo_val]; simp [h]))
+    have h2 : t ≠ 2 := fun h => ht ⟨1, h1⟩ (Fin.ext (by rw [eLo_val, h]; simp))
+    simp only [Function.update_apply, h2, if_false, io2, h0]
+
+/-- Normalize association-list stores. -/
+macro "norm_sto" : tactic =>
+  `(tactic| try simp only [update_sto, tmplS_sto, sto_cons, sto_nil, reduceIte, Fin.reduceEq,
+    List.drop_zero, List.nil_append, List.reverse_cons, List.reverse_nil, List.map_cons, List.map_nil,
+    List.cons_append, List.nil_append, List.length_replicate, List.singleton_append])
 
 end AdvancedEncryption.DualUse.Prog
