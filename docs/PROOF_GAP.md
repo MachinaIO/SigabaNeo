@@ -735,7 +735,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   10^375 above Haar at cutoffs near 1. The linear unmarked recursion amplifies by ≥ q^504 per step. On the relevant GH band,
   however, the restart comparison is benign: the rank-1 ratio is < 5.803 for 0.954·GH ≤ x ≤ q. Propagating a GH-band comparison
   through the suffix is open.
-* **Frontier after Parts 1–124 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 125 (audited, minor caveats).** [annealed_selection](research/wall1_annealed_selection.md): forced SVP inequalities on
+  subunit runs give a restart floor of 2.78·10⁻⁷ × own GH, weaker than Part 110's pathwise 5.21·10⁻⁶. At the 0.954 target a
+  terminal witness can first appear in the last window, with a winner up to 1.096607 × window GH. The selection-weighted finite
+  probability (Part 118) remains the obligation.
+* **Frontier after Parts 1–125 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
