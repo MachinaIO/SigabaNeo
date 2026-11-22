@@ -1123,9 +1123,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * the constructed CDT tables (P = 960, F = 1024, R = 2^22 − 1) have per-draw SD ≤ 2^−930 at both recorded dimensions
       and all four run widths;
     * so SD(A, D) ≤ d·2^−930 + SD(K, D) for d ∈ {646, 647}.
-    These hold under the §3.3 accuracy contract for the two input constants E₁ ≈ e^{−π/s²} and E₂ ≈ e^{−2π/s²}.
+    GaussianConstantSeries / GaussianConstantArgument / RecordedGaussianConstants (axiom-clean) discharge the two input
+    constants:
+    * 1088-bit Machin π and logarithm routines with certified error;
+    * kernel-checked fourth-root enclosures;
+    * a 36-term Taylor routine;
+    * `recordedGaussianConstants` builds `GaussianConstants` for all eight recorded widths.
+    The final theorem is SD(A(M), D_{L_M,s}) ≤ (r+t)·2^−930 + SD(kleinLaw, D_{L_M,s}), with no numerical hypotheses.
     Still open in Lean:
-    * the §3.3 routine that computes those constants;
     * the word-operation count;
     * the ADRS combiner analysis itself (Part 140).
   * **Rigorous cost frontier (Nov 2026).** Recovering the secret of plain LWE (511, 512, 3329), CBD(3) with probability ≥
