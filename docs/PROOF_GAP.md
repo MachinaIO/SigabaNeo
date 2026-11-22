@@ -703,6 +703,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   121's non-closure counterexample. The diagonal lattices with sides (1/8, 1/4, 1/3, 3) and (1/8, 1/4, 1/2, 2) both have
   determinant 1/32 and the same first two selected minima, but their minima after two removals are 1/3 and 1/2. All four are
   accepted on Prove2Me.
+  ProjectedLength.lean (`projectedLength_sq_mul_det`, `projectedLength_eq_sqrt`, `projectedMinimum_le_sqrt`) proves
+  ‖πw‖²·det G(b) = det G(b, w). This is the determinant-ratio identity for extension lengths used in Parts 86–101 and 116. It
+  also gives the projected-minimum bound. All three are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
