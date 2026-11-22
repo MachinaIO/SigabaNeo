@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Prog.DecodeWord
+import SigabaNeo.Lib.Machines.Prog.FrameParseX
 import PE.Impl.DualUse.Prog.Layout
 import PE.Impl.DualUse.Registry
 
@@ -18,13 +19,14 @@ state word never starts with `false`).
 * `inst3Of`, `inst5Of`: the instance of a word (`split3`, `split5` of the decoded pair, reindexed
   by `enumFin`), as `wordDist` reads it (`wordDist_split3`, `wordDist_split5`).
 * `dec3M N K k` (hybrid 3 and the ideal side) and `dec5M N K k d` (hybrid 5): the parser
-  `SigabaNeo.Tape.Prog.decodeM` (the second negating the public parts), clocked for the registry's
+  `SigabaNeo.Tape.XProg.decodeMX` (the second negating the public parts), clocked for the registry's
   words (`encLen`).
 * **`run_dec3M`**, **`run_dec5M`**: on every word of the support of the registry's real or uniform
   law, the output is `PMF.pure (true :: inst3Enc.enc (inst3Of w))`, resp.
   `PMF.pure (true :: (inst5Enc d).enc (inst5Of w))`; on any word at most `encLen` bits long it is
-  the point mass at `decodeW …` (`run_decodeM`).
-* `cost_dec3M_le`, `cost_dec5M_le`: the costs (`cost_decodeM_le`).
+  the point mass at `decodeW …` (`run_decodeMX`).
+* `time_dec3M_le`, `states_dec3M_le`, `tapes_dec3M` (and for `dec5M`): the clock, states and
+  tapes of the machines (`XProg.decodeMX`: doubled templates, per-tape clock).
 -/
 
 namespace AdvancedEncryption.DualUse.Prog
@@ -172,19 +174,19 @@ theorem wordDist_split5 (d : ℕ) (g : Pub (Fin d) (Rg N K) k × Pub (Fin d) (Rg
 variable (N K k) in
 /-- **The decoding machine of hybrid 3 and of the ideal side.** -/
 noncomputable def dec3M : Machine :=
-  Tape.Prog.decodeM false K (2 * m3 k * N * K) (encLen (m3 k) N K)
+  Tape.XProg.decodeMX false K (2 * m3 k * N * K) (encLen (m3 k) N K)
 
 variable (N K k) in
 /-- **The decoding machine of hybrid 5**: the public parts negated. -/
 noncomputable def dec5M (d : ℕ) : Machine :=
-  Tape.Prog.decodeM true K (2 * m5 k d * N * K) (encLen (m5 k d) N K)
+  Tape.XProg.decodeMX true K (2 * m5 k d * N * K) (encLen (m5 k d) N K)
 
 /-- **The decoding machine of hybrid 3 on an encoded pair**: `true`, then the word of the
 instance. -/
 theorem run_dec3M_encodeRing (v : (Fin (m3 k) → Rg N K) × (Fin (m3 k) → Rg N K)) :
     (dec3M N K k).run (encodeRing v) =
       PMF.pure (true :: (inst3Enc (N := N) (K := K) (k := k)).enc (inst3Of (encodeRing v))) := by
-  rw [dec3M, Tape.Prog.run_decodeM _ _ _ _ _ (length_encodeRing_le v), decodeW_encodeRing,
+  rw [dec3M, Tape.XProg.run_decodeMX _ _ _ _ _ (length_encodeRing_le v), decodeW_encodeRing,
     inst3Of_encodeRing, inst3Enc_split3]
   simp only [Bool.false_eq_true, ↓reduceIte, Function.comp_apply]
   rw [flatMap_enumFin (fun j => (ringEnc N K).enc (v.1 j)),
@@ -194,7 +196,7 @@ theorem run_dec3M_encodeRing (v : (Fin (m3 k) → Rg N K) × (Fin (m3 k) → Rg 
 theorem run_dec5M_encodeRing (d : ℕ) (v : (Fin (m5 k d) → Rg N K) × (Fin (m5 k d) → Rg N K)) :
     (dec5M N K k d).run (encodeRing v) =
       PMF.pure (true :: (inst5Enc (N := N) (K := K) (k := k) d).enc (inst5Of d (encodeRing v))) := by
-  rw [dec5M, Tape.Prog.run_decodeM _ _ _ _ _ (length_encodeRing_le v), decodeW_encodeRing,
+  rw [dec5M, Tape.XProg.run_decodeMX _ _ _ _ _ (length_encodeRing_le v), decodeW_encodeRing,
     inst5Of_encodeRing, inst5Enc_split5]
   simp only [↓reduceIte, Function.comp_apply]
   rw [flatMap_enumFin (fun j => (ringEnc N K).enc (-v.1 j)),
@@ -240,16 +242,35 @@ theorem run_dec5M (d : ℕ) (err : SecretDist) (w : List Bool)
 
 /-! ### Costs -/
 
-theorem cost_dec3M_le :
-    (dec3M N K k).cost ≤ 500 * (encLen (m3 k) N K + K + 2 * m3 k * N * K + 9) ^ 3 +
-      6 * 3 ^ 13 * (60 * (K + 2 * m3 k * N * K) + 5518) * (60 * (K + 2 * m3 k * N * K) + 5574) :=
-  Tape.Prog.cost_decodeM_le _ _ _ _
+theorem tapes_dec3M : (dec3M N K k).tapes = 14 := rfl
 
-theorem cost_dec5M_le (d : ℕ) :
-    (dec5M N K k d).cost ≤ 500 * (encLen (m5 k d) N K + K + 2 * m5 k d * N * K + 9) ^ 3 +
-      6 * 3 ^ 13 * (60 * (K + 2 * m5 k d * N * K) + 5518) *
-        (60 * (K + 2 * m5 k d * N * K) + 5574) :=
-  Tape.Prog.cost_decodeM_le _ _ _ _
+theorem tapes_dec5M (d : ℕ) : (dec5M N K k d).tapes = 14 := rfl
+
+theorem states_dec3M_le {m : ℕ} (hK : K < 2 ^ m) (hT : 2 * m3 k * N * K + 1 < 2 ^ m) :
+    (dec3M N K k).states ≤ 2 * (195 * m + 36) + 7000 :=
+  Tape.XProg.states_decodeMX_le _ hK hT
+
+theorem states_dec5M_le (d : ℕ) {m : ℕ} (hK : K < 2 ^ m) (hT : 2 * m5 k d * N * K + 1 < 2 ^ m) :
+    (dec5M N K k d).states ≤ 2 * (195 * m + 36) + 7000 :=
+  Tape.XProg.states_decodeMX_le _ hK hT
+
+theorem time_dec3M_le : (dec3M N K k).time ≤
+    (2 * encLen (m3 k) N K + 2) + ((2 * K + 1) * (4 * (encLen (m3 k) N K + K + 2 * m3 k * N * K + 1) + 12) +
+      ((2 * (2 * m3 k * N * K + 1) + 1) * (4 * (encLen (m3 k) N K + K + 2 * m3 k * N * K + 1) + 12) +
+        (14 * (2 * (encLen (m3 k) N K + K + 2 * m3 k * N * K + 1 + 14) + 5) +
+          (2 * (encLen (m3 k) N K + K + 2 * m3 k * N * K + 1) + 3) *
+            (4 + 25 * encLen (m3 k) N K + 4 * encLen (m3 k) N K * K)))) +
+      (2 * (encLen (m3 k) N K + K + 2 * m3 k * N * K + 1) + 2) :=
+  Tape.XProg.time_decodeMX_le _ _ _ _
+
+theorem time_dec5M_le (d : ℕ) : (dec5M N K k d).time ≤
+    (2 * encLen (m5 k d) N K + 2) + ((2 * K + 1) * (4 * (encLen (m5 k d) N K + K + 2 * m5 k d * N * K + 1) + 12) +
+      ((2 * (2 * m5 k d * N * K + 1) + 1) * (4 * (encLen (m5 k d) N K + K + 2 * m5 k d * N * K + 1) + 12) +
+        (14 * (2 * (encLen (m5 k d) N K + K + 2 * m5 k d * N * K + 1 + 14) + 5) +
+          (2 * (encLen (m5 k d) N K + K + 2 * m5 k d * N * K + 1) + 3) *
+            (4 + 25 * encLen (m5 k d) N K + 4 * encLen (m5 k d) N K * K)))) +
+      (2 * (encLen (m5 k d) N K + K + 2 * m5 k d * N * K + 1) + 2) :=
+  Tape.XProg.time_decodeMX_le _ _ _ _
 
 /-! ### The registry's words, reindexed by the enumerations -/
 

@@ -156,3 +156,14 @@ theorem size_natP_le (t c : Fin k) : ∀ (n m : ℕ), n < 2 ^ m → (natP t c n)
     · simp only [size_seq, bitAp, size_prog, Prog.size, Prim.pad]; omega
 
 end SigabaNeo.Tape.XProg
+
+namespace SigabaNeo.Tape.XProg
+
+theorem natB_le' {k : ℕ} {t c : Fin k} {n M : ℕ} {a : Fin k → ℕ} (ha : ∀ i, a i ≤ M) (hn : n ≤ M)
+    (i : Fin k) : natB t c n a i ≤ M := by
+  simp only [natB]; split_ifs
+  · exact hn
+  · exact max_le (ha c) hn
+  · exact ha i
+
+end SigabaNeo.Tape.XProg
