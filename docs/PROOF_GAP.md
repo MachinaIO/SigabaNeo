@@ -739,7 +739,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   subunit runs give a restart floor of 2.78·10⁻⁷ × own GH, weaker than Part 110's pathwise 5.21·10⁻⁶. At the 0.954 target a
   terminal witness can first appear in the last window, with a winner up to 1.096607 × window GH. The selection-weighted finite
   probability (Part 118) remains the obligation.
-* **Frontier after Parts 1–125 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
+* **Part 126 (audited, minor caveats).** [band_moments](research/wall1_band_moments.md): three relaxations of the GH-band
+  moment propagation lose too much:
+  * killing sub-band restarts costs only 1.4·10⁻¹⁰, but a single q-axis then carries weight 10^{279.7};
+  * marking winner incidence through rank 2 leaves a rank-3 Haar mean 10^{45.2} times the budget;
+  * a scalar physical-floor recursion drops below 27.4538 at step 34 of 407.
+
+  The exact marked recursion with history-averaged incidence remains the only open route (cf. Part 122).
+* **Frontier after Parts 1–126 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
   reducedness/flag/monotonicity/symmetrization arguments (Parts 30–37), A-independent or low-cardinality prefix families
