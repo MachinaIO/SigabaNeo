@@ -146,4 +146,59 @@ theorem plc_oneB (o : Fin 82) (h : Function.Injective (vOne o)) (hN : 0 < N) (hK
 
 end Laws
 
+/-! ### Placed laws with the values named -/
+
+section Named
+
+variable {N K k : ℕ}
+
+theorem plc_trB' (o a : Fin 82) (h : Function.Injective (vTr o a)) (m r s B Z : ℕ) (S : Store 82)
+    (hS : Blank20 S) {A v : List Bool} (ha : S a = A) (hv : trW m r s B Z A = v) :
+    (frame ⟨vTr o a, h⟩ (trB m r s B Z)).law S = PMF.pure (Function.update S o v) := by
+  rw [plc_trB o a h m r s B Z S hS, ha, hv]
+
+theorem plc_selB' (o a b c : Fin 82) (h : Function.Injective (vSel o a b c)) (n B : ℕ) (S : Store 82)
+    (hS : Blank20 S) {X Y Z v : List Bool} (ha : S a = X) (hb : S b = Y) (hc : S c = Z)
+    (hv : selW n B X Y Z = v) :
+    (frame ⟨vSel o a b c, h⟩ (selB n B)).law S = PMF.pure (Function.update S o v) := by
+  rw [plc_selB o a b c h n B S hS, ha, hb, hc, hv]
+
+theorem plc_hashB' (o a b c : Fin 82) (h : Function.Injective (vHash o a b c)) (P d : ℕ)
+    (S : Store 82) (hS : Blank20 S) {X Y Z v : List Bool} (ha : S a = X) (hb : S b = Y)
+    (hc : S c = Z) (hv : hashW P d N K X Y Z = v) :
+    (frame ⟨vHash o a b c, h⟩ (hashB P d N K)).law S = PMF.pure (Function.update S o v) := by
+  rw [plc_hashB o a b c h P d S hS, ha, hb, hc, hv]
+
+theorem plc_mmB' (o a b : Fin 82) (h : Function.Injective (vMm o a b)) (m n l : ℕ) (S : Store 82)
+    (hS : Blank20 S) {X Y v : List Bool} (ha : S a = X) (hb : S b = Y)
+    (hx : X.length = m * n * (N * K)) (hy : Y.length = n * l * (N * K))
+    (hv : matMulW N K m n l X Y = v) :
+    (frame ⟨vMm o a b, h⟩ (mmB m n l N K)).law S = PMF.pure (Function.update S o v) := by
+  rw [plc_mmB o a b h m n l S hS (by rw [ha]; exact hx) (by rw [hb]; exact hy), ha, hb, hv]
+
+theorem plc_addB' (o a b : Fin 82) (h : Function.Injective (vAdd o a b)) (L : ℕ) (S : Store 82)
+    (hS : Blank20 S) {X Y v : List Bool} (ha : S a = X) (hb : S b = Y)
+    (hx : X.length = L * N * K) (hy : Y.length = L * N * K) (hv : matAddW N K L X Y = v) :
+    (frame ⟨vAdd o a b, h⟩ (addB L N K)).law S = PMF.pure (Function.update S o v) := by
+  rw [plc_addB o a b h L S hS (by rw [ha]; exact hx) (by rw [hb]; exact hy), ha, hb, hv]
+
+theorem plc_subB' (o a b : Fin 82) (h : Function.Injective (vAdd o a b)) (L : ℕ) (S : Store 82)
+    (hS : Blank20 S) {X Y v : List Bool} (ha : S a = X) (hb : S b = Y)
+    (hx : X.length = L * N * K) (hy : Y.length = L * N * K) (hv : matSubW N K L X Y = v) :
+    (frame ⟨vAdd o a b, h⟩ (subB L N K)).law S = PMF.pure (Function.update S o v) := by
+  rw [plc_subB o a b h L S hS (by rw [ha]; exact hx) (by rw [hb]; exact hy), ha, hb, hv]
+
+theorem plc_getB' (o a : Fin 82) (h : Function.Injective (vGet o a)) (off L : ℕ) (S : Store 82)
+    (hS : Blank20 S) {W v : List Bool} (ha : S a = W) (hv : takeD L (W.drop off) = v) :
+    (frame ⟨vGet o a, h⟩ (getB off L)).law S = PMF.pure (Function.update S o v) := by
+  rw [plc_getB o a h off L S hS, ha, hv]
+
+theorem plc_joinB' (o a b c : Fin 82) (h : Function.Injective (vJoin o a b c)) (x y z : ℕ)
+    (S : Store 82) (hS : Blank20 S) {X Y Z v : List Bool} (ha : S a = X) (hb : S b = Y)
+    (hc : S c = Z) (hv : takeD x X ++ takeD y Y ++ takeD z Z = v) :
+    (frame ⟨vJoin o a b c, h⟩ (joinB x y z)).law S = PMF.pure (Function.update S o v) := by
+  rw [plc_joinB o a b c h x y z S hS, ha, hb, hc, hv]
+
+end Named
+
 end AdvancedEncryption.DualUse.Prog
