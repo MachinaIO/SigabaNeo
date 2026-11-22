@@ -233,4 +233,84 @@ theorem run_ph2 {N K k d : ℕ} (t : Store 90) (ht : ∀ j : Fin 90, 31 ≤ j.va
   funext j
   fin_cases j <;> simp [ht, e1', h18, ed, hsm, dotW_eq_matMulW]
 
+/-! ### Phase 3: the shift, the shifted key, the ball test -/
+
+/-- `37 := W_f z`, `39 := x = (p₀ − W_f z, p₁)`, `40 := [x ∈ ball]` (`26`, `38` consumed). -/
+def ph3 : Prog 90 :=
+  map (mmAt 37 2 36 16 13 15 18) matMulP ⨾ map (bzAt 38 31 37 6 21) subRWP ⨾ cp 39 11 ⨾
+    map (mvAt 38 39 18) mvP ⨾ map (mvAt 26 39 19) mvP ⨾ map ballAt ballP
+
+theorem run_ph3 {N K k d : ℕ} (hK0 : 0 < K) (t : Store 90) (ht : ∀ j : Fin 90, 37 ≤ j.val → t j = [])
+    (hwf : (t 2).length = d * (2 * k) * (N * K)) (hS : (t 4).length = K)
+    (hK : (t 6).length = K) (hN : (t 7).length = N) (hNK : (t 8).length = N * K)
+    (hn : (t 10).length = (d + nT k) * N) (hnK : (t 11).length = (d + nT k) * N * K)
+    (h13 : (t 13).length = 2 * k) (h14 : (t 14).length = 1) (h15 : (t 15).length = 1)
+    (h16 : (t 16).length = d) (h18 : (t 18).length = d * (N * K))
+    (h19 : (t 19).length = nT k * (N * K)) (h21 : (t 21).length = d * N)
+    (hp1 : (t 26).length = nT k * (N * K)) (hp0 : (t 31).length = d * (N * K))
+    (hz : (t 36).length = 2 * k * (N * K)) :
+    run ph3 t = Function.update (Function.update (Function.update (Function.update
+      (Function.update t
+      37 (simShiftW N K k d (t 2) (t 36)))
+      38 [])
+      39 (matSubW N K d (t 31) (simShiftW N K k d (t 2) (t 36)) ++ t 26))
+      26 [])
+      40 [ballW ((d + nT k) * N) K (t 4)
+        (matSubW N K d (t 31) (simShiftW N K k d (t 2) (t 36)) ++ t 26)] := by
+  have ht41 : ∀ j : Fin 90, 41 ≤ j.val → t j = [] := fun j hj => ht j (by omega)
+  set T := simShiftW N K k d (t 2) (t 36) with hT
+  set X := matSubW N K d (t 31) T with hX
+  have hTl : T.length = d * (N * K) := by rw [hT, simShiftW, length_matMulW]; ring
+  have hXl : X.length = d * (N * K) := by
+    rw [hX, matSubW_eq_subRW, length_subRW _ _ (by rw [hp0]; ring)]; ring
+  have s1 : run (map (mmAt 37 2 36 16 13 15 18) matMulP) t = Function.update t 37 T :=
+    run_mmAt (K := K) (N := N) (m' := d) (n' := 2 * k) (l' := 1) (by decide) _ ht41 hK hN hNK h16 h13
+      h15 (by rw [h18]; ring) hwf (by rw [hz]; ring)
+  have s2 : run (map (bzAt 38 31 37 6 21) subRWP) (Function.update t 37 T) =
+      Function.update (Function.update t 37 T) 38 X := by
+    rw [run_matSubAt (K := K) (N := N) (L := d) (by decide) _
+      (by (repeat' (apply clean_upd (by decide))); exact ht41)
+      (by simp [hK]) (by simp [h21]) (by simp [hp0]; ring) (by simp [hTl]; ring)]
+    simp [hX]
+  have s3 : run (map (mvAt 38 39 18) mvP)
+      (Function.update (Function.update (Function.update t 37 T) 38 X) 39 (t 11)) =
+      Function.update (Function.update (Function.update (Function.update (Function.update t 37 T)
+        38 X) 39 (t 11)) 38 []) 39 ((t 11 ++ X).drop (d * (N * K))) := by
+    rw [run_mvAt (a := 38) (b := 39) (c := 18) (by decide) _ (by simp [ht]) (by simp [ht])]
+    simp only [Function.update_self, Function.update_of_ne (show (38 : Fin 90) ≠ 39 by decide),
+      Function.update_of_ne (show (18 : Fin 90) ≠ 39 by decide),
+      Function.update_of_ne (show (18 : Fin 90) ≠ 38 by decide),
+      Function.update_of_ne (show (18 : Fin 90) ≠ 37 by decide), h18]
+    rw [takeD_of_length' hXl, List.drop_eq_nil_of_le (le_of_eq hXl)]
+  set S3 := Function.update (Function.update (Function.update (Function.update (Function.update t 37 T)
+        38 X) 39 (t 11)) 38 []) 39 ((t 11 ++ X).drop (d * (N * K))) with hS3
+  have hx : ((t 11 ++ X).drop (d * (N * K)) ++ t 26).drop (nT k * (N * K)) = X ++ t 26 := by
+    have := drop_append_drop (t 11) X (t 26)
+    rw [hXl, hp1] at this
+    rw [this, List.drop_left']
+    rw [hnK]; ring
+  have s4 : run (map (mvAt 26 39 19) mvP) S3 =
+      Function.update (Function.update S3 26 []) 39 (X ++ t 26) := by
+    rw [run_mvAt (a := 26) (b := 39) (c := 19) (by decide) _ (by simp [hS3, ht]) (by simp [hS3, ht])]
+    have a26 : S3 26 = t 26 := by simp [hS3]
+    have a19 : S3 19 = t 19 := by simp [hS3]
+    have a39 : S3 39 = (t 11 ++ X).drop (d * (N * K)) := by simp [hS3]
+    rw [a26, a19, a39, h19, takeD_of_length' hp1, List.drop_eq_nil_of_le (le_of_eq hp1), hx]
+  have hXl' : (X ++ t 26).length = (d + nT k) * N * K := by
+    rw [List.length_append, hXl, hp1]; ring
+  have s5 : run (map ballAt ballP) (Function.update (Function.update S3 26 []) 39 (X ++ t 26)) =
+      Function.update (Function.update (Function.update S3 26 []) 39 (X ++ t 26)) 40
+        [ballW ((d + nT k) * N) K (t 4) (X ++ t 26)] := by
+    rw [run_ballAt (n := (d + nT k) * N) (K := K) hK0 _
+      (by (repeat' (apply clean_upd (by decide))); exact ht41)
+      (by simp [hXl']) (by simp [hS3, hS]) (by simp [hS3, hK]) (by simp [hS3, hn]) (by simp [hS3, h14])]
+    simp [hS3]
+  have c3 : Function.update (Function.update (Function.update t 37 T) 38 X) 39
+      (Function.update (Function.update t 37 T) 38 X 11) =
+      Function.update (Function.update (Function.update t 37 T) 38 X) 39 (t 11) := by simp
+  simp only [ph3, run_seq, run_copy]
+  rw [s1, s2, c3, s3, s4, s5]
+  funext j
+  fin_cases j <;> simp [hS3]
+
 end AdvancedEncryption.DualUse.ProgKey
