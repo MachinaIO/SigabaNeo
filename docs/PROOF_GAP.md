@@ -1671,6 +1671,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Outside probability < 4.249·10⁻¹², every raw lift of such a witness has length > 250 and loses > 98.9184% of its
     squared length.
   * **Remaining.** The probability of that penultimate-projection event. It is still a property of the reduction chain.
+* **Part 184 (audited, SOUND).** [penultimate_projection](research/wall1_penultimate_projection.md): first moments for Part
+  183's penultimate-projection event E.
+  * **Conditioning obstruction.** For a fixed raw candidate, membership plus the preceding columns fix the mark at its pivot.
+    So a compatible branch has joint mass N(S)/Q^511, which is |H(S)| times the product of the marginals.
+  * An exact finite sum counts each design in E ∩ G once. Its weighted estimate, and so Pr(E) ≤ 4·10⁻⁷, is open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1680,7 +1685,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–183 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–184 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
