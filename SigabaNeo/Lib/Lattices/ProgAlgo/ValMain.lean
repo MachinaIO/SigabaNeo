@@ -326,7 +326,72 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
   have I1' : exec V f (ofList [insC]) w1 INSW = (insWords bW wW ent).flatten := by
     simp only [exec_ofList, List.foldl_cons, List.foldl_nil]; exact I1
   generalize exec V f (ofList [insC]) w1 = w2 at c2 e2 I1'
-  sorry
+  have E2 : ∀ j, j ∉ wr insC → j.val ≥ 61 → j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → j ≠ CQ →
+      w2 j = w j := fun j h0 hj a2 a3 a4 a5 a6 => by rw [e2 j h0, E1 j hj a2 a3 a4 a5 a6]
+  -- the constant bundle
+  set cst := constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K)) with hcst
+  have hcl : (bw cst).length = S := length_bw (constRepVV_len one zv h1 hz _)
+  have P3 : exec V f (ofList [.cp RES TSl, cbC, .cp CBW RES]) w2 CBW = bw cst ∧
+      NCtx V K N one zv (exec V f (ofList [.cp RES TSl, cbC, .cp CBW RES]) w2) ∧
+      ∀ j ∉ wr (ofList [.cp RES TSl, cbC, .cp CBW RES]),
+        exec V f (ofList [.cp RES TSl, cbC, .cp CBW RES]) w2 j = w2 j := by
+    refine ⟨?_, c2.exec _ (by decide +kernel), fun j hj => exec_not_mem _ _ _ hj⟩
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+    obtain ⟨R1, -, -⟩ := exec_cbC (V := V) (f := f) (K := K) hN (Function.update w2 RES (w2 TSl))
+      (c2.upd RES (by decide) _)
+    rw [Function.update_self, R1, Function.update_self, List.drop_left' (by
+      rw [hcl, E2 TSl (by decide +kernel) (by decide) (by decide) (by decide) (by decide)
+        (by decide) (by decide), h.tsl])]
+  obtain ⟨p31, c3, p33⟩ := P3
+  generalize exec V f (ofList [.cp RES TSl, cbC, .cp CBW RES]) w2 = w3 at p31 c3 p33
+  have E3 : ∀ j, j ∉ wr (ofList [.cp RES TSl, cbC, .cp CBW RES]) → j ∉ wr insC → j.val ≥ 61 →
+      j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → j ≠ CQ → w3 j = w j :=
+    fun j h00 h0 hj a2 a3 a4 a5 a6 => by rw [p33 j h00, E2 j h0 hj a2 a3 a4 a5 a6]
+  -- the store
+  set ins := (List.finRange 10).map fun i => bw (inBW bW wW ent i) with hins
+  have hinsu : UV S ins := fun x hx => by
+    simp only [hins, List.mem_map] at hx
+    obtain ⟨i, -, rfl⟩ := hx
+    exact length_bw (hin i)
+  have hinsl : ins.length = 10 := by simp [hins]
+  obtain ⟨S1, S2⟩ := exec_stC (V := V) (f := f) (S := S) (W := W) (by omega) w3 p31 hcl
+    (by rw [E3 TSl (by decide +kernel) (by decide +kernel) (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide), h.tsl])
+    (by rw [E3 TST (by decide +kernel) (by decide +kernel) (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide), h.tst])
+    (by rw [E3 TW9 (by decide +kernel) (by decide +kernel) (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide), h.tw9]) hinsu hinsl
+    (by rw [p33 INSW (by decide +kernel), I1', insWords_flatten])
+    (by rw [E3 TINS (by decide +kernel) (by decide +kernel) (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide), h.tins])
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil]
+  generalize exec V f stC w3 = w4 at S1 S2
+  have E4 : ∀ j, j ≠ GST → j ≠ CQ → j ≠ rX → j ≠ INSW →
+      j ∉ wr (ofList [.cp RES TSl, cbC, .cp CBW RES]) → j ∉ wr insC → j.val ≥ 61 →
+      j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → w4 j = w j :=
+    fun j b1 b2 b3 b4 h00 h0 hj a2 a3 a4 a5 => by
+      rw [S2 j b1 b2 b3 b4, E3 j h00 h0 hj a2 a3 a4 a5 b2]
+  have c4 : NCtx V K N one zv w4 := c3.of_eq fun j hj => S2 j (by revert j hj; decide)
+    (by revert j hj; decide) (by revert j hj; decide) (by revert j hj; decide)
+  -- the gates
+  have hD : GData S W (bw cst) ins gs w4 := ⟨hcl, hinsu, hinsl, hgs, hbnd,
+    by rw [E4 TSl (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tsl],
+    by rw [E4 TST (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tst],
+    by rw [E4 TD2 (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.td2],
+    by rw [E4 TW (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tw]⟩
+  obtain ⟨-, G2, -, -⟩ := exec_gloopC (V := V) (f := f) (blockSpec_nandC hf hN one zv h1 hz) w4 hD
+    c4 S1
+    (by rw [E4 GS (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.gsw])
+    (by rw [E4 GCNT (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.gcnt])
+    (by rw [E4 TPAD (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tpad])
+  rw [G2 hne, hcst, getLast_gl_nandW one zv (inBW bW wW ent) hf h1 rfl hin gs hne]
 
 end ValVM
 
