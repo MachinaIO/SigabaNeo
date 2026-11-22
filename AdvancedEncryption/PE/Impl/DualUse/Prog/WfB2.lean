@@ -742,6 +742,82 @@ theorem w1_GS (hW : 0 < W) (hb : BndG W gs) :
 
 end W1
 
+/-! ### The state of the run of `f̂` on the simulation data -/
+
+theorem flatten_flatMap {α β : Type*} (l : List α) (g : α → List (List β)) :
+    (l.flatMap g).flatten = l.flatMap fun i => (g i).flatten := by
+  induction l with
+  | nil => rfl
+  | cons a l ih => simp [List.flatMap_cons, List.flatten_append, ih]
+
+section RunT
+
+variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ) (gs : GateList)
+  (sd : SimData hk c)
+
+/-- The step of the run of `f̂`. -/
+abbrev fT (N K d : ℕ) : List Bool → List Bool → List Bool :=
+  simStepJW N K (K + 1) 1 d (gadW N K (K + 1)) (ginvW N K (K + 1))
+
+/-- The value `one` of the run of `f̂`. -/
+abbrev oneT (N K d : ℕ) : List Bool :=
+  gadW N K (K + 1) ++ zeroW (lenA N K (K + 1) d) ++ oneW N K
+
+/-- The words after the streams and `one`. -/
+def w2 : St := exec (VT N K (K + 1) c.d) (fT N K c.d) (ofList [streamsT, oneC])
+  (w1 hk c W ((sdEnc hk c).enc sd) gs)
+
+theorem w2_spec (hW : 0 < W) (hb : BndG W gs) :
+    w2 hk c W gs sd 10 = oneT N K c.d ∧
+    w2 hk c W gs sd BSt = ((sdEnc hk c).enc sd).drop (offB c) ∧
+    w2 hk c W gs sd WSt = ((sdEnc hk c).enc sd).drop (offW hk c) ∧
+    w2 hk c W gs sd PSt = ((sdEnc hk c).enc sd).drop (offPsi hk c) ∧
+    ∀ x, x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] → w2 hk c W gs sd x = w1 hk c W ((sdEnc hk c).enc sd) gs x := by
+  obtain ⟨g1, g2, g3⟩ := w1_content hk c W ((sdEnc hk c).enc sd) gs hW hb
+  have e : w2 hk c W gs sd = exec (VT N K (K + 1) c.d) (fT N K c.d) oneC
+      (exec (VT N K (K + 1) c.d) (fT N K c.d) streamsT (w1 hk c W ((sdEnc hk c).enc sd) gs)) := rfl
+  rw [e, exec_streamsT]
+  set w := w1 hk c W ((sdEnc hk c).enc sd) gs with hw
+  have l61 : (w 61).length = offB c := by
+    rw [hw, w1_key hk c W _ gs (n := offB c) (by simp [wordsT]) (by decide) (by decide)]; simp
+  have l62 : (w 62).length = offW hk c := by
+    rw [hw, w1_key hk c W _ gs (n := offW hk c) (by simp [wordsT]) (by decide) (by decide)]; simp
+  have l63 : (w 63).length = offPsi hk c := by
+    rw [hw, w1_key hk c W _ gs (n := offPsi hk c) (by simp [wordsT]) (by decide) (by decide)]; simp
+  have hS : w SDW = (sdEnc hk c).enc sd := w1_SDW hk c W _ gs
+  obtain ⟨o1, o2⟩ := exec_oneC (V := VT N K (K + 1) c.d) (f := fT N K c.d)
+    (Function.update (Function.update (Function.update w BSt ((w SDW).drop (w 61).length)) WSt
+      ((w SDW).drop (w 62).length)) PSt ((w SDW).drop (w 63).length))
+    (g := gadW N K (K + 1)) (z := zeroW (lenA N K (K + 1) c.d)) (o := oneW N K)
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false]
+        rw [hw, w1_key hk c W _ gs (n := VT N K (K + 1) c.d) (by simp [wordsT]) (by decide) (by decide)])
+    (by rw [length_gadW, length_zeroW, length_oneW]; simp [VT, lenA])
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false, g1])
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false, g2])
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false, g3])
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false]
+        rw [hw, w1_key hk c W _ gs (n := lenA N K (K + 1) 1) (by simp [wordsT]) (by decide) (by decide),
+          length_gadW]; simp)
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false]
+        rw [hw, w1_key hk c W _ gs (n := lenA N K (K + 1) c.d) (by simp [wordsT]) (by decide) (by decide),
+          length_zeroW]; simp)
+    (by simp (config := {decide := true}) only [Function.update_apply, if_false]
+        rw [hw, w1_key hk c W _ gs (n := N * K) (by simp [wordsT]) (by decide) (by decide),
+          length_oneW]; simp)
+  refine ⟨o1, ?_, ?_, ?_, fun x hx => ?_⟩
+  · rw [o2 _ (by decide) (by decide) (by decide) (by decide)]
+    simp (config := {decide := true}) only [Function.update_apply, if_false, if_true, hS, l61]
+  · rw [o2 _ (by decide) (by decide) (by decide) (by decide)]
+    simp (config := {decide := true}) only [Function.update_apply, if_false, if_true, hS, l62]
+  · rw [o2 _ (by decide) (by decide) (by decide) (by decide)]
+    simp (config := {decide := true}) only [Function.update_apply, if_false, if_true, hS, l63]
+  · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hx
+    obtain ⟨a1, a2, a3, a4, a5, a6, a7⟩ := hx
+    rw [o2 _ a4 a5 a6 a7]
+    simp only [Function.update_apply, if_neg a1, if_neg a2, if_neg a3]
+
+end RunT
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
