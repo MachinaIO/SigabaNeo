@@ -430,17 +430,17 @@ theorem lenBoundT_consN (n : ℕ) (i : Fin k) (b : Bool) (ℓ : Fin k → ℕ) :
 
 end SigabaNeo.Tape.Prog
 
-/-! ### Sizes of loop-free programs -/
+/-! ### Primitive counts of loop-free programs -/
 
 namespace SigabaNeo.Tape.Prog
 
 variable {k : ℕ}
 
 /-- The number of primitives and branchings of a program (loops count `0`). -/
-def size : Prog k → ℕ
+def pcount : Prog k → ℕ
   | prim _ | coin _ => 1
-  | seq p q => size p + size q
-  | ifBlank _ p q | ifBit _ p q => size p + size q + 1
+  | seq p q => pcount p + pcount q
+  | ifBlank _ p q | ifBit _ p q => pcount p + pcount q + 1
   | loop _ _ => 0
 
 /-- The program has no loop. -/
@@ -449,87 +449,87 @@ def LoopFree : Prog k → Prop
   | seq p q | ifBlank _ p q | ifBit _ p q => p.LoopFree ∧ q.LoopFree
   | loop _ _ => False
 
-theorem lenBound_le_size (p : Prog k) (hp : p.LoopFree) (L : ℕ) : lenBound p L ≤ L + size p := by
+theorem lenBound_le_pcount (p : Prog k) (hp : p.LoopFree) (L : ℕ) : lenBound p L ≤ L + pcount p := by
   induction p generalizing L with
-  | prim q => cases q <;> simp [lenBound, size, Prim.grow]
-  | coin i => simp [lenBound, size]
+  | prim q => cases q <;> simp [lenBound, pcount, Prim.grow]
+  | coin i => simp [lenBound, pcount]
   | seq p q ihp ihq =>
     have h1 := ihp hp.1 L
     have h2 := ihq hp.2 (lenBound p L)
-    simp only [lenBound, size]; omega
+    simp only [lenBound, pcount]; omega
   | ifBlank i p q ihp ihq | ifBit i p q ihp ihq =>
     have h1 := ihp hp.1 L
     have h2 := ihq hp.2 L
-    simp only [lenBound, size]; omega
+    simp only [lenBound, pcount]; omega
   | loop i b ih => exact hp.elim
 
-/-- **The time of a loop-free program**: at most `size · (2 (L + size) + 5)`. -/
-theorem timeBound_le_size (p : Prog k) (hp : p.LoopFree) (L : ℕ) :
-    timeBound p L ≤ size p * (2 * (L + size p) + 5) := by
+/-- **The time of a loop-free program**: at most `pcount · (2 (L + pcount) + 5)`. -/
+theorem timeBound_le_pcount (p : Prog k) (hp : p.LoopFree) (L : ℕ) :
+    timeBound p L ≤ pcount p * (2 * (L + pcount p) + 5) := by
   induction p generalizing L with
-  | prim q => cases q <;> simp [timeBound, size, Prim.pad] <;> omega
-  | coin i => simp [timeBound, size]; omega
+  | prim q => cases q <;> simp [timeBound, pcount, Prim.pad] <;> omega
+  | coin i => simp [timeBound, pcount]; omega
   | seq p q ihp ihq =>
     have h1 := ihp hp.1 L
     have h2 := ihq hp.2 (lenBound p L)
-    have h3 := lenBound_le_size p hp.1 L
-    simp only [timeBound, size]
-    have h4 : size q * (2 * (lenBound p L + size q) + 5) ≤
-        size q * (2 * (L + size p + size q) + 5) := Nat.mul_le_mul_left _ (by omega)
-    have h5 : size p * (2 * (L + size p) + 5) ≤ size p * (2 * (L + (size p + size q)) + 5) :=
+    have h3 := lenBound_le_pcount p hp.1 L
+    simp only [timeBound, pcount]
+    have h4 : pcount q * (2 * (lenBound p L + pcount q) + 5) ≤
+        pcount q * (2 * (L + pcount p + pcount q) + 5) := Nat.mul_le_mul_left _ (by omega)
+    have h5 : pcount p * (2 * (L + pcount p) + 5) ≤ pcount p * (2 * (L + (pcount p + pcount q)) + 5) :=
       Nat.mul_le_mul_left _ (by omega)
-    have h6 : size p * (2 * (L + (size p + size q)) + 5) +
-        size q * (2 * (L + size p + size q) + 5) =
-        (size p + size q) * (2 * (L + (size p + size q)) + 5) := by ring
+    have h6 : pcount p * (2 * (L + (pcount p + pcount q)) + 5) +
+        pcount q * (2 * (L + pcount p + pcount q) + 5) =
+        (pcount p + pcount q) * (2 * (L + (pcount p + pcount q)) + 5) := by ring
     omega
   | ifBlank i p q ihp ihq | ifBit i p q ihp ihq =>
     have h1 := ihp hp.1 L
     have h2 := ihq hp.2 L
-    simp only [timeBound, size]
-    have h4 : size q * (2 * (L + size q) + 5) ≤
-        size q * (2 * (L + (size p + size q + 1)) + 5) := Nat.mul_le_mul_left _ (by omega)
-    have h5 : size p * (2 * (L + size p) + 5) ≤
-        size p * (2 * (L + (size p + size q + 1)) + 5) := Nat.mul_le_mul_left _ (by omega)
-    have h6 : size p * (2 * (L + (size p + size q + 1)) + 5) +
-        size q * (2 * (L + (size p + size q + 1)) + 5) + 1 ≤
-        (size p + size q + 1) * (2 * (L + (size p + size q + 1)) + 5) := by ring_nf; omega
+    simp only [timeBound, pcount]
+    have h4 : pcount q * (2 * (L + pcount q) + 5) ≤
+        pcount q * (2 * (L + (pcount p + pcount q + 1)) + 5) := Nat.mul_le_mul_left _ (by omega)
+    have h5 : pcount p * (2 * (L + pcount p) + 5) ≤
+        pcount p * (2 * (L + (pcount p + pcount q + 1)) + 5) := Nat.mul_le_mul_left _ (by omega)
+    have h6 : pcount p * (2 * (L + (pcount p + pcount q + 1)) + 5) +
+        pcount q * (2 * (L + (pcount p + pcount q + 1)) + 5) + 1 ≤
+        (pcount p + pcount q + 1) * (2 * (L + (pcount p + pcount q + 1)) + 5) := by ring_nf; omega
     have := max_le_add_of_nonneg (Nat.zero_le (timeBound p L)) (Nat.zero_le (timeBound q L))
     omega
   | loop i b ih => exact hp.elim
 
 /-- The per-tape time of a loop-free program. -/
-theorem timeBoundT_le_size (p : Prog k) (hp : p.LoopFree) (ℓ : Fin k → ℕ) {M : ℕ}
-    (hM : ∀ t, ℓ t ≤ M) : timeBoundT p ℓ ≤ size p * (2 * (M + size p) + 5) := by
-  refine (timeBoundT_le_timeBound p ℓ).trans ((timeBound_le_size p hp _).trans ?_)
+theorem timeBoundT_le_pcount (p : Prog k) (hp : p.LoopFree) (ℓ : Fin k → ℕ) {M : ℕ}
+    (hM : ∀ t, ℓ t ≤ M) : timeBoundT p ℓ ≤ pcount p * (2 * (M + pcount p) + 5) := by
+  refine (timeBoundT_le_timeBound p ℓ).trans ((timeBound_le_pcount p hp _).trans ?_)
   have : supB ℓ ≤ M := Finset.sup_le fun t _ => hM t
   exact Nat.mul_le_mul_left _ (by omega)
 
-theorem size_iter (z : Fin k) (p : Prog k) (n : ℕ) : size (iter z p n) = n * size p + 1 := by
+theorem pcount_iter (z : Fin k) (p : Prog k) (n : ℕ) : pcount (iter z p n) = n * pcount p + 1 := by
   induction n with
-  | zero => simp [iter, size]
-  | succ n ih => simp only [iter, size, ih]; ring
+  | zero => simp [iter, pcount]
+  | succ n ih => simp only [iter, pcount, ih]; ring
 
 theorem loopFree_iter (z : Fin k) (p : Prog k) (hp : p.LoopFree) : ∀ n, (iter z p n).LoopFree
   | 0 => trivial
   | n + 1 => ⟨hp, loopFree_iter z p hp n⟩
 
-@[simp] theorem size_moveFront (n : ℕ) (src dst tmp : Fin k) :
-    size (moveFront n src dst tmp) = 3 * n + 1 := by
-  rw [moveFront, size_iter]; simp [stepF, size]; ring
+@[simp] theorem pcount_moveFront (n : ℕ) (src dst tmp : Fin k) :
+    pcount (moveFront n src dst tmp) = 3 * n + 1 := by
+  rw [moveFront, pcount_iter]; simp [stepF, pcount]; ring
 
-@[simp] theorem size_moveRev (n : ℕ) (src dst tmp : Fin k) :
-    size (moveRev n src dst tmp) = 3 * n + 1 := by
-  rw [moveRev, size_iter]; simp [stepR, size]; ring
+@[simp] theorem pcount_moveRev (n : ℕ) (src dst tmp : Fin k) :
+    pcount (moveRev n src dst tmp) = 3 * n + 1 := by
+  rw [moveRev, pcount_iter]; simp [stepR, pcount]; ring
 
-@[simp] theorem size_prependN (n : ℕ) (src dst t₁ t₂ : Fin k) :
-    size (prependN n src dst t₁ t₂) = 6 * n + 2 := by
-  simp [prependN, size]; ring
+@[simp] theorem pcount_prependN (n : ℕ) (src dst t₁ t₂ : Fin k) :
+    pcount (prependN n src dst t₁ t₂) = 6 * n + 2 := by
+  simp [prependN, pcount]; ring
 
-@[simp] theorem size_dropN (n : ℕ) (i : Fin k) : size (dropN n i) = n + 1 := by
-  rw [dropN, size_iter]; simp [size]
+@[simp] theorem pcount_dropN (n : ℕ) (i : Fin k) : pcount (dropN n i) = n + 1 := by
+  rw [dropN, pcount_iter]; simp [pcount]
 
-@[simp] theorem size_consN (n : ℕ) (i : Fin k) (b : Bool) : size (consN n i b) = n + 1 := by
-  rw [consN, size_iter]; simp [size]
+@[simp] theorem pcount_consN (n : ℕ) (i : Fin k) (b : Bool) : pcount (consN n i b) = n + 1 := by
+  rw [consN, pcount_iter]; simp [pcount]
 
 theorem loopFree_moveFront (n : ℕ) (src dst tmp : Fin k) : (moveFront n src dst tmp).LoopFree :=
   loopFree_iter _ _ (by simp [stepF, LoopFree]) n
