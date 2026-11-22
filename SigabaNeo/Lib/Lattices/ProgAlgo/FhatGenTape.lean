@@ -451,6 +451,233 @@ theorem vm_runs {N k K W n : ℕ} (hk : 0 < k) (hN : 0 < N) (hK : K ≤ k + 1)
   rw [ho, posList_eq]
   rfl
 
+/-! ### Reading the output -/
+
+/-- The gate stream into `1`, the gate counter into `2` (counter `124`). -/
+def ext1P : Prog 136 :=
+  Prog.cp 1 4 ⨾ Prog.dropBy 1 5 124 ⨾ Prog.cp 2 7 ⨾ Prog.dropBy 2 6 124 ⨾ Prog.dropBy 2 9 124 ⨾
+    Prog.tl 2 ⨾ Prog.setZero 2
+
+/-- The output reset from the pad template `123`. -/
+def resetP : Prog 136 := Prog.cp 4 123 ⨾ Prog.cp 5 123
+
+/-- The positions into `3`: the output, without its first gate. -/
+def ext2P : Prog 136 :=
+  Prog.cp 3 4 ⨾ Prog.dropBy 3 5 124 ⨾ Prog.dropBy 3 8 124 ⨾ Prog.dropBy 3 8 124
+
+/-- Clear the tapes of a list. -/
+def clrsP : List (Fin 136) → Prog 136
+  | [] => Prog.nop 0
+  | t :: ts => Prog.clr t ⨾ clrsP ts
+
+theorem run_clrsP : ∀ (ts : List (Fin 136)) (st : Store 136),
+    Prog.run (clrsP ts) st = fun i => if i ∈ ts then [] else st i
+  | [], st => by funext i; simp [clrsP]
+  | t :: ts, st => by
+    rw [clrsP, Prog.run_seq, Prog.run_clear, run_clrsP ts]
+    funext i; by_cases h : i = t
+    · subst h; simp
+    · simp [h, Function.update_of_ne h]
+
+theorem run_ext1P (st : Store 136) (h124 : st 124 = []) :
+    Prog.run ext1P st = Function.update (Function.update st 1 ((st 4).drop (st 5).length)) 2
+      (List.replicate ((((st 7).drop (st 6).length).drop (st 9).length).tail.length) false) := by
+  simp only [ext1P, Prog.run_seq, Prog.run_copy, Prog.run_tail, Prog.run_setZero,
+    Prog.run_dropBy 1 5 124 (by decide : (124 : Fin 136) ≠ 1),
+    Prog.run_dropBy 2 6 124 (by decide : (124 : Fin 136) ≠ 2),
+    Prog.run_dropBy 2 9 124 (by decide : (124 : Fin 136) ≠ 2)]
+  funext x; simp only [Function.update_apply]; split_ifs <;> simp_all
+
+theorem run_resetP (st : Store 136) :
+    Prog.run resetP st = Function.update (Function.update st 4 (st 123)) 5 (st 123) := by
+  simp [resetP]
+
+theorem run_ext2P (st : Store 136) (h124 : st 124 = []) :
+    Prog.run ext2P st = Function.update st 3
+      ((((st 4).drop (st 5).length).drop (st 8).length).drop (st 8).length) := by
+  simp only [ext2P, Prog.run_seq, Prog.run_copy,
+    Prog.run_dropBy 3 5 124 (by decide : (124 : Fin 136) ≠ 3),
+    Prog.run_dropBy 3 8 124 (by decide : (124 : Fin 136) ≠ 3)]
+  funext x; simp only [Function.update_apply]; split_ifs <;> simp_all
+
+theorem shift_out (P : ℕ) (o : List Bool) (h : o.length ≤ P) :
+    ((List.replicate P true ++ o).drop o.length).drop (P - o.length) = o := by
+  rw [List.drop_append_of_le_length (by simp; omega), List.drop_replicate,
+    List.drop_append_of_le_length (by simp), List.drop_replicate]
+  simp
+
+theorem length_posW (W N k : ℕ) (f : ℕ → ℕ → ℕ → ℕ)
+    (hf : ∀ c i j, c < 2 * k → i < k → j < N → f c i j ≤ W) :
+    (Prog.posW W N k f).length = 2 * k * (k * (N * W)) := by
+  unfold Prog.posW
+  refine length_concatN fun c hc => length_concatN fun i hi => length_concatN fun j hj => ?_
+  exact Prog.length_unaryW (hf c i j hc hi hj)
+
+/-! ### The main program -/
+
+/-- The tapes cleared at the end. -/
+def tsK : List (Fin 136) := (List.finRange 136).filter (fun i => 4 ≤ i.val)
+
+/-- **The deterministic part**: count, `f̂`, its stream and counter, reset, positions, clear. -/
+noncomputable def mainP : Prog 136 :=
+  countP ⨾ Prog.map uV (compile fhatC 0) ⨾ ext1P ⨾ resetP ⨾ Prog.map uV (compile posC 0) ⨾ ext2P ⨾
+    clrsP tsK
+
+/-- The input store. -/
+def inS (W : ℕ) (gs : GateList) : Store 136 := fun i => if i.val = 0 then Prog.gsW W gs else []
+
+/-- The output store. -/
+def outS (W : ℕ) (gs : GateList) (a1 a2 a3 : List Bool) : Store 136 := fun i =>
+  if i.val = 0 then Prog.gsW W gs else if i.val = 1 then a1 else if i.val = 2 then a2
+  else if i.val = 3 then a3 else []
+
+theorem place_4 (S : Store 136) (v : Store RegVM.K) : place S v 4 = v tOUT := place_uV S v tOUT
+theorem place_5 (S : Store 136) (v : Store RegVM.K) : place S v 5 = v tOC := place_uV S v tOC
+theorem place_6 (S : Store 136) (v : Store RegVM.K) : place S v 6 = v tCO := place_uV S v tCO
+theorem place_7 (S : Store 136) (v : Store RegVM.K) : place S v 7 = v tT := place_uV S v tT
+theorem place_8 (S : Store 136) (v : Store RegVM.K) : place S v 8 = v tW := place_uV S v tW
+theorem place_9 (S : Store 136) (v : Store RegVM.K) : place S v 9 = v tN := place_uV S v tN
+
+theorem pfix_le {n thr N k W : ℕ} (R : List ℕ) (c i j : ℕ) (hn : n ≤ W) (ht : thr ≤ W + 1) :
+    pfix n thr N k R c i j ≤ W := by
+  unfold pfix; split_ifs <;> omega
+
+theorem senc_srcOf (E : Env) (gs : GateList) : senc E (srcOf gs) = Prog.gsW E.W gs := by
+  rw [Prog.gsW_eq_flatten]; rfl
+
+theorem inv_σA {N k K W n : ℕ} (gs : GateList) (hb : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W) :
+    Inv (envG N k W n) (σA N k K n gs) := by
+  refine ⟨fun l => by simp [σA], fun x hx => ?_⟩
+  simp only [σA, srcOf, List.mem_flatMap, List.mem_cons, List.mem_singleton,
+    List.not_mem_nil, or_false] at hx
+  obtain ⟨g, hg, rfl | rfl⟩ := hx
+  · exact (hb g hg).1
+  · exact (hb g hg).2
+
+theorem step_ext1 (E : Env) (P : ℕ) (hpad : E.pad = List.replicate P true) (σ : St)
+    (ctr : Fin nD → List Bool) (S : Store 136) (h124 : S 124 = []) (hlo : σ.out.length ≤ P)
+    (ht : E.n + 1 + σ.t ≤ E.M) :
+    Prog.run ext1P (place S (enc E σ ctr)) =
+      place (Function.update (Function.update S 1 σ.out) 2 (List.replicate σ.t false))
+        (enc E σ ctr) := by
+  rw [run_ext1P _ (by rw [place_out _ _ _ (by decide)]; exact h124),
+    place_4, place_5, place_6, place_7, place_9, enc_OUT, enc_OC, enc_CO, enc_T, enc_N,
+    update_place _ _ _ (by decide), update_place _ _ _ (by decide)]
+  congr 3
+  · rw [hpad]; simp only [List.length_replicate]; exact shift_out P σ.out hlo
+  · simp only [List.drop_replicate, List.length_replicate, List.tail_replicate]
+    omega
+
+theorem step_reset (E : Env) (P : ℕ) (hpad : E.pad = List.replicate P true) (σ : St)
+    (ctr : Fin nD → List Bool) (S : Store 136) (h123 : S 123 = E.pad) :
+    Prog.run resetP (place S (enc E σ ctr)) = place S (enc E { σ with out := [] } ctr) := by
+  rw [run_resetP, place_out _ _ _ (by decide), h123,
+    show (4 : Fin 136) = uV tOUT from rfl, show (5 : Fin 136) = uV tOC from rfl,
+    update_place_uV, update_place_uV, enc_out E σ ctr []]
+  rw [hpad]; simp
+
+theorem step_ext2 (E : Env) (P : ℕ) (hpad : E.pad = List.replicate P true) (σ : St)
+    (ctr : Fin nD → List Bool) (S : Store 136) (h124 : S 124 = []) (hlo : σ.out.length ≤ P)
+    (a : List Bool) (ha : a.length = E.W) (rest : List Bool) (ho : σ.out = a ++ a ++ rest) :
+    Prog.run ext2P (place S (enc E σ ctr)) = place (Function.update S 3 rest) (enc E σ ctr) := by
+  rw [run_ext2P _ (by rw [place_out _ _ _ (by decide)]; exact h124),
+    place_4, place_5, place_8, enc_OUT, enc_OC, enc_W, update_place _ _ _ (by decide)]
+  congr 2
+  rw [hpad]; simp only [List.length_replicate]
+  rw [shift_out P σ.out hlo, ho, List.append_assoc,
+    List.drop_left' ha, List.drop_left' ha]
+
+theorem step_count {N k K W n : ℕ} (gs : GateList) (hb : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W)
+    (hW : 0 < W) (hgW : gs.length ≤ W) (S : Store 136) (h0 : S 0 = Prog.gsW W gs)
+    (h125 : S 125 = []) (h126 : S 126 = []) (h127 : S 127 = []) (h128 : S 128 = []) :
+    Prog.run countP (place S (enc (envG N k W n) (σC N k K n) (fun _ => []))) =
+      place S (enc (envG N k W n) (σA N k K n gs) (fun _ => [])) := by
+  rw [run_countP W hW gs hb hgW _ (by rw [place_out _ _ _ (by decide)]; exact h0)
+      (by rw [place_8, enc_W]; rfl)
+      (by rw [place_out _ _ _ (by decide)]; exact h125)
+      (by rw [place_out _ _ _ (by decide)]; exact h126)
+      (by rw [place_out _ _ _ (by decide)]; exact h127)
+      (by rw [place_out _ _ _ (by decide)]; exact h128)]
+  rw [show (98 : Fin 136) = uV (tR 63) from rfl, show (10 : Fin 136) = uV tSRC from rfl,
+    update_place_uV, update_place_uV]
+  congr 1
+  have e : σA N k K n gs = { σC N k K n with sc := Function.update (σC N k K n).sc 63 gs.length, src := srcOf gs } := rfl
+  rw [e, enc_sc_src, senc_srcOf]
+  rfl
+
+set_option maxHeartbeats 1000000 in
+/-- **The run of the main program** from the constants. -/
+theorem run_mainP {N k K W n : ℕ} (hk : 0 < k) (hN : 0 < N) (hK : K ≤ k + 1)
+    (ix' : Fin 10 × BI N k → ℕ) (hix : ∀ i b, ix' (i, b) = i.val * (4 * k * N * k) + codec b)
+    (hixn : ∀ j, ix' j < n) (gs : GateList) (hgs : gs ≠ []) (hb : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W)
+    (hG : gs.length + 10 ≤ W) (hT : n + (fhF N k K gs).1.length ≤ W) :
+    Prog.run mainP (place (Function.update (inS W gs) 123 (List.replicate (Pv N k W) true))
+      (enc (envG N k W n) (σC N k K n) (fun _ => []))) =
+      outS W gs (Prog.gatesW ix' n W (fhF N k K gs).1 0)
+        (List.replicate (fhF N k K gs).1.length false)
+        (Prog.posW W N k (fun c i j => pfix n (n + 1 + (fhF N k K gs).1.length) N k
+          (repList (envG N k W n) ix' (fhF N k K gs).2) c i j)) := by
+  obtain ⟨σ1, e1, ho1, ht1, hI1, ho2⟩ := vm_runs hk hN hK ix' hix hixn gs hgs hb hG hT
+  have hnW : n ≤ W := by omega
+  have hBpos : 1 ≤ 4 * k * N * k := by
+    have := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos (show 0 < 4 by norm_num) hk) hN) hk
+    omega
+  have hWM : (envG N k W n).W ≤ (envG N k W n).M := by
+    show W ≤ Mv N k W; unfold Mv; nlinarith
+  have hMt : n + 1 + (fhF N k K gs).1.length ≤ Mv N k W := by unfold Mv; nlinarith
+  have hpad : (envG N k W n).pad = List.replicate (Pv N k W) true := rfl
+  have hSo : ∀ i : Fin 136, i.val ≠ 0 → i.val ≠ 123 →
+      Function.update (inS W gs) 123 (List.replicate (Pv N k W) true) i = [] :=
+    fun i h0 h123 => by
+      rw [Function.update_of_ne (fun h => h123 (by rw [h]; rfl))]; simp [inS, h0]
+  have hlo1 : σ1.out.length ≤ Pv N k W := by
+    rw [ho1, Prog.length_gatesW ix' hixn _ 0 (by omega)]
+    unfold Pv
+    have : (fhF N k K gs).1.length * (2 * W) ≤ W * (2 * W) := Nat.mul_le_mul_right _ (by omega)
+    nlinarith
+  set PW := Prog.posW W N k (fun c i j => pfix n (n + 1 + (fhF N k K gs).1.length) N k
+    (repList (envG N k W n) ix' (fhF N k K gs).2) c i j) with hPW
+  have hPWl : PW.length = 2 * k * (k * (N * W)) :=
+    length_posW W N k _ (fun c i j _ _ _ => pfix_le _ c i j hnW (by omega))
+  have huw : (uw W n).length = W := length_uw hnW
+  have hlo2 : (exec (envG N k W n) posC { σ1 with out := [] }).out.length ≤ Pv N k W := by
+    rw [ho2, List.length_append, List.length_append, huw, hPWl]
+    unfold Pv
+    have h1 : 2 * k * (k * (N * W)) = (2 * k * k * N) * W := by ring
+    have h2 : 2 * k * k * N ≤ 4 * k * N * k := by nlinarith
+    have h3 : (2 * k * k * N) * W ≤ (4 * k * N * k) * W := Nat.mul_le_mul_right _ h2
+    nlinarith
+  simp only [mainP, Prog.run_seq]
+  rw [step_count gs hb (by omega) (by omega) _
+      (by rw [Function.update_of_ne (by decide)]; simp [inS])
+      (hSo _ (by decide) (by decide)) (hSo _ (by decide) (by decide))
+      (hSo _ (by decide) (by decide)) (hSo _ (by decide) (by decide)),
+    run_map_place, run_compile _ hWM fhatC 0 (by decide) _ (inv_σA gs hb) _ (fun _ _ => rfl), e1,
+    step_ext1 _ _ hpad σ1 _ _ (hSo _ (by decide) (by decide)) hlo1 (by rw [ht1]; exact hMt),
+    step_reset _ _ hpad σ1 _ _ (by simp [hpad]),
+    run_map_place, run_compile _ hWM posC 0 (by decide) { σ1 with out := [] } hI1 _
+      (fun _ _ => rfl),
+    step_ext2 _ _ hpad _ _ _ (by
+        rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide)]
+        exact hSo 124 (by decide) (by decide))
+      hlo2 (uw W n) huw PW ho2,
+    run_clrsP, ho1, ht1]
+  funext i
+  simp only [outS, tsK, List.mem_filter, List.mem_finRange, true_and, decide_eq_true_eq]
+  by_cases h4 : 4 ≤ i.val
+  · rw [if_pos h4, if_neg (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+  · rw [if_neg h4, place_out _ _ _ (by omega)]
+    have : i.val = 0 ∨ i.val = 1 ∨ i.val = 2 ∨ i.val = 3 := by omega
+    rcases this with h | h | h | h
+    · have hi : i = 0 := Fin.ext h
+      subst hi; simp [inS]
+    · have hi : i = 1 := Fin.ext h
+      subst hi; simp
+    · have hi : i = 2 := Fin.ext h
+      subst hi; simp
+    · have hi : i = 3 := Fin.ext h
+      subst hi; simp
+
 end FhatGen
 
 end SigabaNeo.Lattices
