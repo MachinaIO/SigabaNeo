@@ -2,6 +2,7 @@ import PE.Impl.DualUse.Prog.WfTime
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValMain
 import SigabaNeo.Lib.Lattices.ProgAlgo.KeySumT
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimTmpl
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValWF
 
 /-!
 # The block-structured `W_f` block
@@ -1715,6 +1716,64 @@ theorem run_simKeyP_B2 (C : List Bool) (hN : 0 < N) (hK : 0 < K) (r : Store 94)
     rfl
 
 end IdK
+
+/-! ### The key sum and the cleanup -/
+
+theorem coinFree_clrsP (l : List (Fin 256)) : (clrsP l).CoinFree := by
+  induction l with
+  | nil => rfl
+  | cons x l ih =>
+    simp only [CoinFree, clrsP] at ih ⊢; simp [coinFreeB, ih]
+
+theorem law_clrsP (l : List (Fin 256)) (S : Store 256) :
+    (XProg.prog (clrsP l)).law S = PMF.pure (fun t => if t ∈ l then [] else S t) := by
+  rw [XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_clrsP l), run_clrsP]
+
+/-- The store after the preparation of the key sum. -/
+def S5 (N K k d : ℕ) (S : Store 256) : Store 256 :=
+  Function.update (tmplS (keyT N K k d) (fun t => if t ∈ keyClr then [] else S t)) (ms 87)
+    (tmplS (keyT N K k d) (fun t => if t ∈ keyClr then [] else S t) (ms 87) ++ [false])
+
+theorem keys_keyT (N K k d : ℕ) : (keyT N K k d).map Prod.fst =
+    [ms 3, ms 4, ms 5, ms 6, ms 7, ms 8, ms 9, ms 10, ms 11, ms 12, ms 13, ms 14, ms 15, ms 16,
+      ms 17, ms 88, ms 89, ms 90] := rfl
+
+theorem law_keyPrep (N K k d : ℕ) (S : Store 256) (hX : S tX0 = []) :
+    (keyPrep N K k d).law S = PMF.pure (S5 N K k d S) := by
+  rw [keyPrep, XProg.law_seq, law_clrsP, PMF.pure_bind, XProg.law_seq,
+    law_tmplP _ _ _ (by simp (config := {decide := true}) [keyClr, hX])
+      (ne_of_keys (keys_keyT N K k d) (by decide)), PMF.pure_bind, law_putW]
+  rfl
+
+theorem S5_key (N K k d : ℕ) (S : Store 256) {t : Fin 256} {n : ℕ} (h : (t, n) ∈ keyT N K k d) :
+    S5 N K k d S t = List.replicate n false := by
+  have ht : t ≠ ms 87 := by
+    have hm : t ∈ (keyT N K k d).map Prod.fst := List.mem_map_of_mem (f := Prod.fst) h
+    rw [keys_keyT] at hm
+    intro e; rw [e] at hm; revert hm; decide
+  rw [S5, Function.update_of_ne ht]
+  exact tmplS_mem _ (by rw [keys_keyT]; decide) (t, n) h _
+
+theorem S5_87 (N K k d : ℕ) (S : Store 256) : S5 N K k d S (ms 87) = [false] := by
+  rw [S5, Function.update_self, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_keyT N K k d)
+    (by decide))]
+  simp (config := {decide := true}) [keyClr]
+
+theorem S5_not (N K k d : ℕ) (S : Store 256) {t : Fin 256} (h : t ∉ (keyT N K k d).map Prod.fst)
+    (h' : t ≠ ms 87) : S5 N K k d S t = if t ∈ keyClr then [] else S t := by
+  rw [S5, Function.update_of_ne h', tmplS_apply_of_not_mem _ _ _ (fun x hx e => h (by
+    rw [← e]; exact List.mem_map_of_mem hx))]
+
+theorem law_keyF (S : Store 256) (v : List Bool)
+    (h : run simKeyP (fun j => S (oK2 j)) = Function.update (fun j => S (oK2 j)) 0 v) :
+    (XProg.frame (ValVM.mkE oK2 oK2_inj) (.prog simKeyP)).law S =
+      PMF.pure (Function.update S 255 v) := by
+  rw [law_frame_run _ _ noGrow_simKeyP,
+    show (fun j => S ((ValVM.mkE oK2 oK2_inj) j)) = fun j => S (oK2 j) from rfl, h]
+  have := embedF_upd (ValVM.mkE oK2 oK2_inj) S (fun j => S (oK2 j)) 0 v
+  rw [show (fun j => S (oK2 j)) = fun j => S ((ValVM.mkE oK2 oK2_inj) j) from rfl] at this ⊢
+  rw [this, embedF_comp]
+  rfl
 
 end WB2
 
