@@ -45,6 +45,7 @@ import PE.Impl.DualUse.Prog.Post
 import PE.Impl.DualUse.ReductionPerQuery
 import PE.Impl.DualUse.ReductionComps
 import PE.Impl.DualUse.ReductionSteps
+import PE.Impl.DualUse.AHComps
 import PE.Impl.DualUse.GameChain
 import PE.Impl.DualUse.Params.SimTrapNorm
 import PE.Impl.DualUse.Params.Sizes
