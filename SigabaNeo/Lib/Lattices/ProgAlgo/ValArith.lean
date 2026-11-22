@@ -46,6 +46,54 @@ theorem exec_rep' {c : Fin 40} {b : Code} {w : St} :
     exec V f (.rep c b) w =
       (fun w' => exec V f b (Function.update w' c (w' c).tail))^[(w c).length] w := rfl
 
+/-! ### The words a code writes -/
+
+/-- The words a code may write. -/
+def wr : Code → List (Fin 40)
+  | .gate d _ _ => [d]
+  | .mvV d s => [d, s]
+  | .mv d s _ => [d, s]
+  | .cp d _ => [d]
+  | .drop t _ => [t]
+  | .clr t => [t]
+  | .tl t => [t]
+  | .rep c b => c :: wr b
+  | .seq p q => wr p ++ wr q
+  | .nop => []
+
+/-- **A code leaves the words it does not write.** -/
+theorem exec_not_mem : ∀ (c : Code) (w : St) (j : Fin 40), j ∉ wr c → exec V f c w j = w j
+  | .gate d a b, w, j, h => by simp only [wr, List.mem_singleton] at h; simp [exec, Function.update_of_ne h]
+  | .mvV d s, w, j, h => by
+    simp only [wr, List.mem_cons, List.not_mem_nil, or_false, not_or] at h
+    simp only [exec]; split_ifs <;> simp [Function.update_of_ne h.1, Function.update_of_ne h.2]
+  | .mv d s c, w, j, h => by
+    simp only [wr, List.mem_cons, List.not_mem_nil, or_false, not_or] at h
+    simp only [exec]; split_ifs <;> simp [Function.update_of_ne h.1, Function.update_of_ne h.2]
+  | .cp d s, w, j, h => by simp only [wr, List.mem_singleton] at h; simp [exec, Function.update_of_ne h]
+  | .drop t c, w, j, h => by
+    simp only [wr, List.mem_singleton] at h
+    simp only [exec]; split_ifs <;> simp [Function.update_of_ne h]
+  | .clr t, w, j, h => by simp only [wr, List.mem_singleton] at h; simp [exec, Function.update_of_ne h]
+  | .tl t, w, j, h => by simp only [wr, List.mem_singleton] at h; simp [exec, Function.update_of_ne h]
+  | .rep c b, w, j, h => by
+    simp only [wr, List.mem_cons, not_or] at h
+    rw [exec_rep']
+    generalize (w c).length = n
+    induction n generalizing w with
+    | zero => rfl
+    | succ n ih =>
+      rw [Function.iterate_succ_apply, ih, exec_not_mem b _ j h.2, Function.update_of_ne h.1]
+  | .seq p q, w, j, h => by
+    simp only [wr, List.mem_append, not_or] at h
+    show exec V f q (exec V f p w) j = w j
+    rw [exec_not_mem q _ j h.2, exec_not_mem p _ j h.1]
+  | .nop, w, j, _ => rfl
+
+theorem wr_ofList : ∀ l : List Code, wr (ofList l) = l.flatMap wr
+  | [] => rfl
+  | c :: l => by simp [ofList, wr, wr_ofList l]
+
 /-! ### Moving values -/
 
 theorem shiftIn_val {r v L : List Bool} (hr : r.length = V) (hv : v.length = V) :
@@ -567,6 +615,124 @@ theorem constV_pow {α : Type*} (one zv : α) :
     rw [h1, h2, constV_pow one zv K j m]
     simp [List.replicate_succ]
 
-end ValVM
+/-! ### Lengths of the shadows -/
 
-end SigabaNeo.Tape
+section Lengths
+
+variable {α : Type*} (one : α) (step : α → α → α)
+
+theorem length_rippleV (as bs : List α) (c : α) (h : as.length = bs.length) :
+    (rippleV one step as bs c).length = as.length + 1 := by
+  rw [rippleV_eq_rippleL, List.length_append, length_rippleL one step as bs c h]; rfl
+
+end Lengths
+
+theorem rippleL_carry_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {one : List Bool} : ∀ (as bs : List (List Bool)) (c : List Bool), c.length = V →
+      (rippleL one (fV V f) as bs c).2.length = V
+  | [], _, c, hc => hc
+  | _ :: _, [], c, hc => hc
+  | a :: as, b :: bs, c, _ => rippleL_carry_len hf as bs _ (hf _ _ (by simp) (by simp))
+
+theorem rippleV_len (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {one c : List Bool}
+    (hc : c.length = V) (as bs : List (List Bool)) :
+    ∀ x ∈ rippleV one (fV V f) as bs c, x.length = V := by
+  intro x hx
+  rw [rippleV_eq_rippleL, List.mem_append, List.mem_singleton] at hx
+  rcases hx with hx | rfl
+  · exact rippleL_len hf as bs c x hx
+  · exact rippleL_carry_len hf as bs c hc
+
+/-! ### The modular adder -/
+
+/-- Words of the modular arithmetic: `X = 24`, `Y = 25` the operands, `Z = 26` the result,
+`S1 = 21`, `T = 23` intermediate; templates `TK = 12` (`k` bits), `TK1 = 13` (`k + 1`),
+`TBk = 14`, `TBk1 = 15`, `TBk2 = 16` (`k V`, `(k+1) V`, `(k+2) V` bits), `TKm = 20` (`k - 1`);
+constants `ONE = 10`, `ZV = 11`. -/
+def madd1 : Code := ofList [.cp 0 10, .cp 1 10, .cp NA 24, .cp NB 25, .cp 2 11, rippleC 12 15, .cp 21 NC]
+
+theorem exec_madd1 (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (xs ys : List (List Bool)) (hl : xs.length = ys.length) (hxv : ∀ x ∈ xs, x.length = V)
+    (hyv : ∀ x ∈ ys, x.length = V) (h10 : (w 10).length = V) (h11 : (w 11).length = V)
+    (hX : w 24 = xs.flatten) (hY : w 25 = ys.flatten) (hk : (w 12).length = xs.length)
+    (hb : (w 15).length = (xs.length + 1) * V) :
+    exec V f madd1 w 21 = (rippleV (w 10) (fV V f) xs ys (w 11)).flatten := by
+  simp only [madd1, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  rw [Function.update_self]
+  refine ((exec_rippleC (V := V) (f := f) hf (tk := 12) (tb := 15)
+    (by simp (config := {decide := true}) [rippleW]) (by simp (config := {decide := true}) [rippleW])
+    xs ys _ hl hxv hyv ?_ ?_ ?_ ?_ ?_ ?_ ?_).1).trans ?_
+  all_goals simp (config := {decide := true}) [Function.update_apply, h10, h11, hX, hY, hk, hb]
+
+theorem drop_append_drop' {X Y : List Bool} {a : ℕ} (h : a ≤ X.length) (b : ℕ) :
+    (X.drop a ++ Y).drop b = (X ++ Y).drop (a + b) := by
+  rw [← List.drop_append_of_le_length h, List.drop_drop]
+
+theorem flatten_replicate_len {v : List Bool} (hv : v.length = V) (n : ℕ) :
+    (List.replicate n v).flatten.length = n * V := by
+  rw [length_flatten_of (V := V) (fun x hx => by rw [List.eq_of_mem_replicate hx]; exact hv),
+    List.length_replicate]
+
+/-- Two constants: `|t1|` copies of `s1`, then `|t2|` copies of `s2`, into `NC`. -/
+def const2C (s1 t1 s2 t2 : Fin 40) : Code := .seq (constC s1 t1) (constC s2 t2)
+
+theorem exec_const2C {s1 t1 s2 t2 : Fin 40} (h1 : s1.val ≥ 9 ∧ s1 ≠ NC ∧ s1 ≠ CT0)
+    (h2 : s2.val ≥ 9 ∧ s2 ≠ NC ∧ s2 ≠ CT0) (ht1 : t1.val ≥ 9 ∧ t1 ≠ NC ∧ t1 ≠ CT0)
+    (ht2 : t2.val ≥ 9 ∧ t2 ≠ NC ∧ t2 ≠ CT0) {w : St} (hs1 : (w s1).length = V)
+    (hs2 : (w s2).length = V) (hNC : (w t1).length * V ≤ (w NC).length) :
+    exec V f (const2C s1 t1 s2 t2) w NC =
+        (w NC ++ (List.replicate (w t1).length (w s1) ++
+          List.replicate (w t2).length (w s2)).flatten).drop
+          (((w t1).length + (w t2).length) * V) ∧
+      ∀ j, j ≠ 3 → j ≠ NC → j ≠ CT0 → exec V f (const2C s1 t1 s2 t2) w j = w j := by
+  have n3 : ∀ x : Fin 40, x.val ≥ 9 → x ≠ 3 := fun x hx e => by subst e; simp at hx
+  obtain ⟨c1, c2⟩ := exec_constC (V := V) (f := f) (n3 s1 h1.1) h1.2.1 h1.2.2 ht1.2.2 (w := w) hs1
+  set w1 := exec V f (constC s1 t1) w
+  have e1 : w1 s2 = w s2 := c2 _ (n3 s2 h2.1) h2.2.1 h2.2.2
+  have e2 : w1 t2 = w t2 := c2 _ (n3 t2 ht2.1) ht2.2.1 ht2.2.2
+  obtain ⟨d1, d2⟩ := exec_constC (V := V) (f := f) (n3 s2 h2.1) h2.2.1 h2.2.2 ht2.2.2 (w := w1)
+    (by rw [e1]; exact hs2)
+  refine ⟨?_, fun j hj3 hjN hjC => ?_⟩
+  · show exec V f (constC s2 t2) w1 NC = _
+    rw [d1, e1, e2, c1, drop_append_drop' (by rw [List.length_append]; omega),
+      List.append_assoc, List.flatten_append]
+    congr 1; ring
+  · show exec V f (constC s2 t2) w1 j = _
+    rw [d2 j hj3 hjN hjC, c2 j hj3 hjN hjC]
+
+/-- The second ripple: `NC := rippleV (S1, C₁)` with `C₁ = zv^K ++ [1, 1]` (`T2 = 27` a template
+of `2` bits). -/
+def madd2 : Code := ofList [.cp NC 15, const2C 11 20 10 27, .cp NB NC, .cp NA 21,
+  .cp 2 11, .cp 0 10, .cp 1 10, rippleC 13 16]
+
+theorem exec_madd2 (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) (w : St)
+    (ss : List (List Bool)) (K : ℕ) (hsv : ∀ x ∈ ss, x.length = V) (hsl : ss.length = K + 2)
+    (h10 : (w 10).length = V) (h11 : (w 11).length = V) (hS : w 21 = ss.flatten)
+    (hm : (w 20).length = K) (h27 : (w 27).length = 2) (h15 : (w 15).length = (K + 2) * V)
+    (h13 : (w 13).length = K + 2) (h16 : (w 16).length = (K + 3) * V) :
+    exec V f madd2 w NC = (rippleV (w 10) (fV V f) ss
+      (List.replicate K (w 11) ++ [w 10, w 10]) (w 11)).flatten := by
+  simp only [madd2, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  set w1 := Function.update w NC (w 15)
+  obtain ⟨c1, c2⟩ := exec_const2C (V := V) (f := f) (s1 := 11) (t1 := 20) (s2 := 10) (t2 := 27)
+    (by decide) (by decide) (by decide) (by decide) (w := w1)
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h11])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, h10])
+    (by simp (config := {decide := true}) [w1, Function.update_apply, hm, h15]; nlinarith)
+  set w2 := exec V f (const2C 11 20 10 27) w1
+  have v : ∀ j, j ≠ 3 → j ≠ NC → j ≠ CT0 → w2 j = w1 j := c2
+  have hC : w2 NC = (List.replicate K (w 11) ++ [w 10, w 10]).flatten := by
+    rw [c1]
+    simp (config := {decide := true}) only [w1, Function.update_apply, if_true, if_false]
+    rw [hm, h27, List.drop_left' (by rw [h15])]
+    simp [List.replicate_succ]
+  refine ((exec_rippleC (V := V) (f := f) hf (tk := 13) (tb := 16)
+    (by simp (config := {decide := true}) [rippleW]) (by simp (config := {decide := true}) [rippleW])
+    ss (List.replicate K (w 11) ++ [w 10, w 10]) _ (by simp [hsl]) hsv ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_).1).trans ?_
+  · intro x hx
+    simp only [List.mem_append, List.mem_cons, List.mem_replicate, List.not_mem_nil, or_false] at hx
+    rcases hx with ⟨_, rfl⟩ | rfl | rfl <;> assumption
+  all_goals simp (config := {decide := true}) [Function.update_apply, v, w1, h10, h11, hS, h13,
+    h16, hC, hsl]
+
+end ValVM
