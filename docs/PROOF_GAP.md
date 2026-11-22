@@ -1207,6 +1207,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     whole procedure" is therefore wrong by one. Part 47 and the Lean chain are consistent: J + d = N counts horizontal
     dimensions, and the decoder runs SVP on the full projected lattice.
   * The 1% quantile at ρ = 0.954 remains open.
+  * **Lean.** SlideCovolume / SlideEndpoint / SlideZeroDesign / SlideRankFive / SlideProjectedRank (axiom-clean, 29
+    declarations) formalize:
+    * an integer frame has covolume ≥ 1, with equality iff it spans a coordinate sublattice;
+    * a unit-covolume rank-n frame exists in the null lattice iff A = 0, the exact qI-first run ends there, and its mass
+      is q^{−mn};
+    * accepted-step monotonicity;
+    * the rank-5 example with terminal covolumes 90 and 100;
+    * projected ranks d and d+1 for the null and attack lattices (512 and 513 at N = 1023, J = 511).
+
 * **Part 144 (audited, SOUND).** [horizontal_core](research/wall1_horizontal_core.md): a direct attack on the horizontal-step
   core (Part 120), counting over Part 108's conditional law.
   * **Barrier 1.** At width 506 there is an explicit family of penultimate restart histories with maximal mark. On it, every
