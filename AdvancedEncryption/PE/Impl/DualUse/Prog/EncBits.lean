@@ -161,7 +161,7 @@ theorem addRW_row (A B : Matrix (Fin 1) (Fin (2 * k)) (Rg N K)) :
   have := matAddW_enc (N := N) (K := K) (m := 1) (n := 2 * k) A B
   rwa [Nat.one_mul] at this
 
-theorem len_rowC (A : Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) :
+theorem len_rowCE (A : Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) :
     ((matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc A).length = 1 * (2 * k) * (N * K) := by
   rw [matEnc_cols, colsW, length_matW]
 
@@ -174,8 +174,8 @@ theorem jStepE_enc (s : Rg N K) (Bj ej : Matrix (Fin 1) (RingBTVW.Col k) (Rg N K
       ((out ++ (matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc
           (scalar s * (Bj - bitR (R := Rg N K) z • (Sdw (N := N) hk).Γ₁.G) + ej)).drop
           (1 * (2 * k) * (N * K)), rz, rb, re) := by
-  have hb := len_rowC (N := N) (K := K) Bj
-  have he := len_rowC (N := N) (K := K) ej
+  have hb := len_rowCE (N := N) (K := K) Bj
+  have he := len_rowCE (N := N) (K := K) ej
   have hsw : (ringEnc N K).enc s = matW N K 1 1 (scalar s) := by rw [matW_one_one]; rfl
   have hg : gadW N K k = colsW N K k 1 (Sdw (N := N) hk).Γ₁.G := gadW_enc hk.le
   simp only [Tape.Prog.jStepE, hd_cons, List.tail_cons]
@@ -219,6 +219,6 @@ theorem jStepE_list (s : Rg N K) (Ψ : (Sdw (N := N) hk).Attr → Matrix (Fin 2)
   | j :: l, out, rz, rb, re => by
     rw [List.length_cons, Function.iterate_succ_apply]
     simp only [List.map_cons, List.flatMap_cons, List.cons_append, List.append_assoc]
-    rw [jStepE_enc hk, jStepE_list s Ψ Bj ej l, reg_shiftW _ _ _ (len_rowC _), bitsOf_eq hk]
+    rw [jStepE_enc hk, jStepE_list s Ψ Bj ej l, reg_shiftW _ _ _ (len_rowCE _), bitsOf_eq hk]
 
 end AdvancedEncryption.DualUse.Prog

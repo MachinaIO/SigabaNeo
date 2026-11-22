@@ -6,7 +6,7 @@ import SigabaNeo.Lib.Machines.Prog.Moves
 
 `encP X : XProg 124` realizes the law `encM` of `Enc` exactly:
 
-1. **parsing** (`parseP`): the input `encodeTuple [pw, mpk, x, [M]]` (tape `120`) is read frame by
+1. **parsing** (`encParseP`): the input `encodeTuple [pw, mpk, x, [M]]` (tape `120`) is read frame by
    frame (`unframeP`, counters built by `natP`): the fields `B₀`, `B₁`, the `B_j`, `p` of `mpk`,
    the date bits and the message bit land on the tapes `1 … 6`;
 2. **the coins** (framed samplers, scratch `52 … 56`): `s`, `e₀`, `e₁ = [σ | ea | ez]`, the binary
@@ -93,7 +93,7 @@ theorem law_seq_smp124 {e : Fin 7 ↪ Fin 124} {p : XProg 7} {μ : PMF (List Boo
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-- **The parser of the input of `Enc`.** -/
-def parseP : XProg 124 :=
+def encParseP : XProg 124 :=
   seq (dropChunk (2 * pw.length + 1)) <|
   seq (ufChunk 1 ((Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin c.d)).length * (N * K)))) <|
   seq (ufChunk 2 ((Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)))) <|
@@ -106,15 +106,15 @@ theorem flatMap_pairs_append (u v : List Bool) :
     (u ++ v).flatMap (fun b => [true, b]) =
       u.flatMap (fun b => [true, b]) ++ v.flatMap (fun b => [true, b]) := List.flatMap_append
 
-theorem length_frame (w : List Bool) : (Turing.MultiTapeTM.frame w).length = 2 * w.length + 1 := by
+theorem length_frameE (w : List Bool) : (Turing.MultiTapeTM.frame w).length = 2 * w.length + 1 := by
   simp [Turing.MultiTapeTM.frame]; ring
 
 set_option maxHeartbeats 4000000 in
 /-- **The law of the parser.** -/
-theorem law_parseP (mpk : PK hk c) (x : Date) (b : Bool) (s : Store 124)
+theorem law_encParseP (mpk : PK hk c) (x : Date) (b : Bool) (s : Store 124)
     (hin : s 120 = encodeTuple [pw, (pkEnc hk c).enc mpk, encDate x, [b]])
     (hD : ∀ i : Fin 124, 1 ≤ i.val → i.val ≤ 6 → s i = []) (h121 : s 121 = []) (h123 : s 123 = []) :
-    (parseP hk c).law s = PMF.pure
+    (encParseP hk c).law s = PMF.pure
       (Function.update (Function.update (Function.update (Function.update (Function.update
         (Function.update (Function.update s 1 ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc mpk.B₀))
           2 ((matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc mpk.B₁))
@@ -124,8 +124,8 @@ theorem law_parseP (mpk : PK hk c) (x : Date) (b : Bool) (s : Store 124)
   have e : encodeTuple [pw, (pkEnc hk c).enc mpk, encDate x, [b]] =
       Turing.MultiTapeTM.frame pw ++ (Turing.MultiTapeTM.frame ((pkEnc hk c).enc mpk) ++
         (Turing.MultiTapeTM.frame (encDate x) ++ (Turing.MultiTapeTM.frame [b] ++ []))) := rfl
-  rw [parseP, law_seq, law_dropChunk _ s h121 h123, PMF.pure_bind]
-  rw [hin, e, ← length_frame, List.drop_left' rfl]
+  rw [encParseP, law_seq, law_dropChunk _ s h121 h123, PMF.pure_bind]
+  rw [hin, e, ← length_frameE, List.drop_left' rfl]
   set wB0 := (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc mpk.B₀
   set wB1 := (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc mpk.B₁
   set wBj := (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
@@ -279,7 +279,7 @@ theorem law_encTail (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bo
 
 /-- **`Enc` as a tape program.** -/
 def encP (X : ChiSampler c) : XProg 124 :=
-  seq (parseP hk c) <| seq (frame e7 (coinsF (N * K))) <|
+  seq (encParseP hk c) <| seq (frame e7 (coinsF (N * K))) <|
   seq (frame e8 (repF ((Enum.list (α := Fin c.d)).length * N) X.P)) <|
   seq (frame e9 (repF N X.P)) <|
   seq (frame e9 (repF ((Enum.list (α := RingBTVW.Col k)).length * N) X.P)) <|
@@ -311,7 +311,7 @@ theorem law_encP [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (X : ChiSampler c) (mpk 
         PMF.uniformOfFintype (Fin c.d → Bool)).map fun rr => (rmTEnc c).enc (rMat (R := Rg N K) rr) := by
     refine (rmLaw_eq hk c hN hK).symm.trans ?_
     exact PMF.map_comp _ _ _
-  rw [encP, law_seq, law_parseP hk c mpk x b _ (by simp [inputStore])
+  rw [encP, law_seq, law_encParseP hk c mpk x b _ (by simp [inputStore])
     (fun i h1 h2 => by
       rw [inputStore, Function.update_of_ne (fun h => by subst h; simp at h2)]) (by simp [inputStore]) (by simp [inputStore]),
     PMF.pure_bind]
@@ -362,7 +362,7 @@ theorem wf_dropChunk (n : ℕ) : (dropChunk n).WF :=
 theorem wf_ufChunk (D : Fin 124) (hD : D.val < 120) (n : ℕ) : (ufChunk D n).WF :=
   ⟨wf_natP (by decide) _, XProg.wf_unframeP (by decide) (fun h => by subst h; simp at hD), trivial⟩
 
-theorem wf_parseP : (parseP hk c).WF :=
+theorem wf_encParseP : (encParseP hk c).WF :=
   ⟨wf_dropChunk _, wf_ufChunk _ (by decide) _, wf_ufChunk _ (by decide) _, wf_ufChunk _ (by decide) _,
     wf_ufChunk _ (by decide) _, trivial, wf_ufChunk _ (by decide) _, trivial,
     wf_ufChunk _ (by decide) _⟩
@@ -371,7 +371,7 @@ theorem wf_encTail : (encTail hk c).WF :=
   ⟨wf_natL _ (tmplList_ne hk c), wf_encCoreP, XProg.wf_frameApP (by decide) (by decide)⟩
 
 theorem wf_encP (X : ChiSampler c) : (encP hk c X).WF :=
-  ⟨wf_parseP hk c, wf_coinsF _, wf_repF X.wf X.pres6 _, wf_repF X.wf X.pres6 _,
+  ⟨wf_encParseP hk c, wf_coinsF _, wf_repF X.wf X.pres6 _, wf_repF X.wf X.pres6 _,
     wf_repF X.wf X.pres6 _, wf_repF X.wf X.pres6 _,
     wf_repF (body := entB N K) ⟨wf_coinAp _ _, wf_zerosF _⟩
       ⟨preserves_coinAp (by decide) (by decide), preserves_zerosF _ (by decide)⟩ _,
@@ -391,7 +391,7 @@ theorem length_encIn (mpk : PK hk c) (x : PE.DateWindow.Date) (b : Bool) :
     (encodeTuple [pw, (pkEnc hk c).enc mpk, PE.DateWindow.encDate x, [b]]).length = nInE hk c := by
   show (Turing.MultiTapeTM.frame pw ++ (Turing.MultiTapeTM.frame ((pkEnc hk c).enc mpk) ++
     (Turing.MultiTapeTM.frame (PE.DateWindow.encDate x) ++ (Turing.MultiTapeTM.frame [b] ++ [])))).length = _
-  simp only [List.length_append, length_frame, PE.Gates.DateWindow.length_encDate, List.length_nil,
+  simp only [List.length_append, length_frameE, PE.Gates.DateWindow.length_encDate, List.length_nil,
     List.length_singleton]
   rw [(pkEnc hk c).length]
   rfl

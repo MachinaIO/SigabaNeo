@@ -159,8 +159,10 @@ theorem abortP : (((confP.Big.card - innerP.card : ℕ) : ℝ≥0∞) / confP.Bi
     four_τ_le.trans (pow_le_pow' (by rw [Eτ_def, Bp_def]; norm_num))
   exact abort_le (d := dp) (Wt := TrapCol kp) (N := Np) Bp τp 128 hBp one_le_Bp mBp hmBp h4 hprod
 
+variable {ms : Machines hkp confP}
+
 /-- **The implementation is correct.** -/
-theorem correct_conf (M : SEMachines hkp confP) : Correct dateUniverse params (impl hkp confP M) := by
+theorem correct_conf : Correct dateUniverse params (impl hkp confP ms) := by
   have hb := box_arith _ _ hτM
   refine DualUse.correct hkp confP (by show 0 < dp; rw [dp_def]; positivity) hdecp (2 ^ 512) Sp
     innerP ?_ ?_ ?_ abortP ?_ ?_ ?_ ?_
@@ -193,8 +195,8 @@ attribute [local irreducible] dateBound in
 theorem confP_L : confP.L = dateBound := rfl
 
 /-- **The implementation is expressive.** -/
-theorem expressive_conf (M : SEMachines hkp confP) : Expressive dateUniverse params (impl hkp confP M) :=
-  DualUse.expressive hkp confP M (le_of_eq confP_L.symm)
+theorem expressive_conf : Expressive dateUniverse params (impl hkp confP ms) :=
+  DualUse.expressive hkp confP (le_of_eq confP_L.symm)
 
 /-! ### Both trapdoors are covered -/
 

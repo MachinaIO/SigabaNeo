@@ -9,7 +9,7 @@ import PE.Impl.DualUse.ConcreteNoise
 Concrete parameters of the dual-use scheme: `q = 2^K` with `K = 2^24`, `k = K + 1` binary digits,
 `N = 2^10`, `|Wd| = 2^35`, errors from the centered binomial law of width `16`, flooding errors
 below `2^512`, and boxes of `512`-bit coefficients for key generation (`conf`). Every condition
-of `DualUse.correct` holds, so the implementation `impl hkc conf` is correct
+of `DualUse.correct` holds, so the implementation `impl hkc conf ms` is correct
 (`correct_concrete`) and expressive (`expressive_concrete`).
 
 The sizes `K` and `|Wd|` are opaque (`irreducible_def`): no power `2^K` is evaluated and `Fin |Wd|`
@@ -124,8 +124,10 @@ theorem card_coef_le : Fintype.card (Coef dc (TrapCol kc) Nc) ≤ 2 ^ 46 := by
   calc (2 ^ 35 + (1 + (2 * kc + 2 * kc))) * 2 ^ 10 ≤ 2 ^ 36 * 2 ^ 10 := Nat.mul_le_mul_right _ h
     _ = 2 ^ 46 := by rw [← pow_add]
 
+variable {ms : Machines hkc conf}
+
 /-- **The implementation is correct.** -/
-theorem correct_concrete (M : SEMachines hkc conf) : Correct dateUniverse params (impl hkc conf M) := by
+theorem correct_concrete : Correct dateUniverse params (impl hkc conf ms) := by
   have hτ := τc_le
   refine DualUse.correct hkc conf (by show 0 < dc; rw [dc_def]; positivity) hdecc (2 ^ 512) Sc
     innerc ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
@@ -166,7 +168,7 @@ attribute [local irreducible] dateBound in
 theorem conf_L : conf.L = dateBound := rfl
 
 /-- **The implementation is expressive.** -/
-theorem expressive_concrete (M : SEMachines hkc conf) : Expressive dateUniverse params (impl hkc conf M) :=
-  DualUse.expressive hkc conf M (le_of_eq conf_L.symm)
+theorem expressive_concrete : Expressive dateUniverse params (impl hkc conf ms) :=
+  DualUse.expressive hkc conf (le_of_eq conf_L.symm)
 
 end AdvancedEncryption.DualUse.Concrete

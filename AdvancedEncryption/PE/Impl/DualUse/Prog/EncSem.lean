@@ -6,7 +6,7 @@ import PE.Impl.DualUse.Prog.ChalI
 
 The words that the phases of `encCoreP` compute are those of the fields of `encrypt`:
 
-* `c0_word`, `row_affine`: `c₀ = s B₀ + e₀`, `c₁ = s B₁ + e₁` (rows over any enumerated columns);
+* `c0_wordS`, `row_affine`: `c₀ = s B₀ + e₀`, `c₁ = s B₁ + e₁` (rows over any enumerated columns);
 * `halfW_eq`, `kap_word`: `κ = s p + e' + M ⌊q/2⌋`;
 * **`encCore_out`**: from the words of `mpk`, the date, the message bit and the coins, the output
   register of `encCoreP` is the word `ctEnc` of `encrypt mpk (bitsOf x) M r`.

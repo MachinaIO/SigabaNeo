@@ -145,6 +145,21 @@ theorem noNand_leafPre : NoNand (.seq (.lnil 0) (.rep 2 (.lpush 0 rZ))) := ⟨tr
 theorem noNand_takeOdo : NoNand (.seq (takeC 2 2 12) odoC) := by
   simp [NoNand, takeC, odoC]
 
+theorem le_length_termStep {N k : ℕ} (z : Wire ι) (q : ℕ) (repA repB : BI N k → Wire ι) (a : Fin 2)
+    (col : Fin 2 × Fin k) (t : Fin N) (st : SLP ι × List (Wire ι)) (e : (Fin 2 × Fin k) × Fin N) :
+    st.1.length ≤ (termStep z q k repA repB a col t st e).1.length := by
+  unfold termStep
+  split_ifs
+  · exact (le_length_andL _ _ _).trans (le_length_modSub _ _ _ _ _ _)
+  · exact (le_length_andL _ _ _).trans (le_length_modAdd _ _ _ _ _ _)
+
+theorem le_length_leaves {N k : ℕ} (z : Wire ι) (q : ℕ) (repA repB : BI N k → Wire ι) (a : Fin 2)
+    (col : Fin 2 × Fin k) (t : Fin N) : ∀ (p : SLP ι) (es : List ((Fin 2 × Fin k) × Fin N)),
+    p.length ≤ (leaves z q k repA repB a col t p es).1.length
+  | p, [] => le_rfl
+  | p, e :: es => (le_length_termStep z q repA repB a col t (p, _) e).trans
+      (le_length_leaves z q repA repB a col t _ es)
+
 set_option maxHeartbeats 4000000 in
 theorem iter_leafBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n)
     {N k K : ℕ} (hK : K ≤ k + 1) (repA repB : BI N k → Wire ι) (a : Fin 2)
@@ -155,7 +170,8 @@ theorem iter_leafBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
       σ.sc 47 = x → σ.sc 48 = y → σ.sc 49 = z → (x * k + y) * N + z = i → y < k → z < N →
       σ.ls 10 = repList E ix repA → σ.ls 11 = repList E ix repB → σ.ls 12 = L0 →
       L0.length + j * k ≤ E.C → k + 3 ≤ E.C → 4 * k * N * k + 2 * N + k + 2 ≤ E.M →
-      E.n + ((exec E leafBody)^[j] (mk E ix P σ)).t ≤ E.M →
+      E.n + (leaves (.gate 0) (2 ^ K) k repA repB a col t P
+        (((enumT N k).drop i).take j)).1.length ≤ E.M →
       ∃ sc' ls', (exec E leafBody)^[j] (mk E ix P σ) = mk E ix
           (leaves (.gate 0) (2 ^ K) k repA repB a col t P (((enumT N k).drop i).take j)).1
           (setSL σ sc' ls') ∧
@@ -181,8 +197,9 @@ theorem iter_leafBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
     have hdrop : ((enumT N k).drop i).take (j + 1) = e :: ((enumT N k).drop (i + 1)).take j := by
       rw [List.drop_eq_getElem_cons hlt, List.take_succ_cons]
       congr 1; exact (List.getElem?_eq_some_iff.mp hie).2
-    rw [hdrop]
-    rw [Function.iterate_succ_apply] at hM ⊢
+    rw [hdrop] at hM ⊢
+    simp only [leaves] at hM
+    rw [Function.iterate_succ_apply]
     -- the running sum `constL z k 0` into `0`
     set acc : List (Wire ι) := constL (.gate 0) k 0
     set σ1 : St := { σ with ls := Function.update σ.ls 0 (acc.map (pos E ix)) }
@@ -195,15 +212,15 @@ theorem iter_leafBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
     have hb : ∀ τ, exec E leafBody τ = exec E (.seq (takeC 2 2 12) odoC)
         (exec E termStepC (exec E (.seq (.lnil 0) (.rep 2 (.lpush 0 rZ))) τ)) := fun τ => by
       rw [leafBody, exec_seq, exec_seq]
-    rw [hb, e1] at hM ⊢
+    rw [hb, e1]
     -- the term
     obtain ⟨sc2, ls2, h2, d2, f2, g2⟩ := exec_termStepC hnM hWM hix hK repA repB a col t e P acc σ1
       ⟨⟨⟨hc0, hc1⟩, hc2, hc3, hc4⟩, hc5, hc6, hc7⟩ hIS1.1 hIS1.2 h43 h44 h45 h46 h47 h48 h49
       (by simp [σ1, h10]) (by simp [σ1, h11]) (by simp [σ1]) (constL_length _ _ _) hcap' hbig
-      (le_trans (Nat.add_le_add_left (le_trans (t_le_exec E (.seq (takeC 2 2 12) odoC) _) (t_le_iter E leafBody j _)) _) hM)
+      (le_trans (Nat.add_le_add_left (le_length_leaves _ _ _ _ _ _ _ _ _) _) hM)
     set T := termStep (.gate 0) (2 ^ K) k repA repB a col t (P, acc) e
     have hT : T.2.length = k := length_termStep repA repB a col t P acc (constL_length _ _ _) e
-    rw [h2] at hM ⊢
+    rw [h2]
     set τ2 := setSL σ1 sc2 ls2
     have hIS2 := is_exec hnM' hWM (c := .seq (.seq (.lnil 0) (.rep 2 (.lpush 0 rZ))) termStepC)
       (τ := mk E ix P σ) (by rw [exec_seq, e1, h2]) ⟨hI, hS⟩
@@ -242,7 +259,7 @@ theorem iter_leafBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
     have hbody : exec E leafBody (mk E ix P σ) = mk E ix T.1 σ4 := by
       rw [hb, e1, h2, exec_mk_noNand _ noNand_takeOdo, exec_seq, h3', h4]
     have hIS4 := is_exec hnM' hWM hbody ⟨hI, hS⟩
-    rw [exec_mk_noNand _ noNand_takeOdo, exec_seq, h3', h4] at hM ⊢
+    rw [exec_mk_noNand _ noNand_takeOdo, exec_seq, h3', h4]
     have hs4 : ∀ r : SR, r.val < 16 ∨ (43 ≤ r.val ∧ r.val ≤ 46) ∨ 53 < r.val → σ4.sc r = σ.sc r :=
       fun r hr => by
         simp only [σ4, setSL]
@@ -301,7 +318,7 @@ theorem exec_leavesC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (h11 : σ.ls 11 = repList E ix repB) (hL : σ.ls 12 = L0)
     (hcap : L0.length + 2 * k * N * k ≤ E.C) (hcap' : k + 3 ≤ E.C)
     (hbig : 4 * k * N * k + 2 * N + k + 2 ≤ E.M)
-    (hM : E.n + (exec E leavesC (mk E ix P σ)).t ≤ E.M) :
+    (hM : E.n + (leaves (.gate 0) (2 ^ K) k repA repB a col t P (enumT N k)).1.length ≤ E.M) :
     ∃ sc' ls', exec E leavesC (mk E ix P σ) =
         mk E ix (leaves (.gate 0) (2 ^ K) k repA repB a col t P (enumT N k)).1 (setSL σ sc' ls') ∧
       ls' 12 = L0 ++ ((leaves (.gate 0) (2 ^ K) k repA repB a col t P (enumT N k)).2.map
@@ -318,10 +335,12 @@ theorem exec_leavesC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
       Function.update_of_ne (by rintro rfl; revert hr; decide),
       Function.update_of_ne (by rintro rfl; revert hr; decide)]
   obtain ⟨⟨⟨hc0, hc1⟩, hc2, hc3, hc4⟩, hc5, hc6, hc7⟩ := hc
-  unfold leavesC at hM ⊢
-  simp only [exec_seq] at hM ⊢
+  unfold leavesC
+  simp only [exec_seq]
   rw [e0, exec_rep, show (mk E ix P σ0).sc 8 = 2 * k * N by
-    rw [mk_sc, hs0 8 (by decide), h8]] at hM ⊢
+    rw [mk_sc, hs0 8 (by decide), h8]]
+  have hall : ((enumT N k).drop 0).take (2 * k * N) = enumT N k := by
+    rw [List.drop_zero, List.take_of_length_le (by rw [length_enumT])]
   obtain ⟨sc', ls', h, d, f, g⟩ := iter_leafBody hnM hWM hix hK repA repB a col t (2 * k * N) 0 P
     σ0 0 0 0 L0 (by omega)
     ⟨⟨⟨by rw [← hc0]; exact hs0 0 (by decide), by rw [← hc1]; exact hs0 1 (by decide)⟩,
@@ -332,9 +351,7 @@ theorem exec_leavesC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by rw [hs0 45 (by decide), h45]) (by rw [hs0 46 (by decide), h46])
     (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by ring)
     hk hN
-    h10 h11 hL (by nlinarith) hcap' hbig hM
-  have hall : ((enumT N k).drop 0).take (2 * k * N) = enumT N k := by
-    rw [List.drop_zero, List.take_of_length_le (by rw [length_enumT])]
+    h10 h11 hL (by nlinarith) hcap' hbig (by rw [hall]; exact hM)
   rw [hall] at h d
   refine ⟨sc', ls', h, d, fun r hr => ?_, g⟩
   rw [f r hr, hs0 r (by omega)]

@@ -21,7 +21,7 @@ open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.P
 open AdvancedEncryption.PE.Gates.DateWindow
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
-variable (M : SEMachines hk c)
+variable {ms : Machines hk c}
 
 /-- What a reduction knows about the selected attribute's ciphertext and keys. -/
 structure SimData where
@@ -71,7 +71,7 @@ theorem evalGates_of_not_auth (hL : dateBound ≤ c.L) (w : Window) (x : Date)
     (h : authI hk c (winWord w) x = false) : evalGates (encDate x, parse (winWord w)) = true := by
   unfold authI at h
   simp only [decide_eq_false_iff_not] at h
-  rw [win_authorized_iff (impl hk c (SEMachines.finite hk c)) rfl] at h
+  rw [win_authorized_iff (impl hk c) rfl] at h
   have hlen := (Finset.le_sup (f := fun wx : Window × Date =>
       (encodeTuple [paramsWord dateUniverse params, winWord wx.1, dateUniverse.encAttr wx.2]).length)
       (Finset.mem_univ (α := Window × Date) (w, x))).trans hL

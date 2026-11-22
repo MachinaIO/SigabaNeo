@@ -8,7 +8,7 @@ import SigabaNeo.Lib.Machines.Prog.FrameOut
 Further uniform bounds (`UB p M T M'`: from tapes below `M`, cost at most `T`, tapes below `M'`
 after), for the programs that assemble the outputs of `Setup` and `Enc`:
 
-* `ub_copy`: a copy keeps the bound;
+* `ub_copyS`: a copy keeps the bound;
 * **`ub_loop`**, `ub_forN`: a loop whose body grows every tape by at most `g` per round, from a
   counter of at most `n` (resp. `M`) bits;
 * `ub_appendTapeP`, `ub_frameApP`: appending a tape (resp. its frame) at most doubles (triples)
@@ -23,7 +23,7 @@ open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
 
 variable {k : ℕ}
 
-theorem ub_copy (i j : Fin k) (M : ℕ) : UB (prog (.prim (.copy i j))) M (2 * (M + 1) + 3) M := by
+theorem ub_copyS (i j : Fin k) (M : ℕ) : UB (prog (.prim (.copy i j))) M (2 * (M + 1) + 3) M := by
   intro ℓ hℓ
   refine ⟨((ub_prim _ M) ℓ hℓ).1, fun t => ?_⟩
   rw [lenBoundT_prim]
@@ -79,7 +79,7 @@ theorem ub_forN {c t : Fin k} {body : XProg k} {g : ℕ} {T : ℕ → ℕ}
     (hb : ∀ X, UB body X (T X) (X + g)) (M : ℕ) :
     UB (forN c t body) M (forT T g M) (M + M * g) := by
   intro ℓ hℓ
-  have h1 := ub_copy c t M ℓ hℓ
+  have h1 := ub_copyS c t M ℓ hℓ
   have h2 := ub_loop (i := c) hb (M := M) (n := M) _ h1.2 (h1.2 c)
   exact ⟨Nat.add_le_add h1.1 h2.1, h2.2⟩
 
@@ -107,7 +107,7 @@ def appT (M : ℕ) : ℕ := 3 * (2 * (M + 3 * M + 3) + 3) + forT stepT 3 M
 
 theorem ub_appendTapeP (r a S c : Fin k) (M : ℕ) :
     UB (appendTapeP r a S c) M (appT M) (4 * M + 1) := by
-  have u := (ub_copy S a M).seq <| (ub_forN (c := c) (t := a) (ub_appStep r S) M).seq <|
+  have u := (ub_copyS S a M).seq <| (ub_forN (c := c) (t := a) (ub_appStep r S) M).seq <|
     (ub_clear S (M + M * 3)).seq (ub_clear a (M + M * 3))
   refine u.mono ?_ (by omega)
   unfold appT forT stepT
@@ -116,7 +116,7 @@ theorem ub_appendTapeP (r a S c : Fin k) (M : ℕ) :
 
 theorem ub_frameApP (r a S c : Fin k) (M : ℕ) :
     UB (frameApP r a S c) M (appT M) (4 * M + 1) := by
-  have u := (ub_copy S a M).seq <| (ub_forN (c := c) (t := a) (ub_frStep r S) M).seq <|
+  have u := (ub_copyS S a M).seq <| (ub_forN (c := c) (t := a) (ub_frStep r S) M).seq <|
     (ub_prim (.snoc r false) (M + M * 3)).seq (ub_clear S (M + M * 3 + 1))
   refine u.mono ?_ (by omega)
   unfold appT forT stepT

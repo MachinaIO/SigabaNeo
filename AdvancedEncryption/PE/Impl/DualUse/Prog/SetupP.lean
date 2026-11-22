@@ -104,10 +104,10 @@ theorem wf_appC (r a : Fin 96) (hr : r ≠ 90) : (appC r a).WF :=
 
 /-! ### Lifted components -/
 
-theorem eighty_le : (80 : ℕ) ≤ 94 := by norm_num
+theorem eighty_leS : (80 : ℕ) ≤ 94 := by norm_num
 
 /-- The tapes `0 … 81`. -/
-abbrev e82 : Fin 82 ↪ Fin 96 := liftE eighty_le
+abbrev e82 : Fin 82 ↪ Fin 96 := liftE eighty_leS
 
 /-- **A lifted component** on a store whose tapes `1 … 81` are blank. -/
 theorem law_lift82 {p : XProg 82} {W W' : List Bool}
@@ -133,9 +133,9 @@ theorem law_lift82 {p : XProg 82} {W W' : List Bool}
     simp only [ioS]
     split_ifs with h1 h2
     · rw [show e82 i = 0 from Fin.ext (by simp [h1]), Function.update_self]
-    · rw [Function.update_of_ne (fun h => h1 (by rw [← liftE_val eighty_le i, h]; rfl))]
+    · rw [Function.update_of_ne (fun h => h1 (by rw [← liftE_val eighty_leS i, h]; rfl))]
       exact (hs _ (by simp [h2]) (by simp)).symm
-    · rw [Function.update_of_ne (fun h => h1 (by rw [← liftE_val eighty_le i, h]; rfl))]
+    · rw [Function.update_of_ne (fun h => h1 (by rw [← liftE_val eighty_leS i, h]; rfl))]
       exact (hs _ (by simp; omega) (by simp)).symm
 
 /-! ### The program -/
@@ -183,7 +183,7 @@ theorem length_rowC (a : Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) :
   rw [matEnc_cols, colsW, length_matW, Nat.one_mul]
 
 /-- **The word of `t a + e`** computed by `c0P`. -/
-theorem c0_word (a e : Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) (t : Rg N K) :
+theorem c0_wordS (a e : Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) (t : Rg N K) :
     matAddW N K (1 * (2 * k)) (matMulW N K 1 1 (2 * k) ((ringEnc N K).enc t)
       ((matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc a))
       ((matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc e) =
@@ -239,7 +239,7 @@ theorem law_setupDet (hN : 0 < N) (hK : 0 < K) (B₀ : Matrix (Fin 1) (Fin c.d) 
     (length_rowC a) ((ringEnc N K).length t) (length_rowC e) (by
       rw [show tw = matW N K 1 1 (scalar t) by rw [matW_one_one]; rfl,
         show aw = colsW N K k 1 a from matEnc_cols a, colsW, matMulW_enc, length_matW]; ring)
-  have hcw : matAddW N K (1 * (2 * k)) (matMulW N K 1 1 (2 * k) tw aw) ew = bw := c0_word a e t
+  have hcw : matAddW N K (1 * (2 * k)) (matMulW N K 1 1 (2 * k) tw aw) ew = bw := c0_wordS a e t
   rw [hcw] at hc0
   rw [law_seq_pure' (law_lift82 hc0 _ (by simp [h83, h84, h85]) (by blank_tac hlow))]
   -- `a ++ b`, then `B₁`

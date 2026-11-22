@@ -241,12 +241,24 @@ theorem length_muxL_eq (s : Wire ι) (p : SLP ι) (as bs : List (Wire ι))
     (h : as.length = bs.length) : (muxL s p as bs).2.length = as.length := by
   rw [muxL_eq s p as bs .one h]; simp [length_zipB _ _ _ _ _ h]
 
+theorem le_modAdd_r1 (z : Wire ι) (q w : ℕ) (p : SLP ι) (as bs : List (Wire ι)) :
+    (rippleAdd p as bs z).1.length ≤ (modAdd z q w p as bs).1.length :=
+  (le_length_rippleAdd _ _ _ _).trans (le_length_muxL _ _ _ _)
+
+theorem le_modAdd_r2 (z : Wire ι) (q w : ℕ) (p : SLP ι) (as bs : List (Wire ι)) :
+    (rippleAdd (rippleAdd p as bs z).1 (rippleAdd p as bs z).2 (constL z (w + 1) (2 ^ (w + 1) - q))
+      z).1.length ≤ (modAdd z q w p as bs).1.length := le_length_muxL _ _ _ _
+
+theorem le_length_modAdd (z : Wire ι) (q w : ℕ) (p : SLP ι) (as bs : List (Wire ι)) :
+    p.length ≤ (modAdd z q w p as bs).1.length :=
+  (le_length_rippleAdd _ _ _ _).trans (le_modAdd_r1 z q w p as bs)
+
 theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n) {k K : ℕ}
     (hK : K ≤ k + 1) (as bs : List (Wire ι)) (P : SLP ι) (σ : St) (hc : Cst (E := E) k K σ)
     (hI : Inv E σ) (hS : ScOK E σ) (hA : σ.ls 0 = as.map (pos E ix))
     (hB : σ.ls 1 = bs.map (pos E ix)) (hla : as.length = k) (hlb : bs.length = k)
     (hcap : k + 3 ≤ E.C) (hkM : k + 2 ≤ E.M)
-    (hM : E.n + (exec E modAddC (mk E ix P σ)).t ≤ E.M) :
+    (hM : E.n + (modAdd (.gate 0) (2 ^ K) k P as bs).1.length ≤ E.M) :
     ∃ sc' ls', exec E modAddC (mk E ix P σ) =
         mk E ix (modAdd (.gate 0) (2 ^ K) k P as bs).1 (setSL σ sc' ls') ∧
       ls' 2 = (modAdd (.gate 0) (2 ^ K) k P as bs).2.map (pos E ix) ∧
@@ -259,8 +271,8 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     simp only [exec, mk, σ2, setSL, hc.1.2]
   have hIS2 : Inv E σ2 ∧ ScOK E σ2 := is_exec (τ := mk E ix P σ) (τ' := mk E ix P σ2) hnM' hWM
     (c := .seq (.lnil 3) (.mov 18 rZ)) e2 ⟨hI, hS⟩
-  simp only [modAddC, exec_seq] at hM ⊢
-  rw [e2] at hM ⊢
+  simp only [modAddC, exec_seq]
+  rw [e2]
   -- 3: the first ripple addition
   have hc2 : Consts E σ2 := ⟨by simp [σ2, setSL, rONE, Function.update_apply, ← hc.1.1],
     by simp [σ2, setSL, rZ, Function.update_apply, ← hc.1.2]⟩
@@ -268,20 +280,20 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by decide) (by decide) (by decide) as bs P σ2 (.gate 0) [] (by omega) hc2 hIS2.1 hIS2.2
     (by simp [σ2, setSL, hA]) (by simp [σ2, setSL, hB]) (by simp [σ2, setSL])
     (by simp [σ2, setSL, pos]) (by simp [σ2, setSL, hc.2.1, hla]) (by simp; omega)
-    (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    (le_trans (Nat.add_le_add_left (le_modAdd_r1 _ _ _ _ _ _) _) hM)
   set r1 := rippleAdd P as bs (.gate 0)
   have hl1 : r1.2.length = k + 1 := by rw [length_rippleAdd_eq _ _ _ _ (by omega), hla]
   set ls3' := ls3 σ2.ls 0 1 3 ([] ++ r1.2.map (pos E ix))
   have e3 : ({ σ2 with sc := sc3, ls := ls3' } : St) = setSL σ sc3 ls3' := rfl
   rw [e3] at h3
   have hIS3 := is_exec hnM' hWM h3 (by exact hIS2)
-  rw [h3] at hM ⊢
+  rw [h3]
   -- 4: copy
   set σ4 := setSL σ sc3 (Function.update ls3' 4 (r1.2.map (pos E ix)))
   have e4 : exec E (.lmov 4 3) (mk E ix r1.1 (setSL σ sc3 ls3')) = mk E ix r1.1 σ4 := by
     rw [exec_mk_noNand (.lmov 4 3) trivial]; simp [exec, σ4, setSL, ls3', ls3]
   have hIS4 := is_exec hnM' hWM e4 hIS3
-  rw [e4] at hM ⊢
+  rw [e4]
   -- 5: the constant
   have fr3 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → sc3 r = σ.sc r := fun r hr => by
     rw [f3 r (not_mem_of_out _ (by decide) hr)]
@@ -294,7 +306,7 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (fun σ h v ls' => cst_setSL h (by decide) v ls')
     (fun σ i hq hi hl => exec_addConstBody (E := E) hnM 5 σ i hq hi hl) σ4 hc4
     (by rw [hc4.2.2.1]; omega) (by rw [hc4.2.2.1]; omega)
-  rw [exec_mk_noNand _ (by simp [NoNand, constC, addConstBody]), h5] at hM ⊢
+  rw [exec_mk_noNand _ (by simp [NoNand, constC, addConstBody]), h5]
   have hIS5 := is_exec hnM' hWM (c := constC 3 5 (addConstBody 5)) (τ := mk E ix r1.1 σ4)
     (by rw [exec_mk_noNand _ (by simp [NoNand, constC, addConstBody]), h5]) hIS4
   set KC : List (Wire ι) := constL (.gate 0) (k + 1) (2 ^ (k + 1) - 2 ^ K)
@@ -307,11 +319,11 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     by_cases h : K ≤ i
     · simp [h, hi, pos, show ¬ i < K by omega]
     · simp [h, pos, show i < K by omega]
-  rw [hKC] at hM ⊢ hIS5
+  rw [hKC] at ⊢ hIS5
   set sc5 := Function.update σ4.sc 42 (σ4.sc 3)
   set ls5 := Function.update σ4.ls 5 (KC.map (pos E ix))
   have e5 : setSL σ4 sc5 ls5 = setSL σ sc5 ls5 := rfl
-  rw [e5] at hM ⊢ hIS5
+  rw [e5] at ⊢ hIS5
   -- 6, 7: `lnil 6`, `mov 18 z`
   set σ7 := setSL σ (Function.update sc5 18 (E.n + 1)) (Function.update ls5 6 [])
   have e7 : exec E (.mov 18 rZ) (exec E (.lnil 6) (mk E ix r1.1 (setSL σ sc5 ls5))) =
@@ -320,7 +332,7 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
       simp only [sc5]; rw [Function.update_of_ne (by decide)]; exact hc4.1.2
     simp only [exec, mk, σ7, setSL, hz5]
   have hIS7 := is_exec hnM' hWM (c := .seq (.lnil 6) (.mov 18 rZ)) e7 hIS5
-  rw [e7] at hM ⊢
+  rw [e7]
   -- 8: the second ripple addition
   have fr5 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → Function.update sc5 18 (E.n + 1) r = σ.sc r :=
     fun r hr => by
@@ -339,14 +351,14 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by decide) (by decide) (by decide) r1.2 KC r1.1 σ7 (.gate 0) [] (by omega) hc7 hIS7.1 hIS7.2
     hl4 hl5 hl6 (by simp [σ7, setSL, pos])
     (by rw [hl1, ← hc.2.2.1]; exact fr5 3 (by decide)) (by simp; omega)
-    (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    (le_trans (Nat.add_le_add_left (le_modAdd_r2 _ _ _ _ _ _) _) hM)
   set r2 := rippleAdd r1.1 r1.2 KC (.gate 0)
   have hl2 : r2.2.length = k + 2 := by rw [length_rippleAdd_eq _ _ _ _ (by omega), hl1]
   set ls8 := ls3 σ7.ls 4 5 6 ([] ++ r2.2.map (pos E ix))
   have e8 : ({ σ7 with sc := sc8, ls := ls8 } : St) = setSL σ sc8 ls8 := rfl
   rw [e8] at h8
   have hIS8 := is_exec hnM' hWM h8 hIS7
-  rw [h8] at hM ⊢
+  rw [h8]
   have fr8 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → sc8 r = σ.sc r := fun r hr => by
     rw [f8 r (not_mem_of_out _ (by decide) hr)]; exact fr5 r hr
   -- 9, 10: `lnil 7`, the first `k + 1` wires of `r2` into `7`
@@ -361,13 +373,13 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by simp [exec])
     (by simp [exec, setSL]; rw [fr8 3 (by decide), hc.2.2.1]; simp [hl2]) (by simp; omega)
   rw [exec_mk_noNand (.lnil 7) trivial, exec_mk_noNand (takeC 3 6 7)
-    (by simp [NoNand, takeC]), h10] at hM ⊢
+    (by simp [NoNand, takeC]), h10]
   set τ9 := exec E (.lnil 7) (setSL σ sc8 ls8)
   set ls10 := Function.update (Function.update τ9.ls 6
     ((r2.2.drop (k + 1)).map (pos E ix))) 7 ([] ++ (r2.2.take (k + 1)).map (pos E ix))
   have e10 : ({ out := τ9.out, t := τ9.t, sc := sc10, ls := ls10, src := τ9.src } : St) =
       setSL σ sc10 ls10 := rfl
-  rw [e10] at hM ⊢
+  rw [e10]
   have hIS10 : Inv E (mk E ix r2.1 (setSL σ sc10 ls10)) ∧ ScOK E (mk E ix r2.1 (setSL σ sc10 ls10)) :=
     is_exec hnM' hWM (c := .seq (.lnil 7) (takeC 3 6 7)) (τ := mk E ix r2.1 (setSL σ sc8 ls8))
       (by rw [exec_seq, exec_mk_noNand (.lnil 7) trivial, exec_mk_noNand (takeC 3 6 7)
@@ -387,7 +399,7 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     have h6 : ls10 6 = [pos E ix w36] := by simp [ls10, hY]
     simp only [exec, σ12, setSL, h6, List.headD_cons, List.tail_cons]
   have hIS12 := is_exec hnM' hWM (c := .seq (.lpop 36 6) (.lnil 8)) e12 hIS10
-  rw [e12] at hM ⊢
+  rw [e12]
   -- 13: the mux
   have fr12 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → σ12.sc r = σ.sc r := fun r hr => by
     simp only [σ12, setSL]
@@ -401,14 +413,14 @@ theorem exec_modAddC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, i
     (by simp; omega) hc12 hIS12.1 hIS12.2 (by simp [σ12, setSL])
     (by simp [σ12, setSL, ls10, Function.update_apply]) hl12_3 (by simp [σ12, setSL])
     (by rw [fr12 3 (by decide), hc.2.2.1]; simp; omega) (by decide) (by simp; omega)
-    (le_trans (Nat.add_le_add_left (by t_chain) _) hM)
+    hM
   set r3 := muxL w36 r2.1 (r2.2.take (k + 1)) r1.2
   have hl3 : r3.2.length = k + 1 := by rw [length_muxL_eq _ _ _ _ (by simp; omega)]; simp; omega
   set ls13 := ls3 σ12.ls 7 3 8 ([] ++ r3.2.map (pos E ix))
   have e13 : ({ σ12 with sc := sc13, ls := ls13 } : St) = setSL σ sc13 ls13 := rfl
   rw [e13] at h13
   have hIS13 := is_exec hnM' hWM h13 hIS12
-  rw [h13] at hM ⊢
+  rw [h13]
   have fr13 : ∀ r : SR, r.val < 16 ∨ 42 < r.val → sc13 r = σ.sc r := fun r hr => by
     rw [f13 r (not_mem_of_out _ (by decide) hr)]; exact fr12 r hr
   -- 14, 15: `lnil 2`, the first `k` wires of `r3` into `2`

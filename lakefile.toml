@@ -52,4 +52,6 @@ roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Tru
   "SigabaNeo.Lib.Machines.Compose.LinCost", "SigabaNeo.Lib.Machines.Prog.Macros", "SigabaNeo.Lib.Machines.Prog.RegVMSim",
   "SigabaNeo.Lib.Machines.Inline.Regions",
   "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.FrameParse", "SigabaNeo.Lib.Machines.Prog.FrameSize", "SigabaNeo.Lib.Machines.Prog.MacroSize",
-  "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.SampleTime"]
+  "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.SampleTime",
+  "SigabaNeo.Lib.Machines.Prog.CoinFreeX", "SigabaNeo.Lib.Machines.Prog.DetX", "SigabaNeo.Lib.Machines.Prog.LoadB",
+  "SigabaNeo.Lib.Machines.Prog.UBP", "SigabaNeo.Lib.Machines.Prog.FrameIO"]

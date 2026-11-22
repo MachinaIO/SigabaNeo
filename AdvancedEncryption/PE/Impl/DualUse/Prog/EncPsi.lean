@@ -238,7 +238,7 @@ theorem gswW_eq : gswW N K k =
 
 /-! ### The ciphertexts `Ψᵢ` -/
 
-theorem length_flatMap_const {α : Type} {n : ℕ} (l : List α) (f : α → List Bool)
+theorem length_flatMap_constE {α : Type} {n : ℕ} (l : List α) (f : α → List Bool)
     (h : ∀ x ∈ l, (f x).length = n) : (l.flatMap f).length = l.length * n := by
   induction l with
   | nil => simp
@@ -308,8 +308,8 @@ theorem qB_psi (hN : 0 < N) (hK : 0 < K) {d : ℕ} (B₀ c₀ : Matrix (Fin 1) (
   have h0 := hrow 0
   have h1 := hrow 1
   simp only [if_true, show ((1 : Fin 2) = 0) = False from by decide, if_false] at h0 h1
-  rw [qB_eq _ _ _ _ (by rw [length_flatMap_const _ _ (fun _ _ => len_enc _), hL])
-    (by rw [length_flatMap_const _ _ (fun _ _ => len_enc _), hL]), h0, h1, ← matEnc2_eq]
+  rw [qB_eq _ _ _ _ (by rw [length_flatMap_constE _ _ (fun _ _ => len_enc _), hL])
+    (by rw [length_flatMap_constE _ _ (fun _ _ => len_enc _), hL]), h0, h1, ← matEnc2_eq]
   cases x
   · simp [bitR]
   · simp only [bitR, if_true, one_smul, if_true]

@@ -30,6 +30,8 @@ theorem exists_setupMachine : ∃ M : Machine, M.run (encodeTuple [pw]) =
     (fun _ w => [(pkEnc hk c).enc (g w).1, (mskEnc hk c).enc (g w).2])
   exact ⟨M, by rw [hM (), setupM, hg, PMF.map_comp]; rfl⟩
 
+/-- The machine of `Setup`. -/
+noncomputable def setupMachine : Machine := Classical.choose (exists_setupMachine hk c)
 
 theorem exists_encMachine : ∃ M : Machine, ∀ (mpk : PK hk c) (x : Date) (b : Bool),
     M.run (encodeTuple [pw, (pkEnc hk c).enc mpk, encDate x, [b]]) =
@@ -45,29 +47,8 @@ theorem exists_encMachine : ∃ M : Machine, ∀ (mpk : PK hk c) (x : Date) (b :
   rw [hM (mpk, x, b), encM, PMF.map_comp, coinsM, hg, PMF.map_comp]
   rfl
 
-/-- **Machines for `Setup` and `Enc`** with the laws of the scheme: `Setup` outputs the
-encodings of `(mpk, msk) ← setupM`, `Enc` that of `ct ← encM mpk x b`. The implementation `impl`
-is built from any such pair; `exists_setupMachine`, `exists_encMachine` give lookup-table machines,
-`PE.Impl.DualUse.Prog.SetupEncP` the explicit compiled tape programs with explicit costs. -/
-structure SEMachines where
-  /-- The machine of `Setup`. -/
-  setup : Machine
-  /-- The machine of `Enc`. -/
-  enc : Machine
-  /-- The law of `Setup`. -/
-  run_setup : setup.run (encodeTuple [pw]) =
-    (setupM hk c).map fun v => encodeTuple [(pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2]
-  /-- The law of `Enc`. -/
-  run_enc : ∀ (mpk : PK hk c) (x : Date) (b : Bool),
-    enc.run (encodeTuple [pw, (pkEnc hk c).enc mpk, encDate x, [b]]) =
-      (encM hk c mpk x b).map fun ct => encodeTuple [(ctEnc hk c).enc ct]
-
-/-- The lookup-table machines of `exists_setupMachine`, `exists_encMachine` (no explicit cost). -/
-noncomputable def SEMachines.finite : SEMachines hk c where
-  setup := Classical.choose (exists_setupMachine hk c)
-  enc := Classical.choose (exists_encMachine hk c)
-  run_setup := Classical.choose_spec (exists_setupMachine hk c)
-  run_enc := Classical.choose_spec (exists_encMachine hk c)
+/-- The machine of `Enc`. -/
+noncomputable def encMachine : Machine := Classical.choose (exists_encMachine hk c)
 
 theorem exists_keyMachine : ∃ M : Machine,
     (∀ (msk : SKey hk c) (C : List Bool), C.length ≤ c.L →
@@ -109,22 +90,61 @@ theorem exists_decMachine : ∃ M : Machine, M.Deterministic ∧
 /-- The machine of `Dec`. -/
 noncomputable def decMachine : Machine := Classical.choose (exists_decMachine hk c)
 
-variable (M : SEMachines hk c)
+/-- **The machines of `KeyGen` and `Dec`** with their specifications: on keys of predicates of at
+most `c.L` bits `KeyGen` realizes `keyM` and outputs the empty tuple on longer predicates, `Dec` is
+deterministic and computes `decM`. `Machines.lookup` are the finite machines above; the explicit
+compiled machines are in `PE.Impl.DualUse.Prog.KeyGenP` and `PE.Impl.DualUse.Prog.DecP`. -/
+structure Machines where
+  /-- The machine of `Setup`. -/
+  setup : Machine := setupMachine hk c
+  setup_law : setup.run (encodeTuple [pw]) =
+    (setupM hk c).map fun v => encodeTuple [(pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2] := by
+    exact Classical.choose_spec (exists_setupMachine hk c)
+  /-- The machine of `Enc`. -/
+  enc : Machine := encMachine hk c
+  enc_law : ∀ (mpk : PK hk c) (x : Date) (b : Bool),
+    enc.run (encodeTuple [pw, (pkEnc hk c).enc mpk, encDate x, [b]]) =
+      (encM hk c mpk x b).map fun ct => encodeTuple [(ctEnc hk c).enc ct] := by
+    exact Classical.choose_spec (exists_encMachine hk c)
+  /-- The machine of `KeyGen`. -/
+  key : Machine
+  key_short : ∀ (msk : SKey hk c) (C : List Bool), C.length ≤ c.L →
+    key.run (encodeTuple [pw, (mskEnc hk c).enc msk, C]) =
+      (keyM hk c msk C).map fun sk => encodeTuple [(skEnc hk c).enc sk]
+  key_long : ∀ (msk : SKey hk c) (C : List Bool), ¬ C.length ≤ c.L →
+    key.run (encodeTuple [pw, (mskEnc hk c).enc msk, C]) = PMF.pure (encodeTuple [])
+  /-- The machine of `Dec`. -/
+  dec : Machine
+  dec_det : dec.Deterministic
+  dec_law : ∀ (sk : SK hk c) (C : List Bool) (ct : CT hk c), C.length ≤ c.L →
+    dec.run (encodeTuple [pw, (skEnc hk c).enc sk, C, (ctEnc hk c).enc ct]) =
+      PMF.pure (encodeTuple [decM hk c sk C ct])
 
-/-- **The implementation**, with the machines `M` for `Setup` and `Enc`. -/
-noncomputable def impl : Impl PE.sig where
+/-- The finite machines. -/
+noncomputable def Machines.lookup : Machines hk c where
+  key := keyMachine hk c
+  key_short := (Classical.choose_spec (exists_keyMachine hk c)).1
+  key_long := (Classical.choose_spec (exists_keyMachine hk c)).2
+  dec := decMachine hk c
+  dec_det := (Classical.choose_spec (exists_decMachine hk c)).1
+  dec_law := (Classical.choose_spec (exists_decMachine hk c)).2
+
+/-- **The implementation**, with the machines `ms` of `KeyGen` and `Dec`. -/
+noncomputable def impl (ms : Machines hk c := Machines.lookup hk c) : Impl PE.sig where
   machine
-    | .setup => M.setup
-    | .enc => M.enc
-    | .keyGen => keyMachine hk c
-    | .dec => decMachine hk c
+    | .setup => ms.setup
+    | .enc => ms.enc
+    | .keyGen => ms.key
+    | .dec => ms.dec
     | .eval => winEvalMachine c.L
   deterministic a h := by
     cases a
     all_goals first
       | exact absurd h (by decide)
-      | exact (Classical.choose_spec (exists_decMachine hk c)).1
+      | exact ms.dec_det
       | exact winEvalMachine_deterministic _
+
+variable {ms : Machines hk c}
 
 /-! ### The laws of the algorithms -/
 
@@ -139,12 +159,12 @@ theorem decodeTuple_one_nil : decodeTuple 1 (encodeTuple []) = [[]] := by
       simp [encodeTuple, Turing.MultiTapeTM.length_frame] at this
 
 /-- `Setup` outputs the encodings of `(mpk, msk)`. -/
-theorem impl_setup : PE.setup (U := dateUniverse) params (impl hk c M) =
+theorem impl_setup : PE.setup (U := dateUniverse) params (impl hk c ms) =
     (setupM hk c).map fun v => ((pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2) := by
   unfold PE.setup
-  rw [run_of_machine (impl hk c M) .setup (paramsWord dateUniverse params) [] (setupM hk c)
+  rw [run_of_machine (impl hk c ms) .setup (paramsWord dateUniverse params) [] (setupM hk c)
     (fun v => [(pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2]) (fun _ => rfl)
-    M.run_setup, PMF.map_comp]
+    ms.setup_law, PMF.map_comp]
   rfl
 
 /-- The answer of `KeyGen` on every predicate word. -/
@@ -153,17 +173,17 @@ noncomputable def KGreal (msk : SKey hk c) (C : List Bool) : PMF (List Bool) :=
 
 /-- `KeyGen` answers `KGreal`. -/
 theorem impl_keyGen (msk : SKey hk c) (C : List Bool) :
-    keyGen (U := dateUniverse) params (impl hk c M) ((mskEnc hk c).enc msk) C = KGreal hk c msk C := by
+    keyGen (U := dateUniverse) params (impl hk c ms) ((mskEnc hk c).enc msk) C = KGreal hk c msk C := by
   unfold keyGen KGreal
   split_ifs with hC
-  · rw [run_of_machine (impl hk c M) .keyGen (paramsWord dateUniverse params)
+  · rw [run_of_machine (impl hk c ms) .keyGen (paramsWord dateUniverse params)
       [(mskEnc hk c).enc msk, C] (keyM hk c msk C) (fun sk => [(skEnc hk c).enc sk])
-      (fun _ => rfl) ((Classical.choose_spec (exists_keyMachine hk c)).1 msk C hC), PMF.map_comp]
+      (fun _ => rfl) (ms.key_short msk C hC), PMF.map_comp]
     rfl
   · unfold Impl.run
-    have h := (Classical.choose_spec (exists_keyMachine hk c)).2 msk C hC
-    change (PMF.map _ (PMF.map _ ((keyMachine hk c).run _))) = _
-    rw [show (keyMachine hk c).run (encodeTuple [paramsWord dateUniverse params,
+    have h := ms.key_long msk C hC
+    change (PMF.map _ (PMF.map _ (ms.key.run _))) = _
+    rw [show ms.key.run (encodeTuple [paramsWord dateUniverse params,
       (mskEnc hk c).enc msk, C]) = PMF.pure (encodeTuple []) from h, PMF.pure_map, PMF.pure_map]
     have : (sig Alg.keyGen).outputs.length = 1 := rfl
     rw [this, decodeTuple_one_nil]
@@ -171,13 +191,13 @@ theorem impl_keyGen (msk : SKey hk c) (C : List Bool) :
 
 /-- `Enc` outputs the encoding of the ciphertext. -/
 theorem impl_enc (mpk : PK hk c) (x : Date) (b : Bool) :
-    enc (U := dateUniverse) params (impl hk c M) ((pkEnc hk c).enc mpk) x b =
+    enc (U := dateUniverse) params (impl hk c ms) ((pkEnc hk c).enc mpk) x b =
       (encM hk c mpk x b).map (ctEnc hk c).enc := by
   unfold enc
-  rw [run_of_machine (impl hk c M) .enc (paramsWord dateUniverse params)
+  rw [run_of_machine (impl hk c ms) .enc (paramsWord dateUniverse params)
     [(pkEnc hk c).enc mpk, dateUniverse.encAttr x, dateUniverse.encMsg b] (encM hk c mpk x b)
     (fun ct => [(ctEnc hk c).enc ct]) (fun _ => rfl)
-    (M.run_enc mpk x b), PMF.map_comp]
+    (ms.enc_law mpk x b), PMF.map_comp]
   rfl
 
 /-! ### Correctness -/
@@ -191,46 +211,46 @@ theorem correct_of_scheme
         1 - ((2 : ℝ) ^ params.corrBits)⁻¹ ≤
           (((setupM hk c).bind fun v => (keyM hk c v.2 (winWord w)).bind fun sk =>
             (encM hk c v.1 x b).map fun ct => decM hk c sk (winWord w) ct) [b]).toReal) :
-    Correct dateUniverse params (impl hk c M) := by
-  have hauth : ∀ C (x : Date), Authorized (U := dateUniverse) params (impl hk c M) C x →
+    Correct dateUniverse params (impl hk c ms) := by
+  have hauth : ∀ C (x : Date), Authorized (U := dateUniverse) params (impl hk c ms) C x →
       C.length ≤ c.L ∧ (∃ w : Window, winWord w = C) ∧ evalGates (encDate x, parse C) = false := by
     intro C x h
-    obtain ⟨h1, h2, h3⟩ := (win_authorized_iff (impl hk c M) rfl C x).mp h
+    obtain ⟨h1, h2, h3⟩ := (win_authorized_iff (impl hk c ms) rfl C x).mp h
     exact ⟨(length_le_encodeTuple (by simp)).trans h1, h2, h3⟩
-  refine correct_of_laws (U := dateUniverse) params (impl hk c M) (pkEnc hk c).enc (mskEnc hk c).enc
+  refine correct_of_laws (U := dateUniverse) params (impl hk c ms) (pkEnc hk c).enc (mskEnc hk c).enc
     (skEnc hk c).enc (ctEnc hk c).enc (setupM hk c) (keyM hk c) (encM hk c) (decM hk c) ?_ ?_ ?_ ?_ ?_
   · unfold PE.setup
-    rw [run_of_machine (impl hk c M) .setup (paramsWord dateUniverse params) [] (setupM hk c)
+    rw [run_of_machine (impl hk c ms) .setup (paramsWord dateUniverse params) [] (setupM hk c)
       (fun v => [(pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2]) (fun _ => rfl)
-      M.run_setup, PMF.map_comp]
+      ms.setup_law, PMF.map_comp]
     rfl
   · intro msk C x hC
     unfold keyGen
-    rw [run_of_machine (impl hk c M) .keyGen (paramsWord dateUniverse params) [(mskEnc hk c).enc msk, C] (keyM hk c msk C) (fun sk => [(skEnc hk c).enc sk])
-      (fun _ => rfl) ((Classical.choose_spec (exists_keyMachine hk c)).1 msk C (hauth C x hC).1),
+    rw [run_of_machine (impl hk c ms) .keyGen (paramsWord dateUniverse params) [(mskEnc hk c).enc msk, C] (keyM hk c msk C) (fun sk => [(skEnc hk c).enc sk])
+      (fun _ => rfl) (ms.key_short msk C (hauth C x hC).1),
       PMF.map_comp]
     rfl
   · intro mpk x b
     unfold enc
-    rw [run_of_machine (impl hk c M) .enc (paramsWord dateUniverse params)
+    rw [run_of_machine (impl hk c ms) .enc (paramsWord dateUniverse params)
       [(pkEnc hk c).enc mpk, dateUniverse.encAttr x, dateUniverse.encMsg b] (encM hk c mpk x b) (fun ct => [(ctEnc hk c).enc ct])
-      (fun _ => rfl) (M.run_enc mpk x b), PMF.map_comp]
+      (fun _ => rfl) (ms.enc_law mpk x b), PMF.map_comp]
     rfl
   · intro sk C ct x hC
     unfold dec
-    rw [run_of_machine (impl hk c M) .dec (paramsWord dateUniverse params) [(skEnc hk c).enc sk, C, (ctEnc hk c).enc ct]
+    rw [run_of_machine (impl hk c ms) .dec (paramsWord dateUniverse params) [(skEnc hk c).enc sk, C, (ctEnc hk c).enc ct]
       (PMF.pure (decM hk c sk C ct))
       (fun r => [r]) (fun _ => rfl) (by
         rw [PMF.pure_map]
-        exact (Classical.choose_spec (exists_decMachine hk c)).2 sk C ct (hauth C x hC).1),
+        exact ms.dec_law sk C ct (hauth C x hC).1),
       PMF.pure_map, PMF.pure_map]
-    rfl
+    simp only [List.getD_cons_zero]
   · intro x C hC b
     obtain ⟨h1, ⟨w, rfl⟩, h3⟩ := hauth C x hC
     exact hscheme x w h1 h3 b
 
 /-- **Expressiveness.** -/
-theorem expressive (hL : dateBound ≤ c.L) : Expressive dateUniverse params (impl hk c M) :=
-  expressive_win (impl hk c M) rfl hL
+theorem expressive (hL : dateBound ≤ c.L) : Expressive dateUniverse params (impl hk c ms) :=
+  expressive_win (impl hk c ms) rfl hL
 
 end AdvancedEncryption.DualUse

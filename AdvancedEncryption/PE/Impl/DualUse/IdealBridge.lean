@@ -17,7 +17,7 @@ open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.P
 open AdvancedEncryption.PE.Gates.DateWindow
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
-variable (M : SEMachines hk c)
+variable {ms : Machines hk c}
 
 /-- The simulator's ciphertext. -/
 noncomputable abbrev ctUc : PMF (CT hk c) := ctU (Sdw (N := N) hk) (Fin c.d) (TrapCol k)
@@ -95,39 +95,39 @@ noncomputable def CHideal (_ : PK hk c) (_ : Date) (_ : Bool) : PMF (List Bool) 
 
 /-- The ideal challenger as a generic challenger. -/
 noncomputable def idealSpec :=
-  Generic.implSpec (U := dateUniverse) params (impl hk c M) (pkEnc hk c).enc (setupM hk c)
+  Generic.implSpec (U := dateUniverse) params (impl hk c) (pkEnc hk c).enc (setupM hk c)
     (KGreal hk c) (CHideal hk c)
 
 /-- The simulator's challenge, written as a shift of the uniform ciphertext. -/
 noncomputable def gIdeal (_ : Date × PK hk c × SKey hk c) (μ : Bool) (ct : CT hk c) : List Bool :=
   (ctEnc hk c).enc (shiftCT hk c μ ct)
 
-variable {hk c M}
+variable {hk c}
 
 /-- **The ideal experiment is the experiment of the ideal view.** -/
 theorem ideal_eq_gameV (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) [NeZero c.d] (A : Machine 3) :
-    (PE.ideal dateUniverse params (impl hk c M) (simMachine hk c) A).map
+    (PE.ideal dateUniverse params (impl hk c ms) (simMachine hk c) A).map
         (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad)) =
       gameV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A (VI0 hk c) := by
-  have b1 := Generic.game_eq_generic params (impl hk c M) (pkEnc hk c).enc (mskEnc hk c).enc
+  have b1 := Generic.game_eq_generic params (impl hk c ms) (pkEnc hk c).enc (mskEnc hk c).enc
     (setupM hk c) (KGreal hk c) (CHideal hk c)
     (fun mpk (_ : dateUniverse.Attr) (_ : dateUniverse.Msg) =>
-      simulate dateUniverse params (simMachine hk c) mpk) (impl_setup hk c M)
-    (impl_keyGen hk c M) (fun mpk _ _ => simulate_eq hk c mpk) A
+      simulate dateUniverse params (simMachine hk c) mpk) (impl_setup hk c)
+    (impl_keyGen hk c) (fun mpk _ _ => simulate_eq hk c mpk) A
   unfold PE.ideal
   rw [b1]
   unfold Machine.runWith gameV Machine.runWith
-  have hchal : ∀ σ μ, (idealSpec hk c M).chal σ μ = (ctUc hk c).map (gIdeal hk c σ μ) := by
+  have hchal : ∀ σ μ, (idealSpec hk c).chal σ μ = (ctUc hk c).map (gIdeal hk c σ μ) := by
     intro σ μ
     show (ctUc hk c).map (ctEnc hk c).enc = _
     conv_lhs => rw [← ctU_shift hk c μ, PMF.map_comp]
     rfl
-  rw [show Generic.implSpec (U := dateUniverse) params (impl hk c M) (pkEnc hk c).enc (setupM hk c)
-      (KGreal hk c) (CHideal hk c) = idealSpec hk c M from rfl,
-    Generic.runWith_eagerCoins (idealSpec hk c M) (ctUc hk c) (gIdeal hk c) hchal]
+  rw [show Generic.implSpec (U := dateUniverse) params (impl hk c ms) (pkEnc hk c).enc (setupM hk c)
+      (KGreal hk c) (CHideal hk c) = idealSpec hk c from rfl,
+    Generic.runWith_eagerCoins (idealSpec hk c) (ctUc hk c) (gIdeal hk c) hchal]
   set prog := A.machine.runOracle A.time (paramsWord dateUniverse params)
-  set eag := Generic.eagerCoins (idealSpec hk c M) (ctUc hk c) (gIdeal hk c)
+  set eag := Generic.eagerCoins (idealSpec hk c) (ctUc hk c) (gIdeal hk c)
   let toV : (Date × PK hk c × SKey hk c) × CT hk c → PK hk c × CT hk c := fun σ => (σ.1.2.1, σ.2)
   set sp3 := (specV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) (VI0 hk c)).comap
     toV eag.setup

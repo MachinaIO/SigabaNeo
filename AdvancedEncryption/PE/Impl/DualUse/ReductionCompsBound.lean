@@ -115,26 +115,27 @@ theorem chainSlope_comp_le {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
 
 /-- **A power-of-two bound on the constant of the reduction from components**, from abstract
 bounds on the decoder `P` (states `≤ 2 ^ r`, time `≤ 2 ^ t`, tapes `≤ p`), on the components
-(sizes `≤ 2 ^ s`, time `compTimeP cb ≤ 2 ^ τ`) and on the lengths (`≤ 2 ^ ℓ`). -/
+(sizes `≤ 2 ^ s`, time `compTimeP cb ≤ 2 ^ τ`), on the lengths (`≤ 2 ^ ℓ`) and on the cut `c.L ≤ 2 ^ lc`
+(which alone enters the states of the handlers, so `ℓ` need not be below `r`). -/
 theorem compConst_le_two_pow {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
     {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
     (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
-    (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ) (r t p s τ ℓ k' g : ℕ)
+    (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ) (r t p s τ ℓ lc k' g : ℕ)
     (hsP : P.states ≤ 2 ^ r) (htP : P.time ≤ 2 ^ t) (hpP : P.tapes ≤ p)
     (hsetup : cs.setupP.size ≤ 2 ^ s) (hpub : cs.pubP.size ≤ 2 ^ s)
     (hkey : cs.keyP.size ≤ 2 ^ s) (hauth : cs.authP.size ≤ 2 ^ s) (hchal : cs.chalP.size ≤ 2 ^ s)
     (hT : compTimeP cb ≤ 2 ^ τ)
     (hSsig : cb.Ssig ≤ 2 ^ ℓ) (hLp : cb.Lp ≤ 2 ^ ℓ) (hLk : cb.Lk ≤ 2 ^ ℓ) (hLa : cb.La ≤ 2 ^ ℓ)
     (hLc : cb.Lc ≤ 2 ^ ℓ) (hW : W ≤ 2 ^ ℓ) (hnS : nS ≤ 2 ^ ℓ) (hcL : c.L ≤ 2 ^ ℓ)
-    (hL : L ≤ 2 ^ ℓ)
-    (hℓr : ℓ + 30 ≤ r) (hsr : s + 30 ≤ r) (htr : t + 28 ≤ 2 ^ r)
+    (hL : L ≤ 2 ^ ℓ) (hcLs : c.L ≤ 2 ^ lc)
+    (hlr : lc + 30 ≤ r) (hsr : s + 30 ≤ r) (htr : t + 28 ≤ 2 ^ r)
     (hτt : τ + 5 ≤ t) (hℓt : 2 * ℓ + 21 ≤ t)
     (hk : p + R + 30 ≤ k') (hg : 4 * k' + r + 10 ≤ 2 ^ g) :
     compConst cs cb P L ≤ 2 ^ (r + g + 11 + 65 * k' / 41) + 2 ^ (t + 6) := by
   have hX : 1 ≤ 2 ^ ℓ := Nat.one_le_two_pow
-  have hr30 : 2 ^ 30 * 2 ^ ℓ ≤ 2 ^ r := by
+  have hr30 : 2 ^ 30 * 2 ^ lc ≤ 2 ^ r := by
     rw [← pow_add]; exact Nat.pow_le_pow_right (by norm_num) (by omega)
   have hs30 : 2 ^ 30 * 2 ^ s ≤ 2 ^ r := by
     rw [← pow_add]; exact Nat.pow_le_pow_right (by norm_num) (by omega)
@@ -146,8 +147,10 @@ theorem compConst_le_two_pow {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     have h0 := states_compHandlers_le (c := c) cs W s hsetup hpub hkey hauth hchal 0
     have h1 := states_compHandlers_le (c := c) cs W s hsetup hpub hkey hauth hchal 1
     have h2 := states_compHandlers_le (c := c) cs W s hsetup hpub hkey hauth hchal 2
+    have hX' : 1 ≤ 2 ^ lc := Nat.one_le_two_pow
+    clear hcL hL hW hnS hSsig hLp hLk hLa hLc
     generalize 2 ^ r = Z at *
-    generalize 2 ^ ℓ = X at *
+    generalize 2 ^ lc = X at *
     generalize 2 ^ s = S at *
     omega
   -- the slope

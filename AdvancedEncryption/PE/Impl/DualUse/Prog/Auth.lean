@@ -24,6 +24,7 @@ open SigabaNeo AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEn
 open AdvancedEncryption.PE.Gates.DateWindow
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+variable {ms : Machines hk c}
 
 /-- **The test of `Eval`** for window predicates, as a Boolean computation. -/
 def authTest (L : ℕ) (C : List Bool) (x : Date) : Bool :=
@@ -33,7 +34,7 @@ def authTest (L : ℕ) (C : List Bool) (x : Date) : Bool :=
 /-- **`authI` is the test of `Eval`.** -/
 theorem authI_eq_test (C : List Bool) (x : Date) : authI hk c C x = authTest c.L C x := by
   classical
-  have h := win_authorized_iff (impl hk c (SEMachines.finite hk c)) (L := c.L) rfl C x
+  have h := win_authorized_iff (impl hk c) (L := c.L) rfl C x
   unfold authI authTest
   rw [Bool.eq_iff_iff, decide_eq_true_iff, h, Bool.and_eq_true, Bool.and_eq_true,
     decide_eq_true_iff, inClassW_iff, Bool.not_eq_true']
