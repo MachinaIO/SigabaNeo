@@ -138,6 +138,147 @@ theorem exec_notC (hix : ∀ i, ix i < E.n) (hc : Consts E σ) (P : SLP ι) (d a
       mk E ix (notW P wa).1 { σ with sc := Function.update σ.sc d (pos E ix (notW P wa).2) } :=
   exec_nand E ix hix P σ d rONE a .one wa hc.1 ha hM
 
+theorem Consts.upd {σ : St} (hc : Consts E σ) {d : SR} (h0 : d ≠ rONE) (h1 : d ≠ rZ) (v : ℕ) :
+    Consts E { σ with sc := Function.update σ.sc d v } :=
+  ⟨by simp [Function.update_of_ne (Ne.symm h0), hc.1], by simp [Function.update_of_ne (Ne.symm h1), hc.2]⟩
+
+/-- `exec` of a sequence. -/
+@[simp] theorem exec_seq (p q : Code) (σ : St) : exec E (.seq p q) σ = exec E q (exec E p σ) := rfl
+
+theorem exec_andC (hix : ∀ i, ix i < E.n) {σ : St} (hc : Consts E σ) (P : SLP ι) (d a b u : SR)
+    (wa wb : Wire ι) (hu : u ≠ rONE) (hu' : u ≠ rZ) (ha : σ.sc a = pos E ix wa)
+    (hb : σ.sc b = pos E ix wb) (hM : E.n + P.length + 2 ≤ E.M) :
+    Gad (E := E) (ix := ix) (andC d a b u) [d, u] P (andW P wa wb).1 σ d (andW P wa wb).2 := by
+  unfold Gad
+  rw [andC, exec_seq, exec_nand E ix hix P σ u a b wa wb ha hb (by omega),
+    exec_notC hix (hc.upd hu hu' _) _ d u (addNand P wa wb).2 (by simp)
+      (by simp [addNand]; omega)]
+  exact ⟨_, rfl, by simp [andW], (Fr.update (by simp) _).trans (Fr.update (by simp) _)⟩
+
+theorem exec_orC (hix : ∀ i, ix i < E.n) {σ : St} (hc : Consts E σ) (P : SLP ι) (d a b u v : SR)
+    (wa wb : Wire ι) (hu : u ≠ rONE) (hu' : u ≠ rZ) (hvb : b ≠ u)
+    (huv : u ≠ v) (ha : σ.sc a = pos E ix wa) (hb : σ.sc b = pos E ix wb)
+    (hM : E.n + P.length + 3 ≤ E.M) :
+    Gad (E := E) (ix := ix) (orC d a b u v) [d, u, v] P (orW P wa wb).1 σ d (orW P wa wb).2 := by
+  unfold Gad
+  rw [orC, exec_seq, exec_seq, exec_notC hix hc P u a wa ha (by omega),
+    exec_notC hix (hc.upd hu hu' _) _ v b wb (by simp [Function.update_of_ne hvb, hb])
+      (by simp [notW, addNand]; omega),
+    exec_nand E ix hix _ _ d u v (notW P wa).2 (notW (notW P wa).1 wb).2
+      (by simp [Function.update_of_ne huv]) (by simp) (by simp [notW, addNand]; omega)]
+  exact ⟨_, rfl, by simp [orW], ((Fr.update (by simp) _).trans (Fr.update (by simp) _)).trans
+    (Fr.update (by simp) _)⟩
+
+theorem exec_xorC (hix : ∀ i, ix i < E.n) {σ : St} (P : SLP ι) (d a b m u v : SR)
+    (wa wb : Wire ι) (hma : a ≠ m) (hmb : b ≠ m) (hub : b ≠ u) (hmu : m ≠ u)
+    (huv : u ≠ v) (ha : σ.sc a = pos E ix wa) (hb : σ.sc b = pos E ix wb)
+    (hM : E.n + P.length + 4 ≤ E.M) :
+    Gad (E := E) (ix := ix) (xorC d a b m u v) [d, m, u, v] P (xorW P wa wb).1 σ d
+      (xorW P wa wb).2 := by
+  unfold Gad
+  rw [xorC, exec_seq, exec_seq, exec_seq, exec_nand E ix hix P σ m a b wa wb ha hb (by omega),
+    exec_nand E ix hix _ _ u a m wa (addNand P wa wb).2 (by simp [Function.update_of_ne hma, ha])
+      (by simp) (by simp [addNand]; omega),
+    exec_nand E ix hix _ _ v b m wb (addNand P wa wb).2
+      (by simp [Function.update_of_ne hmb, Function.update_of_ne hub, hb])
+      (by simp [Function.update_of_ne hmu]) (by simp [addNand]; omega),
+    exec_nand E ix hix _ _ d u v (addNand (addNand P wa wb).1 wa (addNand P wa wb).2).2
+      (addNand (addNand (addNand P wa wb).1 wa (addNand P wa wb).2).1 wb (addNand P wa wb).2).2
+      (by simp [Function.update_of_ne huv]) (by simp) (by simp [addNand]; omega)]
+  exact ⟨_, rfl, by simp [xorW], (((Fr.update (by simp) _).trans (Fr.update (by simp) _)).trans
+    (Fr.update (by simp) _)).trans (Fr.update (by simp) _)⟩
+
+theorem exec_muxC (hix : ∀ i, ix i < E.n) {σ : St} (hc : Consts E σ) (P : SLP ι)
+    (d s a b m u v : SR) (ws wa wb : Wire ι) (hsm : s ≠ m)
+    (ham : a ≠ m) (hbm : b ≠ m) (hbu : b ≠ u) (hmu : m ≠ u) (huv : u ≠ v)
+    (hs : σ.sc s = pos E ix ws) (ha : σ.sc a = pos E ix wa) (hb : σ.sc b = pos E ix wb)
+    (hM : E.n + P.length + 4 ≤ E.M) :
+    Gad (E := E) (ix := ix) (muxC d s a b m u v) [d, m, u, v] P (muxW P ws wa wb).1 σ d
+      (muxW P ws wa wb).2 := by
+  unfold Gad
+  rw [muxC, exec_seq, exec_seq, exec_seq, exec_notC hix hc P m s ws hs (by omega),
+    exec_nand E ix hix _ _ u s a ws wa (by simp [Function.update_of_ne hsm, hs])
+      (by simp [Function.update_of_ne ham, ha]) (by simp [notW, addNand]; omega),
+    exec_nand E ix hix _ _ v m b (notW P ws).2 wb (by simp [Function.update_of_ne hmu])
+      (by simp [Function.update_of_ne hbm, Function.update_of_ne hbu, hb])
+      (by simp [notW, addNand]; omega),
+    exec_nand E ix hix _ _ d u v (addNand (notW P ws).1 ws wa).2
+      (addNand (addNand (notW P ws).1 ws wa).1 (notW P ws).2 wb).2
+      (by simp [Function.update_of_ne huv]) (by simp) (by simp [notW, addNand]; omega)]
+  exact ⟨_, rfl, by simp [muxW], (((Fr.update (by simp) _).trans (Fr.update (by simp) _)).trans
+    (Fr.update (by simp) _)).trans (Fr.update (by simp) _)⟩
+
+/-! ### The full adder -/
+
+/-- The full adder on the registers `16 17 18` (summands and carry), into `19` (sum) and `20`
+(carry), with the scratch `21 … 32`. -/
+def fullAddC : Code :=
+  .seq (xorC 21 16 17 22 23 24) (.seq (xorC 19 21 18 25 26 27) (.seq (.nand 28 16 17)
+    (.seq (orC 29 16 17 30 31) (.seq (.nand 32 29 18) (.nand 20 28 32)))))
+
+/-- The registers written by `fullAddC`. -/
+def faRegs : List SR := [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+
+theorem exec_fullAddC (hix : ∀ i, ix i < E.n) {σ : St} (hc : Consts E σ) (P : SLP ι)
+    (wa wb wc : Wire ι) (ha : σ.sc 16 = pos E ix wa) (hb : σ.sc 17 = pos E ix wb)
+    (hcc : σ.sc 18 = pos E ix wc) (hM : E.n + P.length + 14 ≤ E.M) :
+    ∃ sc', exec E fullAddC (mk E ix P σ) = mk E ix (fullAdd P wa wb wc).1 { σ with sc := sc' } ∧
+      sc' 19 = pos E ix (fullAdd P wa wb wc).2.1 ∧ sc' 20 = pos E ix (fullAdd P wa wb wc).2.2 ∧
+      Fr faRegs σ.sc sc' := by
+  obtain ⟨sc1, h1, d1, f1⟩ := exec_xorC (E := E) (ix := ix) hix (σ := σ) P 21 16 17 22 23 24 wa wb
+    (by decide) (by decide) (by decide) (by decide) (by decide) ha hb (by omega)
+  set P1 := (xorW P wa wb).1
+  obtain ⟨sc2, h2, d2, f2⟩ := exec_xorC (E := E) (ix := ix) hix (σ := { σ with sc := sc1 }) P1
+    19 21 18 25 26 27 (xorW P wa wb).2 wc (by decide) (by decide) (by decide) (by decide)
+    (by decide) d1 (by dsimp only; rw [f1 18 (by decide)]; exact hcc) (by simp [P1, length_xorW]; omega)
+  dsimp only at f2 h2
+  set P2 := (xorW P1 (xorW P wa wb).2 wc).1
+  have h3 := exec_nand E ix hix P2 { σ with sc := sc2 } 28 16 17 wa wb
+    (by dsimp only; rw [f2 16 (by decide), f1 16 (by decide)]; exact ha)
+    (by dsimp only; rw [f2 17 (by decide), f1 17 (by decide)]; exact hb)
+    (by simp [P2, P1, length_xorW]; omega)
+  set P3 := (addNand P2 wa wb).1
+  have hc3 : Consts E { σ with sc := Function.update sc2 28 (pos E ix (addNand P2 wa wb).2) } := by
+    refine ⟨?_, ?_⟩ <;> simp only [Function.update_of_ne (by decide : (0 : SR) ≠ 28),
+      Function.update_of_ne (by decide : (1 : SR) ≠ 28)]
+    · rw [f2 0 (by decide), f1 0 (by decide)]; exact hc.1
+    · rw [f2 1 (by decide), f1 1 (by decide)]; exact hc.2
+  obtain ⟨sc4, h4, d4, f4⟩ := exec_orC (E := E) (ix := ix) hix hc3 P3 29 16 17 30 31 wa wb
+    (by decide) (by decide) (by decide) (by decide)
+    (by simp [Function.update_of_ne (by decide : (16 : SR) ≠ 28)];
+        rw [f2 16 (by decide), f1 16 (by decide)]; exact ha)
+    (by simp [Function.update_of_ne (by decide : (17 : SR) ≠ 28)];
+        rw [f2 17 (by decide), f1 17 (by decide)]; exact hb)
+    (by simp [P3, P2, P1, length_xorW, length_addNand]; omega)
+  dsimp only at f4 h4
+  set P4 := (orW P3 wa wb).1
+  have h5 := exec_nand E ix hix P4 { σ with sc := sc4 } 32 29 18 (orW P3 wa wb).2 wc d4
+    (by dsimp only; rw [f4 18 (by decide)]; simp [Function.update_of_ne (by decide : (18 : SR) ≠ 28)];
+        rw [f2 18 (by decide), f1 18 (by decide)]; exact hcc)
+    (by simp [P4, P3, P2, P1, length_xorW, length_addNand, length_orW]; omega)
+  set P5 := (addNand P4 (orW P3 wa wb).2 wc).1
+  have h6 := exec_nand E ix hix P5
+      { σ with sc := (Function.update sc4 32 (pos E ix (addNand P4 (orW P3 wa wb).2 wc).2)) }
+      20 28 32 (addNand P2 wa wb).2
+      (addNand P4 (orW P3 wa wb).2 wc).2
+    (by dsimp only; simp [Function.update_of_ne (by decide : (28 : SR) ≠ 32)]; rw [f4 28 (by decide)]; simp)
+    (by simp) (by simp [P5, P4, P3, P2, P1, length_xorW, length_addNand, length_orW]; omega)
+  dsimp only at h3 h5 h6
+  rw [fullAddC, exec_seq, exec_seq, exec_seq, exec_seq, exec_seq, h1, h2, h3, h4, h5, h6]
+  refine ⟨_, rfl, ?_, ?_, ?_⟩
+  · simp [Function.update_of_ne (by decide : (19 : SR) ≠ 20),
+      Function.update_of_ne (by decide : (19 : SR) ≠ 32)]
+    rw [f4 19 (by decide)]; simp [Function.update_of_ne (by decide : (19 : SR) ≠ 28)]
+    rw [d2]; rfl
+  · simp; rfl
+  · intro r hr
+    have hr' : r ∉ ([21, 22, 23, 24] : List SR) ∧ r ∉ ([19, 25, 26, 27] : List SR) ∧ r ≠ 28 ∧
+        r ∉ ([29, 30, 31] : List SR) ∧ r ≠ 32 ∧ r ≠ 20 := by
+      simp only [faRegs, List.mem_cons, List.not_mem_nil, or_false, not_or] at hr ⊢
+      refine ⟨⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_, ?_⟩, ?_, ⟨?_, ?_, ?_⟩, ?_, ?_⟩ <;> tauto
+    simp only [Function.update_of_ne hr'.2.2.2.2.2, Function.update_of_ne hr'.2.2.2.2.1]
+    rw [f4 r (by simp at hr' ⊢; tauto), Function.update_of_ne hr'.2.2.1, f2 r hr'.2.1, f1 r hr'.1]
+
 end FhatGen
 
 end SigabaNeo.Lattices
