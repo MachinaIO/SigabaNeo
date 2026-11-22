@@ -985,6 +985,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     K = 1 / 10 / 1000.
   * Part 101 certifies only 8.1588. Sufficiency (per the audit) needs L ≥ 35.112 at β = 506 (32.145 at β = 406), so the
     rigorous gap is about a factor of 2 in the threshold. Conjectures 5.1–5.3 are open.
+  * **Lean.** ForkCheckpoints.lean (axiom-clean) formalizes three results:
+    * Prop 2.3: planted and null laws of a plant-free reducer's output are equal;
+    * Thm 4.4: failure ≤ δ_𝒯 + reductionError + ε_lift + Pr[collision];
+    * Thm 4.5: success ≤ Pr[¬B_ℓ] + Kτ(ℓ)Pr[B_ℓ].
+    The numerical inputs (τ, the collision probability, and the null-trajectory probabilities) are hypotheses.
 * **Part 136 (audited, minor caveats with one substantive correction; see the note's Audit section).**
   [restart_certificate](research/wall1_restart_certificate.md): what "non-rare acceptance" has to mean.
   * **Monte Carlo certificate.** Run the fixed decoupled pipeline on simulated CBD plants. The certificate is sound: there is
