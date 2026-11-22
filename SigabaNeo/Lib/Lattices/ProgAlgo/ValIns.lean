@@ -205,6 +205,212 @@ theorem exec_tLoopI {A1 Ad N K : ℕ} (w : St) (ht : ITmpl V A1 Ad N K w) (htn :
   · rw [I5, e1 INSW (by decide) (by decide)]
   · rw [I6 j a1 a2 a3 a4 a5 a6 a7, e1 j a4 a7]
 
+/-! ### The bits `i'` of an entry -/
+
+/-- One bit index `i'`: its `N` inputs, then the next bit. -/
+def ipBody : Code := ofList [tLoopI, .tl ZM]
+
+/-- **One entry** `E` of `ψᵢ` (`N K` bits from `PSt`): the bits `i' < K`, then `i' = K` (all
+`false`). -/
+def eBody : Code :=
+  ofList [.cp rX TNK, .mv rX PSt TNK, .cp ZM rX, .cp CI 20, .rep CI ipBody, .clr ZM, tLoopI]
+
+/-- The bit of the input `(i', t)` of an entry `E`. -/
+def bitE (K : ℕ) (E : List Bool) (i' t : ℕ) : Bool := if i' < K then E.getD (t * K + i') false else false
+
+theorem range_map_dite {β : Type*} {n : ℕ} (g : Fin n → β) (d : β) :
+    (List.range n).map (fun t => if h : t < n then g ⟨t, h⟩ else d) = (List.finRange n).map g := by
+  rw [← List.map_coe_finRange_eq_range, List.map_map]
+  congr 1; funext t; simp [t.isLt]
+
+/-- The `N` inputs of `(i, q, i')` with the bits from `z`. -/
+def blockI (N K : ℕ) (bF wF : Fin N → List Bool) (bit : ℕ → Bool) : List (List Bool) :=
+  (List.finRange N).map fun t => jw (bF t) (wF t) (bit t.val) N K
+
+theorem exec_tLoopI' {A1 Ad N K : ℕ} (w : St) (ht : ITmpl V A1 Ad N K w) (htn : (w TN).length = N)
+    (bF wF : Fin N → List Bool) (hb : ∀ t, (bF t).length = A1) (hx : ∀ t, (wF t).length = Ad)
+    {RB RW : List Bool} (hB : w BSt = ((List.finRange N).map bF).flatten ++ RB)
+    (hW : w WSt = ((List.finRange N).map wF).flatten ++ RW) :
+    exec V f tLoopI w INSW = (w INSW ++ (blockI N K bF wF fun t =>
+        (w ZM).getD (t * K) false).flatten).drop (N * V) ∧
+      exec V f tLoopI w BSt = RB ∧ exec V f tLoopI w WSt = RW ∧
+      ∀ j, j ≠ JR → j ≠ BSt → j ≠ WSt → j ≠ rZ → j ≠ rY → j ≠ INSW → j ≠ CT →
+        exec V f tLoopI w j = w j := by
+  have h := exec_tLoopI (V := V) (f := f) w ht htn
+    (fun t => if h : t < N then bF ⟨t, h⟩ else List.replicate A1 false)
+    (fun t => if h : t < N then wF ⟨t, h⟩ else List.replicate Ad false)
+    (fun t => by split_ifs <;> simp [hb]) (fun t => by split_ifs <;> simp [hx])
+    (RB := RB) (RW := RW) (by rw [hB, range_map_dite]) (by rw [hW, range_map_dite])
+  refine ⟨?_, h.2.1, h.2.2.1, h.2.2.2⟩
+  rw [h.1, blockI]
+  congr 3
+  rw [← List.map_coe_finRange_eq_range, List.map_map]
+  congr 1; funext t; simp [t.isLt]
+
+theorem blockI_shape {A1 Ad N K : ℕ} (hV : V = A1 + Ad + N * K) (hNK : 0 < N * K)
+    {bF wF : Fin N → List Bool} (hb : ∀ t, (bF t).length = A1) (hx : ∀ t, (wF t).length = Ad)
+    (bit : ℕ → Bool) : UV V (blockI N K bF wF bit) ∧ (blockI N K bF wF bit).length = N := by
+  refine ⟨fun y hy => ?_, by simp [blockI]⟩
+  simp only [blockI, List.mem_map] at hy
+  obtain ⟨t, -, rfl⟩ := hy
+  simp [jw, hb, hx, hV]; omega
+
+/-- The inputs of an entry `E`. -/
+def entryI (N K : ℕ) (bF wF : Fin (K + 1) → Fin N → List Bool) (E : List Bool) :
+    List (List Bool) :=
+  (List.finRange (K + 1)).flatMap fun i' => blockI N K (bF i') (wF i') (bitE K E i'.val)
+
+theorem exec_eBody {A1 Ad N K : ℕ} (w : St) (ht : ITmpl V A1 Ad N K w)
+    (htn : (w TN).length = N) (h20 : (w 20).length = K) (hnk : (w TNK).length = N * K)
+    (bF wF : Fin (K + 1) → Fin N → List Bool) (hb : ∀ i t, (bF i t).length = A1)
+    (hx : ∀ i t, (wF i t).length = Ad) {E RB RW RP : List Bool} (hE : E.length = N * K)
+    (hB : w BSt = ((List.finRange (K + 1)).flatMap fun i' =>
+      (List.finRange N).map (bF i')).flatten ++ RB)
+    (hW : w WSt = ((List.finRange (K + 1)).flatMap fun i' =>
+      (List.finRange N).map (wF i')).flatten ++ RW)
+    (hP : w PSt = E ++ RP) :
+    exec V f eBody w INSW = (w INSW ++ (entryI N K bF wF E).flatten).drop
+        ((K + 1) * (N * V)) ∧
+      exec V f eBody w BSt = RB ∧ exec V f eBody w WSt = RW ∧ exec V f eBody w PSt = RP ∧
+      ∀ j ∉ wr eBody, exec V f eBody w j = w j := by
+  refine ⟨?_, ?_, ?_, ?_, fun j hj => exec_not_mem _ _ _ hj⟩ <;>
+  · rw [show eBody = ofList ([.cp rX TNK, .mv rX PSt TNK, .cp ZM rX, .cp CI 20] ++
+      [.rep CI ipBody, .clr ZM, tLoopI]) from rfl, exec_ofList_append]
+    have pre : exec V f (ofList [.cp rX TNK, .mv rX PSt TNK, .cp ZM rX, .cp CI 20]) w ZM = E ∧
+        exec V f (ofList [.cp rX TNK, .mv rX PSt TNK, .cp ZM rX, .cp CI 20]) w PSt = RP ∧
+        (exec V f (ofList [.cp rX TNK, .mv rX PSt TNK, .cp ZM rX, .cp CI 20]) w CI).length = K ∧
+        ∀ j, j ≠ rX → j ≠ PSt → j ≠ ZM → j ≠ CI →
+          exec V f (ofList [.cp rX TNK, .mv rX PSt TNK, .cp ZM rX, .cp CI 20]) w j = w j := by
+      simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+      rw [exec_mv_pop (x := E) (L := RP) (by decide) (by simp [Function.update_apply])
+        (by simp (config := {decide := true}) [Function.update_apply, hE, hnk])
+        (by simp (config := {decide := true}) [Function.update_apply, hP])]
+      refine ⟨by simp (config := {decide := true}) [Function.update_apply],
+        by simp (config := {decide := true}) [Function.update_apply],
+        by simp (config := {decide := true}) [Function.update_apply, h20],
+        fun j a1 a2 a3 a4 => by simp [Function.update_apply, a1, a2, a3, a4]⟩
+    obtain ⟨p1, p2, p3, p4⟩ := pre
+    generalize exec V f (ofList [.cp rX TNK, .mv rX PSt TNK, .cp ZM rX, .cp CI 20]) w = u at p1 p2 p3 p4
+    have ht1 : ITmpl V A1 Ad N K u := ht.of_eq fun j hj => p4 j (by revert j hj; decide)
+      (by revert j hj; decide) (by revert j hj; decide) (by revert j hj; decide)
+    have I := exec_rep_inv (V := V) (f := f) (c := CI) (B := ipBody)
+      (fun r w' => r ≤ K → ITmpl V A1 Ad N K w' ∧ (w' TN).length = N ∧ w' ZM = E.drop r ∧
+        w' BSt = (((List.finRange (K + 1)).drop r).flatMap fun i' =>
+          (List.finRange N).map (bF i')).flatten ++ RB ∧
+        w' WSt = (((List.finRange (K + 1)).drop r).flatMap fun i' =>
+          (List.finRange N).map (wF i')).flatten ++ RW ∧
+        w' PSt = RP ∧
+        w' INSW = (u INSW ++ (((List.finRange (K + 1)).take r).flatMap fun i' =>
+          blockI N K (bF i') (wF i') (bitE K E i'.val)).flatten).drop (r * (N * V)))
+      (fun r w' ih hr => by
+        obtain ⟨t1, tn1, hz, hB', hW', hP', hI'⟩ := ih (by omega)
+        have hrl : r < (List.finRange (K + 1)).length := by simp; omega
+        set i' := (List.finRange (K + 1))[r] with hi'
+        have hi'v : i'.val = r := by simp [hi']
+        have t2 := t1.of_eq fun j hj => Function.update_of_ne (show j ≠ CI by revert j hj; decide)
+          (w' CI).tail w'
+        simp only [ipBody, exec_ofList, List.foldl_cons, List.foldl_nil, exec_tl']
+        obtain ⟨T1, T2, T3, T4⟩ := exec_tLoopI' (V := V) (f := f)
+          (Function.update w' CI (w' CI).tail) t2 (by rw [Function.update_of_ne (by decide), tn1])
+          (bF i') (wF i') (hb i') (hx i')
+          (RB := (((List.finRange (K + 1)).drop (r + 1)).flatMap fun i' =>
+            (List.finRange N).map (bF i')).flatten ++ RB)
+          (RW := (((List.finRange (K + 1)).drop (r + 1)).flatMap fun i' =>
+            (List.finRange N).map (wF i')).flatten ++ RW)
+          (by rw [Function.update_of_ne (by decide), hB', List.drop_eq_getElem_cons hrl,
+            List.flatMap_cons, List.flatten_append, List.append_assoc])
+          (by rw [Function.update_of_ne (by decide), hW', List.drop_eq_getElem_cons hrl,
+            List.flatMap_cons, List.flatten_append, List.append_assoc])
+        refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+        · refine (t2.of_eq fun j hj => T4 j (by revert j hj; decide) (by revert j hj; decide)
+            (by revert j hj; decide) (by revert j hj; decide) (by revert j hj; decide)
+            (by revert j hj; decide) (by revert j hj; decide)).of_eq fun j hj => ?_
+          exact Function.update_of_ne (show j ≠ ZM by revert j hj; decide) _ _
+        · rw [Function.update_of_ne (by decide), T4 TN (by decide) (by decide) (by decide)
+            (by decide) (by decide) (by decide) (by decide), Function.update_of_ne (by decide), tn1]
+        · rw [Function.update_self, T4 ZM (by decide) (by decide) (by decide) (by decide)
+            (by decide) (by decide) (by decide), Function.update_of_ne (by decide), hz,
+            List.tail_drop]
+        · rw [Function.update_of_ne (by decide), T2]
+        · rw [Function.update_of_ne (by decide), T3]
+        · rw [Function.update_of_ne (by decide), T4 PSt (by decide) (by decide) (by decide)
+            (by decide) (by decide) (by decide) (by decide), Function.update_of_ne (by decide), hP']
+        · rw [Function.update_of_ne (by decide), T1, Function.update_of_ne (by decide), hI']
+          have hzm : (Function.update w' CI (w' CI).tail ZM) = E.drop r := by
+            rw [Function.update_of_ne (by decide), hz]
+          rw [hzm]
+          have hbs := blockI_shape (V := V) ht.hV ht.hNK (hb i') (hx i')
+            (fun t => (E.drop r).getD (t * K) false)
+          have e : blockI N K (bF i') (wF i') (fun t => (E.drop r).getD (t * K) false) =
+              blockI N K (bF i') (wF i') (bitE K E i'.val) := by
+            congr 1; funext t; rw [bitE, hi'v, if_pos (by omega), List.getD_eq_getElem?_getD,
+              List.getElem?_drop, ← List.getD_eq_getElem?_getD, Nat.add_comm]
+          have hpl : ((((List.finRange (K + 1)).take r).flatMap fun i' =>
+              blockI N K (bF i') (wF i') (bitE K E i'.val)).flatten).length = r * (N * V) := by
+            rw [length_flatten_of (V := V) (fun y hy => by
+              simp only [List.mem_flatMap] at hy
+              obtain ⟨j, -, hy⟩ := hy
+              exact (blockI_shape ht.hV ht.hNK (hb j) (hx j) _).1 y hy)]
+            simp only [List.length_flatMap]
+            rw [List.map_congr_left (fun j _ => (blockI_shape (V := V) ht.hV ht.hNK (hb j) (hx j)
+              (bitE K E j.val)).2), List.map_const', List.sum_replicate]
+            simp [List.length_take]; rw [min_eq_left (by omega)]; ring
+          rw [e, show (r + 1) * (N * V) = r * (N * V) + N * V by ring]
+          rw [drop_append_drop' (by simp only [List.length_append, hpl]; omega), List.append_assoc,
+            List.take_succ, List.getElem?_eq_getElem hrl, Option.toList_some, List.flatMap_append,
+            List.flatMap_singleton, List.flatten_append, ← hi']) u
+      (fun _ => ⟨ht1, by rw [p4 TN (by decide) (by decide) (by decide) (by decide), htn],
+        by simp [p1], by rw [p4 BSt (by decide) (by decide) (by decide) (by decide), hB]; simp,
+        by rw [p4 WSt (by decide) (by decide) (by decide) (by decide), hW]; simp, p2, by simp⟩)
+    rw [p3] at I
+    obtain ⟨t1, tn1, hz, hB', hW', hP', hI'⟩ := I le_rfl
+    simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_clr']
+    generalize exec V f (.rep CI ipBody) u = v at t1 tn1 hz hB' hW' hP' hI'
+    have hK' : K < (List.finRange (K + 1)).length := by simp
+    have hlast : (List.finRange (K + 1)).drop K = [Fin.last K] := by
+      rw [List.drop_eq_getElem_cons hK', List.drop_eq_nil_of_le (by simp)]
+      congr 1; ext; simp
+    have t2 := t1.of_eq (w' := Function.update v ZM []) fun j hj =>
+      Function.update_of_ne (show j ≠ ZM by revert j hj; decide) _ _
+    obtain ⟨T1, T2, T3, T4⟩ := exec_tLoopI' (V := V) (f := f) (Function.update v ZM []) t2
+      (by rw [Function.update_of_ne (by decide), tn1]) (bF (Fin.last K)) (wF (Fin.last K))
+      (hb _) (hx _) (RB := RB) (RW := RW)
+      (by rw [Function.update_of_ne (by decide), hB', hlast]; simp)
+      (by rw [Function.update_of_ne (by decide), hW', hlast]; simp)
+    have hINS : exec V f tLoopI (Function.update v ZM []) INSW =
+        (w INSW ++ (entryI N K bF wF E).flatten).drop ((K + 1) * (N * V)) := by
+       rw [T1, Function.update_of_ne (by decide), hI', p4 INSW (by decide) (by decide) (by decide)
+        (by decide)]
+       have hpl : ((((List.finRange (K + 1)).take K).flatMap fun i' =>
+           blockI N K (bF i') (wF i') (bitE K E i'.val)).flatten).length = K * (N * V) := by
+         rw [length_flatten_of (V := V) (fun y hy => by
+           simp only [List.mem_flatMap] at hy
+           obtain ⟨j, -, hy⟩ := hy
+           exact (blockI_shape ht.hV ht.hNK (hb j) (hx j) _).1 y hy)]
+         simp only [List.length_flatMap]
+         rw [List.map_congr_left (fun j _ => (blockI_shape (V := V) ht.hV ht.hNK (hb j) (hx j)
+           (bitE K E j.val)).2), List.map_const', List.sum_replicate]
+         simp [List.length_take]; ring
+       rw [drop_append_drop' (by simp only [List.length_append, hpl]; omega), List.append_assoc]
+       have e : blockI N K (bF (Fin.last K)) (wF (Fin.last K)) (fun t =>
+           (Function.update v ZM [] ZM).getD (t * K) false) =
+           blockI N K (bF (Fin.last K)) (wF (Fin.last K)) (bitE K E (Fin.last K).val) := by
+         congr 1; funext t; simp [bitE]
+       have hEI : entryI N K bF wF E = ((List.finRange (K + 1)).take K).flatMap (fun i' =>
+           blockI N K (bF i') (wF i') (bitE K E i'.val)) ++
+           blockI N K (bF (Fin.last K)) (wF (Fin.last K)) (bitE K E (Fin.last K).val) := by
+         unfold entryI
+         conv_lhs => rw [← List.take_append_drop K (List.finRange (K + 1)), hlast]
+         rw [List.flatMap_append, List.flatMap_singleton]
+       rw [e, hEI, List.flatten_append]
+       congr 1; ring
+    first
+    | exact hINS
+    | exact T2
+    | exact T3
+    | (rw [T4 PSt (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+        (by decide), Function.update_of_ne (by decide), hP'])
+
 end ValVM
 
 end SigabaNeo.Tape
