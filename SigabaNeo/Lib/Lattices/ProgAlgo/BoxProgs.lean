@@ -77,6 +77,26 @@ theorem pushNat_iter (c : ℕ) (f : ℕ → List Bool) (hf : ∀ j, (f j).length
     rw [hl, hf] at this
     simp only [this, concatN, Nat.succ_mul, Nat.add_assoc]
 
+theorem ball_iter (K : ℕ) (sW : List Bool) : ∀ (m : ℕ) (l : List Bool) (b : Bool),
+    (fun a : List Bool × Bool => (a.1.drop K, a.2 && absLeW (takeD K a.1) sW))^[m] (l, b) =
+      (l.drop (m * K), b && allN m (fun q => absLeW (takeD K (l.drop (q * K))) sW))
+  | 0, l, b => by simp [allN]
+  | m + 1, l, b => by
+    rw [Function.iterate_succ_apply', ball_iter K sW m l b]
+    simp only [List.drop_drop, allN, Bool.and_assoc, Nat.succ_mul, Nat.add_comm K]
+
+theorem allN_congr {n : ℕ} {f g : ℕ → Bool} (h : ∀ q < n, f q = g q) : allN n f = allN n g := by
+  induction n with
+  | zero => rfl
+  | succ n ih => rw [allN, allN, ih (fun q hq => h q (by omega)), h n (by omega)]
+
+/-- The ball test of one residue through two comparisons. -/
+theorem absLeW_eq_lt {w sW : List Bool} (h : w.length = sW.length) :
+    absLeW w sW = !(decide (val sW < val w) && decide (val sW < val (negW w))) := by
+  rw [absLeW, leW_eq h, leW_eq (by rw [length_negW, h])]
+  cases h1 : decide (val sW < val w) <;> cases h2 : decide (val sW < val (negW w)) <;>
+    simp_all [decide_eq_false_iff_not]
+
 namespace Prog
 
 open scoped Prog
@@ -180,6 +200,129 @@ theorem run_embP_map {u : Fin 22 → Fin k} (hu : Function.Injective u) {n B K :
 
 theorem noGrow_embP : embP.NoGrow := rfl
 theorem wf_embP : embP.WF := wf_of_wfB (by decide)
+
+/-! ### The ball test -/
+
+def blA : Fin 5 → Fin 23 := ![6, 7, 13, 14, 3]
+def blN : Fin 11 → Fin 23 := ![9, 15, 8, 7, 16, 17, 18, 19, 20, 21, 22]
+def blL1 : Fin 11 → Fin 23 := ![10, 15, 2, 7, 16, 17, 18, 19, 20, 21, 22]
+def blL2 : Fin 11 → Fin 23 := ![11, 15, 2, 9, 16, 17, 18, 19, 20, 21, 22]
+theorem blA_inj : Function.Injective blA := by decide
+theorem blN_inj : Function.Injective blN := by decide
+theorem blL1_inj : Function.Injective blL1 := by decide
+theorem blL2_inj : Function.Injective blL2 := by decide
+
+theorem run_blA (t : Store 23) (h13 : t 13 = []) (h14 : t 14 = []) :
+    run (map blA mvP) t = Function.update (Function.update t 6 ((t 6).drop (t 3).length)) 7
+      ((t 7 ++ takeD (t 3).length (t 6)).drop (t 3).length) := run_mvP_map blA_inj t h13 h14
+
+theorem clean_bl {u : Fin 11 → Fin 23} (hu1 : u 1 = 15)
+    (hu : ∀ i : Fin 11, 4 ≤ i.val → 16 ≤ (u i).val) (t : Store 23)
+    (h : ∀ j : Fin 23, 15 ≤ j.val → t j = []) :
+    ∀ i : Fin 11, (i = 1 ∨ 4 ≤ i.val) → t (u i) = [] := by
+  rintro i (rfl | hi)
+  · rw [hu1]; exact h _ (by decide)
+  · exact h _ (by have := hu i hi; omega)
+
+theorem run_blN (t : Store 23) (h : ∀ j : Fin 23, 15 ≤ j.val → t j = [])
+    (hl : (t 8).length = (t 7).length) :
+    run (map blN subP) t = Function.update t 9 (subW (t 8) (t 7)) :=
+  run_subP_map blN_inj t (clean_bl rfl (by decide) t h) hl
+
+theorem run_blL1 (t : Store 23) (h : ∀ j : Fin 23, 15 ≤ j.val → t j = [])
+    (hl : (t 2).length = (t 7).length) (h0 : t 2 ≠ []) :
+    run (map blL1 ltP) t = Function.update t 10 [decide (val (t 2) < val (t 7))] :=
+  run_ltP_map blL1_inj t (clean_bl rfl (by decide) t h) hl h0
+
+theorem run_blL2 (t : Store 23) (h : ∀ j : Fin 23, 15 ≤ j.val → t j = [])
+    (hl : (t 2).length = (t 9).length) (h0 : t 2 ≠ []) :
+    run (map blL2 ltP) t = Function.update t 11 [decide (val (t 2) < val (t 9))] :=
+  run_ltP_map blL2_inj t (clean_bl rfl (by decide) t h) hl h0
+
+/-- Clear the flag `0` if both comparisons `10`, `11` hold. -/
+def flagP : Prog 23 := ifBit 10 (ifBit 11 (setZero 0) (nop 0)) (nop 0)
+
+theorem run_flagP (t : Store 23) :
+    run flagP t = Function.update t 0
+      (if (hd (t 10) && hd (t 11)) = true then List.replicate (t 0).length false else t 0) := by
+  simp only [flagP, run_ifBit]
+  cases h10 : hd (t 10) <;> cases h11 : hd (t 11) <;> simp
+
+/-- One residue. Tapes `6` the stream, `7` the residue, `8` zero, `9` its negation, `10` `11` the
+comparisons, `12` the counter, `13 … 22` scratch. -/
+def ballBody : Prog 23 :=
+  cp 7 3 ⨾ map blA mvP ⨾ cp 8 3 ⨾ setZero 8 ⨾ map blN subP ⨾ map blL1 ltP ⨾ map blL2 ltP ⨾ flagP ⨾
+    clr 7 ⨾ clr 8 ⨾ clr 9 ⨾ clr 10 ⨾ clr 11
+
+/-- **The ball test** `[ballW n K sW w]`. -/
+def ballP : Prog 23 := cp 0 5 ⨾ sin true 0 ⨾ cp 6 1 ⨾ forN 12 4 ballBody ⨾ clr 6
+
+theorem flag_eq (fl a b : Bool) :
+    (if (a && b) = true then List.replicate [fl].length false else [fl]) = [fl && !(a && b)] := by
+  cases a <;> cases b <;> cases fl <;> rfl
+
+theorem run_ballBody {K : ℕ} (hK0 : 0 < K) (s : Store 23) (hs : ∀ i : Fin 23, 6 ≤ i.val → s i = [])
+    (hS : (s 2).length = K) (hK : (s 3).length = K) (a : List Bool × Bool) (w : List Bool) :
+    run ballBody (Function.update (Function.update (Function.update s 6 a.1) 0 [a.2]) 12 w) =
+      Function.update (Function.update (Function.update s 6 (a.1.drop K)) 0
+        [a.2 && absLeW (takeD K a.1) (s 2)]) 12 w := by
+  obtain ⟨sv, fl⟩ := a
+  have h0 : s 2 ≠ [] := by intro h; rw [h] at hS; simp at hS; omega
+  simp only [ballBody, run_seq, run_copy, run_clear, run_setZero]
+  rw [run_blA _ (by simp [hs]) (by simp [hs])]
+  rw [run_blN _ (by intro j hj; fin_cases j <;> simp at hj ⊢ <;> exact hs _ (by decide))
+    (by simp [hK])]
+  rw [run_blL1 _ (by intro j hj; fin_cases j <;> simp at hj ⊢ <;> exact hs _ (by decide))
+    (by simp [hK, hS]) (by simp [h0])]
+  rw [run_blL2 _ (by intro j hj; fin_cases j <;> simp at hj ⊢ <;> exact hs _ (by decide))
+    (by simp [hK, hS]) (by simp [h0])]
+  rw [run_flagP]
+  have hneg : subW (List.replicate K false) (takeD K sv) = negW (takeD K sv) := by
+    rw [negW, length_takeD, zeroW]
+  have hab := absLeW_eq_lt (w := takeD K sv) (sW := s 2) (by simp [hS])
+  funext t
+  fin_cases t <;> simp [hs, hK]
+  rw [hneg, hab]
+  by_cases h1 : val (s 2) < val (takeD K sv) <;> by_cases h2 : val (s 2) < val (negW (takeD K sv)) <;>
+    simp [h1, h2]
+
+theorem run_ballP {n K : ℕ} (hK0 : 0 < K) (s : Store 23)
+    (hs : ∀ i : Fin 23, 6 ≤ i.val → s i = []) (hw : (s 1).length = n * K) (hS : (s 2).length = K)
+    (hK : (s 3).length = K) (hn : (s 4).length = n) (h1 : (s 5).length = 1) :
+    run ballP s = Function.update s 0 [ballW n K (s 2) (s 1)] := by
+  let G : List Bool × Bool → Store 23 := fun a =>
+    Function.update (Function.update s 6 a.1) 0 [a.2]
+  have hloop := run_forN 12 4 ballBody G
+    (fun a => (a.1.drop K, a.2 && absLeW (takeD K a.1) (s 2)))
+    (fun a w => run_ballBody hK0 s hs hS hK a w) (s 1, true)
+    (Function.update (Function.update s 0 [true]) 6 (s 1)) (by
+      funext t; simp only [G]; fin_cases t <;> simp)
+  have e0 : run (cp 6 1) (run (sin true 0) (run (cp 0 5) s)) =
+      Function.update (Function.update s 0 [true]) 6 (s 1) := by
+    obtain ⟨x, hx⟩ : ∃ x, s 5 = [x] := by
+      match h : s 5, h1 with
+      | [x], _ => exact ⟨x, rfl⟩
+    funext t; fin_cases t <;> simp [hx]
+  simp only [ballP, run_seq] at e0 ⊢
+  rw [e0, hloop]
+  have h4 : Function.update (Function.update s 0 [true]) 6 (s 1) 4 = s 4 := by simp
+  rw [h4, hn, ball_iter]
+  have hb : allN n (fun q => absLeW (takeD K ((s 1).drop (q * K))) (s 2)) = ballW n K (s 2) (s 1) := by
+    rw [ballW]
+    exact allN_congr fun q hq => by rw [takeD_drop_eq_block hw hq]
+  funext t
+  simp only [G, run_clear, Bool.true_and, hb]
+  fin_cases t <;> simp [hs]
+
+theorem run_ballP_map {u : Fin 23 → Fin k} (hu : Function.Injective u) {n K : ℕ} (hK0 : 0 < K)
+    (s : Store k) (hs : ∀ i : Fin 23, 6 ≤ i.val → s (u i) = []) (hw : (s (u 1)).length = n * K)
+    (hS : (s (u 2)).length = K) (hK : (s (u 3)).length = K) (hn : (s (u 4)).length = n)
+    (h1 : (s (u 5)).length = 1) :
+    run (map u ballP) s = Function.update s (u 0) [ballW n K (s (u 2)) (s (u 1))] :=
+  run_map_eq_update hu _ s 0 _ (run_ballP hK0 _ hs hw hS hK hn h1)
+
+theorem noGrow_ballP : ballP.NoGrow := rfl
+theorem wf_ballP : ballP.WF := wf_of_wfB (by decide)
 
 end Prog
 
