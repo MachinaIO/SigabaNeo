@@ -1,5 +1,6 @@
 import SigabaNeo.Lib.Machines.Prog.AbsBound
 import SigabaNeo.Lib.Machines.Prog.SampleTime
+import SigabaNeo.Lib.Machines.Prog.FrameSize
 
 /-!
 # Per-tape bound transformers
@@ -128,3 +129,30 @@ theorem UBZ.frame {m j j' : ℕ} (e : Fin m ↪ Fin k) (he : ∀ i, (e i).val < 
 end XProg
 
 end SigabaNeo.Tape
+
+namespace SigabaNeo.Tape.XProg
+
+variable {k : ℕ}
+
+/-! ### The size of a counter built by doubling -/
+
+theorem size_dblP (t c : Fin k) : (dblP t c).size ≤ 135 := by
+  simp [dblP, XProg.forN, bitAp, Prog.size, Prim.pad]
+
+/-- **A counter of `n < 2^m` costs `O(m)` states.** -/
+theorem size_natP_le (t c : Fin k) : ∀ (n m : ℕ), n < 2 ^ m → (natP t c n).size ≤ 195 * m + 36
+  | 0, m, _ => by unfold natP; simp [Prog.size, Prim.pad]
+  | n + 1, m, h => by
+    obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by
+      rcases m with _ | m
+      · simp at h
+      · simp⟩
+    have hm : (n + 1) / 2 < 2 ^ m' := by rw [pow_succ] at h; omega
+    have ih := size_natP_le t c ((n + 1) / 2) m' hm
+    have hd := size_dblP t c
+    unfold natP
+    split_ifs
+    · simp only [size_seq]; omega
+    · simp only [size_seq, bitAp, size_prog, Prog.size, Prim.pad]; omega
+
+end SigabaNeo.Tape.XProg

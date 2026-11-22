@@ -686,3 +686,125 @@ theorem ub_oneB (N K M : ℕ) (hM : N * K ≤ M) (h1 : 1 ≤ M) :
   simp only [Prim.lenT, natB, zv, Function.update_apply]; split_ifs <;> simp_all <;> omega
 
 end AdvancedEncryption.DualUse.Prog
+
+/-! ### State counts of the blocks -/
+
+namespace AdvancedEncryption.DualUse.Prog
+
+open SigabaNeo SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape SigabaNeo.Tape.XProg
+
+section Sizes
+
+variable {k : ℕ}
+
+/-- `p` has at most `n` states. -/
+def SZ (p : XProg k) (n : ℕ) : Prop := p.size ≤ n
+
+theorem SZ.seq {p q : XProg k} {a b : ℕ} (hp : SZ p a) (hq : SZ q b) : SZ (XProg.seq p q) (a + b) :=
+  Nat.add_le_add hp hq
+
+theorem SZ.frame {m : ℕ} (e : Fin m ↪ Fin k) {p : XProg m} {a : ℕ} (h : SZ p a) :
+    SZ (frame e p) a := h
+
+theorem SZ.mono {p : XProg k} {a b : ℕ} (h : SZ p a) (hab : a ≤ b) : SZ p b := h.trans hab
+
+theorem sz_prim (p : Prim k) : SZ (prog (.prim p)) 60 := by
+  show (3 + 2 * p.pad) * 12 ≤ 60
+  cases p <;> simp [Prim.pad]
+
+theorem size_clearL [NeZero k] : ∀ l : List (Fin k), (clearL l).size = 36 * (l.length + 1)
+  | [] => rfl
+  | t :: l => by
+    simp only [clearL, size_seq, size_prog, Prog.size, Prim.pad, size_clearL l, List.length_cons]
+    ring
+
+/-- The states of a counter of at most `M < 2^183` bits. -/
+theorem sz_natP {t c : Fin k} {n M : ℕ} (hn : n ≤ M) (hB : M < 2 ^ 240) :
+    SZ (natP t c n) 46836 :=
+  (size_natP_le t c n 240 (by omega)).trans (by norm_num)
+
+theorem size_splitP : Prog.splitP.size ≤ 2 ^ 12 := by decide +kernel
+theorem size_joinP : Prog.joinP.size ≤ 2 ^ 12 := by decide +kernel
+theorem size_addRWP : Prog.addRWP.size ≤ 2 ^ 12 := by decide +kernel
+theorem size_subRWP : Prog.subRWP.size ≤ 2 ^ 12 := by decide +kernel
+theorem size_gadP : Prog.gadP.size ≤ 2 ^ 14 := by decide +kernel
+theorem size_trP : Prog.trP.size ≤ 2 ^ 12 := by decide +kernel
+theorem size_bitSelP : Prog.bitSelP.size ≤ 2 ^ 12 := by decide +kernel
+theorem size_hashP : Prog.hashP.size ≤ 2 ^ 14 := by decide +kernel
+theorem size_matMulP : Prog.matMulP.size ≤ 2 ^ 16 := by decide +kernel
+
+theorem sz_leaf {n m : ℕ} {u : Fin m → Fin n} {p : Prog m} {a : ℕ} (h : p.size ≤ a) :
+    SZ (prog (Prog.map u p)) a := by
+  show Prog.size (Prog.map u p) ≤ a
+  rw [Prog.size_map]; exact h
+
+theorem sz_clearL [NeZero k] (l : List (Fin k)) : SZ (clearL l) (36 * (l.length + 1)) :=
+  le_of_eq (size_clearL l)
+
+theorem sz_trB (m r s B Z M : ℕ) (hM : sizeTrB m r s B Z ≤ M) (hB : M < 2 ^ 240) :
+    SZ (trB m r s B Z) (6 * 46836 + 2 ^ 12 + 36 * 20) := by
+  unfold sizeTrB at hM
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_trP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
+
+theorem sz_selB (n B M : ℕ) (hM : sizeSelB n B ≤ M) (hB : M < 2 ^ 240) :
+    SZ (selB n B) (3 * 46836 + 2 ^ 12 + 36 * 11) := by
+  unfold sizeSelB at hM
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_bitSelP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
+
+theorem sz_hashB (P d N K M : ℕ) (hM : sizeHashB P d N K ≤ M) (hB : M < 2 ^ 240) :
+    SZ (hashB P d N K) (6 * 46836 + 2 ^ 14 + 36 * 43) := by
+  unfold sizeHashB at hM
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_hashP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
+
+theorem sz_mmB (m n l N K M : ℕ) (hM : sizeMmB m n l N K ≤ M) (hB : M < 2 ^ 240) :
+    SZ (mmB m n l N K) (7 * 46836 + 2 ^ 16 + 36 * 58) := by
+  unfold sizeMmB at hM
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_natP (by omega) hB).seq <| (sz_leaf size_matMulP).seq (sz_clearL _)).mono
+    (by simp [scrFrom]; rfl)
+
+theorem sz_addB (L N K M : ℕ) (hM : sizeAddB L N K ≤ M) (hB : M < 2 ^ 240) :
+    SZ (addB L N K) (2 * 46836 + 2 ^ 12 + 36 * 27) := by
+  unfold sizeAddB at hM
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_addRWP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
+
+theorem sz_subB (L N K M : ℕ) (hM : sizeAddB L N K ≤ M) (hB : M < 2 ^ 240) :
+    SZ (subB L N K) (2 * 46836 + 2 ^ 12 + 36 * 27) := by
+  unfold sizeAddB at hM
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_subRWP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
+
+theorem sz_getB (o L M : ℕ) (hM : o + L ≤ M) (hB : M < 2 ^ 240) :
+    SZ (getB o L) (2 * 46836 + 2 ^ 12 + 36 * 10) := by
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_splitP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
+
+theorem sz_joinB (a b c M : ℕ) (hM : a + b + c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (joinB a b c) (4 * 46836 + 2 ^ 12 + 36 * 9) := by
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_natP (by omega) hB).seq <| (sz_leaf size_joinP).seq (sz_clearL _)).mono
+    (by simp [scrFrom]; rfl)
+
+theorem sz_gadB (N K k M : ℕ) (hM : sizeGadB N K k ≤ M) (hB : M < 2 ^ 240) :
+    SZ (gadB N K k) (5 * 46836 + 2 ^ 14 + 36 * 22) := by
+  unfold sizeGadB at hM
+  exact ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_gadP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
+
+theorem sz_oneB (N K M : ℕ) (hM : N * K ≤ M) (hB : M < 2 ^ 240) : SZ (oneB N K) (46836 + 120) :=
+  ((sz_natP (by omega) hB).seq ((sz_prim _).seq (sz_prim _))).mono (by norm_num)
+
+theorem sz_oneB' (N K M : ℕ) (hM : N * K ≤ M) (hB : M < 2 ^ 240) : SZ (oneB N K) (46836 + 120) :=
+  sz_oneB N K M hM hB
+
+end Sizes
+
+end AdvancedEncryption.DualUse.Prog

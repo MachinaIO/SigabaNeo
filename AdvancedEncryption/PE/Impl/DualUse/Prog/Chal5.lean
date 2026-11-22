@@ -110,6 +110,25 @@ theorem ub_chal5TailBody (M : ℕ) (hM : sizechal5Tail hk c ≤ M) :
     (UBZ.frame _ (by decide) (ub_joinB (fPsi N K k + fD N K c.d + fT N K k) (fJ (N := N) hk) (fR N K) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_flipB (offK hk c + (K - 1)) (fencLen (ctEnc hk c)) M (by omega)) le_rfl)
 
+theorem sz_chal5TailBody (M : ℕ) (hM : sizechal5Tail hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (chal5TailBody hk c) (2 ^ 22) := by
+  unfold sizechal5Tail at hM
+  exact ((SZ.frame _ (sz_getB (o5va c) (fC N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_mmB (1) (1) (2 * k) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_addB (1 * (2 * k)) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5vz c) (fC N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_mmB (1) (1) (2 * k) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_addB (1 * (2 * k)) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5e hk c) (fencLen (eEnc (N := N) hk)) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_hashB (P1 N k * (2 * k)) (c.d) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_mmB (1) (1) (1) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5vp c) (fR N K) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_addB (1) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fPsi N K k) (fD N K c.d) (fT N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fPsi N K k + fD N K c.d + fT N K k) (fJ (N := N) hk) (fR N K) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_flipB (offK hk c + (K - 1)) (fencLen (ctEnc hk c)) M (by omega) hB))).mono (by norm_num)
+
 
 set_option maxHeartbeats 8000000 in
 /-- **The law of the tail of hybrid 5.** -/
@@ -199,6 +218,11 @@ theorem ub_chal5Body (M : ℕ) (hM : sizeChal5 hk c ≤ M) :
     UBZ 20 (seq (pub5Body hk c) (chal5TailBody hk c)) M (timeChal5 hk c M) M :=
   (ub_pub5Body hk c M (by unfold sizeChal5 at hM; omega)).seq
     (ub_chal5TailBody hk c M (by unfold sizeChal5 at hM; omega))
+
+theorem sz_chal5Body (M : ℕ) (hM : sizeChal5 hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (seq (pub5Body hk c) (chal5TailBody hk c)) (2 ^ 24) :=
+  ((sz_pub5Body hk c M (by unfold sizeChal5 at hM; omega) hB).seq
+    (sz_chal5TailBody hk c M (by unfold sizeChal5 at hM; omega) hB)).mono (by norm_num)
 
 theorem time_chal5P (a b : ℕ) :
     timeBoundT (chal5P hk c) (io2 (R := 80) a b 0) ≤

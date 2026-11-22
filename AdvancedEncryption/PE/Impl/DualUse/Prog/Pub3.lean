@@ -148,6 +148,29 @@ theorem ub_pub3Body (M : ℕ) (hM : sizepub3 hk c ≤ M) :
     (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M (by omega)) le_rfl)
 
+theorem sz_pub3Body (M : ℕ) (hM : sizepub3 hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (pub3Body hk c) (2 ^ 23) := by
+  unfold sizepub3 at hM
+  exact ((SZ.frame _ (sz_getB (o3B (N := N) (K := K) (k := k)) (fD N K c.d) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o3s hk c) (fR N K) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o3e0 hk c) (fD N K c.d) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_mmB (1) (1) (c.d) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_addB (1 * c.d) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o3R hk c) (fencLen (rmTEnc c)) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o3x (N := N) (K := K) (k := k)) (fencLen dateEnc) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o3w c) (fencLen (wEnc hk c)) M (by omega) hB)).seq <|
+    (sz_psiCore N K k c.d M (by omega) hB).seq <|
+    (sz_bjCore N K k c.d M (by omega) hB).seq <|
+    (SZ.frame _ (sz_getB (0) (fC N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (fC N K k + 0) (fC N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_gadB N K k M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_subB (1 * (2 * k)) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_oneB' N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o3p hk c) (fR N K) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M (by omega) hB))).mono (by norm_num)
+
 
 /-- **The public-key component of hybrid 3.** -/
 def pub3P : XProg 82 := seq (pub3Body hk c) (finP 15)

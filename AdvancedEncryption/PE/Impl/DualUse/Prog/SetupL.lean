@@ -409,3 +409,38 @@ theorem len_setup5D_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 10) :
 end Time
 
 end AdvancedEncryption.DualUse.Prog
+
+namespace AdvancedEncryption.DualUse.Prog
+
+open SigabaNeo SigabaNeo.Encode AdvancedEncryption.DualUse.Params
+
+/-! ### The secret words fit the input bound -/
+
+section Words
+
+set_option maxRecDepth 100000
+set_option maxHeartbeats 0
+set_option exponentiation.threshold 1000
+
+theorem nS3_conf :
+    fencLen ((inst3Enc (N := Np) (K := Kp) (k := kp)).prod (sec3Enc hkp confP)) + 14 ≤ 2 ^ 180 := by
+  simp only [fencLen, inst3Enc, sec3Enc, restEnc]
+  comp_unfold
+  norm_num
+
+theorem nSI_conf :
+    fencLen ((inst3Enc (N := Np) (K := Kp) (k := kp)).prod (secIEnc hkp confP)) + 14 ≤ 2 ^ 180 := by
+  simp only [fencLen, inst3Enc, secIEnc, coinsEnc, ctEnc]
+  comp_unfold
+  norm_num
+
+theorem nS5_conf :
+    fencLen ((inst5Enc (N := Np) (K := Kp) (k := kp) confP.d).prod (sec5Enc hkp confP)) + 14 ≤
+      2 ^ 180 := by
+  simp only [fencLen, inst5Enc, pubEnc, sec5Enc]
+  comp_unfold
+  norm_num
+
+end Words
+
+end AdvancedEncryption.DualUse.Prog

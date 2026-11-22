@@ -197,6 +197,20 @@ theorem ub_psiCore (N K k d M : ℕ) (hM : sizePsiCore N K k d ≤ M) :
     (UBZ.frame _ (by decide) (ub_addB _ _ _ M (by omega)) le_rfl).seq <|
     (ubz_clear _ M).seq <| (ubz_clear _ M).seq <| (ubz_clear _ M).seq <| ubz_clear _ M
 
+theorem sz_psiCore (N K k d M : ℕ) (hM : sizePsiCore N K k d ≤ M) (hB : M < 2 ^ 240) :
+    SZ (psiCore N K k d) (2 ^ 21) := by
+  unfold sizePsiCore at hM
+  exact ((SZ.frame _ (sz_joinB _ _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_trB _ _ _ _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_mmB _ _ _ _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_trB _ _ _ _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_gadB _ _ _ M (by omega) hB)).seq <|
+    (sz_prim _).seq <|
+    (SZ.frame _ (sz_joinB _ _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_selB _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_addB _ _ _ M (by omega) hB)).seq <|
+    (sz_prim _).seq <| (sz_prim _).seq <| (sz_prim _).seq <| sz_prim _).mono (by norm_num)
+
 /-- The sizes of the templates of `bjCore`. -/
 def sizeBjCore (N K k d : ℕ) : ℕ :=
   sizeTrB (10 * (2 * (2 * k))) N K 1 ((k - K) * N) + sizeGadB N K k +
@@ -218,5 +232,14 @@ theorem ub_bjCore (N K k d M : ℕ) (hM : sizeBjCore N K k d ≤ M) :
     (UBZ.frame _ (by decide) (ub_selB _ _ M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_hashB _ _ _ _ M (by omega)) le_rfl).seq <|
     (ubz_clear _ M).seq <| (ubz_clear _ M).seq <| ubz_clear _ M
+
+theorem sz_bjCore (N K k d M : ℕ) (hM : sizeBjCore N K k d ≤ M) (hB : M < 2 ^ 240) :
+    SZ (bjCore N K k d) (2 ^ 20) := by
+  unfold sizeBjCore at hM
+  exact ((SZ.frame _ (sz_trB _ _ _ _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_gadB _ _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_selB _ _ M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_hashB _ _ _ _ M (by omega) hB)).seq <|
+    (sz_prim _).seq <| (sz_prim _).seq <| sz_prim _).mono (by norm_num)
 
 end AdvancedEncryption.DualUse.Prog

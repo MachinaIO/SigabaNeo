@@ -152,6 +152,13 @@ theorem ub_flipB (P L M : ℕ) (hM : P + L ≤ M) : UBZ 3 (flipB P L) M (timeFli
   simp only [wFlip, pEval, mEval, List.headD, List.tail]
   ring
 
+theorem size_cflipP : cflipP.size ≤ 2 ^ 12 := by decide +kernel
+
+theorem sz_flipB (P L M : ℕ) (hM : P + L ≤ M) (hB : M < 2 ^ 240) :
+    SZ (flipB P L) (3 * 46836 + 2 ^ 12 + 36 * 9) :=
+  ((sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <| (sz_natP (by omega) hB).seq <|
+    (sz_leaf size_cflipP).seq (sz_clearL _)).mono (by simp [scrFrom]; rfl)
+
 /-- Output `o`, word `a`, flag `b`; scratch from `20`. -/
 def vFl (o a b : Fin 82) (j : Fin 11) : Fin 82 :=
   if j.val = 0 then o else if j.val = 1 then a else if j.val = 2 then b

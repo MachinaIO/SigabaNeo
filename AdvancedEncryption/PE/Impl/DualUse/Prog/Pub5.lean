@@ -88,6 +88,27 @@ theorem ub_pub5Body (M : ℕ) (hM : sizepub5 hk c ≤ M) :
     (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M (by omega)) le_rfl)
 
+theorem sz_pub5Body (M : ℕ) (hM : sizepub5 hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (pub5Body hk c) (2 ^ 23) := by
+  unfold sizepub5 at hM
+  exact ((SZ.frame _ (sz_getB (0) (fD N K c.d) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5u c) (fR N K) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5v c) (fD N K c.d) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_mmB (1) (1) (c.d) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_addB (1 * c.d) N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5R hk c) (fencLen (rmTEnc c)) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5x c) (fencLen dateEnc) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5w c) (fencLen (wEnc hk c)) M (by omega) hB)).seq <|
+    (sz_psiCore N K k c.d M (by omega) hB).seq <|
+    (sz_bjCore N K k c.d M (by omega) hB).seq <|
+    (SZ.frame _ (sz_getB (o5a c) (fC N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5z c) (fC N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_oneB' N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (N * K) (rowL N K k) (rowL N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5p c) (fR N K) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M (by omega) hB))).mono (by norm_num)
+
 
 /-- **The public-key component of hybrid 5.** -/
 def pub5P : XProg 82 := seq (pub5Body hk c) (finP 15)
@@ -208,6 +229,11 @@ theorem ub_sd5Body (M : ℕ) (hM : sizeSd5 hk c ≤ M) :
     UBZ 20 (seq (pub5Body hk c) (sdTailBody hk c)) M (timeSd5 hk c M) M :=
   (ub_pub5Body hk c M (by unfold sizeSd5 at hM; omega)).seq
     (ub_sdTailBody hk c M (by unfold sizeSd5 at hM; omega))
+
+theorem sz_sd5Body (M : ℕ) (hM : sizeSd5 hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (seq (pub5Body hk c) (sdTailBody hk c)) (2 ^ 24) :=
+  ((sz_pub5Body hk c M (by unfold sizeSd5 at hM; omega) hB).seq
+    (sz_sdTailBody hk c M (by unfold sizeSd5 at hM; omega) hB)).mono (by norm_num)
 
 theorem time_sd5P (a b : ℕ) :
     timeBoundT (sd5P hk c) (io2 (R := 80) a b 0) ≤

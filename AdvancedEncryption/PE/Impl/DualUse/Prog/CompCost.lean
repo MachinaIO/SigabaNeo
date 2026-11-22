@@ -90,6 +90,12 @@ theorem lenChalI_conf : 2 * (sChalI hkp confP (2 ^ 180) (2 ^ 180) + (offK hkp co
   simp only [sChalI, preI, coinsEnc, inst3Enc, restEnc, eEnc]
   comp_unfold; norm_num
 
+theorem sizeSd3_conf : sizeSd3 hkp confP ≤ 2 ^ 239 := by
+  simp only [sizeSd3]; comp_unfold; norm_num
+
+theorem sizeSd5_conf : sizeSd5 hkp confP ≤ 2 ^ 239 := by
+  simp only [sizeSd5]; comp_unfold; norm_num
+
 end Eval
 
 /-! ### The lifted components at `confP` -/
@@ -172,5 +178,57 @@ theorem len_chalIL2_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 2 ^ 180) :
     (io2_mono (by simpa only [kp] using lenChalI_conf) le_rfl))
 
 end Lifted
+
+/-! ### State counts at `confP` -/
+
+section States
+
+set_option maxRecDepth 100000
+
+theorem sz_finP (o : Fin 82) : SZ (finP o) (60 + 36 * 82) :=
+  (sz_prim _).seq ((sz_clearL scrL).mono (by rw [scrL_length]))
+
+theorem hB240 : (2 : ℕ) ^ 182 < 2 ^ 240 := by norm_num
+theorem hB239 : (2 : ℕ) ^ 239 < 2 ^ 240 := by norm_num
+
+theorem size_pub3P_conf : (pub3P hkp confP).size ≤ 2 ^ 24 := by
+  unfold pub3P
+  exact ((sz_pub3Body hkp confP (2 ^ 182) (sizepub3_conf.trans (by norm_num)) hB240).seq
+    (sz_finP 15)).mono (by norm_num)
+
+theorem size_pub3L_conf : (pub3L hkp confP).size ≤ 2 ^ 24 := by
+  rw [pub3L, lift256, liftP, size_frame]; exact size_pub3P_conf
+
+theorem size_pubIL_conf : (pubIL hkp confP).size ≤ 2 ^ 24 := by
+  rw [pubIL, lift256, liftP, size_frame, pubIP]; exact size_pub3P_conf
+
+theorem size_chal3L_conf : (chal3L hkp confP).size ≤ 2 ^ 25 := by
+  rw [chal3L, lift256, liftP, size_frame, chal3P]
+  exact ((sz_chal3Body hkp confP (2 ^ 182) (sizeChal3_conf.trans (by norm_num)) hB240).seq
+    (sz_finP 10)).mono (by norm_num)
+
+theorem size_pub5L_conf : (pub5L hkp confP).size ≤ 2 ^ 24 := by
+  rw [pub5L, lift256, liftP, size_frame, pub5P]
+  exact ((sz_pub5Body hkp confP (2 ^ 182) (sizepub5_conf.trans (by norm_num)) hB240).seq
+    (sz_finP 15)).mono (by norm_num)
+
+theorem size_chal5L_conf : (chal5L hkp confP).size ≤ 2 ^ 25 := by
+  rw [chal5L, lift256, liftP, size_frame, chal5P]
+  exact ((sz_chal5Body hkp confP (2 ^ 182) (sizeChal5_conf.trans (by norm_num)) hB240).seq
+    (sz_finP 10)).mono (by norm_num)
+
+/-- **The simulation-data programs** (inside the key component). -/
+theorem size_sd3P_conf : (sd3P hkp confP).size ≤ 2 ^ 25 := by
+  unfold sd3P
+  exact ((sz_sd3Body hkp confP (2 ^ 239) sizeSd3_conf hB239).seq (sz_finP 13)).mono (by norm_num)
+
+theorem size_sdIP_conf : (sdIP hkp confP).size ≤ 2 ^ 25 := by
+  unfold sdIP; exact size_sd3P_conf
+
+theorem size_sd5P_conf : (sd5P hkp confP).size ≤ 2 ^ 25 := by
+  unfold sd5P
+  exact ((sz_sd5Body hkp confP (2 ^ 239) sizeSd5_conf hB239).seq (sz_finP 13)).mono (by norm_num)
+
+end States
 
 end AdvancedEncryption.DualUse.Prog

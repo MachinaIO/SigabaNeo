@@ -72,6 +72,17 @@ theorem ub_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) :
     (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M (by omega)) le_rfl)
 
+theorem sz_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (sdTailBody hk c) (2 ^ 21) := by
+  unfold sizesdTail at hM
+  exact ((SZ.frame _ (sz_trB (10) (2 * k) (c.d) (N * K) (0) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_trB (P1 N k) (2 * k) (c.d) (1) (0) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_oneB' N K M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_selB (P1 N k * (c.d * (2 * k))) (N * K) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M (by omega) hB))).mono (by norm_num)
+
 
 set_option maxHeartbeats 4000000 in
 /-- **The law of the tail.** -/
@@ -160,6 +171,11 @@ theorem ub_sd3Body (M : ℕ) (hM : sizeSd3 hk c ≤ M) :
     UBZ 20 (seq (pub3Body hk c) (sdTailBody hk c)) M (timeSd3 hk c M) M :=
   (ub_pub3Body hk c M (by unfold sizeSd3 at hM; omega)).seq
     (ub_sdTailBody hk c M (by unfold sizeSd3 at hM; omega))
+
+theorem sz_sd3Body (M : ℕ) (hM : sizeSd3 hk c ≤ M) (hB : M < 2 ^ 240) :
+    SZ (seq (pub3Body hk c) (sdTailBody hk c)) (2 ^ 24) :=
+  ((sz_pub3Body hk c M (by unfold sizeSd3 at hM; omega) hB).seq
+    (sz_sdTailBody hk c M (by unfold sizeSd3 at hM; omega) hB)).mono (by norm_num)
 
 /-- **The time of the simulation-data component** (hybrid 3 and the ideal side). -/
 theorem time_sd3P (a b : ℕ) :
