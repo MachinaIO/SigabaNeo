@@ -42,6 +42,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.Nand
 import SigabaNeo.Lib.Lattices.ProgAlgo.Spec
 import SigabaNeo.Lib.Lattices.ProgAlgo.SLPTape
 import SigabaNeo.Lib.Lattices.ProgAlgo.SLPPK
+import SigabaNeo.Lib.Lattices.ProgAlgo.SimSLP
 
 /-!
 # Lattice library
