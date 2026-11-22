@@ -1346,6 +1346,52 @@ theorem w5_spec (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
     simp only [Function.update_apply, if_neg a1, if_neg a2, if_neg a3]
     exact hw' x a0
 
+/-- **The words before `gswC` meet `GInit`.** -/
+theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
+    (hT : T (mw GSC) = gsW W gs) (hA : T (mw SDW) = (sdEnc hk c).enc sd) :
+    GInit (VG N K k c.d) W (lenA N K k 2) (lenA N K k c.d) (N * K) (oneG N K k c.d) gs
+      (fun i => colsW N K k 2 (sd.Ψ i)) (fun i => colsW N K k c.d (sd.Rm i))
+      ((T (mw SDW)).drop (oXG hk c))
+      ((w5 hk c W T BSt).drop
+        (((List.finRange 10).map fun i => colsW N K k 2 (sd.Ψ i)).flatten.length))
+      ((w5 hk c W T WSt).drop
+        (((List.finRange 10).map fun i => colsW N K k c.d (sd.Rm i)).flatten.length))
+      (w5 hk c W T) := by
+  obtain ⟨o1, oB, oW, oX, oG, o2⟩ := w5_spec hk c W gs T hW hb hT
+  have L : ∀ (x : Fin 120) (n : ℕ), (mw x, n) ∈ stepG N K k c.d ++
+      wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c) →
+      x ∉ [GS, BSt, WSt, rZ, 10, GADW, ZEROW, ONEW] → (w5 hk c W T x).length = n :=
+    fun x n h hx => by rw [o2 x hx, w4_key hk c W T h, List.length_replicate]
+  obtain ⟨-, -, g3⟩ := S3_GS hk c W gs T hW hb hT
+  exact {
+    it := {
+      h10 := by rw [o1, oneG, List.length_append, List.length_append, length_gswGadW'',
+        length_zeroW, length_oneW]
+      hV := by simp [VG]
+      ta1 := L _ _ (by simp [wordsG]) (by decide)
+      tad := L _ _ (by simp [wordsG]) (by decide)
+      tk1 := L _ _ (by simp [wordsG]) (by decide)
+      znk1 := by rw [o2 _ (by decide), w4_key hk c W T (n := N * K - 1) (by simp [wordsG]),
+        Nat.mul_one]
+      t29 := L _ _ (by simp [wordsG]) (by decide)
+      hNK := by rw [Nat.mul_one]; exact Nat.mul_pos hN hK
+      hK := Nat.one_pos }
+    vone := o1
+    t10 := L _ _ (by simp [wordsG]) (by decide)
+    bst := eq_append_drop (by rw [oB, hA, sd_dropPsi]; rfl)
+    wst := eq_append_drop (by rw [oW, hA, sd_dropR]; rfl)
+    zs := oX
+    insw := L _ _ (by simp [wordsG]) (by decide)
+    tsl := L _ _ (by simp [wordsG]) (by decide)
+    tst := L _ _ (by simp [wordsG]) (by decide)
+    td2 := L _ _ (by simp [wordsG]) (by decide)
+    tw := L _ _ (by simp [wordsG]) (by decide)
+    tpad := L _ _ (by simp [wordsG]) (by decide)
+    tw9 := L _ _ (by simp [wordsG]) (by decide)
+    tins := L _ _ (by simp [wordsG]) (by decide)
+    gsw := oG
+    gcnt := by rw [o2 _ (by decide), w4, g3, List.length_replicate] }
+
 end RunG
 
 end WB2
