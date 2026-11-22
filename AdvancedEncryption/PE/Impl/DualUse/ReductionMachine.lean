@@ -128,46 +128,61 @@ theorem acceptProb_reduction_accOn {Sec Inst : Type} (P Post : Machine) (A : Mac
     setupI viewI sdI hgame, hinst,
     accOn_sim hdec hL hcov A D instLaw F setupI viewI sdI hF hmpk hx hvalid]
 
-/-- The constant of the reduction's cost. -/
-noncomputable def redFactor (P Post : Machine) (H : Fin 3 → Routine (m + 3)) (E Q L : ℕ) : ℕ :=
-  P.andThenLinFactor * 650000 * (500000 * initFactor H Q L (paramsWord dateUniverse params).length E *
-    Post.cost)
+/-- The constant of the reduction's cost, for a post-processing machine `Post` of description
+length `Post.descLen` and time at most `pt · cost A` (it reads `A`'s output). -/
+noncomputable def redFactor (P Post : Machine) (H : Fin 3 → Routine (m + 3)) (E Q L pt : ℕ) : ℕ :=
+  P.andThenLinFactor * 650000 *
+    (initFactor H Q L (paramsWord dateUniverse params).length E * (11 + 498960 * Post.descLen) +
+      pt + 10)
 
 /-- **Cost of the reduction**: at most a constant (independent of `A` and `D`) times
-`cost A · cost D`. -/
+`cost A · cost D`, when the post-processing takes time at most `pt · cost A`. -/
 theorem cost_reduction_le (P Post : Machine) (A : Machine 3) (H : Fin 3 → Routine (m + 3))
-    (E Q L : ℕ) (D : Machine) :
-    (reduction P Post A H E Q L D).cost ≤ redFactor P Post H E Q L * A.cost * D.cost := by
+    (E Q L pt : ℕ) (D : Machine) (hPostT : Post.time ≤ pt * A.cost) :
+    (reduction P Post A H E Q L D).cost ≤ redFactor P Post H E Q L pt * A.cost * D.cost := by
   unfold reduction redFactor
-  have h1 := Machine.cost_andThenLin_andThenGuard_le P
-    ((A.inlineOracleInit H (paramsWord dateUniverse params) E Q L).andThenLin Post) D
-  have h2 := Machine.cost_andThenLin_le_mul
-    (A.inlineOracleInit H (paramsWord dateUniverse params) E Q L) Post
+  set Inl := A.inlineOracleInit H (paramsWord dateUniverse params) E Q L
+  have h1 := Machine.cost_andThenLin_andThenGuard_le P (Inl.andThenLin Post) D
+  have ht := Machine.time_andThenLin_le Inl Post
+  have hd := Machine.descLen_andThenLin_le Inl Post
   have h3 := A.cost_inlineOracleInit_le H (paramsWord dateUniverse params) E Q L
+  have hA := A.one_le_cost
+  have hIt : Inl.time ≤ Inl.cost := by unfold Machine.cost; omega
+  have hM : (Inl.andThenLin Post).cost ≤
+      (initFactor H Q L (paramsWord dateUniverse params).length E * (11 + 498960 * Post.descLen) +
+        pt + 10) * A.cost := by
+    have e : (Inl.andThenLin Post).cost = (Inl.andThenLin Post).time + (Inl.andThenLin Post).descLen :=
+      rfl
+    rw [e]
+    have h4 : 498960 * Inl.cost * Post.descLen ≤
+        498960 * Post.descLen * (initFactor H Q L (paramsWord dateUniverse params).length E * A.cost) := by
+      calc 498960 * Inl.cost * Post.descLen = 498960 * Post.descLen * Inl.cost := by ring
+        _ ≤ _ := Nat.mul_le_mul_left _ h3
+    have h5 : 11 * Inl.time ≤ 11 * (initFactor H Q L (paramsWord dateUniverse params).length E * A.cost) :=
+      Nat.mul_le_mul_left _ (hIt.trans h3)
+    nlinarith
   calc _ ≤ _ := h1
     _ ≤ P.andThenLinFactor * 650000 *
-          (500000 * (initFactor H Q L (paramsWord dateUniverse params).length E * A.cost) *
-            Post.cost) * D.cost := by
-        gcongr
-        exact h2.trans (by gcongr)
+          ((initFactor H Q L (paramsWord dateUniverse params).length E * (11 + 498960 * Post.descLen) +
+            pt + 10) * A.cost) * D.cost := by gcongr
     _ = _ := by ring
 
 /-- **Cost of the reduction, quadratic form.** -/
 theorem cost_reduction_le_sq (P Post : Machine) (A : Machine 3) (H : Fin 3 → Routine (m + 3))
-    (E Q L : ℕ) (D : Machine) :
+    (E Q L pt : ℕ) (D : Machine) (hPostT : Post.time ≤ pt * A.cost) :
     ((reduction P Post A H E Q L D).cost : ℝ) ≤
-      (redFactor P Post H E Q L : ℝ) * ((A.cost + D.cost : ℕ) : ℝ) ^ 2 := by
-  have h := cost_reduction_le P Post A H E Q L D
+      (redFactor P Post H E Q L pt : ℝ) * ((A.cost + D.cost : ℕ) : ℝ) ^ 2 := by
+  have h := cost_reduction_le P Post A H E Q L pt D hPostT
   have h' : ((reduction P Post A H E Q L D).cost : ℝ) ≤
-      (redFactor P Post H E Q L : ℝ) * (A.cost : ℝ) * (D.cost : ℝ) := by exact_mod_cast h
+      (redFactor P Post H E Q L pt : ℝ) * (A.cost : ℝ) * (D.cost : ℝ) := by exact_mod_cast h
   refine h'.trans ?_
   push_cast
   have : (A.cost : ℝ) * D.cost ≤ ((A.cost : ℝ) + D.cost) ^ 2 := by
     nlinarith [sq_nonneg ((A.cost : ℝ)), sq_nonneg ((D.cost : ℝ)),
       (Nat.cast_nonneg A.cost : (0 : ℝ) ≤ A.cost), (Nat.cast_nonneg D.cost : (0 : ℝ) ≤ D.cost)]
-  have h0 : (0 : ℝ) ≤ redFactor P Post H E Q L := Nat.cast_nonneg _
-  calc (redFactor P Post H E Q L : ℝ) * A.cost * D.cost
-      = (redFactor P Post H E Q L : ℝ) * (A.cost * D.cost) := by ring
+  have h0 : (0 : ℝ) ≤ redFactor P Post H E Q L pt := Nat.cast_nonneg _
+  calc (redFactor P Post H E Q L pt : ℝ) * A.cost * D.cost
+      = (redFactor P Post H E Q L pt : ℝ) * (A.cost * D.cost) := by ring
     _ ≤ _ := mul_le_mul_of_nonneg_left this h0
 
 end AdvancedEncryption.DualUse
