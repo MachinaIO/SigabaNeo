@@ -198,7 +198,7 @@ def run : Prog k → Store k → Store k
   | ifBit i p q, s => if hd (s i) = true then run p s else run q s
   | loop i body, s => (fun t => run body (tailAt i t))^[(s i).length] s
 
-@[simp] theorem run_prim (p : Prim k) (s : Store k) : run (prim p) s = p.apply s := rfl
+theorem run_prim (p : Prim k) (s : Store k) : run (prim p) s = p.apply s := rfl
 @[simp] theorem run_seq (p q : Prog k) (s : Store k) : run (seq p q) s = run q (run p s) := rfl
 theorem run_ifBlank (i : Fin k) (p q : Prog k) (s : Store k) :
     run (ifBlank i p q) s = if s i = [] then run p s else run q s := rfl
@@ -508,7 +508,21 @@ theorem run_map_eq_update (hu : Function.Injective u) (p : Prog n) (s : Store k)
     run (map u p) s = Function.update s (u o) v := by
   rw [run_map hu, h, extend_update hu, extend_comp_self]
 
+/-- The law of a relabelled program of the fragment whose specification is an update. -/
+theorem law_map_eq_update (hu : Function.Injective u) (p : Prog n) (hp : p.NoGrow) (s : Store k)
+    (o : Fin n) (v : List Bool) (h : run p (s ∘ u) = Function.update (s ∘ u) o v) :
+    law (map u p) s = PMF.pure (Function.update s (u o) v) := by
+  rw [law_eq_run _ (hp.map u), run_map_eq_update hu p s o v h]
+
 end Map
+
+/-- **The bounds of a program of the fragment**, from its syntactic constants: the length bound
+is the identity, the time is at most `C (L + 1) ^ d`, and the machine has `S` states. Relabelling
+changes none of them (`lenBound_map`, `timeBound_map`, `size_map`). -/
+theorem bounds_of (p : Prog k) (hp : p.NoGrow) {C d S : ℕ} (hC : tbC p = C) (hd : tbD p = d)
+    (hS : size p = S) (L : ℕ) :
+    lenBound p L = L ∧ timeBound p L ≤ C * (L + 1) ^ d ∧ size p = S :=
+  ⟨lenBound_eq p hp L, hC ▸ hd ▸ timeBound_le p hp L, hS⟩
 
 /-! ### Small programs -/
 
@@ -553,7 +567,7 @@ def nop (i : Fin k) : Prog k := prim (.copy i i)
 
 @[simp] theorem run_sin (b : Bool) (i : Fin k) (s : Store k) :
     run (sin b i) s = Function.update s i ((s i ++ [b]).tail) := by
-  simp [sin, Prim.apply, carryOp_sinOp_snd]
+  simp [sin, run_prim, Prim.apply, carryOp_sinOp_snd]
 
 @[simp] theorem run_push (i f : Fin k) (s : Store k) :
     run (push i f) s = Function.update s i ((s i ++ [hd (s f)]).tail) := by
@@ -562,14 +576,14 @@ def nop (i : Fin k) : Prog k := prim (.copy i i)
 
 @[simp] theorem run_takeHead (f a : Fin k) (s : Store k) :
     run (takeHead f a) s = Function.update s f ((s a).take 1) := by
-  simp [takeHead, Prim.apply]
+  simp [takeHead, run_prim, Prim.apply]
 
 @[simp] theorem run_setZero (i : Fin k) (s : Store k) :
     run (setZero i) s = Function.update s i (List.replicate (s i).length false) := by
-  simp [setZero, Prim.apply, carryOp_zeroOp_snd]
+  simp [setZero, run_prim, Prim.apply, carryOp_zeroOp_snd]
 
 @[simp] theorem run_nop (i : Fin k) (s : Store k) : run (nop i) s = s := by
-  simp [nop, Prim.apply]
+  simp [nop, run_prim, Prim.apply]
 
 @[simp] theorem run_clear (i : Fin k) (s : Store k) :
     run (prim (.clear i)) s = Function.update s i [] := rfl
