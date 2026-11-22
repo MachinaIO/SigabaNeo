@@ -72,6 +72,30 @@ theorem law_keyTrySimCoinsP {N K k d B P m : ℕ} (hK0 : 0 < K) (s : Store 90)
   · subst hj3; simp [h3]
   · simp [hj3]
 
+/-- **Time bound** of the whole program on words at most `L` long: the coin loop, then the
+deterministic part on words at most `2L` long, with the syntactic constants `tbC`, `tbD` of
+`keyTrySimP ⨾ clr 3` (`timeBound_le`). -/
+theorem timeBound_keyTrySimCoinsP (L : ℕ) :
+    timeBound keyTrySimCoinsP L ≤
+      23 * (L + 1) ^ 2 + tbC (keyTrySimP ⨾ clr 3) * (2 * L + 1) ^ tbD (keyTrySimP ⨾ clr 3) := by
+  have hng : (keyTrySimP ⨾ clr 3).NoGrow := by decide
+  show timeBound (coinsAt 3 25 41 42) L +
+      timeBound (keyTrySimP ⨾ clr 3) (lenBound (coinsAt 3 25 41 42) L) ≤ _
+  have h1 := timeBound_coinsAt_le (3 : Fin 90) 25 41 42 L
+  have h2 := timeBound_le _ hng (lenBound (coinsAt (3 : Fin 90) 25 41 42) L)
+  have h3 : (lenBound (coinsAt (3 : Fin 90) 25 41 42) L + 1) ^ tbD (keyTrySimP ⨾ clr 3) ≤
+      (2 * L + 1) ^ tbD (keyTrySimP ⨾ clr 3) :=
+    Nat.pow_le_pow_left (by have := lenBound_coinsAt_le (3 : Fin 90) 25 41 42 L; omega) _
+  have h4 := Nat.mul_le_mul_left (tbC (keyTrySimP ⨾ clr 3)) h3
+  omega
+
+/-- The length bound of the whole program: `2L` (the coins), then unchanged. -/
+theorem lenBound_keyTrySimCoinsP_le (L : ℕ) : lenBound keyTrySimCoinsP L ≤ 2 * L := by
+  have hng : (keyTrySimP ⨾ clr 3).NoGrow := by decide
+  show lenBound (keyTrySimP ⨾ clr 3) (lenBound (coinsAt 3 25 41 42) L) ≤ _
+  rw [lenBound_eq _ hng]
+  exact lenBound_coinsAt_le _ _ _ _ L
+
 /-- The first two blocks of a public key fit in its word. -/
 theorem pk_size {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : DualUse.Conf N K k) (mpk : DualUse.PK hk c) :
     c.d * (N * K) + nT k * (N * K) ≤ ((DualUse.pkEnc hk c).enc mpk).length := by
