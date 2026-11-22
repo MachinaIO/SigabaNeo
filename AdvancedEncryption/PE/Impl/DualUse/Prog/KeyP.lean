@@ -47,7 +47,7 @@ section Helpers
 variable {n m : ℕ}
 
 /-- An embedded store, from its values on and off the frame. -/
-theorem embedF_eq_of (e : Fin m ↪ Fin n) (s s' : Store n) (g : Store m)
+theorem embedF_eq_of {α : Type} (e : Fin m ↪ Fin n) (s s' : Fin n → α) (g : Fin m → α)
     (h1 : ∀ j, s' (e j) = g j) (h2 : ∀ t, (∀ j, e j ≠ t) → s' t = s t) : embedF e s g = s' := by
   funext t
   rcases embedF_cases e s g t with ⟨hn, h⟩ | ⟨j, rfl, h⟩
@@ -155,27 +155,27 @@ theorem eSd_val (j : Fin 82) : (eSd j).val = if j.val = 0 then 0 else j.val + 1 
 theorem eFr_val (j : Fin 8) : (eFr j).val = if j.val = 0 then 1 else j.val + 82 := rfl
 theorem eKT_val (j : Fin 90) : (eKT j).val = j.val := rfl
 
-theorem io2_eSd (a b d : List Bool) :
+theorem io2_eSd {α : Type} (a b d : α) :
     (fun j => io2 (R := 254) a b d (eSd j)) = io2 (R := 80) a d d := by
   funext j
   simp only [io2, eSd_val]
   split_ifs <;> first | rfl | (exfalso; omega)
 
-theorem embedF_eSd (a b a' : List Bool) :
-    embedF eSd (io2 (R := 254) a b []) (io2 (R := 80) a' [] []) = io2 (R := 254) a' b [] := by
+theorem embedF_eSd {α : Type} (a b a' d : α) :
+    embedF eSd (io2 (R := 254) a b d) (io2 (R := 80) a' d d) = io2 (R := 254) a' b d := by
   refine embedF_eq_of _ _ _ _ (fun j => ?_) (fun t ht => ?_)
   · simp only [io2, eSd_val]; split_ifs <;> first | rfl | (exfalso; omega)
   · have h0 : t.val ≠ 0 := fun h => ht 0 (Fin.ext (by rw [eSd_val]; simp [h]))
     simp only [io2, h0, ite_false]
 
-theorem io2_eFr (a b : List Bool) :
-    (fun j => io2 (R := 254) a b [] (eFr j)) = io2 (R := 6) b [] [] := by
+theorem io2_eFr {α : Type} (a b d : α) :
+    (fun j => io2 (R := 254) a b d (eFr j)) = io2 (R := 6) b d d := by
   funext j
   simp only [io2, eFr_val]
   split_ifs <;> first | rfl | (exfalso; omega)
 
-theorem embedF_eFr (a b b' : List Bool) :
-    embedF eFr (io2 (R := 254) a b []) (io2 (R := 6) b' [] []) = io2 (R := 254) a b' [] := by
+theorem embedF_eFr {α : Type} (a b b' d : α) :
+    embedF eFr (io2 (R := 254) a b d) (io2 (R := 6) b' d d) = io2 (R := 254) a b' d := by
   refine embedF_eq_of _ _ _ _ (fun j => ?_) (fun t ht => ?_)
   · simp only [io2, eFr_val]; split_ifs <;> first | rfl | (exfalso; omega)
   · have h1 : t.val ≠ 1 := fun h => ht 0 (Fin.ext (by rw [eFr_val]; simp [h]))
