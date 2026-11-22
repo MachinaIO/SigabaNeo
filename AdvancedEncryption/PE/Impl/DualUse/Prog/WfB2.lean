@@ -600,6 +600,65 @@ theorem s1_simPre (hW : 0 < W) (hb : BndG W gs) :
 
 end PrepT
 
+/-! ### The entries of the words `ψᵢ` -/
+
+theorem concatN_eq_flatten (n : ℕ) (f : ℕ → List Bool) :
+    concatN n f = ((List.range n).map f).flatten := by
+  induction n with
+  | zero => rfl
+  | succ n ih => rw [concatN, ih, List.range_succ, List.map_append, List.flatten_append]; simp
+
+/-- The entry `q = (a, (c₁, c₂))` of the word of a `2 × 2k` matrix. -/
+def entQ (N K k : ℕ) (w : List Bool) (q : Fin 2 × (Fin 2 × Fin k)) : List Bool :=
+  rget N K (q.1.val * (2 * k) + (q.2.1.val * k + q.2.2.val)) w
+
+theorem getElem_product_div {α β : Type*} (l₁ : List α) (l₂ : List β) {i : ℕ}
+    (hi : i < (l₁ ×ˢ l₂).length) :
+    (l₁ ×ˢ l₂)[i] = (l₁[i / l₂.length]'(by
+        rw [List.length_product] at hi
+        exact Nat.div_lt_of_lt_mul (by rwa [Nat.mul_comm] at hi)),
+      l₂[i % l₂.length]'(Nat.mod_lt _ (by
+        rw [List.length_product] at hi; rcases Nat.eq_zero_or_pos l₂.length with h | h
+        · rw [h] at hi; simp at hi
+        · exact h))) := by
+  have hl : 0 < l₂.length := by
+    rw [List.length_product] at hi; rcases Nat.eq_zero_or_pos l₂.length with h | h
+    · rw [h] at hi; simp at hi
+    · exact h
+  have h := ValVM.getD_product_map' l₁ l₂ (C := l₂.length) rfl id (l₁[0]'(by
+      rw [List.length_product] at hi; rcases Nat.eq_zero_or_pos l₁.length with h | h
+      · rw [h] at hi; simp at hi
+      · exact h), l₂[0]'hl) (i := i / l₂.length) (j := i % l₂.length)
+    (Nat.div_lt_of_lt_mul (by rw [List.length_product] at hi; rwa [Nat.mul_comm] at hi))
+    (Nat.mod_lt _ hl)
+  rw [List.map_id, Nat.div_add_mod' i l₂.length, List.getD_eq_getElem _ _ hi] at h
+  exact h
+
+theorem qsL_idx (k : ℕ) : (ValVM.qsL k).map (fun q => q.1.val * (2 * k) + (q.2.1.val * k + q.2.2.val))
+    = List.range (2 * (2 * k)) := by
+  apply List.ext_getElem (by simp [ValVM.length_qsL])
+  intro i h1 h2
+  simp only [List.length_map] at h1
+  rw [List.getElem_map, List.getElem_range]
+  simp only [ValVM.qsL]
+  rw [getElem_product_div]
+  simp only [List.getElem_finRange, Fin.val_cast, ValVM.cols]
+  rw [getElem_product_div]
+  simp only [List.getElem_finRange, Fin.val_cast, List.length_finRange, List.length_product]
+  have hk : 0 < k := by
+    rcases Nat.eq_zero_or_pos k with h | h
+    · subst h; simp [ValVM.length_qsL] at h1
+    · exact h
+  rw [Nat.div_add_mod' (i % (2 * k)) k, Nat.div_add_mod' i (2 * k)]
+
+theorem qsL_entries (N K k : ℕ) (w : List Bool) (hw : w.length = 2 * (2 * k) * (N * K)) :
+    ((ValVM.qsL k).map (entQ N K k w)).flatten = w := by
+  have e : (ValVM.qsL k).map (entQ N K k w) =
+      ((ValVM.qsL k).map (fun q => q.1.val * (2 * k) + (q.2.1.val * k + q.2.2.val))).map
+        (fun p => rget N K p w) := by rw [List.map_map]; rfl
+  rw [e, qsL_idx, ← concatN_eq_flatten]
+  exact concatN_block hw
+
 end WB2
 
 end AdvancedEncryption.DualUse.Prog
