@@ -277,15 +277,16 @@ def rippleAddC (n : SR) (lA lB lR : LR) : Code :=
 
 /-- `lR := lR ++ muxL (reg 36) lA lB`. -/
 def muxLC (n : SR) (lA lB lR : LR) : Code :=
-  .rep n (zipBody (muxC 35 36 33 34 37 38 39) 33 34 35 40 40 lA lB lR)
+  .seq (.mov 40 rONE) (.rep n (zipBody (muxC 35 36 33 34 37 38 39) 33 34 35 40 40 lA lB lR))
 
 /-- `lR := lR ++ andL (reg 36) lA` (`lB` is scratch). -/
 def andLC (n : SR) (lA lB lR : LR) : Code :=
-  .seq (.lmov lB lA) (.rep n (zipBody (andC 35 36 33 37) 33 34 35 40 40 lA lB lR))
+  .seq (.mov 40 rONE) (.seq (.lmov lB lA)
+    (.rep n (zipBody (andC 35 36 33 37) 33 34 35 40 40 lA lB lR)))
 
 /-- `lR := lR ++ notL lA` (`lB` is scratch). -/
 def notLC (n : SR) (lA lB lR : LR) : Code :=
-  .seq (.lmov lB lA) (.rep n (zipBody (notC 35 33) 33 34 35 40 40 lA lB lR))
+  .seq (.mov 40 rONE) (.seq (.lmov lB lA) (.rep n (zipBody (notC 35 33) 33 34 35 40 40 lA lB lR)))
 
 theorem exec_rep (a : SR) (body : Code) (σ : St) :
     exec E (.rep a body) σ = (exec E body)^[σ.sc a] σ := rfl
@@ -322,6 +323,102 @@ theorem exec_rippleAddC (hnM : E.n ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix
   simp only [exec, e, hlen, ite_true, h18, d1]
   congr 1
   simp only [ls3, Function.update_idem, L1, List.map_append, List.map_singleton, List.append_assoc]
+
+theorem exec_muxLC (hnM : E.n ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n) {n : SR}
+    {lA lB lR : LR} (hAB : lA ≠ lB) (hAR : lA ≠ lR) (hBR : lB ≠ lR) (ws : Wire ι)
+    (as bs : List (Wire ι)) (P : SLP ι) (σ : St) (L0 : List ℕ) (hl : as.length = bs.length)
+    (hc : Consts E σ) (hI : Inv E σ) (hS : ScOK E σ) (hs : σ.sc 36 = pos E ix ws)
+    (hA : σ.ls lA = as.map (pos E ix)) (hB : σ.ls lB = bs.map (pos E ix)) (hR : σ.ls lR = L0)
+    (hn : σ.sc n = as.length) (hn40 : n ≠ 40) (hcap : L0.length + as.length ≤ E.C)
+    (hM : E.n + (exec E (muxLC n lA lB lR) (mk E ix P σ)).t ≤ E.M) :
+    ∃ sc', exec E (muxLC n lA lB lR) (mk E ix P σ) = mk E ix (muxL ws P as bs).1
+        { σ with sc := sc', ls := ls3 σ.ls lA lB lR (L0 ++ (muxL ws P as bs).2.map (pos E ix)) } ∧
+      Fr [33, 34, 40, 35, 37, 38, 39] σ.sc sc' := by
+  set σ0 : St := { σ with sc := Function.update σ.sc 40 E.n }
+  have e0 : exec E (.mov 40 rONE) (mk E ix P σ) = mk E ix P σ0 := by
+    simp only [exec_mk_mov]; simp [exec, σ0, hc.1]
+  rw [muxLC, exec_seq, e0, exec_rep] at hM ⊢
+  have hn0 : σ0.sc n = as.length := by simp [σ0, Function.update_of_ne hn40, hn]
+  rw [mk_sc, hn0] at hM ⊢
+  obtain ⟨sc1, h1, _, f1⟩ := iter_zipBody hnM hWM (gspec_muxC hix ws) hAB hAR hBR (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) as bs P σ0 .one L0 hl
+    ⟨by simp [σ0, Function.update_of_ne (by decide : rONE ≠ 40), hc.1],
+      by simp [σ0, Function.update_of_ne (by decide : rZ ≠ 40), hc.2]⟩ (by simp [σ0, Function.update_of_ne (by decide : (36 : SR) ≠ 40), hs]) hI
+    (fun r => by by_cases h : r = 40 <;> simp [σ0, h, hnM, hS r]) hA hB hR (by simp [σ0, pos])
+    (by omega) hM
+  rw [h1, muxL_eq ws P as bs .one hl]
+  refine ⟨sc1, rfl, fun r hr => ?_⟩
+  rw [f1 r hr]
+  simp only [σ0]
+  rw [Function.update_of_ne (fun h => hr (by simp [h]))]
+
+theorem exec_andLC (hnM : E.n ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n) {n : SR}
+    {lA lB lR : LR} (hAB : lA ≠ lB) (hAR : lA ≠ lR) (hBR : lB ≠ lR) (wd : Wire ι)
+    (as : List (Wire ι)) (P : SLP ι) (σ : St) (L0 : List ℕ)
+    (hc : Consts E σ) (hI : Inv E σ) (hS : ScOK E σ) (hs : σ.sc 36 = pos E ix wd)
+    (hA : σ.ls lA = as.map (pos E ix)) (hR : σ.ls lR = L0)
+    (hn : σ.sc n = as.length) (hn40 : n ≠ 40) (hcap : L0.length + as.length ≤ E.C)
+    (hM : E.n + (exec E (andLC n lA lB lR) (mk E ix P σ)).t ≤ E.M) :
+    ∃ sc', exec E (andLC n lA lB lR) (mk E ix P σ) = mk E ix (andL wd P as).1
+        { σ with sc := sc', ls := ls3 σ.ls lA lB lR (L0 ++ (andL wd P as).2.map (pos E ix)) } ∧
+      Fr [33, 34, 40, 35, 37] σ.sc sc' := by
+  set σ0 : St := { σ with sc := Function.update σ.sc 40 E.n, ls := Function.update σ.ls lB (σ.ls lA) }
+  have e0 : exec E (.lmov lB lA) (exec E (.mov 40 rONE) (mk E ix P σ)) = mk E ix P σ0 := by
+    simp only [exec_mk_mov]; simp [exec, σ0, hc.1]; rfl
+  rw [andLC, exec_seq, exec_seq, e0, exec_rep] at hM ⊢
+  have hn0 : σ0.sc n = as.length := by simp [σ0, Function.update_of_ne hn40, hn]
+  rw [mk_sc, hn0] at hM ⊢
+  have hI0 : Inv E σ0 := by
+    have := inv_exec E (.seq (.mov 40 rONE) (.lmov lB lA)) (mk E ix P σ) hI
+    rw [exec_seq, e0] at this; exact this
+  obtain ⟨sc1, h1, _, f1⟩ := iter_zipBody hnM hWM (gspec_andC hix wd) hAB hAR hBR (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) as as P σ0 .one L0 rfl
+    ⟨by simp [σ0, Function.update_of_ne (by decide : rONE ≠ 40), hc.1],
+      by simp [σ0, Function.update_of_ne (by decide : rZ ≠ 40), hc.2]⟩ (by simp [σ0, Function.update_of_ne (by decide : (36 : SR) ≠ 40), hs]) hI0
+    (fun r => by by_cases h : r = 40 <;> simp [σ0, h, hnM, hS r])
+    (by simp [σ0, Function.update_of_ne hAB, hA]) (by simp [σ0, hA])
+    (by simp [σ0, Function.update_of_ne hBR.symm, hR]) (by simp [σ0, pos]) (by omega) hM
+  rw [h1, andL_eq wd P as as .one rfl]
+  refine ⟨sc1, ?_, fun r hr => ?_⟩
+  · congr 2
+    funext l; simp only [ls3, σ0, Function.update_apply]; split_ifs <;> rfl
+  · rw [f1 r hr]
+    simp only [σ0]
+    rw [Function.update_of_ne (fun h => hr (by simp [h]))]
+
+theorem exec_notLC (hnM : E.n ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n) {n : SR}
+    {lA lB lR : LR} (hAB : lA ≠ lB) (hAR : lA ≠ lR) (hBR : lB ≠ lR)
+    (as : List (Wire ι)) (P : SLP ι) (σ : St) (L0 : List ℕ)
+    (hc : Consts E σ) (hI : Inv E σ) (hS : ScOK E σ)
+    (hA : σ.ls lA = as.map (pos E ix)) (hR : σ.ls lR = L0)
+    (hn : σ.sc n = as.length) (hn40 : n ≠ 40) (hcap : L0.length + as.length ≤ E.C)
+    (hM : E.n + (exec E (notLC n lA lB lR) (mk E ix P σ)).t ≤ E.M) :
+    ∃ sc', exec E (notLC n lA lB lR) (mk E ix P σ) = mk E ix (notL P as).1
+        { σ with sc := sc', ls := ls3 σ.ls lA lB lR (L0 ++ (notL P as).2.map (pos E ix)) } ∧
+      Fr [33, 34, 40, 35] σ.sc sc' := by
+  set σ0 : St := { σ with sc := Function.update σ.sc 40 E.n, ls := Function.update σ.ls lB (σ.ls lA) }
+  have e0 : exec E (.lmov lB lA) (exec E (.mov 40 rONE) (mk E ix P σ)) = mk E ix P σ0 := by
+    simp only [exec_mk_mov]; simp [exec, σ0, hc.1]; rfl
+  rw [notLC, exec_seq, exec_seq, e0, exec_rep] at hM ⊢
+  have hn0 : σ0.sc n = as.length := by simp [σ0, Function.update_of_ne hn40, hn]
+  rw [mk_sc, hn0] at hM ⊢
+  have hI0 : Inv E σ0 := by
+    have := inv_exec E (.seq (.mov 40 rONE) (.lmov lB lA)) (mk E ix P σ) hI
+    rw [exec_seq, e0] at this; exact this
+  obtain ⟨sc1, h1, _, f1⟩ := iter_zipBody hnM hWM (gspec_notC hix) hAB hAR hBR (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide) as as P σ0 .one L0 rfl
+    ⟨by simp [σ0, Function.update_of_ne (by decide : rONE ≠ 40), hc.1],
+      by simp [σ0, Function.update_of_ne (by decide : rZ ≠ 40), hc.2]⟩ (by simp [σ0, Function.update_of_ne (by decide : rONE ≠ 40), hc.1]) hI0
+    (fun r => by by_cases h : r = 40 <;> simp [σ0, h, hnM, hS r])
+    (by simp [σ0, Function.update_of_ne hAB, hA]) (by simp [σ0, hA])
+    (by simp [σ0, Function.update_of_ne hBR.symm, hR]) (by simp [σ0, pos]) (by omega) hM
+  rw [h1, notL_eq P as as .one rfl]
+  refine ⟨sc1, ?_, fun r hr => ?_⟩
+  · congr 2
+    funext l; simp only [ls3, σ0, Function.update_apply]; split_ifs <;> rfl
+  · rw [f1 r hr]
+    simp only [σ0]
+    rw [Function.update_of_ne (fun h => hr (by simp [h]))]
 
 end FhatGen
 
