@@ -12,19 +12,22 @@ encOpt msg, o]` otherwise (`postG`).
 
 Every primitive of the tape language sweeps whole tapes, so the long word `o` is never read bit by
 bit by a program. The machine is one closed machine of four phases (`SigabaNeo.Tape.Pass`), each
-linear in the input length, with no clock between them (so its number of states does not depend on
-`n`):
+linear in the input length, with no clock between them (so its number of states depends neither on
+`n` nor on `E`):
 
 1. `revInPhase`: tape `0` := the reversal of the input, `dbl (rev u) ++ true :: false :: rev o`;
 2. `trPhase sepT`: tape `1` := the separator transducer `sepT` on tape `0`: it reads pairs, emits
    `[true, b]` for a pair `b b` (a bit of `rev u`) and `[false, false]` for the first unequal pair
    `true false` (the separator), then `[c, true]` for every bit `c` of `rev o`, so that tape `1` is
    `frame (rev u) ++ rev (frame o)` (`sepT_run`);
-3. the tape program `postProg E nA nM`: `E` rounds move the bits of `u` (at most `E`) to tape `3`;
-   tape `1` is then `rev (frame o)`, and the program appends the reversal of the head
-   `true :: frame (encOpt attr) ++ frame (encOpt msg)` read off `u` (or writes `[false]` when the
-   flag is up). It has no loop, so it takes `pcount · (2 L + …)` steps for words of length `L`;
-4. `revOutPhase`: emit the reversal of tape `1`.
+3. `trPhase cntT`: tape `7` := the counter transducer `cntT` on tape `0`: one bit per pair of
+   `dbl (rev u)`, so tape `7` is `rev u`, of length `|u| ≤ E` (`cntT_run`);
+4. the tape program `postProg nA nM`: a loop on the counter tape `7` (`|u|` rounds) moves the bits
+   of `u` to tape `3`; tape `1` is then `rev (frame o)`, and the program appends the reversal of
+   the head `true :: frame (encOpt attr) ++ frame (encOpt msg)` read off `u` (or writes `[false]`
+   when the flag is up). Its states do not depend on `E`; under per-tape bounds
+   (`compile_runsWordsT`) the loop costs `|u| ≤ E` rounds of `O(n + E)` steps;
+5. `revOutPhase`: emit the reversal of tape `1`.
 
 ## Main results
 
@@ -32,8 +35,10 @@ linear in the input length, with no clock between them (so its number of states 
   PMF.pure (postG (obs (o, st.2)))` for `|o| ≤ n` and a state `st` as the handlers keep it
   (`PostOK`: the instance word does not start with `false`, the experiment state is initial or
   selected, the encoded state has at most `E` bits).
-* `Generic.time_post`: `(Post n E nA nM).time = postA E nA nM * n + postB E nA nM`;
-  `Generic.descLen_post`: the description length does not depend on `n`.
+* `Generic.time_post`: `(Post n E nA nM).time = postA E nA nM * n + postB E nA nM`, with
+  `postA = 19 + 28 E + 4 postPc` and `postB = O(E ^ 2)`;
+  `Generic.descLen_post`, `Generic.states_post`, `Generic.tapes_post`: the description length, the
+  states and the tapes depend neither on `n` nor on `E`.
 -/
 
 namespace AdvancedEncryption.PE.Generic
@@ -92,11 +97,56 @@ theorem sepT_run_pairOut (o u : List Bool) :
         o.reverse.flatMap (fun c => [c, true]) := by
   rw [reverse_pairOut, sepT_q₀]; exact sepT_run _ _
 
+/-! ### The counter transducer -/
+
+/-- The step of `cntT`: as `sepStep`, but it emits the bit `b` of a pair `b b`, and nothing at and
+after the separator. -/
+def cntStep : Option (Option Bool) → Bool → Option (Option Bool) × List Bool
+  | some none, a => (some (some a), [])
+  | some (some b), a => if a = b then (some none, [b]) else (none, [])
+  | none, _ => (none, [])
+
+theorem length_cntStep (q : Option (Option Bool)) (a : Bool) : (cntStep q a).2.length ≤ 2 := by
+  rcases q with _ | _ | b
+  · simp [cntStep]
+  · simp [cntStep]
+  · simp only [cntStep]; split_ifs <;> simp
+
+/-- **The counter transducer**: on `dbl v ++ true :: false :: r` it writes `v`. -/
+def cntT : MultiTapeTM.Transducer Bool (Option (Option Bool)) where
+  q₀ := some none
+  step := cntStep
+  final _ := []
+  length_step_le := length_cntStep
+  length_final_le _ := by simp
+
+@[simp] theorem cntT_step : cntT.step = cntStep := rfl
+@[simp] theorem cntT_final (q : Option (Option Bool)) : cntT.final q = [] := rfl
+@[simp] theorem cntT_q₀ : cntT.q₀ = some none := rfl
+
+theorem cntT_run_none : ∀ r : List Bool, cntT.run none r = []
+  | [] => rfl
+  | c :: r => by
+    rw [MultiTapeTM.Transducer.run_cons]
+    simp [cntStep, cntT_run_none r]
+
+theorem cntT_run (r : List Bool) : ∀ v : List Bool,
+    cntT.run (some none) (dbl v ++ true :: false :: r) = v
+  | [] => by
+    simp [MultiTapeTM.Transducer.run_cons, cntStep, cntT_run_none]
+  | b :: v => by
+    simp [MultiTapeTM.Transducer.run_cons, cntStep, cntT_run r v]
+
+/-- **The word of tape `7` after the counter transducer.** -/
+theorem cntT_run_pairOut (o u : List Bool) :
+    cntT.run cntT.q₀ (pairOut o u).reverse = u.reverse := by
+  rw [reverse_pairOut, cntT_q₀]; exact cntT_run _ _
+
 /-! ### The program
 
 Tapes: `0` the reversed input, `1` the word being built, `2` a flag tape of the phases, `3` the
 state word `u`, `4` a blank scratch tape, `5` the reversed attribute, `6` the reversed message,
-`7` the message flag. -/
+`7` the counter of the rounds, then the message flag. -/
 
 /-- One round: if tape `1` starts with `true b`, drop it and put `b` in front of tape `3`. -/
 def rnd : Prog 8 :=
@@ -125,10 +175,13 @@ def goodB (nA nM : ℕ) : Prog 8 :=
 /-- After the selection: `false :: bad :: …`. -/
 def caseB (nA nM : ℕ) : Prog 8 := .seq (.prim (.tail 3)) (.ifBit 3 badB (goodB nA nM))
 
-/-- **The program of the post-processing.** -/
-def postProg (E nA nM : ℕ) : Prog 8 :=
-  .seq (Prog.iter 1 rnd E) (.seq (.prim (.tail 1))
-    (.ifBlank 3 caseA (.ifBit 3 caseA (caseB nA nM))))
+/-- The program after the rounds. -/
+def postRest (nA nM : ℕ) : Prog 8 :=
+  .seq (.prim (.tail 1)) (.ifBlank 3 caseA (.ifBit 3 caseA (caseB nA nM)))
+
+/-- **The program of the post-processing**: one round per bit of the counter tape `7`, then the
+rest. -/
+def postProg (nA nM : ℕ) : Prog 8 := .seq (.loop 7 rnd) (postRest nA nM)
 
 /-! ### Its semantics -/
 
@@ -163,6 +216,38 @@ theorem run_rnds (R : List Bool) : ∀ (v : List Bool) (s : Store 8) (E : ℕ),
     funext j
     simp [Function.update_apply]
     split_ifs <;> simp_all
+
+/-- **The rounds as a loop on the counter tape `7`**: each round drops a bit of the counter. -/
+theorem iterate_rnd (R : List Bool) : ∀ (v : List Bool) (s : Store 8),
+    s 1 = v.flatMap (fun b => [true, b]) ++ false :: R → s 4 = [] →
+    (fun t => run rnd (tailAt 7 t))^[v.length] s =
+      Function.update (Function.update (Function.update s 1 (false :: R)) 3 (v.reverse ++ s 3)) 7
+        ((s 7).drop v.length)
+  | [], s, h1, _ => by
+    funext j
+    simp only [List.flatMap_nil, List.nil_append] at h1
+    simp only [List.length_nil, Function.iterate_zero, id_eq, List.reverse_nil, List.nil_append,
+      List.drop_zero, Function.update_apply]
+    split_ifs <;> simp_all
+  | b :: v, s, h1, h4 => by
+    rw [List.length_cons, Function.iterate_succ_apply]
+    have ht1 : tailAt 7 s 1 = true :: b :: (v.flatMap (fun b => [true, b]) ++ false :: R) := by
+      simp [tailAt, h1]
+    have ht4 : tailAt 7 s 4 = [] := by simp [tailAt, h4]
+    rw [run_rnd_true _ ht1 ht4]
+    rw [iterate_rnd R v _ (by simp) (by simp [tailAt, h4])]
+    have hd : ((s 7).tail).drop v.length = (s 7).drop (v.length + 1) := by
+      rcases s 7 with _ | ⟨a, l⟩ <;> simp
+    funext j
+    fin_cases j <;> simp [tailAt, hd]
+
+theorem run_loop_rnd (R : List Bool) (v : List Bool) (s : Store 8)
+    (h1 : s 1 = v.flatMap (fun b => [true, b]) ++ false :: R) (h4 : s 4 = [])
+    (h7 : (s 7).length = v.length) :
+    run (.loop 7 rnd) s =
+      Function.update (Function.update (Function.update s 1 (false :: R)) 3 (v.reverse ++ s 3)) 7
+        [] := by
+  rw [run_loop, h7, iterate_rnd R v s h1 h4, ← h7, List.drop_length]
 
 /-- The round of `appendFR`. -/
 def frBody (j : Fin 8) : Prog 8 :=
@@ -266,13 +351,14 @@ theorem run_caseB_good (nA nM : ℕ) (t : Store 8) {m : Bool} {μ a σ : List Bo
     show nA = (t4 5).length by simp [e4.2, ha], run_appendFR 5 (by decide)]
   simp [Prim.apply, e4.1, e4.2, rfr]
 
-/-- **The program, up to its branch**: the rounds move the bits of `u` to tape `3`. -/
-theorem run_postProg (E nA nM : ℕ) (s : Store 8) (u R : List Bool)
+/-- **The program, up to its branch**: the rounds (one per bit of the counter tape `7`, which holds
+`|u|` bits) move the bits of `u` to tape `3`. -/
+theorem run_postProg (nA nM : ℕ) (s : Store 8) (u R : List Bool)
     (h1 : s 1 = u.reverse.flatMap (fun b => [true, b]) ++ false :: R) (h3 : s 3 = [])
-    (h4 : s 4 = []) (hu : u.length ≤ E) :
-    run (postProg E nA nM) s 1 = run (.ifBlank 3 caseA (.ifBit 3 caseA (caseB nA nM)))
-      (Function.update (Function.update s 1 R) 3 u) 1 := by
-  rw [postProg, run_seq, run_iter, run_rnds R u.reverse s E h1 h4 (by simpa using hu), run_seq,
+    (h4 : s 4 = []) (h7 : (s 7).length = u.length) :
+    run (postProg nA nM) s 1 = run (.ifBlank 3 caseA (.ifBit 3 caseA (caseB nA nM)))
+      (Function.update (Function.update (Function.update s 1 R) 3 u) 7 []) 1 := by
+  rw [postProg, run_seq, run_loop_rnd R u.reverse s h1 h4 (by simpa using h7), postRest, run_seq,
     run_prim]
   congr 2
   funext i
@@ -294,9 +380,10 @@ theorem loopFree_appendFR (j : Fin 8) (c : ℕ) : (appendFR j c).LoopFree := by
   simp only [frBody] at h
   simp [appendFR, LoopFree, h]
 
-theorem loopFree_postProg (E nA nM : ℕ) : (postProg E nA nM).LoopFree := by
-  have h1 := loopFree_iter 1 rnd (by simp [rnd, LoopFree]) E
-  simp [postProg, caseA, caseB, badB, goodB, LoopFree, h1, loopFree_moveRev, loopFree_appendFR]
+theorem loopFree_rnd : rnd.LoopFree := by simp [rnd, LoopFree]
+
+theorem loopFree_postRest (nA nM : ℕ) : (postRest nA nM).LoopFree := by
+  simp [postRest, caseA, caseB, badB, goodB, LoopFree, loopFree_moveRev, loopFree_appendFR]
 
 theorem wf_of_loopFree : ∀ p : Prog 8, p.LoopFree → p.WF
   | .prim _, _ | .coin _, _ => trivial
@@ -310,14 +397,18 @@ theorem coinFree_appendFR (j : Fin 8) (c : ℕ) : (appendFR j c).CoinFree := by
   simp only [CoinFree, frBody] at h ⊢
   simp [appendFR, coinFreeB, h]
 
-theorem coinFree_postProg (E nA nM : ℕ) : (postProg E nA nM).CoinFree := by
-  have h1 := coinFree_iter 1 rnd rfl E
+theorem coinFree_postProg (nA nM : ℕ) : (postProg nA nM).CoinFree := by
+  have h1 : rnd.CoinFree := rfl
   have h2 := coinFree_moveRev nM 3 6 4
   have h3 := coinFree_moveRev nA 3 5 4
   have h4 := coinFree_appendFR 6 nM
   have h5 := coinFree_appendFR 5 nA
   simp only [CoinFree] at *
-  simp [postProg, caseA, caseB, badB, goodB, coinFreeB, h1, h2, h3, h4, h5]
+  simp [postProg, postRest, caseA, caseB, badB, goodB, coinFreeB, h1, h2, h3, h4, h5]
+
+theorem wf_postProg (nA nM : ℕ) : (postProg nA nM).WF :=
+  ⟨⟨wf_of_loopFree rnd loopFree_rnd, by simp [rnd, Preserves, Prim.writes]⟩,
+    wf_of_loopFree _ (loopFree_postRest nA nM)⟩
 
 theorem preserves_appendFR (j : Fin 8) (hj : j ≠ 2) (c : ℕ) : (appendFR j c).Preserves 2 := by
   have h := preserves_iter 1 (frBody j) (i := 2) (by decide)
@@ -329,9 +420,9 @@ theorem preserves_moveRev2 (n : ℕ) (dst : Fin 8) (hd : dst ≠ 2) :
     (Prog.moveRev n 3 dst 4).Preserves 2 :=
   preserves_iter _ _ (by decide) (by simp [Prog.stepR, Preserves, Prim.writes, Ne.symm hd]) n
 
-theorem preserves_postProg (E nA nM : ℕ) : (postProg E nA nM).Preserves 2 := by
-  have h1 := preserves_iter 1 rnd (i := 2) (by decide) (by simp [rnd, Preserves, Prim.writes]) E
-  simp [postProg, caseA, caseB, badB, goodB, Preserves, Prim.writes, h1,
+theorem preserves_postProg (nA nM : ℕ) : (postProg nA nM).Preserves 2 := by
+  have h1 : rnd.Preserves 2 := by simp [rnd, Preserves, Prim.writes]
+  simp [postProg, postRest, caseA, caseB, badB, goodB, Preserves, Prim.writes, h1,
     preserves_moveRev2 _ 6 (by decide), preserves_moveRev2 _ 5 (by decide),
     preserves_appendFR 6 (by decide), preserves_appendFR 5 (by decide)]
 
@@ -353,69 +444,174 @@ def eOut : Fin 2 ↪ Fin 8 := ⟨![1, 2], by decide⟩
 @[simp] theorem eOut_zero : eOut 0 = 1 := rfl
 @[simp] theorem eOut_one : eOut 1 = 2 := rfl
 
-/-- The four phases. -/
-noncomputable def postPTM (E nA nM : ℕ) :=
-  (revInPhase eIn).seq ((trPhase sepT eTr).seq ((Prog.compile (postProg E nA nM)).seq (revOutPhase eOut)))
+/-- Output, input and flag tapes of the counter transducer. -/
+def eCnt : Fin 3 ↪ Fin 8 := ⟨![7, 0, 2], by decide⟩
 
-/-- The number of primitives of the program. -/
-def postPc (E nA nM : ℕ) : ℕ := Prog.pcount (postProg E nA nM)
+@[simp] theorem eCnt_zero : eCnt 0 = 7 := rfl
+@[simp] theorem eCnt_one : eCnt 1 = 0 := rfl
+@[simp] theorem eCnt_two : eCnt 2 = 2 := rfl
+
+/-- The five phases. -/
+noncomputable def postPTM (nA nM : ℕ) :=
+  (revInPhase eIn).seq ((trPhase sepT eTr).seq ((trPhase cntT eCnt).seq
+    ((Prog.compile (postProg nA nM)).seq (revOutPhase eOut))))
+
+/-- The number of primitives of the program after the rounds. -/
+def postPc (nA nM : ℕ) : ℕ := Prog.pcount (postRest nA nM)
+
+theorem pcount_rnd : Prog.pcount rnd = 6 := rfl
+
+/-- The bound on every tape but the counter after the rounds: `L + E` with `L = 2 N + 2`,
+`N = n + 2 + 2 E`. -/
+def postM (n E : ℕ) : ℕ := 2 * (n + 2 + 2 * E) + 2 + E
+
+/-- The time bound of the program under per-tape bounds: `E` rounds, then the rest. -/
+def postProgTime (n E nA nM : ℕ) : ℕ :=
+  E * (2 * postM n E + 3 + 6 * (2 * (postM n E + 6) + 5) + 1) + 2 +
+    postPc nA nM * (2 * (postM n E + postPc nA nM) + 5)
 
 /-- The clock, for outputs of `A` of at most `n` bits and encoded states of at most `E` bits. -/
 def postClock (n E nA nM : ℕ) : ℕ :=
-  9 * (n + 2 + 2 * E) + 20 +
-    postPc E nA nM * (2 * (2 * (n + 2 + 2 * E) + 2 + postPc E nA nM) + 5) +
-    (2 * (2 * (n + 2 + 2 * E) + 2 + postPc E nA nM) + 6)
+  3 * (n + 2 + 2 * E) + 4 + (6 * (n + 2 + 2 * E) + 16) + (6 * (n + 2 + 2 * E) + 16) +
+    postProgTime n E nA nM + (2 * (postM n E + postPc nA nM) + 6)
 
 /-- **The post-processing machine.** -/
 noncomputable def Post (n E nA nM : ℕ) : Machine :=
-  Machine.ofPTM (postPTM E nA nM) (postClock n E nA nM)
+  Machine.ofPTM (postPTM nA nM) (postClock n E nA nM)
 
 /-- The store before the program. -/
 def postS (x : List Bool) : Store 8 :=
-  Function.update (Function.update (fun _ => []) 0 x.reverse) 1 (sepT.run sepT.q₀ x.reverse)
+  Function.update (Function.update (Function.update (fun _ => []) 0 x.reverse) 1
+    (sepT.run sepT.q₀ x.reverse)) 7 (cntT.run cntT.q₀ x.reverse)
 
-/-- **The output of the machine on a word**: the reversal of tape `1` after the program. -/
-theorem run_Post_word (n E nA nM : ℕ) (x : List Bool) (hx : x.length ≤ n + 2 + 2 * E) :
+/-! ### The time of the program under per-tape bounds -/
+
+section TimeT
+
+open Prog
+
+theorem compile_runsWordsTU (p : Prog 8) (hp : p.WF) (hc : p.CoinFree) (x : List Bool)
+    (ℓ : Fin 8 → ℕ) (s : Store 8) (out₀ : List Bool) (hs : Fits s ℓ) :
+    (compile p).RunsWords x s out₀ (timeBoundT p ℓ) (pure ()) (fun _ => run p s) (fun _ => []) := by
+  have h := compile_runsWordsT p hp x ℓ s out₀ hs
+  rw [denote_eq_run_of_coinFree p hc s, ProbOracleComp.sample_pure] at h
+  exact RunsWords.toUnit h
+
+theorem lenBound_rnd (c : ℕ) : lenBound rnd c ≤ c + 1 := by
+  simp [rnd, lenBound, Prim.grow]
+
+theorem loopStepT_rnd_le {ℓ : Fin 8 → ℕ} {c : ℕ} (h : ∀ t, ℓ t ≤ c) (t : Fin 8) :
+    loopStepT 7 rnd ℓ t ≤ c + 1 := by
+  have h1 : loopStepT 7 rnd ℓ ≤ lenBoundT rnd (fun _ => c) :=
+    lenBoundT_mono rnd ((tailB_le 7 ℓ).trans fun t => h t)
+  exact (h1 t).trans ((lenBoundT_const_le rnd c t).trans (lenBound_rnd c))
+
+theorem iterate_loopStepT_rnd_le {ℓ : Fin 8 → ℕ} {c : ℕ} (h : ∀ t, ℓ t ≤ c) :
+    ∀ j t, ((loopStepT 7 rnd)^[j] ℓ) t ≤ c + j
+  | 0, t => h t
+  | j + 1, t => by
+    rw [Function.iterate_succ_apply']
+    exact loopStepT_rnd_le (iterate_loopStepT_rnd_le h j) t
+
+/-- **The time of the program** from per-tape bounds `ℓ`, all at most `L`, with at most `E` bits on
+the counter tape. -/
+theorem timeBoundT_postProg (nA nM L E : ℕ) (ℓ : Fin 8 → ℕ) (hℓ : ∀ t, ℓ t ≤ L) (h7 : ℓ 7 ≤ E) :
+    timeBoundT (postProg nA nM) ℓ ≤
+      E * (2 * (L + E) + 3 + 6 * (2 * (L + E + 6) + 5) + 1) + 2 +
+        postPc nA nM * (2 * (L + E + postPc nA nM) + 5) ∧
+    lenBoundT (postProg nA nM) ℓ 1 ≤ L + E + postPc nA nM := by
+  have hit := iterate_loopStepT_rnd_le hℓ
+  have hloop : timeBoundT (loop 7 rnd) ℓ ≤
+      ℓ 7 * (2 * (L + E) + 3 + 6 * (2 * (L + E + 6) + 5) + 1) + 2 := by
+    refine timeBoundT_loop_le 7 rnd ℓ fun j hj => ?_
+    have hj' : ∀ t, ((loopStepT 7 rnd)^[j] ℓ) t ≤ L + E := fun t => (hit j t).trans (by omega)
+    have h1 := roundTimeT_le rnd 7 ((loopStepT 7 rnd)^[j] ℓ)
+    have h2 : supB ((loopStepT 7 rnd)^[j] ℓ) ≤ L + E := Finset.sup_le fun t _ => hj' t
+    have h3 := timeBoundT_le_pcount rnd loopFree_rnd _ hj'
+    rw [pcount_rnd] at h3
+    omega
+  have hlenL : ∀ t, lenBoundT (loop 7 rnd) ℓ t ≤ L + E := by
+    intro t
+    rw [lenBoundT_loop]
+    exact Finset.sup_le fun j hj => (hit j t).trans (by simp at hj; omega)
+  have hrest := timeBoundT_le_pcount (postRest nA nM) (loopFree_postRest nA nM) _ hlenL
+  refine ⟨?_, ?_⟩
+  · have e : timeBoundT (postProg nA nM) ℓ =
+        timeBoundT (loop 7 rnd) ℓ + timeBoundT (postRest nA nM) (lenBoundT (loop 7 rnd) ℓ) := rfl
+    have hm : ℓ 7 * (2 * (L + E) + 3 + 6 * (2 * (L + E + 6) + 5) + 1) ≤
+        E * (2 * (L + E) + 3 + 6 * (2 * (L + E + 6) + 5) + 1) := Nat.mul_le_mul_right _ h7
+    rw [e]; unfold postPc; omega
+  · have e : lenBoundT (postProg nA nM) ℓ 1 =
+        lenBoundT (postRest nA nM) (lenBoundT (loop 7 rnd) ℓ) 1 := rfl
+    rw [e]
+    have h1 : lenBoundT (postRest nA nM) (lenBoundT (loop 7 rnd) ℓ) 1 ≤
+        lenBoundT (postRest nA nM) (fun _ => L + E) 1 :=
+      lenBoundT_mono (postRest nA nM) (show lenBoundT (loop 7 rnd) ℓ ≤ fun _ => L + E
+        from hlenL) 1
+    have h2 : lenBoundT (postRest nA nM) (fun _ => L + E) 1 ≤ lenBound (postRest nA nM) (L + E) :=
+      lenBoundT_const_le (postRest nA nM) (L + E) 1
+    have h3 := lenBound_le_pcount (postRest nA nM) (loopFree_postRest nA nM) (L + E)
+    unfold postPc; omega
+
+end TimeT
+
+/-- **The output of the machine on a word** whose counter (`cntT` on its reversal) has at most `E`
+bits: the reversal of tape `1` after the program. -/
+theorem run_Post_word (n E nA nM : ℕ) (x : List Bool) (hx : x.length ≤ n + 2 + 2 * E)
+    (hc : (cntT.run cntT.q₀ x.reverse).length ≤ E) :
     (Post n E nA nM).run x =
-      PMF.pure (Prog.run (postProg E nA nM) (postS x) 1).reverse := by
-  set p := postProg E nA nM
+      PMF.pure (Prog.run (postProg nA nM) (postS x) 1).reverse := by
+  set p := postProg nA nM
   set L := 2 * (n + 2 + 2 * E) + 2
+  set s₁ := Function.update (fun _ => ([] : List Bool)) (eIn 0) x.reverse with hs₁
+  set s₂ := Function.update s₁ (eTr 0) (sepT.run sepT.q₀ (s₁ (eTr 1))) with hs₂
   have h1 := revInPhase_runs eIn x (fun _ => []) rfl []
-  have h2 := trPhase_runs sepT eTr x (Function.update (fun _ => []) (eIn 0) x.reverse)
-    (by simp) (by simp) ([] ++ [])
-  have hmax : maxLen (postS x) ≤ L := by
-    rw [maxLen_le_iff]
+  have h2 := trPhase_runs sepT eTr x s₁ (by simp [hs₁]) (by simp [hs₁]) ([] ++ [])
+  have h2' := trPhase_runs cntT eCnt x s₂ (by simp [hs₂, hs₁]) (by simp [hs₂, hs₁])
+    ([] ++ [] ++ [])
+  have hs₃ : Function.update s₂ (eCnt 0) (cntT.run cntT.q₀ (s₂ (eCnt 1))) = postS x := by
+    simp [hs₂, hs₁, postS]
+  rw [hs₃] at h2'
+  set ℓ : Fin 8 → ℕ := Function.update (fun _ => L) 7 E with hℓ
+  have hfits : Fits (postS x) ℓ := by
     intro i
-    have := Transducer.length_run_le sepT sepT.q₀ x.reverse
-    simp only [sepT_q₀, List.length_reverse] at this
-    simp only [postS, Function.update_apply]
-    split_ifs <;> simp <;> omega
-  have h3 := Prog.compile_runsWordsU p (wf_of_loopFree p (loopFree_postProg E nA nM))
-    (coinFree_postProg E nA nM) x L (postS x) ([] ++ [] ++ []) hmax
+    have h0 := Transducer.length_run_le sepT sepT.q₀ x.reverse
+    simp only [List.length_reverse, sepT_q₀] at h0
+    have hc' := hc
+    simp only [cntT_q₀] at hc'
+    fin_cases i <;> simp [postS, hℓ] <;> omega
+  have hℓL : ∀ t, ℓ t ≤ L := by
+    intro t; simp only [hℓ, Function.update_apply]; split_ifs <;> omega
+  have hT := timeBoundT_postProg nA nM L E ℓ hℓL (by simp [hℓ])
+  have h3 := compile_runsWordsTU p (wf_postProg nA nM) (coinFree_postProg nA nM) x ℓ (postS x)
+    ([] ++ [] ++ [] ++ []) hfits
   have h4 := revOutPhase_runs eOut x (Prog.run p (postS x))
     (by rw [eOut_one,
-      Prog.run_eq_of_preserves p (coinFree_postProg E nA nM) (preserves_postProg E nA nM)]; rfl)
-    ([] ++ [] ++ [] ++ [])
-  have h := RunsWords.seqU h1 (RunsWords.seqU h2 (RunsWords.seqU h3 h4))
-  have hlen : (Prog.run p (postS x) 1).length ≤ L + postPc E nA nM := by
-    have hs := Prog.lenBound_spec p L (postS x) hmax (Prog.run p (postS x))
-      (by rw [Prog.law_eq_run_of_coinFree p (coinFree_postProg E nA nM)]; simp)
-    exact ((length_le_maxLen _ 1).trans hs).trans (Prog.lenBound_le_pcount p (loopFree_postProg E nA nM) L)
-  have ht := Prog.timeBound_le_pcount p (loopFree_postProg E nA nM) L
-  have hT : 3 * x.length + 4 + (6 * x.reverse.length + 16 +
-      (Prog.timeBound p L + (2 * (Prog.run p (postS x) (eOut 0)).length + 6))) ≤
+      Prog.run_eq_of_preserves p (coinFree_postProg nA nM) (preserves_postProg nA nM)]; rfl)
+    ([] ++ [] ++ [] ++ [] ++ [])
+  have h := RunsWords.seqU h1 (RunsWords.seqU h2 (RunsWords.seqU h2' (RunsWords.seqU h3 h4)))
+  have hlen : (Prog.run p (postS x) 1).length ≤ L + E + postPc nA nM := by
+    have hs := Prog.lenBoundT_spec p ℓ (postS x) hfits (Prog.run p (postS x))
+      (by rw [Prog.law_eq_run_of_coinFree p (coinFree_postProg nA nM)]; simp)
+    exact (hs 1).trans hT.2
+  have hin : (s₂ (eCnt 1)).length = x.length := by simp [hs₂, hs₁]
+  have hin' : (s₁ (eTr 1)).length = x.length := by simp [hs₁]
+  have hclock : 3 * x.length + 4 + (6 * (s₁ (eTr 1)).length + 16 + (6 * (s₂ (eCnt 1)).length + 16 +
+      (Prog.timeBoundT p ℓ + (2 * (Prog.run p (postS x) (eOut 0)).length + 6)))) ≤
       postClock n E nA nM := by
-    have hp : postProg E nA nM = p := rfl
-    have hL : L = 2 * (n + 2 + 2 * E) + 2 := rfl
-    clear_value p L
-    subst hL
-    simp only [postClock, postPc, hp, List.length_reverse, eOut_zero] at hlen ⊢
-    generalize Prog.pcount p = c at *
-    generalize Prog.timeBound p (2 * (n + 2 + 2 * E) + 2) = tb at *
-    generalize c * (2 * (2 * (n + 2 + 2 * E) + 2 + c) + 5) = T at *
+    rw [hin, hin', eOut_zero]
+    have hT1 := hT.1
+    simp only [postClock, postProgTime, postM]
+    simp only [L] at hT1 hlen
+    generalize postPc nA nM = c at *
+    generalize Prog.timeBoundT p ℓ = tb at *
+    generalize (Prog.run p (postS x) 1).length = lo at *
+    generalize E * (2 * (2 * (n + 2 + 2 * E) + 2 + E) + 3 +
+      6 * (2 * (2 * (n + 2 + 2 * E) + 2 + E + 6) + 5) + 1) = T₁ at *
+    generalize c * (2 * (2 * (n + 2 + 2 * E) + 2 + E + c) + 5) = T₂ at *
     omega
   rw [Post, Machine.run_ofPTM]
-  exact eval_runClosed_of_runsWordsU (h.mono hT)
+  exact eval_runClosed_of_runsWordsU (h.mono hclock)
 
 /-! ### Frames -/
 
@@ -477,13 +673,18 @@ theorem run_post (cd : Codes U Sig) (n E : ℕ) (o : List Bool) (st : List Bool 
   set u := cd.encState st with hu
   have hx : (pairOut o u).length ≤ n + 2 + 2 * E := by
     simp only [pairOut, List.length_append, List.length_cons, length_dbl]; omega
-  rw [run_Post_word _ _ _ _ _ hx]
+  have hc : (cntT.run cntT.q₀ (pairOut o u).reverse).length ≤ E := by
+    rw [cntT_run_pairOut, List.length_reverse]; exact hE
+  rw [run_Post_word _ _ _ _ _ hx hc]
   congr 1
   set R := false :: o.reverse.flatMap (fun c => [c, true])
   have h1 : postS (pairOut o u) 1 = u.reverse.flatMap (fun b => [true, b]) ++ false :: R := by
-    simp only [postS, Function.update_self]; exact sepT_run_pairOut o u
-  rw [run_postProg E cd.nA cd.nM _ u R h1 (by simp [postS]) (by simp [postS]) hE]
-  set t := Function.update (Function.update (postS (pairOut o u)) 1 R) 3 u
+    simp only [postS, Function.update_self, Function.update_of_ne (show (1 : Fin 8) ≠ 7 by decide)]
+    exact sepT_run_pairOut o u
+  have h7 : (postS (pairOut o u) 7).length = u.length := by
+    simp only [postS, Function.update_self]; rw [cntT_run_pairOut, List.length_reverse]
+  rw [run_postProg cd.nA cd.nM _ u R h1 (by simp [postS]) (by simp [postS]) h7]
+  set t := Function.update (Function.update (Function.update (postS (pairOut o u)) 1 R) 3 u) 7 []
   have t1 : t 1 = R := by simp [t]
   have t3 : t 3 = u := by simp [t]
   have t4 : t 4 = [] := by simp [t, postS]
@@ -539,7 +740,7 @@ theorem run_post (cd : Codes U Sig) (n E : ℕ) (o : List Bool) (st : List Bool 
 /-! ### Cost -/
 
 /-- The slope of the clock in `n`. -/
-def postA (E nA nM : ℕ) : ℕ := 13 + 4 * postPc E nA nM
+def postA (E nA nM : ℕ) : ℕ := 19 + 28 * E + 4 * postPc nA nM
 
 /-- The clock for `n = 0`. -/
 def postB (E nA nM : ℕ) : ℕ := postClock 0 E nA nM
@@ -547,7 +748,7 @@ def postB (E nA nM : ℕ) : ℕ := postClock 0 E nA nM
 /-- **The time of the post-processing** is affine in the bound `n` on `A`'s output. -/
 theorem time_post (n E nA nM : ℕ) : (Post n E nA nM).time = postA E nA nM * n + postB E nA nM := by
   show postClock n E nA nM = _
-  simp only [postClock, postA, postB]
+  simp only [postClock, postProgTime, postM, postA, postB]
   ring
 
 theorem time_post_le (n E nA nM c : ℕ) (hn : n ≤ c) (hc : 1 ≤ c) :
@@ -557,9 +758,24 @@ theorem time_post_le (n E nA nM c : ℕ) (hn : n ≤ c) (hc : 1 ≤ c) :
   have h2 : postB E nA nM ≤ postB E nA nM * c := Nat.le_mul_of_pos_right _ hc
   nlinarith
 
-/-- **The description length does not depend on `n`.** -/
-theorem descLen_post (n n' E nA nM : ℕ) : (Post n E nA nM).descLen = (Post n' E nA nM).descLen :=
+theorem states_ofPTM_clock {k : ℕ} {S : Type} [Finite S] (m : MultiTapePTM k Bool S) (t t' : ℕ) :
+    (Machine.ofPTM m t).states = (Machine.ofPTM m t').states := rfl
+
+theorem tapes_ofPTM_clock {k : ℕ} {S : Type} [Finite S] (m : MultiTapePTM k Bool S) (t t' : ℕ) :
+    (Machine.ofPTM m t).tapes = (Machine.ofPTM m t').tapes := rfl
+
+/-- **The description length depends neither on `n` nor on `E`.** -/
+theorem descLen_post (n n' E E' nA nM : ℕ) :
+    (Post n E nA nM).descLen = (Post n' E' nA nM).descLen :=
   descLen_ofPTM _ _ _
+
+/-- **The states depend neither on `n` nor on `E`.** -/
+theorem states_post (n n' E E' nA nM : ℕ) : (Post n E nA nM).states = (Post n' E' nA nM).states :=
+  states_ofPTM_clock _ _ _
+
+/-- **The tapes depend neither on `n` nor on `E`.** -/
+theorem tapes_post (n n' E E' nA nM : ℕ) : (Post n E nA nM).tapes = (Post n' E' nA nM).tapes :=
+  tapes_ofPTM_clock _ _ _
 
 end AdvancedEncryption.PE.Generic
 
@@ -599,7 +815,7 @@ theorem cost_reduction_post (P : Machine) (A : Machine 3) (H : Fin 3 → Routine
   have h := cost_reduction_le P (Post A.time E 10 1) A H E Q L _ D (time_post_le_cost A E 10 1)
   have e : redFactor P (Post A.time E 10 1) H E Q L (postA E 10 1 + postB E 10 1) =
       redFactor P (Post 0 E 10 1) H E Q L (postA E 10 1 + postB E 10 1) := by
-    unfold redFactor; rw [descLen_post A.time 0]
+    unfold redFactor; rw [descLen_post A.time 0 E E]
   rw [← e]; exact h
 
 end AdvancedEncryption.DualUse
