@@ -38,6 +38,9 @@ theorem takeD_eq_take : ∀ {n : ℕ} {w : List Bool}, n ≤ w.length → takeD 
 theorem takeD_of_length (w : List Bool) : takeD w.length w = w := by
   rw [takeD_eq_take le_rfl, List.take_length]
 
+theorem takeD_of_length' {n : ℕ} {w : List Bool} (h : w.length = n) : takeD n w = w := by
+  subst h; exact takeD_of_length w
+
 theorem takeD_add : ∀ (a b : ℕ) (w : List Bool), takeD (a + b) w = takeD a w ++ takeD b (w.drop a)
   | 0, b, w => by simp [takeD]
   | a + 1, b, w => by

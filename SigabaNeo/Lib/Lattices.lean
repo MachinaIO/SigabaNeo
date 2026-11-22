@@ -28,6 +28,7 @@ import SigabaNeo.Lib.Lattices.Algo.SLPWords
 import SigabaNeo.Lib.Lattices.Algo.FhatLoop
 import SigabaNeo.Lib.Lattices.Algo.Coins
 import SigabaNeo.Lib.Lattices.Algo.SimWords
+import SigabaNeo.Lib.Lattices.ProgAlgo.Blocks
 
 /-!
 # Lattice library
@@ -77,4 +78,7 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   with explicit orders and gadget coefficients, equal to `fhatSLP` at the chosen orders), `Coins`
   (one try of box rejection as a function of a fixed number of fair coins), `SimWords` (the
   simulated short matrices `slpSim`/`evalSim` of `KeyGen*` on words, both binary gadgets).
+* `ProgAlgo/`: the word algorithms of `Algo/` as programs of the verified tape language
+  (`SigabaNeo.Tape.Prog`, compiled to machines by `Prog.toMachine`), with their laws, length and
+  time bounds and state counts — `Blocks` (block-wise programs on ring words: `addRW`, `subRW`).
 -/
