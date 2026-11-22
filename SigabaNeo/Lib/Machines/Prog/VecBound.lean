@@ -167,3 +167,83 @@ theorem natB_le' {k : ℕ} {t c : Fin k} {n M : ℕ} {a : Fin k → ℕ} (ha : �
   · exact ha i
 
 end SigabaNeo.Tape.XProg
+
+/-! ### Programs as framed programs, structurally -/
+
+namespace SigabaNeo.Tape.Prog
+
+variable {k : ℕ}
+
+/-- A program as a framed program, construct by construct (loops stay loops), so the shape bounds
+of `SigabaNeo.Lib.Machines.Prog.SampleTime` (`ATB`) apply to its parts. -/
+def toX : Prog k → XProg k
+  | prim p => .prog (prim p)
+  | coin i => .prog (coin i)
+  | seq p q => .seq (toX p) (toX q)
+  | ifBlank i p q => .ifBlank i (toX p) (toX q)
+  | ifBit i p q => .ifBit i (toX p) (toX q)
+  | loop i body => .loop i (toX body)
+
+theorem denote_toX : ∀ p : Prog k, (toX p).denote = p.denote
+  | prim _ => rfl
+  | coin _ => rfl
+  | seq p q => by funext s; simp only [toX, XProg.denote, denote, denote_toX p, denote_toX q]
+  | ifBlank i p q => by funext s; simp only [toX, XProg.denote, denote, denote_toX p, denote_toX q]
+  | ifBit i p q => by funext s; simp only [toX, XProg.denote, denote, denote_toX p, denote_toX q]
+  | loop i body => by funext s; simp only [toX, XProg.denote, denote, denote_toX body]
+
+theorem law_toX (p : Prog k) (s : Store k) : (toX p).law s = p.law s := by
+  simp only [XProg.law, Prog.law, denote_toX]
+
+theorem lenBoundT_toX : ∀ p : Prog k, XProg.lenBoundT (toX p) = lenBoundT p
+  | prim _ => rfl
+  | coin _ => rfl
+  | seq p q => by funext ℓ; simp only [toX, XProg.lenBoundT, lenBoundT, lenBoundT_toX p, lenBoundT_toX q]
+  | ifBlank i p q => by
+    funext ℓ; simp only [toX, XProg.lenBoundT, lenBoundT, lenBoundT_toX p, lenBoundT_toX q]
+  | ifBit i p q => by
+    funext ℓ; simp only [toX, XProg.lenBoundT, lenBoundT, lenBoundT_toX p, lenBoundT_toX q]
+  | loop i body => by
+    funext ℓ; simp only [toX, XProg.lenBoundT, lenBoundT, lenBoundT_toX body]
+
+theorem timeBoundT_toX : ∀ p : Prog k, XProg.timeBoundT (toX p) = timeBoundT p
+  | prim _ => rfl
+  | coin _ => rfl
+  | seq p q => by
+    funext ℓ; simp only [toX, XProg.timeBoundT, timeBoundT, timeBoundT_toX p, timeBoundT_toX q,
+      lenBoundT_toX p]
+  | ifBlank i p q => by
+    funext ℓ; simp only [toX, XProg.timeBoundT, timeBoundT, timeBoundT_toX p, timeBoundT_toX q]
+  | ifBit i p q => by
+    funext ℓ; simp only [toX, XProg.timeBoundT, timeBoundT, timeBoundT_toX p, timeBoundT_toX q]
+  | loop i body => by
+    funext ℓ
+    have e : XProg.loopStepT i (toX body) = loopStepT i body := by
+      funext ℓ'; simp only [XProg.loopStepT, loopStepT, lenBoundT_toX body]
+    simp only [toX, XProg.timeBoundT, timeBoundT, timeBoundT_toX body, e]
+
+theorem preserves_toX (i : Fin k) : ∀ p : Prog k, p.Preserves i → (toX p).Preserves i
+  | prim _, h => h
+  | coin _, h => h
+  | seq p q, h => ⟨preserves_toX i p h.1, preserves_toX i q h.2⟩
+  | ifBlank _ p q, h => ⟨preserves_toX i p h.1, preserves_toX i q h.2⟩
+  | ifBit _ p q, h => ⟨preserves_toX i p h.1, preserves_toX i q h.2⟩
+  | loop _ body, h => ⟨h.1, preserves_toX i body h.2⟩
+
+theorem wf_toX : ∀ p : Prog k, p.WF → (toX p).WF
+  | prim _, _ => trivial
+  | coin _, _ => trivial
+  | seq p q, h => ⟨wf_toX p h.1, wf_toX q h.2⟩
+  | ifBlank _ p q, h => ⟨wf_toX p h.1, wf_toX q h.2⟩
+  | ifBit _ p q, h => ⟨wf_toX p h.1, wf_toX q h.2⟩
+  | loop i body, h => ⟨wf_toX body h.1, preserves_toX i body h.2⟩
+
+theorem size_toX : ∀ p : Prog k, (toX p).size = p.size
+  | prim _ => rfl
+  | coin _ => rfl
+  | seq p q => by simp only [toX, XProg.size, size, size_toX p, size_toX q]
+  | ifBlank _ p q => by simp only [toX, XProg.size, size, size_toX p, size_toX q]
+  | ifBit _ p q => by simp only [toX, XProg.size, size, size_toX p, size_toX q]
+  | loop _ body => by simp only [toX, XProg.size, size, size_toX body]
+
+end SigabaNeo.Tape.Prog
