@@ -1087,8 +1087,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * Lemma 4.6: Banaszczyk tail after cancellation.
     * Lemma 4.5: preservation of domination under pair-and-average. ASD18's Def 2.2 (upper-orthant order) is NOT preserved;
       the audit gives an explicit counterexample. Their theorems survive via Lemma 4.5.
-  * **Open.** A proven word-RAM sampler cost. A Lean formalization is estimated at 4–8 months; Gaussian Poisson summation on
-    lattices is missing.
+  * **Open.** A proven word-RAM sampler cost (settled at the recorded instance by Part 141).
+  * **Lean (started).** AdrsGaussian / AdrsPoisson / AdrsCoupling / AdrsPairing / AdrsOrthant (axiom-clean, 29 theorems)
+    prove:
+    * the Gaussian identities I1 and I3, including p_max = ρ_{s/2}(L)/ρ_s(L);
+    * Lemma 4.3a: the Poisson ratio bound and an exact-marginal coupling;
+    * the Lemma 4.3b tail bounds;
+    * Lemma 4.5 in one-step form: maximal within-label pairings have one output law, and sub-multiset coupling dominates
+      upward-closed events;
+    * the audit's exact counterexample to ASD18 Def 2.2 (L = Z, s = 2).
+    Still open in Lean: the conditional output law I2, Lemma 4.3b(2), and the history induction through a full run of
+    Procedure E.
 * **Part 141 (audited, minor caveats).** [sampler_wordram](research/wall1_sampler_wordram.md): a word-RAM version of Part
   140 at the recorded instance.
   * The Part 39 lattice is L_M = {(h, u) : h ≡ Mu mod q}, whose Gram–Schmidt norms are q and 1.
