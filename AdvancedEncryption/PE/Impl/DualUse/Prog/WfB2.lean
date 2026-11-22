@@ -37,6 +37,7 @@ open AdvancedEncryption.PE.Gates.DateWindow
 open scoped SigabaNeo.Tape.Prog
 
 set_option linter.unusedSimpArgs false
+set_option maxRecDepth 100000
 
 namespace WB2
 
@@ -513,6 +514,89 @@ theorem S1_ZB : S1 hk c W a gs (mw ZB) = [false] := by
   rw [S1, Function.update_self, Function.update_of_ne (by decide),
     X6_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)]
   rfl
+
+theorem S0_blank (t : Fin 256) (h1 : t ≠ mw SDW) (h2 : t ≠ mw GS) : S0 W a gs t = [] := by
+  simp [S0, h1, h2]
+
+/-- The step's store prepared for the run of `f̂`. -/
+def s1 : Store 132 := fun j => S1 hk c W a gs (ms j)
+
+/-- The words prepared for the run of `f̂`. -/
+def w1 : ValVM.St := fun x => S1 hk c W a gs (mw x)
+
+theorem S1_enc : S1 hk c W a gs = ValVM.enc (s1 hk c W a gs) (VT N K k c.d) (w1 hk c W a gs) := by
+  refine ValVM.enc_ext (fun j => ?_) ?_ (fun x => ?_) ?_ ?_ ?_
+  · simp [s1]
+  · rw [ValVM.enc_tTV, S1_key hk c W a gs (n := VT N K k c.d) (by simp [stepT, wordsT])
+      (by decide) (by decide)]
+  · simp [w1]
+  all_goals
+    rw [S1_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide), S0_blank W a gs _ (by decide) (by decide)]
+    simp
+
+/-- The step's tapes `prepT` does not write. -/
+theorem s1_blank (t : Fin 132)
+    (ht : ∀ j ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 86, 87, 88, 89],
+      t.val ≠ j) : s1 hk c W a gs t = [] := by
+  have key : ∀ t : Fin 132, (∀ j ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20,
+      21, 86, 87, 88, 89], t.val ≠ j) → ms t ∉ keysT ∧
+      ms t ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS, mw GSC] ∧
+      (∀ j, tm31 j ≠ ms t) ∧ (∀ j, cm13 j ≠ ms t) ∧
+      ms t ∉ [mw 4, mw 5, mw 6, mw 7, mw 8, mw 9, mw 10, mw 11] ∧ ms t ≠ mw OB ∧ ms t ≠ mw ZB ∧
+      ms t ≠ mw SDW ∧ ms t ≠ mw GS := by decide +kernel
+  obtain ⟨b1, b2, b3, b4, b5, b6, b7, b8, b9⟩ := key t ht
+  rw [s1, S1_eq_S0 hk c W a gs _ b1 b2 b3 b4 b5 b6 b7, S0_blank W a gs _ b8 b9]
+
+theorem s1_tmpl {j : Fin 132} {n : ℕ}
+    (h : (ms j, n) ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) :
+    (s1 hk c W a gs j).length = n := by
+  rw [s1, S1_key hk c W a gs h (ValVM.tS_ne_tWd _ _) (ValVM.tS_ne_tWd _ _), List.length_replicate]
+
+theorem s1_content (hW : 0 < W) (hb : BndG W gs) :
+    s1 hk c W a gs 19 = gadW N K k ∧ s1 hk c W a gs 20 = zeroW (lenA N K k c.d) ∧
+      s1 hk c W a gs 21 = oneW N K := by
+  refine ⟨?_, ?_, ?_⟩ <;>
+  · rw [s1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
+    simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
+
+/-- **The step's store prepared for `f̂` meets `SimPre`.** -/
+theorem s1_simPre (hW : 0 < W) (hb : BndG W gs) :
+    SimPre N K k 1 c.d (gadW N K k) (GPreTop N K k) (s1 hk c W a gs) where
+  blank i h h' := s1_blank hk c W a gs i (by intro j hj; simp at hj; omega)
+  h3 := s1_tmpl hk c W a gs (by simp [stepT])
+  h4 := s1_tmpl hk c W a gs (by simp [stepT])
+  h5 := s1_tmpl hk c W a gs (by simp [stepT])
+  h6 := s1_tmpl hk c W a gs (by simp [stepT])
+  h7 := s1_tmpl hk c W a gs (by simp [stepT])
+  h8 := s1_tmpl hk c W a gs (by simp [stepT])
+  h9 := s1_tmpl hk c W a gs (by simp [stepT])
+  h10 := s1_tmpl hk c W a gs (by simp [stepT])
+  h11 := s1_tmpl hk c W a gs (by simp [stepT])
+  h12 := s1_tmpl hk c W a gs (by simp [stepT])
+  h13 := s1_tmpl hk c W a gs (by simp [stepT])
+  h14 := s1_tmpl hk c W a gs (by simp [stepT])
+  h15 := s1_tmpl hk c W a gs (by simp [stepT])
+  h16 := s1_tmpl hk c W a gs (by simp [stepT])
+  h17 := s1_tmpl hk c W a gs (by simp [stepT])
+  h19 := (s1_content hk c W a gs hW hb).1
+  h20 := (s1_content hk c W a gs hW hb).2.1
+  h21 := (s1_content hk c W a gs hW hb).2.2
+  g := by
+    refine ⟨fun i h h' => ?_, ?_, ?_, ?_, ?_⟩
+    · show s1 hk c W a gs (vG i) = []
+      exact s1_blank hk c W a gs _ (by
+        have : ∀ i : Fin 48, 6 ≤ i.val → i.val < 35 → ∀ j ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+          14, 15, 16, 17, 19, 20, 21, 86, 87, 88, 89], (vG i).val ≠ j := by decide +kernel
+        exact this i h h')
+    · rw [Function.comp_apply, show vG 2 = 86 from rfl]
+      exact s1_tmpl hk c W a gs (by simp [stepT])
+    · rw [Function.comp_apply, show vG 3 = 87 from rfl]
+      exact s1_tmpl hk c W a gs (by simp [stepT])
+    · rw [Function.comp_apply, show vG 4 = 88 from rfl]
+      exact s1_tmpl hk c W a gs (by simp [stepT])
+    · rw [Function.comp_apply, show vG 5 = 89 from rfl]
+      exact s1_tmpl hk c W a gs (by simp [stepT])
 
 end PrepT
 
