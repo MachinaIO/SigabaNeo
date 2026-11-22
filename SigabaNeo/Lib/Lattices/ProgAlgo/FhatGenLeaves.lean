@@ -280,3 +280,65 @@ theorem iter_leafBody (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, 
 end FhatGen
 
 end SigabaNeo.Lattices
+
+namespace SigabaNeo.Lattices
+
+namespace FhatGen
+
+open SigabaNeo.Tape SigabaNeo.Tape.RegVM SLP Algo
+
+variable {ι : Type*} {E : Env} {ix : ι → ℕ}
+
+/-- **`leaves` over all the terms** (`8` holds `2kN`): the outputs appended to the list `12`. -/
+def leavesC : Code := .seq (.zero 47) (.seq (.zero 48) (.seq (.zero 49) (.rep 8 leafBody)))
+
+theorem exec_leavesC (hnM : E.n + 1 ≤ E.M) (hWM : E.W ≤ E.M) (hix : ∀ i, ix i < E.n)
+    {N k K : ℕ} (hk : 0 < k) (hN : 0 < N) (hK : K ≤ k + 1) (repA repB : BI N k → Wire ι)
+    (a : Fin 2) (col : Fin 2 × Fin k) (t : Fin N) (P : SLP ι) (σ : St) (L0 : List ℕ)
+    (hc : CstB (E := E) k K N σ) (h8 : σ.sc 8 = 2 * k * N) (hI : Inv E σ) (hS : ScOK E σ)
+    (h43 : σ.sc 43 = a.val) (h44 : σ.sc 44 = col.1.val) (h45 : σ.sc 45 = col.2.val)
+    (h46 : σ.sc 46 = t.val) (h10 : σ.ls 10 = repList E ix repA)
+    (h11 : σ.ls 11 = repList E ix repB) (hL : σ.ls 12 = L0)
+    (hcap : L0.length + 2 * k * N * k ≤ E.C) (hcap' : k + 3 ≤ E.C)
+    (hbig : 4 * k * N * k + 2 * N + k + 2 ≤ E.M)
+    (hM : E.n + (exec E leavesC (mk E ix P σ)).t ≤ E.M) :
+    ∃ sc' ls', exec E leavesC (mk E ix P σ) =
+        mk E ix (leaves (.gate 0) (2 ^ K) k repA repB a col t P (enumT N k)).1 (setSL σ sc' ls') ∧
+      ls' 12 = L0 ++ ((leaves (.gate 0) (2 ^ K) k repA repB a col t P (enumT N k)).2.map
+        (List.map (pos E ix))).flatten ∧
+      (∀ r : SR, r.val < 16 ∨ (43 ≤ r.val ∧ r.val ≤ 46) ∨ 53 < r.val → sc' r = σ.sc r) ∧
+      (∀ l : LR, l = 10 ∨ l = 11 ∨ (12 < l.val ∧ l.val ≤ 16) ∨ 20 < l.val → ls' l = σ.ls l) := by
+  set σ0 := setSL σ (Function.update (Function.update (Function.update σ.sc 47 0) 48 0) 49 0) σ.ls
+  have e0 : exec E (.zero 49) (exec E (.zero 48) (exec E (.zero 47) (mk E ix P σ))) =
+      mk E ix P σ0 := rfl
+  have hIS0 := is_exec (by omega) hWM (c := .seq (.zero 47) (.seq (.zero 48) (.zero 49))) e0 ⟨hI, hS⟩
+  have hs0 : ∀ r : SR, r.val < 47 ∨ 49 < r.val → σ0.sc r = σ.sc r := fun r hr => by
+    simp only [σ0, setSL]
+    rw [Function.update_of_ne (by rintro rfl; revert hr; decide),
+      Function.update_of_ne (by rintro rfl; revert hr; decide),
+      Function.update_of_ne (by rintro rfl; revert hr; decide)]
+  obtain ⟨⟨⟨hc0, hc1⟩, hc2, hc3, hc4⟩, hc5, hc6, hc7⟩ := hc
+  unfold leavesC at hM ⊢
+  simp only [exec_seq] at hM ⊢
+  rw [e0, exec_rep, show (mk E ix P σ0).sc 8 = 2 * k * N by
+    rw [mk_sc, hs0 8 (by decide), h8]] at hM ⊢
+  obtain ⟨sc', ls', h, d, f, g⟩ := iter_leafBody hnM hWM hix hK repA repB a col t (2 * k * N) 0 P
+    σ0 0 0 0 L0 (by omega)
+    ⟨⟨⟨by rw [← hc0]; exact hs0 0 (by decide), by rw [← hc1]; exact hs0 1 (by decide)⟩,
+      by rw [← hc2]; exact hs0 2 (by decide), by rw [← hc3]; exact hs0 3 (by decide),
+      by rw [← hc4]; exact hs0 4 (by decide)⟩, by rw [← hc5]; exact hs0 5 (by decide),
+      by rw [← hc6]; exact hs0 6 (by decide), by rw [← hc7]; exact hs0 7 (by decide)⟩
+    hIS0.1 hIS0.2 (by rw [hs0 43 (by decide), h43]) (by rw [hs0 44 (by decide), h44])
+    (by rw [hs0 45 (by decide), h45]) (by rw [hs0 46 (by decide), h46])
+    (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by simp [σ0, setSL]) (by ring)
+    hk hN
+    h10 h11 hL (by nlinarith) hcap' hbig hM
+  have hall : ((enumT N k).drop 0).take (2 * k * N) = enumT N k := by
+    rw [List.drop_zero, List.take_of_length_le (by rw [length_enumT])]
+  rw [hall] at h d
+  refine ⟨sc', ls', h, d, fun r hr => ?_, g⟩
+  rw [f r hr, hs0 r (by omega)]
+
+end FhatGen
+
+end SigabaNeo.Lattices
