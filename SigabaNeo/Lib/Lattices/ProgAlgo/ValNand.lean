@@ -797,6 +797,412 @@ theorem exec_c2Body (hf : ∀ a b, a.length = V → b.length = V → (f a b).len
   · rw [hR2 SB1 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
       hT3 SB1 (by decide), hE2 SB1 (by decide) (by decide) (by decide), hd1]
 
+/-! ### The columns of a row `col.1` -/
+
+theorem length_blocks {α : Type*} {N K : ℕ} (A : BI N (K + 1) → α) :
+    (blocks A).length = 2 * (2 * (K + 1)) := by
+  simp [blocks, cols, List.length_product]
+
+theorem getD_product_map' {α β γ : Type*} (l₁ : List α) (l₂ : List β) {C : ℕ}
+    (hC : l₂.length = C) (g : α × β → γ) (d : γ) {i j : ℕ} (hi : i < l₁.length) (hj : j < C) :
+    ((l₁ ×ˢ l₂).map g).getD (i * C + j) d = g (l₁[i], l₂[j]'(by omega)) := by
+  subst hC; exact getD_product_map l₁ l₂ g d hi hj
+
+theorem getElem_cols {K : ℕ} (c1 : Fin 2) (c2 : Fin (K + 1)) (h : c1.val * (K + 1) + c2.val <
+    (cols (K + 1)).length) : (cols (K + 1))[c1.val * (K + 1) + c2.val] = (c1, c2) := by
+  have hq := getD_product_map' (List.finRange 2) (List.finRange (K + 1)) (C := K + 1) (by simp) id
+    (c1, c2) (i := c1.val) (j := c2.val) (by simpa using c1.isLt) c2.isLt
+  rw [List.map_id] at hq
+  have h' : c1.val * (K + 1) + c2.val < (List.finRange 2 ×ˢ List.finRange (K + 1)).length := h
+  rw [List.getD_eq_getElem _ _ h'] at hq
+  show (List.finRange 2 ×ˢ List.finRange (K + 1))[c1.val * (K + 1) + c2.val] = (c1, c2)
+  rw [hq]
+  simp
+
+/-- The block `(x, (c1, c2))` in the list of blocks. -/
+theorem getD_blocks {α : Type*} {N K : ℕ} (A : BI N (K + 1) → α) (x : Fin 2) (c1 : Fin 2)
+    (c2 : Fin (K + 1)) :
+    (blocks A).getD (x.val * (2 * (K + 1)) + (c1.val * (K + 1) + c2.val)) [] = blk A x (c1, c2) := by
+  have hc : (cols (K + 1)).length = 2 * (K + 1) := by simp [cols, List.length_product]
+  have hj : c1.val * (K + 1) + c2.val < 2 * (K + 1) := by
+    have := c2.isLt; have := c1.isLt; nlinarith
+  rw [blocks, getD_product_map' (List.finRange 2) (cols (K + 1)) hc _ [] (by simpa using x.isLt) hj,
+    getElem_cols c1 c2 (by omega)]
+  simp
+
+theorem drop_cons_getD {α : Type*} (L : List (List α)) {m : ℕ} (hm : m < L.length) :
+    L.drop m = L.getD m [] :: L.drop (m + 1) := by
+  rw [List.drop_eq_getElem_cons hm, List.getD_eq_getElem _ _ hm]
+
+/-- The loop over `col.2`. -/
+def c2Loop : Code := ofList [.cp C2 TTk, .rep C2 c2Body]
+
+/-- The blocks of the NAND's bundle shifted into `RES` by the first `r` columns of `(a, c1)`. -/
+def resC2 {N K : ℕ} (P : BI N (K + 1) → List Bool) (a c1 : Fin 2) (r : ℕ) : List (List Bool) :=
+  ((List.finRange (K + 1)).take r).flatMap fun c2 => blk P a (c1, c2)
+
+/-- The invariant of the loop over `col.2`. -/
+structure C2Inv (V K N : ℕ) (one zv : List Bool) (A B P : BI N (K + 1) → List Bool) (a c1 : Fin 2)
+    (w₀ : St) (r : ℕ) (w : St) : Prop where
+  ctx : NCtx V K N one zv w
+  rasb : w RASB = rasW A a
+  dg : w DG = [decide (a = c1)]
+  c2 : w C2 = List.replicate (K + 1 - r) true
+  sb0 : w SB0 = bstream ((blocks B).drop (c1.val * (K + 1) + r))
+  sb1 : w SB1 = bstream ((blocks B).drop (2 * (K + 1) + (c1.val * (K + 1) + r)))
+  res : w RES = (w₀ RES ++ (resC2 P a c1 r).flatten).drop (resC2 P a c1 r).flatten.length
+
+theorem c2Inv_step (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    {one zv : List Bool} (A B : BI N (K + 1) → List Bool) (hA : ∀ b, (A b).length = V)
+    (hB : ∀ b, (B b).length = V) (a c1 : Fin 2) {w₀ : St} {r : ℕ} (hr : r < K + 1) {w : St}
+    (h : C2Inv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) zv (2 ^ K) A B) a c1 w₀ r w) :
+    C2Inv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) zv (2 ^ K) A B) a c1 w₀ (r + 1)
+      (exec V f c2Body (Function.update w C2 (w C2).tail)) := by
+  set P := nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B
+  have hP : ∀ b, (P b).length = V := nandV_len hf (by rw [← h.ctx.vone]; exact h.ctx.tm.h10)
+    (by rw [← h.ctx.vzv]; exact h.ctx.tm.h11) A B hA hB
+  set c2 : Fin (K + 1) := ⟨r, hr⟩
+  have hm0 : c1.val * (K + 1) + r < (blocks B).length := by
+    rw [length_blocks]; have := c1.isLt; nlinarith
+  have hm1 : 2 * (K + 1) + (c1.val * (K + 1) + r) < (blocks B).length := by
+    rw [length_blocks]; have := c1.isLt; nlinarith
+  have g0 := getD_blocks B 0 c1 c2
+  have g1 := getD_blocks B 1 c1 c2
+  simp only [Fin.val_zero, Fin.val_one, Nat.zero_mul, Nat.zero_add, Nat.one_mul] at g0 g1
+  obtain ⟨R1, R2, R3, R4, R5⟩ := exec_c2Body (V := V) (f := f) hf A B hA hB a (c1, c2)
+    (Function.update w C2 (w C2).tail) (h.ctx.upd C2 (by decide) _)
+    (by rw [Function.update_of_ne (by decide)]; exact h.rasb)
+    (by rw [Function.update_of_ne (by decide)]; exact h.dg)
+    (L0 := (blocks B).drop (c1.val * (K + 1) + r + 1))
+    (L1 := (blocks B).drop (2 * (K + 1) + (c1.val * (K + 1) + r) + 1))
+    (by rw [Function.update_of_ne (by decide), h.sb0, drop_cons_getD _ hm0, g0])
+    (by rw [Function.update_of_ne (by decide), h.sb1, drop_cons_getD _ hm1, g1])
+    (by rw [Function.update_self, h.c2, List.tail_replicate]; congr 1; show K + 1 - r - 1 = K - r; omega)
+  refine ⟨R4, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [R5 RASB (by decide), Function.update_of_ne (by decide), h.rasb]
+  · rw [R5 DG (by decide), Function.update_of_ne (by decide), h.dg]
+  · rw [R5 C2 (by decide), Function.update_self, h.c2, List.tail_replicate]; congr 1
+  · rw [R2]; congr 2
+  · rw [R3]; congr 2
+  · rw [R1, Function.update_of_ne (by decide), h.res]
+    have hb := blk_shape hP a (c1, c2)
+    rw [show (K + 1) * N * V = (blk P a (c1, c2)).flatten.length by
+      rw [length_flatten_of hb.1, hb.2], shift_acc]
+    have e : resC2 P a c1 (r + 1) = resC2 P a c1 r ++ blk P a (c1, c2) := by
+      simp only [resC2]
+      rw [List.take_succ, List.flatMap_append, List.getElem?_eq_getElem (by simpa using hr)]
+      have : (List.finRange (K + 1))[r]'(by simpa using hr) = c2 := Fin.ext (by simp [c2])
+      simp [this]
+    rw [e, List.flatten_append]
+
+/-- **The columns of a row `c1`**: `RES` receives the `k` blocks `(a, (c1, ·))`. -/
+theorem exec_c2Loop (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    {one zv : List Bool} (A B : BI N (K + 1) → List Bool) (hA : ∀ b, (A b).length = V)
+    (hB : ∀ b, (B b).length = V) (a c1 : Fin 2) (w : St) (ctx : NCtx V K N one zv w)
+    (hras : w RASB = rasW A a) (hdg : w DG = [decide (a = c1)])
+    (hs0 : w SB0 = bstream ((blocks B).drop (c1.val * (K + 1))))
+    (hs1 : w SB1 = bstream ((blocks B).drop (2 * (K + 1) + c1.val * (K + 1)))) :
+    C2Inv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) zv (2 ^ K) A B) a c1 w (K + 1) (exec V f c2Loop w) ∧
+      ∀ j ∉ wr c2Loop, exec V f c2Loop w j = w j := by
+  refine ⟨?_, fun j hj => exec_not_mem _ _ _ hj⟩
+  simp only [c2Loop, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  have I := exec_rep_inv (V := V) (f := f) (c := C2) (B := c2Body)
+    (fun r w' => r ≤ K + 1 → C2Inv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1))
+      (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B) a c1 w r w')
+    (fun r w' ih hr => c2Inv_step hf A B hA hB a c1 (by omega) (ih (by omega)))
+    (Function.update w C2 (w TTk))
+    (fun _ => ⟨ctx.upd C2 (by decide) _, by rw [Function.update_of_ne (by decide), hras],
+      by rw [Function.update_of_ne (by decide), hdg],
+      by rw [Function.update_self, ctx.ttk]; simp,
+      by rw [Function.update_of_ne (by decide), hs0]; simp,
+      by rw [Function.update_of_ne (by decide), hs1]; simp,
+      by simp [resC2]; rw [Function.update_of_ne (by decide)]⟩)
+  have hn : (Function.update w C2 (w TTk) C2).length = K + 1 := by
+    rw [Function.update_self, ctx.ttk, List.length_replicate]
+  rw [hn] at I
+  have I' := I le_rfl
+  refine ⟨I'.ctx, I'.rasb, I'.dg, I'.c2, I'.sb0, I'.sb1, ?_⟩
+  rw [I'.res]
+
+/-! ### The rows `col.1` -/
+
+/-- `DG := [a = col.1]` from the counters `CA` (`1 − a` bits) and `C1` (`1 − c1` bits). -/
+def dgC : Code := .ifb CA (.ifb C1 (.cp DG OB) (.cp DG ZB)) (.ifb C1 (.cp DG ZB) (.cp DG OB))
+
+theorem hd_replicate_sub (x : Fin 2) : hd (List.replicate (1 - x.val) true) = decide (x = 0) := by
+  fin_cases x <;> rfl
+
+theorem exec_dgC (a c1 : Fin 2) (w : St) (hob : w OB = [true]) (hzb : w ZB = [false])
+    (hca : w CA = List.replicate (1 - a.val) true) (hc1 : w C1 = List.replicate (1 - c1.val) true) :
+    exec V f dgC w = Function.update w DG [decide (a = c1)] := by
+  simp only [dgC, exec_ifb', hca, hc1, hd_replicate_sub, exec_cp', hob, hzb]
+  fin_cases a <;> fin_cases c1 <;> rfl
+
+/-- One row: the flag `DG`, the `k` columns. -/
+def c1Body : Code := ofList [dgC, c2Loop]
+
+/-- The loop over `col.1`. -/
+def c1Loop : Code := ofList [.cp C1 TT2, .rep C1 c1Body]
+
+/-- The blocks shifted into `RES` by the first `r` rows of `a`. -/
+def resC1 {N K : ℕ} (P : BI N (K + 1) → List Bool) (a : Fin 2) (r : ℕ) : List (List Bool) :=
+  ((List.finRange 2).take r).flatMap fun c1 => resC2 P a c1 (K + 1)
+
+/-- The invariant of the loop over `col.1`. -/
+structure C1Inv (V K N : ℕ) (one zv : List Bool) (A B P : BI N (K + 1) → List Bool) (a : Fin 2)
+    (w₀ : St) (r : ℕ) (w : St) : Prop where
+  ctx : NCtx V K N one zv w
+  rasb : w RASB = rasW A a
+  ca : w CA = List.replicate (1 - a.val) true
+  c1 : w C1 = List.replicate (2 - r) true
+  sb0 : w SB0 = bstream ((blocks B).drop (r * (K + 1)))
+  sb1 : w SB1 = bstream ((blocks B).drop (2 * (K + 1) + r * (K + 1)))
+  res : w RES = (w₀ RES ++ (resC1 P a r).flatten).drop (resC1 P a r).flatten.length
+
+theorem c1Inv_step (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    {one zv : List Bool} (A B : BI N (K + 1) → List Bool) (hA : ∀ b, (A b).length = V)
+    (hB : ∀ b, (B b).length = V) (a : Fin 2) {w₀ : St} {r : ℕ} (hr : r < 2) {w : St}
+    (h : C1Inv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) zv (2 ^ K) A B) a w₀ r w) :
+    C1Inv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) zv (2 ^ K) A B) a w₀ (r + 1)
+      (exec V f c1Body (Function.update w C1 (w C1).tail)) := by
+  set P := nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B
+  set c1 : Fin 2 := ⟨r, hr⟩
+  have c0 := h.ctx.upd C1 (by decide) (w C1).tail
+  simp only [c1Body, exec_ofList, List.foldl_cons, List.foldl_nil]
+  rw [exec_dgC a c1 _ c0.ob c0.zb (by rw [Function.update_of_ne (by decide), h.ca])
+    (by rw [Function.update_self, h.c1, List.tail_replicate]; congr 1; show 2 - r - 1 = 1 - r; omega)]
+  obtain ⟨I, Io⟩ := exec_c2Loop (V := V) (f := f) hf A B hA hB a c1
+    (Function.update (Function.update w C1 (w C1).tail) DG [decide (a = c1)])
+    (c0.upd DG (by decide) _)
+    (by rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide), h.rasb])
+    (by rw [Function.update_self])
+    (by rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide), h.sb0])
+    (by rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide), h.sb1])
+  refine ⟨I.ctx, I.rasb, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [Io CA (by decide), Function.update_of_ne (by decide), Function.update_of_ne (by decide),
+      h.ca]
+  · rw [Io C1 (by decide), Function.update_of_ne (by decide), Function.update_self, h.c1,
+      List.tail_replicate]; congr 1
+  · rw [I.sb0]; congr 2; simp [c1]; ring
+  · rw [I.sb1]; congr 2; simp [c1]; ring
+  · rw [I.res, Function.update_of_ne (by decide), Function.update_of_ne (by decide), h.res,
+      shift_acc]
+    have e : resC1 P a (r + 1) = resC1 P a r ++ resC2 P a c1 (K + 1) := by
+      simp only [resC1]
+      rw [List.take_succ, List.flatMap_append, List.getElem?_eq_getElem (by simpa using hr)]
+      have : (List.finRange 2)[r]'(by simpa using hr) = c1 := Fin.ext (by simp [c1])
+      simp [this]
+    rw [e, List.flatten_append]
+
+/-- **The rows of `a`**: `RES` receives the `2k` blocks `(a, ·)`. -/
+theorem exec_c1Loop (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V) {N K : ℕ}
+    {one zv : List Bool} (A B : BI N (K + 1) → List Bool) (hA : ∀ b, (A b).length = V)
+    (hB : ∀ b, (B b).length = V) (a : Fin 2) (w : St) (ctx : NCtx V K N one zv w)
+    (hras : w RASB = rasW A a) (hca : w CA = List.replicate (1 - a.val) true)
+    (hs0 : w SB0 = bstream (blocks B)) (hs1 : w SB1 = bstream ((blocks B).drop (2 * (K + 1)))) :
+    C1Inv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) zv (2 ^ K) A B) a w 2 (exec V f c1Loop w) ∧
+      ∀ j ∉ wr c1Loop, exec V f c1Loop w j = w j := by
+  refine ⟨?_, fun j hj => exec_not_mem _ _ _ hj⟩
+  simp only [c1Loop, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  have I := exec_rep_inv (V := V) (f := f) (c := C1) (B := c1Body)
+    (fun r w' => r ≤ 2 → C1Inv V K N one zv A B (nandV one (fV V f) (enumT N (K + 1))
+      (enumO N (K + 1)) (gvExp (2 ^ K)) zv (2 ^ K) A B) a w r w')
+    (fun r w' ih hr => c1Inv_step hf A B hA hB a (by omega) (ih (by omega)))
+    (Function.update w C1 (w TT2))
+    (fun _ => ⟨ctx.upd C1 (by decide) _, by rw [Function.update_of_ne (by decide), hras],
+      by rw [Function.update_of_ne (by decide), hca],
+      by rw [Function.update_self, ctx.tt2]; rfl,
+      by rw [Function.update_of_ne (by decide), hs0]; simp,
+      by rw [Function.update_of_ne (by decide), hs1]; simp,
+      by simp [resC1]; rw [Function.update_of_ne (by decide)]⟩)
+  have hn : (Function.update w C1 (w TT2) C1).length = 2 := by
+    rw [Function.update_self, ctx.tt2]; rfl
+  rw [hn] at I
+  exact I le_rfl
+
+/-! ### The reversed rows of the row `a` of `A` -/
+
+theorem flatten_flatMap' {α β : Type*} (l : List α) (g : α → List (List β)) :
+    (l.flatMap g).flatten = (l.map fun x => (g x).flatten).flatten := by
+  induction l with
+  | nil => rfl
+  | cons x l ih => simp [List.flatMap_cons, ih]
+
+/-- One column `c'` of `A`: pop its block, reverse-transpose it into `RASB`. -/
+def rasBody : Code := ofList [.cp rX TNKV, .mv rX SA TNKV, rrC]
+
+/-- The `2k` columns. -/
+def rasLoop : Code := ofList [.cp RASB T2kkNV, .cp CC2 T2K, .rep CC2 rasBody]
+
+/-- The values shifted into `RASB` by the first `r` columns. -/
+def rasL {N K : ℕ} (A : BI N (K + 1) → List Bool) (a : Fin 2) (r : ℕ) : List (List Bool) :=
+  ((cols (K + 1)).take r).flatMap fun c => rrL (blk A a c) N (K + 1) N
+
+theorem getD_blk {α : Type*} {N K : ℕ} (A : BI N (K + 1) → α) (a : Fin 2) (c : Fin 2 × Fin (K + 1))
+    (d : α) (i : Fin (K + 1)) (m : Fin N) : (blk A a c).getD (m.val + i.val * N) d = A (a, c, i, m) := by
+  have h := getD_product_map' (List.finRange (K + 1)) (List.finRange N) (C := N) (by simp)
+    (fun p => A (a, c, p)) d (i := i.val) (j := m.val) (by simpa using i.isLt) m.isLt
+  rw [blk, Nat.add_comm m.val]
+  simpa using h
+
+/-- **The reversed transposed rows of a block are `rowRev`.** -/
+theorem rrL_blk {N K : ℕ} (A : BI N (K + 1) → List Bool) (a : Fin 2) (c : Fin 2 × Fin (K + 1)) :
+    (rrL (blk A a c) N (K + 1) N).flatten = fl (rowRev A a c) := by
+  rw [rrL, rowRev, fl, ← List.map_coe_finRange_eq_range, List.flatMap_map, List.map_map,
+    flatten_flatMap']
+  congr 1
+  apply List.map_congr_left
+  intro m _
+  unfold coefWV
+  simp only [colOf, Function.comp_apply, List.ofFn_eq_map]
+  rw [← List.map_coe_finRange_eq_range, List.map_map]
+  congr 1
+  apply List.map_congr_left
+  intro i _
+  simp only [Function.comp_apply]
+  have := getD_blk A a c [] i m.rev
+  rw [Fin.val_rev] at this
+  rw [show N - 1 - m.val = N - (m.val + 1) by omega, this]
+
+theorem rasW_eq {N K : ℕ} (A : BI N (K + 1) → List Bool) (a : Fin 2) :
+    rasW A a = (rasL A a (2 * (K + 1))).flatten := by
+  rw [rasW, rasL, List.take_of_length_le (by simp [cols, List.length_product]),
+    flatten_flatMap', List.map_map]
+  congr 1
+  apply List.map_congr_left
+  intro c _
+  simp [rrL_blk]
+
+theorem bstream_drop {L : List (List (List Bool))} {S : ℕ} (hL : ∀ x ∈ L, x.flatten.length = S)
+    (m : ℕ) : (bstream L).drop (m * S) = bstream (L.drop m) := by
+  rw [bstream, drop_flatten_uv (V := S) (fun x hx => by
+    simp only [List.mem_map] at hx; obtain ⟨y, hy, rfl⟩ := hx; exact hL y hy), bstream,
+    List.map_drop]
+
+theorem bstream_drop_cons (L : List (List (List Bool))) {m : ℕ} (hm : m < L.length) :
+    bstream (L.drop m) = (L.getD m []).flatten ++ bstream (L.drop (m + 1)) := by
+  rw [drop_cons_getD L hm, bstream_cons]
+
+theorem rrL_shape {L : List (List Bool)} (hL : UV V L) {N R : ℕ} (hlen : L.length = R * N) :
+    UV V (rrL L N R N) ∧ (rrL L N R N).length = N * R := by
+  have hb : ∀ m < N, ∀ i < R, N - 1 - m + i * N < L.length := fun m hm i hi => by
+    rw [hlen]; have : (i + 1) * N ≤ R * N := Nat.mul_le_mul_right _ hi
+    rw [Nat.succ_mul] at this; omega
+  refine ⟨fun x hx => ?_, ?_⟩
+  · simp only [rrL, List.mem_flatMap, List.mem_range] at hx
+    obtain ⟨m, hm, hx⟩ := hx
+    exact hL.colOf (hb m hm) x hx
+  · simp only [rrL, List.length_flatMap, colOf, List.length_map, List.length_range]
+    rw [List.map_const', List.sum_replicate]; simp
+
+theorem rasL_shape {N K : ℕ} {A : BI N (K + 1) → List Bool} (hA : ∀ b, (A b).length = V)
+    (a : Fin 2) (r : ℕ) :
+    UV V (rasL A a r) ∧ (rasL A a r).length = ((cols (K + 1)).take r).length * (N * (K + 1)) := by
+  have hs := fun c => rrL_shape (blk_shape hA a c).1 (N := N) (R := K + 1) (by rw [(blk_shape hA a c).2])
+  refine ⟨fun x hx => ?_, ?_⟩
+  · simp only [rasL, List.mem_flatMap] at hx
+    obtain ⟨c, -, hx⟩ := hx
+    exact (hs c).1 x hx
+  · simp only [rasL, List.length_flatMap]
+    rw [List.map_congr_left (fun c _ => (hs c).2), List.map_const', List.sum_replicate]; simp
+
+/-- The invariant of the loop over the columns of `A`. -/
+structure RasInv (V K N : ℕ) (one zv : List Bool) (A : BI N (K + 1) → List Bool) (a : Fin 2)
+    (w₀ : St) (r : ℕ) (w : St) : Prop where
+  ctx : NCtx V K N one zv w
+  sa : w SA = bstream ((blocks A).drop (a.val * (2 * (K + 1)) + r))
+  ras : w RASB = (w₀ RASB ++ (rasL A a r).flatten).drop (rasL A a r).flatten.length
+
+theorem rasInv_step {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (A : BI N (K + 1) → List Bool)
+    (hA : ∀ b, (A b).length = V) (a : Fin 2) {w₀ : St} {r : ℕ} (hr : r < 2 * (K + 1)) {w : St}
+    (h : RasInv V K N one zv A a w₀ r w) :
+    RasInv V K N one zv A a w₀ (r + 1) (exec V f rasBody (Function.update w CC2 (w CC2).tail)) := by
+  have c0 := h.ctx.upd CC2 (by decide) (w CC2).tail
+  have hc : (cols (K + 1)).length = 2 * (K + 1) := by simp [cols, List.length_product]
+  set c := (cols (K + 1))[r]'(by omega) with hcdef
+  obtain ⟨c1, c2, hcc⟩ : ∃ (c1 : Fin 2) (c2 : Fin (K + 1)), c = (c1, c2) := ⟨c.1, c.2, rfl⟩
+  have hrc : r = c1.val * (K + 1) + c2.val := by
+    have h1 := getElem_cols (K := K) c1 c2 (by
+      have := c2.isLt; have := c1.isLt; rw [hc]; nlinarith)
+    have h2 : (cols (K + 1)).Nodup := (List.nodup_finRange 2).product (List.nodup_finRange (K + 1))
+    have := (List.Nodup.getElem_inj_iff h2).mp (h1.trans (hcc.symm.trans hcdef))
+    omega
+  have hm : a.val * (2 * (K + 1)) + r < (blocks A).length := by
+    rw [length_blocks]; have := a.isLt; nlinarith
+  have hg : (blocks A).getD (a.val * (2 * (K + 1)) + r) [] = blk A a c := by
+    rw [hrc, getD_blocks, hcc]
+  simp only [rasBody, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  have hsa' : Function.update (Function.update w CC2 (w CC2).tail) rX
+      (Function.update w CC2 (w CC2).tail TNKV) SA = (blk A a c).flatten ++
+        bstream ((blocks A).drop (a.val * (2 * (K + 1)) + r + 1)) := by
+    rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide), h.sa,
+      bstream_drop_cons _ hm, hg]
+  rw [exec_mv_pop (x := (blk A a c).flatten) (L := bstream ((blocks A).drop (a.val * (2 * (K + 1)) +
+    r + 1))) (by decide)
+    (by simp (config := {decide := true}) [Function.update_apply])
+    (by simp (config := {decide := true}) [Function.update_apply, blk_len hA, h.ctx.nkv]) hsa']
+  set u := Function.update (Function.update (Function.update (Function.update w CC2 (w CC2).tail)
+    rX (Function.update w CC2 (w CC2).tail TNKV)) SA
+    (bstream ((blocks A).drop (a.val * (2 * (K + 1)) + r + 1)))) rX (blk A a c).flatten with hu
+  have cu : NCtx V K N one zv u := (c0.upd rX (by decide) _ |>.upd SA (by decide) _).upd rX
+    (by decide) _
+  obtain ⟨R1, R2⟩ := exec_rrC (V := V) (f := f) (blk_shape hA a c).1 hN
+    (by rw [(blk_shape hA a c).2]) u (by simp [hu]) (by rw [cu.vone, ← h.ctx.vone]; exact
+      h.ctx.tm.h10) cu.tm.h12 cu.tn1v cu.tn
+  refine ⟨cu.of_eq fun j hj => R2 j (by revert j hj; decide) (by revert j hj; decide)
+    (by revert j hj; decide) (by revert j hj; decide) (by revert j hj; decide)
+    (by revert j hj; decide), ?_, ?_⟩
+  · rw [R2 SA (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
+    simp (config := {decide := true}) [hu, Function.update_apply]
+    rfl
+  · rw [R1]
+    simp (config := {decide := true}) only [hu, Function.update_apply, if_false]
+    rw [h.ras, shift_acc]
+    have e : rasL A a (r + 1) = rasL A a r ++ rrL (blk A a c) N (K + 1) N := by
+      simp only [rasL]
+      rw [List.take_succ, List.flatMap_append, List.getElem?_eq_getElem (by omega)]
+      simp [hcdef]
+    rw [e, List.flatten_append]
+
+/-- **The reversed rows of the row `a` of `A`**, from the stream `SA` of its blocks. -/
+theorem exec_rasLoop {N K : ℕ} (hN : 0 < N) {one zv : List Bool} (A : BI N (K + 1) → List Bool)
+    (hA : ∀ b, (A b).length = V) (a : Fin 2) (w : St) (ctx : NCtx V K N one zv w)
+    (hsa : w SA = bstream ((blocks A).drop (a.val * (2 * (K + 1))))) :
+    exec V f rasLoop w RASB = rasW A a ∧
+      exec V f rasLoop w SA = bstream ((blocks A).drop ((a.val + 1) * (2 * (K + 1)))) ∧
+      NCtx V K N one zv (exec V f rasLoop w) ∧ ∀ j ∉ wr rasLoop, exec V f rasLoop w j = w j := by
+  refine ⟨?_, ?_, ctx.exec _ (by decide), fun j hj => exec_not_mem _ _ _ hj⟩ <;>
+  · simp only [rasLoop, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+    have I := exec_rep_inv (V := V) (f := f) (c := CC2) (B := rasBody)
+      (fun r w' => r ≤ 2 * (K + 1) → RasInv V K N one zv A a
+        (Function.update (Function.update w RASB (w T2kkNV)) CC2
+          (Function.update w RASB (w T2kkNV) T2K)) r w')
+      (fun r w' ih hr => rasInv_step hN A hA a (by omega) (ih (by omega)))
+      (Function.update (Function.update w RASB (w T2kkNV)) CC2
+        (Function.update w RASB (w T2kkNV) T2K))
+      (fun _ => ⟨(ctx.upd RASB (by decide) _).upd CC2 (by decide) _,
+        by simp (config := {decide := true}) [Function.update_apply, hsa],
+        by simp [rasL]⟩)
+    have hn : (Function.update (Function.update w RASB (w T2kkNV)) CC2
+        (Function.update w RASB (w T2kkNV) T2K) CC2).length = 2 * (K + 1) := by
+      simp (config := {decide := true}) [Function.update_apply, ctx.t2k]
+    rw [hn] at I
+    have I' := I le_rfl
+    first
+    | (rw [I'.ras]
+       simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+       have hl : (rasL A a (2 * (K + 1))).flatten.length = (w T2kkNV).length := by
+         rw [ctx.t2kknv, length_flatten_of (rasL_shape hA a _).1, (rasL_shape hA a _).2]
+         simp [cols, List.length_product]; ring
+       rw [hl, List.drop_left, rasW_eq])
+    | (rw [I'.sa]; congr 2; ring)
+
 end ValVM
 
 end SigabaNeo.Tape
