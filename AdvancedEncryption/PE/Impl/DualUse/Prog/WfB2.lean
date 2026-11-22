@@ -816,6 +816,94 @@ theorem w2_spec (hW : 0 < W) (hb : BndG W gs) :
     rw [o2 _ a4 a5 a6 a7]
     simp only [Function.update_apply, if_neg a1, if_neg a2, if_neg a3]
 
+theorem eq_append_drop {L P R : List Bool} (h : L = P ++ R) : L = P ++ L.drop P.length := by
+  rw [h, List.drop_left]
+
+/-- The input words of `f̂` on the simulation data. -/
+abbrev bWs : Fin 10 × BI N (K + 1) → List Bool := fun j => rowW N K (K + 1) (sd.mpk.Bj j)
+abbrev wWs : Fin 10 × BI N (K + 1) → List Bool := fun j => colsW N K (K + 1) c.d (sd.W j)
+abbrev entS : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool :=
+  fun i q => entQ N K (K + 1) (colsW N K (K + 1) 2 (sd.Ψ i)) q
+
+/-- **The words before `fhatC` meet `FInit`.** -/
+theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) :
+    FInit (VT N K (K + 1) c.d) K N W (lenA N K (K + 1) 1) (lenA N K (K + 1) c.d) (oneT N K c.d) gs
+      (bWs hk c sd) (wWs hk c sd) (entS hk c sd)
+      ((w2 hk c W gs sd BSt).drop
+        (((Enum.list (α := Fin 10 × BI N (K + 1))).map (bWs hk c sd)).flatten.length))
+      ((w2 hk c W gs sd WSt).drop
+        (((Enum.list (α := Fin 10 × BI N (K + 1))).map (wWs hk c sd)).flatten.length))
+      ((w2 hk c W gs sd PSt).drop
+        (((List.finRange 10).flatMap fun i => (ValVM.qsL (K + 1)).map (entS hk c sd i)).flatten.length))
+      (w2 hk c W gs sd) := by
+  obtain ⟨o1, oB, oW, oP, o2⟩ := w2_spec hk c W gs sd hW hb
+  have L : ∀ (x : Fin 120) (n : ℕ), (mw x, n) ∈ stepT N K (K + 1) c.d ++
+      wordsT N K (K + 1) c.d W (offB c) (offW hk c) (offPsi hk c) →
+      x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] → x ≠ OB → x ≠ ZB →
+      (w2 hk c W gs sd x).length = n := fun x n h hx h1 h2 => by
+    rw [o2 x hx, w1_key hk c W _ gs h h1 h2, List.length_replicate]
+  have Z : ∀ (x : Fin 120) (n : ℕ), (mw x, n) ∈ stepT N K (K + 1) c.d ++
+      wordsT N K (K + 1) c.d W (offB c) (offW hk c) (offPsi hk c) →
+      x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] → x ≠ OB → x ≠ ZB →
+      w2 hk c W gs sd x = List.replicate n false := fun x n h hx h1 h2 => by
+    rw [o2 x hx, w1_key hk c W _ gs h h1 h2]
+  have hS1 : ∀ x : Fin 120, x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] →
+      w2 hk c W gs sd x = S1 hk c W ((sdEnc hk c).enc sd) gs (mw x) := fun x hx => by
+    rw [o2 x hx]; rfl
+  obtain ⟨g1, g2⟩ := w1_GS hk c W ((sdEnc hk c).enc sd) gs hW hb
+  exact {
+    tm := ⟨by rw [o1]; simp [VT, lenA, length_gadW, length_oneW]; ring,
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
+      L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)⟩
+    vone := o1
+    ob := by rw [hS1 _ (by decide)]; exact S1_OB hk c W _ gs
+    zb := by rw [hS1 _ (by decide)]; exact S1_ZB hk c W _ gs
+    nv := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    nkv := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    t2k := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tlb := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tcnt := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    th := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tn := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tn1 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tn1v := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tkv := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    t2knv := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    t2kknv := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    ta1 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tad := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tk1 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    znk1 := Z _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    hV := rfl
+    hNK := Nat.mul_pos hN hK
+    hK := hK
+    tnk := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    t4k := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    t10 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    bst := eq_append_drop (by rw [oB, sd_dropB]; rfl)
+    wst := eq_append_drop (by rw [oW, sd_dropW]; rfl)
+    pst := eq_append_drop (R := dateEnc.enc sd.x) (by
+      rw [oP, sd_dropPsi, flatten_flatMap]
+      refine congrArg (· ++ dateEnc.enc sd.x) (List.flatMap_congr fun i _ => ?_)
+      exact (qsL_entries N K (K + 1) _ (by rw [length_colsW'])).symm)
+    insw := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tsl := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tst := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    td2 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tw := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tpad := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tw9 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tins := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    gsw := by rw [o2 _ (by decide)]; exact g1
+    gcnt := by rw [o2 _ (by decide), g2, List.length_replicate] }
+
 end RunT
 
 end WB2
