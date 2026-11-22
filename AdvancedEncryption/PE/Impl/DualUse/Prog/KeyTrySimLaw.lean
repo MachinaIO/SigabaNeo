@@ -25,6 +25,11 @@ def keyTrySimCoinsP : Prog 90 := coinsAt 3 25 41 42 ⨾ (keyTrySimP ⨾ clr 3)
 
 theorem noGrow_keyTrySimP : keyTrySimP.NoGrow := by decide
 
+theorem wf_keyTrySimP : keyTrySimP.WF := wf_of_wfB (by decide)
+
+theorem wf_keyTrySimCoinsP : keyTrySimCoinsP.WF :=
+  ⟨wf_coinsAt _ _ _ _ (by decide) (by decide), wf_keyTrySimP, trivial⟩
+
 theorem law_keyTrySimCoinsP {N K k d B P m : ℕ} (hK0 : 0 < K) (s : Store 90)
     (hs : ∀ j : Fin 90, 26 ≤ j.val → s j = []) (h3 : s 3 = [])
     (hpk : (s 1).length = P) (hsz : d * (N * K) + nT k * (N * K) ≤ P)
