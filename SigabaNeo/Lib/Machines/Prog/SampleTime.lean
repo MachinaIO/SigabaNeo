@@ -356,6 +356,101 @@ theorem ATB.count {t c : Fin k} (htr : t ≠ r) (hcr : c ≠ r) (hct : c ≠ t) 
     · omega
     · exact ((lenBoundT_mono (loop c body) hcopy).trans hloopL) i
 
+/-- **A loop over a tape of at most `m` bits** (the counter `c` a copy of `t`). -/
+theorem forN_bounds {t c : Fin k} (hcr : c ≠ r) {body : XProg k} {S₀ a s : ℕ}
+    {T : ℕ → ℕ → ℕ} (hb : ATB body r S₀ a s T) (hc : body.Preserves c)
+    (hT : ∀ x x' S S', x ≤ x' → S ≤ S' → T x S ≤ T x' S') {ℓ : Fin k → ℕ} {x S m : ℕ}
+    (hS : S₀ ≤ S) (hm : m ≤ S) (hℓ : ℓ ≤ shp r x S) (ht : ℓ t ≤ m) :
+    timeBoundT (forN c t body) ℓ ≤ (2 * (x + S) + 3) +
+      (m * (2 * (x + m * a + (S + m * s)) + 3 + T (x + m * a) (S + m * s) + 1) + 2) ∧
+    lenBoundT (forN c t body) ℓ ≤ shp r (x + m * a) (S + m * s) := by
+  set L0 := Function.update (shp r x S) c m
+  set g := loopStepT c body
+  have hit : ∀ j, j ≤ m → g^[j] L0 ≤ Function.update (shp r (x + j * a) (S + j * s)) c (m - j) := by
+    intro j
+    induction j with
+    | zero => intro _; simp [L0]
+    | succ j ih =>
+      intro hj i
+      rw [Function.iterate_succ_apply']
+      have h1 := ih (by omega)
+      have htl : tailB c (g^[j] L0) ≤ shp r (x + j * a) (S + j * s) := fun i' => by
+        have := h1 i'
+        simp only [tailB, Function.update_apply] at this ⊢
+        split_ifs at this ⊢ with h
+        · subst h; simp only [shp, if_neg hcr]; omega
+        · exact this
+      generalize g^[j] L0 = L at h1 htl ⊢
+      show lenBoundT body (tailB c L) i ≤ _
+      by_cases hic : i = c
+      · subst hic
+        rw [lenBoundT_of_preserves body i hc, tailB, Function.update_self, Function.update_self]
+        have := h1 i; simp at this; omega
+      · simp only [Function.update_apply, if_neg hic]
+        refine ((lenBoundT_mono body htl) i).trans (((hb _ _ (by nlinarith)).2 i).trans ?_)
+        simp only [shp]; split_ifs
+        · rw [Nat.succ_mul]; omega
+        · rw [Nat.succ_mul]; omega
+  have hitS : ∀ j, j ≤ m → g^[j] L0 ≤ shp r (x + m * a) (S + m * s) := by
+    intro j hj i
+    refine (hit j hj i).trans ?_
+    have h1 : j * a ≤ m * a := Nat.mul_le_mul_right _ hj
+    have h2 : j * s ≤ m * s := Nat.mul_le_mul_right _ hj
+    simp only [Function.update_apply, shp]
+    split_ifs <;> omega
+  have hcopy : lenBoundT (prog (.prim (.copy c t))) ℓ ≤ L0 := by
+    intro i
+    rw [lenBoundT_prim]
+    simp only [Prim.lenT, Function.update_apply, L0]
+    split_ifs
+    · exact ht
+    · exact hℓ i
+  have hloopT : timeBoundT (loop c body) L0 ≤
+      m * (2 * (x + m * a + (S + m * s)) + 3 + T (x + m * a) (S + m * s) + 1) + 2 := by
+    have := timeBoundT_loop_le c body L0
+      (R := 2 * (x + m * a + (S + m * s)) + 3 + T (x + m * a) (S + m * s)) (fun j hj => by
+        have hj' : j < m := by simpa [L0] using hj
+        have hs1 := supB_mono (hitS j hj'.le)
+        have hs2 := supB_shp r (x + m * a) (S + m * s)
+        have htl : tailB c (g^[j] L0) ≤ shp r (x + j * a) (S + j * s) := fun i' => by
+          have := hit j hj'.le i'
+          simp only [tailB, Function.update_apply] at this ⊢
+          split_ifs at this ⊢ with h
+          · subst h; simp only [shp, if_neg hcr]; omega
+          · exact this
+        have hbt := (hb.time (by nlinarith) htl).trans
+          (hT _ _ _ _ (Nat.add_le_add_left (Nat.mul_le_mul_right a hj'.le) x)
+            (Nat.add_le_add_left (Nat.mul_le_mul_right s hj'.le) S))
+        show 2 * supB (g^[j] L0) + 3 + timeBoundT body (tailB c (g^[j] L0)) ≤ _
+        omega)
+    simpa [L0] using this
+  have hloopL : lenBoundT (loop c body) L0 ≤ shp r (x + m * a) (S + m * s) :=
+    iterSupT_le fun j hj => hitS j (by simpa [L0] using hj)
+  refine ⟨?_, ?_⟩
+  · show timeBoundT (prog (.prim (.copy c t))) ℓ +
+      timeBoundT (loop c body) (lenBoundT (prog (.prim (.copy c t))) ℓ) ≤ _
+    have e1 := (timeBoundT_mono (loop c body) hcopy).trans hloopT
+    have hcp : timeBoundT (prog (.prim (.copy c t))) ℓ ≤ 2 * (x + S) + 3 := by
+      rw [timeBoundT_prim]
+      have := supB_mono hℓ
+      have := supB_shp r x S
+      simp only [Prim.pad]; omega
+    omega
+  · exact (lenBoundT_mono (loop c body) hcopy).trans hloopL
+
+theorem countT_mono {n a s : ℕ} {T : ℕ → ℕ → ℕ}
+    (hT : ∀ x x' S S', x ≤ x' → S ≤ S' → T x S ≤ T x' S') :
+    ∀ x x' S S', x ≤ x' → S ≤ S' → countT n a s T x S ≤ countT n a s T x' S' := by
+  intro x x' S S' hx hS
+  unfold countT
+  have h1 := hT (x + n * a) (x' + n * a) (S + n * s) (S' + n * s) (by omega) (by omega)
+  have h2 : (2 * n + 1) * (4 * (x + S) + 12) ≤ (2 * n + 1) * (4 * (x' + S') + 12) :=
+    Nat.mul_le_mul_left _ (by omega)
+  have h3 : n * (2 * (x + n * a + (S + n * s)) + 3 + T (x + n * a) (S + n * s) + 1) ≤
+      n * (2 * (x' + n * a + (S' + n * s)) + 3 + T (x' + n * a) (S' + n * s) + 1) :=
+    Nat.mul_le_mul_left _ (by omega)
+  omega
+
 end XProg
 
 end SigabaNeo.Tape
