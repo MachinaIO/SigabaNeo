@@ -376,4 +376,57 @@ theorem setup3_enc [NeZero c.d] (x : Date) :
   refine Eq.trans ?_ (PMF.map_comp _ _ _).symm
   rfl
 
+/-! ### The ideal side -/
+
+/-- The coins of `Enc` with `s` first and the encodings' errors before `e'`. -/
+theorem lawCoinsC_eq [NeZero c.d] : lawCoinsC hk c =
+    (PMF.uniformOfFintype (Rg N K)).bind fun s => (rowLaw (χR c) (Fin c.d)).bind fun e₀ =>
+      (χR c).bind fun σ => (rowLaw (χR c) (RingBTVW.Col k)).bind fun ea =>
+        (rowLaw (χR c) (RingBTVW.Col k)).bind fun ez =>
+          (lawRmBin (S := Sdw (N := N) hk) (Wd := Fin c.d) (k := k)).bind fun Rm =>
+            (lawEc hk c).bind fun ej => (χR c).bind fun e' =>
+              PMF.pure (⟨s, e₀, trapRowU' σ ea ez, Rm, ej, e'⟩ :
+                EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)) := by
+  unfold lawCoinsC lawCoins
+  rw [lawRestC_eq]
+  simp only [PMF.bind_bind, PMF.pure_bind]
+  refine congrArg (PMF.bind _) (funext fun s => ?_)
+  refine congrArg (PMF.bind _) (funext fun e₀ => ?_)
+  refine congrArg (PMF.bind _) (funext fun σ => ?_)
+  refine congrArg (PMF.bind _) (funext fun ea => ?_)
+  refine congrArg (PMF.bind _) (funext fun ez => ?_)
+  refine congrArg (PMF.bind _) (funext fun Rm => ?_)
+  rw [PMF.bind_comm]
+  refine congrArg (PMF.bind _) (funext fun ej => ?_)
+  rw [← bind_pure_eq_map]
+  rfl
+
+/-- **The word of the coins of `Enc`.** -/
+theorem coinsLaw_enc [NeZero c.d] (hN : 0 < N) (hK : 0 < K) :
+    (lawCoinsC hk c).map (coinsEnc hk c).enc =
+      cat (BitString.uniformList (N * K)) (cat (catPow (catPow (μχ c) N) (Enum.list (α := Fin c.d)).length)
+        (cat (cat (catPow (μχ c) N) (cat (catPow (catPow (μχ c) N) (Enum.list (α := RingBTVW.Col k)).length)
+          (catPow (catPow (μχ c) N) (Enum.list (α := RingBTVW.Col k)).length)))
+        (cat (catPow (μB N K) ((Enum.list (α := (Sdw (N := N) hk).Attr × RingBTVW.Col k)).length *
+          (List.finRange c.d).length))
+          (cat (catPow (μF K c.w) (Enum.list (α := JC (Sdw (N := N) hk) × Fin N)).length)
+            (catPow (μχ c) N))))) := by
+  rw [lawCoinsC_eq, ← χR_enc, ← rowLaw_enc (χR c) (Fin c.d), ← rowLaw_enc (χR c) (RingBTVW.Col k),
+    ← rmW_law hk c hN hK, ← eLaw_eq hk c, ← unif_ring, cat_assoc, cat_assoc]
+  simp only [cat_map_left, PMF.map_bind, PMF.map_comp, Function.comp_def, bind_pure_eq_map]
+  refine congrArg (PMF.bind _) (funext fun s => ?_)
+  refine congrArg (PMF.bind _) (funext fun e₀ => ?_)
+  refine congrArg (PMF.bind _) (funext fun σ => ?_)
+  refine congrArg (PMF.bind _) (funext fun ea => ?_)
+  refine congrArg (PMF.bind _) (funext fun ez => ?_)
+  refine congrArg (PMF.bind _) (funext fun Rm => ?_)
+  refine congrArg (PMF.bind _) (funext fun ej => ?_)
+  congr 1
+  funext e'
+  show (ringEnc N K).enc s ++ ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc e₀ ++
+    ((matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (trapRowU' σ ea ez) ++
+      ((rmTEnc c).enc Rm ++ ((eEnc (N := N) hk).enc ej ++ (ringEnc N K).enc e')))) = _
+  rw [trapRow_enc]
+  simp only [rmW, List.append_assoc]
+
 end AdvancedEncryption.DualUse.Prog
