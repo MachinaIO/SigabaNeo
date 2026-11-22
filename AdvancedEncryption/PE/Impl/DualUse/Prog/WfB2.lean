@@ -1777,6 +1777,25 @@ theorem law_keyF (S : Store 256) (v : List Bool)
 
 /-! ### The law of the body -/
 
+theorem oK2_lo : ∀ t : Fin 94, 18 ≤ t.val → t.val < 86 → oK2 t ∉ [ms 3, ms 4, ms 5, ms 6, ms 7,
+    ms 8, ms 9, ms 10, ms 11, ms 12, ms 13, ms 14, ms 15, ms 16, ms 17, ms 88, ms 89, ms 90] ∧
+    oK2 t ≠ ms 87 := by decide
+
+theorem oK2_lo_clr : ∀ t : Fin 94, 18 ≤ t.val → t.val < 22 → oK2 t ∈ keyClr := by decide
+
+theorem oK2_lo_ms : ∀ t : Fin 94, 22 ≤ t.val → t.val < 86 →
+    oK2 t = ms ⟨t.val, Nat.lt_of_lt_of_le t.isLt (by decide)⟩ := by decide
+
+theorem oK2_wrG : ∀ t : Fin 94, 22 ≤ t.val → t.val < 86 → t.val ∉ wrG := by decide
+
+theorem oK2_top : ∀ t : Fin 94, 91 ≤ t.val → oK2 t ∉ [ms 3, ms 4, ms 5, ms 6, ms 7,
+    ms 8, ms 9, ms 10, ms 11, ms 12, ms 13, ms 14, ms 15, ms 16, ms 17, ms 88, ms 89, ms 90] ∧
+    oK2 t ≠ ms 87 ∧ oK2 t ∈ keyClr := by decide
+
+theorem oK2_mid : ∀ j : Fin 86, 3 ≤ j.val → oK2 (Prog.oKs j) = ⟨j.val, Nat.lt_of_lt_of_le j.isLt (by decide)⟩ := by decide
+
+theorem oK2_hi : ∀ j : Fin 94, 87 ≤ j.val → oK2 j = ⟨j.val, Nat.lt_of_lt_of_le j.isLt (by decide)⟩ := by decide
+
 section Final
 
 variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ) (gs : GateList)
@@ -1810,6 +1829,78 @@ theorem T3_facts (hW : 0 < W) (hb : BndG W gs) :
     have sub : ∀ i ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 86, 87, 88,
         89], i ∈ wrG := by decide
     exact s1_blank hk c W _ gs j (fun i hi e => hj (by rw [e]; exact sub i hi))
+
+
+theorem S4_FOUT (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) (hgs : gs.length + 10 ≤ W)
+    (hne : gs ≠ []) :
+    S4 hk c W gs sd (mw FOUT) = ValVM.bw (fhatV (oneT N K c.d)
+      (ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d))
+      (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1)) (enumO N (K + 1))
+      (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1 (predOf 10 gs).2) := by
+  have hF : FOUT ∉ wr gswFullC := by decide +kernel
+  rw [S4, ValVM.enc_tWd, w6_frame _ _ _ _ _ hF, w4, S3_eq_T _ _ _ _ (by decide) (by decide)
+    (by decide), T3, ValVM.enc_tWd]
+  exact w3_FOUT hk c W gs sd hN hK hW hb hgs hne
+
+/-- **`simKeyP` on the prepared store writes `W_f`.** -/
+theorem key_run (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W (parse C))
+    (hgs : (parse C).length + 10 ≤ W) (hne : parse C ≠ []) :
+    run simKeyP (fun j => S5 N K (K + 1) c.d (S4 hk c W (parse C) sd) (oK2 j)) =
+      Function.update (fun j => S5 N K (K + 1) c.d (S4 hk c W (parse C) sd) (oK2 j)) 0
+        (colsW N K (K + 1) c.d (simW sd C)) := by
+  set gs := parse C with hgs_def
+  obtain ⟨tG, tA, tO, tS, tX0', tX1', tX2'⟩ := T3_facts hk c W gs sd hW hb
+  obtain ⟨o86, o61⟩ := w6_spec hk c W gs (T3 hk c W gs sd) sd hN hK hW hb hgs hne tG tA tO
+  set r : Store 94 := fun j => S5 N K (K + 1) c.d (S4 hk c W gs sd) (oK2 j) with hr
+  have L : ∀ (t : Fin 256) n, (t, n) ∈ keyT N K (K + 1) c.d →
+      (S5 N K (K + 1) c.d (S4 hk c W gs sd) t).length = n := fun t n h => by
+    rw [S5_key _ _ _ _ _ h, List.length_replicate]
+  have blank : ∀ j : Fin 132, j.val ∉ wrG → S4 hk c W gs sd (ms j) = [] := fun j hj => by
+    rw [S4, ValVM.enc_tS]; exact s3_blank hk c W _ tS j hj
+  refine run_simKeyP_B2 hk c sd C hN hK r ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  · exact ⟨L (ms 3) (K) (by simp [keyT]),
+    L (ms 4) (N) (by simp [keyT]),
+    L (ms 5) (N * K) (by simp [keyT]),
+    L (ms 6) (K + 1) (by simp [keyT]),
+    L (ms 7) (2 * (K + 1)) (by simp [keyT]),
+    L (ms 8) (2 * (K + 1)) (by simp [keyT]),
+    L (ms 9) (2 * (K + 1) * N) (by simp [keyT]),
+    L (ms 10) (2 * (K + 1) * (N * K)) (by simp [keyT]),
+    L (ms 11) (2 * (K + 1) * (2 * (K + 1) * (N * K))) (by simp [keyT]),
+    L (ms 12) (c.d) (by simp [keyT]),
+    L (ms 13) (c.d * (2 * (K + 1)) * (N * K)) (by simp [keyT]),
+    L (ms 14) (c.d * (2 * (K + 1)) * N) (by simp [keyT]),
+    L (ms 15) (nPos N (K + 1)) (by simp [keyT]),
+    L (ms 16) (VT N K (K + 1) c.d) (by simp [keyT]),
+    L (ms 17) (lenA N K (K + 1) 1) (by simp [keyT])⟩
+  · intro t h h'
+    simp only [hr]
+    obtain ⟨a1, a2⟩ := oK2_lo t h h'
+    rw [S5_not _ _ _ _ _ (by rw [keys_keyT]; exact a1) a2]
+    by_cases h22 : t.val < 22
+    · rw [if_pos (oK2_lo_clr t h h22)]
+    · split_ifs
+      · rfl
+      · rw [oK2_lo_ms t (by omega) h']; exact blank _ (oK2_wrG t (by omega) h')
+  · intro t h
+    simp only [hr]
+    obtain ⟨a1, a2, a3⟩ := oK2_top t h
+    rw [S5_not _ _ _ _ _ (by rw [keys_keyT]; exact a1) a2, if_pos a3]
+  · simp only [hr]
+    rw [show oK2 1 = mw FOUT from rfl, S5_not _ _ _ _ _ (by rw [keys_keyT]; decide) (by decide),
+      if_neg (by decide)]
+    exact S4_FOUT hk c W gs sd hN hK hW hb hgs hne
+  · simp only [hr]
+    rw [show oK2 2 = mw 61 from rfl, S5_not _ _ _ _ _ (by rw [keys_keyT]; decide) (by decide),
+      if_neg (by decide), S4, ValVM.enc_tWd, o61]
+  · simp only [hr]
+    rw [show oK2 86 = mw OUTW from rfl, S5_not _ _ _ _ _ (by rw [keys_keyT]; decide) (by decide),
+      if_neg (by decide), S4, ValVM.enc_tWd, o86, tA]
+  · simp only [hr]
+    rw [show oK2 87 = ms 87 from rfl, S5_87]
+  · simp only [hr]; rw [show oK2 88 = ms 88 from rfl]; exact L _ _ (by simp [keyT])
+  · simp only [hr]; rw [show oK2 89 = ms 89 from rfl]; exact L _ _ (by simp [keyT])
+  · simp only [hr]; rw [show oK2 90 = ms 90 from rfl]; exact L _ _ (by simp [keyT])
 
 end Final
 
