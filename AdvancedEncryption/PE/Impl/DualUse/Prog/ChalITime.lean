@@ -171,9 +171,19 @@ theorem flipP_bounds (P : ℕ) {ℓ : Fin 7 → ℕ} {S : ℕ} (hP : P ≤ S) (h
   · show lenBoundT (prog (.prim (.clear 2))) (lenBoundT (prog (.prim (.copy 0 2))) ℓ3) ≤ _
     exact ((lenBoundT_mono _ hℓ4).trans hK.2).trans (shp_mono (by simp) (by simp))
 
+/-- Clearing the scratch tapes. -/
+theorem clrS_bounds {ℓ : Fin 7 → ℕ} {S : ℕ} (hℓ : ℓ ≤ shp (6 : Fin 7) 0 S) :
+    timeBoundT clrS ℓ ≤ 6 * tBit 0 S ∧ lenBoundT clrS ℓ = fun t => if t = 0 then ℓ 0 else 0 := by
+  have h := (atb6_clear 1).seq ((atb6_clear 2).seq ((atb6_clear 3).seq ((atb6_clear 4).seq
+    ((atb6_clear 5).seq (atb6_clear 6)))))
+  refine ⟨((timeBoundT_mono _ hℓ).trans (h 0 S (Nat.zero_le _)).1).trans
+    (le_of_eq (by simp only [Nat.add_zero]; ring)), ?_⟩
+  funext t
+  fin_cases t <;> rfl
+
 /-- **The time of the challenge body** from the shape `shp 6 0 S`. -/
 def tChal (D P S : ℕ) : ℕ :=
-  countT D 0 0 tBit 0 S + (max (tFlip P S) (tBit 0 S) + 1 + tBit 0 (2 * (S + P + 1)))
+  countT D 0 0 tBit 0 S + (max (tFlip P S) (tBit 0 S) + 1 + 6 * tBit 0 (2 * (S + P + 1)))
 
 theorem time_chalBodyP (D P : ℕ) {ℓ : Fin 7 → ℕ} {S : ℕ} (hD : D ≤ S) (hP : P ≤ S)
     (hℓ : ℓ ≤ shp (6 : Fin 7) 0 S) : timeBoundT (chalBodyP D P) ℓ ≤ tChal D P S := by
@@ -186,17 +196,36 @@ theorem time_chalBodyP (D P : ℕ) {ℓ : Fin 7 → ℕ} {S : ℕ} (hD : D ≤ S
     ((lenBoundT_mono _ hℓ1).trans hN.2).trans (shp_mono (by simp) (by omega))
   have hℓ2 : lenBoundT (ifBit 1 (flipP P) nopX) (lenBoundT (dropF D) ℓ) ≤
       shp (6 : Fin 7) 0 (2 * (S + P + 1)) := fun t => max_le (hF.2 t) (hNl t)
-  have hK := atb6_clear 1 0 (2 * (S + P + 1)) (Nat.zero_le _)
   show timeBoundT (dropF D) ℓ + ((max (timeBoundT (flipP P) (lenBoundT (dropF D) ℓ))
     (timeBoundT nopX (lenBoundT (dropF D) ℓ)) + 1) +
-      timeBoundT (prog (.prim (.clear 1))) (lenBoundT (ifBit 1 (flipP P) nopX)
-        (lenBoundT (dropF D) ℓ))) ≤ _
+      timeBoundT clrS (lenBoundT (ifBit 1 (flipP P) nopX) (lenBoundT (dropF D) ℓ))) ≤ _
   have t1 := (timeBoundT_mono _ hℓ).trans hd.1
   have t2 := (timeBoundT_mono nopX hℓ1).trans hN.1
-  have t3 := (timeBoundT_mono _ hℓ2).trans hK.1
+  have t3 := (clrS_bounds hℓ2).1
   have hm := max_le_max hF.1 t2
   unfold tChal
   omega
+
+/-- **The length bound of the challenge body**: the output alone on tape `0`. -/
+theorem len_chalBodyP (D P : ℕ) {ℓ : Fin 7 → ℕ} {S : ℕ} (hD : D ≤ S) (hP : P ≤ S)
+    (hℓ : ℓ ≤ shp (6 : Fin 7) 0 S) :
+    lenBoundT (chalBodyP D P) ℓ ≤ io2 (R := 5) (2 * (S + P + 1)) 0 0 := by
+  have hd := atb6_dropF D 0 S (by omega)
+  have hℓ1 : lenBoundT (dropF D) ℓ ≤ shp (6 : Fin 7) 0 S :=
+    ((lenBoundT_mono _ hℓ).trans hd.2).trans (shp_mono (by simp) (by simp))
+  have hF := flipP_bounds P hP hℓ1
+  have hN := atb6_copy 2 2 (by decide) (by decide) 0 S (Nat.zero_le _)
+  have hNl : lenBoundT nopX (lenBoundT (dropF D) ℓ) ≤ shp (6 : Fin 7) 0 (2 * (S + P + 1)) :=
+    ((lenBoundT_mono _ hℓ1).trans hN.2).trans (shp_mono (by simp) (by omega))
+  have hℓ2 : lenBoundT (ifBit 1 (flipP P) nopX) (lenBoundT (dropF D) ℓ) ≤
+      shp (6 : Fin 7) 0 (2 * (S + P + 1)) := fun t => max_le (hF.2 t) (hNl t)
+  show lenBoundT clrS (lenBoundT (ifBit 1 (flipP P) nopX) (lenBoundT (dropF D) ℓ)) ≤ _
+  rw [(clrS_bounds hℓ2).2]
+  intro t
+  have h0 := hℓ2 0
+  simp only [shp] at h0
+  simp only [io2]
+  split_ifs <;> simp_all
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
@@ -212,9 +241,22 @@ theorem time_chalIP (a b : ℕ) :
   simp only [io2, shp, sChalI]
   split_ifs <;> omega
 
+/-- **The length bound of the challenge component of the ideal side.** -/
+theorem len_chalIP (a b : ℕ) :
+    lenBoundT (chalIP hk c) (io2 (R := 5) a b 0) ≤
+      io2 (2 * (sChalI hk c a b + (offK hk c + (K - 1)) + 1)) 0 0 := by
+  refine len_chalBodyP _ _ (by unfold sChalI; omega) (by unfold sChalI; omega) fun i => ?_
+  simp only [io2, shp, sChalI]
+  split_ifs <;> omega
+
 /-- **The time of the lifted challenge component of the ideal side.** -/
 theorem time_chalIL (a b : ℕ) :
     timeBoundT (chalIL hk c) (io2 (R := 80) a b 0) ≤ timeChalI hk c a b := by
   rw [chalIL, time_lift82]; exact time_chalIP hk c a b
+
+theorem len_chalIL (a b : ℕ) :
+    lenBoundT (chalIL hk c) (io2 (R := 80) a b 0) ≤
+      io2 (2 * (sChalI hk c a b + (offK hk c + (K - 1)) + 1)) 0 0 :=
+  lenBoundT_liftP_le _ _ (len_chalIP hk c a b)
 
 end AdvancedEncryption.DualUse.Prog
