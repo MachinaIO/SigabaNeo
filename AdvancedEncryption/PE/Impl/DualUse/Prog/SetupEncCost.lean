@@ -53,3 +53,16 @@ theorem timeBound_encCoreP_le (L : ℕ) :
   Prog.timeBound_le encCoreP noGrow_encCoreP L
 
 end AdvancedEncryption.DualUse.Prog
+
+namespace AdvancedEncryption.DualUse.Prog
+
+/-- **The explicit χ sampler of `confP`**: the centered binomial sampler `chiP` (width 16). -/
+def chiSamplerP : ChiSampler Params.confP where
+  P := chiP
+  law := law_chiP
+  wf := wf_chiP
+  pres6 := preserves6_chiP
+  B := bChi
+  atb := atbb_chiP
+
+end AdvancedEncryption.DualUse.Prog
