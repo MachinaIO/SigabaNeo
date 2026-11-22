@@ -70,13 +70,13 @@ theorem run_parse4P (p a b e : List Bool) (f : List Bool) :
   split_ifs <;> rfl
 
 /-- The framed dummy answer `[false]`. -/
-def dumD : XProg 256 := XProg.seq (XProg.prog (clr 0)) (putW 0 [true, false, false])
+def dumDec : XProg 256 := XProg.seq (XProg.prog (clr 0)) (putW 0 [true, false, false])
 
 variable (hk c) in
 /-- The branches on the output of the front end. -/
 noncomputable def branchD (cfX : XProg 256) : XProg 256 :=
   XProg.ifBit 1 (XProg.seq (XProg.prog (.prim (.tail 1))) (XProg.seq cfX (decFinB hk c)))
-    (XProg.ifBlank 1 longB dumD)
+    (XProg.ifBlank 1 longB dumDec)
 
 variable (hk c) in
 /-- The longest input of `Dec` with a predicate of at most `c.L` bits. -/
@@ -142,7 +142,7 @@ theorem law_decGenP {cfX : XProg 256} {W : ℕ} (hcf : CfSpec hk c cfX W) (hK2 :
       decM_win hk c sk C ct hw]
     rfl
   · rw [frontV_short_not hL hw, if_neg (by simp [io2]), XProg.law_ifBlank, if_neg (by simp [io2]),
-      dumD, XProg.law_seq_pure (XProg.law_prim _ _), law_putW, PMF.pure_bind, law_clearL]
+      dumDec, XProg.law_seq_pure (XProg.law_prim _ _), law_putW, PMF.pure_bind, law_clearL]
     congr 1
     have hd : decM hk c sk C ct = [false] := by
       classical

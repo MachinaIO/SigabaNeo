@@ -67,6 +67,15 @@ import PE.Impl.DualUse.Algo.KeyTry
 import PE.Impl.DualUse.Algo.KeyTrySim
 import PE.Impl.DualUse.Prog.KeyTrySim
 import PE.Impl.DualUse.Prog.KeyTrySimLaw
+import PE.Impl.DualUse.Prog.KeyTryReal
+import PE.Impl.DualUse.Prog.KeyTryRealLaw
+import PE.Impl.DualUse.Prog.BfB
+import PE.Impl.DualUse.Prog.KeyGenP
+import PE.Impl.DualUse.Algo.DecWords
+import PE.Impl.DualUse.Prog.DecFin
+import PE.Impl.DualUse.Prog.DecP
+import PE.Impl.DualUse.Prog.DecGenP
+import PE.Impl.DualUse.ImplP
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad
