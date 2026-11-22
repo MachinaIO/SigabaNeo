@@ -86,11 +86,8 @@ theorem shortMapW_eq (hk : 2 ^ K < 2 ^ k) {d : ℕ}
 /-- **The shift `[e; t I; I] · G̲⁻¹(B_f̂ − G̲) · z`** on words: `y = G̲⁻¹(B_f̂ − G̲) z`, then
 `(e · y, t y, y)`. -/
 def trapShiftW (N K k : ℕ) (eW tW bfW zW : List Bool) : List Bool :=
-  dotW N K (2 * k) eW
-      (matMulW N K (2 * k) (2 * k) 1 (ginvW N K k (matSubW N K (1 * (2 * k)) bfW (gadW N K k))) zW) ++
-    (smulVW N K (2 * k) tW
-      (matMulW N K (2 * k) (2 * k) 1 (ginvW N K k (matSubW N K (1 * (2 * k)) bfW (gadW N K k))) zW) ++
-      matMulW N K (2 * k) (2 * k) 1 (ginvW N K k (matSubW N K (1 * (2 * k)) bfW (gadW N K k))) zW)
+  let yW := matMulW N K (2 * k) (2 * k) 1 (ginvW N K k (matSubW N K (1 * (2 * k)) bfW (gadW N K k))) zW
+  dotW N K (2 * k) eW yW ++ (smulVW N K (2 * k) tW yW ++ yW)
 
 /-- The matrix-vector product on the gadget columns. -/
 theorem matMulW_vec (M : Matrix (Col k) (Col k) (Rq N K)) (z : Col k → Rq N K) :
@@ -307,5 +304,103 @@ theorem keyTryMskW_eq (hk : 2 ^ K < 2 ^ k) (h0 : 0 < k) (c : DualUse.Conf N K k)
       simp [DualUse.keyTry, hcl]
     rw [hT, hinC, Bool.false_and, ite_eq_right_of_eq_false _ _ (eq_false Bool.false_ne_true)]
     exact congrArg _ (keyEnc_zero c).symm
+
+/-! ### `KeyGen` for `confP` -/
+
+/-- **`KeyGen` from fair coins, with the explicit layout of the big box.** -/
+theorem keyM_coinsE (hk : 2 ^ K < 2 ^ k) (c : DualUse.Conf N K k) (B : ℕ) (hB : 2 ^ B ≤ 2 ^ K)
+    (m : ℕ) (hm : nCoef c.d (DualUse.TrapCol k) N * B = m)
+    (hBig : c.Big = Finset.univ.map (keyEmbE (d := c.d) (Wt := DualUse.TrapCol k) (N := N) B hB m hm))
+    (msk : DualUse.SKey hk c) (C : List Bool) :
+    DualUse.keyM hk c msk C = (BitString.uniformList m).map (fun l => DualUse.keyTry hk c msk C
+      (keyEmbE (d := c.d) (Wt := DualUse.TrapCol k) (N := N) B hB m hm
+        (SigabaNeo.Lattices.Algo.bitsOf m l))) := by
+  have key : ∀ (s t : Finset (DualUse.KeyShort (Fin c.d) (DualUse.TrapCol k) (DualUse.Rg N K)))
+      (h1 : s.Nonempty) (h2 : t.Nonempty), s = t →
+      PMF.uniformOfFinset s h1 = PMF.uniformOfFinset t h2 := by
+    rintro s _ h1 h2 rfl; rfl
+  unfold DualUse.keyM
+  rw [key _ _ c.hBig Finset.univ_nonempty.map hBig, uniformOfFinset_map_eq, PMF.map_comp,
+    Function.comp_def]
+
+namespace Params
+
+set_option maxRecDepth 100000
+
+open AdvancedEncryption.DualUse.Params
+
+theorem hmE : nCoef dp (DualUse.TrapCol kp) Np * Bp = mBp := by
+  rw [nCoef_eq_card]; exact hmBp
+
+/-- The big box of `confP` with the explicit layout. -/
+theorem big_eqE : confP.Big =
+    Finset.univ.map (keyEmbE (d := dp) (Wt := DualUse.TrapCol kp) (N := Np) Bp hBp mBp hmE) := by
+  rw [univ_map_keyEmbE_eq Bp hBp mBp hmE hmBp]
+  rfl
+
+/-- The word of the radius `Sp`. -/
+noncomputable def SpW : List Bool := toBits Kp Sp
+
+theorem length_SpW : SpW.length = Kp := length_toBits _ _
+
+theorem val_SpW : val SpW = Sp := by
+  rw [SpW, val_toBits, Nat.mod_eq_of_lt]
+  have h1 : 2 ^ (Bp - 1) < 2 ^ Bp :=
+    Nat.pow_lt_pow_right (by norm_num) (by have := one_le_Bp; omega)
+  exact lt_of_le_of_lt Sp_le (lt_of_lt_of_le h1 hBp)
+
+/-- **The words of the keys of `KeyGen` for `confP`**: the image of `mBp` fair coins under one try
+on words, for the key row `B_f̂` given by its word. -/
+theorem keyM_words (msk : DualUse.SKey hkp confP) (C : List Bool) (inC : Bool)
+    (hC : inC = true ↔ ∃ w : Window, winWord w = C) (bfW : List Bool)
+    (hbf : bfW = rowW Np Kp kp (DualUse.keyMatrix msk.1 (DualUse.predC C))) :
+    (DualUse.keyM hkp confP msk C).map (DualUse.skEnc hkp confP).enc =
+      (BitString.uniformList mBp).map
+        (keyTryMskW Np Kp kp dp Bp SpW inC ((DualUse.mskEnc hkp confP).enc msk) bfW) := by
+  rw [keyM_coinsE hkp confP Bp hBp mBp hmE big_eqE, PMF.map_comp]
+  congr 1
+  funext l
+  exact (keyTryMskW_eq hkp (Nat.succ_pos _) confP Bp hBp mBp hmE length_SpW val_SpW rfl decp_eq
+    msk C inC hC bfW hbf l).symm
+
+/-- **The same, with `B_f̂` computed on words** by `keyMatrixW` from the words of the `B_j`. -/
+theorem keyM_words_keyMatrix (msk : DualUse.SKey hkp confP) (C : List Bool) (inC : Bool)
+    (hC : inC = true ↔ ∃ w : Window, winWord w = C)
+    (bjW : Fin 10 × BI Np kp → List Bool) (hbj : bjW = fun j => rowW Np Kp kp (msk.1.Bj j)) :
+    (DualUse.keyM hkp confP msk C).map (DualUse.skEnc hkp confP).enc =
+      (BitString.uniformList mBp).map
+        (keyTryMskW Np Kp kp dp Bp SpW inC ((DualUse.mskEnc hkp confP).enc msk)
+          (keyMatrixW Np Kp kp (ordT₀ Np kp) (ordO₀ Np kp) (parse C) bjW)) :=
+  keyM_words msk C inC hC _ (by subst hbj; exact keyMatrixW_eq hkp msk.1 (parse C))
+
+end Params
+
+/-! ### Step counts -/
+
+/-- Steps of `dotW` on `n` entries: per entry two block copies and a product, then the sum. -/
+def dotSteps (N K n : ℕ) : ℕ := n * (2 * (N * K) + mulRSteps N K) + sumSteps N K n
+
+/-- Steps of `shortMapW`: splitting `p`, the two dot products, the sum. -/
+def shortMapSteps (N K d L : ℕ) : ℕ :=
+  (d + L) * (N * K) + dotSteps N K d + dotSteps N K L + addRSteps N K
+
+/-- Steps of `trapShiftW`: `B_f̂ − G̲`, `G̲⁻¹`, `y = G̲⁻¹(B_f̂ − G̲) z`, then `e · y`, `t y`, `y`. -/
+def trapShiftSteps (N K k : ℕ) : ℕ :=
+  gadSteps N K k + 2 * k * (2 * (N * K) + addRSteps N K) + ginvSteps N K k +
+    matMulSteps N K (2 * k) (2 * k) 1 + dotSteps N K (2 * k) +
+    2 * k * (N * K + mulRSteps N K) + 2 * k * (N * K)
+
+/-- Steps of `subShiftW`: copy `p₀`, subtract on `p₁`. -/
+def subShiftSteps (N K d L : ℕ) : ℕ := d * (N * K) + L * (2 * (N * K) + addRSteps N K)
+
+/-- **Steps of one try** (`keyTryMskW`), for a public key of `P` bits: reading `(pk, e, t)` and the
+blocks `B₀`, `B₁`, `p_pub` of `pk`, the coins (`embSteps`), `u`, `z`, the shift, `x`, the ball
+test, and writing the output (the public key and a key). -/
+def keyTrySteps (N K k d B P : ℕ) : ℕ :=
+  (P + 2 * k * (N * K) + N * K) + ((d + nT k) * (N * K) + N * K) +
+    embSteps ((d + nT k) * N) B K + shortMapSteps N K d (nT k) + addRSteps N K +
+    decSteps N K k + trapShiftSteps N K k + subShiftSteps N K d (nT k) +
+    ballSteps ((d + nT k) * N) K + 1 +
+    (P + (d + nT k) * (N * K) + 2 * k * (N * K))
 
 end AdvancedEncryption.DualUse.Algo

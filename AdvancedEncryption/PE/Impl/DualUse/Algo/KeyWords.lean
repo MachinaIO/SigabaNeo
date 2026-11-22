@@ -203,10 +203,12 @@ theorem shortW_coef (x : DualUse.KeyShort (Fin d) Wt (Rq N K)) :
 /-- The number of coefficients of a short part. -/
 abbrev nCoef (d : ℕ) (Wt : Type) [Enum Wt] (N : ℕ) : ℕ := (Enum.list (α := DualUse.Coef d Wt N)).length
 
+omit [Fintype Wt] [DecidableEq Wt] in
 theorem length_shortW (x : DualUse.KeyShort (Fin d) Wt (Rq N K)) :
     (shortW N K x).length = nCoef d Wt N * K := by
   rw [shortW_coef]; exact (FixedEnc.fun _).length _
 
+omit [Fintype Wt] [DecidableEq Wt] in
 theorem block_shortW (x : DualUse.KeyShort (Fin d) Wt (Rq N K)) {q : ℕ} (hq : q < nCoef d Wt N) :
     block K q (shortW N K x) =
       (zmodEnc K).enc (DualUse.keyEquiv x (Enum.list (α := DualUse.Coef d Wt N))[q]) := by
@@ -274,6 +276,7 @@ theorem nCoef_eq_card : nCoef d Wt N = Fintype.card (DualUse.Coef d Wt N) := by
   rw [← Fintype.card_fin (nCoef d Wt N)]
   exact Fintype.card_congr (coefEquiv d Wt N)
 
+omit [Fintype Wt] [DecidableEq Wt] in
 /-- **`embW` computes the big-box element of the coins.** -/
 theorem embW_eq (B : ℕ) (hB : 2 ^ B ≤ 2 ^ K) (m : ℕ) (hm : nCoef d Wt N * B = m) (l : List Bool) :
     embW (nCoef d Wt N) B K l =
