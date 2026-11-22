@@ -248,7 +248,7 @@ def prepG (W : ℕ) : XProg 256 :=
   .seq (.frame (ValVM.mkE tm31 tm31_inj) (.prog simTmplP)) <|
   .seq (.prog (copiesP 1)) <|
   .seq (tmplP ValVM.tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-    (offPsi hk c + 10 * lenPsi N K k))) (.prog (clr ValVM.tX0))
+    (offPsi hk c + 10 * lenPsi N K k))) (.seq (.prog (clr ValVM.tX0)) (.prog (clr (ms 92))))
 
 /-- **The body**, in the machine's coordinates. -/
 noncomputable def wfBody (W : ℕ) : XProg 256 :=
@@ -1141,43 +1141,6 @@ theorem S3_tX0 (hX : T tX0 = []) : S3 hk c W T tX0 = [] := by
   rw [tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide))]
   exact Z5_tX0 c W T hX
 
-/-- **The law of `prepG`.** -/
-theorem law_prepG (hX : T tX0 = []) : (prepG hk c W).law T = PMF.pure (S3 hk c W T) := by
-  have hc0 : (clrsP lowW ⨾ cp (mw GS) (mw GSC)).CoinFree := by
-    have : ∀ l : List (Fin 256), (clrsP l).CoinFree := by
-      intro l; induction l with
-      | nil => rfl
-      | cons x l ih =>
-        simp only [CoinFree, clrsP] at ih ⊢; simp [coinFreeB, ih]
-    have h := this lowW
-    simp only [CoinFree] at h ⊢
-    simp [coinFreeB, h]
-  have hc1 : (Prog.map cntE (Prog.countP (2 * W))).CoinFree := coinFree_map _ (Prog.coinFree_countP (2 * W))
-  have hc2 : (Prog.map tm31 simTmplP ⨾ copiesP 1).CoinFree := by
-    have h1 := coinFree_map tm31 (coinFree_of_noGrow _ noGrow_simTmplP)
-    simp only [CoinFree] at h1 ⊢
-    simp [coinFreeB, h1, show (copiesP 1).coinFreeB = true from rfl]
-  rw [prepG, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc0, PMF.pure_bind,
-    XProg.law_seq, law_frame_map cntE_inj _ (Prog.coinFree_countP (2 * W)), PMF.pure_bind,
-    XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
-      from rfl, XProg.law_prim, PMF.pure_bind,
-    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
-  simp only [run_copy, Prim.apply]
-  rw [XProg.law_seq, law_tmplP _ _ _ (by
-      rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide),
-        run_map_apply_not cntE_inj _ _ _ (by decide)]
-      exact Z1_tX0 T hX)
-      (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
-    PMF.pure_bind, XProg.law_seq,
-    law_frame_map tm31_inj _ (coinFree_of_noGrow _ noGrow_simTmplP), PMF.pure_bind,
-    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_copiesP 1), PMF.pure_bind,
-    XProg.law_seq, law_tmplP _ _ _ (by exact Z5_tX0 c W T hX)
-      (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), PMF.pure_bind,
-    show (XProg.prog (clr tX0) : XProg 256) = XProg.prog (.prim (.clear tX0)) from rfl, XProg.law_prim]
-  show PMF.pure (Function.update (S3 hk c W T) tX0 []) = _
-  rw [show Function.update (S3 hk c W T) tX0 [] = S3 hk c W T from
-    Function.update_eq_self_iff.mpr (S3_tX0 hk c W T hX).symm]
-
 /-! #### Lookups of `S3` -/
 
 abbrev keysG : List (Fin 256) :=
@@ -1215,6 +1178,51 @@ theorem S3_eq_T {t : Fin 256} (h1 : t ∉ keysG)
       rcases cntE_mem j with m | m
       · exact h3 (by rw [← e]; exact m)
       · exact a7 (by rw [← e]; exact m)), Z1_apply, if_neg a7, if_neg h3]
+
+/-- **The law of `prepG`.** -/
+theorem law_prepG (hX : T tX0 = []) (h92 : T (ms 92) = []) :
+    (prepG hk c W).law T = PMF.pure (S3 hk c W T) := by
+  have hc0 : (clrsP lowW ⨾ cp (mw GS) (mw GSC)).CoinFree := by
+    have : ∀ l : List (Fin 256), (clrsP l).CoinFree := by
+      intro l; induction l with
+      | nil => rfl
+      | cons x l ih =>
+        simp only [CoinFree, clrsP] at ih ⊢; simp [coinFreeB, ih]
+    have h := this lowW
+    simp only [CoinFree] at h ⊢
+    simp [coinFreeB, h]
+  have hc1 : (Prog.map cntE (Prog.countP (2 * W))).CoinFree := coinFree_map _ (Prog.coinFree_countP (2 * W))
+  have hc2 : (Prog.map tm31 simTmplP ⨾ copiesP 1).CoinFree := by
+    have h1 := coinFree_map tm31 (coinFree_of_noGrow _ noGrow_simTmplP)
+    simp only [CoinFree] at h1 ⊢
+    simp [coinFreeB, h1, show (copiesP 1).coinFreeB = true from rfl]
+  rw [prepG, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc0, PMF.pure_bind,
+    XProg.law_seq, law_frame_map cntE_inj _ (Prog.coinFree_countP (2 * W)), PMF.pure_bind,
+    XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
+      from rfl, XProg.law_prim, PMF.pure_bind,
+    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
+  simp only [run_copy, Prim.apply]
+  rw [XProg.law_seq, law_tmplP _ _ _ (by
+      rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide),
+        run_map_apply_not cntE_inj _ _ _ (by decide)]
+      exact Z1_tX0 T hX)
+      (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
+    PMF.pure_bind, XProg.law_seq,
+    law_frame_map tm31_inj _ (coinFree_of_noGrow _ noGrow_simTmplP), PMF.pure_bind,
+    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_copiesP 1), PMF.pure_bind,
+    XProg.law_seq, law_tmplP _ _ _ (by exact Z5_tX0 c W T hX)
+      (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), PMF.pure_bind,
+    XProg.law_seq,
+    show (XProg.prog (clr tX0) : XProg 256) = XProg.prog (.prim (.clear tX0)) from rfl, XProg.law_prim,
+    PMF.pure_bind,
+    show (XProg.prog (clr (ms 92)) : XProg 256) = XProg.prog (.prim (.clear (ms 92))) from rfl,
+    XProg.law_prim]
+  show PMF.pure (Function.update (Function.update (S3 hk c W T) tX0 []) (ms 92) []) = _
+  rw [show Function.update (S3 hk c W T) tX0 [] = S3 hk c W T from
+    Function.update_eq_self_iff.mpr (S3_tX0 hk c W T hX).symm,
+    show Function.update (S3 hk c W T) (ms 92) [] = S3 hk c W T from
+    Function.update_eq_self_iff.mpr (by
+      rw [S3_eq_T hk c W T (by decide) (by decide) (by decide), h92])]
 
 theorem S3_GS (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
     S3 hk c W T (mw GS) = gsW W gs ∧ S3 hk c W T (mw GSC) = gsW W gs ∧
@@ -1977,7 +1985,7 @@ theorem law_wfBody (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : 
     law_runT hk c W (parse C) sd hW hb, PMF.pure_bind,
     show ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) (parse C)) (VT N K (K + 1) c.d)
       (w3 hk c W (parse C) sd) = T3 hk c W (parse C) sd from rfl,
-    XProg.law_seq, law_prepG hk c W _ tX0', PMF.pure_bind, XProg.law_seq,
+    XProg.law_seq, law_prepG hk c W _ tX0' (tS 92 (by decide)), PMF.pure_bind, XProg.law_seq,
     law_runG hk c W (parse C) _ hW hb tG tS tX0' tX1' tX2', PMF.pure_bind,
     show ValVM.enc (s3 hk c W (T3 hk c W (parse C) sd)) (VG N K (K + 1) c.d)
       (w6 hk c W (T3 hk c W (parse C) sd)) = S4 hk c W (parse C) sd from rfl,
@@ -2030,7 +2038,8 @@ theorem wf_wfBody {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) 
     hT, ⟨⟨wf_clrsP _, wf_of_wfB rfl⟩, Prog.wf_countP (2 * W), wf_of_wfB rfl, wf_of_wfB rfl,
     wf_tmplP _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     wf_simTmplP, wf_copiesP 1,
-    wf_tmplP _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), wf_of_wfB rfl⟩, hG,
+    wf_tmplP _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), wf_of_wfB rfl,
+    wf_of_wfB rfl⟩, hG,
     ⟨wf_clrsP _, wf_tmplP _ _ (ne_of_keys (keys_keyT N K k c.d) (by decide)), wf_putW _ _⟩,
     wf_simKeyP, wf_clrsP _⟩
 

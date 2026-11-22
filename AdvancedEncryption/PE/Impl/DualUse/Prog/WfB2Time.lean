@@ -297,7 +297,7 @@ def vG (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v7 := Prog.lenBoundT (copiesP 1) v6
   let v8 := tmplB tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
     (offPsi hk c + 10 * lenPsi N K k)) v7
-  Prog.lenBoundT (clr tX0) v8
+  Prog.lenBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8)
 
 /-- The steps of `prepG`. -/
 def tG (β0 : Fin 256 → ℕ) (M31 : ℕ) : ℕ :=
@@ -315,7 +315,7 @@ def tG (β0 : Fin 256 → ℕ) (M31 : ℕ) : ℕ :=
     (tmplTT tX0 (tmpl31 N K k c.d) v4 + ((2 * M31 + 3) * simTmplSweeps N K k +
     (Prog.timeBoundT (copiesP 1) v6 + (tmplTT tX0 (stepG N K k c.d ++ wordsG N K k c.d W
       (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) v7 +
-    Prog.timeBoundT (clr tX0) v8)))))))
+    (Prog.timeBoundT (clr tX0) v8 + Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8)))))))))
 
 /-- **The phase of `prepG`.** -/
 theorem ph_prepG (β0 : Fin 256 → ℕ) (M31 : ℕ)
@@ -335,7 +335,7 @@ theorem ph_prepG (β0 : Fin 256 → ℕ) (M31 : ℕ)
     ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)
   exact (ph_prog _ β0).seq <| (ph_cnt W _).seq <| (ph_prog _ _).seq <| (ph_prog _ _).seq <|
     (ph_tmplP tX0 _ _ k31).seq <| (ph_tm c M31 _ hin htop).seq <| (ph_prog _ _).seq <|
-    (ph_tmplP tX0 _ _ kG).seq (ph_prog _ _)
+    (ph_tmplP tX0 _ _ kG).seq ((ph_prog _ _).seq (ph_prog _ _))
 
 /-- **The phase of the key sum's preparation.** -/
 theorem ph_keyPrep (N K k d : ℕ) (β : Fin 256 → ℕ) :
@@ -440,7 +440,7 @@ def vGn (N K k d W : ℕ) (lw : List (Fin 256 × ℕ)) (β0 : Fin 256 → ℕ) (
   let v6 := tmOutN N K k d M31 v5
   let v7 := Prog.lenBoundT (copiesP 1) v6
   let v8 := tmplB tX0 (stepG N K k d ++ lw) v7
-  Prog.lenBoundT (clr tX0) v8
+  Prog.lenBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8)
 
 theorem TLe_refl {n : ℕ} : ∀ l : List (Fin n × ℕ), TLe l l
   | [] => trivial
@@ -492,7 +492,8 @@ theorem vG_le (β0 : Fin 256 → ℕ) (M31 : ℕ) (lw : List (Fin 256 × ℕ))
     (hl : TLe (wordsG N K k c.d W (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) lw) :
     vG hk c W β0 M31 ≤ vGn N K k c.d W lw β0 M31 := by
   simp only [vG, vGn]
-  exact Prog.lenBoundT_mono _ (tmplB_mono tX0 _ _ (TLe_append (TLe_refl _) hl) le_rfl)
+  exact Prog.lenBoundT_mono _ (Prog.lenBoundT_mono _
+    (tmplB_mono tX0 _ _ (TLe_append (TLe_refl _) hl) le_rfl))
 
 end WB2
 
