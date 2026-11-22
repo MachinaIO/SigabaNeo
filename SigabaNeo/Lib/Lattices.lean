@@ -30,6 +30,16 @@ import SigabaNeo.Lib.Lattices.Algo.FhatGates
 import SigabaNeo.Lib.Lattices.Algo.Coins
 import SigabaNeo.Lib.Lattices.Algo.SimWords
 import SigabaNeo.Lib.Lattices.Algo.BoxWords
+import SigabaNeo.Lib.Lattices.ProgAlgo.Blocks
+import SigabaNeo.Lib.Lattices.ProgAlgo.MulAlg
+import SigabaNeo.Lib.Lattices.ProgAlgo.RingProgs
+import SigabaNeo.Lib.Lattices.ProgAlgo.MulRW
+import SigabaNeo.Lib.Lattices.ProgAlgo.Digits
+import SigabaNeo.Lib.Lattices.ProgAlgo.MatAdd
+import SigabaNeo.Lib.Lattices.ProgAlgo.MatMul
+import SigabaNeo.Lib.Lattices.ProgAlgo.Gadget
+import SigabaNeo.Lib.Lattices.ProgAlgo.Nand
+import SigabaNeo.Lib.Lattices.ProgAlgo.Spec
 
 /-!
 # Lattice library
@@ -79,4 +89,11 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   with explicit orders and gadget coefficients, equal to `fhatSLP` at the chosen orders), `Coins`
   (one try of box rejection as a function of a fixed number of fair coins), `SimWords` (the
   simulated short matrices `slpSim`/`evalSim` of `KeyGen*` on words, both binary gadgets).
+* `ProgAlgo/`: the word algorithms of `Algo/` as programs of the verified tape language
+  (`SigabaNeo.Tape.Prog`, compiled to machines by `Prog.toMachine`), with their laws, length and
+  time bounds and state counts; interface in `ProgAlgo/Spec` (laws placed on any distinct tapes,
+  bounds `C · (L + 1) ^ d`, state counts) — `Blocks` (block-wise programs on ring words: `addRW`,
+  `subRW`), `MulAlg` (the product by Horner's rule in `X⁻¹`), `RingProgs` and `MulRW` (`mulRW`),
+  `Digits` (`digitRW`, `monoW`, `constW`), `MatAdd` (`matAddW`, `matSubW`), `MatMul` (`matMulW`),
+  `Gadget` (`ginvW`, `gadW`), `Nand` (`nandPKW`).
 -/
