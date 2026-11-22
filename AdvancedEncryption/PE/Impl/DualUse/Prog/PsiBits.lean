@@ -14,7 +14,9 @@ otherwise the bit is `0` (`psiBitsW_sd`, `psiBitsW_sd_ge`).
 
 `psiBitP j : Prog 3` (tape `0` the word `sdEnc d`, `1` scratch, `2` the output) writes
 `psiBitsW … j` (`run_psiBitP`), the bit by `bitAtP` (a copy, `posBit j` drops, one bit, then
-`N K - 1` zeros): `posBit j + N K + 4` primitives (`pcount_psiBitP`).
+`N K - 1` zeros): at most `posBit j + N K + 4` primitives (`pcount_psiBitP_le`). Likewise
+`xBitP i` writes the ring word `constW N K (bitW K (bitsOf d.x i))` of the bit `i` of the attribute
+(the inputs of the Ring-GSW simulation, `run_xBitP`), read at `posX i` (the last field).
 -/
 
 namespace AdvancedEncryption.DualUse.Prog
@@ -211,5 +213,56 @@ theorem timeBoundT_psiBitP (pos : Fin 10 × BI N k → ℕ) (j : Fin 10 × BI N 
   refine (timeBoundT_le_pcount _ (loopFree_psiBitP pos j) ℓ hM).trans ?_
   have := pcount_psiBitP_le pos j hN hK
   exact Nat.mul_le_mul this (by omega)
+
+/-! ### The bits of the attribute -/
+
+/-- The position of the bit `i` of the attribute in `sdEnc d`: the last field. -/
+def posX (i : Fin 10) : ℕ := offPsi hk c + (10 * lenPsi N K k + i.val)
+
+theorem getD_sd_posX (d : SimData hk c) (i : Fin 10) :
+    ((sdEnc hk c).enc d).getD (posX hk c i) false = bitsOf d.x i := by
+  rw [sdEnc_enc]
+  have hpos : posX hk c i = fixLen (pkEnc hk c) +
+      (fixLen (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)) + (fixLen (rmEnc c) +
+        (fixLen (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
+          (matEnc (N := N) (K := K) (Fin c.d) (RingBTVW.Col k))) +
+          (fixLen (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))) +
+            i.val)))) := by
+    rw [fixLen_psiFun]; simp only [posX, offPsi]; omega
+  rw [hpos, ← length_enc_fixLen (pkEnc hk c) d.mpk, getD_append_len,
+    ← length_enc_fixLen (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)) d.c₀, getD_append_len,
+    ← length_enc_fixLen (rmEnc c) d.Rm, getD_append_len,
+    ← length_enc_fixLen (FixedEnc.fun (matEnc (N := N) (K := K) (Fin c.d) (RingBTVW.Col k))) d.W,
+    getD_append_len,
+    ← length_enc_fixLen (FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))) d.Ψ,
+    getD_append_len]
+  rfl
+
+theorem posX_lt (d : SimData hk c) (i : Fin 10) : posX hk c i < ((sdEnc hk c).enc d).length := by
+  rw [length_sdEnc]; simp only [posX]; omega
+
+/-- **The program of the bit `i` of the attribute**: tape `0` the word `sdEnc d`, `1` scratch, `2`
+the output, the ring word of the bit (an input of the Ring-GSW simulation). -/
+def xBitP (N K : ℕ) (pos : Fin 10 → ℕ) (i : Fin 10) : Prog 3 := bitAtP 0 1 2 (pos i) (N * K - 1)
+
+theorem run_xBitP (hN : 0 < N) (hK : 0 < K) (d : SimData hk c) (i : Fin 10) (s : Store 3)
+    (h0 : s 0 = (sdEnc hk c).enc d) :
+    run (xBitP N K (posX hk c) i) s =
+      Function.update (Function.update s 2 (constW N K (bitW K (bitsOf d.x i)))) 1 [] := by
+  rw [xBitP, run_bitAtP (by decide) (by decide), constW_bitW _ hN hK, h0,
+    take_one_drop (posX_lt hk c d i), getD_sd_posX]
+  rfl
+
+theorem coinFree_xBitP (pos : Fin 10 → ℕ) (i : Fin 10) : (xBitP N K pos i).CoinFree :=
+  coinFree_bitAtP _ _ _ _ _
+
+theorem wf_xBitP (pos : Fin 10 → ℕ) (i : Fin 10) : (xBitP N K pos i).WF := wf_bitAtP _ _ _ _ _
+
+theorem timeBoundT_xBitP (pos : Fin 10 → ℕ) (i : Fin 10) (ℓ : Fin 3 → ℕ) {M : ℕ}
+    (hM : ∀ t, ℓ t ≤ M) :
+    timeBoundT (xBitP N K pos i) ℓ ≤
+      (pos i + (N * K - 1) + 5) * (2 * (M + (pos i + (N * K - 1) + 5)) + 5) := by
+  have := timeBoundT_le_pcount _ (loopFree_bitAtP (0 : Fin 3) 1 2 (pos i) (N * K - 1)) ℓ hM
+  rwa [pcount_bitAtP] at this
 
 end AdvancedEncryption.DualUse.Prog
