@@ -665,6 +665,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   log D_T ≥ r^T·log D_0 − log C·Σ_{i<T} r^i, where r = (b−1)/b. Both are accepted on Prove2Me.
   LayerCount.lean (`averaged_layer_count`) proves the exact averaged layer count of Parts 110/120:
   (1/|H|)·Σ_h #{x ∈ S : π(x) = k·h} = #{x ∈ S : π(x) ∈ kH} / |kH|. It is accepted on Prove2Me.
+  SubsetCollision.lean (`subsetSumCollision`, `subgroupCollision`) proves the subset-sum pigeonhole behind Parts 129–130. If
+  2^f > |U| (or |B/G| < 2^f), some nonzero ternary z has Σ z_i v_i = 0 (or lies in G), with ‖z‖² equal to a Hamming distance
+  ≤ f. Both are accepted on Prove2Me.
 * **Part 109 (audited, minor caveats).** [terminal_mixing](research/wall1_terminal_mixing.md): every first-tour path satisfies
   the deterministic terminal floors 6.5·10⁻⁸ (b = 406) / 3.3·10⁻⁸ (b = 506) × own GH. History-uniform mixing is impossible:
   reachable histories (probability q^{−Θ(b·n)}) force terminal ratios < 0.21 with 1 draw left, and < 0.73 / 0.51 with 64 draws
