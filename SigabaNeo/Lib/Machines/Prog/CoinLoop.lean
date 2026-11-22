@@ -127,6 +127,64 @@ theorem law_coinsP (s : Store 4) (h2 : s 2 = []) (h3 : s 3 = []) :
   funext t
   fin_cases t <;> simp [h2]
 
+/-! ### Drawing coins on any distinct tapes -/
+
+/-- **`|s t|` fair coins into the register `r`** (counter `c`, coin `b`). -/
+def coinsAt (r t c b : Fin k) : Prog k := cp r t ⨾ forN c t (coin b ⨾ push r b ⨾ clr b)
+
+theorem law_coinsAt {r t c b : Fin k} (hrt : r ≠ t) (hrc : r ≠ c) (hrb : r ≠ b) (htc : t ≠ c)
+    (hcb : c ≠ b) (s : Store k) (hc : s c = []) (hb : s b = []) :
+    law (coinsAt r t c b) s =
+      (BitString.uniformList (s t).length).map (fun l => Function.update s r l) := by
+  let μ : List Bool → PMF (List Bool) :=
+    fun x => (PMF.uniformOfFintype Bool).map (fun bit => (x ++ [bit]).tail)
+  have hbody : ∀ x : Store k, x b = [] → law (coin b ⨾ push r b ⨾ clr b) x =
+      (PMF.uniformOfFintype Bool).map (fun bit => Function.update x r ((x r ++ [bit]).tail)) := by
+    intro x hx
+    have hrest : ∀ bit : Bool, law (push r b ⨾ clr b) (Function.update x b [bit]) =
+        PMF.pure (Function.update x r ((x r ++ [bit]).tail)) := by
+      intro bit
+      rw [law_eq_run _ (by rfl)]
+      congr 1
+      funext j
+      simp only [run_seq, run_push, run_clear, Function.update_apply]
+      by_cases hjb : j = b
+      · subst hjb; simp [Ne.symm hrb, hx]
+      · by_cases hjr : j = r
+        · subst hjr; simp [hrb, hd]
+        · simp [hjb, hjr]
+    rw [law_seq, law, denote, ProbComp.eval_map, ProbComp.eval_uniform, PMF.bind_map]
+    simp only [Function.comp_def, hrest]
+    exact PMF.bind_pure_comp _ _
+  have hloop := law_loop_iter c (coin b ⨾ push r b ⨾ clr b) (fun x => Function.update s r x) μ (by
+    intro x w
+    rw [hbody _ (by simp [Function.update_apply, Ne.symm hcb, Ne.symm hrb, hb]), PMF.map_comp]
+    congr 1
+    funext bit
+    funext j
+    simp only [Function.comp_apply, Function.update_apply]
+    by_cases hjc : j = c
+    · subst hjc; simp [hrc, Ne.symm hrc]
+    · by_cases hjr : j = r
+      · subst hjr; simp [hrc]
+      · simp [hjc, hjr])
+  have e1 : law (cp r t) s = PMF.pure (Function.update s r (s t)) := law_prim _ _
+  have e2 : law (cp c t) (Function.update s r (s t)) =
+      PMF.pure (Function.update (Function.update s r (s t)) c (s t)) := by
+    rw [law_prim]; simp [Prim.apply, Function.update_apply, Ne.symm hrt]
+  rw [coinsAt, forN, law_seq_pure e1, law_seq_pure e2, hloop, kIter_coins, PMF.map_comp]
+  congr 1
+  funext l
+  simp only [Function.comp_apply, List.drop_left]
+  funext j
+  simp only [Function.update_apply]
+  by_cases hjc : j = c
+  · subst hjc; simp [Ne.symm hrc, hc]
+  · simp [hjc]
+
+theorem wf_coinsAt (r t c b : Fin k) (hc : c ≠ r) (hc' : c ≠ b) : (coinsAt r t c b).WF := by
+  simp [coinsAt, forN, WF, Preserves, push, sin, Prim.writes, hc, hc', Ne.symm hc', Ne.symm hc]
+
 theorem wf_coinsP : coinsP.WF :=
   wf_of_wfB (by decide)
 
