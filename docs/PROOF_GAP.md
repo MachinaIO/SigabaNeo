@@ -4020,6 +4020,130 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   total below3.922e-12; that remaining estimate is still unproved.
   Through24 stays about3.818709584e223: this is an ineffective upper
   envelope, not an actual probability. Full BKZ remains open.
+* **Part 403 (actual fresh-column power drift).**
+  [Two-layer power drift](research/wall1_two_layer_power_drift.md)
+  proves E[(p')^k | incoming history] <= p(B)^k p(sqrt(B^2-1))
+  for k>=1 and a predictable lower bound B on every outgoing radius.
+  It follows from an exact two-layer miss-set inclusion and does not
+  assume independence of the chosen winner. Independent audit and3276
+  nested-set plus104 shortest-winner branch checks pass. The resulting
+  stopped-power criterion still needs the actual moving-radius shell
+  estimate and an initial power bound. Fresh unexposed columns are
+  essential; this is not a theorem for arbitrary reused-column BKZ tours.
+* **Part 404 (anchor collision energy via connected unions).**
+  [Anchor collision energy](research/anchor_collision_energy.md)
+  bounds same-span energy by a common-map second moment, then by
+  sum_i binomial(H,i)^2 i! F_(2H-i,r). Individual pairwise probability
+  gluing is false; aggregate Jensen is valid. Exact finite checks include
+  actual ball fibers. The reduction needs degrees up to2r+4 for H=r+2,
+  beyond24 when r>=11, and can lose substantially through variance.
+  No small collision energy or new high-order global bound is inferred.
+* **Part 405 (H13/H14 long-crossing refinements, integrated).**
+  [H13 girth five](research/wall1_five_thirteen_short_pairs.md) excludes
+  outside norm-eight rows and independent norm-ten pairs, then counts
+  25200 saturated (8,10) witnesses.
+  [H14 girth four](research/wall1_four_fourteen_long_crossing.md) proves the no-four
+  GS bound(10,9) for all overlaps and counts norm-twelve crossings in
+  the overlap-three one-four family, retaining its full complement.
+  Both arguments passed independent review and exact finite checks;
+  integrated kernels match independent reconstructions. All original
+  tails, periodic corrections and outer coefficient factors remain.
+  The final all-overlap run passes2106 exact cumulant regressions.
+  Through17 is8.047466717798704e-13, still below8.048e-13; through24
+  is about4.816712268e216. The latter remains an ineffective upper
+  envelope, not a failure probability. Sizes18..24, selected-history
+  shell control, and the complete BKZ theorem remain unproved.
+* **Part 406 (girth-seven H13 excludes two norm-eight rows).**
+  [H13 girth seven](research/wall1_seven_thirteen_no_eight_pair.md)
+  proves that every norm-eight row uses all six new and two old
+  coordinates. Two independent such rows would yield a nonzero old
+  row of support at most four, contradicting girth seven. The complete
+  GS cases(8,8) and(10,15/2) retain cutoff14 tail power13/2 and all
+  periodic terms. Independent audit and11760 pair checks pass; the
+  integrated selected kernels match independent evaluation within1e-60.
+  The full cumulant run passes2106 exact regressions. Through17 is
+  8.047466639505124e-13; through24 remains about2.747742353e215,
+  an ineffective upper envelope. No completed high-order or BKZ
+  probability certificate follows from this local refinement.
+* **Part 407 (girth-six H13 counted short pairs).**
+  [H13 girth six](research/wall1_six_thirteen_short_pairs.md) counts
+  2100 saturated norm6/norm8 witnesses with determinant47 and retains
+  the one-six complement with GS(6,17/2). In the no-six family,
+  norm-ten rows must be unit on seven new and three old coordinates.
+  Differences exclude independent(8,8),(8,10),(10,10) pairs, yielding
+  complete GS cases(8,10),(10,19/2),(12,9). Independent proof audits
+  approve the split with unchanged cutoff36/14 tails and power6.
+* **Part 408 (girth-three H9 counted short pairs).**
+  [H9 girth three](research/wall1_three_nine_short_pairs.md) counts
+  315 saturated norm6/norm8 witnesses with determinant at least39,
+  retains the full one-six complement, and excludes independent
+  norm-eight pairs in the no-six family. All195 proportional-new
+  pair checks and an independent audit pass. The integration retains
+  all existing excluded-family addbacks and coefficient normalizers.
+  The relevant improvement is in the restricted residual; an
+  unrestricted stratum comparison would obscure the actual effect.
+* **Part 409 (girth-four H12 norm-twelve crossing cover).**
+  [H12 crossing classification](research/wall1_four_twelve_ten_pairs.md)
+  retains the exact546 norm-ten charts, counts at most7434 norm-twelve
+  pair witnesses with Gram at least44 for overlap three, and bounds
+  the remaining one-four family by GS(4,13). Independent enumeration
+  confirms saturation and the D44/D47 chart counts over7,17,3329.
+  A separate no-four improvement was numerically negligible and was
+  not substituted for this effective one-four refinement. Original
+  cutoff40 tails, periodic corrections and complete complements remain.
+* **Part 410 (integrated three-family verification).**
+  The complete run after Parts407--409 passes240 Poisson/cumulant and
+  1866 connected-support regressions. The through17 correction is
+  6.902542020700491e-13, hence below6.903e-13. Together with the
+  reference/error cap9.131e-13, a conservative remaining allocation
+  2.3185e-12 for sizes18..24 and later histories would keep the total
+  below3.922e-12; this allocation is a target, not a proved estimate.
+  Through24 is still about1.803622374e213. The full frontier diagnostic
+  also completes and verifies all18 selected-cover/remainder comparisons.
+  Its leading size18 stratum is rank9/girth5, size19 rank10/girth6,
+  and size24 rank13/girth4. The upper envelopes remain ineffective
+  for those high orders; no full BKZ or selected-history proof follows.
+* **Part 411 (H9 girth-five short-pair chart covers).**
+  [H9 refinement](research/wall1_five_nine_refinement.md) enumerates
+  all eligible norm6/8 and norm8/8 normalized charts. Their rare terms
+  retain the old uniform complete kernels; the complementary GS bounds
+  are(6,17/2) and(8,8),(10,15/2). Independent enumeration over7,17,3329
+  and a proof audit pass. All4 integrated kernels match independent
+  formulas within1e-60. The full size18 rank9/girth5 residual improves
+  5.1445268404 decimal orders, limited by unchanged t3/t5 families.
+* **Part 412 (H15 girth-four long-crossing cover).**
+  [H15 refinement](research/wall1_four_fifteen_long_crossing.md) counts
+  5544 norm4/12 witnesses with Gram47 and retains the full one-four
+  complement. The no-four cases are(10,23/2),(12,45/4),(14,25/2),
+  (16,12): independent outside12/14 and14/14 pairs are excluded by
+  their short old-supported differences. All original tails remain.
+  Independent audit and finite checks pass; all3 integrated selected
+  kernels match the independent interval reconstruction.
+* **Part 413 (complete rank-ten D32 cover).**
+  [Rank-ten cover](research/wall1_six_ten_rank_ten.md) uses connectivity
+  of the fundamental-circuit graph to cover both t2 and t3 crossings.
+  The former needs one additional independent basis point; the latter
+  needs none. Both leave h-13 completions in affine dimension9.
+  All2400 new norm-six witnesses and an independent coverage audit
+  pass. Production retains the D27 addback and the entire D32 cover
+  when using the residual excluding both families. The standalone
+  complete rank10/girth6 envelope improves5.8020122293 decimal orders.
+  [Weight diagnostic](research/wall1_six_ten_frontier_refinement.md)
+  separately documents a much smaller weight adjustment; that optional
+  adjustment is not integrated or needed for this coverage theorem.
+* **Part 414 (rank-ten integrated verification checkpoint).**
+  All2106 exact cumulant regressions pass after Parts411--413.
+  Through17 is6.143361028426690e-13, below6.144e-13. With the
+  reference/error cap9.131e-13, a conservative2.3944e-12 allocation
+  for sizes18..24 and later histories would keep the total below
+  3.922e-12; that remaining allocation is still unproved. Through24
+  remains about6.573520003e212, an ineffective upper envelope.
+  All18 frontier selected-cover/remainder comparisons pass, including
+  the new rank-ten D32 addback. Current leading strata at sizes18,
+  19,24 are respectively rank9/girth4,rank11/girth4,rank12/girth5.
+  This checkpoint contains paper proofs and interval/exact computations;
+  these new results have not been formalized in Lean. The complete
+  BKZ cost/probability theorem remains open.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

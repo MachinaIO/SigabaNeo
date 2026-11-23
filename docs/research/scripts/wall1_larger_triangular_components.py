@@ -144,6 +144,8 @@ def actual_parameters():
     six_ten_thirty_two=rank_eight_envelopes(s)
     from wall1_six_ten_rank_nine import envelopes as six_ten_rank_nine_envelopes
     six_ten_rank_nine=six_ten_rank_nine_envelopes(s)
+    from wall1_six_ten_rank_ten import envelopes as six_ten_rank_ten_envelopes
+    six_ten_rank_ten,_=six_ten_rank_ten_envelopes(s)
     from wall1_twenty_four_plane import envelopes as twenty_four_envelopes
     twenty_four=twenty_four_envelopes(s)
     from wall1_seven_twenty_three import envelopes as seven_six_envelopes
@@ -170,6 +172,9 @@ def actual_parameters():
                 if r==9:
                     value=min((value,no_six_ten_thirty_two[h,r,c]+nine_twenty_seven[h,r]
                                +six_ten_rank_nine[h]),key=lambda v:v.b)
+                if r==10:
+                    value=min((value,no_six_ten_thirty_two[h,r,c]+nine_twenty_seven[h,r]
+                               +six_ten_rank_ten[h]),key=lambda v:v.b)
             if c==3 and r>=4:
                 value=min((value,no_girth_three_twenty[h,r,c]+girth_three_twenty[h,r]),key=lambda v:v.b)
                 value=min((value,no_five_twenty[h,r,c]+girth_three_twenty[h,r]+five_twenty[h,r]),

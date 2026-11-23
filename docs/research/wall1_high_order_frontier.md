@@ -9,6 +9,16 @@ all selected-cover components. It separately reconstructs the underlying
 one/two-relation remainder candidates and their actual leading terms.
 No production source is edited.
 
+The current capture uses private in-memory copies of the two production
+functions, with a hook inserted only at their own return statements. Return
+expressions are evaluated once and their original objects are returned.
+Nested functions and loaded module bindings are untouched. Small checks cover
+early returns, object identity, nested-return exclusion, and private globals.
+This replaces global Python tracing; the numerical cover reconstruction and
+its interval-agreement assertions are unchanged. The earlier traced
+post-H13/H14 run was intentionally interrupted before producing a result,
+so that run supplies no numerical evidence.
+
 ## What the completion factor means
 
 In the two-relation remainder at support size h and rank r, after selecting
@@ -135,3 +145,56 @@ and the captured `completions` dictionary, and disables line tracing while
 retaining return-local capture. The full numerical log above belongs to the
 prior snapshot; these compatibility edits passed a Python compilation check
 but were not used to claim a second complete production run.
+
+## Completed Part406 snapshot
+
+The private-return-hook diagnostic completed successfully after the H13/c5,
+H14/c4 and H13/c7 integrations. Log: `/tmp/wall1_c7_h13_frontier.log`.
+All18 selected-cover and remainder reconstructions pass their interval
+agreement assertions. The reported weighted total logarithms are13.2572609301
+at size18,46.6972229094 at size19, and215.4389760078 at size24. These are
+logarithms of upper envelopes, not measured probabilities.
+
+The leading size18/19 stratum is now rank11/girth6, with the H13 anchor
+c=6,t=7,overlap5 and no extra free basis points. The leading size24 stratum
+is rank12/girth6 with that same H13 anchor and one extra basis point.
+The D27-nine cover wins in all three cases, but the leading contribution
+is its remaining two-relation term, not the D27 addback. Thus the next
+specific local target is the c6/H13 crossing geometry. At size18 several
+other strata are comparable (rank9/girth3, rank9/girth5 and rank10/girth4),
+so a gain in the leading c6 term alone will not settle that whole size.
+
+This snapshot supersedes the Part396 leading-stratum identification for
+the current production evaluator. The historical figures above are retained
+as dated evidence, not presented as the current frontier.
+
+## Completed Part410 snapshot
+
+After the c6/H13, c3/H9 and c4/H12 integrations, the full diagnostic again
+completes, including all18 selected-cover/remainder interval checks.
+Log: `/tmp/wall1_c6_c3_c4_frontier.log`. Weighted total logarithms are
+12.6161089160 at size18,42.1007482855 at size19,213.2561456141 at size24.
+These remain upper-envelope logarithms, not probabilities.
+
+The current leading strata are rank9/girth5 at size18, rank10/girth6 at
+size19, and rank13/girth4 at size24. Thus the Part406 leading c6/H13
+identification is superseded; its improvement has exposed other terms.
+The cumulant evaluator separately reports through17 below6.903e-13 and
+through24 about1.803622374e213. The full high-order target and the actual
+selected-history shell estimate remain open.
+
+## Completed Part414 snapshot
+
+The H9/c5 and H15/c4 refinements and the full rank-ten D32 cover are
+integrated. Log `/tmp/wall1_rank10_d32_frontier.log` completes all18
+selected-cover/remainder interval comparisons, including the rank-ten
+D32 addback. Weighted total logarithms at sizes18,19,24 are respectively
+11.5648055378,40.1484938201,212.8177979888. Their leading strata are
+rank9/girth4,rank11/girth4,rank12/girth5. These supersede Part410's
+leading-stratum identification.
+
+The separate cumulant log `/tmp/wall1_rank10_d32_cumulants.log` passes
+all2106 exact regressions and evaluates through17 at6.143361028426690e-13
+and through24 at6.573520003e212. No probability interpretation is assigned
+to the latter ineffective envelope. Higher-rank D32 extensions under
+investigation are not part of this snapshot.

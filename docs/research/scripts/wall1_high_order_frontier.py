@@ -1,29 +1,93 @@
 """Read-only capture of actual high-order production strata and selected covers."""
 import contextlib
 import io
-import sys
+import ast
+import inspect
+import textwrap
 from math import comb
 from wall1_larger_triangular_components import actual_parameters
 
 
+def _capture_copy(function, callback, *, globals_override=None):
+    """Clone one function, wrapping only its own returns in a locals hook.
+
+    Nested functions are not transformed. The original return expression is
+    evaluated once, before locals are read; the hook returns the same object.
+    All changes occur in a private globals dictionary, never a loaded module.
+    """
+    assert function.__closure__ is None
+    source=textwrap.dedent(inspect.getsource(function))
+    tree=ast.parse(source)
+    root=tree.body[0]
+    assert isinstance(root,ast.FunctionDef) and not root.decorator_list
+    hook_name='_high_order_return_capture_hook'
+    locals_name='_high_order_return_capture_locals'
+    names={n.id for n in ast.walk(tree) if isinstance(n,ast.Name)}
+    assert hook_name not in names and locals_name not in names
+    class WrapReturns(ast.NodeTransformer):
+        count=0
+        def visit_FunctionDef(self,node):
+            return self.generic_visit(node) if node is root else node
+        def visit_AsyncFunctionDef(self,node):return node
+        def visit_Lambda(self,node):return node
+        def visit_Return(self,node):
+            self.count+=1
+            value=node.value if node.value is not None else ast.Constant(None)
+            return ast.copy_location(ast.Return(ast.Call(
+                ast.Name(hook_name,ast.Load()),
+                [value,ast.Call(ast.Name(locals_name,ast.Load()),[],[])],[])),node)
+    transform=WrapReturns()
+    tree=transform.visit(tree)
+    assert transform.count>0
+    ast.fix_missing_locations(tree)
+    namespace=dict(function.__globals__)
+    if globals_override:namespace.update(globals_override)
+    def hook(value,state):
+        callback(value,state)
+        return value
+    namespace[hook_name]=hook
+    namespace[locals_name]=locals
+    exec(compile(tree,inspect.getsourcefile(function)+'::return-capture','exec'),namespace)
+    result=namespace[function.__name__]
+    assert inspect.signature(result)==inspect.signature(function)
+    return result
+
+
+def _capture_probe(value, *, stop=False):
+    def nested(x):return {'nested':x}
+    answer=nested(value)
+    if stop:return None
+    return answer
+
+
+def capture_checks():
+    records=[]
+    wrapped=_capture_copy(_capture_probe,lambda value,state:records.append((value,state)))
+    for stop in (False,True):
+        before=len(records)
+        result=wrapped(7,stop=stop)
+        assert result==_capture_probe(7,stop=stop)
+        assert len(records)==before+1  # No hook for nested().
+        captured,state=records[-1]
+        assert captured is result
+        assert state['value']==7 and state['stop']==stop
+        assert state['answer']=={'nested':7}
+    assert '_high_order_return_capture_hook' not in _capture_probe.__globals__
+    print('Passed return-capture checks: normal/early returns, object identity, nested exclusion, globals isolation.')
+
+
 def main():
+    from wall1_general_two_relations import draw14_bounds
     captured={};draws={}
-    def local_trace(frame,event,arg):
-        if event=='return':
-            if frame.f_code.co_name=='actual_parameters':captured.update(frame.f_locals)
-            else:
-                l=frame.f_locals
-                if isinstance(arg,tuple) and len(arg)==3:draws[id(arg[2])]={'anchors':l['anchors'],'s':l['s'],'completions':l.get('completions')}
-        return local_trace
-    def global_trace(frame,event,arg):
-        if event=='call' and ((frame.f_code.co_name=='actual_parameters' and frame.f_code.co_filename.endswith('wall1_larger_triangular_components.py')) or (frame.f_code.co_name=='draw14_bounds' and frame.f_code.co_filename.endswith('wall1_general_two_relations.py'))):
-            frame.f_trace_lines=False
-            return local_trace
-        return None
-    sys.settrace(global_trace)
-    try:
-        with contextlib.redirect_stdout(io.StringIO()):actual_parameters()
-    finally:sys.settrace(None)
+    def capture_draw(value,state):
+        assert isinstance(value,tuple) and len(value)==3
+        draws[id(value[2])]={'anchors':state['anchors'],'s':state['s'],
+                            'completions':state.get('completions')}
+    instrumented_draw=_capture_copy(draw14_bounds,capture_draw)
+    instrumented_actual=_capture_copy(actual_parameters,
+        lambda value,state:captured.update(state),
+        globals_override={'draw14_bounds':instrumented_draw})
+    with contextlib.redirect_stdout(io.StringIO()):instrumented_actual()
     l=captured;s=l['s'];I,iv,q,mu=s['I'],s['iv'],s['q'],s['mu']
     def covers(h,r,c):
         key=(h,r,c);old=l['strata'][key]
@@ -53,8 +117,9 @@ def main():
         if c==6 and r>=7:
             added={'D27-nine':l['nine_twenty_seven'][h,r]}
             result['D27-nine']=({'remaining':l['no_nine_twenty_seven'][key],**added},'no_nine_twenty_seven')
-            if r in (8,9):
-                added['D32-ten']=l['six_ten_thirty_two' if r==8 else 'six_ten_rank_nine'][h]
+            if r in (8,9,10):
+                source={8:'six_ten_thirty_two',9:'six_ten_rank_nine',10:'six_ten_rank_ten'}[r]
+                added['D32-ten']=l[source][h]
                 result['D32-ten']=({'remaining':l['no_six_ten_thirty_two'][key],**added},'no_six_ten_thirty_two')
         if c==4 and r>=4 and 'no_six_d24' in l:
             previous=result['D31-eleven'][0]
@@ -97,4 +162,4 @@ def main():
                 print(' TWO_TERM',t,a,'LOG',iv.log10(factor*x),'free_basis',r-c-t+2)
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':capture_checks();main()

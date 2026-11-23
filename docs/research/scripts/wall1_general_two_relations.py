@@ -339,6 +339,13 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         two_six = no_four_plane(6, two_six_height, six_tail)
                         no_six = no_four_plane(8, 6, no_tail)
                         no_six_power = no_six**n
+                        if c==3 and union==9:
+                            # Two crossing unit-eight rows differ on <=3 old
+                            # coordinates: a forbidden support-two row or a
+                            # norm-six row, excluded in this family.
+                            refined_nine=(no_four_plane(8,8,no_tail)**n
+                                +no_four_plane(10,I(15)/2,no_tail)**n)
+                            no_six_power=min((no_six_power,refined_nine),key=lambda v:v.b)
                         if c==3 and union==7:
                             # Proportional new parts and full old difference:
                             # no(8,8); Gram(8,10)>=76; Gram(10,10)>=91.
@@ -450,6 +457,14 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                 for det,count in THREE_COUNTS[overlap]),I(0))
                             two_six_term=min((two_six_term,exact_two_six),key=lambda v:v.b)
                         one_six_term=I(six_count)/coefficient_count*only_six**n
+                        if c==3 and union==9:
+                            # Three old (2,-1,-1) lines times 105 unit-eight
+                            # crossings, saturated and Gram determinant>=39.
+                            counted_eight=(I(min(six_count,315))/coefficient_count
+                                *no_four_plane(6,I(39)/6,six_tail)**n
+                                +I(six_count)/coefficient_count
+                                    *no_four_plane(6,I(17)/2,six_tail)**n)
+                            one_six_term=min((one_six_term,counted_eight),key=lambda v:v.b)
                         if c==3 and union==10:
                             # Only C can carry norm six. Norm-eight independent
                             # rows are unit on seven new and one old positions.
@@ -532,6 +547,14 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             for det,count in twelve_counts[overlap]),I(0))
                             +I(one_count)/coefficient_count*fixed_four_plane(11)**n)
                         one_power=min((one_power,ten_split),key=lambda v:v.b)
+                        if overlap==3:
+                            # Retain the exact norm-ten family; count all
+                            # norm-twelve crossings (Gram>=44) before the
+                            # full norm>=14 complement.
+                            twelve_split=(I(546)/coefficient_count*fixed_four_plane(10)**n
+                                +I(min(one_count,7434))/coefficient_count*fixed_four_plane(11)**n
+                                +I(one_count)/coefficient_count*fixed_four_plane(13)**n)
+                            one_power=min((one_power,twelve_split),key=lambda v:v.b)
                     if c==3 and union==6:
                         # Exact prescribed three-support and crossing support:
                         # all eligible norm-eight planes already occur at six.
@@ -754,6 +777,20 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                 *fixed_four_plane(I(39)/4)**n
                                 +I(one_count)/coefficient_count*fixed_four_plane(11)**n)
                             rare_split=min((rare_split,thirteen_split),key=lambda v:v.b)
+                        if union==14 and overlap==3:
+                            # At most 3*C(4,2)*C(12,6)/2 saturated norm4/12
+                            # pairs. Prescribed overlap three forces Gram48.
+                            fourteen_split=(I(min(one_count,8316))/coefficient_count
+                                *fixed_four_plane(12)**n
+                                +I(one_count)/coefficient_count*fixed_four_plane(13)**n)
+                            rare_split=min((rare_split,fourteen_split),key=lambda v:v.b)
+                        if union==15:
+                            # Old norm4 and outside unit12: 5544 witnesses,
+                            # Gram47. Retain all norm>=14 crossings as well.
+                            fifteen_split=(I(min(one_count,5544))/coefficient_count
+                                *fixed_four_plane(I(47)/4)**n
+                                +I(one_count)/coefficient_count*fixed_four_plane(13)**n)
+                            rare_split=min((rare_split,fifteen_split),key=lambda v:v.b)
                         if rare_split.b < one_power.b:
                             one_power = rare_split
                         # Only the first circuit can carry a norm-four word.
@@ -764,6 +801,24 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         s['first_ball_ratios'][t, overlap] = direct_one/one_power
                         if direct_one.b < one_power.b:
                             one_power = direct_one
+                    if c==4 and union==14:
+                        # Norm6/8 cannot fit either the old four coordinates
+                        # or a crossing with at least eleven nonzeros.
+                        long_no_four=(iv.pi/beta)**7*((theta(10*alpha)*theta(9*alpha)
+                            +no_tail)/q**2+periodic_plane)
+                        none_power=min((none_power,long_no_four**n),key=lambda v:v.b)
+                    if c==4 and union==15:
+                        def fifteen_no_four(first,second):
+                            return (iv.pi/beta)**(I(15)/2)*(
+                                (theta(I(first)*alpha)*theta(I(second)*alpha)+no_tail)/q**2
+                                +periodic_plane)
+                        # Complete minimum split; outside12/14 and14/14
+                        # pairs produce a forbidden short old-supported row.
+                        long_no_four=(fifteen_no_four(10,I(23)/2)**n
+                            +fifteen_no_four(12,I(45)/4)**n
+                            +fifteen_no_four(14,I(25)/2)**n
+                            +fifteen_no_four(16,12)**n)
+                        none_power=min((none_power,long_no_four),key=lambda v:v.b)
                     split = (I(bad_count)/coefficient_count*bad_bound**n
                              +one_power+none_power)
                     if c==4 and union==11:
@@ -867,6 +922,17 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             +six_plane(10,I(42)/5,tail8)**n
                             +six_plane(12,9,tail8)**n)
                         none_term=min((none_term,refined_twelve),key=lambda v:v.b)
+                    if c==6 and union==13:
+                        # Two unit-eight rows have proportional new parts and
+                        # a nonzero difference on <=2 old positions: impossible.
+                        tail8=iv.exp(-98*alpha)*half_sum
+                        # Outside norm-ten rows are unit on seven new and
+                        # three old coordinates. An (8,10) pair violates
+                        # girth; a (10,10) pair violates girth or gives norm6.
+                        refined_thirteen=(six_plane(8,10,tail8)**n
+                            +six_plane(10,I(19)/2,tail8)**n
+                            +six_plane(12,9,tail8)**n)
+                        none_term=min((none_term,refined_thirteen),key=lambda v:v.b)
                     if c==5 and union==10:
                         # Every two-norm-eight plane is generated modulo q by
                         # an unordered pair of balanced short lines. Count all
@@ -897,6 +963,18 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             +six_plane(10,I(19)/2,tail8)**n
                             +six_plane(12,9,tail8)**n)
                         none_term=min((none_term,refined_twelve),key=lambda v:v.b)
+                    if c==5 and union==13:
+                        # Outside rows use all eight new and at least one old
+                        # coordinate. Norm-eight is old-only; two independent
+                        # norm-ten rows contradict girth five.
+                        from wall1_five_thirteen_short_pairs import EIGHT_TEN_WITNESSES
+                        tail8=iv.exp(-98*alpha)*half_sum
+                        refined_thirteen=(I(min(coefficient_count,EIGHT_TEN_WITNESSES))/coefficient_count
+                            *six_plane(8,I(71)/8,tail8)**n
+                            +six_plane(8,10,tail8)**n
+                            +six_plane(10,I(19)/2,tail8)**n
+                            +six_plane(12,9,tail8)**n)
+                        none_term=min((none_term,refined_thirteen),key=lambda v:v.b)
                     two_term=I(two_count)/coefficient_count*two**n
                     if c==5 and union==8:
                         from wall1_five_six_pair_codes import COUNTS as FIVE_COUNTS
@@ -932,6 +1010,25 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             if not (exclude_six_ten_thirty_two and union==10 and det==32)),I(0))
                         two_term=min((two_term,exact_two),key=lambda v:v.b)
                     one_term=I(one_count)/coefficient_count*one**n
+                    if c==5 and union==9:
+                        from wall1_five_nine_refinement import SIX_EIGHT_COUNTS, EIGHT_EIGHT_COUNTS
+                        counted_one=(I(min(one_count,SIX_EIGHT_COUNTS[overlap]))/coefficient_count
+                            *one**n+I(one_count)/coefficient_count
+                                *six_plane(6,I(17)/2,long_tail)**n)
+                        one_term=min((one_term,counted_one),key=lambda v:v.b)
+                        tail8=iv.exp(-98*alpha)*half_sum
+                        counted_none=(I(min(coefficient_count,EIGHT_EIGHT_COUNTS[overlap]))/coefficient_count
+                            *none**n+six_plane(8,8,tail8)**n
+                            +six_plane(10,I(15)/2,tail8)**n)
+                        none_term=min((none_term,counted_none),key=lambda v:v.b)
+                    if c==6 and union==13:
+                        # Ten old unit-six lines and 210 crossing unit-eight
+                        # lines; each saturated pair has Gram determinant47.
+                        rare_eight=(I(min(one_count,2100))/coefficient_count
+                            *six_plane(6,I(47)/6,long_tail)**n
+                            +I(one_count)/coefficient_count
+                                *six_plane(6,I(17)/2,long_tail)**n)
+                        one_term=min((one_term,rare_eight),key=lambda v:v.b)
                     if c==6 and union==10:
                         # Count all norm-six/eight witnesses; excluding two-six
                         # rows leaves second norm>=8, then>=10 beyond this cover.
@@ -973,7 +1070,7 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         s['five_circuit_anchor_parts'][t,overlap]={
                             'one-six':one_term,'two-six':two_term,
                             'no-six':none_term,'split':split,'selected':power_bound}
-                if (c==8 and union<=11) or (c==7 and union<=12):
+                if (c==8 and union<=11) or (c==7 and union<=13):
                     # If both reduced minima are eight, girth eight excludes
                     # inner products +/-3,+/-5 on their five shared positions.
                     # Otherwise one minimum is >=10. Keep both complete cases.
@@ -986,6 +1083,9 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                     # H<=9 is impossible; H=10 forces dot=0; H=11 gives |dot|<=3.
                     # H=12: every projective group of two unit-eight rows has
                     # size<=4, so their plane has no seven-support circuit.
+                    # H=13,c=7: norm-eight rows use six new and two old
+                    # coordinates. Two such rows with proportional new parts
+                    # give a nonzero old row of support<=4, violating girth.
                     # If the second minimum is >=10, its height is >=8.
                     height=(I(63)/8 if c==8 and union==11 else
                             I(55)/8 if c==7 and union==11 else I(8))
