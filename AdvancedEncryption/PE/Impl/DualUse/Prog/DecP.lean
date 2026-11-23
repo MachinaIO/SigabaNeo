@@ -378,9 +378,6 @@ theorem cfX_clearL {n : ℕ} [NeZero n] : ∀ l : List (Fin n), (clearL l).CoinF
   | [] => rfl
   | _ :: l => XProg.coinFree_seq rfl (cfX_clearL l)
 
-theorem cfX_frontP (n W : ℕ) : (frontP n W).CoinFree :=
-  XProg.coinFree_seq (XProg.coinFree_seq (coinFree_putW 0 _) rfl) (coinFree_lookTail _ _ _ _)
-
 theorem cfX_getP (o L : ℕ) (dst : Fin 256) : (getP o L dst).CoinFree := by
   have h := coinFree_tailsP (102 : Fin 256) o
   refine XProg.coinFree_seq ?_ (XProg.coinFree_seq (cfX_prefP _ _ _ _ _) rfl)

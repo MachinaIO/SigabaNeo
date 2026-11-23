@@ -222,15 +222,6 @@ theorem ub_branchB {wfB : XProg 256} {Twf Gwf : ℕ → ℕ} (hU : ∀ M, UB wfB
 
 /-! ### The key component -/
 
-/-- The time of the front end on queries of at most `T` bits (`timeBoundT_frontP`). -/
-def frontT (n W T : ℕ) : ℕ :=
-  20 * T + ((n + 2) * (2 * (n + 2) + 5) + 10 * (2 * (n + 11) + 5) +
-    (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12) *
-      (2 * (n + 1 + (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12)) + 5))
-
-/-- The length bound of the front end's output (`lenBoundT_frontP`). -/
-def frontL (n W : ℕ) : ℕ := n + 1 + (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12)
-
 variable (hk c) in
 /-- The uniform bound at the branches: the SimData word, the front end's output, the templates. -/
 def keyM (Lsd W : ℕ) (cf : KeyCfg) : ℕ := max (max Lsd (frontL c.L W)) (tmplMax (keyTmpl hk c cf))
@@ -284,6 +275,66 @@ theorem time_keyP {sdP : XProg 82} {Ls Ts Lsd : ℕ}
       256 * (2 * (branchL hk c Gwf cf M + 1) + 3) := Nat.mul_le_mul_right _ length_clrAll_le
   refine ⟨?_, fun t => ?_⟩
   · show timeBoundT (frame eSd sdP) _ + (timeBoundT (frame eFr (frontP c.L W)) ℓ1 +
+      (timeBoundT (branchB hk c wfB cf) ℓ2 +
+        timeBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2))) ≤ _
+    have := ub.1
+    have := hc.1
+    simp only [clrT]
+    omega
+  · show lenBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2) t ≤ _
+    refine (lenBoundT_clearL_le clrAll _ t).trans ?_
+    simp only [mem_clrAll]
+    by_cases h : t = 0
+    · subst h; simp [io2, ub.2 0]
+    · have : t.val ≠ 0 := fun e => h (Fin.ext e)
+      simp [h, io2, this]
+
+variable (hk c) in
+/-- The uniform bound at the branches for a front end with output bound `LF`. -/
+def keyMF (Lsd LF : ℕ) (cf : KeyCfg) : ℕ := max (max Lsd LF) (tmplMax (keyTmpl hk c cf))
+
+variable (hk c) in
+/-- **The time and length bounds of the key component for any front end** (`keyPF`), from the
+phase bounds `FT`, `FL` of the front end (the `ph` field of `FrontSpec`): as `time_keyP` with
+`FT K₀` for `frontT c.L W K₀` and `FL K₀` for `frontL c.L W`. -/
+theorem time_keyPF {sdP : XProg 82} {Ls Ts Lsd : ℕ}
+    (hsT : timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
+    (hsL : lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0)
+    {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr : XProg (R + 2)} {FT FL : ℕ → ℕ}
+    (hfr : ∀ T, Ph fr (io2 (R := R) T 0 0) (FT T) (io2 (R := R) (FL T) 0 0))
+    {wfB : XProg 256} {Twf Gwf : ℕ → ℕ} (hU : ∀ M, UB wfB M (Twf M) (Gwf M))
+    (cf : KeyCfg) (K₀ : ℕ) :
+    timeBoundT (keyPF hk c sdP e fr wfB cf) (io2 (R := 254) Ls K₀ 0) ≤
+        Ts + FT K₀ + branchT hk c Twf Gwf cf (keyMF hk c Lsd (FL K₀) cf) +
+          clrT (branchL hk c Gwf cf (keyMF hk c Lsd (FL K₀) cf)) ∧
+      lenBoundT (keyPF hk c sdP e fr wfB cf) (io2 (R := 254) Ls K₀ 0) ≤
+        io2 (branchL hk c Gwf cf (keyMF hk c Lsd (FL K₀) cf)) 0 0 := by
+  set M := keyMF hk c Lsd (FL K₀) cf with hMdef
+  have e1 : (fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) = io2 (R := 80) Ls 0 0 := io2_eSd Ls K₀ 0
+  have l1 : lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ io2 (R := 254) Lsd K₀ 0 := by
+    show embedF eSd _ (lenBoundT sdP fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) ≤ _
+    rw [e1, ← embedF_eSd Ls K₀ Lsd 0]
+    exact embedF_mono _ le_rfl hsL
+  have t1 : timeBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ Ts := by
+    rw [timeBoundT_frame, e1]; exact hsT
+  set ℓ1 := lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) with hℓ1
+  have v1 : (fun j => ℓ1 (e j)) ≤ io2 (R := R) K₀ 0 0 := by
+    rw [← io2_frEmb he Lsd K₀ 0]; exact fun j => l1 (e j)
+  have pf := hfr K₀ _ v1
+  have t2 : timeBoundT (frame e fr) ℓ1 ≤ FT K₀ := by rw [timeBoundT_frame]; exact pf.1
+  have l2 : lenBoundT (frame e fr) ℓ1 ≤ io2 (R := 254) Lsd (FL K₀) 0 := by
+    show embedF e ℓ1 (lenBoundT fr fun j => ℓ1 (e j)) ≤ _
+    rw [← embedF_frEmb he Lsd K₀ (FL K₀) 0]
+    exact embedF_mono _ l1 pf.2
+  set ℓ2 := lenBoundT (frame e fr) ℓ1 with hℓ2
+  have hℓ2M : ∀ t, ℓ2 t ≤ M := fun t => (l2 t).trans (by
+    simp only [io2, hMdef, keyMF]; split_ifs <;> omega)
+  have ub := ub_branchB hk c hU cf (M := M) (le_max_right _ _) ℓ2 hℓ2M
+  have hc := ub_clearL (branchL hk c Gwf cf M) clrAll _ ub.2
+  have hlen : clrAll.length * (2 * (branchL hk c Gwf cf M + 1) + 3) ≤
+      256 * (2 * (branchL hk c Gwf cf M + 1) + 3) := Nat.mul_le_mul_right _ length_clrAll_le
+  refine ⟨?_, fun t => ?_⟩
+  · show timeBoundT (frame eSd sdP) _ + (timeBoundT (frame e fr) ℓ1 +
       (timeBoundT (branchB hk c wfB cf) ℓ2 +
         timeBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2))) ≤ _
     have := ub.1

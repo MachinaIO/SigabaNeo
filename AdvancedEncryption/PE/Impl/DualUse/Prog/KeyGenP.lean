@@ -96,14 +96,14 @@ def keyTmplR (cf : KeyCfg) : List (Fin 256 × ℕ) :=
 def keyClrR : List (Fin 256) := keyClr ++ [90, 91, 92, 93, 100, 253]
 
 variable (hk c) in
-/-- **The key-row block**: from the word of a master secret key (tape `0`) and the gate list
-`gsW W (parse C)` of a window predicate of at most `c.L` bits (tape `1`), the word of the key row
-`B_f̂ = keyMatrix mpk (predC C)` on tape `2`, the master key kept on tape `0`, every other tape
-blank. -/
+/-- **The key-row block**: from the word of a master secret key (tape `0`) and the block word
+`blockWord W C` of a predicate of the class (`ValidC`) of at most `c.L` bits (tape `1`), the word of
+the key row `B_f̂ = keyMatrix mpk (predC C)` on tape `2`, the master key kept on tape `0`, every
+other tape blank. -/
 structure BfSpec (bfX : XProg 256) (W : ℕ) : Prop where
   wf : bfX.WF
-  law : ∀ (msk : SKey hk c) (C : List Bool), C.length ≤ c.L → (∃ w : Window, winWord w = C) →
-    bfX.law (io2 (R := 254) ((mskEnc hk c).enc msk) (SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
+  law : ∀ (msk : SKey hk c) (C : List Bool), C.length ≤ c.L → ValidC C →
+    bfX.law (io2 (R := 254) ((mskEnc hk c).enc msk) (blockWord W C) []) =
       PMF.pure (Function.update (io2 (R := 254) ((mskEnc hk c).enc msk) [] []) 2
         (rowW N K k (keyMatrix msk.1 (predC C))))
 
@@ -164,17 +164,17 @@ theorem tmplS_out' {l : List (Fin 256 × ℕ)} {ks : List ℕ} (hks : l.map (fun
 /-- The window branch from the generator to the store before the try. -/
 theorem law_winPrep {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W)
     (cf : KeyCfg) (msk : SKey hk c) (C : List Bool) (hL : C.length ≤ c.L)
-    (hC : ∃ w : Window, winWord w = C)
+    (hC : ValidC C)
     (X : XProg 256) :
     (XProg.seq (XProg.prog (.prim (.tail 1))) <| XProg.seq bfX <|
       XProg.seq (prefP (lenPK hk c) 0 1 100 101) <| XProg.seq (etP hk c) <|
       XProg.seq (putW 4 cf.sW) <| XProg.seq (putW 5 (powW K (cf.B - 1))) <|
       XProg.seq (tmplP 120 (keyTmplR hk c cf)) X).law
-        (io2 (R := 254) ((mskEnc hk c).enc msk) (true :: SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
+        (io2 (R := 254) ((mskEnc hk c).enc msk) (true :: blockWord W C) []) =
       X.law (winSR hk c ((mskEnc hk c).enc msk) (rowW N K k (keyMatrix msk.1 (predC C))) cf) := by
   have e1 : (Prim.tail (1 : Fin 256)).apply
-      (io2 (R := 254) ((mskEnc hk c).enc msk) (true :: SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
-      io2 (R := 254) ((mskEnc hk c).enc msk) (SigabaNeo.Tape.Prog.gsW W (parse C)) [] := by
+      (io2 (R := 254) ((mskEnc hk c).enc msk) (true :: blockWord W C) []) =
+      io2 (R := 254) ((mskEnc hk c).enc msk) (blockWord W C) [] := by
     funext t
     simp only [Prim.apply, Function.update_apply, io2]
     split_ifs <;> first | rfl | (exfalso; simp_all [Fin.ext_iff])
@@ -241,9 +241,9 @@ theorem coinFree_frAt : (Prog.map uF frP).CoinFree := coinFree_mapP uF coinFree_
 /-- **The law of the window branch**: the image of `keyM msk C` under the framed key. -/
 theorem law_winR {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W)
     (cf : KeyCfg) (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool)
-    (hL : C.length ≤ c.L) (hC : ∃ w : Window, winWord w = C) :
+    (hL : C.length ≤ c.L) (hC : ValidC C) :
     (winR hk c bfX W cf).law
-        (io2 (R := 254) ((mskEnc hk c).enc msk) (true :: SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
+        (io2 (R := 254) ((mskEnc hk c).enc msk) (true :: blockWord W C) []) =
       (DualUse.keyM hk c msk C).map fun sk =>
         io2 (R := 254) (MultiTapeTM.frame ((skEnc hk c).enc sk)) [] [] := by
   rw [winR, law_winPrep hbf cf msk C hL hC]
@@ -355,12 +355,19 @@ variable (hk c) in
 def nKG : ℕ := (2 * (pw).length + 1) + (2 * fixLen (mskEnc hk c) + 1) + (2 * c.L + 1)
 
 variable (hk c) in
-/-- **The program of `KeyGen`**: input on tape `255`, output on tape `0`. -/
-noncomputable def keyGenP (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) : XProg 256 :=
+/-- **The program of `KeyGen`** for a front end `fr` framed by `e` (`FrontSpec`, `FrEmb`): input on
+tape `255`, output on tape `0`. -/
+noncomputable def keyGenF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) (fr : XProg (R + 2))
+    (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) : XProg 256 :=
   XProg.seq (XProg.prog (Prog.map uL (leP (nKG hk c))))
     (XProg.ifBlank 254 (XProg.prog (clr 255))
-      (XProg.seq (XProg.prog parseP) <| XProg.seq (XProg.frame eFr (frontP c.L W)) <|
+      (XProg.seq (XProg.prog parseP) <| XProg.seq (XProg.frame e fr) <|
         XProg.seq (branchK hk c bfX W cf) (clearL clrAll)))
+
+variable (hk c) in
+/-- **The program of `KeyGen`** with the date-window front end `frontP c.L W`. -/
+noncomputable def keyGenP (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) : XProg 256 :=
+  keyGenF hk c eFr (frontP c.L W) bfX W cf
 
 theorem run_leAt (n : ℕ) (s : Store 256) :
     run (Prog.map uL (leP n)) s = Function.update (Function.update s 254
@@ -381,16 +388,18 @@ theorem length_encodeTuple_KG (msk : SKey hk c) (C : List Bool) :
 /-- **The law of `KeyGen` as a tape program**: from the first `nKG + 1` bits of the input, on
 predicates of at most `c.L` bits the image of `keyM` under the framed key, otherwise the empty
 tuple. -/
-theorem law_keyGenP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W)
+theorem law_keyGenF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr : XProg (R + 2)}
+    {W : ℕ} {FT FL : ℕ → ℕ} {FS : ℕ} (hfr : FrontSpec fr c.L W FT FL FS)
+    {bfX : XProg 256} (hbf : BfSpec hk c bfX W)
     (cf : KeyCfg) (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) :
-    (keyGenP hk c bfX W cf).law (inputStore 255
+    (keyGenF hk c e fr bfX W cf).law (inputStore 255
         ((SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C]).take (nKG hk c + 1))) =
       if C.length ≤ c.L then (DualUse.keyM hk c msk C).map fun sk =>
         io2 (R := 254) (SigabaNeo.encodeTuple [(skEnc hk c).enc sk]) [] []
       else PMF.pure (io2 (R := 254) [] [] []) := by
   set x := SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C] with hx
   have hlen := length_encodeTuple_KG (hk := hk) (c := c) msk C
-  rw [keyGenP, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_leAt _),
+  rw [keyGenF, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_leAt _),
     PMF.pure_bind, run_leAt, XProg.law_ifBlank]
   by_cases hn : x.length ≤ nKG hk c
   · -- the input is read whole
@@ -412,24 +421,24 @@ theorem law_keyGenP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W)
       simp only [CoinFree] at h1 h2 h3
       simp [CoinFree, parseP, coinFreeB, h1, h2, h3]
     rw [es, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hpc, PMF.pure_bind,
-      run_parseP, XProg.law_seq_pure (by rw [XProg.law_frame, io2_eFr, law_frontP, PMF.pure_map,
-        embedF_eFr]), XProg.law_seq, branchK, XProg.law_ifBit]
+      run_parseP, XProg.law_seq_pure (law_frame_frEmb he hfr _ C), XProg.law_seq, branchK,
+      XProg.law_ifBit]
     have e : (clearL clrAll).law ∘ (fun w => io2 (R := 254) w [] []) =
         PMF.pure ∘ (fun w => io2 (R := 254) w [] []) := funext law_clrAll
     by_cases hL : C.length ≤ c.L
     · rw [if_pos hL]
-      by_cases hw : ∃ w : Window, winWord w = C
-      · rw [frontV_win hL hw, if_pos (by simp [io2]), law_winR hbf cf hcf msk C hL hw,
+      by_cases hw : ValidC C
+      · rw [frontG_valid hL hw, if_pos (by simp [io2]), law_winR hbf cf hcf msk C hL hw,
           PMF.bind_map]
         have e' : (clearL clrAll).law ∘ (fun sk => io2 (R := 254)
             (MultiTapeTM.frame ((skEnc hk c).enc sk)) [] []) =
             PMF.pure ∘ (fun sk => io2 (R := 254) (SigabaNeo.encodeTuple [(skEnc hk c).enc sk]) [] []) := by
           funext sk; simp only [Function.comp_apply, law_clrAll, encodeTuple_single]
         rw [e', PMF.bind_pure_comp]
-      · rw [frontV_short_not hL hw, if_neg (by simp [io2]), XProg.law_ifBlank, if_neg (by simp [io2]),
+      · rw [frontG_short_not hL hw, if_neg (by simp [io2]), XProg.law_ifBlank, if_neg (by simp [io2]),
           law_dumR, PMF.pure_bind, law_clrAll, keyM_of_not hk c msk C hw, PMF.pure_map,
           encodeTuple_single]
-    · rw [if_neg hL, frontV_long hL, if_neg (by simp [io2]), XProg.law_ifBlank, if_pos (by simp [io2]),
+    · rw [if_neg hL, frontG_long hL, if_neg (by simp [io2]), XProg.law_ifBlank, if_pos (by simp [io2]),
         law_longB, PMF.pure_bind, law_clrAll]
   · -- a longer input: its predicate is longer than `c.L`
     have hL : ¬ C.length ≤ c.L := by
@@ -445,6 +454,16 @@ theorem law_keyGenP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W)
     simp only [Prim.apply, Function.update_apply, inputStore, io2]
     split_ifs <;> rfl
 
+/-- **The law of `KeyGen` as a tape program** (date-window front end). -/
+theorem law_keyGenP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W)
+    (cf : KeyCfg) (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) :
+    (keyGenP hk c bfX W cf).law (inputStore 255
+        ((SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C]).take (nKG hk c + 1))) =
+      if C.length ≤ c.L then (DualUse.keyM hk c msk C).map fun sk =>
+        io2 (R := 254) (SigabaNeo.encodeTuple [(skEnc hk c).enc sk]) [] []
+      else PMF.pure (io2 (R := 254) [] [] []) :=
+  law_keyGenF frEmb_eFr (frontSpec_frontP c.L W) hbf cf hcf msk C
+
 end AdvancedEncryption.DualUse.Prog
 
 namespace AdvancedEncryption.DualUse.Prog
@@ -456,20 +475,32 @@ variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
 
 /-! ### The machine -/
 
-theorem wf_keyGenP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg) :
-    (keyGenP hk c bfX W cf).WF := by
+theorem wf_keyGenF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) {fr : XProg (R + 2)} (hfr : fr.WF)
+    {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg) :
+    (keyGenF hk c e fr bfX W cf).WF := by
   have hk1 : ∀ x ∈ keyTmplR hk c cf, x.1 ≠ (120 : Fin 256) := fun x hx e => by
     have := List.mem_map_of_mem (f := fun x : Fin 256 × ℕ => x.1.val) hx
     rw [keyTmplR_keys, e] at this; simp at this
   refine ⟨WF.map (by decide) (wf_leP _), trivial, ?_, ?_⟩
   · exact ⟨trivial, WF.map (by decide) wf_unfrP, WF.map (by decide) wf_unfrP,
       WF.map (by decide) wf_unfrP, trivial, trivial⟩
-  · refine ⟨Gates.DateWindow.wf_frontP _ _, ⟨?_, wf_clearL _, ⟨trivial, wf_prefP _ _ _ _ _,
+  · refine ⟨hfr, ⟨?_, wf_clearL _, ⟨trivial, wf_prefP _ _ _ _ _,
       wf_putW _ _, trivial, trivial⟩, WF.map (by decide) wf_frP⟩, wf_clearL _⟩
     · exact ⟨trivial, hbf.wf, wf_prefP _ _ _ _ _,
         ⟨⟨trivial, wf_tailsP _ _, trivial, wf_tailsP _ _⟩, wf_prefP _ _ _ _ _, trivial⟩,
         wf_putW _ _, wf_putW _ _, wf_tmplP _ _ hk1, ProgKeyR.wf_keyTryRCoinsP,
         WF.map (by decide) wf_frP, wf_clearL _⟩
+
+theorem wf_keyGenP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg) :
+    (keyGenP hk c bfX W cf).WF :=
+  wf_keyGenF eFr (Gates.DateWindow.wf_frontP _ _) hbf cf
+
+variable (hk c) in
+/-- **The machine of `KeyGen`** for a framed front end: input on tape `255` (at most `nKG + 1` bits
+loaded), output on tape `0`. -/
+noncomputable def keyMachineF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) (fr : XProg (R + 2))
+    (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) : Machine :=
+  (keyGenF hk c e fr bfX W cf).toMachineB 255 0 (nKG hk c)
 
 variable (hk c) in
 /-- **The machine of `KeyGen`**: input on tape `255` (at most `nKG + 1` bits loaded), output on
@@ -477,16 +508,27 @@ tape `0`. -/
 noncomputable def keyMachineP (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) : Machine :=
   (keyGenP hk c bfX W cf).toMachineB 255 0 (nKG hk c)
 
+theorem run_keyMachineF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr : XProg (R + 2)}
+    {W : ℕ} {FT FL : ℕ → ℕ} {FS : ℕ} (hfr : FrontSpec fr c.L W FT FL FS)
+    {bfX : XProg 256} (hbf : BfSpec hk c bfX W) (cf : KeyCfg)
+    (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) :
+    (keyMachineF hk c e fr bfX W cf).run (SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C]) =
+      if C.length ≤ c.L then (DualUse.keyM hk c msk C).map fun sk =>
+        SigabaNeo.encodeTuple [(skEnc hk c).enc sk]
+      else PMF.pure (SigabaNeo.encodeTuple []) := by
+  rw [keyMachineF, XProg.run_toMachineB _ (wf_keyGenF e hfr.wf hbf cf),
+    law_keyGenF he hfr hbf cf hcf msk C]
+  split_ifs
+  · rw [PMF.map_comp]; rfl
+  · rw [PMF.pure_map]; rfl
+
 theorem run_keyMachineP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg)
     (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) :
     (keyMachineP hk c bfX W cf).run (SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C]) =
       if C.length ≤ c.L then (DualUse.keyM hk c msk C).map fun sk =>
         SigabaNeo.encodeTuple [(skEnc hk c).enc sk]
-      else PMF.pure (SigabaNeo.encodeTuple []) := by
-  rw [keyMachineP, XProg.run_toMachineB _ (wf_keyGenP hbf cf), law_keyGenP hbf cf hcf msk C]
-  split_ifs
-  · rw [PMF.map_comp]; rfl
-  · rw [PMF.pure_map]; rfl
+      else PMF.pure (SigabaNeo.encodeTuple []) :=
+  run_keyMachineF frEmb_eFr (frontSpec_frontP c.L W) hbf cf hcf msk C
 
 theorem keyMachineP_short {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg)
     (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) (hC : C.length ≤ c.L) :

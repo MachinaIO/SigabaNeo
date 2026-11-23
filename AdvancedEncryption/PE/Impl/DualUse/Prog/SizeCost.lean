@@ -170,7 +170,7 @@ theorem size_keyGenP (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) (m : ℕ)
   have hA := length_clrAll_le
   have hc : keyClrR.length = 31 := rfl
   rw [hc] at c1
-  simp only [keyGenP, branchK, winR, dumR, dumB, longB, etP, size_seq, size_prog, size_frame,
+  simp only [keyGenP, keyGenF, branchK, winR, dumR, dumB, longB, etP, size_seq, size_prog, size_frame,
     size_ifBit, size_ifBlank, Prog.size, Prim.pad, Prog.size_map, size_tailsP,
     List.length_singleton] at *
   omega
@@ -208,7 +208,7 @@ theorem size_decGenP (cfX : XProg 256) (W : ℕ) (B m : ℕ) (hB : ∀ x ∈ dec
   simp only [List.length_cons, List.length_nil] at u1 u2
   have hA := length_clrAll_le
   rw [← getP_eq] at g1 g2 g3 g4 g5 g6
-  simp only [decGenP, branchD, decFinB, dumDec, longB, size_seq, size_prog, size_frame,
+  simp only [decGenP, decGenF, branchD, decFinB, dumDec, longB, size_seq, size_prog, size_frame,
     size_ifBit, size_ifBlank, Prog.size, Prim.pad, Prog.size_map, size_tailsP,
     List.length_singleton]
   omega

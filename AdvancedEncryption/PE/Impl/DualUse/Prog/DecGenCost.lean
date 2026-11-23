@@ -169,18 +169,42 @@ def decGT (W B Tb Gb : ℕ) : ℕ :=
     (parse4T (nDec hk c + 2) + (frontT c.L W (16 * (nDec hk c + 2)) + (decBT hk c W B Tb Gb +
       (256 * (2 * (decBL hk c W B Gb + 1) + 3) + (2 * (decBL hk c W B Gb + 1) + 3))))) + 1)
 
+variable (hk c) in
+/-- The time of the branches of `Dec`. -/
+def decBTF (LF B Tb Gb : ℕ) : ℕ :=
+  let Mβ := max (16 * (nDec hk c + 2)) LF
+  max ((2 * (Mβ + 1) + 3) + (Tb + decFT (c := c) K B Gb))
+    (max (longT Mβ) ((2 * (Mβ + 1) + 3) + putT 3 Mβ) + 1) + 1
+
+variable (hk c) in
+/-- The bound of tape `0` after the branches of `Dec`. -/
+def decBLF (LF B Gb : ℕ) : ℕ :=
+  let Mβ := max (16 * (nDec hk c + 2)) LF
+  max (decFG K B Gb) (max Mβ (Mβ + 3 + 1))
+
+variable (hk c) in
+/-- **The time of `Dec`'s program** from its input bound. -/
+def decGTF (FT LF B Tb Gb : ℕ) : ℕ :=
+  leT (nDec hk c) (nDec hk c + 1) + (max (2 * (nDec hk c + 2 + 1) + 3)
+    (parse4T (nDec hk c + 2) + (FT + (decBTF hk c LF B Tb Gb +
+      (256 * (2 * (decBLF hk c LF B Gb + 1) + 3) + (2 * (decBLF hk c LF B Gb + 1) + 3))))) + 1)
+
 /-- **The time and the output bound of `Dec`'s program.** -/
-theorem ph_decGenP (cfX : XProg 256) (W B : ℕ) {Tb Gb : ℕ}
-    (hcf : ∀ β : Fin 256 → ℕ, β 0 ≤ 16 * (nDec hk c + 2) → β 1 ≤ frontL c.L W →
-      (∀ i, β i ≤ max (16 * (nDec hk c + 2)) (frontL c.L W)) → Ph cfX β Tb (fun _ => Gb))
+theorem ph_decGenF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) (hR : R ≤ 166)
+    {fr : XProg (R + 2)} {FT FL : ℕ → ℕ}
+    (hfr : ∀ T, Ph fr (io2 (R := R) T 0 0) (FT T) (io2 (R := R) (FL T) 0 0))
+    (cfX : XProg 256) (B : ℕ) {Tb Gb : ℕ}
+    (hcf : ∀ β : Fin 256 → ℕ, β 0 ≤ 16 * (nDec hk c + 2) → β 1 ≤ FL (16 * (nDec hk c + 2)) →
+      (∀ i, β i ≤ max (16 * (nDec hk c + 2)) (FL (16 * (nDec hk c + 2)))) →
+        Ph cfX β Tb (fun _ => Gb))
     (hB : ∀ x ∈ decOffs hk c, x ≤ B) (hT : ∀ x ∈ decTmpl c, x.2 ≤ Gb) :
-    timeBoundT (decGenP hk c cfX W) (Prog.inputBound (255 : Fin 256) (nDec hk c + 1)) ≤
-        decGT hk c W B Tb Gb ∧
-      lenBoundT (decGenP hk c cfX W) (Prog.inputBound (255 : Fin 256) (nDec hk c + 1)) 0 ≤
-        decBL hk c W B Gb := by
+    timeBoundT (decGenF hk c e fr cfX) (Prog.inputBound (255 : Fin 256) (nDec hk c + 1)) ≤
+        decGTF hk c (FT (16 * (nDec hk c + 2))) (FL (16 * (nDec hk c + 2))) B Tb Gb ∧
+      lenBoundT (decGenF hk c e fr cfX) (Prog.inputBound (255 : Fin 256) (nDec hk c + 1)) 0 ≤
+        decBLF hk c (FL (16 * (nDec hk c + 2))) B Gb := by
   set n := nDec hk c with hn
   set a := 16 * (n + 2) with ha
-  set FL := frontL c.L W with hFL
+  set FL := FL a with hFL
   set Mβ := max a FL with hMβ
   have h0 : ∀ i, Prog.inputBound (255 : Fin 256) (n + 1) i ≤ n + 1 := fun i => by
     simp only [Prog.inputBound, Function.update_apply]; split_ifs <;> omega
@@ -196,37 +220,37 @@ theorem ph_decGenP (cfX : XProg 256) (W B : ℕ) {Tb Gb : ℕ}
   have p3 := ph_parse4 (n + 2) hβ1M
   set β3 := fun i => if i ∈ [(254 : Fin 256), 253, 0, 1, 251, 252, 255]
     then 2 * (2 * (2 * (2 * (n + 2)))) else β1 i with hβ3
-  have hβ3e : ∀ j, (fun j => β3 (eFr j)) j ≤ io2 (R := 6) a 0 0 j := by
+  have hβ3e : ∀ j, (fun j => β3 (e j)) j ≤ io2 (R := R) a 0 0 j := by
     intro j
     simp only [hβ3, hβ1, Prog.inputBound, Function.update_apply, io2]
     by_cases hj : j.val = 0
-    · have : eFr j = 1 := Fin.ext (by rw [eFr_val]; simp [hj])
+    · have : e j = 1 := Fin.ext (by rw [he]; simp [hj])
       simp [this, hj, ha]; omega
-    · have hv : (eFr j).val = j.val + 82 := by rw [eFr_val]; simp [hj]
-      have hne : ∀ t : Fin 256, t.val ≤ 82 ∨ t.val ≥ 90 → eFr j ≠ t := fun t ht e => by
-        rw [← e, hv] at ht; have := j.isLt; omega
-      have h1 : eFr j ≠ 254 := hne 254 (by simp)
-      have h2 : eFr j ≠ 253 := hne 253 (by simp)
-      have h3 : eFr j ≠ 0 := hne 0 (by simp)
-      have h4 : eFr j ≠ 1 := hne 1 (by simp)
-      have h5 : eFr j ≠ 251 := hne 251 (by simp)
-      have h6 : eFr j ≠ 252 := hne 252 (by simp)
-      have h7 : eFr j ≠ 255 := hne 255 (by simp)
+    · have hv : (e j).val = j.val + 82 := by rw [he]; simp [hj]
+      have hne : ∀ t : Fin 256, t.val ≤ 82 ∨ t.val ≥ 250 → e j ≠ t := fun t ht e' => by
+        rw [← e', hv] at ht; have := j.isLt; omega
+      have h1 : e j ≠ 254 := hne 254 (by simp)
+      have h2 : e j ≠ 253 := hne 253 (by simp)
+      have h3 : e j ≠ 0 := hne 0 (by simp)
+      have h4 : e j ≠ 1 := hne 1 (by simp)
+      have h5 : e j ≠ 251 := hne 251 (by simp)
+      have h6 : e j ≠ 252 := hne 252 (by simp)
+      have h7 : e j ≠ 255 := hne 255 (by simp)
       simp [h1, h2, h3, h4, h5, h6, h7, hj]
-  have p4 := ph_front c.L W a (β := β3) (fun j => hβ3e j)
-  set β4 := embedF eFr β3 (io2 (R := 6) FL 0 0) with hβ4
+  have p4 := ph_frame e (p := fr) (β := β3) (hfr a |>.mono (fun j => hβ3e j) le_rfl le_rfl)
+  set β4 := embedF e β3 (io2 (R := R) FL 0 0) with hβ4
   have hb40 : β4 0 = a := by
     rw [hβ4]
-    rcases embedF_cases eFr β3 (io2 (R := 6) FL 0 0) 0 with ⟨-, h⟩ | ⟨j, hj, -⟩
+    rcases embedF_cases e β3 (io2 (R := R) FL 0 0) 0 with ⟨-, h⟩ | ⟨j, hj, -⟩
     · rw [h]; simp [hβ3]; omega
-    · exact absurd hj (eFr_ne_zero j)
+    · exact absurd hj (he.ne_zero j)
   have hb41 : β4 1 ≤ FL := by
-    rw [hβ4, show (1 : Fin 256) = eFr 0 from Fin.ext (by rw [eFr_val]; simp), embedF_apply_self]
+    rw [hβ4, ← he.zero, embedF_apply_self]
     simp [io2]
   have hb4M : ∀ i, β4 i ≤ Mβ := by
     intro i
     rw [hβ4]
-    rcases embedF_cases eFr β3 (io2 (R := 6) FL 0 0) i with ⟨-, h⟩ | ⟨j, -, h⟩
+    rcases embedF_cases e β3 (io2 (R := R) FL 0 0) i with ⟨-, h⟩ | ⟨j, -, h⟩
     · rw [h]; simp only [hβ3, hβ1, Prog.inputBound, Function.update_apply]
       split_ifs <;> omega
     · rw [h]; simp only [io2]; split_ifs <;> omega
@@ -239,26 +263,37 @@ theorem ph_decGenP (cfX : XProg 256) (W B : ℕ) {Tb Gb : ℕ}
   have plong := ph_of_ub hb4M (ub_longB Mβ)
   have pdum := ph_of_ub hb4M (ub_dumDec Mβ)
   have p5 := ph_ifBit' (1 : Fin 256) pwin (ph_ifBlank' (1 : Fin 256) plong pdum)
-  have p5' := p5.mono le_rfl (le_of_eq rfl) (show _ ≤ fun _ => decBL hk c W B Gb from
+  have p5' := p5.mono le_rfl (le_of_eq rfl) (show _ ≤ fun _ => decBLF hk c FL B Gb from
     fun t => le_of_eq rfl)
-  have p6 := ph_clearL clrAll (fun _ => decBL hk c W B Gb)
+  have p6 := ph_clearL clrAll (fun _ => decBLF hk c FL B Gb)
   have pB := p3.seq (p4.seq (p5'.seq p6))
   have pall := p1.seq (ph_ifBlank' (254 : Fin 256) pA pB)
   have h := pall (Prog.inputBound (255 : Fin 256) (n + 1)) le_rfl
   refine ⟨h.1.trans ?_, (h.2 0).trans ?_⟩
-  · have hs := supB_const_le (k := 256) (decBL hk c W B Gb)
+  · have hs := supB_const_le (k := 256) (decBLF hk c FL B Gb)
     have hl := length_clrAll_le
-    have e : clrAll.length * (2 * (supB (fun _ : Fin 256 => decBL hk c W B Gb) + 1) + 3) +
-        (2 * (supB (fun _ : Fin 256 => decBL hk c W B Gb) + 1) + 3) ≤
-        256 * (2 * (decBL hk c W B Gb + 1) + 3) + (2 * (decBL hk c W B Gb + 1) + 3) := by
-      have h2 : 2 * (supB (fun _ : Fin 256 => decBL hk c W B Gb) + 1) + 3 ≤
-          2 * (decBL hk c W B Gb + 1) + 3 := by omega
+    have e : clrAll.length * (2 * (supB (fun _ : Fin 256 => decBLF hk c FL B Gb) + 1) + 3) +
+        (2 * (supB (fun _ : Fin 256 => decBLF hk c FL B Gb) + 1) + 3) ≤
+        256 * (2 * (decBLF hk c FL B Gb + 1) + 3) + (2 * (decBLF hk c FL B Gb + 1) + 3) := by
+      have h2 : 2 * (supB (fun _ : Fin 256 => decBLF hk c FL B Gb) + 1) + 3 ≤
+          2 * (decBLF hk c FL B Gb + 1) + 3 := by omega
       exact Nat.add_le_add (Nat.mul_le_mul hl h2) h2
-    show _ ≤ leT n (n + 1) + (max (2 * (n + 2 + 1) + 3) (parse4T (n + 2) + (frontT c.L W a +
-      (decBT hk c W B Tb Gb + (256 * (2 * (decBL hk c W B Gb + 1) + 3) +
-        (2 * (decBL hk c W B Gb + 1) + 3))))) + 1)
+    show _ ≤ leT n (n + 1) + (max (2 * (n + 2 + 1) + 3) (parse4T (n + 2) + (FT a +
+      (decBTF hk c FL B Tb Gb + (256 * (2 * (decBLF hk c FL B Gb + 1) + 3) +
+        (2 * (decBLF hk c FL B Gb + 1) + 3))))) + 1)
     gcongr
     exact Nat.le_of_eq rfl
   · simp [mem_clrAll, Prim.lenT, hβ1, Prog.inputBound]
+
+/-- **The time and the output bound of `Dec`'s program** (date-window front end). -/
+theorem ph_decGenP (cfX : XProg 256) (W B : ℕ) {Tb Gb : ℕ}
+    (hcf : ∀ β : Fin 256 → ℕ, β 0 ≤ 16 * (nDec hk c + 2) → β 1 ≤ frontL c.L W →
+      (∀ i, β i ≤ max (16 * (nDec hk c + 2)) (frontL c.L W)) → Ph cfX β Tb (fun _ => Gb))
+    (hB : ∀ x ∈ decOffs hk c, x ≤ B) (hT : ∀ x ∈ decTmpl c, x.2 ≤ Gb) :
+    timeBoundT (decGenP hk c cfX W) (Prog.inputBound (255 : Fin 256) (nDec hk c + 1)) ≤
+        decGT hk c W B Tb Gb ∧
+      lenBoundT (decGenP hk c cfX W) (Prog.inputBound (255 : Fin 256) (nDec hk c + 1)) 0 ≤
+        decBL hk c W B Gb :=
+  ph_decGenF frEmb_eFr (by norm_num) (frontSpec_frontP c.L W).ph cfX B hcf hB hT
 
 end AdvancedEncryption.DualUse.Prog
