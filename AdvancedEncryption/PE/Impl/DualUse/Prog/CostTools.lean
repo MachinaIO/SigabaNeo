@@ -335,6 +335,13 @@ theorem ph_wLoopP {out f x c c' tn tz tr : Fin k} (hd : [out, f, x, c, c', tn, t
 
 /-! ### Clearing and reading blocks -/
 
+theorem mvT_le_const' {β : Fin k → ℕ} {X : ℕ} (h : ∀ i, β i ≤ X) (t : Fin k) :
+    mvT β t ≤ (X + 1) * (6 * (X + X) + 20) := by
+  unfold mvT
+  have := supB_le_of h
+  have := h t
+  exact Nat.mul_le_mul (by omega) (by omega)
+
 theorem ph_clearL [NeZero k] (l : List (Fin k)) (β : Fin k → ℕ) :
     Ph (clearL l) β (l.length * (2 * (supB β + 1) + 3) + (2 * (supB β + 1) + 3))
       (fun t => if t ∈ l then 0 else β t) := fun ℓ hℓ =>
@@ -388,20 +395,6 @@ theorem ph_getAt (o L : ℕ) {src dst tmp a b : Fin k} (h1 : tmp ≠ a) (h2 : tm
 
 /-! ### The reading loop -/
 
-/-- The per-round bound of `skipLoopP`. -/
-def skB (β : Fin k → ℕ) (out c c' tn tz tr : Fin k) (j : ℕ) : Fin k → ℕ :=
-  fun t => if t = out then β out + j * β tr
-    else if t = c' then max (β c') (max (β tz) (β tr))
-    else if t = c then β tn else β t
-
-/-- The largest bound of `skipLoopP`. -/
-def skS (β : Fin k → ℕ) (tn tz tr : Fin k) : ℕ := supB β + β tn * β tr + β tz + β tr
-
-/-- The time of `skipLoopP`. -/
-def skT (β : Fin k → ℕ) (tn tz tr : Fin k) : ℕ :=
-  (β tn + 1) * (2 * ((β tz + β tr + 1) * (6 * (skS β tn tz tr + 2 * (β tz + β tr)) + 20)) +
-    4 * skS β tn tz tr + 2 * (β tz + β tr) + 12)
-
 /-- A counted drop. -/
 theorem ph_dropP {S c t : Fin k} (hSc : S ≠ c) (hct : c ≠ t) (β : Fin k → ℕ) :
     Ph (dropP S c t) β (mvT β t) (Function.update β c (β t)) := by
@@ -419,5 +412,121 @@ theorem ph_dropP {S c t : Fin k} (hSc : S ≠ c) (hct : c ≠ t) (β : Fin k →
     omega
   · intro x; simp only [Prim.lenT, Function.update_apply]; split_ifs <;> simp_all
   · have := supB_update_le β c (β t); have := le_supB β t; omega
+
+/-! ### The reading loop, uniformly -/
+
+/-- **The reading loop** from tapes below `M`: at most `M` rounds, each moving at most `M` bits. -/
+theorem ub_skipLoopP {out src c c' tn tz tr : Fin k} (hd : [out, src, c, c', tn, tz, tr].Nodup)
+    (M : ℕ) : UB (skipLoopP out src c c' tn tz tr) M
+      ((2 * (M + 1) + 3) + (M * (2 * (M + M * M) + 3 + 2 * ((M + M * M + 1) * (6 * (M + M * M +
+        (M + M * M)) + 20)) + 1) + 2)) (M + M * M) := by
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or] at hd
+  obtain ⟨⟨h01, h02, h03, h04, h05, h06⟩, ⟨h12, h13, h14, h15, h16⟩,
+    ⟨h23, h24, h25, h26⟩, ⟨h34, h35, h36⟩, ⟨h45, h46⟩, h56, -⟩ := hd
+  set X := M + M * M
+  have hc := ph_prim (.copy c tn) (fun _ => M)
+  have e1 : (Prim.copy c tn).lenT (fun _ => M) = fun _ => M := by
+    funext t; simp [Prim.lenT, Function.update_apply]
+  let B : ℕ → Fin k → ℕ := fun j => Function.update (fun _ => M) out (M + j * M)
+  have hBX : ∀ j ≤ M, ∀ t, B j t ≤ X := fun j hj t => by
+    simp only [B, Function.update_apply]; split_ifs
+    · have := Nat.mul_le_mul_right M hj; omega
+    · omega
+  have hstep : ∀ j < (Prim.copy c tn).lenT (fun _ => M) c,
+      Ph (XProg.seq (dropP src c' tz) (moveP out src c' tr)) (B j)
+        (2 * ((X + 1) * (6 * (X + X) + 20))) (B (j + 1)) := by
+    intro j hj
+    have hjM : j < M := by simpa [e1] using hj
+    have p1 := ph_dropP h13 h35 (B j)
+    have p2 := ph_moveP h01 h03 h13 h36 (Function.update (B j) c' (B j tz))
+    have hb1 : ∀ t, Function.update (B j) c' (B j tz) t ≤ X := fun t => by
+      simp only [Function.update_apply]; split_ifs
+      · exact hBX j (by omega) tz
+      · exact hBX j (by omega) t
+    refine (p1.seq p2).mono le_rfl ?_ ?_
+    · have := mvT_le_const' (hBX j (by omega)) tz
+      have := mvT_le_const' hb1 tr
+      omega
+    · intro t
+      simp only [mvB, B, Function.update_apply, Nat.succ_mul]
+      split_ifs <;> simp_all <;> omega
+  have hl := ph_loop_iter c (β := (Prim.copy c tn).lenT (fun _ => M)) B (fun _ => X)
+    (2 * ((X + 1) * (6 * (X + X) + 20))) (2 * X + 3 + 2 * ((X + 1) * (6 * (X + X) + 20)))
+    (fun t => by rw [e1]; simp only [B, Function.update_apply]; split_ifs <;> omega) hstep
+    (fun j hj t => hBX j (by simpa [e1] using hj) t)
+    (fun j hj => by
+      have hj' : j < M := by simpa [e1] using hj
+      have := supB_le_of (hBX j (by omega)); omega)
+  intro ℓ hℓ
+  have h := (hc.seq hl) ℓ hℓ
+  rw [e1] at h
+  have hs := supB_const_le (k := k) M
+  refine ⟨h.1.trans ?_, fun i => h.2 i⟩
+  simp only
+  omega
+
+/-! ### Relabelled framing programs -/
+
+section MapUB
+
+open SigabaNeo.Tape.Prog
+
+variable {n : ℕ}
+
+theorem map_tailsP (u : Fin n → Fin k) (i : Fin n) : ∀ m, Prog.map u (tailsP i m) = tailsP (u i) m
+  | 0 => rfl
+  | m + 1 => by rw [tailsP, tailsP, ← map_tailsP u i m]; rfl
+
+theorem ubp_leP_map (u : Fin 3 → Fin k) (m M : ℕ) : UBP (Prog.map u (leP m)) M (leT m M) (M + 1) := by
+  have e : Prog.map u (leP m) = prim (.clear (u 1)) ⨾ prim (.copy (u 2) (u 0)) ⨾ tailsP (u 2) m ⨾
+      ifBlank (u 2) (prim (.snoc (u 1) true)) (prim (.copy (u 1) (u 1))) ⨾ prim (.clear (u 2)) := by
+    simp only [leP, Prog.map, Prim.map, map_tailsP]
+  rw [e]
+  have h := (ubp_prim0 (.clear (u 1)) rfl M).seq ((ubp_prim0 (.copy (u 2) (u 0)) rfl M).seq
+    ((ubp_tailsP (u 2) m M).seq ((ubp_ifBlank (i := u 2) (ubp_prim (.snoc (u 1) true) M)
+      (ubp_prim0 (.copy (u 1) (u 1)) rfl M)).seq (ubp_prim0 (.clear (u 2)) rfl _))))
+  refine h.mono ?_ (by simp only [max_def]; split_ifs <;> omega)
+  simp only [leT, max_def]
+  split_ifs <;> nlinarith
+
+theorem ubp_unfrP_map (u : Fin 4 → Fin k) (M : ℕ) : UBP (Prog.map u unfrP) M (unfrT M) (2 * M) := by
+  have hb : ∀ M', UBP (Prog.map u unfrBody) M' (4 * (2 * (M' + 2) + 3) + 2) (M' + 1) := by
+    intro M'
+    have e : Prog.map u unfrBody = ifBlank (u 3) (ifBit (u 0) (prim (.tail (u 0)) ⨾
+        prim (.snocHead (u 1) (u 0)) ⨾ prim (.tail (u 0))) (prim (.tail (u 0)) ⨾ prim (.snoc (u 3) true)))
+        (prim (.copy (u 3) (u 3))) := by simp only [unfrBody, Prog.map, Prim.map]
+    rw [e]
+    have h1 := (ubp_prim0 (.tail (u 0)) rfl M').seq ((ubp_prim (.snocHead (u 1) (u 0)) M').seq
+      (ubp_prim0 (.tail (u 0)) rfl (M' + 1)))
+    have h2 := (ubp_prim0 (.tail (u 0)) rfl M').seq (ubp_prim (.snoc (u 3) true) M')
+    have h3 := ubp_prim0 (.copy (u 3) (u 3)) rfl M'
+    refine (ubp_ifBlank (ubp_ifBit h1 h2) h3).mono ?_ ?_
+    · simp only [max_def]; split_ifs <;> omega
+    · simp only [max_def]; split_ifs <;> omega
+  have e : Prog.map u unfrP = prim (.copy (u 2) (u 0)) ⨾ loop (u 2) (Prog.map u unfrBody) ⨾
+      prim (.clear (u 3)) := by simp only [unfrP, Prog.map, Prim.map]
+  rw [e]
+  have h := (ubp_prim0 (.copy (u 2) (u 0)) rfl M).seq
+    ((ubp_loop (u 2) _ 1 _ hb M).seq (ubp_prim0 (.clear (u 3)) rfl _))
+  refine h.mono (le_of_eq ?_) (by omega)
+  simp only [unfrT, Nat.add_assoc]
+
+theorem ubp_frP_map (u : Fin 3 → Fin k) (M : ℕ) : UBP (Prog.map u frP) M (frT M) (3 * M + 1) := by
+  have hb : ∀ M', UBP (prim (.snoc (u 2) true) ⨾ prim (.snocHead (u 2) (u 0)) ⨾ prim (.tail (u 0))) M'
+      (3 * (2 * (M' + 2) + 3)) (M' + 2) := fun M' =>
+    ((ubp_prim (.snoc (u 2) true) M').seq ((ubp_prim (.snocHead (u 2) (u 0)) (M' + 1)).seq
+      (ubp_prim0 (.tail (u 0)) rfl _))).mono (by omega) (by omega)
+  have e : Prog.map u frP = prim (.copy (u 1) (u 0)) ⨾ loop (u 1) (prim (.snoc (u 2) true) ⨾
+      prim (.snocHead (u 2) (u 0)) ⨾ prim (.tail (u 0))) ⨾ prim (.snoc (u 2) false) ⨾
+      prim (.copy (u 0) (u 2)) ⨾ prim (.clear (u 2)) := by
+    simp only [frP, Prog.map, Prim.map]
+  rw [e]
+  have h := (ubp_prim0 (.copy (u 1) (u 0)) rfl M).seq ((ubp_loop (u 1) _ 2 _ hb M).seq
+    ((ubp_prim (.snoc (u 2) false) _).seq ((ubp_prim0 (.copy (u 0) (u 2)) rfl _).seq
+    (ubp_prim0 (.clear (u 2)) rfl _))))
+  refine h.mono ?_ (by omega)
+  simp only [frT]; omega
+
+end MapUB
 
 end AdvancedEncryption.DualUse.Prog
