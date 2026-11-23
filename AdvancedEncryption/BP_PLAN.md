@@ -808,3 +808,77 @@ state `… + bitR (bit0 C) • …`. Machines:
   reads the bit back and adds the gadget only if it is set (`ifBit`);
 * the reductions' key component (`keyPF`, simulated keys, `f(x*) = 1`) does not need the bit: its
   block is `tail 1` then the stream block (`WfSpec` on `blockWord`, from `WfSpecR`).
+
+### Progress after the switch (lead, `t3/bp-switch`)
+
+| Milestone | State | Where |
+| --- | --- | --- |
+| M6 `correct_conf`, `expressive_conf` (`bpUniverse`) | **done** | `Params/Conf.lean` |
+| statistics at confA (`flood_conf` 2^-499, `delta1/6_le` 2^-370, advantage + 2^-239) | **done** | `Params/Stat.lean`, `Params/Advantage.lean` |
+| f(0) machine fix: `frontBP` emits `bit0 C` (authBPC at `attr0`), `bfX`/`cfX` carry it, `postCoreB`/`postCoreC` add the gadget under `ifBit` | **done** (laws) | `Prog/FrontBP.lean`, `Prog/BfX.lean`, `Prog/CfX.lean` |
+| front-end cost with the bit: `frontBTn ≤ 2^8 X²`, `frontBA m = m + allG + S0 + 3` | **done** | `Prog/FrontBPCost.lean` |
+| `WfSpecS` (block on the stream), `wfSpecS_of_wfSpecR`, `wfSpec_tailB` (key component), `bpRP_getLast` | **done** | `Prog/KeyP.lean`, `Prog/WfSpecBridge.lean` |
+| M7 shells with `frontBP` (`keyMachineP hk c bfX cf`, `decMachineP hk c cfX`), `machinesP`, **`implC`, `correct_implC`, `expressive_implC`** | **done** | `Prog/ShellsBP.lean`, `ImplP.lean`, `ImplBP.lean` |
+| Setup/Enc at confA: `time_setupMP_conf' ≤ 2^387`, `time_encMP_confT ≤ 2^452`, `descLen_setupMP_conf`, `descLen_encMP_conf ≤ 2^300` | **done** | `Prog/SetupConfA.lean`, `Prog/EncConfA.lean` |
+| W_f stream block at confA (`time_wfB2S_conf ≤ 2^628`, `size_wfB2S_conf ≤ 2^25`, `wfSpecR_wfB2S`) | builds (WS6, hypotheses `nA = nAn` etc. now true by `rfl`) | `Prog/WfB2S*.lean`, `Prog/WfRCert.lean` |
+| KeyGen/Dec clocks and descLen at confA (KeyTight*, DecTight*, KeyCost*, DecCostConf, DescConf, BlockCost, PostCost, BfXCost, SizeCost, KeyGenCost, DecGenCost) | **open** (helpers `t3/bp-r-key`, `t3/bp-r-dec`) | `Attic/` |
+| authorization component: `AuthSpec`, **`authSpec_authBPX : AuthSpec hk c authBPX (2^49) 109 18`** (WS7's `authBPC` + output normalization, lifted to 256 tapes) | **done** | `Prog/AuthBPX.lean` |
+| reductions' components and kb at confA | **done** (key component's cost a hypothesis, `KeyRConfA`) | `ReductionCompsBound`, `Prog/{SetupLA, CompCost, SzWide, RedDecodeA}`, `AHConcrete` |
+| `Submission` for `BranchingProgram.primitive` | **done** (hypotheses `KeyRConfA`, `KeyDecCost`) | `Submission.lean` |
+
+Facts kept from the workstream status files (removed):
+
+* WS1: never `unfold bpPred`/`bpRP`/`RP.toSLP` of a concrete program (go through `RP.pred`,
+  `RP.valueOf_pred`, `RP.run_eq_valueOf` with a variable program); a kernel-cheap route for the
+  predicate of the stream block is `predC_eq_pred`, `predR_eq_pred` (both `rfl` on variables).
+* WS2: `Params/SizesA.lean` (generic confA chain) is now redundant with `Params/Sizes.lean`;
+  flooding is `2^-499` (`|JC| = 2^127 (1 + 2^-27)^3`).
+* WS5: KeyGen, Dec and the key component keep `256` tapes (`3^256` in `descLen`); the front end
+  costs `≤ 2^8 X²` (`frontBTn_le`), its output `≤ frontBA bpLen ≤ 2^63`, its states
+  `≤ 36 n + 2^56`; WS9's per-tape key clock for any front end is `KeyPTimeV.time_keyPFV`.
+* WS6: `time_wfB2S_conf ≤ 2^628` (every tape `≤ 2^262`), `size_wfB2S_conf ≤ 2^25`, for SimData
+  `≤ 2^260` and streams `≤ 2^64` bits of `≤ 2^50` instructions (`WfRCert`: f̂ run `≤ 2^627`).
+* WS7: compiler `≤ 2^126` steps, tapes `≤ 2^62`, `≤ 2^27` states; `authBPC` `≤ 2^108` steps,
+  `≤ 2^17` states.
+* WS8: the generic `kb` formula (`ReductionCompsBoundG`, now in `Attic/`) gives
+  `kb = 495 + ⌈1.585 (298 + tc)⌉` (`tc` = tapes the compiler adds to the key component; with the
+  front end framed inside the `256` tapes `tc = 0`, `kb ≈ 968`); `AHConcreteBP.statTerm_bp`
+  (`statTerm ≤ 2^-239`), `compBoundBP_le`, `attributeHiding_of_constBound`.
+
+`AdvancedEncryption/Attic/` holds the files not yet repaired (not built). A file is restored by
+`git mv` back under `PE/`, its import added to `AdvancedEncryption.lean`, then fixed or pruned of
+its date-window numerals (the pruning helper used: delete the declarations whose build fails and
+re-prove them at confA).
+
+### M9: reductions, attribute hiding, submission (branch `t3/bp-r-ah`)
+
+* **`kb = 965`**: `AHConcrete.attributeHiding_conf_rlwe (hkey : KeyRConfA) (kb) (hkb : 965 ≤ kb)
+  hard3 hard5 : AttributeHiding PUniv params (impl hkp confP ms)`; `registry_covers_kb : 965 ≤
+  RingLWE.H` at both instances (`Params/Strength.lean`, now the confA scans under the unprimed
+  names `ringLWE_H_registry3/5`; the `N = 2^34` scans are removed). The premises of the submission
+  ask `965` bits (`Sub.kbA`).
+* The constant: `compConst_le_bp` (`ReductionCompsBound`, generic in the codes, BP slope
+  `postPc nA 1 = 802`, `chainSlope ≤ 11 Tc + 2^26 X²`) and `compBound_confA`, `kb_confA`
+  (`64 · (2^128)² · Cst ≤ 2^965`, `Cst ≈ 2^702.8`): states of the chain `≈ 55944 · Sz2` with
+  `Sz2 ≤ 2^198 + 2^196 + 2^28`, `3^298` for `14 + 254 + 30` tapes.
+* Components at confA (proved): setups `≤ 2^394` steps, `≤ 2^195` bits (`Prog/SetupLA`, generic
+  closed forms `…_numA` then instantiated; packed secrets `+ 132 ≤ 2^193`); public keys and
+  challenges `≤ 2^458` steps, `≤ 2^196`/`2^197` bits; SimData programs `≤ 2^520` steps
+  (`≈ 2^519.85`), `≤ 2^259` bits; states `≤ 2^25` (`Prog/CompCost`; the SimData templates reach
+  `2^257`, so their state counts use `Prog/SzWide`, the block counts for templates below `2^260`);
+  the reductions' decoders `≤ 2^380` steps, `≤ 2^16` states (`Prog/RedDecodeA`, new file, does not
+  touch BP-R-Dec's `DecodeCost`); authorization `authSpec_authBPX`.
+* The reductions' key component is `keyR sdP = keyPF hkp confP sdP eF (frontBP confP.L)
+  (tailB Sub.wfC) cfP` (law proved). **Its cost is the hypothesis** `KeyRConfA := ∃ Tk Lk Sk,
+  KeyRCost 520 259 Tk Lk Sk ∧ Tk ≤ 650 ∧ Lk ≤ 270 ∧ Sk ≤ 2^198 + 2^196`, where `KeyRCost Ts Ls Tk Lk
+  Sk`: for any `sdP : XProg 82` and `a ≤ 2^193` with `timeBoundT sdP (io2 a 0 0) ≤ 2^Ts` and
+  `lenBoundT sdP (io2 a 0 0) ≤ io2 (2^Ls) 0 0`, `timeBoundT (keyR sdP) (io2 a confP.L 0) ≤ 2^Tk` and
+  `lenBoundT … ≤ io2 (2^Lk) 0 0`; and `sdP.size ≤ 2^25 → (keyR sdP).size ≤ Sk` (expected
+  `≈ 264 · lenPK = 2^198.05`, `lenPK ≤ 2^191`). To be discharged from BP-R-Key's
+  `time_keyP_confV`/`size_keyP_confV`-style lemmas for `keyPF … frontBP …`.
+* `Submission.lean` (`Sub` namespace): registry over decision Ring-LWE, `deps .attributeHiding =
+  [prem3, prem5]` at `965` bits, `[]` otherwise, `N = 2^1002`; `cost_implC (hKD : KeyDecCost)`,
+  `spec_submission (hkey : KeyRConfA) (hKD : KeyDecCost)`, `valid_submission` (no hypothesis).
+  `KeyDecCost`: `(keyMachineP hkp confP bfC cfP).time ≤ 2^700`, `(decMachineP hkp confP cfC).time
+  ≤ 2^700`, both `descLen ≤ 2^1000` (Setup/Enc are proved: `2^387`, `2^452`, `2^300`).
+

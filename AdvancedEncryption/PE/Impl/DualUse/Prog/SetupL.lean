@@ -185,32 +185,6 @@ end Counts
 
 section Eval
 
-set_option maxRecDepth 100000
-set_option maxHeartbeats 0
-set_option exponentiation.threshold 1000
-
-theorem lbTail3_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 34)
-    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 61) (hw : c.w = 512) {A : ℕ}
-    (hA : A = 2 ^ 25) :
-    (lbTail3 hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).w ≤ 2 ^ 200 ∧
-      (lbTail3 hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).E ≤ 2 ^ 200 := by
-  simp only [lbTail3, lbRest, LB.seq, LB.cnt, lbCoins, lbZeros, lbEntB, lbEntF, LB.coin, LB.prim,
-    bRest, bCoins, bZeros, bCoin, bEntB, bEntF, Bnd.seq, Bnd.count, Bnd.prim, nW_eq, nR_eq, nE_eq,
-    lenFin, len_col, hd, hw]
-  subst hN hK hk' hA
-  norm_num
-
-theorem lbTailI_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 34)
-    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 61) (hw : c.w = 512) {A : ℕ}
-    (hA : A = 2 ^ 25) :
-    (lbTailI hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).w ≤ 2 ^ 200 ∧
-      (lbTailI hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).E ≤ 2 ^ 200 := by
-  simp only [lbTailI, lbEncCoins, lbCt, LB.seq, LB.cnt, lbCoins, lbZeros, lbEntB, lbEntF, LB.coin,
-    LB.prim, bEncCoins, bCt, bCoins, bZeros, bCoin, bEntB, bEntF, Bnd.seq, Bnd.count, Bnd.prim,
-    nW_eq, nR_eq, nE_eq, nPsi_eq, nC0_eq, nC1_eq, nCj_eq, lenFin, len_col, len_trap, hd, hw]
-  subst hN hK hk' hA
-  norm_num
-
 theorem bTail3_as {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (Bχ : Bnd) :
     (bTail3 hk c Bχ).a = (bTail3 hk c (Bnd.prim Bχ.a Bχ.s)).a ∧
       (bTail3 hk c Bχ).s = (bTail3 hk c (Bnd.prim Bχ.a Bχ.s)).s := by
@@ -224,62 +198,7 @@ theorem bTailI_as {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (Bχ : Bnd
     bCoin]
   exact ⟨trivial, trivial⟩
 
-theorem bTail3_as_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 34)
-    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 61) (hw : c.w = 512) {A : ℕ}
-    (hA : A = 2 ^ 25) :
-    (bTail3 hk c (Bnd.prim A 64)).a ≤ 2 ^ 181 ∧ (bTail3 hk c (Bnd.prim A 64)).s ≤ 2 ^ 181 := by
-  simp only [bTail3, bRest, Bnd.seq, Bnd.count, Bnd.prim, bCoins, bZeros, bEntB, bEntF, bCoin,
-    nW_eq, nR_eq, nE_eq, lenFin, len_col, hd, hw]
-  subst hN hK hk' hA
-  norm_num
-
-theorem bTailI_as_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N = 2 ^ 34)
-    (hK : K = 2 ^ 25) (hk' : k = 2 ^ 25 + 1) (hd : c.d = 2 ^ 61) (hw : c.w = 512) {A : ℕ}
-    (hA : A = 2 ^ 25) :
-    (bTailI hk c (Bnd.prim A 64)).a ≤ 2 ^ 181 ∧ (bTailI hk c (Bnd.prim A 64)).s ≤ 2 ^ 181 := by
-  simp only [bTailI, bEncCoins, bCt, Bnd.seq, Bnd.count, Bnd.prim, bCoins, bZeros, bEntB, bEntF,
-    bCoin, nW_eq, nR_eq, nE_eq, nPsi_eq, nC0_eq, nC1_eq, nCj_eq, lenFin, len_col, len_trap, hd, hw]
-  subst hN hK hk' hA
-  norm_num
-
-/-- The arithmetic of the setup bounds. -/
-theorem setup_arith {s w E M : ℕ} (hs : s ≤ 2 ^ 181) (hw : w ≤ 2 ^ 200) (hE : E ≤ 2 ^ 200)
-    (hM : M ≤ 2 ^ 182) :
-    (2 * (2 ^ 180 + 10 + 1) + 3) + ((tApp (2 ^ 180) s 10 + w * (2 ^ 180 + 10 + s + E)) +
-      6 * (2 * (M + 1) + 3)) ≤ 2 ^ 403 := by
-  have h := Nat.mul_le_mul hw (show 2 ^ 180 + 10 + s + E ≤ 2 ^ 180 + 10 + 2 ^ 181 + 2 ^ 200 by omega)
-  unfold tApp tBit
-  norm_num at h hM ⊢
-  omega
-
 end Eval
-
-/-! ### The bounds at `confP` -/
-
-section Time
-
-variable {a b : ℕ}
-
-set_option maxRecDepth 100000
-set_option exponentiation.threshold 1000
-
-end Time
-
-end AdvancedEncryption.DualUse.Prog
-
-namespace AdvancedEncryption.DualUse.Prog
-
-open SigabaNeo SigabaNeo.Encode AdvancedEncryption.DualUse.Params
-
-/-! ### The secret words fit the input bound -/
-
-section Words
-
-set_option maxRecDepth 100000
-set_option maxHeartbeats 0
-set_option exponentiation.threshold 1000
-
-end Words
 
 end AdvancedEncryption.DualUse.Prog
 
