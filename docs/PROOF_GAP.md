@@ -2031,6 +2031,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * A gated wholly old hit on draw 406 forces ≥ 36 independent earlier column constraints for each fixed lift, with last
     used draw ≥ 57. Four terminal rank tests cost < 6.227·10⁻¹⁶ across surviving and replacement planes.
   * Balance: > 4.02079·10⁻¹² remains for mixed hits with 32.32 < g < 32.75 and the remaining wholly old mass.
+* **Part 222 (audited, CONFIRMED; partial positive).** [long_winner_handle](research/wall1_long_winner_handle.md):
+  raw-graph winner caps.
+  * Counting short raw-graph vectors bounds early winner lengths under the original graph law. Hölder's inequality allows
+    arbitrary dependence. The conditional hypotheses are now needed only on later draws: (A) on 67–405 → crossing
+    < 2.3750·10⁻¹¹; (B) on 54–405 → < 2.4681·10⁻¹¹; (C) on 49–380 → < 2.0204·10⁻¹¹. Each fits 2.72513·10⁻¹¹.
+  * Outside one exceptional set of probability < 2.417·10⁻¹¹, (B) holds for every next mark on draws 11–19. This lies
+    inside each unconditional prefix, so there is no double charge.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
