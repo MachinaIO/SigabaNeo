@@ -2379,6 +2379,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Σ_A |competitors p A| · q^r ≤ (ballCount − 1)·#designs when 4·normSq p < q². This is the first-moment form of
   `translated_ball`, so E Nᵢ obeys the same numerical bound as Pr[Nᵢ ≥ 1]. Remaining for the tie-robust constant:
   combine it with MinimumCandidateCount and the CBD averaging.
+* **Lean (randomized solvers, tie gap closed).** Width638Randomized (axiom-clean).
+  * `recovery_randomized`: let S be any family of solvers indexed by seeds ω (finite seed law w, independent of the
+    sample). Suppose that for every input the probability over seeds of a non-closest answer is ≤ δ. Then the
+    width-638 recovery probability is > 0.643162094166 − 4δ.
+  * Proof: for each seed, wrong answers are patched by a fixed exact oracle; `recovery_std` applies to the patched
+    oracle; the raw and patched runs agree unless one of the four queries is wrong (`agree`); and `seed_average_le`
+    swaps the seed average with the sample law.
+  * This supersedes the E|C| route; no count of tied minimizers is needed.
+  * Remaining for the concrete solver: instantiate the per-input error δ = 2⁻¹⁶⁸ from IntegralShiftedGaussianCVP (the
+    rank-638 coordinate contract plus the samplerTV hypothesis).
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
