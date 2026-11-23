@@ -1918,6 +1918,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * the Blichfeldt constants at ranks 9–155 except 24.
   The Part 192 terminal theorem now depends only on four classical Hermite constants: γ₅ = 8^{1/5}, γ₆ = (64/3)^{1/6},
   γ₇ = 64^{1/7} (Blichfeldt / Vetčinkin) and γ₂₄ = 4 (Cohn–Kumar). These are published theorems, not yet in Lean.
+* **Lean (Hermite inputs, partial).** MordellBlichfeldtProfile / MordellBlichfeldtEnclosures / WatsonMinimalFamily
+  (axiom-clean) formalize:
+  * an unconditional suffix-length bound in every rank from Blichfeldt and Mordell constants;
+  * five independent shortest vectors in rank 5 generate a sublattice of index ≤ 2, via Watson's inequality.
+  * Weaker constants do not close Part 192: the prefix majorant rises to 1.128·10⁻⁹. So the sharp γ₅, γ₆, γ₇, γ₂₄ are needed.
+    An external Lean formalization of rank-24 optimality exists but uses another toolchain.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
