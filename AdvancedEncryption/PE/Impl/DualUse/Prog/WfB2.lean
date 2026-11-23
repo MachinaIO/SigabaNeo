@@ -138,11 +138,11 @@ def wordsT (oB oW oP : ℕ) : List (Fin 256 × ℕ) :=
     (mw TKV, K * VT N K k d), (mw T2kNV, 2 * (N * ((K + 1) * VT N K k d))),
     (mw T2kkNV, 2 * (K + 1) * (N * ((K + 1) * VT N K k d))), (mw TA1, lenA N K k 1),
     (mw TAd, lenA N K k d), (mw TK1, K - 1), (mw ZNK1, N * K - 1), (mw TNK, N * K),
-    (mw T4k, 2 * (2 * (K + 1))), (mw T10, 10), (mw INSW, 10 * (nBI N K * VT N K k d)),
+    (mw T4k, 2 * (2 * (K + 1))), (mw T10, nA), (mw INSW, nA * (nBI N K * VT N K k d)),
     (mw TSl, nBI N K * VT N K k d), (mw TST, (W + 1) * (nBI N K * VT N K k d)),
     (mw TD2, 2 * ((W + 1) * (nBI N K * VT N K k d))), (mw TW, W),
-    (mw TPAD, (W - 10) * (nBI N K * VT N K k d)), (mw TW9, W - 9),
-    (mw TINS, 10 * (nBI N K * VT N K k d)), (mw 61, oB), (mw 62, oW), (mw 63, oP)]
+    (mw TPAD, (W - nA) * (nBI N K * VT N K k d)), (mw TW9, W - nA + 1),
+    (mw TINS, nA * (nBI N K * VT N K k d)), (mw 61, oB), (mw 62, oW), (mw 63, oP)]
 
 /-- The number of positions of the key sum. -/
 abbrev nPos : ℕ := 2 * k * k * N
@@ -151,9 +151,9 @@ abbrev nPos : ℕ := 2 * k * k * N
 templates of `posC`). -/
 def wordsG (oP oR oX : ℕ) : List (Fin 256 × ℕ) :=
   [(ValVM.tTV, VG N K k d), (mw 10, VG N K k d), (mw TA1, lenA N K k 2), (mw TAd, lenA N K k d),
-    (mw TK1, 0), (mw ZNK1, N * K - 1), (mw TNK, N * K), (mw 29, 1), (mw T10, 10), (mw INSW, 10 * VG N K k d),
+    (mw TK1, 0), (mw ZNK1, N * K - 1), (mw TNK, N * K), (mw 29, 1), (mw T10, nA), (mw INSW, nA * VG N K k d),
     (mw TSl, VG N K k d), (mw TST, (W + 1) * VG N K k d), (mw TD2, 2 * ((W + 1) * VG N K k d)),
-    (mw TW, W), (mw TPAD, (W - 10) * VG N K k d), (mw TW9, W - 9), (mw TINS, 10 * VG N K k d),
+    (mw TW, W), (mw TPAD, (W - nA) * VG N K k d), (mw TW9, W - nA + 1), (mw TINS, nA * VG N K k d),
     (mw 61, oP), (mw 62, oR), (mw 63, oX), (mw 73, nPos N k * nPos N k), (mw 74, nPos N k),
     (mw 75, nPos N k)]
 
@@ -228,12 +228,9 @@ def finClr : List (Fin 256) := (List.finRange 256).filter fun t => t ≠ mw SDW 
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
-/-- **The preparation of the run of `f̂`.** -/
-def prepT (W : ℕ) : XProg 256 :=
-  .seq (.prog (cp (mw GSC) (mw GS))) <|
-  .seq (.frame (ValVM.mkE cntE cntE_inj) (.prog (Prog.countP (2 * W)))) <|
-  .seq (.frame (ValVM.mkE capE capE_inj) (.prog (Prog.capP W))) <|
-  .seq (.prog (clr (mw 12))) <|
+/-- The preparation of the run of `f̂` after the count: the templates, the step's store, `OB`,
+`ZB`. -/
+abbrev prepTRest (W : ℕ) : XProg 256 :=
   .seq (.prog (cp (mw GS) (mw GSC))) <|
   .seq (tmplP ValVM.tX0 (tmpl31 N K k c.d)) <|
   .seq (.frame (ValVM.mkE tm31 tm31_inj) (.prog simTmplP)) <|
@@ -242,18 +239,28 @@ def prepT (W : ℕ) : XProg 256 :=
   .seq (.prog (clr ValVM.tX0)) <|
   .seq (putW (mw OB) [true]) (putW (mw ZB) [false])
 
-/-- **The preparation of the run of the predicate.** -/
-def prepG (W : ℕ) : XProg 256 :=
-  .seq (.prog (clrsP lowW ⨾ cp (mw GS) (mw GSC))) <|
+/-- **The preparation of the run of `f̂`.** -/
+def prepT (W : ℕ) : XProg 256 :=
+  .seq (.prog (cp (mw GSC) (mw GS))) <|
   .seq (.frame (ValVM.mkE cntE cntE_inj) (.prog (Prog.countP (2 * W)))) <|
   .seq (.frame (ValVM.mkE capE capE_inj) (.prog (Prog.capP W))) <|
-  .seq (.prog (clr (mw 12))) <|
+  .seq (.prog (clr (mw 12))) (prepTRest hk c W)
+
+/-- The preparation of the predicate's run after the count. -/
+abbrev prepGRest (W : ℕ) : XProg 256 :=
   .seq (.prog (cp (mw GS) (mw GSC))) <|
   .seq (tmplP ValVM.tX0 (tmpl31 N K k c.d)) <|
   .seq (.frame (ValVM.mkE tm31 tm31_inj) (.prog simTmplP)) <|
   .seq (.prog (copiesP 1)) <|
   .seq (tmplP ValVM.tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-    (offPsi hk c + 10 * lenPsi N K k))) (.seq (.prog (clr ValVM.tX0)) (.prog (clr (ms 92))))
+    (offPsi hk c + nA * lenPsi N K k))) (.seq (.prog (clr ValVM.tX0)) (.prog (clr (ms 92))))
+
+/-- **The preparation of the run of the predicate.** -/
+def prepG (W : ℕ) : XProg 256 :=
+  .seq (.prog (clrsP lowW ⨾ cp (mw GS) (mw GSC))) <|
+  .seq (.frame (ValVM.mkE cntE cntE_inj) (.prog (Prog.countP (2 * W)))) <|
+  .seq (.frame (ValVM.mkE capE capE_inj) (.prog (Prog.capP W))) <|
+  .seq (.prog (clr (mw 12))) (prepGRest hk c W)
 
 /-- **The body**, in the machine's coordinates. -/
 noncomputable def wfBody (W : ℕ) : XProg 256 :=
@@ -319,26 +326,36 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 section PrepT
 
-variable (W : ℕ) (a : List Bool) (gs : GateList)
+variable (W : ℕ) (a : List Bool) (gs : GateList) (G : List Bool) (m : ℕ)
+
+/-- An input: `a` on the word `SDW`, the stream `G` on `GS`. -/
+def S0g (a G : List Bool) : Store 256 := fun t => if t = mw SDW then a else if t = mw GS then G else []
 
 /-- The input, in the machine's coordinates. -/
-def S0 : Store 256 := fun t => if t = mw SDW then a else if t = mw GS then gsW W gs else []
+def S0 : Store 256 := S0g a (gsW W gs)
 
 def X2 : Store 256 := Function.update (run (Prog.map capE (Prog.capP W))
   (run (Prog.map cntE (Prog.countP (2 * W))) (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS)))))
   (mw 12) []
 
-def X4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (X2 W a gs) (mw GS) (X2 W a gs (mw GSC)))
+/-- **The store after the count** of `m` blocks of the stream `G` (kept on `GS` and `GSC`). -/
+def X2g : Store 256 := fun t =>
+  if t = mw GCNT then List.replicate m false else Function.update (S0g a G) (mw GSC) G t
 
-def X5 : Store 256 := run (Prog.map tm31 simTmplP ⨾ copiesP 0) (X4 c W a gs)
+theorem X2g_apply (t : Fin 256) : X2g a G m t =
+    if t = mw GCNT then List.replicate m false else Function.update (S0g a G) (mw GSC) G t := rfl
+
+def X4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (X2g a G m) (mw GS) (X2g a G m (mw GSC)))
+
+def X5 : Store 256 := run (Prog.map tm31 simTmplP ⨾ copiesP 0) (X4 c a G m)
 
 def X6 : Store 256 :=
-  tmplS (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) (X5 c W a gs)
+  tmplS (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) (X5 c a G m)
 
 /-- The store after `prepT`. -/
-def S1 : Store 256 := Function.update (Function.update (X6 hk c W a gs) (mw OB)
-  (X6 hk c W a gs (mw OB) ++ [true])) (mw ZB)
-  (Function.update (X6 hk c W a gs) (mw OB) (X6 hk c W a gs (mw OB) ++ [true]) (mw ZB) ++ [false])
+def S1 : Store 256 := Function.update (Function.update (X6 hk c W a G m) (mw OB)
+  (X6 hk c W a G m (mw OB) ++ [true])) (mw ZB)
+  (Function.update (X6 hk c W a G m) (mw OB) (X6 hk c W a G m (mw OB) ++ [true]) (mw ZB) ++ [false])
 
 theorem coinFree_copiesP (g : Fin 120) : (copiesP g).CoinFree := rfl
 
@@ -360,13 +377,16 @@ theorem keys_T (N K k d W oB oW oP : ℕ) :
 theorem X2_tX0 : X2 W a gs tX0 = [] := by
   rw [X2, Function.update_of_ne (by decide), run_map_apply_not capE_inj _ _ _ (by decide),
     run_map_apply_not cntE_inj _ _ _ (by decide), Function.update_of_ne (by decide)]
-  simp (config := {decide := true}) [S0]
+  simp (config := {decide := true}) [S0, S0g]
 
-theorem X4_tX0 : X4 c W a gs tX0 = [] := by
+theorem X2g_tX0 : X2g a G m tX0 = [] := by
+  simp (config := {decide := true}) [X2g, S0g, Function.update_apply]
+
+theorem X4_tX0 : X4 c a G m tX0 = [] := by
   rw [X4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
-    Function.update_of_ne (by decide), X2_tX0]
+    Function.update_of_ne (by decide), X2g_tX0]
 
-theorem X5_tX0 : X5 c W a gs tX0 = [] := by
+theorem X5_tX0 : X5 c a G m tX0 = [] := by
   rw [X5, run_seq]
   simp only [copiesP, run_seq, run_copy]
   simp (config := {decide := true}) only [Function.update_apply, if_false]
@@ -379,39 +399,30 @@ theorem law_frame_map {m : ℕ} {u : Fin m → Fin 256} (hu : Function.Injective
     XProg.embedF_eq_extend]
   rfl
 
-theorem X6_tX0 : X6 hk c W a gs tX0 = [] := by
+theorem X6_tX0 : X6 hk c W a G m tX0 = [] := by
   unfold X6
   rw [tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide))]
-  exact X5_tX0 c W a gs
+  exact X5_tX0 c a G m
 
-theorem law_prepT : (prepT hk c W).law (S0 W a gs) = PMF.pure (S1 hk c W a gs) := by
-  have hc1 : (Prog.map cntE (Prog.countP (2 * W))).CoinFree := coinFree_map _ (Prog.coinFree_countP (2 * W))
-  have hc2 : (Prog.map tm31 simTmplP ⨾ copiesP 0).CoinFree := by
-    have h1 := coinFree_map tm31 (coinFree_of_noGrow _ noGrow_simTmplP)
-    simp only [CoinFree] at h1 ⊢
-    simp [coinFreeB, h1, show (copiesP 0).coinFreeB = true from rfl]
-  rw [prepT, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind,
-    XProg.law_seq, law_frame_map cntE_inj _ (Prog.coinFree_countP (2 * W)), PMF.pure_bind,
-    XProg.law_seq, law_frame_map capE_inj _ (Prog.coinFree_capP W), PMF.pure_bind,
-    XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
-      from rfl, XProg.law_prim, PMF.pure_bind,
-    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
+/-- **The preparation after the count.** -/
+theorem law_prepTRest : (prepTRest hk c W).law (X2g a G m) = PMF.pure (S1 hk c W a G m) := by
+  rw [prepTRest, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
   simp only [run_copy, Prim.apply]
   rw [XProg.law_seq, law_tmplP _ _ _ (by
-      rw [Function.update_of_ne (by decide)]; exact X2_tX0 W a gs)
+      rw [Function.update_of_ne (by decide)]; exact X2g_tX0 a G m)
       (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     PMF.pure_bind, XProg.law_seq,
     law_frame_map tm31_inj _ (coinFree_of_noGrow _ noGrow_simTmplP), PMF.pure_bind,
     XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_copiesP 0), PMF.pure_bind,
-    XProg.law_seq, law_tmplP _ _ _ (by exact X5_tX0 c W a gs)
+    XProg.law_seq, law_tmplP _ _ _ (by exact X5_tX0 c a G m)
       (ne_of_keys (keys_T N K k c.d W _ _ _) (by decide)),
     PMF.pure_bind, XProg.law_seq,
     show (XProg.prog (clr tX0) : XProg 256) = XProg.prog (.prim (.clear tX0)) from rfl, XProg.law_prim,
     PMF.pure_bind]
   show (XProg.seq (putW (mw OB) [true]) (putW (mw ZB) [false])).law
-    (Function.update (X6 hk c W a gs) tX0 []) = _
-  rw [show Function.update (X6 hk c W a gs) tX0 [] = X6 hk c W a gs from
-    Function.update_eq_self_iff.mpr (X6_tX0 hk c W a gs).symm, XProg.law_seq, law_putW, PMF.pure_bind, law_putW]
+    (Function.update (X6 hk c W a G m) tX0 []) = _
+  rw [show Function.update (X6 hk c W a G m) tX0 [] = X6 hk c W a G m from
+    Function.update_eq_self_iff.mpr (X6_tX0 hk c W a G m).symm, XProg.law_seq, law_putW, PMF.pure_bind, law_putW]
   rfl
 
 theorem nodup_T (N K k d W oB oW oP : ℕ) :
@@ -429,7 +440,7 @@ theorem X2c_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
   have hin : (Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS))) ∘ cntE =
       fun i => if i = 0 then gsW W gs else [] := by
     funext i
-    fin_cases i <;> simp (config := {decide := true}) [cntE, S0, Function.update_apply]
+    fin_cases i <;> simp (config := {decide := true}) [cntE, S0, S0g, Function.update_apply]
   have hrun := Prog.run_countP (m := 2 * W) (g := gs.length) (by omega)
     ((Function.update (S0 W a gs) (mw GSC) (S0 W a gs (mw GS))) ∘ cntE)
     (by rw [hin]; simp [length_gsW hb, Nat.mul_comm]) (by rw [hin]; simp) (by rw [hin]; simp)
@@ -437,12 +448,12 @@ theorem X2c_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
   by_cases ht : ∃ j, cntE j = t
   · obtain ⟨j, rfl⟩ := ht
     rw [run_map_apply cntE_inj, hrun, hin]
-    fin_cases j <;> simp (config := {decide := true}) [cntE, S0, Function.update_apply]
+    fin_cases j <;> simp (config := {decide := true}) [cntE, S0, S0g, Function.update_apply]
   · push_neg at ht
     rw [run_map_apply_not cntE_inj _ _ _ ht]
     have h3 : t ≠ mw GCNT := fun e => ht 1 (by rw [e]; rfl)
     have h1 : t ≠ mw GS := fun e => ht 0 (by rw [e]; rfl)
-    simp (config := {decide := true}) [h1, h3, Function.update_apply, S0]
+    simp (config := {decide := true}) [h1, h3, Function.update_apply, S0, S0g]
 
 /-- The gate count. -/
 theorem X2_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
@@ -455,61 +466,74 @@ theorem X2_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
     funext i
     simp only [Function.comp_apply]
     rw [hc]
-    fin_cases i <;> simp (config := {decide := true}) [capE, S0, Function.update_apply]
+    fin_cases i <;> simp (config := {decide := true}) [capE, S0, S0g, Function.update_apply]
   have hrun := Prog.run_capP W gs.length (_ ∘ capE) (by rw [hin]; simp) (by rw [hin]; simp)
     (by rw [hin]; simp) (by rw [hin]; simp) (by rw [hin]; simp)
   rw [X2]
   by_cases h12 : t = mw 12
   · subst h12; rw [Function.update_self]
-    simp (config := {decide := true}) [S0, Function.update_apply]
+    simp (config := {decide := true}) [S0, S0g, Function.update_apply]
   rw [Function.update_of_ne h12]
   by_cases ht : ∃ j, capE j = t
   · obtain ⟨j, rfl⟩ := ht
     rw [run_map_apply capE_inj, hrun, hin]
-    fin_cases j <;> simp (config := {decide := true}) [capE, S0, Function.update_apply]
+    fin_cases j <;> simp (config := {decide := true}) [capE, S0, S0g, Function.update_apply]
   · push_neg at ht
     rw [run_map_apply_not capE_inj _ _ _ ht, hc]
     have h3 : t ≠ mw GCNT := fun e => ht 0 (by rw [e]; rfl)
     simp [h3]
 
-theorem X4_word (hW : 0 < W) (hb : BndG W gs) (j : ℕ) (hj : 12 ≤ j) (hj' : j < 120) (h31 : j < 31) :
-    X4 c W a gs (mw ⟨j, hj'⟩) = [] := by
+/-- **The law of `prepT`** on a gate list. -/
+theorem law_prepT (hW : 0 < W) (hb : BndG W gs) :
+    (prepT hk c W).law (S0 W a gs) = PMF.pure (S1 hk c W a (gsW W gs) (min gs.length W)) := by
+  rw [prepT, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind,
+    XProg.law_seq, law_frame_map cntE_inj _ (Prog.coinFree_countP (2 * W)), PMF.pure_bind,
+    XProg.law_seq, law_frame_map capE_inj _ (Prog.coinFree_capP W), PMF.pure_bind,
+    XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
+      from rfl, XProg.law_prim, PMF.pure_bind]
+  simp only [run_copy]
+  show (prepTRest hk c W).law (X2 W a gs) = _
+  rw [show X2 W a gs = X2g a (gsW W gs) (min gs.length W) from funext (X2_apply W a gs hW hb)]
+  exact law_prepTRest hk c W a _ _
+
+theorem X4_word (j : ℕ) (hj : 12 ≤ j) (hj' : j < 120) (h31 : j < 31) :
+    X4 c a G m (mw ⟨j, hj'⟩) = [] := by
   have hv : ∀ x : Fin 120, (mw ⟨j, hj'⟩ : Fin 256) = mw x → j = x.val := fun x e => by
     have := congrArg Fin.val e; simp [ValVM.tWd] at this; omega
   rw [X4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by
     simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> intro e <;> have := hv _ e <;> simp at this <;>
       omega)), Function.update_of_ne (fun e => by have := hv _ e; simp at this; omega),
-    X2_apply W a gs hW hb]
+    X2g_apply]
   have h1 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GS := fun e => by have := hv _ e; simp at this; omega
   have h2 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw 1 := fun e => by have := hv _ e; simp at this; omega
   have h3 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GCNT := fun e => by have := hv _ e; simp at this; omega
   have h4 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw 3 := fun e => by have := hv _ e; simp at this; omega
   have h5 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GSC := fun e => by have := hv _ e; simp at this; omega
   have h6 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw SDW := fun e => by have := hv _ e; simp at this; omega
-  simp [h1, h2, h3, h4, h5, h6, Function.update_apply, S0]
+  simp [h1, h2, h3, h4, h5, h6, Function.update_apply, S0g]
 
 theorem X4_key {t : Fin 256} {n : ℕ} (h : (t, n) ∈ tmpl31 N K k c.d) :
-    X4 c W a gs t = List.replicate n false := by
+    X4 c a G m t = List.replicate n false := by
   rw [X4]; exact tmplS_mem _ (nodup_31 _ _ _ _) (t, n) h _
 
 /-- The content words written by `simTmplP`. -/
-theorem Y4_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
-    run (Prog.map tm31 simTmplP) (X4 c W a gs) t =
+theorem Y4_apply (t : Fin 256) :
+    run (Prog.map tm31 simTmplP) (X4 c a G m) t =
       if t = mw 0 then gadW N K k else if t = mw 1 then gswGadW N K k else
-      if t = mw 2 then zeroW (lenA N K k c.d) else if t = mw 3 then oneW N K else X4 c W a gs t := by
+      if t = mw 2 then zeroW (lenA N K k c.d) else if t = mw 3 then oneW N K else X4 c a G m t := by
   have hrun := run_simTmplP (N := N) (K := K) (k := k) (Lw := lenA N K k c.d)
-    (X4 c W a gs ∘ tm31) (fun t ht => by
-      have := X4_word c W a gs hW hb t.val ht (by omega) t.isLt
+    (X4 c a G m ∘ tm31) (fun t ht => by
+      have := X4_word c a G m t.val ht (by omega) t.isLt
       simpa [tm31] using this)
-    (by simp [tm31, X4_key c W a gs (t := mw 4) (n := K) (by simp [tmpl31])])
-    (by simp [tm31, X4_key c W a gs (t := mw 5) (n := N) (by simp [tmpl31])])
-    (by simp [tm31, X4_key c W a gs (t := mw 6) (n := N * K) (by simp [tmpl31])])
-    (by simp [tm31, X4_key c W a gs (t := mw 7) (n := k) (by simp [tmpl31])])
-    (by simp [tm31, X4_key c W a gs (t := mw 8) (n := 2 * k * (N * K)) (by simp [tmpl31])])
-    (by simp [tm31, X4_key c W a gs (t := mw 9) (n := 2 * (2 * k) * (N * K)) (by simp [tmpl31])])
-    (by simp [tm31, X4_key c W a gs (t := mw 10) (n := k * (N * K)) (by simp [tmpl31])])
-    (by simp [tm31, X4_key c W a gs (t := mw 11) (n := lenA N K k c.d) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c a G m (t := mw 4) (n := K) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c a G m (t := mw 5) (n := N) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c a G m (t := mw 6) (n := N * K) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c a G m (t := mw 7) (n := k) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c a G m (t := mw 8) (n := 2 * k * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c a G m (t := mw 9) (n := 2 * (2 * k) * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c a G m (t := mw 10) (n := k * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, X4_key c a G m (t := mw 11) (n := lenA N K k c.d) (by simp [tmpl31])])
   by_cases ht : ∃ j, tm31 j = t
   · obtain ⟨j, rfl⟩ := ht
     rw [run_map_apply tm31_inj, hrun]
@@ -526,7 +550,7 @@ theorem Y4_apply (hW : 0 < W) (hb : BndG W gs) (t : Fin 256) :
 
 theorem S1_key {t : Fin 256} {n : ℕ}
     (h : (t, n) ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c))
-    (h1 : t ≠ mw OB) (h2 : t ≠ mw ZB) : S1 hk c W a gs t = List.replicate n false := by
+    (h1 : t ≠ mw OB) (h2 : t ≠ mw ZB) : S1 hk c W a G m t = List.replicate n false := by
   rw [S1, Function.update_of_ne h2, Function.update_of_ne h1, X6]
   exact tmplS_mem _ (nodup_T _ _ _ _ _ _ _ _) (t, n) h _
 
@@ -535,18 +559,18 @@ theorem S1_not {t : Fin 256} (h : t ∉ [ms 3, ms 4, ms 5, ms 6, ms 7, ms 8, ms 
     mw 12, mw 13, mw 14, mw 15, mw 16, mw 20, mw 27, mw 29, mw TNV, mw TNKV, mw T2K, mw TLB, mw TCNT,
     mw TH, mw TN, mw TN1, mw TN1V, mw TKV, mw T2kNV, mw T2kkNV, mw TA1, mw TAd, mw TK1, mw ZNK1,
     mw TNK, mw T4k, mw T10, mw INSW, mw TSl, mw TST, mw TD2, mw TW, mw TPAD, mw TW9, mw TINS, mw 61,
-    mw 62, mw 63]) (h1 : t ≠ mw OB) (h2 : t ≠ mw ZB) : S1 hk c W a gs t = X5 c W a gs t := by
+    mw 62, mw 63]) (h1 : t ≠ mw OB) (h2 : t ≠ mw ZB) : S1 hk c W a G m t = X5 c a G m t := by
   rw [S1, Function.update_of_ne h2, Function.update_of_ne h1, X6,
     tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) h)]
 
-theorem X5_apply (t : Fin 256) : X5 c W a gs t =
-    if t = mw ONEW then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 3) else
-    if t = mw ZEROW then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 2) else
-    if t = mw GADW then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 0) else
-    if t = ms 21 then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 3) else
-    if t = ms 20 then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 2) else
-    if t = ms 19 then run (Prog.map tm31 simTmplP) (X4 c W a gs) (mw 0) else
-    run (Prog.map tm31 simTmplP) (X4 c W a gs) t := by
+theorem X5_apply (t : Fin 256) : X5 c a G m t =
+    if t = mw ONEW then run (Prog.map tm31 simTmplP) (X4 c a G m) (mw 3) else
+    if t = mw ZEROW then run (Prog.map tm31 simTmplP) (X4 c a G m) (mw 2) else
+    if t = mw GADW then run (Prog.map tm31 simTmplP) (X4 c a G m) (mw 0) else
+    if t = ms 21 then run (Prog.map tm31 simTmplP) (X4 c a G m) (mw 3) else
+    if t = ms 20 then run (Prog.map tm31 simTmplP) (X4 c a G m) (mw 2) else
+    if t = ms 19 then run (Prog.map tm31 simTmplP) (X4 c a G m) (mw 0) else
+    run (Prog.map tm31 simTmplP) (X4 c a G m) t := by
   simp only [X5, run_seq, copiesP, run_copy]
   simp (config := {decide := true}) only [Function.update_apply, if_false]
 
@@ -563,64 +587,56 @@ theorem X6_eq_S0 (t : Fin 256) (h1 : t ∉ keysT)
     (h2 : t ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS, mw GSC])
     (h3 : ∀ j, tm31 j ≠ t) (h4 : ∀ j, cntE j ≠ t)
     (h5 : t ∉ [mw 4, mw 5, mw 6, mw 7, mw 8, mw 9, mw 10, mw 11]) :
-    X6 hk c W a gs t = S0 W a gs t := by
+    X6 hk c W a G m t = S0g a G t := by
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at h2
   obtain ⟨a3, a4, a5, a6, a7, a8, a9, a10⟩ := h2
   rw [X6, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_T N K k c.d W _ _ _) h1), X5_apply]
   simp only [if_neg a8, if_neg a7, if_neg a6, if_neg a5, if_neg a4, if_neg a3]
   rw [run_map_apply_not tm31_inj _ _ _ h3, X4, tmplS_apply_of_not_mem _ _ _
-    (ne_of_keys (keys_tmpl31 N K k c.d) h5), Function.update_of_ne a9, X2,
-    Function.update_of_ne (fun e => h3 12 (by rw [e]; rfl)),
-    run_map_apply_not capE_inj _ _ _ (fun j e => by
-      fin_cases j
-      · exact h4 1 (by rw [← e]; rfl)
-      · exact h4 2 (by rw [← e]; rfl)
-      · exact h3 5 (by rw [← e]; rfl)
-      · exact h4 3 (by rw [← e]; rfl)
-      · exact h4 4 (by rw [← e]; rfl)),
-    run_map_apply_not cntE_inj _ _ _ h4, Function.update_of_ne a10]
+    (ne_of_keys (keys_tmpl31 N K k c.d) h5), Function.update_of_ne a9, X2g_apply,
+    if_neg (fun e => h4 1 (by rw [e]; rfl)), Function.update_of_ne a10]
 
 theorem S1_eq_S0 (t : Fin 256) (h1 : t ∉ keysT)
     (h2 : t ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS, mw GSC])
     (h3 : ∀ j, tm31 j ≠ t) (h4 : ∀ j, cntE j ≠ t)
     (h5 : t ∉ [mw 4, mw 5, mw 6, mw 7, mw 8, mw 9, mw 10, mw 11]) (h6 : t ≠ mw OB)
-    (h7 : t ≠ mw ZB) : S1 hk c W a gs t = S0 W a gs t := by
-  rw [S1, Function.update_of_ne h7, Function.update_of_ne h6, X6_eq_S0 hk c W a gs t h1 h2 h3 h4 h5]
+    (h7 : t ≠ mw ZB) : S1 hk c W a G m t = S0g a G t := by
+  rw [S1, Function.update_of_ne h7, Function.update_of_ne h6, X6_eq_S0 hk c W a G m t h1 h2 h3 h4 h5]
 
-theorem S1_OB : S1 hk c W a gs (mw OB) = [true] := by
+theorem S1_OB : S1 hk c W a G m (mw OB) = [true] := by
   rw [S1, Function.update_of_ne (by decide), Function.update_self,
-    X6_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)]
+    X6_eq_S0 hk c W a G m _ (by decide) (by decide) (by decide) (by decide) (by decide)]
   rfl
 
-theorem S1_ZB : S1 hk c W a gs (mw ZB) = [false] := by
+theorem S1_ZB : S1 hk c W a G m (mw ZB) = [false] := by
   rw [S1, Function.update_self, Function.update_of_ne (by decide),
-    X6_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)]
+    X6_eq_S0 hk c W a G m _ (by decide) (by decide) (by decide) (by decide) (by decide)]
   rfl
 
-theorem S0_blank (t : Fin 256) (h1 : t ≠ mw SDW) (h2 : t ≠ mw GS) : S0 W a gs t = [] := by
-  simp [S0, h1, h2]
+theorem S0g_blank (t : Fin 256) (h1 : t ≠ mw SDW) (h2 : t ≠ mw GS) : S0g a G t = [] := by
+  simp [S0g, h1, h2]
 
 /-- The step's store prepared for the run of `f̂`. -/
-def s1 : Store 132 := fun j => S1 hk c W a gs (ms j)
+def s1 : Store 132 := fun j => S1 hk c W a G m (ms j)
 
 /-- The words prepared for the run of `f̂`. -/
-def w1 : ValVM.St := fun x => S1 hk c W a gs (mw x)
+def w1 : ValVM.St := fun x => S1 hk c W a G m (mw x)
 
-theorem S1_enc : S1 hk c W a gs = ValVM.enc (s1 hk c W a gs) (VT N K k c.d) (w1 hk c W a gs) := by
+theorem S1_enc : S1 hk c W a G m = ValVM.enc (s1 hk c W a G m) (VT N K k c.d) (w1 hk c W a G m) := by
   refine ValVM.enc_ext (fun j => ?_) ?_ (fun x => ?_) ?_ ?_ ?_
   · simp [s1]
-  · rw [ValVM.enc_tTV, S1_key hk c W a gs (n := VT N K k c.d) (by simp [stepT, wordsT])
+  · rw [ValVM.enc_tTV, S1_key hk c W a G m (n := VT N K k c.d) (by simp [stepT, wordsT])
       (by decide) (by decide)]
   · simp [w1]
   all_goals
-    rw [S1_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)
-      (by decide) (by decide), S0_blank W a gs _ (by decide) (by decide)]
+    rw [S1_eq_S0 hk c W a G m _ (by decide) (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide), S0g_blank a G _ (by decide) (by decide)]
     simp
 
 /-- The step's tapes `prepT` does not write. -/
 theorem s1_blank (t : Fin 132)
     (ht : ∀ j ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 86, 87, 88, 89],
-      t.val ≠ j) : s1 hk c W a gs t = [] := by
+      t.val ≠ j) : s1 hk c W a G m t = [] := by
   have key : ∀ t : Fin 132, (∀ j ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20,
       21, 86, 87, 88, 89], t.val ≠ j) → ms t ∉ keysT ∧
       ms t ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS, mw GSC] ∧
@@ -628,57 +644,57 @@ theorem s1_blank (t : Fin 132)
       ms t ∉ [mw 4, mw 5, mw 6, mw 7, mw 8, mw 9, mw 10, mw 11] ∧ ms t ≠ mw OB ∧ ms t ≠ mw ZB ∧
       ms t ≠ mw SDW ∧ ms t ≠ mw GS := by decide +kernel
   obtain ⟨b1, b2, b3, b4, b5, b6, b7, b8, b9⟩ := key t ht
-  rw [s1, S1_eq_S0 hk c W a gs _ b1 b2 b3 b4 b5 b6 b7, S0_blank W a gs _ b8 b9]
+  rw [s1, S1_eq_S0 hk c W a G m _ b1 b2 b3 b4 b5 b6 b7, S0g_blank a G _ b8 b9]
 
 theorem s1_tmpl {j : Fin 132} {n : ℕ}
     (h : (ms j, n) ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c)) :
-    (s1 hk c W a gs j).length = n := by
-  rw [s1, S1_key hk c W a gs h (ValVM.tS_ne_tWd _ _) (ValVM.tS_ne_tWd _ _), List.length_replicate]
+    (s1 hk c W a G m j).length = n := by
+  rw [s1, S1_key hk c W a G m h (ValVM.tS_ne_tWd _ _) (ValVM.tS_ne_tWd _ _), List.length_replicate]
 
-theorem s1_content (hW : 0 < W) (hb : BndG W gs) :
-    s1 hk c W a gs 19 = gadW N K k ∧ s1 hk c W a gs 20 = zeroW (lenA N K k c.d) ∧
-      s1 hk c W a gs 21 = oneW N K := by
+theorem s1_content :
+    s1 hk c W a G m 19 = gadW N K k ∧ s1 hk c W a G m 20 = zeroW (lenA N K k c.d) ∧
+      s1 hk c W a G m 21 = oneW N K := by
   refine ⟨?_, ?_, ?_⟩ <;>
-  · rw [s1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
-    simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
+  · rw [s1, S1_not hk c W a G m (by decide) (by decide) (by decide), X5_apply]
+    simp (config := {decide := true}) only [Y4_apply c a G m, if_true, if_false]
 
 /-- **The step's store prepared for `f̂` meets `SimPre`.** -/
-theorem s1_simPre (hW : 0 < W) (hb : BndG W gs) :
-    SimPre N K k 1 c.d (gadW N K k) (GPreTop N K k) (s1 hk c W a gs) where
-  blank i h h' := s1_blank hk c W a gs i (by intro j hj; simp at hj; omega)
-  h3 := s1_tmpl hk c W a gs (by simp [stepT])
-  h4 := s1_tmpl hk c W a gs (by simp [stepT])
-  h5 := s1_tmpl hk c W a gs (by simp [stepT])
-  h6 := s1_tmpl hk c W a gs (by simp [stepT])
-  h7 := s1_tmpl hk c W a gs (by simp [stepT])
-  h8 := s1_tmpl hk c W a gs (by simp [stepT])
-  h9 := s1_tmpl hk c W a gs (by simp [stepT])
-  h10 := s1_tmpl hk c W a gs (by simp [stepT])
-  h11 := s1_tmpl hk c W a gs (by simp [stepT])
-  h12 := s1_tmpl hk c W a gs (by simp [stepT])
-  h13 := s1_tmpl hk c W a gs (by simp [stepT])
-  h14 := s1_tmpl hk c W a gs (by simp [stepT])
-  h15 := s1_tmpl hk c W a gs (by simp [stepT])
-  h16 := s1_tmpl hk c W a gs (by simp [stepT])
-  h17 := s1_tmpl hk c W a gs (by simp [stepT])
-  h19 := (s1_content hk c W a gs hW hb).1
-  h20 := (s1_content hk c W a gs hW hb).2.1
-  h21 := (s1_content hk c W a gs hW hb).2.2
+theorem s1_simPre :
+    SimPre N K k 1 c.d (gadW N K k) (GPreTop N K k) (s1 hk c W a G m) where
+  blank i h h' := s1_blank hk c W a G m i (by intro j hj; simp at hj; omega)
+  h3 := s1_tmpl hk c W a G m (by simp [stepT])
+  h4 := s1_tmpl hk c W a G m (by simp [stepT])
+  h5 := s1_tmpl hk c W a G m (by simp [stepT])
+  h6 := s1_tmpl hk c W a G m (by simp [stepT])
+  h7 := s1_tmpl hk c W a G m (by simp [stepT])
+  h8 := s1_tmpl hk c W a G m (by simp [stepT])
+  h9 := s1_tmpl hk c W a G m (by simp [stepT])
+  h10 := s1_tmpl hk c W a G m (by simp [stepT])
+  h11 := s1_tmpl hk c W a G m (by simp [stepT])
+  h12 := s1_tmpl hk c W a G m (by simp [stepT])
+  h13 := s1_tmpl hk c W a G m (by simp [stepT])
+  h14 := s1_tmpl hk c W a G m (by simp [stepT])
+  h15 := s1_tmpl hk c W a G m (by simp [stepT])
+  h16 := s1_tmpl hk c W a G m (by simp [stepT])
+  h17 := s1_tmpl hk c W a G m (by simp [stepT])
+  h19 := (s1_content hk c W a G m).1
+  h20 := (s1_content hk c W a G m).2.1
+  h21 := (s1_content hk c W a G m).2.2
   g := by
     refine ⟨fun i h h' => ?_, ?_, ?_, ?_, ?_⟩
-    · show s1 hk c W a gs (vG i) = []
-      exact s1_blank hk c W a gs _ (by
+    · show s1 hk c W a G m (vG i) = []
+      exact s1_blank hk c W a G m _ (by
         have : ∀ i : Fin 48, 6 ≤ i.val → i.val < 35 → ∀ j ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
           14, 15, 16, 17, 19, 20, 21, 86, 87, 88, 89], (vG i).val ≠ j := by decide +kernel
         exact this i h h')
     · rw [Function.comp_apply, show vG 2 = 86 from rfl]
-      exact s1_tmpl hk c W a gs (by simp [stepT])
+      exact s1_tmpl hk c W a G m (by simp [stepT])
     · rw [Function.comp_apply, show vG 3 = 87 from rfl]
-      exact s1_tmpl hk c W a gs (by simp [stepT])
+      exact s1_tmpl hk c W a G m (by simp [stepT])
     · rw [Function.comp_apply, show vG 4 = 88 from rfl]
-      exact s1_tmpl hk c W a gs (by simp [stepT])
+      exact s1_tmpl hk c W a G m (by simp [stepT])
     · rw [Function.comp_apply, show vG 5 = 89 from rfl]
-      exact s1_tmpl hk c W a gs (by simp [stepT])
+      exact s1_tmpl hk c W a G m (by simp [stepT])
 
 end PrepT
 
@@ -794,34 +810,32 @@ end Streams
 
 section W1
 
-variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) (a : List Bool) (gs : GateList)
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) (a G : List Bool) (m : ℕ)
 
 theorem w1_key {x : Fin 120} {n : ℕ}
     (h : (mw x, n) ∈ stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c))
-    (h1 : x ≠ OB) (h2 : x ≠ ZB) : w1 hk c W a gs x = List.replicate n false :=
-  S1_key hk c W a gs h (fun e => h1 (ValVM.tWd_inj e)) (fun e => h2 (ValVM.tWd_inj e))
+    (h1 : x ≠ OB) (h2 : x ≠ ZB) : w1 hk c W a G m x = List.replicate n false :=
+  S1_key hk c W a G m h (fun e => h1 (ValVM.tWd_inj e)) (fun e => h2 (ValVM.tWd_inj e))
 
-theorem w1_SDW : w1 hk c W a gs SDW = a := by
-  rw [w1, S1_eq_S0 hk c W a gs _ (by decide) (by decide) (by decide) (by decide) (by decide)
+theorem w1_SDW : w1 hk c W a G m SDW = a := by
+  rw [w1, S1_eq_S0 hk c W a G m _ (by decide) (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide)]
-  simp [S0]
+  simp [S0g]
 
-theorem w1_content (hW : 0 < W) (hb : BndG W gs) :
-    w1 hk c W a gs GADW = gadW N K k ∧ w1 hk c W a gs ZEROW = zeroW (lenA N K k c.d) ∧
-      w1 hk c W a gs ONEW = oneW N K := by
+theorem w1_content :
+    w1 hk c W a G m GADW = gadW N K k ∧ w1 hk c W a G m ZEROW = zeroW (lenA N K k c.d) ∧
+      w1 hk c W a G m ONEW = oneW N K := by
   refine ⟨?_, ?_, ?_⟩ <;>
-  · rw [w1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
-    simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
+  · rw [w1, S1_not hk c W a G m (by decide) (by decide) (by decide), X5_apply]
+    simp (config := {decide := true}) only [Y4_apply c a G m, if_true, if_false]
 
-theorem w1_GS (hW : 0 < W) (hb : BndG W gs) :
-    w1 hk c W a gs GS = gsW W gs ∧
-      w1 hk c W a gs GCNT = List.replicate (min gs.length W) false := by
+theorem w1_GS :
+    w1 hk c W a G m GS = G ∧ w1 hk c W a G m GCNT = List.replicate m false := by
   refine ⟨?_, ?_⟩ <;>
-  · rw [w1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
-    simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
+  · rw [w1, S1_not hk c W a G m (by decide) (by decide) (by decide), X5_apply]
+    simp (config := {decide := true}) only [Y4_apply c a G m, if_true, if_false]
     rw [X4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide))]
-    simp (config := {decide := true}) only [Function.update_apply, if_true, if_false,
-      X2_apply W a gs hW hb]
+    simp (config := {decide := true}) only [Function.update_apply, if_true, if_false, X2g_apply, S0g]
 
 end W1
 
@@ -835,7 +849,7 @@ theorem flatten_flatMap {α β : Type*} (l : List α) (g : α → List (List β)
 
 section RunT
 
-variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ) (gs : GateList)
+variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ) (G : List Bool) (m : ℕ)
   (sd : SimData hk c)
 
 /-- The step of the run of `f̂`. -/
@@ -848,44 +862,44 @@ abbrev oneT (N K d : ℕ) : List Bool :=
 
 /-- The words after the streams and `one`. -/
 def w2 : St := exec (VT N K (K + 1) c.d) (fT N K c.d) (ofList [streamsT, oneC])
-  (w1 hk c W ((sdEnc hk c).enc sd) gs)
+  (w1 hk c W ((sdEnc hk c).enc sd) G m)
 
-theorem w2_spec (hW : 0 < W) (hb : BndG W gs) :
-    w2 hk c W gs sd 10 = oneT N K c.d ∧
-    w2 hk c W gs sd BSt = ((sdEnc hk c).enc sd).drop (offB c) ∧
-    w2 hk c W gs sd WSt = ((sdEnc hk c).enc sd).drop (offW hk c) ∧
-    w2 hk c W gs sd PSt = ((sdEnc hk c).enc sd).drop (offPsi hk c) ∧
-    ∀ x, x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] → w2 hk c W gs sd x = w1 hk c W ((sdEnc hk c).enc sd) gs x := by
-  obtain ⟨g1, g2, g3⟩ := w1_content hk c W ((sdEnc hk c).enc sd) gs hW hb
-  have e : w2 hk c W gs sd = exec (VT N K (K + 1) c.d) (fT N K c.d) oneC
-      (exec (VT N K (K + 1) c.d) (fT N K c.d) streamsT (w1 hk c W ((sdEnc hk c).enc sd) gs)) := rfl
+theorem w2_spec :
+    w2 hk c W G m sd 10 = oneT N K c.d ∧
+    w2 hk c W G m sd BSt = ((sdEnc hk c).enc sd).drop (offB c) ∧
+    w2 hk c W G m sd WSt = ((sdEnc hk c).enc sd).drop (offW hk c) ∧
+    w2 hk c W G m sd PSt = ((sdEnc hk c).enc sd).drop (offPsi hk c) ∧
+    ∀ x, x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] → w2 hk c W G m sd x = w1 hk c W ((sdEnc hk c).enc sd) G m x := by
+  obtain ⟨g1, g2, g3⟩ := w1_content hk c W ((sdEnc hk c).enc sd) G m
+  have e : w2 hk c W G m sd = exec (VT N K (K + 1) c.d) (fT N K c.d) oneC
+      (exec (VT N K (K + 1) c.d) (fT N K c.d) streamsT (w1 hk c W ((sdEnc hk c).enc sd) G m)) := rfl
   rw [e, exec_streamsT]
-  set w := w1 hk c W ((sdEnc hk c).enc sd) gs with hw
+  set w := w1 hk c W ((sdEnc hk c).enc sd) G m with hw
   have l61 : (w 61).length = offB c := by
-    rw [hw, w1_key hk c W _ gs (n := offB c) (by simp [wordsT]) (by decide) (by decide)]; simp
+    rw [hw, w1_key hk c W _ G m (n := offB c) (by simp [wordsT]) (by decide) (by decide)]; simp
   have l62 : (w 62).length = offW hk c := by
-    rw [hw, w1_key hk c W _ gs (n := offW hk c) (by simp [wordsT]) (by decide) (by decide)]; simp
+    rw [hw, w1_key hk c W _ G m (n := offW hk c) (by simp [wordsT]) (by decide) (by decide)]; simp
   have l63 : (w 63).length = offPsi hk c := by
-    rw [hw, w1_key hk c W _ gs (n := offPsi hk c) (by simp [wordsT]) (by decide) (by decide)]; simp
-  have hS : w SDW = (sdEnc hk c).enc sd := w1_SDW hk c W _ gs
+    rw [hw, w1_key hk c W _ G m (n := offPsi hk c) (by simp [wordsT]) (by decide) (by decide)]; simp
+  have hS : w SDW = (sdEnc hk c).enc sd := w1_SDW hk c W _ G m
   obtain ⟨o1, o2⟩ := exec_oneC (V := VT N K (K + 1) c.d) (f := fT N K c.d)
     (Function.update (Function.update (Function.update w BSt ((w SDW).drop (w 61).length)) WSt
       ((w SDW).drop (w 62).length)) PSt ((w SDW).drop (w 63).length))
     (g := gadW N K (K + 1)) (z := zeroW (lenA N K (K + 1) c.d)) (o := oneW N K)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]
-        rw [hw, w1_key hk c W _ gs (n := VT N K (K + 1) c.d) (by simp [wordsT]) (by decide) (by decide)])
+        rw [hw, w1_key hk c W _ G m (n := VT N K (K + 1) c.d) (by simp [wordsT]) (by decide) (by decide)])
     (by rw [length_gadW, length_zeroW, length_oneW]; simp [VT, lenA])
     (by simp (config := {decide := true}) only [Function.update_apply, if_false, g1])
     (by simp (config := {decide := true}) only [Function.update_apply, if_false, g2])
     (by simp (config := {decide := true}) only [Function.update_apply, if_false, g3])
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]
-        rw [hw, w1_key hk c W _ gs (n := lenA N K (K + 1) 1) (by simp [wordsT]) (by decide) (by decide),
+        rw [hw, w1_key hk c W _ G m (n := lenA N K (K + 1) 1) (by simp [wordsT]) (by decide) (by decide),
           length_gadW]; simp)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]
-        rw [hw, w1_key hk c W _ gs (n := lenA N K (K + 1) c.d) (by simp [wordsT]) (by decide) (by decide),
+        rw [hw, w1_key hk c W _ G m (n := lenA N K (K + 1) c.d) (by simp [wordsT]) (by decide) (by decide),
           length_zeroW]; simp)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]
-        rw [hw, w1_key hk c W _ gs (n := N * K) (by simp [wordsT]) (by decide) (by decide),
+        rw [hw, w1_key hk c W _ G m (n := N * K) (by simp [wordsT]) (by decide) (by decide),
           length_oneW]; simp)
   refine ⟨o1, ?_, ?_, ?_, fun x hx => ?_⟩
   · rw [o2 _ (by decide) (by decide) (by decide) (by decide)]
@@ -903,38 +917,37 @@ theorem eq_append_drop {L P R : List Bool} (h : L = P ++ R) : L = P ++ L.drop P.
   rw [h, List.drop_left]
 
 /-- The input words of `f̂` on the simulation data. -/
-abbrev bWs : Fin 10 × BI N (K + 1) → List Bool := fun j => rowW N K (K + 1) (sd.mpk.Bj j)
-abbrev wWs : Fin 10 × BI N (K + 1) → List Bool := fun j => colsW N K (K + 1) c.d (sd.W j)
-abbrev entS : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool :=
+abbrev bWs : Fin nA × BI N (K + 1) → List Bool := fun j => rowW N K (K + 1) (sd.mpk.Bj j)
+abbrev wWs : Fin nA × BI N (K + 1) → List Bool := fun j => colsW N K (K + 1) c.d (sd.W j)
+abbrev entS : Fin nA → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool :=
   fun i q => entQ N K (K + 1) (colsW N K (K + 1) 2 (sd.Ψ i)) q
 
 /-- **The words before `fhatC` meet `FInit`.** -/
-theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
-    (hgs : gs.length + 10 ≤ W) :
-    FInit (VT N K (K + 1) c.d) K N W (lenA N K (K + 1) 1) (lenA N K (K + 1) c.d) (oneT N K c.d) gs
+theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) :
+    FInit (VT N K (K + 1) c.d) K N W (lenA N K (K + 1) 1) (lenA N K (K + 1) c.d) (oneT N K c.d) G m
       (bWs hk c sd) (wWs hk c sd) (entS hk c sd)
-      ((w2 hk c W gs sd BSt).drop
-        (((Enum.list (α := Fin 10 × BI N (K + 1))).map (bWs hk c sd)).flatten.length))
-      ((w2 hk c W gs sd WSt).drop
-        (((Enum.list (α := Fin 10 × BI N (K + 1))).map (wWs hk c sd)).flatten.length))
-      ((w2 hk c W gs sd PSt).drop
-        (((List.finRange 10).flatMap fun i => (ValVM.qsL (K + 1)).map (entS hk c sd i)).flatten.length))
-      (w2 hk c W gs sd) := by
-  obtain ⟨o1, oB, oW, oP, o2⟩ := w2_spec hk c W gs sd hW hb
+      ((w2 hk c W G m sd BSt).drop
+        (((Enum.list (α := Fin nA × BI N (K + 1))).map (bWs hk c sd)).flatten.length))
+      ((w2 hk c W G m sd WSt).drop
+        (((Enum.list (α := Fin nA × BI N (K + 1))).map (wWs hk c sd)).flatten.length))
+      ((w2 hk c W G m sd PSt).drop
+        (((List.finRange nA).flatMap fun i => (ValVM.qsL (K + 1)).map (entS hk c sd i)).flatten.length))
+      (w2 hk c W G m sd) := by
+  obtain ⟨o1, oB, oW, oP, o2⟩ := w2_spec hk c W G m sd
   have L : ∀ (x : Fin 120) (n : ℕ), (mw x, n) ∈ stepT N K (K + 1) c.d ++
       wordsT N K (K + 1) c.d W (offB c) (offW hk c) (offPsi hk c) →
       x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] → x ≠ OB → x ≠ ZB →
-      (w2 hk c W gs sd x).length = n := fun x n h hx h1 h2 => by
-    rw [o2 x hx, w1_key hk c W _ gs h h1 h2, List.length_replicate]
+      (w2 hk c W G m sd x).length = n := fun x n h hx h1 h2 => by
+    rw [o2 x hx, w1_key hk c W _ G m h h1 h2, List.length_replicate]
   have Z : ∀ (x : Fin 120) (n : ℕ), (mw x, n) ∈ stepT N K (K + 1) c.d ++
       wordsT N K (K + 1) c.d W (offB c) (offW hk c) (offPsi hk c) →
       x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] → x ≠ OB → x ≠ ZB →
-      w2 hk c W gs sd x = List.replicate n false := fun x n h hx h1 h2 => by
-    rw [o2 x hx, w1_key hk c W _ gs h h1 h2]
+      w2 hk c W G m sd x = List.replicate n false := fun x n h hx h1 h2 => by
+    rw [o2 x hx, w1_key hk c W _ G m h h1 h2]
   have hS1 : ∀ x : Fin 120, x ∉ [BSt, WSt, PSt, 10, GADW, ZEROW, ONEW] →
-      w2 hk c W gs sd x = S1 hk c W ((sdEnc hk c).enc sd) gs (mw x) := fun x hx => by
+      w2 hk c W G m sd x = S1 hk c W ((sdEnc hk c).enc sd) G m (mw x) := fun x hx => by
     rw [o2 x hx]; rfl
-  obtain ⟨g1, g2⟩ := w1_GS hk c W ((sdEnc hk c).enc sd) gs hW hb
+  obtain ⟨g1, g2⟩ := w1_GS hk c W ((sdEnc hk c).enc sd) G m
   exact {
     tm := ⟨by rw [o1]; simp [VT, lenA, length_gadW, length_oneW]; ring,
       L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
@@ -947,8 +960,8 @@ theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
       L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide),
       L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)⟩
     vone := o1
-    ob := by rw [hS1 _ (by decide)]; exact S1_OB hk c W _ gs
-    zb := by rw [hS1 _ (by decide)]; exact S1_ZB hk c W _ gs
+    ob := by rw [hS1 _ (by decide)]; exact S1_OB hk c W _ G m
+    zb := by rw [hS1 _ (by decide)]; exact S1_ZB hk c W _ G m
     nv := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     nkv := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     t2k := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
@@ -985,57 +998,67 @@ theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
     tw9 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     tins := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     gsw := by rw [o2 _ (by decide)]; exact g1
-    gcnt := by rw [o2 _ (by decide), g2, List.length_replicate]; omega }
+    gcnt := by rw [o2 _ (by decide), g2, List.length_replicate] }
 
 theorem vstepT (N K d : ℕ) : VStep (simStepP ginvTopP) (VT N K (K + 1) d) (fT N K d)
     (SimPre N K (K + 1) 1 d (gadW N K (K + 1)) (GPreTop N K (K + 1))) :=
   let h := stepSpec_simTop N K (K + 1) d
   ⟨h.noGrow, h.pre_upd, h.run_eq, h.len⟩
 
-/-- The words after the run of `f̂`. -/
-def w3 : St := exec (VT N K (K + 1) c.d) (fT N K c.d) fhatFullC (w1 hk c W ((sdEnc hk c).enc sd) gs)
+/-- The words after the run of `f̂` (the code `cT`). -/
+def w3 (cT : Code) : St := exec (VT N K (K + 1) c.d) (fT N K c.d) cT (w1 hk c W ((sdEnc hk c).enc sd) G m)
+
+/-- **The law of the run of `f̂`** on the machine, for any code. -/
+theorem law_runX (cT : Code) :
+    (compileA (nocert (simStepP ginvTopP)) cT).toX.law (S1 hk c W ((sdEnc hk c).enc sd) G m) =
+      PMF.pure (ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) G m) (VT N K (K + 1) c.d)
+        (w3 hk c W G m sd cT)) := by
+  rw [S1_enc]
+  exact law_compileA (nocert _) (vstepT N K c.d) (s1_simPre hk c W _ G m)
+    (s1_blank hk c W _ G m 0 (by decide)) (s1_blank hk c W _ G m 1 (by decide))
+    (s1_blank hk c W _ G m 2 (by decide)) _ _
 
 /-- **The law of the run of `f̂`.** -/
-theorem law_runT (hW : 0 < W) (hb : BndG W gs) :
-    runT.law (S1 hk c W ((sdEnc hk c).enc sd) gs) =
-      PMF.pure (ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) gs) (VT N K (K + 1) c.d)
-        (w3 hk c W gs sd)) := by
-  rw [S1_enc]
-  exact law_compileA (nocert _) (vstepT N K c.d) (s1_simPre hk c W _ gs hW hb)
-    (s1_blank hk c W _ gs 0 (by decide)) (s1_blank hk c W _ gs 1 (by decide))
-    (s1_blank hk c W _ gs 2 (by decide)) _ _
+theorem law_runT :
+    runT.law (S1 hk c W ((sdEnc hk c).enc sd) G m) =
+      PMF.pure (ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) G m) (VT N K (K + 1) c.d)
+        (w3 hk c W G m sd fhatFullC)) :=
+  law_runX hk c W G m sd fhatFullC
 
-theorem w3_eq : w3 hk c W gs sd = exec (VT N K (K + 1) c.d) (fT N K c.d) (ofList [fhatC, .cp FOUT OUTW])
-    (w2 hk c W gs sd) := by
-  rw [w3, w2, fhatFullC, show [streamsT, oneC, fhatC, Code.cp FOUT OUTW] =
-    [streamsT, oneC] ++ [fhatC, Code.cp FOUT OUTW] from rfl, exec_ofList_append]
+theorem w3_eq (X : Code) :
+    w3 hk c W G m sd (ofList [streamsT, oneC, X, .cp FOUT OUTW]) =
+      exec (VT N K (K + 1) c.d) (fT N K c.d) (ofList [X, .cp FOUT OUTW]) (w2 hk c W G m sd) := by
+  rw [w3, w2, show [streamsT, oneC, X, Code.cp FOUT OUTW] =
+    [streamsT, oneC] ++ [X, Code.cp FOUT OUTW] from rfl, exec_ofList_append]
 
-theorem w3_frame (x : Fin 120) (hx : x ∉ wr fhatFullC) :
-    w3 hk c W gs sd x = w1 hk c W ((sdEnc hk c).enc sd) gs x :=
+theorem w3_frame (cT : Code) (x : Fin 120) (hx : x ∉ wr cT) :
+    w3 hk c W G m sd cT x = w1 hk c W ((sdEnc hk c).enc sd) G m x :=
   exec_not_mem _ _ _ hx
 
-/-- **The output bundle of `f̂`.** -/
-theorem w3_FOUT (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) (hgs : gs.length + 10 ≤ W)
-    (hne : gs ≠ []) :
-    w3 hk c W gs sd FOUT = bw (fhatV (oneT N K c.d) (fV (VT N K (K + 1) c.d) (fT N K c.d))
+/-- The entries of the words `ψᵢ` have `N K` bits. -/
+theorem length_entS (i : Fin nA) (q : Fin 2 × (Fin 2 × Fin (K + 1))) :
+    (entS hk c sd i q).length = N * K := by
+  simp only [entS, entQ, rget]
+  exact length_block (N := 2 * (2 * (K + 1))) (by rw [length_colsW'])
+    (by have := q.1.isLt; have := q.2.1.isLt; have := q.2.2.isLt; nlinarith)
+
+/-- **The output bundle of `f̂`** (a gate list). -/
+theorem w3_FOUT (gs : GateList) (hN : 0 < N) (hK : 0 < K) (hb : BndG W gs)
+    (hgs : gs.length + nA ≤ W) (hne : gs ≠ []) :
+    w3 hk c W (gsW W gs) gs.length sd fhatFullC FOUT = bw (fhatV (oneT N K c.d)
+      (fV (VT N K (K + 1) c.d) (fT N K c.d))
       (inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1)) (enumO N (K + 1))
-      (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1 (predOf 10 gs).2) := by
-  rw [w3_eq]
+      (gvExp (2 ^ K)) (2 ^ K) (predOf nA gs).1 (predOf nA gs).2) := by
+  rw [fhatFullC, w3_eq]
   simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp', Function.update_self]
   exact exec_fhatC (vstepT N K c.d).len hN hgs hb hne (fun j => length_rowW' _)
-    (fun j => length_colsW' _ _) (fun i q => by
-      simp only [entS, entQ, rget]
-      exact length_block (N := 2 * (2 * (K + 1))) (by rw [length_colsW'])
-        (by have := q.1.isLt; have := q.2.1.isLt; have := q.2.2.isLt; nlinarith))
-    _ (fInit_w2 hk c W gs sd hN hK hW hb hgs)
+    (fun j => length_colsW' _ _) (length_entS hk c sd) _ (fInit_w2 hk c W _ _ sd hN hK)
 
-theorem w1_GSC (hW : 0 < W) (hb : BndG W gs) (a : List Bool) :
-    w1 hk c W a gs GSC = gsW W gs := by
-  rw [w1, S1_not hk c W a gs (by decide) (by decide) (by decide), X5_apply]
-  simp (config := {decide := true}) only [Y4_apply c W a gs hW hb, if_true, if_false]
+theorem w1_GSC (a : List Bool) : w1 hk c W a G m GSC = G := by
+  rw [w1, S1_not hk c W a G m (by decide) (by decide) (by decide), X5_apply]
+  simp (config := {decide := true}) only [Y4_apply c a G m, if_true, if_false]
   rw [X4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K (K + 1) c.d) (by decide))]
-  simp (config := {decide := true}) only [Function.update_apply, if_true, if_false,
-    X2_apply W a gs hW hb]
+  simp (config := {decide := true}) only [Function.update_apply, if_true, if_false, X2g_apply, S0g]
 
 end RunT
 
@@ -1044,6 +1067,7 @@ end RunT
 section PrepG
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) (gs : GateList) (T : Store 256)
+  (m : ℕ)
 
 def Z1 : Store 256 := run (clrsP lowW ⨾ cp (mw GS) (mw GSC)) T
 
@@ -1051,16 +1075,22 @@ def Z2 : Store 256 :=
   Function.update (run (Prog.map capE (Prog.capP W)) (run (Prog.map cntE (Prog.countP (2 * W))) (Z1 T)))
     (mw 12) []
 
-def Z4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (Z2 W T) (mw GS) (Z2 W T (mw GSC)))
+/-- **The store after the count** of `m` blocks. -/
+def Z2g : Store 256 := fun t => if t = mw GCNT then List.replicate m false else Z1 T t
 
-def Z5 : Store 256 := run (Prog.map tm31 simTmplP ⨾ copiesP 1) (Z4 c W T)
+theorem Z2g_apply (t : Fin 256) :
+    Z2g T m t = if t = mw GCNT then List.replicate m false else Z1 T t := rfl
+
+def Z4 : Store 256 := tmplS (tmpl31 N K k c.d) (Function.update (Z2g T m) (mw GS) (Z2g T m (mw GSC)))
+
+def Z5 : Store 256 := run (Prog.map tm31 simTmplP ⨾ copiesP 1) (Z4 c T m)
 
 /-- The offsets of the predicate's streams. -/
-abbrev oXG : ℕ := offPsi hk c + 10 * lenPsi N K k
+abbrev oXG : ℕ := offPsi hk c + nA * lenPsi N K k
 
 /-- The store after `prepG`. -/
 def S3 : Store 256 :=
-  tmplS (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) (Z5 c W T)
+  tmplS (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) (Z5 c T m)
 
 theorem keys_G (N K k d W oP oR oX : ℕ) :
     (stepG N K k d ++ wordsG N K k d W oP oR oX).map Prod.fst =
@@ -1123,15 +1153,15 @@ theorem Z2_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t :
     have h3 : t ≠ mw GCNT := fun e => ht 0 (by rw [e]; rfl)
     simp [h3]
 
-theorem Z4_word (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (j : ℕ) (hj : 12 ≤ j)
-    (hj' : j < 120) (h31 : j < 31) : Z4 c W T (mw ⟨j, hj'⟩) = [] := by
+theorem Z4_word (j : ℕ) (hj : 12 ≤ j)
+    (hj' : j < 120) (h31 : j < 31) : Z4 c T m (mw ⟨j, hj'⟩) = [] := by
   have hv : ∀ x : Fin 120, (mw ⟨j, hj'⟩ : Fin 256) = mw x → j = x.val := fun x e => by
     have := congrArg Fin.val e; simp [ValVM.tWd] at this; omega
   rw [Z4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by
     simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> intro e <;> have := hv _ e <;> simp at this <;>
       omega)), Function.update_of_ne (fun e => by have := hv _ e; simp at this; omega),
-    Z2_apply W gs T hW hb hT]
+    Z2g_apply]
   have h1 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GS := fun e => by have := hv _ e; simp at this; omega
   have h2 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw 1 := fun e => by have := hv _ e; simp at this; omega
   have h3 : (mw ⟨j, hj'⟩ : Fin 256) ≠ mw GCNT := fun e => by have := hv _ e; simp at this; omega
@@ -1142,25 +1172,25 @@ theorem Z4_word (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (j : 
   simp [h1, h2, h3, h4, h5, Z1_apply]
 
 theorem Z4_key {t : Fin 256} {n : ℕ} (h : (t, n) ∈ tmpl31 N K k c.d) :
-    Z4 c W T t = List.replicate n false := by
+    Z4 c T m t = List.replicate n false := by
   rw [Z4]; exact tmplS_mem _ (nodup_31 _ _ _ _) (t, n) h _
 
-theorem Y4G_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t : Fin 256) :
-    run (Prog.map tm31 simTmplP) (Z4 c W T) t =
+theorem Y4G_apply (t : Fin 256) :
+    run (Prog.map tm31 simTmplP) (Z4 c T m) t =
       if t = mw 0 then gadW N K k else if t = mw 1 then gswGadW N K k else
-      if t = mw 2 then zeroW (lenA N K k c.d) else if t = mw 3 then oneW N K else Z4 c W T t := by
+      if t = mw 2 then zeroW (lenA N K k c.d) else if t = mw 3 then oneW N K else Z4 c T m t := by
   have hrun := run_simTmplP (N := N) (K := K) (k := k) (Lw := lenA N K k c.d)
-    (Z4 c W T ∘ tm31) (fun t ht => by
-      have := Z4_word c W gs T hW hb hT t.val ht (by omega) t.isLt
+    (Z4 c T m ∘ tm31) (fun t ht => by
+      have := Z4_word c T m t.val ht (by omega) t.isLt
       simpa [tm31] using this)
-    (by simp [tm31, Z4_key c W T (t := mw 4) (n := K) (by simp [tmpl31])])
-    (by simp [tm31, Z4_key c W T (t := mw 5) (n := N) (by simp [tmpl31])])
-    (by simp [tm31, Z4_key c W T (t := mw 6) (n := N * K) (by simp [tmpl31])])
-    (by simp [tm31, Z4_key c W T (t := mw 7) (n := k) (by simp [tmpl31])])
-    (by simp [tm31, Z4_key c W T (t := mw 8) (n := 2 * k * (N * K)) (by simp [tmpl31])])
-    (by simp [tm31, Z4_key c W T (t := mw 9) (n := 2 * (2 * k) * (N * K)) (by simp [tmpl31])])
-    (by simp [tm31, Z4_key c W T (t := mw 10) (n := k * (N * K)) (by simp [tmpl31])])
-    (by simp [tm31, Z4_key c W T (t := mw 11) (n := lenA N K k c.d) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c T m (t := mw 4) (n := K) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c T m (t := mw 5) (n := N) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c T m (t := mw 6) (n := N * K) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c T m (t := mw 7) (n := k) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c T m (t := mw 8) (n := 2 * k * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c T m (t := mw 9) (n := 2 * (2 * k) * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c T m (t := mw 10) (n := k * (N * K)) (by simp [tmpl31])])
+    (by simp [tm31, Z4_key c T m (t := mw 11) (n := lenA N K k c.d) (by simp [tmpl31])])
   by_cases ht : ∃ j, tm31 j = t
   · obtain ⟨j, rfl⟩ := ht
     rw [run_map_apply tm31_inj, hrun]
@@ -1173,35 +1203,33 @@ theorem Y4G_apply (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (t 
     have h3 : t ≠ mw 3 := fun e => ht 3 (by rw [e]; rfl)
     simp [h0, h1, h2, h3]
 
-theorem Z5_apply (t : Fin 256) : Z5 c W T t =
-    if t = mw ONEW then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 3) else
-    if t = mw ZEROW then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 2) else
-    if t = mw GADW then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 1) else
-    if t = ms 21 then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 3) else
-    if t = ms 20 then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 2) else
-    if t = ms 19 then run (Prog.map tm31 simTmplP) (Z4 c W T) (mw 1) else
-    run (Prog.map tm31 simTmplP) (Z4 c W T) t := by
+theorem Z5_apply (t : Fin 256) : Z5 c T m t =
+    if t = mw ONEW then run (Prog.map tm31 simTmplP) (Z4 c T m) (mw 3) else
+    if t = mw ZEROW then run (Prog.map tm31 simTmplP) (Z4 c T m) (mw 2) else
+    if t = mw GADW then run (Prog.map tm31 simTmplP) (Z4 c T m) (mw 1) else
+    if t = ms 21 then run (Prog.map tm31 simTmplP) (Z4 c T m) (mw 3) else
+    if t = ms 20 then run (Prog.map tm31 simTmplP) (Z4 c T m) (mw 2) else
+    if t = ms 19 then run (Prog.map tm31 simTmplP) (Z4 c T m) (mw 1) else
+    run (Prog.map tm31 simTmplP) (Z4 c T m) t := by
   simp only [Z5, run_seq, copiesP, run_copy]
   simp (config := {decide := true}) only [Function.update_apply, if_false]
 
 theorem Z1_tX0 (hX : T tX0 = []) : Z1 T tX0 = [] := by
   rw [Z1_apply]; simp (config := {decide := true}) [lowW, hX]
 
-theorem Z4_tX0 (hX : T tX0 = []) : Z4 c W T tX0 = [] := by
+theorem Z4_tX0 (hX : T tX0 = []) : Z4 c T m tX0 = [] := by
   rw [Z4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
-    Function.update_of_ne (by decide), Z2, Function.update_of_ne (by decide),
-    run_map_apply_not capE_inj _ _ _ (by decide),
-    run_map_apply_not cntE_inj _ _ _ (by decide), Z1_tX0 T hX]
+    Function.update_of_ne (by decide), Z2g_apply, if_neg (by decide), Z1_tX0 T hX]
 
-theorem Z5_tX0 (hX : T tX0 = []) : Z5 c W T tX0 = [] := by
+theorem Z5_tX0 (hX : T tX0 = []) : Z5 c T m tX0 = [] := by
   rw [Z5_apply]
   simp (config := {decide := true}) only [if_false]
-  rw [run_map_apply_not tm31_inj _ _ _ (by decide), Z4_tX0 c W T hX]
+  rw [run_map_apply_not tm31_inj _ _ _ (by decide), Z4_tX0 c T m hX]
 
-theorem S3_tX0 (hX : T tX0 = []) : S3 hk c W T tX0 = [] := by
+theorem S3_tX0 (hX : T tX0 = []) : S3 hk c W T m tX0 = [] := by
   unfold S3
   rw [tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide))]
-  exact Z5_tX0 c W T hX
+  exact Z5_tX0 c T m hX
 
 /-! #### Lookups of `S3` -/
 
@@ -1219,176 +1247,178 @@ theorem capE_mem : ∀ j, capE j ∈ lowW := by decide
 
 theorem S3_key {t : Fin 256} {n : ℕ}
     (h : (t, n) ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) :
-    S3 hk c W T t = List.replicate n false :=
+    S3 hk c W T m t = List.replicate n false :=
   tmplS_mem _ (nodup_G _ _ _ _ _ _ _ _) (t, n) h _
 
-theorem S3_not {t : Fin 256} (h : t ∉ keysG) : S3 hk c W T t = Z5 c W T t :=
+theorem S3_not {t : Fin 256} (h : t ∉ keysG) : S3 hk c W T m t = Z5 c T m t :=
   tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_G N K k c.d W _ _ _) h)
 
 theorem S3_eq_T {t : Fin 256} (h1 : t ∉ keysG)
     (h2 : t ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS]) (h3 : t ∉ lowW) :
-    S3 hk c W T t = T t := by
+    S3 hk c W T m t = T t := by
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at h2
   obtain ⟨a1, a2, a3, a4, a5, a6, a7⟩ := h2
-  rw [S3_not hk c W T h1, Z5_apply]
+  rw [S3_not hk c W T m h1, Z5_apply]
   simp only [if_neg a1, if_neg a2, if_neg a3, if_neg a4, if_neg a5, if_neg a6]
   rw [run_map_apply_not tm31_inj _ _ _ (fun j e => h3 (by rw [← e]; exact tm31_mem j)), Z4,
     tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (fun hm => h3 (by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hm
       rcases hm with e | e | e | e | e | e | e | e <;> rw [e] <;> decide))),
-    Function.update_of_ne a7, Z2,
-    Function.update_of_ne (fun e => h3 (by rw [e]; decide)),
-    run_map_apply_not capE_inj _ _ _ (fun j e => h3 (by rw [← e]; exact capE_mem j)),
-    run_map_apply_not cntE_inj _ _ _ (fun j e => by
-      rcases cntE_mem j with m | m
-      · exact h3 (by rw [← e]; exact m)
-      · exact a7 (by rw [← e]; exact m)), Z1_apply, if_neg a7, if_neg h3]
+    Function.update_of_ne a7, Z2g_apply, if_neg (fun e => h3 (by rw [e]; decide)), Z1_apply,
+    if_neg a7, if_neg h3]
 
-/-- **The law of `prepG`.** -/
-theorem law_prepG (hX : T tX0 = []) (h92 : T (ms 92) = []) :
-    (prepG hk c W).law T = PMF.pure (S3 hk c W T) := by
-  have hc0 : (clrsP lowW ⨾ cp (mw GS) (mw GSC)).CoinFree := by
-    have : ∀ l : List (Fin 256), (clrsP l).CoinFree := by
-      intro l; induction l with
-      | nil => rfl
-      | cons x l ih =>
-        simp only [CoinFree, clrsP] at ih ⊢; simp [coinFreeB, ih]
-    have h := this lowW
-    simp only [CoinFree] at h ⊢
-    simp [coinFreeB, h]
-  have hc1 : (Prog.map cntE (Prog.countP (2 * W))).CoinFree := coinFree_map _ (Prog.coinFree_countP (2 * W))
+/-- **The preparation of the predicate after the count.** -/
+theorem law_prepGRest (hX : T tX0 = []) (h92 : T (ms 92) = []) :
+    (prepGRest hk c W).law (Z2g T m) = PMF.pure (S3 hk c W T m) := by
   have hc2 : (Prog.map tm31 simTmplP ⨾ copiesP 1).CoinFree := by
     have h1 := coinFree_map tm31 (coinFree_of_noGrow _ noGrow_simTmplP)
     simp only [CoinFree] at h1 ⊢
     simp [coinFreeB, h1, show (copiesP 1).coinFreeB = true from rfl]
-  rw [prepG, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ hc0, PMF.pure_bind,
-    XProg.law_seq, law_frame_map cntE_inj _ (Prog.coinFree_countP (2 * W)), PMF.pure_bind,
-    XProg.law_seq, law_frame_map capE_inj _ (Prog.coinFree_capP W), PMF.pure_bind,
-    XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
-      from rfl, XProg.law_prim, PMF.pure_bind,
-    XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
+  rw [prepGRest, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (by rfl), PMF.pure_bind]
   simp only [run_copy, Prim.apply]
   rw [XProg.law_seq, law_tmplP _ _ _ (by
-      rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide),
-        run_map_apply_not capE_inj _ _ _ (by decide), run_map_apply_not cntE_inj _ _ _ (by decide)]
+      rw [Function.update_of_ne (by decide), Z2g_apply, if_neg (by decide)]
       exact Z1_tX0 T hX)
       (ne_of_keys (keys_tmpl31 N K k c.d) (by decide)),
     PMF.pure_bind, XProg.law_seq,
     law_frame_map tm31_inj _ (coinFree_of_noGrow _ noGrow_simTmplP), PMF.pure_bind,
     XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ (coinFree_copiesP 1), PMF.pure_bind,
-    XProg.law_seq, law_tmplP _ _ _ (by exact Z5_tX0 c W T hX)
+    XProg.law_seq, law_tmplP _ _ _ (by exact Z5_tX0 c T m hX)
       (ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)), PMF.pure_bind,
     XProg.law_seq,
     show (XProg.prog (clr tX0) : XProg 256) = XProg.prog (.prim (.clear tX0)) from rfl, XProg.law_prim,
     PMF.pure_bind,
     show (XProg.prog (clr (ms 92)) : XProg 256) = XProg.prog (.prim (.clear (ms 92))) from rfl,
     XProg.law_prim]
-  show PMF.pure (Function.update (Function.update (S3 hk c W T) tX0 []) (ms 92) []) = _
-  rw [show Function.update (S3 hk c W T) tX0 [] = S3 hk c W T from
-    Function.update_eq_self_iff.mpr (S3_tX0 hk c W T hX).symm,
-    show Function.update (S3 hk c W T) (ms 92) [] = S3 hk c W T from
+  show PMF.pure (Function.update (Function.update (S3 hk c W T m) tX0 []) (ms 92) []) = _
+  rw [show Function.update (S3 hk c W T m) tX0 [] = S3 hk c W T m from
+    Function.update_eq_self_iff.mpr (S3_tX0 hk c W T m hX).symm,
+    show Function.update (S3 hk c W T m) (ms 92) [] = S3 hk c W T m from
     Function.update_eq_self_iff.mpr (by
-      rw [S3_eq_T hk c W T (by decide) (by decide) (by decide), h92])]
+      rw [S3_eq_T hk c W T m (by decide) (by decide) (by decide), h92])]
 
-theorem S3_GS (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
-    S3 hk c W T (mw GS) = gsW W gs ∧ S3 hk c W T (mw GSC) = gsW W gs ∧
-      S3 hk c W T (mw GCNT) = List.replicate (min gs.length W) false := by
+theorem coinFree_clrsP_lowW : (clrsP lowW ⨾ cp (mw GS) (mw GSC)).CoinFree := by
+  have : ∀ l : List (Fin 256), (clrsP l).CoinFree := by
+    intro l; induction l with
+    | nil => rfl
+    | cons x l ih =>
+      simp only [CoinFree, clrsP] at ih ⊢; simp [coinFreeB, ih]
+  have h := this lowW
+  simp only [CoinFree] at h ⊢
+  simp [coinFreeB, h]
+
+/-- **The law of `prepG`** on a gate list. -/
+theorem law_prepG (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) (hX : T tX0 = [])
+    (h92 : T (ms 92) = []) :
+    (prepG hk c W).law T = PMF.pure (S3 hk c W T (min gs.length W)) := by
+  rw [prepG, XProg.law_seq, XProg.law_prog, law_eq_run_of_coinFree _ coinFree_clrsP_lowW,
+    PMF.pure_bind,
+    XProg.law_seq, law_frame_map cntE_inj _ (Prog.coinFree_countP (2 * W)), PMF.pure_bind,
+    XProg.law_seq, law_frame_map capE_inj _ (Prog.coinFree_capP W), PMF.pure_bind,
+    XProg.law_seq, show (XProg.prog (clr (mw 12)) : XProg 256) = .prog (.prim (.clear (mw 12)))
+      from rfl, XProg.law_prim, PMF.pure_bind]
+  show (prepGRest hk c W).law (Z2 W T) = _
+  rw [show Z2 W T = Z2g T (min gs.length W) from funext (Z2_apply W gs T hW hb hT)]
+  exact law_prepGRest hk c W T _ hX h92
+
+theorem S3_GS :
+    S3 hk c W T m (mw GS) = T (mw GSC) ∧ S3 hk c W T m (mw GSC) = T (mw GSC) ∧
+      S3 hk c W T m (mw GCNT) = List.replicate m false := by
   refine ⟨?_, ?_, ?_⟩ <;>
-  · rw [S3_not hk c W T (by decide), Z5_apply]
-    simp (config := {decide := true}) only [Y4G_apply c W gs T hW hb hT, if_true, if_false]
+  · rw [S3_not hk c W T m (by decide), Z5_apply]
+    simp (config := {decide := true}) only [Y4G_apply c T m, if_true, if_false]
     rw [Z4, tmplS_apply_of_not_mem _ _ _ (ne_of_keys (keys_tmpl31 N K k c.d) (by decide))]
     simp (config := {decide := true}) only [Function.update_apply, if_true, if_false,
-      Z2_apply W gs T hW hb hT, Z1_apply, hT]
+      Z2g_apply, Z1_apply]
 
-theorem S3_content (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
-    S3 hk c W T (ms 19) = gswGadW N K k ∧ S3 hk c W T (ms 20) = zeroW (lenA N K k c.d) ∧
-      S3 hk c W T (ms 21) = oneW N K ∧ S3 hk c W T (mw GADW) = gswGadW N K k ∧
-      S3 hk c W T (mw ZEROW) = zeroW (lenA N K k c.d) ∧ S3 hk c W T (mw ONEW) = oneW N K := by
+theorem S3_content :
+    S3 hk c W T m (ms 19) = gswGadW N K k ∧ S3 hk c W T m (ms 20) = zeroW (lenA N K k c.d) ∧
+      S3 hk c W T m (ms 21) = oneW N K ∧ S3 hk c W T m (mw GADW) = gswGadW N K k ∧
+      S3 hk c W T m (mw ZEROW) = zeroW (lenA N K k c.d) ∧ S3 hk c W T m (mw ONEW) = oneW N K := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-  · rw [S3_not hk c W T (by decide), Z5_apply]
-    simp (config := {decide := true}) only [Y4G_apply c W gs T hW hb hT, if_true, if_false]
+  · rw [S3_not hk c W T m (by decide), Z5_apply]
+    simp (config := {decide := true}) only [Y4G_apply c T m, if_true, if_false]
 
 /-- The step's store prepared for the predicate. -/
-def s3 : Store 132 := fun j => S3 hk c W T (ms j)
+def s3 : Store 132 := fun j => S3 hk c W T m (ms j)
 
 /-- The words prepared for the predicate. -/
-def w4 : ValVM.St := fun x => S3 hk c W T (mw x)
+def w4 : ValVM.St := fun x => S3 hk c W T m (mw x)
 
 theorem S3_enc (hX0 : T tX0 = []) (hX1 : T tX1 = []) (hX2 : T tX2 = []) :
-    S3 hk c W T = ValVM.enc (s3 hk c W T) (VG N K k c.d) (w4 hk c W T) := by
+    S3 hk c W T m = ValVM.enc (s3 hk c W T m) (VG N K k c.d) (w4 hk c W T m) := by
   refine ValVM.enc_ext (fun j => ?_) ?_ (fun x => ?_) ?_ ?_ ?_
   · simp [s3]
-  · rw [ValVM.enc_tTV, S3_key hk c W T (n := VG N K k c.d) (by simp [stepG, wordsG])]
+  · rw [ValVM.enc_tTV, S3_key hk c W T m (n := VG N K k c.d) (by simp [stepG, wordsG])]
   · simp [w4]
-  · rw [S3_eq_T hk c W T (by decide) (by decide) (by decide), hX0]; simp
-  · rw [S3_eq_T hk c W T (by decide) (by decide) (by decide), hX1]; simp
-  · rw [S3_eq_T hk c W T (by decide) (by decide) (by decide), hX2]; simp
+  · rw [S3_eq_T hk c W T m (by decide) (by decide) (by decide), hX0]; simp
+  · rw [S3_eq_T hk c W T m (by decide) (by decide) (by decide), hX1]; simp
+  · rw [S3_eq_T hk c W T m (by decide) (by decide) (by decide), hX2]; simp
 
 theorem s3_tmpl {j : Fin 132} {n : ℕ}
     (h : (ms j, n) ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) :
-    (s3 hk c W T j).length = n := by
-  rw [s3, S3_key hk c W T h, List.length_replicate]
+    (s3 hk c W T m j).length = n := by
+  rw [s3, S3_key hk c W T m h, List.length_replicate]
 
 /-- The written step's tapes of `prepG`. -/
 abbrev wrG : List ℕ :=
   [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 86, 87, 88, 89, 90, 91, 93, 94]
 
 theorem s3_blank (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) (j : Fin 132) (hj : j.val ∉ wrG) :
-    s3 hk c W T j = [] := by
+    s3 hk c W T m j = [] := by
   have key : ∀ j : Fin 132, j.val ∉ wrG → ms j ∉ keysG ∧
       ms j ∉ [ms 19, ms 20, ms 21, mw GADW, mw ZEROW, mw ONEW, mw GS] ∧ ms j ∉ lowW := by
     decide +kernel
   obtain ⟨b1, b2, b3⟩ := key j hj
-  rw [s3, S3_eq_T hk c W T b1 b2 b3, hS j hj]
+  rw [s3, S3_eq_T hk c W T m b1 b2 b3, hS j hj]
 
 /-- **The step's store prepared for the predicate meets `SimPre`.** -/
-theorem s3_simPre (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs)
-    (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) :
-    SimPre N K k 2 c.d (gswGadW N K k) (GPreGsw N K k) (s3 hk c W T) where
-  blank i h h' := s3_blank hk c W T hS i (by simp; omega)
-  h3 := s3_tmpl hk c W T (by simp [stepG])
-  h4 := s3_tmpl hk c W T (by simp [stepG])
-  h5 := s3_tmpl hk c W T (by simp [stepG])
-  h6 := s3_tmpl hk c W T (by simp [stepG])
-  h7 := s3_tmpl hk c W T (by simp [stepG])
-  h8 := s3_tmpl hk c W T (by simp [stepG])
-  h9 := s3_tmpl hk c W T (by simp [stepG])
-  h10 := s3_tmpl hk c W T (by simp [stepG])
-  h11 := s3_tmpl hk c W T (by simp [stepG])
-  h12 := s3_tmpl hk c W T (by simp [stepG])
-  h13 := s3_tmpl hk c W T (by simp [stepG])
-  h14 := s3_tmpl hk c W T (by simp [stepG])
-  h15 := s3_tmpl hk c W T (by simp [stepG])
-  h16 := s3_tmpl hk c W T (by simp [stepG])
-  h17 := s3_tmpl hk c W T (by simp [stepG])
-  h19 := (S3_content hk c W gs T hW hb hT).1
-  h20 := (S3_content hk c W gs T hW hb hT).2.1
-  h21 := (S3_content hk c W gs T hW hb hT).2.2.1
+theorem s3_simPre (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) :
+    SimPre N K k 2 c.d (gswGadW N K k) (GPreGsw N K k) (s3 hk c W T m) where
+  blank i h h' := s3_blank hk c W T m hS i (by simp; omega)
+  h3 := s3_tmpl hk c W T m (by simp [stepG])
+  h4 := s3_tmpl hk c W T m (by simp [stepG])
+  h5 := s3_tmpl hk c W T m (by simp [stepG])
+  h6 := s3_tmpl hk c W T m (by simp [stepG])
+  h7 := s3_tmpl hk c W T m (by simp [stepG])
+  h8 := s3_tmpl hk c W T m (by simp [stepG])
+  h9 := s3_tmpl hk c W T m (by simp [stepG])
+  h10 := s3_tmpl hk c W T m (by simp [stepG])
+  h11 := s3_tmpl hk c W T m (by simp [stepG])
+  h12 := s3_tmpl hk c W T m (by simp [stepG])
+  h13 := s3_tmpl hk c W T m (by simp [stepG])
+  h14 := s3_tmpl hk c W T m (by simp [stepG])
+  h15 := s3_tmpl hk c W T m (by simp [stepG])
+  h16 := s3_tmpl hk c W T m (by simp [stepG])
+  h17 := s3_tmpl hk c W T m (by simp [stepG])
+  h19 := (S3_content hk c W T m).1
+  h20 := (S3_content hk c W T m).2.1
+  h21 := (S3_content hk c W T m).2.2.1
   g := by
     unfold GPreGsw
     refine ⟨fun i h h' => ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     · rw [Function.comp_apply]
-      exact s3_blank hk c W T hS _ (by
+      exact s3_blank hk c W T m hS _ (by
         have : ∀ i : Fin 48, 12 ≤ i.val → i.val < 46 → (vG i).val ∉ wrG := by decide +kernel
         exact this i h h')
     · rw [Function.comp_apply, show vG 8 = 92 from rfl]
-      exact s3_blank hk c W T hS _ (by decide)
+      exact s3_blank hk c W T m hS _ (by decide)
     · rw [Function.comp_apply, show vG 2 = 86 from rfl]
-      exact s3_tmpl hk c W T (by simp [stepG])
+      exact s3_tmpl hk c W T m (by simp [stepG])
     · rw [Function.comp_apply, show vG 3 = 87 from rfl]
-      exact s3_tmpl hk c W T (by simp [stepG])
+      exact s3_tmpl hk c W T m (by simp [stepG])
     · rw [Function.comp_apply, show vG 4 = 88 from rfl]
-      exact s3_tmpl hk c W T (by simp [stepG])
+      exact s3_tmpl hk c W T m (by simp [stepG])
     · rw [Function.comp_apply, show vG 5 = 89 from rfl]
-      exact s3_tmpl hk c W T (by simp [stepG])
+      exact s3_tmpl hk c W T m (by simp [stepG])
     · rw [Function.comp_apply, show vG 6 = 90 from rfl]
-      exact s3_tmpl hk c W T (by simp [stepG])
+      exact s3_tmpl hk c W T m (by simp [stepG])
     · rw [Function.comp_apply, show vG 7 = 91 from rfl]
-      exact s3_tmpl hk c W T (by simp [stepG])
+      exact s3_tmpl hk c W T m (by simp [stepG])
     · rw [Function.comp_apply, show vG 9 = 93 from rfl]
-      exact s3_tmpl hk c W T (by simp [stepG])
+      exact s3_tmpl hk c W T m (by simp [stepG])
     · rw [Function.comp_apply, show vG 10 = 94 from rfl]
-      exact s3_tmpl hk c W T (by simp [stepG])
+      exact s3_tmpl hk c W T m (by simp [stepG])
 
 end PrepG
 
@@ -1397,6 +1427,7 @@ end PrepG
 section RunG
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (W : ℕ) (gs : GateList) (T : Store 256)
+  (m : ℕ)
 
 /-- The step of the predicate's run. -/
 abbrev fG (N K k d : ℕ) : List Bool → List Bool → List Bool :=
@@ -1411,60 +1442,60 @@ theorem vstepG (N K k d : ℕ) : VStep (simStepP ginvGswP) (VG N K k d) (fG N K 
   ⟨h.noGrow, h.pre_upd, h.run_eq, h.len⟩
 
 /-- The words before `gswC`. -/
-def w5 : St := exec (VG N K k c.d) (fG N K k c.d) (ofList [.cp GS GSC, streamsG, oneC]) (w4 hk c W T)
+def w5 : St := exec (VG N K k c.d) (fG N K k c.d) (ofList [.cp GS GSC, streamsG, oneC]) (w4 hk c W T m)
 
 theorem w4_key {x : Fin 120} {n : ℕ}
     (h : (mw x, n) ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c)) :
-    w4 hk c W T x = List.replicate n false :=
-  S3_key hk c W T h
+    w4 hk c W T m x = List.replicate n false :=
+  S3_key hk c W T m h
 
 theorem length_gswGadW'' : (gswGadW N K k).length = lenA N K k 2 := by
   rw [gswGadW_eq, List.length_append, List.length_append, length_gadW, length_zeroW,
     List.length_take, length_gadW, lenA]
   rw [min_eq_left (Nat.mul_le_mul_right _ (by omega))]; ring
 
-theorem w5_spec (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
-    w5 hk c W T 10 = oneG N K k c.d ∧
-    w5 hk c W T BSt = (T (mw SDW)).drop (offPsi hk c) ∧
-    w5 hk c W T WSt = (T (mw SDW)).drop (offR hk c) ∧
-    w5 hk c W T rZ = (T (mw SDW)).drop (oXG hk c) ∧
-    w5 hk c W T GS = gsW W gs ∧
-    ∀ x, x ∉ [GS, BSt, WSt, rZ, 10, GADW, ZEROW, ONEW] → w5 hk c W T x = w4 hk c W T x := by
-  obtain ⟨-, -, -, g1, g2, g3⟩ := S3_content hk c W gs T hW hb hT
-  obtain ⟨-, gc, -⟩ := S3_GS hk c W gs T hW hb hT
-  have e : w5 hk c W T = exec (VG N K k c.d) (fG N K k c.d) oneC
+theorem w5_spec :
+    w5 hk c W T m 10 = oneG N K k c.d ∧
+    w5 hk c W T m BSt = (T (mw SDW)).drop (offPsi hk c) ∧
+    w5 hk c W T m WSt = (T (mw SDW)).drop (offR hk c) ∧
+    w5 hk c W T m rZ = (T (mw SDW)).drop (oXG hk c) ∧
+    w5 hk c W T m GS = T (mw GSC) ∧
+    ∀ x, x ∉ [GS, BSt, WSt, rZ, 10, GADW, ZEROW, ONEW] → w5 hk c W T m x = w4 hk c W T m x := by
+  obtain ⟨-, -, -, g1, g2, g3⟩ := S3_content hk c W T m
+  obtain ⟨-, gc, -⟩ := S3_GS hk c W T m
+  have e : w5 hk c W T m = exec (VG N K k c.d) (fG N K k c.d) oneC
       (exec (VG N K k c.d) (fG N K k c.d) streamsG
-        (Function.update (w4 hk c W T) GS (w4 hk c W T GSC))) := rfl
+        (Function.update (w4 hk c W T m) GS (w4 hk c W T m GSC))) := rfl
   rw [e, exec_streamsG]
-  set w := Function.update (w4 hk c W T) GS (w4 hk c W T GSC) with hw
-  have hw' : ∀ x, x ≠ GS → w x = w4 hk c W T x := fun x hx => by
+  set w := Function.update (w4 hk c W T m) GS (w4 hk c W T m GSC) with hw
+  have hw' : ∀ x, x ≠ GS → w x = w4 hk c W T m x := fun x hx => by
     rw [hw, Function.update_of_ne hx]
   have l61 : (w 61).length = offPsi hk c := by
-    rw [hw' _ (by decide), w4_key hk c W T (n := offPsi hk c) (by simp [wordsG])]; simp
+    rw [hw' _ (by decide), w4_key hk c W T m (n := offPsi hk c) (by simp [wordsG])]; simp
   have l62 : (w 62).length = offR hk c := by
-    rw [hw' _ (by decide), w4_key hk c W T (n := offR hk c) (by simp [wordsG])]; simp
+    rw [hw' _ (by decide), w4_key hk c W T m (n := offR hk c) (by simp [wordsG])]; simp
   have l63 : (w 63).length = oXG hk c := by
-    rw [hw' _ (by decide), w4_key hk c W T (n := oXG hk c) (by simp [wordsG])]; simp
+    rw [hw' _ (by decide), w4_key hk c W T m (n := oXG hk c) (by simp [wordsG])]; simp
   have hS : w SDW = T (mw SDW) := by
-    rw [hw' _ (by decide), w4, S3_eq_T hk c W T (by decide) (by decide) (by decide)]
+    rw [hw' _ (by decide), w4, S3_eq_T hk c W T m (by decide) (by decide) (by decide)]
   obtain ⟨o1, o2⟩ := exec_oneC (V := VG N K k c.d) (f := fG N K k c.d)
     (Function.update (Function.update (Function.update w BSt ((w SDW).drop (w 61).length)) WSt
       ((w SDW).drop (w 62).length)) rZ ((w SDW).drop (w 63).length))
     (g := gswGadW N K k) (z := zeroW (lenA N K k c.d)) (o := oneW N K)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]
-        rw [hw' _ (by decide), w4_key hk c W T (n := VG N K k c.d) (by simp [wordsG])])
+        rw [hw' _ (by decide), w4_key hk c W T m (n := VG N K k c.d) (by simp [wordsG])])
     (by rw [length_gswGadW'', length_zeroW, length_oneW])
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]; rw [hw' _ (by decide)]; exact g1)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]; rw [hw' _ (by decide)]; exact g2)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]; rw [hw' _ (by decide)]; exact g3)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]
-        rw [hw' _ (by decide), w4_key hk c W T (n := lenA N K k 2) (by simp [wordsG]),
+        rw [hw' _ (by decide), w4_key hk c W T m (n := lenA N K k 2) (by simp [wordsG]),
           length_gswGadW'']; simp)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]
-        rw [hw' _ (by decide), w4_key hk c W T (n := lenA N K k c.d) (by simp [wordsG]),
+        rw [hw' _ (by decide), w4_key hk c W T m (n := lenA N K k c.d) (by simp [wordsG]),
           length_zeroW]; simp)
     (by simp (config := {decide := true}) only [Function.update_apply, if_false]
-        rw [hw' _ (by decide), w4_key hk c W T (n := N * K) (by simp [wordsG]),
+        rw [hw' _ (by decide), w4_key hk c W T m (n := N * K) (by simp [wordsG]),
           length_oneW]; simp)
   refine ⟨o1, ?_, ?_, ?_, ?_, fun x hx => ?_⟩
   · rw [o2 _ (by decide) (by decide) (by decide) (by decide)]
@@ -1483,24 +1514,22 @@ theorem w5_spec (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
     exact hw' x a0
 
 /-- **The words before `gswC` meet `GInit`.** -/
-theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
-    (hgs : gs.length + 10 ≤ W)
-    (hT : T (mw GSC) = gsW W gs) (hA : T (mw SDW) = (sdEnc hk c).enc sd)
-    (hOB : T (mw OB) = [true]) :
-    GInit (VG N K k c.d) W (lenA N K k 2) (lenA N K k c.d) (N * K) (oneG N K k c.d) gs
+theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K)
+    (hA : T (mw SDW) = (sdEnc hk c).enc sd) (hOB : T (mw OB) = [true]) :
+    GInit (VG N K k c.d) W (lenA N K k 2) (lenA N K k c.d) (N * K) (oneG N K k c.d) (T (mw GSC)) m
       (fun i => colsW N K k 2 (sd.Ψ i)) (fun i => colsW N K k c.d (sd.Rm i))
       ((T (mw SDW)).drop (oXG hk c))
-      ((w5 hk c W T BSt).drop
-        (((List.finRange 10).map fun i => colsW N K k 2 (sd.Ψ i)).flatten.length))
-      ((w5 hk c W T WSt).drop
-        (((List.finRange 10).map fun i => colsW N K k c.d (sd.Rm i)).flatten.length))
-      (w5 hk c W T) := by
-  obtain ⟨o1, oB, oW, oX, oG, o2⟩ := w5_spec hk c W gs T hW hb hT
+      ((w5 hk c W T m BSt).drop
+        (((List.finRange nA).map fun i => colsW N K k 2 (sd.Ψ i)).flatten.length))
+      ((w5 hk c W T m WSt).drop
+        (((List.finRange nA).map fun i => colsW N K k c.d (sd.Rm i)).flatten.length))
+      (w5 hk c W T m) := by
+  obtain ⟨o1, oB, oW, oX, oG, o2⟩ := w5_spec hk c W T m
   have L : ∀ (x : Fin 120) (n : ℕ), (mw x, n) ∈ stepG N K k c.d ++
       wordsG N K k c.d W (offPsi hk c) (offR hk c) (oXG hk c) →
-      x ∉ [GS, BSt, WSt, rZ, 10, GADW, ZEROW, ONEW] → (w5 hk c W T x).length = n :=
-    fun x n h hx => by rw [o2 x hx, w4_key hk c W T h, List.length_replicate]
-  obtain ⟨-, -, g3⟩ := S3_GS hk c W gs T hW hb hT
+      x ∉ [GS, BSt, WSt, rZ, 10, GADW, ZEROW, ONEW] → (w5 hk c W T m x).length = n :=
+    fun x n h hx => by rw [o2 x hx, w4_key hk c W T m h, List.length_replicate]
+  obtain ⟨-, -, g3⟩ := S3_GS hk c W T m
   exact {
     it := {
       h10 := by rw [o1, oneG, List.length_append, List.length_append, length_gswGadW'',
@@ -1509,7 +1538,7 @@ theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb 
       ta1 := L _ _ (by simp [wordsG]) (by decide)
       tad := L _ _ (by simp [wordsG]) (by decide)
       tk1 := L _ _ (by simp [wordsG]) (by decide)
-      znk1 := by rw [o2 _ (by decide), w4_key hk c W T (n := N * K - 1) (by simp [wordsG]),
+      znk1 := by rw [o2 _ (by decide), w4_key hk c W T m (n := N * K - 1) (by simp [wordsG]),
         Nat.mul_one]
       t29 := L _ _ (by simp [wordsG]) (by decide)
       hNK := by rw [Nat.mul_one]; exact Nat.mul_pos hN hK
@@ -1523,65 +1552,81 @@ theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb 
     tsl := L _ _ (by simp [wordsG]) (by decide)
     tst := L _ _ (by simp [wordsG]) (by decide)
     td2 := L _ _ (by simp [wordsG]) (by decide)
-    tw := by rw [o2 _ (by decide), w4_key hk c W T (n := W) (by simp [wordsG])]
-    ob := by rw [o2 _ (by decide), w4, S3_eq_T hk c W T (by decide) (by decide) (by decide), hOB]
+    tw := by rw [o2 _ (by decide), w4_key hk c W T m (n := W) (by simp [wordsG])]
+    ob := by rw [o2 _ (by decide), w4, S3_eq_T hk c W T m (by decide) (by decide) (by decide), hOB]
     tw9 := L _ _ (by simp [wordsG]) (by decide)
     tins := L _ _ (by simp [wordsG]) (by decide)
     gsw := oG
-    gcnt := by rw [o2 _ (by decide), w4, g3, List.length_replicate]; omega }
+    gcnt := by rw [o2 _ (by decide), w4, g3, List.length_replicate] }
 
-/-- The words after the predicate's run. -/
-def w6 : St := exec (VG N K k c.d) (fG N K k c.d) gswFullC (w4 hk c W T)
+/-- The words after the predicate's run (the code `cG`). -/
+def w6 (cG : Code) : St := exec (VG N K k c.d) (fG N K k c.d) cG (w4 hk c W T m)
+
+/-- **The law of the predicate's run** on the machine, for any code. -/
+theorem law_runGX (cG : Code) (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) (hX0 : T tX0 = [])
+    (hX1 : T tX1 = []) (hX2 : T tX2 = []) :
+    (compileA (nocert (simStepP ginvGswP)) cG).toX.law (S3 hk c W T m) =
+      PMF.pure (ValVM.enc (s3 hk c W T m) (VG N K k c.d) (w6 hk c W T m cG)) := by
+  rw [S3_enc hk c W T m hX0 hX1 hX2]
+  exact law_compileA (nocert _) (vstepG N K k c.d) (s3_simPre hk c W T m hS)
+    (s3_blank hk c W T m hS 0 (by decide)) (s3_blank hk c W T m hS 1 (by decide))
+    (s3_blank hk c W T m hS 2 (by decide)) _ _
 
 /-- **The law of the predicate's run.** -/
-theorem law_runG (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs)
-    (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) (hX0 : T tX0 = []) (hX1 : T tX1 = [])
-    (hX2 : T tX2 = []) :
-    runG.law (S3 hk c W T) =
-      PMF.pure (ValVM.enc (s3 hk c W T) (VG N K k c.d) (w6 hk c W T)) := by
-  rw [S3_enc hk c W T hX0 hX1 hX2]
-  exact law_compileA (nocert _) (vstepG N K k c.d) (s3_simPre hk c W gs T hW hb hT hS)
-    (s3_blank hk c W T hS 0 (by decide)) (s3_blank hk c W T hS 1 (by decide))
-    (s3_blank hk c W T hS 2 (by decide)) _ _
+theorem law_runG (hS : ∀ j : Fin 132, j.val ∉ wrG → T (ms j) = []) (hX0 : T tX0 = [])
+    (hX1 : T tX1 = []) (hX2 : T tX2 = []) :
+    runG.law (S3 hk c W T m) =
+      PMF.pure (ValVM.enc (s3 hk c W T m) (VG N K k c.d) (w6 hk c W T m gswFullC)) :=
+  law_runGX hk c W T m gswFullC hS hX0 hX1 hX2
 
-theorem w6_eq : w6 hk c W T = exec (VG N K k c.d) (fG N K k c.d) posC
-    (exec (VG N K k c.d) (fG N K k c.d) gswC (w5 hk c W T)) := by
-  rw [w6, w5, gswFullC, show [Code.cp GS GSC, streamsG, oneC, gswC, posC] =
-    [Code.cp GS GSC, streamsG, oneC] ++ ([gswC] ++ [posC]) from rfl, exec_ofList_append,
+theorem w6_eq (X : Code) : w6 hk c W T m (ofList [.cp GS GSC, streamsG, oneC, X, posC]) =
+    exec (VG N K k c.d) (fG N K k c.d) posC (exec (VG N K k c.d) (fG N K k c.d) X (w5 hk c W T m)) := by
+  rw [w6, w5, show [Code.cp GS GSC, streamsG, oneC, X, posC] =
+    [Code.cp GS GSC, streamsG, oneC] ++ ([X] ++ [posC]) from rfl, exec_ofList_append,
     exec_ofList_append]
   rfl
 
-theorem w6_frame (x : Fin 120) (hx : x ∉ wr gswFullC) : w6 hk c W T x = w4 hk c W T x :=
+theorem w6_frame (cG : Code) (x : Fin 120) (hx : x ∉ wr cG) : w6 hk c W T m cG x = w4 hk c W T m x :=
   exec_not_mem _ _ _ hx
 
-/-- **The predicate's output wire and the positions.** -/
-theorem w6_spec (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
-    (hgs : gs.length + 10 ≤ W) (hne : gs ≠ [])
-    (hT : T (mw GSC) = gsW W gs) (hA : T (mw SDW) = (sdEnc hk c).enc sd) (hOB : T (mw OB) = [true]) :
-    w6 hk c W T OUTW = SLP.valueOf (fun i : Fin 10 =>
-        ((List.finRange 10).map fun i => jw (colsW N K k 2 (sd.Ψ i)) (colsW N K k c.d (sd.Rm i))
-          (((T (mw SDW)).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val [])
-      (oneG N K k c.d) (fV (VG N K k c.d) (fG N K k c.d)) (predOf 10 gs).1 (predOf 10 gs).2 ∧
-    w6 hk c W T 61 = concatN (nPos N k) (unaryW (nPos N k)) := by
-  have hG := exec_gswC (vstepG N K k c.d).len hgs hb hne (fun i => length_colsW' _ _)
-    (fun i => length_colsW' _ _) _ (gInit_w5 hk c W gs T sd hN hK hW hb hgs hT hA hOB)
+/-- **The predicate's output wire and the positions**, for a run `X` that leaves `OB`, `29`, `73`,
+`74`, `75` alone. -/
+theorem w6_pos (X : Code) (hX : ∀ x ∈ [OB, 29, 73, 74, 75], x ∉ wr X) (hOB : T (mw OB) = [true]) :
+    w6 hk c W T m (ofList [.cp GS GSC, streamsG, oneC, X, posC]) OUTW =
+      exec (VG N K k c.d) (fG N K k c.d) X (w5 hk c W T m) OUTW ∧
+    w6 hk c W T m (ofList [.cp GS GSC, streamsG, oneC, X, posC]) 61 =
+      concatN (nPos N k) (unaryW (nPos N k)) := by
   have fr : ∀ x : Fin 120, x ∈ [OB, 29, 73, 74, 75] →
-      exec (VG N K k c.d) (fG N K k c.d) gswC (w5 hk c W T) x = w4 hk c W T x := by
+      exec (VG N K k c.d) (fG N K k c.d) X (w5 hk c W T m) x = w4 hk c W T m x := by
     intro x hx
-    obtain ⟨-, -, -, -, -, o2⟩ := w5_spec hk c W gs T hW hb hT
-    rw [exec_not_mem _ _ _ (by revert x; decide), o2 x (by revert x; decide)]
+    obtain ⟨-, -, -, -, -, o2⟩ := w5_spec hk c W T m
+    rw [exec_not_mem _ _ _ (hX x hx), o2 x (by revert x; decide)]
   obtain ⟨P1, P2⟩ := exec_posC (V := VG N K k c.d) (f := fG N K k c.d) (W' := nPos N k)
-    (M := nPos N k) le_rfl (exec (VG N K k c.d) (fG N K k c.d) gswC (w5 hk c W T))
-    (by rw [fr OB (by decide), w4, S3_eq_T hk c W T (by decide) (by decide) (by decide), hOB])
-    (by rw [fr 29 (by decide), w4_key hk c W T (n := 1) (by simp [wordsG]), List.length_replicate])
-    (by rw [fr 73 (by decide), w4_key hk c W T (n := nPos N k * nPos N k) (by simp [wordsG]),
+    (M := nPos N k) le_rfl (exec (VG N K k c.d) (fG N K k c.d) X (w5 hk c W T m))
+    (by rw [fr OB (by decide), w4, S3_eq_T hk c W T m (by decide) (by decide) (by decide), hOB])
+    (by rw [fr 29 (by decide), w4_key hk c W T m (n := 1) (by simp [wordsG]), List.length_replicate])
+    (by rw [fr 73 (by decide), w4_key hk c W T m (n := nPos N k * nPos N k) (by simp [wordsG]),
       List.length_replicate])
-    (by rw [fr 74 (by decide), w4_key hk c W T (n := nPos N k) (by simp [wordsG])])
-    (by rw [fr 75 (by decide), w4_key hk c W T (n := nPos N k) (by simp [wordsG]),
+    (by rw [fr 74 (by decide), w4_key hk c W T m (n := nPos N k) (by simp [wordsG])])
+    (by rw [fr 75 (by decide), w4_key hk c W T m (n := nPos N k) (by simp [wordsG]),
       List.length_replicate])
   rw [w6_eq]
-  exact ⟨by rw [P2 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
-    (by decide) (by decide)]; exact hG, P1⟩
+  exact ⟨P2 _ (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide), P1⟩
+
+/-- **The predicate's output wire and the positions** (a gate list). -/
+theorem w6_spec (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hb : BndG W gs)
+    (hgs : gs.length + nA ≤ W) (hne : gs ≠ [])
+    (hT : T (mw GSC) = gsW W gs) (hA : T (mw SDW) = (sdEnc hk c).enc sd) (hOB : T (mw OB) = [true]) :
+    w6 hk c W T gs.length gswFullC OUTW = SLP.valueOf (fun i : Fin nA =>
+        ((List.finRange nA).map fun i => jw (colsW N K k 2 (sd.Ψ i)) (colsW N K k c.d (sd.Rm i))
+          (((T (mw SDW)).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val [])
+      (oneG N K k c.d) (fV (VG N K k c.d) (fG N K k c.d)) (predOf nA gs).1 (predOf nA gs).2 ∧
+    w6 hk c W T gs.length gswFullC 61 = concatN (nPos N k) (unaryW (nPos N k)) := by
+  have hG := exec_gswC (vstepG N K k c.d).len hgs hb hne (fun i => length_colsW' _ _)
+    (fun i => length_colsW' _ _) _ (by rw [← hT]; exact gInit_w5 hk c W T gs.length sd hN hK hA hOB)
+  obtain ⟨P1, P2⟩ := w6_pos hk c W T gs.length gswC (by decide +kernel) hOB
+  exact ⟨P1.trans hG, P2⟩
 
 end RunG
 
@@ -1661,7 +1706,7 @@ section IdT
 variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (sd : SimData hk c)
 
 /-- **The inputs of the run of `f̂` are the inputs of the simulation.** -/
-theorem inBW_eq (hN : 0 < N) (hK : 0 < K) (i : Fin 10) (b : BI N (K + 1)) :
+theorem inBW_eq (hN : 0 < N) (hK : 0 < K) (i : Fin nA) (b : BI N (K + 1)) :
     ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd) i b =
       (insTW sd).getD (ixT N K (K + 1) hk (i, b)) [] := by
   rw [ixT, insTW]
@@ -1670,7 +1715,7 @@ theorem inBW_eq (hN : 0 < N) (hK : 0 < K) (i : Fin 10) (b : BI N (K + 1)) :
   simp only [ValVM.inBW, ValVM.jw, jointW, Algo.psiBitsW, bitsW, constW_bitW _ hN hK, getD_block]
   rfl
 
-theorem length_inBW (hN : 0 < N) (hK : 0 < K) (i : Fin 10) (b : BI N (K + 1)) :
+theorem length_inBW (hN : 0 < N) (hK : 0 < K) (i : Fin nA) (b : BI N (K + 1)) :
     (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd) i b).length = VT N K (K + 1) c.d := by
   rw [inBW_eq hk c sd hN hK]
   have hl : ixT N K (K + 1) hk (i, b) < (insTW sd).length := by
@@ -1679,33 +1724,33 @@ theorem length_inBW (hN : 0 < N) (hK : 0 < K) (i : Fin 10) (b : BI N (K + 1)) :
   exact length_mem_insTW sd _ (List.getElem_mem _)
 
 /-- **The output bundle of the machine's run of `f̂` is read from the store of the simulation.** -/
-theorem fhatOut_eq (C : List Bool) (hN : 0 < N) (hK : 0 < K) (b : BI N (K + 1)) :
+theorem fhatOut_eq (P : SLP (Fin nA) × Wire (Fin nA)) (hN : 0 < N) (hK : 0 < K) (b : BI N (K + 1)) :
     fhatV (oneT N K c.d) (ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d))
         (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1))
-        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 (parse C)).1 (predOf 10 (parse C)).2 b =
-      (storeT N K (K + 1) c.d (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C) (insTW sd)
+        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) P.1 P.2 b =
+      (storeTP N K (K + 1) c.d (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P (insTW sd)
         (ixT N K (K + 1) hk)).getD (wireIx (ixT N K (K + 1) hk)
           (Enum.list (α := JT N K (K + 1) hk)).length
-          (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1.length
-          ((fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).2 b)) [] := by
-  set inp : Fin 10 × BI N (K + 1) → List Bool := fun ib =>
+          (fhatProgP K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P).1.length
+          ((fhatProgP K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P).2 b)) [] := by
+  set inp : Fin nA × BI N (K + 1) → List Bool := fun ib =>
     ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd) ib.1 ib.2 with hinp
   have hin : ∀ ib, (inp ib).length = VT N K (K + 1) c.d := fun ib => length_inBW hk c sd hN hK _ _
   have h1 : (oneT N K c.d).length = VT N K (K + 1) c.d := by
     simp [oneT, length_gadW, length_oneW, VT, lenA]; ring
   have e1 := valueOf_fhatSLPL (inp := inp) (one := oneT N K c.d)
-    (step := ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d)) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 (parse C)).1
-    (predOf 10 (parse C)).2 b
+    (step := ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d)) (enumT N (K + 1)) (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) P.1
+    P.2 b
   refine e1.symm.trans ?_
   rw [ValVM.valueOf_fV (vstepT N K c.d).len inp _ hin h1]
   obtain ⟨h, e⟩ := getElem_wireIx (ixT N K (K + 1) hk) (insTW sd) (length_insTW sd)
     (fun j => enumIx_lt (α := JT N K (K + 1) hk) j) (simOneW N K (K + 1) c.d (gadW N K (K + 1)))
     (SLP.values (fun j => (insTW sd).getD (ixT N K (K + 1) hk j) []) (simOneW N K (K + 1) c.d
-      (gadW N K (K + 1))) (fT N K c.d) (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1)
-    ((fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).2 b)
+      (gadW N K (K + 1))) (fT N K c.d) (fhatProgP K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P).1)
+    ((fhatProgP K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P).2 b)
   rw [← SLP.length_values (fun j => (insTW sd).getD (ixT N K (K + 1) hk j) [])
     (simOneW N K (K + 1) c.d (gadW N K (K + 1))) (fT N K c.d)
-    (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1, storeT,
+    (fhatProgP K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P).1, storeTP,
     List.getD_eq_getElem _ _ h, e]
   have hi : inp = fun j => (insTW sd).getD (ixT N K (K + 1) hk j) [] := by
     funext ib; exact inBW_eq hk c sd hN hK ib.1 ib.2
@@ -1718,18 +1763,18 @@ section IdG
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (sd : SimData hk c)
 
-theorem xs_eq (i : Fin 10) :
+theorem xs_eq (i : Fin nA) :
     (((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false = DateWindow.bitsOf sd.x i := by
   rw [← getD_sd_posX hk c sd i, List.getD_eq_getElem?_getD, List.getElem?_drop,
     ← List.getD_eq_getElem?_getD, posX, oXG]
   simp only [Nat.add_assoc]
 
-theorem getD_finRange_map {β : Type*} (g : Fin 10 → List β) (i : Fin 10) :
-    ((List.finRange 10).map g).getD i.val [] = g i := by
+theorem getD_finRange_map {β : Type*} (g : Fin nA → List β) (i : Fin nA) :
+    ((List.finRange nA).map g).getD i.val [] = g i := by
   rw [List.getD_eq_getElem _ _ (by simp), List.getElem_map, List.getElem_finRange]
   rfl
 
-theorem jw_eq (hN : 0 < N) (hK : 0 < K) (i : Fin 10) :
+theorem jw_eq (hN : 0 < N) (hK : 0 < K) (i : Fin nA) :
     ValVM.jw (colsW N K k 2 (sd.Ψ i)) (colsW N K k c.d (sd.Rm i))
       ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1 =
       (insGW sd).getD i.val [] := by
@@ -1737,35 +1782,35 @@ theorem jw_eq (hN : 0 < N) (hK : 0 < K) (i : Fin 10) :
   simp only [ValVM.jw, jointW, constW_bitW _ hN hK, Nat.mul_one]
 
 /-- **The predicate's output wire of the machine's run is read from the simulation's store.** -/
-theorem predOut_eq (C : List Bool) (hN : 0 < N) (hK : 0 < K) :
-    SLP.valueOf (fun i : Fin 10 =>
-        ((List.finRange 10).map fun i => ValVM.jw (colsW N K k 2 (sd.Ψ i))
+theorem predOut_eq (P : SLP (Fin nA) × Wire (Fin nA)) (hN : 0 < N) (hK : 0 < K) :
+    SLP.valueOf (fun i : Fin nA =>
+        ((List.finRange nA).map fun i => ValVM.jw (colsW N K k 2 (sd.Ψ i))
           (colsW N K k c.d (sd.Rm i))
           ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val [])
-      (oneG N K k c.d) (ValVM.fV (VG N K k c.d) (fG N K k c.d)) (predOf 10 (parse C)).1
-      (predOf 10 (parse C)).2 =
-    (storeG N K k c.d (parse C) (insGW sd) (fun i => i.val)).getD
-      (wireIx (fun i : Fin 10 => i.val) 10 (predOf 10 (parse C)).1.length (predOf 10 (parse C)).2) [] := by
-  have hi : (fun i : Fin 10 =>
-        ((List.finRange 10).map fun i => ValVM.jw (colsW N K k 2 (sd.Ψ i))
+      (oneG N K k c.d) (ValVM.fV (VG N K k c.d) (fG N K k c.d)) P.1
+      P.2 =
+    (storeGP N K k c.d P (insGW sd) (fun i => i.val)).getD
+      (wireIx (fun i : Fin nA => i.val) nA P.1.length P.2) [] := by
+  have hi : (fun i : Fin nA =>
+        ((List.finRange nA).map fun i => ValVM.jw (colsW N K k 2 (sd.Ψ i))
           (colsW N K k c.d (sd.Rm i))
           ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val []) =
-      fun i : Fin 10 => (insGW sd).getD i.val [] := by
+      fun i : Fin nA => (insGW sd).getD i.val [] := by
     funext i
     rw [getD_finRange_map]
     exact jw_eq hk c sd hN hK _
-  have hin : ∀ i : Fin 10, ((insGW sd).getD i.val []).length = VG N K k c.d := fun i => by
+  have hin : ∀ i : Fin nA, ((insGW sd).getD i.val []).length = VG N K k c.d := fun i => by
     rw [List.getD_eq_getElem _ _ (by rw [length_insGW]; exact i.isLt)]
     exact length_mem_insGW sd _ (List.getElem_mem _)
   have h1 : (oneG N K k c.d).length = VG N K k c.d := by
     rw [oneG, List.length_append, List.length_append, length_gswGadW'', length_zeroW, length_oneW]
   rw [hi, ValVM.valueOf_fV (vstepG N K k c.d).len _ _ hin h1]
-  obtain ⟨h, e⟩ := getElem_wireIx (fun i : Fin 10 => i.val) (insGW sd) (length_insGW sd)
+  obtain ⟨h, e⟩ := getElem_wireIx (fun i : Fin nA => i.val) (insGW sd) (length_insGW sd)
     (fun i => i.isLt) (simOneW N K k c.d (gswGadW N K k))
-    (SLP.values (fun i : Fin 10 => (insGW sd).getD i.val []) (simOneW N K k c.d (gswGadW N K k))
-      (fG N K k c.d) (predOf 10 (parse C)).1) (predOf 10 (parse C)).2
-  rw [← SLP.length_values (fun i : Fin 10 => (insGW sd).getD i.val [])
-    (simOneW N K k c.d (gswGadW N K k)) (fG N K k c.d) (predOf 10 (parse C)).1, storeG,
+    (SLP.values (fun i : Fin nA => (insGW sd).getD i.val []) (simOneW N K k c.d (gswGadW N K k))
+      (fG N K k c.d) P.1) P.2
+  rw [← SLP.length_values (fun i : Fin nA => (insGW sd).getD i.val [])
+    (simOneW N K k c.d (gswGadW N K k)) (fG N K k c.d) P.1, storeGP,
     List.getD_eq_getElem _ _ h, e]
   rfl
 
@@ -1785,27 +1830,27 @@ theorem posW_posB (N k : ℕ) :
 
 /-- **`simKeyP` on the bundle of `f̂`, the positions and the predicate's output wire writes
 `W_f`.** -/
-theorem run_simKeyP_B2 (C : List Bool) (hN : 0 < N) (hK : 0 < K) (r : Store 94)
+theorem run_simKeyP_B2 (P : SLP (Fin nA) × Wire (Fin nA)) (hN : 0 < N) (hK : 0 < K) (r : Store 94)
     (ht : Prog.KTmpl N K (K + 1) c.d (nPos N (K + 1)) (VT N K (K + 1) c.d) (lenA N K (K + 1) 1)
       (r ∘ Prog.oKs))
     (hb : ∀ t : Fin 94, 18 ≤ t.val → t.val < 86 → r t = []) (hb' : ∀ t : Fin 94, 91 ≤ t.val → r t = [])
     (h1 : r 1 = ValVM.bw (fhatV (oneT N K c.d) (ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d))
         (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1))
-        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 (parse C)).1 (predOf 10 (parse C)).2))
+        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) P.1 P.2))
     (h2 : r 2 = concatN (nPos N (K + 1)) (unaryW (nPos N (K + 1))))
-    (h86 : r 86 = SLP.valueOf (fun i : Fin 10 =>
-        ((List.finRange 10).map fun i => ValVM.jw (colsW N K (K + 1) 2 (sd.Ψ i))
+    (h86 : r 86 = SLP.valueOf (fun i : Fin nA =>
+        ((List.finRange nA).map fun i => ValVM.jw (colsW N K (K + 1) 2 (sd.Ψ i))
           (colsW N K (K + 1) c.d (sd.Rm i))
           ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val [])
       (oneG N K (K + 1) c.d) (ValVM.fV (VG N K (K + 1) c.d) (fG N K (K + 1) c.d))
-      (predOf 10 (parse C)).1 (predOf 10 (parse C)).2)
+      P.1 P.2)
     (h87 : r 87 = [false]) (h88 : (r 88).length = 1)
     (h89 : (r 89).length = VG N K (K + 1) c.d) (h90 : (r 90).length = lenA N K (K + 1) 2) :
-    run Prog.simKeyP r = Function.update r 0 (colsW N K (K + 1) c.d (simW sd C)) := by
+    run Prog.simKeyP r = Function.update r 0 (colsW N K (K + 1) c.d (simWP sd P)) := by
   rw [Prog.run_simKeyP r ht hb hb' (posB N (K + 1)) (fun c hc i hi j hj => by
       simp only [posB, nPos]
       have : c * (K + 1) + i + 1 ≤ 2 * (K + 1) * (K + 1) := by nlinarith
-      nlinarith) (by rw [h2, posW_posB]) h88 h89 h90, ← simKeyStoreW_sd sd C, simKeyStoreW]
+      nlinarith) (by rw [h2, posW_posB]) h88 h89 h90, ← simKeyStoreW_sdP sd P, simKeyStoreWP]
   congr 2
   · apply Prog.keySumMW_congr
     intro c' hc i hi j hj
@@ -1816,40 +1861,40 @@ theorem run_simKeyP_B2 (C : List Bool) (hN : 0 < N) (hK : 0 < K) (r : Store 94)
     have hl : posB N (K + 1) c' i j < ((Enum.list (α := BI N (K + 1))).map
         (fhatV (oneT N K c.d) (ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d))
         (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1))
-        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 (parse C)).1
-        (predOf 10 (parse C)).2)).length := by
+        (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) P.1
+        P.2)).length := by
       rw [List.length_map, hpos]; exact ValVM.biIx_lt _
     rw [Prog.readW_flatten _ (fun x hx => by
         simp only [List.mem_map] at hx
         obtain ⟨b, -, rfl⟩ := hx
-        rw [fhatOut_eq hk c sd C hN hK b]
+        rw [fhatOut_eq hk c sd P hN hK b]
         have hl' := wireIx_lt_store (length_insTW sd) (fun j => enumIx_lt (α := JT N K (K + 1) hk) j)
           (fun j => (insTW sd).getD (ixT N K (K + 1) hk j) []) (simOneW N K (K + 1) c.d
-            (gadW N K (K + 1))) (fT N K c.d) (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1
-          ((fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).2 b)
+            (gadW N K (K + 1))) (fT N K c.d) (fhatProgP K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P).1
+          ((fhatProgP K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P).2 b)
         exact store_len (length_mem_insTW sd) (length_insTW sd)
           (fun j => enumIx_lt (α := JT N K (K + 1) hk) j) (by
             rw [simOneW, length_jointW, length_gadW, length_zeroW, length_oneW]; simp [lenA])
           (fT N K c.d) (fun a b _ _ => length_simStepJW (d := c.d) (by rw [length_gadW, lenA]; ring) _ a b)
-          (fhatProg K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) (parse C)).1 _
+          (fhatProgP K (ordT₀ N (K + 1)) (ordO₀ N (K + 1)) P).1 _
           (List.getD_eq_getElem _ _ hl' ▸ List.getElem_mem hl')) hl (by simp [VT]),
       List.getElem_map]
     simp only [hpos, ValVM.getElem_biIx]
-    rw [fhatOut_eq hk c sd C hN hK]
+    rw [fhatOut_eq hk c sd P hN hK]
     rfl
-  · rw [h86, h87, show takeD 1 [false] = [false] from rfl, predOut_eq hk c sd C hN hK]
+  · rw [h86, h87, show takeD 1 [false] = [false] from rfl, predOut_eq hk c sd P hN hK]
     simp only [Prog.readW, List.count_singleton]
     simp only [Bool.false_eq_true, beq_self_eq_true, if_false, Nat.mul_zero, List.drop_zero,
       Bool.beq_eq_decide_eq, decide_false, Bool.false_eq_true, ite_false]
-    have hl' := wireIx_lt_store (length_insGW sd) (fun i : Fin 10 => i.isLt)
-      (fun i : Fin 10 => (insGW sd).getD i.val []) (simOneW N K (K + 1) c.d (gswGadW N K (K + 1)))
-      (fG N K (K + 1) c.d) (predOf 10 (parse C)).1 (predOf 10 (parse C)).2
-    have hv := store_len (length_mem_insGW sd) (length_insGW sd) (fun i : Fin 10 => i.isLt) (by
+    have hl' := wireIx_lt_store (length_insGW sd) (fun i : Fin nA => i.isLt)
+      (fun i : Fin nA => (insGW sd).getD i.val []) (simOneW N K (K + 1) c.d (gswGadW N K (K + 1)))
+      (fG N K (K + 1) c.d) P.1 P.2
+    have hv := store_len (length_mem_insGW sd) (length_insGW sd) (fun i : Fin nA => i.isLt) (by
         rw [simOneW, length_jointW, length_gswGadW'', length_zeroW, length_oneW])
       (fG N K (K + 1) c.d)
       (fun a b _ _ => length_simStepJW (d := c.d) length_gswGadW'' _ a b)
-      (predOf 10 (parse C)).1 _ (List.getElem_mem hl')
-    rw [storeG, List.getD_eq_getElem _ _ hl', takeD_eq_take (by rw [List.length_drop, hv]; simp only [VG, lenA]; omega)]
+      P.1 _ (List.getElem_mem hl')
+    rw [storeGP, List.getD_eq_getElem _ _ hl', takeD_eq_take (by rw [List.length_drop, hv]; simp only [VG, lenA]; omega)]
     rfl
 
 end IdK
@@ -1935,66 +1980,68 @@ theorem oK2_hi : ∀ j : Fin 94, 87 ≤ j.val → oK2 j = ⟨j.val, Nat.lt_of_lt
 
 section Final
 
-variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ) (gs : GateList)
-  (sd : SimData hk c)
+variable {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ) (G : List Bool)
+  (m : ℕ) (sd : SimData hk c) (cT cG : Code)
 
-/-- The store after the run of `f̂`. -/
+/-- The store after the run of `f̂` (code `cT`). -/
 def T3 : Store 256 :=
-  ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) gs) (VT N K (K + 1) c.d) (w3 hk c W gs sd)
+  ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) G m) (VT N K (K + 1) c.d) (w3 hk c W G m sd cT)
 
-/-- The store after the predicate's run. -/
+/-- The store after the predicate's run (code `cG`). -/
 def S4 : Store 256 :=
-  ValVM.enc (s3 hk c W (T3 hk c W gs sd)) (VG N K (K + 1) c.d) (w6 hk c W (T3 hk c W gs sd))
+  ValVM.enc (s3 hk c W (T3 hk c W G m sd cT) m) (VG N K (K + 1) c.d)
+    (w6 hk c W (T3 hk c W G m sd cT) m cG)
 
-theorem T3_word (x : Fin 120) (hx : x ∉ wr fhatFullC) :
-    T3 hk c W gs sd (mw x) = w1 hk c W ((sdEnc hk c).enc sd) gs x := by
-  rw [T3, ValVM.enc_tWd, w3_frame hk c W gs sd x hx]
+theorem T3_word (x : Fin 120) (hx : x ∉ wr cT) :
+    T3 hk c W G m sd cT (mw x) = w1 hk c W ((sdEnc hk c).enc sd) G m x := by
+  rw [T3, ValVM.enc_tWd, w3_frame hk c W G m sd cT x hx]
 
-theorem T3_facts (hW : 0 < W) (hb : BndG W gs) :
-    T3 hk c W gs sd (mw GSC) = gsW W gs ∧ T3 hk c W gs sd (mw SDW) = (sdEnc hk c).enc sd ∧
-      T3 hk c W gs sd (mw OB) = [true] ∧
-      (∀ j : Fin 132, j.val ∉ wrG → T3 hk c W gs sd (ms j) = []) ∧
-      T3 hk c W gs sd tX0 = [] ∧ T3 hk c W gs sd tX1 = [] ∧ T3 hk c W gs sd tX2 = [] := by
-  have hG : GSC ∉ wr fhatFullC := by decide +kernel
-  have hS : SDW ∉ wr fhatFullC := by decide +kernel
-  have hO : OB ∉ wr fhatFullC := by decide +kernel
+theorem T3_facts (hwr : GSC ∉ wr cT ∧ SDW ∉ wr cT ∧ OB ∉ wr cT) :
+    T3 hk c W G m sd cT (mw GSC) = G ∧ T3 hk c W G m sd cT (mw SDW) = (sdEnc hk c).enc sd ∧
+      T3 hk c W G m sd cT (mw OB) = [true] ∧
+      (∀ j : Fin 132, j.val ∉ wrG → T3 hk c W G m sd cT (ms j) = []) ∧
+      T3 hk c W G m sd cT tX0 = [] ∧ T3 hk c W G m sd cT tX1 = [] ∧
+      T3 hk c W G m sd cT tX2 = [] := by
+  obtain ⟨hG, hS, hO⟩ := hwr
   refine ⟨?_, ?_, ?_, fun j hj => ?_, by simp [T3], by simp [T3], by simp [T3]⟩
-  · rw [T3_word hk c W gs sd _ hG, w1_GSC hk c W gs hW hb]
-  · rw [T3_word hk c W gs sd _ hS, w1_SDW]
-  · rw [T3_word hk c W gs sd _ hO, w1]; exact S1_OB hk c W _ gs
+  · rw [T3_word hk c W G m sd cT _ hG, w1_GSC hk c W G m]
+  · rw [T3_word hk c W G m sd cT _ hS, w1_SDW]
+  · rw [T3_word hk c W G m sd cT _ hO, w1]; exact S1_OB hk c W _ G m
   · rw [T3, ValVM.enc_tS]
     have sub : ∀ i ∈ [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 86, 87, 88,
         89], i ∈ wrG := by decide
-    exact s1_blank hk c W _ gs j (fun i hi e => hj (by rw [e]; exact sub i hi))
+    exact s1_blank hk c W _ G m j (fun i hi e => hj (by rw [e]; exact sub i hi))
 
+theorem S4_FOUT (hF : FOUT ∉ wr cG) :
+    S4 hk c W G m sd cT cG (mw FOUT) = w3 hk c W G m sd cT FOUT := by
+  rw [S4, ValVM.enc_tWd, w6_frame _ _ _ _ _ _ _ hF, w4, S3_eq_T _ _ _ _ _ (by decide) (by decide)
+    (by decide), T3, ValVM.enc_tWd]
 
-theorem S4_FOUT (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs) (hgs : gs.length + 10 ≤ W)
-    (hne : gs ≠ []) :
-    S4 hk c W gs sd (mw FOUT) = ValVM.bw (fhatV (oneT N K c.d)
+/-- **`simKeyP` on the prepared store writes `W_f`**, when the run of `f̂` leaves the output bundle
+of `f̂` for the predicate program `P` on `FOUT` and the predicate's run leaves the value of `P` on
+`OUTW` and the positions on `61`. -/
+theorem key_run (P : SLP (Fin nA) × Wire (Fin nA)) (hN : 0 < N) (hK : 0 < K)
+    (hwr : GSC ∉ wr cT ∧ SDW ∉ wr cT ∧ OB ∉ wr cT) (hF : FOUT ∉ wr cG)
+    (hFO : w3 hk c W G m sd cT FOUT = ValVM.bw (fhatV (oneT N K c.d)
       (ValVM.fV (VT N K (K + 1) c.d) (fT N K c.d))
       (ValVM.inBW (bWs hk c sd) (wWs hk c sd) (entS hk c sd)) (enumT N (K + 1)) (enumO N (K + 1))
-      (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1 (predOf 10 gs).2) := by
-  have hF : FOUT ∉ wr gswFullC := by decide +kernel
-  rw [S4, ValVM.enc_tWd, w6_frame _ _ _ _ _ hF, w4, S3_eq_T _ _ _ _ (by decide) (by decide)
-    (by decide), T3, ValVM.enc_tWd]
-  exact w3_FOUT hk c W gs sd hN hK hW hb hgs hne
-
-/-- **`simKeyP` on the prepared store writes `W_f`.** -/
-theorem key_run (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W (parse C))
-    (hgs : (parse C).length + 10 ≤ W) (hne : parse C ≠ []) :
-    run simKeyP (fun j => S5 N K (K + 1) c.d (S4 hk c W (parse C) sd) (oK2 j)) =
-      Function.update (fun j => S5 N K (K + 1) c.d (S4 hk c W (parse C) sd) (oK2 j)) 0
-        (colsW N K (K + 1) c.d (simW sd C)) := by
-  set gs := parse C with hgs_def
-  obtain ⟨tG, tA, tO, tS, tX0', tX1', tX2'⟩ := T3_facts hk c W gs sd hW hb
-  obtain ⟨o86, o61⟩ := w6_spec hk c W gs (T3 hk c W gs sd) sd hN hK hW hb hgs hne tG tA tO
-  set r : Store 94 := fun j => S5 N K (K + 1) c.d (S4 hk c W gs sd) (oK2 j) with hr
+      (gvExp (2 ^ K)) (2 ^ K) P.1 P.2))
+    (hO : w6 hk c W (T3 hk c W G m sd cT) m cG OUTW = SLP.valueOf (fun i : Fin nA =>
+        ((List.finRange nA).map fun i => ValVM.jw (colsW N K (K + 1) 2 (sd.Ψ i))
+          (colsW N K (K + 1) c.d (sd.Rm i))
+          ((((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false) (N * K) 1).getD i.val [])
+      (oneG N K (K + 1) c.d) (ValVM.fV (VG N K (K + 1) c.d) (fG N K (K + 1) c.d)) P.1 P.2)
+    (h61 : w6 hk c W (T3 hk c W G m sd cT) m cG 61 =
+      concatN (nPos N (K + 1)) (unaryW (nPos N (K + 1)))) :
+    run simKeyP (fun j => S5 N K (K + 1) c.d (S4 hk c W G m sd cT cG) (oK2 j)) =
+      Function.update (fun j => S5 N K (K + 1) c.d (S4 hk c W G m sd cT cG) (oK2 j)) 0
+        (colsW N K (K + 1) c.d (simWP sd P)) := by
+  obtain ⟨tG, tA, tO, tS, tX0', tX1', tX2'⟩ := T3_facts hk c W G m sd cT hwr
+  set r : Store 94 := fun j => S5 N K (K + 1) c.d (S4 hk c W G m sd cT cG) (oK2 j) with hr
   have L : ∀ (t : Fin 256) n, (t, n) ∈ keyT N K (K + 1) c.d →
-      (S5 N K (K + 1) c.d (S4 hk c W gs sd) t).length = n := fun t n h => by
+      (S5 N K (K + 1) c.d (S4 hk c W G m sd cT cG) t).length = n := fun t n h => by
     rw [S5_key _ _ _ _ _ h, List.length_replicate]
-  have blank : ∀ j : Fin 132, j.val ∉ wrG → S4 hk c W gs sd (ms j) = [] := fun j hj => by
-    rw [S4, ValVM.enc_tS]; exact s3_blank hk c W _ tS j hj
-  refine run_simKeyP_B2 hk c sd C hN hK r ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+  refine run_simKeyP_B2 hk c sd P hN hK r ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
   · exact ⟨L (ms 3) (K) (by simp [keyT]),
     L (ms 4) (N) (by simp [keyT]),
     L (ms 5) (N * K) (by simp [keyT]),
@@ -2020,62 +2067,77 @@ theorem key_run (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : Bnd
     rw [S5_not _ _ _ _ _ (by rw [keys_keyT]; exact a1) a2, if_pos a3]
   · simp only [hr]
     rw [show oK2 1 = mw FOUT from rfl, S5_not _ _ _ _ _ (by rw [keys_keyT]; decide) (by decide),
-      if_neg (by decide)]
-    exact S4_FOUT hk c W gs sd hN hK hW hb hgs hne
+      if_neg (by decide), S4_FOUT hk c W G m sd cT cG hF, hFO]
   · simp only [hr]
     rw [show oK2 2 = mw 61 from rfl, S5_not _ _ _ _ _ (by rw [keys_keyT]; decide) (by decide),
-      if_neg (by decide), S4, ValVM.enc_tWd, o61]
+      if_neg (by decide), S4, ValVM.enc_tWd, h61]
   · simp only [hr]
     rw [show oK2 86 = mw OUTW from rfl, S5_not _ _ _ _ _ (by rw [keys_keyT]; decide) (by decide),
-      if_neg (by decide), S4, ValVM.enc_tWd, o86, tA]
+      if_neg (by decide), S4, ValVM.enc_tWd, hO]
   · simp only [hr]
     rw [show oK2 87 = ms 87 from rfl, S5_87]
   · simp only [hr]; rw [show oK2 88 = ms 88 from rfl]; exact L _ _ (by simp [keyT])
   · simp only [hr]; rw [show oK2 89 = ms 89 from rfl]; exact L _ _ (by simp [keyT])
   · simp only [hr]; rw [show oK2 90 = ms 90 from rfl]; exact L _ _ (by simp [keyT])
 
-/-- The store after the body, before the cleanup. -/
-noncomputable def S6 (C : List Bool) : Store 256 :=
-  Function.update (S5 N K (K + 1) c.d (S4 hk c W (parse C) sd)) 255 (colsW N K (K + 1) c.d (simW sd C))
-
-/-- **The law of the body.** -/
-theorem law_wfBody (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W (parse C))
-    (hgs : (parse C).length + 10 ≤ W) (hne : parse C ≠ []) :
-    (wfBody hk c W).law (S0 W ((sdEnc hk c).enc sd) (parse C)) =
-      PMF.pure (fun t => if t ∈ finClr then [] else S6 hk c W sd C t) := by
-  obtain ⟨tG, tA, tO, tS, tX0', tX1', tX2'⟩ := T3_facts hk c W (parse C) sd hW hb
-  rw [wfBody, XProg.law_seq, law_prepT, PMF.pure_bind, XProg.law_seq,
-    law_runT hk c W (parse C) sd hW hb, PMF.pure_bind,
-    show ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) (parse C)) (VT N K (K + 1) c.d)
-      (w3 hk c W (parse C) sd) = T3 hk c W (parse C) sd from rfl,
-    XProg.law_seq, law_prepG hk c W _ tX0' (tS 92 (by decide)), PMF.pure_bind, XProg.law_seq,
-    law_runG hk c W (parse C) _ hW hb tG tS tX0' tX1' tX2', PMF.pure_bind,
-    show ValVM.enc (s3 hk c W (T3 hk c W (parse C) sd)) (VG N K (K + 1) c.d)
-      (w6 hk c W (T3 hk c W (parse C) sd)) = S4 hk c W (parse C) sd from rfl,
-    XProg.law_seq, law_keyPrep _ _ _ _ _ (by simp [S4]), PMF.pure_bind, XProg.law_seq,
-    law_keyF _ _ (key_run hk c W sd C hN hK hW hb hgs hne), PMF.pure_bind, law_clrsP]
-  rfl
+/-- The store after the body, before the cleanup (`v` the word written on `255`). -/
+noncomputable def S6 (v : List Bool) : Store 256 :=
+  Function.update (S5 N K (K + 1) c.d (S4 hk c W G m sd cT cG)) 255 v
 
 theorem mem_finClr (t : Fin 256) : t ∈ finClr ↔ t ≠ mw SDW ∧ t ≠ 255 := by
   simp [finClr]
 
-/-- **The final store**: `sdEnc sd` on its word, `W_f` on the scratch tape `255`. -/
-theorem final_eq (C : List Bool) (hW : 0 < W) (hb : BndG W (parse C)) :
-    (fun t => if t ∈ finClr then [] else S6 hk c W sd C t) = fun t =>
-      if t = mw SDW then (sdEnc hk c).enc sd else if t = 255 then colsW N K (K + 1) c.d (simW sd C)
-      else [] := by
-  obtain ⟨-, tA, -⟩ := T3_facts hk c W (parse C) sd hW hb
+/-- **The final store**: `sdEnc sd` on its word, `v` on the scratch tape `255`. -/
+theorem final_eq (v : List Bool) (hwr : GSC ∉ wr cT ∧ SDW ∉ wr cT ∧ OB ∉ wr cT)
+    (hS : SDW ∉ wr cG) :
+    (fun t => if t ∈ finClr then [] else S6 hk c W G m sd cT cG v t) = fun t =>
+      if t = mw SDW then (sdEnc hk c).enc sd else if t = 255 then v else [] := by
+  obtain ⟨-, tA, -⟩ := T3_facts hk c W G m sd cT hwr
   funext t
   by_cases h1 : t = mw SDW
   · subst h1
     rw [if_neg (by rw [mem_finClr]; simp), if_pos rfl, S6, Function.update_of_ne (by decide),
       S5_not _ _ _ _ _ (by rw [keys_keyT]; decide) (by decide), if_neg (by decide), S4,
-      ValVM.enc_tWd, w6_frame _ _ _ _ _ (by decide +kernel), w4,
-      S3_eq_T _ _ _ _ (by decide) (by decide) (by decide), tA]
+      ValVM.enc_tWd, w6_frame _ _ _ _ _ _ _ hS, w4,
+      S3_eq_T _ _ _ _ _ (by decide) (by decide) (by decide), tA]
   · by_cases h2 : t = 255
     · subst h2
       rw [if_neg (by rw [mem_finClr]; simp), if_neg h1, if_pos rfl, S6, Function.update_self]
     · rw [if_pos ((mem_finClr t).mpr ⟨h1, h2⟩), if_neg h1, if_neg h2]
+
+/-- The stage-I codes leave the words the key sum reads. -/
+theorem wr_full : (GSC ∉ wr fhatFullC ∧ SDW ∉ wr fhatFullC ∧ OB ∉ wr fhatFullC) ∧
+    FOUT ∉ wr gswFullC ∧ SDW ∉ wr gswFullC := by decide +kernel
+
+/-- **The law of the body** on the gate list of a window predicate. -/
+theorem law_wfBody (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W (parse C))
+    (hgs : (parse C).length + nA ≤ W) (hne : parse C ≠ []) :
+    (wfBody hk c W).law (S0 W ((sdEnc hk c).enc sd) (parse C)) =
+      PMF.pure (fun t => if t ∈ finClr then [] else
+        S6 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC gswFullC
+          (colsW N K (K + 1) c.d (simW sd C)) t) := by
+  have hm : min (parse C).length W = (parse C).length := by omega
+  obtain ⟨hwr, hF, -⟩ := wr_full
+  obtain ⟨tG, tA, tO, tS, tX0', tX1', tX2'⟩ :=
+    T3_facts hk c W (gsW W (parse C)) (parse C).length sd fhatFullC hwr
+  obtain ⟨o86, o61⟩ := w6_spec hk c W (parse C) _ sd hN hK hb hgs hne tG tA tO
+  have hFO := w3_FOUT hk c W sd (parse C) hN hK hb hgs hne
+  rw [tA] at o86
+  rw [wfBody, XProg.law_seq, law_prepT hk c W _ _ hW hb, hm, PMF.pure_bind, XProg.law_seq,
+    law_runT, PMF.pure_bind,
+    show ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) (gsW W (parse C)) (parse C).length)
+      (VT N K (K + 1) c.d) (w3 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC) =
+      T3 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC from rfl,
+    XProg.law_seq, law_prepG hk c W (parse C) _ hW hb tG tX0' (tS 92 (by decide)), hm,
+    PMF.pure_bind, XProg.law_seq, law_runG hk c W _ _ tS tX0' tX1' tX2', PMF.pure_bind,
+    show ValVM.enc (s3 hk c W (T3 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC)
+      (parse C).length) (VG N K (K + 1) c.d)
+      (w6 hk c W (T3 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC) (parse C).length
+        gswFullC) = S4 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC gswFullC from rfl,
+    XProg.law_seq, law_keyPrep _ _ _ _ _ (by simp [S4]), PMF.pure_bind, XProg.law_seq,
+    law_keyF _ _ (key_run hk c W _ _ sd fhatFullC gswFullC _ hN hK hwr hF hFO o86 o61),
+    PMF.pure_bind, law_clrsP]
+  rfl
 
 end Final
 
@@ -2120,21 +2182,21 @@ list is nonempty, fits `W` with its `10` inputs and has its operands below `W`. 
 theorem wfSpec_wfB2 {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ)
     (hN : 0 < N) (hK : 0 < K)
     (hP : ∀ C : List Bool, C.length ≤ c.L → (∃ w : Window, winWord w = C) →
-      parse C ≠ [] ∧ (parse C).length + 10 ≤ W ∧ BndG W (parse C)) :
+      parse C ≠ [] ∧ (parse C).length + nA ≤ W ∧ BndG W (parse C)) :
     WfSpec hk c (wfB2 hk c W) W where
   wf := wf_wfBody hk c W
   law := by
     intro sd C hL hC
     obtain ⟨hne, hgs, hb⟩ := hP C hL hC
-    have hW : 0 < W := by omega
+    have hW : 0 < W := by have := List.length_pos_iff.mpr hne; omega
     have hin : (fun j => io2 (R := 254) ((sdEnc hk c).enc sd) (gsW W (parse C)) [] (eW j)) =
         S0 W ((sdEnc hk c).enc sd) (parse C) := by
       funext t
       obtain ⟨e0, e1, -, -⟩ := swp_eq t
       show io2 (R := 254) ((sdEnc hk c).enc sd) (gsW W (parse C)) [] (swp t) = _
-      simp only [io2, S0, e0, e1]
+      simp only [io2, e0, e1]; rfl
     rw [wfB2, XProg.law_frame, hin, law_wfBody hk c W sd C hN hK hW hb hgs hne,
-      final_eq hk c W sd C hW hb, PMF.pure_map]
+      final_eq hk c W _ _ sd _ _ _ wr_full.1 wr_full.2.2, PMF.pure_map]
     congr 1
     funext t
     have ht : t = eW (swp t) := by simp [eW, swp_swp]

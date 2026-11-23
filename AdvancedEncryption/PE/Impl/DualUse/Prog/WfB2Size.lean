@@ -52,9 +52,9 @@ theorem size_wfB2 (W : ℕ) : (wfB2 hk c W).size = fixSz W +
     (tmplP ValVM.tX0 (stepT N K k c.d ++ wordsT N K k c.d W (offB c) (offW hk c) (offPsi hk c))).size +
     (tmplP ValVM.tX0 (tmpl31 N K k c.d)).size +
     (tmplP ValVM.tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-      (offPsi hk c + 10 * lenPsi N K k))).size +
+      (offPsi hk c + nA * lenPsi N K k))).size +
     (tmplP ValVM.tX0 (keyT N K k c.d)).size := by
-  simp only [wfB2, wfBody, prepT, prepG, keyPrep, fixSz, XProg.size_seq, XProg.size_frame,
+  simp only [wfB2, wfBody, prepT, prepG, prepTRest, prepGRest, keyPrep, fixSz, XProg.size_seq, XProg.size_frame,
     XProg.size_prog]
   omega
 
@@ -73,13 +73,14 @@ theorem size_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K +
     (hoB : offB c ≤ Lb) (hoW : offW hk c ≤ Lb) (hoP : offPsi hk c ≤ Lb) (hoR : offR hk c ≤ Lb)
     (hoX : offPsi hk c + 10 * lenPsi N K (K + 1) ≤ Lb) :
     (wfB2 hk c Wc).size ≤ 2 ^ 25 := by
+  have hoX' : offPsi hk c + nA * lenPsi N K (K + 1) ≤ Lb := hoX
   subst hN hK
   obtain ⟨-, -, -, s31, sT, -, -, -, sG, -, sK, -⟩ := chk_small
   have hTl : TLe (wordsT Nc Kc (Kc + 1) c.d Wc (offB c) (offW hk c) (offPsi hk c)) wTc := by
     rw [wordsT_eq, hd]; exact TLe_wordsTx _ _ _ _ _ hth hoB hoW hoP
   have hGl : TLe (wordsG Nc Kc (Kc + 1) c.d Wc (offPsi hk c) (offR hk c)
-      (offPsi hk c + 10 * lenPsi Nc Kc (Kc + 1))) wGc := by
-    rw [hd]; exact TLe_wordsG _ _ _ _ _ hoP hoR hoX
+      (offPsi hk c + nA * lenPsi Nc Kc (Kc + 1))) wGc := by
+    rw [hd]; exact TLe_wordsG _ _ _ _ _ hoP hoR hoX'
   have hM : Mall < 2 ^ (250 + 1) := Nat.pow_lt_pow_right (by norm_num) (by norm_num)
   have lt : ∀ {l : List (Fin 256 × ℕ)}, (∀ x ∈ l, x.2 ≤ Mall) → ∀ x ∈ l, x.2 < 2 ^ (250 + 1) :=
     fun h x hx => (h x hx).trans_lt hM

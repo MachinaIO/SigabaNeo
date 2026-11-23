@@ -531,11 +531,11 @@ def wordsTx (N K k d W th oB oW oP : ℕ) : List (Fin 256 × ℕ) :=
     (mw TKV, K * VT N K k d), (mw T2kNV, 2 * (N * ((K + 1) * VT N K k d))),
     (mw T2kkNV, 2 * (K + 1) * (N * ((K + 1) * VT N K k d))), (mw TA1, lenA N K k 1),
     (mw TAd, lenA N K k d), (mw TK1, K - 1), (mw ZNK1, N * K - 1), (mw TNK, N * K),
-    (mw T4k, 2 * (2 * (K + 1))), (mw T10, 10), (mw INSW, 10 * (nBI N K * VT N K k d)),
+    (mw T4k, 2 * (2 * (K + 1))), (mw T10, nA), (mw INSW, nA * (nBI N K * VT N K k d)),
     (mw TSl, nBI N K * VT N K k d), (mw TST, (W + 1) * (nBI N K * VT N K k d)),
     (mw TD2, 2 * ((W + 1) * (nBI N K * VT N K k d))), (mw TW, W),
-    (mw TPAD, (W - 10) * (nBI N K * VT N K k d)), (mw TW9, W - 9),
-    (mw TINS, 10 * (nBI N K * VT N K k d)), (mw 61, oB), (mw 62, oW), (mw 63, oP)]
+    (mw TPAD, (W - nA) * (nBI N K * VT N K k d)), (mw TW9, W - nA + 1),
+    (mw TINS, nA * (nBI N K * VT N K k d)), (mw 61, oB), (mw 62, oW), (mw 63, oP)]
 
 theorem wordsT_eq (N K k d W oB oW oP : ℕ) :
     wordsT N K k d W oB oW oP = wordsTx N K k d W (treeHeight N (K + 1)) oB oW oP := rfl
