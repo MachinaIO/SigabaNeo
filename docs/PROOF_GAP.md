@@ -1792,6 +1792,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Obstruction.** In an exact rank-3 example, two mark groups with the same order and identical plane counts at every
     cutoff give next-hit probabilities 0 and 2/3. So the recursion does not close from counts alone, and the 6.485·10⁻¹¹
     residual remains open.
+* **Part 196 (audited, SOUND).** [z1_old_planes](research/wall1_z1_old_planes.md): wholly old plane hits (p_old).
+  * A wholly old horizontal first hit forces a < a₂(M_{i−1}) ≤ √(3/2)·a. The constant is sharp, attained by a scaled fcc
+    lattice (Bergé–Martinet / Bangert–Katz).
+  * At the enlarged cutoff, one summand of Part 192's draw-154 bound already exceeds 1.0039·10⁷.
+  * The incoming state fixes the horizontal candidate, so the fresh mark gives only the conditional win probability.
+  * **Remaining.** The win-weighted incidence on surviving prefixes plus p_late must total ≤ 7.6330·10⁻¹¹.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1801,7 +1807,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–195 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–196 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
