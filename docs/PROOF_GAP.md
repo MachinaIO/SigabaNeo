@@ -2079,6 +2079,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     tied to the long-winner/frozen-contraction gap (W1-R97).
   * Balance > 4.0203·10⁻¹². Unpaid: mixed codimension 134–400 (32.33547 < g < 32.66) and 135–400 (32.66 ≤ g < 32.75);
     wholly old creation and terminal codimension 133–400.
+* **Part 227 (audited, CONFIRMED; negative).** [frozen_contraction](research/wall1_frozen_contraction.md): raw-vector
+  counts cannot bound long winners.
+  * With probability > 1 − 3.276·10⁻⁵⁰, every draw 55–405 has > 2.14·10⁵² primitive height-one raw vectors of length
+    ≤ 2383 (pairwise independence suffices). The frozen covolume is exactly ∏_{j<i} sⱼ.
+  * The 0.16135^k contraction condition is necessary only for a projected Hermite determinant certificate. It gives no
+    probability bound for simultaneous projected misses. The crossing on draws 397–406 remains open.
+* **Part 228 (unaudited; negative/strategic).** [parameter_slack](research/wall1_parameter_slack.md): raising β does not
+  remove the gap by existing certificates alone.
+  * A higher deterministic floor could kill the small-g branch, but it cannot exclude wholly old Z₁ planes, since any
+    covolume admits arbitrarily small primitive planes.
+  * Verified Hermite squared caps: 56.21420, 56.79788, 57.84689, 58.89576, 60.99269 at ranks 506, 510, 520, 530, 550.
+  * Cost correction: Part 140's 2^799.23 applies at rank 647, and Part 141 gives 2^794.98 word operations; neither gives
+    a 0.29·Δβ increment.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
@@ -2145,6 +2158,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * `terminal_bound_of_numeric_caps` takes any certified caps with g₇⁷ ≤ 64 and g₂₄ ≤ 4.
   * With the unconditional Mordell/Blichfeldt caps the flag majorant is 3.7817·10⁻¹⁴, and the raw term is only
     6.29·10⁻³⁴. Open: a different suffix split, or a transfer of ≈ 3.1·10⁻¹⁴ from elsewhere in the ledger.
+* **Lean (Part 192 terminal theorem UNCONDITIONAL).** ControlledTightRaw / ControlledProvedProfile /
+  ControlledProvedFlags / ControlledProvedFlagSum / ControlledTerminalUnconditional (axiom-clean).
+  * `terminal_bound_unconditional`: Pr(A₄₀₆) < Pr(Z₁) + Pr(Z₂) + 4.652·10⁻¹², with no Hermite hypotheses. A corollary gives
+    the original 6.515·10⁻¹² remainder.
+  * Ingredients: raw250_tight (< 2.35454·10⁻¹²); initial raw term at radius 2896 (< 7·10⁻³⁴); sum of all 12,089 flag
+    charges ≤ 3.781668308231·10⁻¹⁴; prefix_bound_mordell_blichfeldt (< 3.782·10⁻¹⁴).
+  * Hermite inputs: sharp γ₅ and γ₆, Mordell at ranks 7–8, Blichfeldt at rank 24. γ₇ and γ₂₄ are no longer needed.
+  * The terminal probability is now reduced in Lean to exactly the two research residuals Z₁ and Z₂.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
