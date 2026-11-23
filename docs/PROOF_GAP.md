@@ -1924,6 +1924,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * five independent shortest vectors in rank 5 generate a sublattice of index ≤ 2, via Watson's inequality.
   * Weaker constants do not close Part 192: the prefix majorant rises to 1.128·10⁻⁹. So the sharp γ₅, γ₆, γ₇, γ₂₄ are needed.
     An external Lean formalization of rank-24 optimality exists but uses another toolchain.
+* **Lean (sharp Hermite constants, partial).** HermiteRootExamples and the Watson* modules (7 files, axiom-clean) prove:
+  * the rank-5 index-2 case λ1^{10} ≤ 8·covol², via a polynomial certificate;
+  * the integral-form bounds in ranks 5, 6 and 7;
+  * the D5/E6/E7 lower bounds;
+  * Watson index bounds ≤ 4 in rank 6 and ≤ 10 in rank 7.
+  Still open: the general rank-5 index-1 determinant bound and the reduction to full shortest families, the non-integral
+  rank-6/7 upper bounds, and γ₂₄.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
