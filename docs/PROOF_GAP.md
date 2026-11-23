@@ -2099,6 +2099,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Thresholds (one cap varied, the other sharp), after reevaluating the three late sums: g₇ < 1.816489 and
     g₂₄ < 4.086149. With Lean's current rounded late bounds: 1.816034 and 4.078315. Sharp values are 1.811447 and 4.
   * Rogers' center-density bound gives g₂₄ ≈ 4.0811. That fits the reevaluated budget but is not formalized.
+* **Lean (late enclosures, rank-24 attempts).** ControlledLateEnclosures / HermiteSphereBudget24 / RogersSimplex24
+  (axiom-clean).
+  * Tightened late sums: positive 394 draws < 2.066876811·10⁻¹², radius 30 < 7.189180962·10⁻¹⁵, horizontal 406 draws
+    < 1.037844738·10⁻¹³. This leaves 6.679534238·10⁻¹⁵ for the prefix, so g₂₄ = 4.086149 (with sharp g₇) or
+    g₇ = 1.816489 (with sharp g₂₄) fits.
+  * The rank-506 sphere/lens certificate family reaches only 4.37201 in rank 24. Coefficient 4.09 is excluded for that
+    polynomial family (scripts wall1_sphere24.py).
+  * Rogers' simplex bound gives g₂₄ < 4.0811164, which fits. Lean proves `IntrinsicHermite 24 4.08114` conditional on
+    Rogers' packing comparison and the simplex moment identities (wall1_rogers24.py). Still open: an unconditional
+    rank-24 cap, a near-sharp rank-7 cap, and the terminal theorem parameterized by both caps.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
