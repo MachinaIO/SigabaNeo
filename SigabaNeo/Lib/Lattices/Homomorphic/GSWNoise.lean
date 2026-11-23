@@ -1,5 +1,6 @@
 import SigabaNeo.Lib.Lattices.Homomorphic.GSWCircuit
 import SigabaNeo.Lib.Lattices.Homomorphic.NoiseGadgets
+import SigabaNeo.Lib.Lattices.Homomorphic.Depth
 
 /-!
 # The noise of evaluating `f̂` homomorphically
@@ -393,5 +394,135 @@ theorem nb_fhatSLP {A : Type*} (hk : q < 2 ^ k) (p : SLP A) (w : Wire A) (b : BI
     simp only [addNand, List.nil_append, List.length_nil, nb_one, mul_zero, add_zero] at this
     rw [this]; exact Nat.zero_le _
   exact nb_compileSLP WN E hk x₀ Ψ₀ hx p w [⟨.one, .one⟩] (by simp [Valid]) h0 hz b
+
+section CompileDepth
+
+/-! ### The depth-based bound
+
+The bound `gswFactor^n · E` of `nb_compileSLP` charges every gate; tracking the depth of each gate
+instead (`SLP.depth`, the run of `max a b + 1`) gives `gswFactor^(depth) · E`: a NAND block on
+bundles within `G^(d_a) E` and `G^(d_b) E` is within `G^(max d_a d_b + 1) E`. -/
+
+variable {A : Type*} (hk : q < 2 ^ k) (x : A × BI N k → Bool)
+  (Ψ : A → Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N))
+
+/-- The depth step. -/
+abbrev depthStep : ℕ → ℕ → ℕ := fun a b => max a b + 1
+
+theorem nb_repOf_depth {prog : SLP (A × BI N k)} {z : Wire (A × BI N k)}
+    {reps : List (BI N k → Wire (A × BI N k))} {ds : List ℕ} (hzE : nb WN E prog z ≤ E)
+    (hl : reps.length = ds.length)
+    (hr : ∀ m (h : m < reps.length), RepNB WN E prog reps[m] (gswFactor WN N k ^ ds.getD m 0 * E))
+    (w : Wire A) :
+    RepNB WN E prog (repOf z hk reps w)
+      (gswFactor WN N k ^ SLP.wireVal (fun _ => 0) 0 ds w * E) := by
+  cases w with
+  | input i => intro b; simp [repOf, nb_input, SLP.wireVal]
+  | one => intro b; simpa [SLP.wireVal, repOf] using (nb_constRep WN E z _ b).trans hzE
+  | gate m =>
+    simp only [repOf, SLP.wireVal]
+    by_cases hm : m < reps.length
+    · rw [List.getD_eq_getElem _ _ hm]; exact hr m hm
+    · rw [List.getD_eq_default _ _ (Nat.le_of_not_lt hm), List.getD_eq_default _ _ (by omega)]
+      intro b; simpa using (nb_constRep WN E z _ b).trans hzE
+
+theorem nb_foldl_compileStep_depth
+    (hx : ∀ i a c b j, x (i, a, c, b, j) = ((Ψ i a c).coeffs j).val.testBit b)
+    {z : Wire (A × BI N k)} :
+    ∀ (p : SLP A) (prog : SLP (A × BI N k)) (reps : List (BI N k → Wire (A × BI N k)))
+      (vals : List (Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N))) (ds : List ℕ),
+      Valid prog z → bv x prog z = false → RepsInv x prog reps vals →
+      nb WN E prog z ≤ E → reps.length = ds.length →
+      (∀ m (h : m < reps.length), RepNB WN E prog reps[m] (gswFactor WN N k ^ ds.getD m 0 * E)) →
+      (p.foldl (compileStep z hk) (prog, reps)).2.length =
+          (SLP.run (fun _ => 0) 0 depthStep p ds).length ∧
+        ∀ m (h : m < (p.foldl (compileStep z hk) (prog, reps)).2.length),
+          RepNB WN E (p.foldl (compileStep z hk) (prog, reps)).1
+            (p.foldl (compileStep z hk) (prog, reps)).2[m]
+            (gswFactor WN N k ^ (SLP.run (fun _ => 0) 0 depthStep p ds).getD m 0 * E)
+  | [], prog, reps, vals, ds, _, _, _, _, hl, hr => ⟨hl, hr⟩
+  | g :: p, prog, reps, vals, ds, hz, hz0, h, hzE, hl, hr => by
+    have ha := repOf_spec hk x Ψ hx hz hz0 h g.a
+    have hb := repOf_spec hk x Ψ hx hz hz0 h g.b
+    obtain ⟨e₁, r₁⟩ := nandBlock_spec x hk hz hz0 ha hb
+    set da := SLP.wireVal (fun _ => 0) 0 ds g.a
+    set db := SLP.wireVal (fun _ => 0) 0 ds g.b
+    have hG : 1 ≤ gswFactor WN N k := gswFactor_pos WN N k
+    have hmono : ∀ {u v : ℕ}, u ≤ v → gswFactor WN N k ^ u * E ≤ gswFactor WN N k ^ v * E :=
+      fun huv => Nat.mul_le_mul_right _ (Nat.pow_le_pow_right hG huv)
+    have hEA : E ≤ gswFactor WN N k ^ max da db * E := by
+      simpa using hmono (Nat.zero_le (max da db))
+    have n₁ := nb_nandBlock WN E x hk hz hz0 ha hb (A := gswFactor WN N k ^ max da db * E)
+      (hzE.trans hEA)
+      ((nb_repOf_depth WN E hk hzE hl hr g.a).mono WN E (hmono (le_max_left _ _)))
+      ((nb_repOf_depth WN E hk hzE hl hr g.b).mono WN E (hmono (le_max_right _ _)))
+    have hz₁ := hz.ext e₁
+    have hz0₁ : bv x (nandBlock z q k hk (repOf z hk reps g.a) (repOf z hk reps g.b) prog).1 z =
+        false := by rw [bv_ext x e₁ hz]; exact hz0
+    have h₁ : RepsInv x (nandBlock z q k hk (repOf z hk reps g.a) (repOf z hk reps g.b) prog).1
+        (reps ++ [(nandBlock z q k hk (repOf z hk reps g.a) (repOf z hk reps g.b) prog).2])
+        (vals ++ [gswStep hk (SLP.wireVal Ψ (gswBin hk).G vals g.a)
+          (SLP.wireVal Ψ (gswBin hk).G vals g.b)]) := by
+      refine ⟨by simp [h.1], fun m hm hm' => ?_⟩
+      by_cases hlt : m < reps.length
+      · rw [List.getElem_append_left hlt, List.getElem_append_left (h.1 ▸ hlt)]
+        exact (h.2 m hlt (h.1 ▸ hlt)).ext x e₁
+      · have hm1 : m = reps.length := by simp at hm; omega
+        subst hm1
+        rw [List.getElem_append_right (Nat.le_refl _),
+          List.getElem_append_right (h.1 ▸ Nat.le_refl _)]
+        simp only [Nat.sub_self, h.1, List.getElem_singleton]
+        exact r₁
+    have hr₁ : ∀ m (hm : m < (reps ++ [(nandBlock z q k hk (repOf z hk reps g.a)
+        (repOf z hk reps g.b) prog).2]).length),
+        RepNB WN E (nandBlock z q k hk (repOf z hk reps g.a) (repOf z hk reps g.b) prog).1
+          (reps ++ [(nandBlock z q k hk (repOf z hk reps g.a) (repOf z hk reps g.b) prog).2])[m]
+          (gswFactor WN N k ^ (ds ++ [depthStep da db]).getD m 0 * E) := by
+      intro m hm
+      by_cases hlt : m < reps.length
+      · rw [List.getElem_append_left hlt, List.getD_append _ _ _ _ (hl ▸ hlt)]
+        exact (hr m hlt).ext WN E e₁ (h.2 m hlt (h.1 ▸ hlt)).1
+      · have hm1 : m = reps.length := by simp at hm; omega
+        subst hm1
+        have hd : (ds ++ [depthStep da db]).getD reps.length 0 = max da db + 1 := by
+          rw [hl]; simp [depthStep]
+        rw [hd, pow_succ, mul_comm (gswFactor WN N k ^ max da db) _, mul_assoc]
+        simpa using n₁
+    have ih := nb_foldl_compileStep_depth hx p _ _ _ (ds ++ [depthStep da db]) hz₁ hz0₁ h₁
+      (by rw [nb_ext WN E e₁ hz]; exact hzE) (by simp [hl]) hr₁
+    exact ih
+
+/-- **The noise of the compiled program, by depth**: within `gswFactor^(depth) · E`. -/
+theorem nb_compileSLP_depth
+    (hx : ∀ i a c b j, x (i, a, c, b, j) = ((Ψ i a c).coeffs j).val.testBit b)
+    {z : Wire (A × BI N k)} (p : SLP A) (w : Wire A) (prog : SLP (A × BI N k))
+    (hz : Valid prog z) (hz0 : bv x prog z = false) (hzE : nb WN E prog z ≤ E) :
+    RepNB WN E (compileSLP z hk p w prog).1 (compileSLP z hk p w prog).2
+      (gswFactor WN N k ^ SLP.depth p w * E) := by
+  obtain ⟨hl, hr⟩ := nb_foldl_compileStep_depth WN E hk x Ψ hx p prog [] [] [] hz hz0
+    ⟨rfl, fun _ h => absurd h (by simp)⟩ hzE rfl (fun _ h => absurd h (by simp))
+  obtain ⟨e, -⟩ := foldl_compileStep_spec hk x Ψ hx p prog [] [] hz hz0
+    ⟨rfl, fun _ h => absurd h (by simp)⟩
+  exact nb_repOf_depth WN E hk (by rw [nb_ext WN E e hz]; exact hzE) hl hr w
+
+end CompileDepth
+
+/-- **The noise of `f̂`, by depth**: every output wire of the program of `f̂` for a straight-line
+program is within `gswFactor WN N k ^ (SLP.depth p w) · E`. -/
+theorem nb_fhatSLP_depth {A : Type*} (hk : q < 2 ^ k) (p : SLP A) (w : Wire A) (b : BI N k) :
+    nb WN E (fhatSLP (N := N) hk p w).1 ((fhatSLP (N := N) hk p w).2 b) ≤
+      gswFactor WN N k ^ SLP.depth p w * E := by
+  let x₀ : A × BI N k → Bool := fun _ => false
+  let Ψ₀ : A → Matrix (Fin 2) (Fin 2 × Fin k) (Negacyclic (ZMod q) N) := fun _ => 0
+  have hx : ∀ i a c b j, x₀ (i, a, c, b, j) = ((Ψ₀ i a c).coeffs j).val.testBit b := by
+    intro i a c b j; simp [x₀, Ψ₀]
+  have h0 : bv x₀ [⟨.one, .one⟩] (Wire.gate 0 : Wire (A × BI N k)) = false := by
+    have := bv_addNand x₀ ([] : SLP (A × BI N k)) .one .one trivial trivial
+    simpa [addNand, bv, evalBool, valueOf, wireVal] using this
+  have hz : nb WN E ([⟨.one, .one⟩] : SLP (A × BI N k)) (Wire.gate 0) ≤ E := by
+    have := nb_addNand WN E ([] : SLP (A × BI N k)) .one .one
+    simp only [addNand, List.nil_append, List.length_nil, nb_one, mul_zero, add_zero] at this
+    rw [this]; exact Nat.zero_le _
+  exact nb_compileSLP_depth WN E hk x₀ Ψ₀ hx p w [⟨.one, .one⟩] (by simp [Valid]) h0 hz b
 
 end SigabaNeo.Lattices

@@ -28,12 +28,18 @@ theorem two_pow_mul_inv (a b : ℕ) :
 theorem card_date : ((Fintype.card Date : ℕ) : ℝ≥0∞) = 2 ^ 10 := by
   rw [show Fintype.card Date = 2 ^ 10 by simp [Date, DateWindow.Sym]]; push_cast; norm_num
 
+/-- A term summed over a set of at most `2^a` elements: `|A| · 2^{-(a + t)} ≤ 2^{-t'}` for
+`t' ≤ t`. -/
+theorem card_mul_le {A : Type*} [Fintype A] {a t t' : ℕ} (hA : (Fintype.card A : ℝ≥0∞) ≤ 2 ^ a)
+    (ht : t' ≤ t) {δ : ℝ≥0∞} (h : δ ≤ ((2 : ℝ≥0∞) ^ (a + t))⁻¹) :
+    (Fintype.card A : ℝ≥0∞) * δ ≤ ((2 : ℝ≥0∞) ^ t')⁻¹ :=
+  calc (Fintype.card A : ℝ≥0∞) * δ ≤ 2 ^ a * ((2 : ℝ≥0∞) ^ (a + t))⁻¹ := by gcongr
+    _ = ((2 : ℝ≥0∞) ^ t)⁻¹ := two_pow_mul_inv a t
+    _ ≤ ((2 : ℝ≥0∞) ^ t')⁻¹ := ENNReal.inv_le_inv.mpr (pow_le_pow_right₀ (by norm_num) ht)
+
 theorem date_mul_le {δ : ℝ≥0∞} (h : δ ≤ ((2 : ℝ≥0∞) ^ 180)⁻¹) :
-    (Fintype.card Date : ℝ≥0∞) * δ ≤ ((2 : ℝ≥0∞) ^ 138)⁻¹ := by
-  rw [card_date]
-  calc (2 : ℝ≥0∞) ^ 10 * δ ≤ 2 ^ 10 * ((2 : ℝ≥0∞) ^ (10 + 170))⁻¹ := by gcongr
-    _ = ((2 : ℝ≥0∞) ^ 170)⁻¹ := two_pow_mul_inv 10 170
-    _ ≤ ((2 : ℝ≥0∞) ^ 138)⁻¹ := ENNReal.inv_le_inv.mpr (pow_le_pow_right₀ (by norm_num) (by norm_num))
+    (Fintype.card Date : ℝ≥0∞) * δ ≤ ((2 : ℝ≥0∞) ^ 138)⁻¹ :=
+  card_mul_le (a := 10) (t := 170) card_date.le (by norm_num) h
 
 variable {ms : Machines hkp confP}
 

@@ -14,8 +14,9 @@ flooding below `2^512`, big box of `B = 16041444` bits per coefficient, small bo
   and every window predicate (`goodTrap_sim`, `goodTrap_sim_of`). So keys with `W_f` have
   exactly the law of real keys (`keyLaw_real_eq_sim_conf`), the ideal key law
   (`keyLaw_sim_eq_ideal`).
-* **Correctness** (`correct_conf`): with the larger key box `S` entering the noise, every window
-  predicate stays below `q/4` (`Params.noise_ok`); the abort probability is at most `2^{-128}`.
+* **Correctness** (`correct_conf`): with the larger key box `S` entering the noise, every
+  predicate of depth at most `Dmax` (`depth_predC`; the window predicates have at most `375`
+  gates) stays below `q/4` (`Params.noise_ok`); the abort probability is at most `2^{-128}`.
 * **Expressiveness** (`expressive_conf`).
 -/
 
@@ -100,7 +101,7 @@ noncomputable def confP : Conf Np Kp kp where
   χc := χp
   mχ := 16 + 16
   hχ := BitLaw.cbd 16
-  w := 512
+  w := wP
   mB := mBp
   emb := keyEmb Bp hBp mBp hmBp
   Small := keyBall (2 ^ Kp) dp (TrapCol kp) Np Sp
@@ -135,36 +136,43 @@ theorem shift_shortP (v : PK hkp confP × SKey hkp confP) (hv : v ∈ (setupM hk
   show cnorm ((0 : Fin dp → Rg Np Kp) i) ≤ τp
   simp [cnorm_zero]
 
-theorem card_coef_leP : Fintype.card (Coef dp (TrapCol kp) Np) ≤ 2 ^ 96 := by
-  rw [card_coefP, dp_def]
-  have := kp_le
-  have h : 2 ^ 61 + (1 + (2 * kp + 2 * kp)) ≤ 2 ^ 62 := by omega
-  calc (2 ^ 61 + (1 + (2 * kp + 2 * kp))) * Np ≤ 2 ^ 62 * 2 ^ 34 :=
-        Nat.mul_le_mul h Np_le
-    _ = 2 ^ 96 := by rw [← pow_add]
+/-- `|Coef| ≤ 2^eCoef`. -/
+def eCoef : ℕ := 96
 
-theorem four_τ_le : 4 * τp + 1 ≤ 2 ^ (Eτ + 3) := by
-  unfold τp
-  rw [pow_add]
-  have : 1 ≤ 2 ^ Eτ := Nat.one_le_two_pow
+theorem kp4_le : 1 + 4 * kp ≤ 2 ^ ad := by
+  have h1 := kp_le
+  have h2 : (4 : ℕ) * 2 ^ ak + 1 ≤ 2 ^ ad := by norm_num [ak, ad]
   omega
+
+theorem card_coef_leP : Fintype.card (Coef dp (TrapCol kp) Np) ≤ 2 ^ eCoef :=
+  Gen.card_coef_le dp_le kp4_le Np_le (by norm_num [ad, an, eCoef])
+
+theorem four_τ_le : 4 * τp + 1 ≤ 2 ^ (Eτ + 3) := Gen.four_τ_le Eτ
 
 /-- **The abort probability** is at most `2^{-128}`. -/
 theorem abortP : (((confP.Big.card - innerP.card : ℕ) : ℝ≥0∞) / confP.Big.card) ≤
     ((2 : ℝ≥0∞) ^ params.corrBits)⁻¹ := by
   have hprod : Fintype.card (Coef dp (TrapCol kp) Np) * (4 * τp + 1) * 2 ^ 128 ≤ 2 ^ Bp :=
-    (pow_mul_le' (pow_mul_le' card_coef_leP four_τ_le rfl) (le_refl ((2 : ℕ) ^ 128)) rfl).trans
-      (pow_le_pow' (by rw [Eτ_def, Bp_def]; norm_num))
+    Gen.abort_prod card_coef_leP (by rw [Eτ_def, Bp_def]; norm_num [eCoef])
   have h4 : 4 * τp + 1 ≤ 2 ^ Bp :=
     four_τ_le.trans (pow_le_pow' (by rw [Eτ_def, Bp_def]; norm_num))
   exact abort_le (d := dp) (Wt := TrapCol kp) (N := Np) Bp τp 128 hBp one_le_Bp mBp hmBp h4 hprod
+
+/-- The window predicates have at most `375` gates. -/
+theorem length_predC (w : Window) : (predC (winWord w)).1.length ≤ 375 := by
+  simp only [predC, winWord, parse_unparse, predOf, fromGates, List.length_map]
+  exact length_winGates w
+
+/-- The predicates have depth at most `Dmax`. -/
+theorem depth_predC (w : Window) : SLP.depth (predC (winWord w)).1 (predC (winWord w)).2 ≤ Dmax :=
+  (SLP.depth_le_length _ _).trans (length_predC w)
 
 variable {ms : Machines hkp confP}
 
 /-- **The implementation is correct.** -/
 theorem correct_conf : Correct dateUniverse params (impl hkp confP ms) := by
   have hb := box_arith _ _ hτM
-  refine DualUse.correct hkp confP (by show 0 < dp; rw [dp_def]; positivity) hdecp (2 ^ 512) Sp
+  refine DualUse.correct hkp confP (by show 0 < dp; rw [dp_def]; positivity) hdecp (2 ^ wP) Sp
     innerP ?_ ?_ ?_ abortP ?_ ?_ ?_ ?_
   · -- the inner box lies in the big box
     exact (keyBall_mono hb.1).trans ball_sub_bigP
@@ -182,14 +190,12 @@ theorem correct_conf : Correct dateUniverse params (impl hkp confP ms) := by
     exact (cnorm_decp u i).trans hb.2.2.2.1
   · -- the coins are short
     refine coins_short hkp confP χp_short ?_
-    show (16 : ℕ) ≤ 2 ^ 512
-    calc (16 : ℕ) = 2 ^ 4 := rfl
-      _ ≤ 2 ^ 512 := pow_le_pow' (by norm_num)
+    have h : (16 : ℕ) ≤ 2 ^ wP :=
+      (show (16 : ℕ) = 2 ^ 4 from rfl).le.trans (pow_le_pow' (by norm_num [wP]))
+    exact h
   · -- the noise
     intro w
-    refine noise_ok _ ?_ Sp Sp_le
-    simp only [predC, winWord, parse_unparse, predOf, fromGates, List.length_map]
-    exact length_winGates w
+    exact noise_ok _ (depth_predC w) Sp Sp_le
 
 attribute [local irreducible] dateBound in
 theorem confP_L : confP.L = dateBound := rfl
@@ -199,11 +205,6 @@ theorem expressive_conf : Expressive dateUniverse params (impl hkp confP ms) :=
   DualUse.expressive hkp confP (le_of_eq confP_L.symm)
 
 /-! ### Both trapdoors are covered -/
-
-/-- The window predicates have at most `375` gates. -/
-theorem length_predC (w : Window) : (predC (winWord w)).1.length ≤ 375 := by
-  simp only [predC, winWord, parse_unparse, predOf, fromGates, List.length_map]
-  exact length_winGates w
 
 /-- **The real trapdoor is covered** for every key of `Setup` and every window predicate. -/
 theorem goodTrap_real (v : PK hkp confP × SKey hkp confP) (hv : v ∈ (setupM hkp confP).support)
@@ -230,9 +231,9 @@ theorem goodTrap_sim (mpk : PK hkp confP) (Rm : Fin 10 → Matrix (Fin confP.d) 
       (simTrap (Wt := TrapCol kp)
         (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC (winWord w)))) := by
   refine ⟨simTrap_public mpk _ _ hBf, fun y hy u => add_mem_bigP hy ?_⟩
-  obtain ⟨h1, h2⟩ := cnorm_simTrap_le (Wt := TrapCol kp) hkp Rm x W Ψ mpk.Bj (predC (winWord w))
-    hR hW (decp u) (cnorm_decp u)
-  have hb := simTrapBound_le (length_predC w)
+  obtain ⟨h1, h2⟩ := cnorm_simTrap_le_depth (Wt := TrapCol kp) hkp Rm x W Ψ mpk.Bj
+    (predC (winWord w)) hR hW (decp u) (cnorm_decp u) (depth_predC w)
+  have hb := simTrapBound_le (le_refl Dmax)
   exact zabs_keyEquiv_le (fun i => (h1 i).trans hb) (fun i => (h2 i).trans hb)
 
 /-- `B_f̂ = B₀ W_f + G̲` when `f(x) = 1`. -/
