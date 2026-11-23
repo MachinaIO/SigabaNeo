@@ -1983,6 +1983,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     ≤ 2.87954220·10⁻¹¹. This leaves ≈ 4.2475·10⁻¹¹ of Z₁ for wholly old hits and for mixed hits on draws 404–406.
   * Obstruction for small g: when g ≤ 32.5 the conditional mean number of height-one shell candidates exceeds 118.27,
     so per-prefix first moments fail. The missing quantity is the frequency of small-g prefixes (W1-R86).
+* **Part 216 (audited, CONFIRMED; reduction).** [small_g_frequency](research/wall1_small_g_frequency.md): small-g
+  frequency for Z_rem.
+  * Under the actual chain law, vertical residual hits on draws 396–406 with incoming g ≥ 34.807 cost < 3.75987·10⁻¹¹
+    (improving Part 215). This leaves 2.72513·10⁻¹¹ for g < 34.807.
+  * Any crossing below g = 34.807 on those draws requires at least 100 of the first 405 winners to exceed 1.10 × their own
+    incoming GH length. With 99 exceptions, the draw-406 floor is 34.8186.
+  * **Z_rem reduced to one lemma (long-winner ceiling):** if, on every incoming history, the conditional probability of a
+    winner > 1.10·GH is ≤ 0.126, a binomial coupling (valid for dependent draws) bounds any crossing by 2.58815·10⁻¹¹, and
+    Z_rem ≤ 6.485·10⁻¹¹ follows. The ceiling is open (W1-R88).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
