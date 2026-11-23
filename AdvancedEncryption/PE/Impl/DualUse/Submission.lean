@@ -135,8 +135,7 @@ theorem submission_impl : submission.impl = implC := rfl
 theorem submission_N : submission.N = Ncost := rfl
 theorem submission_deps : submission.deps .attributeHiding = [prem3, prem5] := rfl
 
-/-- **The final statement of the submission**, given the cost of `KeyGen` and `Dec`
-given the cost of the reductions' key component (`KeyRConfA`). -/
+/-- **The final statement of the submission**, given the cost of the reductions' key component (`KeyRConfA`). -/
 theorem spec_submission (hkey : KeyRConfA) :
     Spec BranchingProgram.primitive registry submission := by
   refine spec_of ?_ ?_ ?_ ?_
