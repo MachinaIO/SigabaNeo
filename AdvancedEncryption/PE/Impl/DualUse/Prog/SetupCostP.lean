@@ -40,24 +40,24 @@ def setupST (Bχ : Bnd) (M : ℕ) : ℕ :=
     ((bCoins (nBj (N := N) hk)).T M4 M4 + (bCoins (N * K)).T M5 M5))))
 
 /-- The bound after an append (`appC`) from tapes below `M`. -/
-abbrev apG (M : ℕ) : ℕ := 4 * M + 1
+abbrev apGS (M : ℕ) : ℕ := 4 * M + 1
 
-theorem ub_appC (r a : Fin 96) (M : ℕ) : UB (appC r a) M ((2 * (M + 1) + 3) + appT M) (apG M) :=
+theorem ub_appC (r a : Fin 96) (M : ℕ) : UB (appC r a) M ((2 * (M + 1) + 3) + appT M) (apGS M) :=
   (ub_copyS 88 a M).seq (ub_appendTapeP r 88 89 90 M)
 
 /-- The time of `setupDet` from tapes below `M`. -/
 def detT (N K k M : ℕ) : ℕ :=
-  let A1 := apG M
-  let A2 := apG A1
+  let A1 := apGS M
+  let A2 := apGS A1
   let C1 := A2 + 1
-  let A3 := apG C1
+  let A3 := apGS C1
   let B1 := A3 + 1
-  let A4 := apG B1
-  let A5 := apG A4
-  let A6 := apG A5
-  let F1 := apG A6
-  let A7 := apG F1
-  let A8 := apG A7
+  let A4 := apGS B1
+  let A5 := apGS A4
+  let A6 := apGS A5
+  let F1 := apGS A6
+  let A7 := apGS F1
+  let A8 := apGS A7
   (2 * (M + 1) + 3) + (((2 * (M + 1) + 3) + appT M) + (((2 * (A1 + 1) + 3) + appT A1) +
     (timeC0 0 (2 * k * (N * K)) (2 * k) N K A2 + ((2 * (C1 + 1) + 3) + ((2 * (C1 + 1) + 3) +
     (((2 * (C1 + 1) + 3) + appT C1) + (timeB1 N K k A3 + ((2 * (B1 + 1) + 3) + ((2 * (B1 + 1) + 3) +
@@ -67,14 +67,14 @@ def detT (N K k M : ℕ) : ℕ :=
 
 /-- The bound after `setupDet` from tapes below `M`. -/
 def detG (M : ℕ) : ℕ :=
-  let A2 := apG (apG M)
-  let A3 := apG (A2 + 1)
-  let A6 := apG (apG (apG (A3 + 1)))
-  apG (apG (apG (apG A6)))
+  let A2 := apGS (apGS M)
+  let A3 := apGS (A2 + 1)
+  let A6 := apGS (apGS (apGS (A3 + 1)))
+  apGS (apGS (apGS (apGS A6)))
 
 set_option maxHeartbeats 4000000 in
-theorem ub_setupDet (M : ℕ) (hC : sizeC0 0 (2 * k * (N * K)) (2 * k) N K ≤ apG (apG M))
-    (hB : sizeB1 N K k ≤ apG (apG (apG M) + 1)) :
+theorem ub_setupDet (M : ℕ) (hC : sizeC0 0 (2 * k * (N * K)) (2 * k) N K ≤ apGS (apGS M))
+    (hB : sizeB1 N K k ≤ apGS (apGS (apGS M) + 1)) :
     UB (setupDet (N := N) (K := K) (k := k)) M (detT N K k M) (detG M) := by
   rw [setupDet]
   refine ((ub_copyS 0 83 M).seq <| (ub_appC 0 84 _).seq <| (ub_appC 0 85 _).seq <|
@@ -95,8 +95,8 @@ theorem ub_setupP {X : ChiSampler c} (M : ℕ)
     (h4 : (X.B.count ((Enum.list (α := RingBTVW.Col k)).length * N)).S₀ ≤ M)
     (h5 : (bCoins (nBj (N := N) hk)).S₀ ≤ M) (h6 : (bCoins (N * K)).S₀ ≤ M)
     (hpres : X.P.Preserves 6)
-    (hC : sizeC0 0 (2 * k * (N * K)) (2 * k) N K ≤ apG (apG (setupS hk c X.B M)))
-    (hB : sizeB1 N K k ≤ apG (apG (apG (setupS hk c X.B M)) + 1)) :
+    (hC : sizeC0 0 (2 * k * (N * K)) (2 * k) N K ≤ apGS (apGS (setupS hk c X.B M)))
+    (hB : sizeB1 N K k ≤ apGS (apGS (apGS (setupS hk c X.B M)) + 1)) :
     UB (setupP hk c X) M (setupST hk c X.B M + detT N K k (setupS hk c X.B M))
       (detG (setupS hk c X.B M)) := by
   rw [setupP]
