@@ -2262,6 +2262,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   coordinates. Local membership forces global membership iff D_k spans all relations; k ≥ r + 1 always suffices and is
   sharp. Short lengths alone don't remove the exception (explicit example). This gives no new numerical bound.
   Remaining allowances: Z₁ > 4.0203·10⁻¹², residual mean score ≥ 5.1098·10⁻⁷, extra prefix rejection ≥ 0.00354128.
+* **Part 246 (unaudited; reduction).** Entropy route for Z_rem (W1-R117, reported in chat only).
+  * Part 230 gives a pointwise cap p_{i+1} ≤ a_i and a mean bound E[p_{i+1} | F_{i−1}] ≤ a_i·b_i, where a_i ≤ b_i are
+    the small-radius void fractions.
+  * A chord bound plus a supermartingale gives P(Σp_i > 48.6) ≤ P(L_λ > K) + e^{K−48.6λ}. With ρ = 0.273 this reduces
+    the target to a single exit bound: P(max_{2≤i≤404} b_i > 0.273) ≤ 3.64·10⁻¹² (the remaining term is
+    3.955368·10⁻¹²).
+  * Deletion independence (Parts 243–244) alone cannot give this. A finite-group model satisfying both lemmas has tail
+    > 1.0664·10⁻⁸; its reachability as a lattice history is unproved. Open: the small-radius void exit bound.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
