@@ -159,10 +159,10 @@ theorem decodeTuple_one_nil : decodeTuple 1 (encodeTuple []) = [[]] := by
       simp [encodeTuple, Turing.MultiTapeTM.length_frame] at this
 
 /-- `Setup` outputs the encodings of `(mpk, msk)`. -/
-theorem impl_setup : PE.setup (U := dateUniverse) params (impl hk c ms) =
+theorem impl_setup : PE.setup (U := PUniv) params (impl hk c ms) =
     (setupM hk c).map fun v => ((pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2) := by
   unfold PE.setup
-  rw [run_of_machine (impl hk c ms) .setup (paramsWord dateUniverse params) [] (setupM hk c)
+  rw [run_of_machine (impl hk c ms) .setup (paramsWord PUniv params) [] (setupM hk c)
     (fun v => [(pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2]) (fun _ => rfl)
     ms.setup_law, PMF.map_comp]
   rfl
@@ -173,17 +173,17 @@ noncomputable def KGreal (msk : SKey hk c) (C : List Bool) : PMF (List Bool) :=
 
 /-- `KeyGen` answers `KGreal`. -/
 theorem impl_keyGen (msk : SKey hk c) (C : List Bool) :
-    keyGen (U := dateUniverse) params (impl hk c ms) ((mskEnc hk c).enc msk) C = KGreal hk c msk C := by
+    keyGen (U := PUniv) params (impl hk c ms) ((mskEnc hk c).enc msk) C = KGreal hk c msk C := by
   unfold keyGen KGreal
   split_ifs with hC
-  · rw [run_of_machine (impl hk c ms) .keyGen (paramsWord dateUniverse params)
+  · rw [run_of_machine (impl hk c ms) .keyGen (paramsWord PUniv params)
       [(mskEnc hk c).enc msk, C] (keyM hk c msk C) (fun sk => [(skEnc hk c).enc sk])
       (fun _ => rfl) (ms.key_short msk C hC), PMF.map_comp]
     rfl
   · unfold Impl.run
     have h := ms.key_long msk C hC
     change (PMF.map _ (PMF.map _ (ms.key.run _))) = _
-    rw [show ms.key.run (encodeTuple [paramsWord dateUniverse params,
+    rw [show ms.key.run (encodeTuple [paramsWord PUniv params,
       (mskEnc hk c).enc msk, C]) = PMF.pure (encodeTuple []) from h, PMF.pure_map, PMF.pure_map]
     have : (sig Alg.keyGen).outputs.length = 1 := rfl
     rw [this, decodeTuple_one_nil]
@@ -191,11 +191,11 @@ theorem impl_keyGen (msk : SKey hk c) (C : List Bool) :
 
 /-- `Enc` outputs the encoding of the ciphertext. -/
 theorem impl_enc (mpk : PK hk c) (x : Date) (b : Bool) :
-    enc (U := dateUniverse) params (impl hk c ms) ((pkEnc hk c).enc mpk) x b =
+    enc (U := PUniv) params (impl hk c ms) ((pkEnc hk c).enc mpk) x b =
       (encM hk c mpk x b).map (ctEnc hk c).enc := by
   unfold enc
-  rw [run_of_machine (impl hk c ms) .enc (paramsWord dateUniverse params)
-    [(pkEnc hk c).enc mpk, dateUniverse.encAttr x, dateUniverse.encMsg b] (encM hk c mpk x b)
+  rw [run_of_machine (impl hk c ms) .enc (paramsWord PUniv params)
+    [(pkEnc hk c).enc mpk, PUniv.encAttr x, PUniv.encMsg b] (encM hk c mpk x b)
     (fun ct => [(ctEnc hk c).enc ct]) (fun _ => rfl)
     (ms.enc_law mpk x b), PMF.map_comp]
   rfl
@@ -211,34 +211,34 @@ theorem correct_of_scheme
         1 - ((2 : ℝ) ^ params.corrBits)⁻¹ ≤
           (((setupM hk c).bind fun v => (keyM hk c v.2 (winWord w)).bind fun sk =>
             (encM hk c v.1 x b).map fun ct => decM hk c sk (winWord w) ct) [b]).toReal) :
-    Correct dateUniverse params (impl hk c ms) := by
-  have hauth : ∀ C (x : Date), Authorized (U := dateUniverse) params (impl hk c ms) C x →
-      C.length ≤ c.L ∧ (∃ w : Window, winWord w = C) ∧ evalGates (encDate x, parse C) = false := by
+    Correct PUniv params (impl hk c ms) := by
+  have hauth : ∀ C (x : Date), Authorized (U := PUniv) params (impl hk c ms) C x →
+      C.length ≤ c.L ∧ (ValidC C) ∧ evalGates (encDate x, parse C) = false := by
     intro C x h
     obtain ⟨h1, h2, h3⟩ := (win_authorized_iff (impl hk c ms) rfl C x).mp h
     exact ⟨(length_le_encodeTuple (by simp)).trans h1, h2, h3⟩
-  refine correct_of_laws (U := dateUniverse) params (impl hk c ms) (pkEnc hk c).enc (mskEnc hk c).enc
+  refine correct_of_laws (U := PUniv) params (impl hk c ms) (pkEnc hk c).enc (mskEnc hk c).enc
     (skEnc hk c).enc (ctEnc hk c).enc (setupM hk c) (keyM hk c) (encM hk c) (decM hk c) ?_ ?_ ?_ ?_ ?_
   · unfold PE.setup
-    rw [run_of_machine (impl hk c ms) .setup (paramsWord dateUniverse params) [] (setupM hk c)
+    rw [run_of_machine (impl hk c ms) .setup (paramsWord PUniv params) [] (setupM hk c)
       (fun v => [(pkEnc hk c).enc v.1, (mskEnc hk c).enc v.2]) (fun _ => rfl)
       ms.setup_law, PMF.map_comp]
     rfl
   · intro msk C x hC
     unfold keyGen
-    rw [run_of_machine (impl hk c ms) .keyGen (paramsWord dateUniverse params) [(mskEnc hk c).enc msk, C] (keyM hk c msk C) (fun sk => [(skEnc hk c).enc sk])
+    rw [run_of_machine (impl hk c ms) .keyGen (paramsWord PUniv params) [(mskEnc hk c).enc msk, C] (keyM hk c msk C) (fun sk => [(skEnc hk c).enc sk])
       (fun _ => rfl) (ms.key_short msk C (hauth C x hC).1),
       PMF.map_comp]
     rfl
   · intro mpk x b
     unfold enc
-    rw [run_of_machine (impl hk c ms) .enc (paramsWord dateUniverse params)
-      [(pkEnc hk c).enc mpk, dateUniverse.encAttr x, dateUniverse.encMsg b] (encM hk c mpk x b) (fun ct => [(ctEnc hk c).enc ct])
+    rw [run_of_machine (impl hk c ms) .enc (paramsWord PUniv params)
+      [(pkEnc hk c).enc mpk, PUniv.encAttr x, PUniv.encMsg b] (encM hk c mpk x b) (fun ct => [(ctEnc hk c).enc ct])
       (fun _ => rfl) (ms.enc_law mpk x b), PMF.map_comp]
     rfl
   · intro sk C ct x hC
     unfold dec
-    rw [run_of_machine (impl hk c ms) .dec (paramsWord dateUniverse params) [(skEnc hk c).enc sk, C, (ctEnc hk c).enc ct]
+    rw [run_of_machine (impl hk c ms) .dec (paramsWord PUniv params) [(skEnc hk c).enc sk, C, (ctEnc hk c).enc ct]
       (PMF.pure (decM hk c sk C ct))
       (fun r => [r]) (fun _ => rfl) (by
         rw [PMF.pure_map]
@@ -250,7 +250,7 @@ theorem correct_of_scheme
     exact hscheme x w h1 h3 b
 
 /-- **Expressiveness.** -/
-theorem expressive (hL : dateBound ≤ c.L) : Expressive dateUniverse params (impl hk c ms) :=
+theorem expressive (hL : dateBound ≤ c.L) : Expressive PUniv params (impl hk c ms) :=
   expressive_win (impl hk c ms) rfl hL
 
 end AdvancedEncryption.DualUse

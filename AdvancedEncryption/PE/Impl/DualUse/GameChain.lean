@@ -33,20 +33,20 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 noncomputable def shiftCT (μ : Bool) (ct : CT hk c) : CT hk c :=
   { ct with κ := ct.κ + if μ then (Sdw (N := N) hk).half else 0 }
 
-theorem encrypt_shift (mpk : PK hk c) (x : Fin 10 → Bool) (μ : Bool)
+theorem encrypt_shift (mpk : PK hk c) (x : Fin nA → Bool) (μ : Bool)
     (r : EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)) :
     encrypt mpk x μ r = shiftCT hk c μ (encrypt mpk x false r) := by
   cases μ <;> simp [encrypt, shiftCT]
 
-instance : Fintype dateUniverse.Attr := inferInstanceAs (Fintype Date)
-instance : DecidableEq dateUniverse.Attr := inferInstanceAs (DecidableEq Date)
+instance : Fintype PUniv.Attr := inferInstanceAs (Fintype Date)
+instance : DecidableEq PUniv.Attr := inferInstanceAs (DecidableEq Date)
 
 variable (encMPK : PK hk c → List Bool) (encCT : CT hk c → List Bool)
   (KGi : PK hk c → List Bool → PMF (List Bool)) (authB : List Bool → Date → Bool)
 
 /-- The challenger with the secret `(mpk, ct₀)` drawn from `V x`. -/
 noncomputable def specV (V : Date → PMF (PK hk c × CT hk c)) :
-    Generic.Spec dateUniverse (PK hk c × CT hk c) where
+    Generic.Spec PUniv (PK hk c × CT hk c) where
   setup := V
   pub σ := encMPK σ.1
   key σ := KGi σ.1
@@ -55,7 +55,7 @@ noncomputable def specV (V : Date → PMF (PK hk c × CT hk c)) :
 
 /-- The observable law of the experiment of the adversary `A` against `specV V`. -/
 noncomputable def gameV (A : Machine 3) (V : Date → PMF (PK hk c × CT hk c)) :=
-  (A.runWith (Generic.oracle (specV hk c encMPK encCT KGi authB V)) (paramsWord dateUniverse params)
+  (A.runWith (Generic.oracle (specV hk c encMPK encCT KGi authB V)) (paramsWord PUniv params)
     {}).map Generic.obs
 
 /-! ### The laws of the hybrids -/
@@ -165,7 +165,7 @@ theorem gameV_close (A : Machine 3) {V V' : Date → PMF (PK hk c × CT hk c)} {
       (Fintype.card Date * ε) := by
   unfold gameV Machine.runWith
   have := Generic.closeTo_runWith_setup (specV hk c encMPK encCT KGi authB V)
-    (A.machine.runOracle A.time (paramsWord dateUniverse params)) V' (fun _ => ε) h
+    (A.machine.runOracle A.time (paramsWord PUniv params)) V' (fun _ => ε) h
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at this
   exact this.map _
 

@@ -88,7 +88,7 @@ variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
 /-- The date `(0, 0)`: every bit `false`. -/
 def date0 : Date := (0, 0)
 
-theorem bitsOf_date0 (i : Fin 10) : bitsOf date0 i = false := by
+theorem bitsOf_date0 (i : Fin nA) : bitsOf date0 i = false := by
   fin_cases i <;> rfl
 
 /-- **A window predicate is true on the date `(0, 0)`** (it is not a valid date). -/
@@ -102,7 +102,7 @@ theorem evalBool_date0 (w : Window) :
   simp [accepts, valid, date0]
 
 /-- A predicate true on `x` evaluates to `1` on the bits of `x`. -/
-theorem circ_eval_of_true (x : Fin 10 → Bool) (f : SLP (Fin 10) × Wire (Fin 10))
+theorem circ_eval_of_true (x : Fin nA → Bool) (f : SLP (Fin nA) × Wire (Fin nA))
     (hfx : SLP.evalBool x f.1 f.2 = true) :
     ((Sdw (N := N) hk).circ f).eval (fun i => bitR (R := Rg N K) (x i)) = 1 := by
   have := Circuit.eval_bits (R := Rg N K) x (f.1.circuit f.2)
@@ -116,7 +116,7 @@ theorem circ_eval_date0 (w : Window) :
       (fun i => bitR (R := Rg N K) (bitsOf date0 i)) = 1 :=
   circ_eval_of_true _ _ (evalBool_date0 w)
 
-theorem bitR_date0 (i : Fin 10) : bitR (R := Rg N K) (bitsOf date0 i) = 0 := by
+theorem bitR_date0 (i : Fin nA) : bitR (R := Rg N K) (bitsOf date0 i) = 0 := by
   rw [bitsOf_date0]; simp [bitR]
 
 /-! ### The key row -/
@@ -130,7 +130,7 @@ theorem bitsOf_zero : bitsOf (Sdw (N := N) hk) (fun _ => (0 : Matrix (Fin 2) (Co
 /-- **The key row as a row of the simulated trapdoor**: if row `r` of every `W_j` is `B_j` and row
 `r` of every `Rᵢ` is zero, then with `Ψ = 0` and `x = (0, 0)`,
 `B_f̂ = row_r (simKeyMat …) + f(0) G̲`. -/
-theorem keyMatrix_eq_rowSim (mpk : PK hk c) (Rm : Fin 10 → Matrix (Fin c.d) (Col k) (Rg N K))
+theorem keyMatrix_eq_rowSim (mpk : PK hk c) (Rm : Fin nA → Matrix (Fin c.d) (Col k) (Rg N K))
     (W : (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index → Matrix (Fin c.d) (Col k) (Rg N K))
     (r : Fin c.d) (hW : ∀ j, rowAt (W j) r = mpk.Bj j) (hR : ∀ i, rowAt (Rm i) r = 0)
     (f : (Sdw (N := N) hk).Pred) :
@@ -154,7 +154,7 @@ theorem keyMatrix_eq_rowSim (mpk : PK hk c) (Rm : Fin 10 → Matrix (Fin c.d) (C
     intro j
     rw [hrow, unitRow_mul, hW j, bitsOf_zero]
     simp [oldMPK]
-  have h := keyMatrix_sim (ringSetting_fhatCorrect hk (Fin 10)) (oldMPK mpk) A Rm (bitsOf date0) W
+  have h := keyMatrix_sim (ringSetting_fhatCorrect hk (Fin nA)) (oldMPK mpk) A Rm (bitsOf date0) W
     (fun _ => 0) hΨ hB f
   rw [hrow, unitRow_mul] at h
   exact h
@@ -165,7 +165,7 @@ theorem keyMatrix_eq_rowSim (mpk : PK hk c) (Rm : Fin 10 → Matrix (Fin c.d) (C
 `r` of every `Rᵢ` are the rows `0`, `1` of `Ψᵢ`, then with the ciphertext's `Ψ` and
 `x = (0, 0)`, `c_f̂ = row_r (simKeyMat …) + f(0) · (row 1 of G)`. -/
 theorem evalCiphertext_eq_rowSim (mpk : PK hk c) (ct : CT hk c)
-    (Rm : Fin 10 → Matrix (Fin c.d) (Col k) (Rg N K))
+    (Rm : Fin nA → Matrix (Fin c.d) (Col k) (Rg N K))
     (W : (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index → Matrix (Fin c.d) (Col k) (Rg N K))
     (r r' : Fin c.d) (hW : ∀ j, rowAt (W j) r = ct.cj j)
     (hR0 : ∀ i, rowAt (Rm i) r' = rowAt (ct.Ψ i) 0) (hR1 : ∀ i, rowAt (Rm i) r = rowAt (ct.Ψ i) 1)

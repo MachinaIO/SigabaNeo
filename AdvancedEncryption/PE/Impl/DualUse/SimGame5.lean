@@ -23,7 +23,7 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-- The secret of the reduction of hybrid 5. -/
 abbrev Sec5 := Date × Rg N K × (JC (Sdw (N := N) hk) → (Fin c.d → Bool)) ×
-  (Fin 10 → Matrix (Fin c.d) (Col k) (Rg N K)) ×
+  (Fin nA → Matrix (Fin c.d) (Col k) (Rg N K)) ×
   ((Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index → Matrix (Fin 1) (Col k) (Rg N K))
 
 /-- The law of the secret. -/
@@ -48,7 +48,7 @@ noncomputable def view5 (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) 
     | .inl _ => u₀
     | .inr (.inl c) => (scalar u₀ * a + i.2.2.1) 0 c
     | .inr (.inr c) => (scalar u₀ * z + i.2.2.2.1) 0 c
-  let Ψ : Fin 10 → Matrix (Fin 2) (Col k) (Rg N K) :=
+  let Ψ : Fin nA → Matrix (Fin 2) (Col k) (Rg N K) :=
     fun j => gswPK B₀ c₀ * σ.2.2.2.1 j + bitR (R := Rg N K) (x j) • (Sdw (N := N) hk).Γ.G
   let Bj := fun j => B₀ * wMat σ.2.2.1 j + bitsOf (Sdw (N := N) hk) Ψ j • (Sdw (N := N) hk).Γ₁.G
   (⟨B₀, trapRowU a z, Bj, p⟩,
@@ -87,7 +87,7 @@ theorem accept5 (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (inst : PMF (Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k)) :
     accOn A D inst (F5 hk c) = ((inst.bind fun i =>
       ((A.runWith (Generic.oracle (specSim (setup5 hk c) (view5 hk c i) (sd5 hk c i)))
-        (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
+        (paramsWord PUniv params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
   accOn_sim hdec hL hcov A D inst (F5 hk c) (fun _ => setup5 hk c) (view5 hk c) (sd5 hk c)
     (fun x i => F5_eq hk c x i) (fun _ _ => rfl) (fun _ x σ hσ => setup5_x hk c x σ hσ)
     (fun i x σ hσ => sd5_valid hk c i x σ hσ)
@@ -152,7 +152,7 @@ theorem acceptI (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (inst : PMF (Matrix (Fin 1) (Col k) (Rg N K) × Matrix (Fin 1) (Col k) (Rg N K))) :
     accOn A D inst (FI hk c) = ((inst.bind fun ab =>
       ((A.runWith (Generic.oracle (specSim (setupI hk c) (viewI hk c ab) (sdI hk c ab)))
-        (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
+        (paramsWord PUniv params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
   accOn_sim hdec hL hcov A D inst (FI hk c) (fun _ => setupI hk c) (viewI hk c) (sdI hk c)
     (fun x ab => FI_eq hk c x ab) (fun _ _ => rfl) (fun _ x σ hσ => setupI_x hk c x σ hσ)
     (fun ab x σ hσ => sdI_valid hk c ab x σ hσ)

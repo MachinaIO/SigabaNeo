@@ -76,7 +76,7 @@ theorem accept3 (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (inst : PMF (Matrix (Fin 1) (Col k) (Rg N K) × Matrix (Fin 1) (Col k) (Rg N K))) :
     accOn A D inst (F3 hk c) = ((inst.bind fun ab =>
       ((A.runWith (Generic.oracle (specSim (setup3 hk c) (view3 hk c ab) (sd3 hk c ab)))
-        (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
+        (paramsWord PUniv params) {}).map Generic.obs).bind (DcB D)) true).toReal :=
   accOn_sim hdec hL hcov A D inst (F3 hk c) (fun _ => setup3 hk c) (view3 hk c) (sd3 hk c)
     (fun x ab => F3_eq hk c x ab) (fun _ _ => rfl) (fun _ x σ hσ => setup3_x hk c x σ hσ)
     (fun ab x σ hσ => sd3_valid hk c ab x σ hσ)
