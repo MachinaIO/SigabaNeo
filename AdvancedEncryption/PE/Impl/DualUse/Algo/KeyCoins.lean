@@ -18,8 +18,8 @@ then a fixed function of exactly `c.mB` fair coins:
 namespace AdvancedEncryption.DualUse.Algo
 
 open SigabaNeo SigabaNeo.Lattices SigabaNeo.Lattices.Algo Cslib Cslib.Probability
-  AdvancedEncryption.RingBTVW AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
-  AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.DateWindow
+  AdvancedEncryption.RingBTVW AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+  AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 section General
 

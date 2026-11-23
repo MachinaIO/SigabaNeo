@@ -26,7 +26,7 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.Prog Matrix AdvancedEncryption.RingBTVW Cslib
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 open scoped Prog
 
 /-! ### Placements -/

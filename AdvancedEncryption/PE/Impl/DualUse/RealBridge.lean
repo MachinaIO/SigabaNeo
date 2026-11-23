@@ -16,18 +16,18 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 variable {ms : Machines hk c}
 
 open Classical in
-/-- **The ideal key oracle**: the ideal key law of `mpk` for window predicates of at most `L` bits,
+/-- **The ideal key oracle**: the ideal key law of `mpk` for program words of at most `L` bits,
 the zero key for the other short words, and the empty word for long ones. -/
 noncomputable def KGi (mpk : PK hk c) (C : List Bool) : PMF (List Bool) :=
   if C.length ≤ c.L then
-    if ∃ w : Window, winWord w = C then
+    if ValidC C then
       (idealKeyLaw c.Big c.Small c.hBig c.dec mpk (keyMatrix mpk (predC C))).map
         fun o => (skEnc hk c).enc (mpk, keyOfOutput o)
     else PMF.pure ((skEnc hk c).enc (mpk, dummyKey c))
@@ -35,24 +35,23 @@ noncomputable def KGi (mpk : PK hk c) (C : List Bool) : PMF (List Bool) :=
 
 open Classical in
 /-- The flag of the experiment: the query is authorized for the selected attribute. -/
-noncomputable def authI (C : List Bool) (x : Date) : Bool :=
+noncomputable def authI (C : List Bool) (x : PUniv.Attr) : Bool :=
   decide (Authorized (U := PUniv) params (impl hk c) C x)
 
 /-- **Long predicates are never authorized**: `Eval` rejects inputs longer than `L`. -/
-theorem authI_long (C : List Bool) (x : Date) (hC : c.L < C.length) : authI hk c C x = false := by
+theorem authI_long (hL : bpLen ≤ c.L) (C : List Bool) (x : PUniv.Attr) (hC : c.L < C.length) :
+    authI hk c C x = false := by
   unfold authI
   rw [decide_eq_false_iff_not]
   intro h
-  obtain ⟨h1, -, -⟩ := (win_authorized_iff (impl hk c) rfl C x).mp h
-  have := (length_le_encodeTuple (C := C)
-    (xs := [paramsWord PUniv params, C, encDate x]) (by simp)).trans h1
+  obtain ⟨h1, -⟩ := (bp_authorized_iff (impl hk c) rfl C x).mp h
   omega
 
-/-- The real trapdoor is covered for every key of `Setup` and every window predicate. -/
+/-- The real trapdoor is covered for every key of `Setup` and every program predicate. -/
 def RealCovered : Prop :=
-  ∀ v ∈ (setupM hk c).support, ∀ w : Window,
-    GoodTrap c.Big c.Small c.dec v.1 (keyMatrix v.1 (predC (winWord w)))
-      (realTrap (S := Sdw (N := N) hk) (trapMat v.2.2.1 v.2.2.2) (keyMatrix v.1 (predC (winWord w))))
+  ∀ v ∈ (setupM hk c).support, ∀ C : List Bool, ValidC C →
+    GoodTrap c.Big c.Small c.dec v.1 (keyMatrix v.1 (predC C))
+      (realTrap (S := Sdw (N := N) hk) (trapMat v.2.2.1 v.2.2.2) (keyMatrix v.1 (predC C)))
 
 variable {hk c}
 
@@ -63,17 +62,16 @@ theorem KGreal_eq_KGi (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) 
   obtain ⟨-, hm⟩ := msk_trapdoor _ v hv
   unfold KGreal KGi
   split_ifs with hL hw
-  · obtain ⟨w, rfl⟩ := hw
-    rw [keyM_eq hk c v.2 _ ⟨w, rfl⟩, hm,
-      keyLaw_eq_ideal c.Big c.Small c.hBig c.dec hdec v.1 _ _ (hcov v hv w), PMF.map_comp]
+  · rw [keyM_eq hk c v.2 _ hw, hm,
+      keyLaw_eq_ideal c.Big c.Small c.hBig c.dec hdec v.1 _ _ (hcov v hv C hw), PMF.map_comp]
     rfl
   · rw [keyM_of_not hk c v.2 C hw, hm, PMF.pure_map]
   · rfl
 
 /-- The law of `(mpk, ct₀)` from `Setup` and the coins of `Enc` is the real view. -/
-theorem setup_coins_eq_V0 (x : Date) :
+theorem setup_coins_eq_V0 (x : PUniv.Attr) :
     ((setupM hk c).bind fun v => (coinsM hk c).map fun r =>
-      (v.1, encrypt v.1 (bitsOf x) false r)) = V0 hk c x := by
+      (v.1, encrypt v.1 (attrBits x) false r)) = V0 hk c x := by
   unfold setupM setupLaw V0 realGame realView inst3Real coinsM
   simp only [Cslib.Probability.PMF.monad_bind_eq_bind, Cslib.Probability.PMF.monad_pure_eq_pure,
     PMF.bind_bind, PMF.pure_bind, PMF.bind_map, PMF.map_bind]
@@ -87,7 +85,7 @@ theorem setup_coins_eq_V0 (x : Date) :
 variable (hk c)
 
 /-- The challenge of the implementation, through the encodings. -/
-noncomputable def CHreal (mpk : PK hk c) (x : Date) (μ : Bool) : PMF (List Bool) :=
+noncomputable def CHreal (mpk : PK hk c) (x : PUniv.Attr) (μ : Bool) : PMF (List Bool) :=
   (encM hk c mpk x μ).map (ctEnc hk c).enc
 
 /-- The challenger of the implementation, as a generic challenger. -/
@@ -96,14 +94,14 @@ noncomputable def realSpec :=
     (KGreal hk c) (CHreal hk c)
 
 /-- The challenge with given coins. -/
-noncomputable def gReal (σ : Date × PK hk c × SKey hk c) (μ : Bool)
+noncomputable def gReal (σ : PUniv.Attr × PK hk c × SKey hk c) (μ : Bool)
     (r : EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)) : List Bool :=
-  (ctEnc hk c).enc (encrypt σ.2.1 (bitsOf σ.1) μ r)
+  (ctEnc hk c).enc (encrypt σ.2.1 (attrBits σ.1) μ r)
 
 /-- The secret `(mpk, ct₀)` of the hybrids from the secret with the coins. -/
-noncomputable def toView (σ : (Date × PK hk c × SKey hk c) ×
+noncomputable def toView (σ : (PUniv.Attr × PK hk c × SKey hk c) ×
     EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)) : PK hk c × CT hk c :=
-  (σ.1.2.1, encrypt σ.1.2.1 (bitsOf σ.1.1) false σ.2)
+  (σ.1.2.1, encrypt σ.1.2.1 (attrBits σ.1.1) false σ.2)
 
 variable {hk c}
 
@@ -151,7 +149,7 @@ theorem real_eq_gameV (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) 
     (fun x σ _ => by
       funext μ
       show PMF.pure ((ctEnc hk c).enc (shiftCT hk c μ (toView hk c σ).2)) =
-        PMF.pure ((ctEnc hk c).enc (encrypt σ.1.2.1 (bitsOf σ.1.1) μ σ.2))
+        PMF.pure ((ctEnc hk c).enc (encrypt σ.1.2.1 (attrBits σ.1.1) μ σ.2))
       rw [encrypt_shift hk c _ _ μ]
       rfl)
     rfl prog

@@ -12,7 +12,7 @@ shape `time_keyP` asks for; **`time_keyP_wfB`** is `time_keyP` with this block.
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
 
 /-- **A framed program** from a uniform bound of its body. -/
 theorem ub_frameX {k m : ℕ} (e : Fin m ↪ Fin k) {p : XProg m} {M T M' : ℕ} (h : UB p M T M') :

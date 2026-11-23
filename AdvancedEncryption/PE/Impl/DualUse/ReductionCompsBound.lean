@@ -29,8 +29,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability SigabaNeo.Tape
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow AdvancedEncryption.PE.Generic
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.PE.Generic
 open SigabaNeo.Inline
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
@@ -38,7 +38,7 @@ variable {Sec Inst : Type} {nS : ℕ}
 set_option linter.unusedSectionVars false
 
 /-- The parameter word of the date-window universe has `515` bits. -/
-theorem length_paramsWord_date : (paramsWord dateUniverse params).length = 515 := length_paramsWord_pu
+theorem length_paramsWord_date : (paramsWord PUniv params).length = 515 := length_paramsWord_pu
 
 theorem nA_dateCodes {Sig : Type} (sig : FixedEnc Sig nS) : (puCodes sig).nA = 10 := rfl
 theorem nM_dateCodes {Sig : Type} (sig : FixedEnc Sig nS) : (puCodes sig).nM = 1 := rfl

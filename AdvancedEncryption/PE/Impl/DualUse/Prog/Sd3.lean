@@ -14,8 +14,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Matrix AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ}
 
@@ -40,8 +40,8 @@ def sdTailBody : XProg 82 :=
   seq (frame ⟨vOne 18, by decide⟩ (oneB N K)) <|
   seq (frame ⟨vSel 10 17 18 19, by decide⟩ (selB (P1 N k * (c.d * (2 * k))) (N * K))) <|
   seq (frame ⟨vJoin 11 16 10 8, by decide⟩ (joinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k))) <|
-  seq (frame ⟨vJoin 12 3 11 5, by decide⟩ (joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc))) <|
-  frame ⟨vJoin 13 15 12 19, by decide⟩ (joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0))
+  seq (frame ⟨vJoin 12 3 11 5, by decide⟩ (joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen attrEnc))) <|
+  frame ⟨vJoin 13 15 12 19, by decide⟩ (joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen attrEnc) (0))
 
 theorem wf_sdTailBody : (sdTailBody hk c).WF := by
   unfold sdTailBody
@@ -54,12 +54,12 @@ def sizesdTail : ℕ :=
     (N * K + 1) +
     sizeSelB (P1 N k * (c.d * (2 * k))) (N * K) +
     ((fencLen (rmEnc c)) + (fWm (N := N) hk c) + (fPsi N K k)) +
-    ((fD N K c.d) + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + (fencLen dateEnc)) +
-    ((fencLen (pkEnc hk c)) + (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) + (0))
+    ((fD N K c.d) + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + (fencLen attrEnc)) +
+    ((fencLen (pkEnc hk c)) + (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen attrEnc) + (0))
 
 /-- The time of `sdTailBody` from tapes below `M`. -/
 def timesdTail (M : ℕ) : ℕ :=
-  timeTrB (10) (2 * k) (c.d) (N * K) (0) M + (timeTrB (P1 N k) (2 * k) (c.d) (1) (0) M + (timeOneB N K M + (timeSelB (P1 N k * (c.d * (2 * k))) (N * K) M + (timeJoinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M + (timeJoinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M + (timeJoinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M))))))
+  timeTrB (10) (2 * k) (c.d) (N * K) (0) M + (timeTrB (P1 N k) (2 * k) (c.d) (1) (0) M + (timeOneB N K M + (timeSelB (P1 N k * (c.d * (2 * k))) (N * K) M + (timeJoinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M + (timeJoinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen attrEnc) M + (timeJoinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen attrEnc) (0) M))))))
 
 theorem ub_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) :
     UBZ 20 (sdTailBody hk c) M (timesdTail hk c M) M := by
@@ -69,8 +69,8 @@ theorem ub_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) :
     (UBZ.frame _ (by decide) (ub_oneB' N K M (by omega) (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_selB (P1 N k * (c.d * (2 * k))) (N * K) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_joinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M (by omega)) le_rfl).seq <|
-    (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
-    (UBZ.frame _ (by decide) (ub_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M (by omega)) le_rfl)
+    (UBZ.frame _ (by decide) (ub_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen attrEnc) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen attrEnc) (0) M (by omega)) le_rfl)
 
 theorem sz_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) (hB : M < 2 ^ 240) :
     SZ (sdTailBody hk c) (2 ^ 21) := by
@@ -80,18 +80,18 @@ theorem sz_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) (hB : M < 2 ^ 240) 
     (SZ.frame _ (sz_oneB' N K M (by omega) hB)).seq <|
     (SZ.frame _ (sz_selB (P1 N k * (c.d * (2 * k))) (N * K) M (by omega) hB)).seq <|
     (SZ.frame _ (sz_joinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M (by omega) hB)).seq <|
-    (SZ.frame _ (sz_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen dateEnc) M (by omega) hB)).seq <|
-    (SZ.frame _ (sz_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen dateEnc) (0) M (by omega) hB))).mono (by norm_num)
+    (SZ.frame _ (sz_joinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen attrEnc) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_joinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen attrEnc) (0) M (by omega) hB))).mono (by norm_num)
 
 
 set_option maxHeartbeats 4000000 in
 /-- **The law of the tail.** -/
 theorem law_sdTail (hN : 0 < N) (hK : 0 < K) (S : Store 82) (hS : Blank20 S)
     (c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K))
-    (x : Date) (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
+    (x : PUniv.Attr) (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
     (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) (pk : PK hk c)
     (h3 : S 3 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc c₀)
-    (h4 : S 4 = (rmTEnc c).enc Rm) (h5 : S 5 = encDate x) (h6 : S 6 = (wEnc hk c).enc w)
+    (h4 : S 4 = (rmTEnc c).enc Rm) (h5 : S 5 = encAttr x) (h6 : S 6 = (wEnc hk c).enc w)
     (h8 : S 8 = (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ)
     (h15 : S 15 = (pkEnc hk c).enc pk) (h19 : S 19 = []) :
     ∃ S', (sdTailBody hk c).law S = PMF.pure S' ∧ S' 13 = (sdEnc hk c).enc ⟨pk, c₀, Rm, wMat w, Ψ, x⟩ := by
@@ -108,13 +108,13 @@ theorem law_sdTail (hN : 0 < N) (hK : 0 < K) (S : Store 82) (hS : Blank20 S)
     (join3_exact (Y := ((rmEnc c).enc Rm ++ (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
         (DualUse.matEnc (N := N) (K := K) (Fin c.d) (RingBTVW.Col k))).enc (wMat w) ++
         (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ))
-      (Z := encDate x) (c := fencLen dateEnc) (length_enc _ c₀)
-      (by simp only [List.length_append, length_enc]) (length_enc dateEnc x)),
+      (Z := encAttr x) (c := fencLen attrEnc) (length_enc _ c₀)
+      (by simp only [List.length_append, length_enc]) (length_enc attrEnc x)),
     PMF.pure_bind]
   rw [plc_joinB' _ _ _ _ _ _ _ _ _ (by bl20) (by simp [h15]) (by simp) (by simp [h19])
     (join2_exact (Y := (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc c₀ ++ ((rmEnc c).enc Rm ++ (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
         (DualUse.matEnc (N := N) (K := K) (Fin c.d) (RingBTVW.Col k))).enc (wMat w) ++
-        (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ) ++ encDate x)
+        (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ) ++ encAttr x)
       (length_enc _ pk)
       (by simp only [List.length_append, length_enc]; rfl))]
   refine ⟨_, rfl, ?_⟩

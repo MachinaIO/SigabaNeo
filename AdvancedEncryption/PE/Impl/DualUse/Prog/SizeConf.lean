@@ -14,7 +14,7 @@ and `Enc` with the sampler `chiSamplerP`, from the state counts of their blocks 
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 section Generic
 

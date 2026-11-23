@@ -20,7 +20,7 @@ Conventions (those of the codec `PE.Impl.DualUse.Codec`):
   the columns `(a, i)` in the order `p ↦ (p / k, p % k)`;
 * a function on an enumerated type is the concatenation of its values in the enumeration's order
   (`FixedEnc.fun`), a product the concatenation of its fields (`FixedEnc.prod`), first field first;
-* a bit is one bit (`bitEnc`); a date is its 10 bits `encDate` (`dateEnc`).
+* a bit is one bit (`bitEnc`); an attribute is its 128 bits `encAttr` (`attrEnc`).
 
 ## The layouts
 
@@ -44,8 +44,8 @@ known offset.
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
@@ -57,11 +57,11 @@ def bitEnc : FixedEnc Bool 1 where
   inj _ _ h := by simpa using h
   length _ := rfl
 
-/-- **A date**: its 10 bits, the month then the day, each most significant bit first. -/
-def dateEnc : FixedEnc Date 10 where
-  enc := encDate
-  inj := encDate.injective
-  length := length_encDate
+/-- **An attribute**: its `nA = 128` bits, symbol `0` first, each most significant bit first. -/
+def attrEnc : FixedEnc PUniv.Attr nA where
+  enc := encAttr
+  inj := encAttr.injective
+  length := length_encAttr
 
 /-- An encoding along an equivalence (to change the shape of a product). -/
 def FixedEnc.equiv {α β : Type} {n : ℕ} (e : FixedEnc β n) (f : α ≃ β) : FixedEnc α n :=
@@ -130,16 +130,16 @@ def coinsEnc :=
 
 /-- **The secret of hybrid 3**: `x`, `B₀`, `w`, `p`, `rest`, `e`. -/
 def sec3Enc :=
-  dateEnc.prod ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod ((wEnc hk c).prod
+  attrEnc.prod ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod ((wEnc hk c).prod
     ((ringEnc N K).prod ((restEnc c).prod (eEnc (N := N) hk)))))
 
 /-- **The secret of hybrid 5**: `x`, `u₀`, `w`, `Rm`, `e`. -/
 def sec5Enc :=
-  dateEnc.prod ((ringEnc N K).prod ((wEnc hk c).prod ((rmTEnc c).prod (eEnc (N := N) hk))))
+  attrEnc.prod ((ringEnc N K).prod ((wEnc hk c).prod ((rmTEnc c).prod (eEnc (N := N) hk))))
 
 /-- **The secret of the ideal side**: `x`, `B₀`, `w`, `p`, the coins, the uniform challenge. -/
 def secIEnc :=
-  dateEnc.prod ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod ((wEnc hk c).prod
+  attrEnc.prod ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod ((wEnc hk c).prod
     ((ringEnc N K).prod ((coinsEnc hk c).prod (ctEnc hk c)))))
 
 /-! ### What the reduction knows -/
@@ -155,19 +155,19 @@ theorem sdTuple_injective : Function.Injective (sdTuple (hk := hk) (c := c)) := 
   subst h1 h2 h3 h4 h5 h6; rfl
 
 /-- **The simulation data**, the input of the key component: `mpk` (`pkEnc`), `c₀`
-(`1 × Fin d`), the `Rᵢ` (`Fin d × Col k`, `i < 10`), the `Wⱼ` (`Fin d × Col k`, along
-`Attr × Index`), the `Ψᵢ` (`Fin 2 × Col k`), and the date `x` (10 bits). -/
+(`1 × Fin d`), the `Rᵢ` (`Fin d × Col k`, `i < nA`), the `Wⱼ` (`Fin d × Col k`, along
+`Attr × Index`), the `Ψᵢ` (`Fin 2 × Col k`), and the attribute `x` (`nA` bits). -/
 def sdEnc :=
   ((pkEnc hk c).prod ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod ((rmEnc c).prod
     ((FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
       (matEnc (N := N) (K := K) (Fin c.d) (Col k))).prod
-    ((FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (Col k))).prod dateEnc))))).comap
+    ((FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (Col k))).prod attrEnc))))).comap
     (sdTuple hk c) (sdTuple_injective hk c)
 
 theorem sdEnc_enc (s : SimData hk c) :
     (sdEnc hk c).enc s = (pkEnc hk c).enc s.mpk ++ ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc s.c₀ ++
       ((rmEnc c).enc s.Rm ++ ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin c.d) (Col k))).enc s.W ++
-        ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (Col k))).enc s.Ψ ++ dateEnc.enc s.x)))) := rfl
+        ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (Col k))).enc s.Ψ ++ attrEnc.enc s.x)))) := rfl
 
 /-! ### Matrices with the gadget columns are `colsW` -/
 

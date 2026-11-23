@@ -16,8 +16,8 @@ import PE.Impl.DualUse.Prog.KeyTrySim
 namespace AdvancedEncryption.DualUse.ProgKey
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices.Algo
-  AdvancedEncryption.DualUse.Algo Cslib AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
-  AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.DateWindow
+  AdvancedEncryption.DualUse.Algo Cslib AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+  AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 /-- **One try with the simulated trapdoor from fresh coins.** -/

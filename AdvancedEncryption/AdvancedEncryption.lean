@@ -1,15 +1,10 @@
 -- Advanced encryption primitives, defined as Sigaba Neo primitives (`SigabaNeo.Trusted.Primitive`).
 import PE
-import PE.DateWindow
 import PE.BranchingProgram
 import PE.Impl.Gates.BPCircuit
 import PE.Impl.Gates.BPWord
 import PE.Impl.RingBTVW
 import PE.Impl.Gates.Eval
-import PE.Impl.Gates.DateWindow
-import PE.Impl.Gates.WindowTest
-import PE.Impl.Gates.ProgWindow
-import PE.Impl.Gates.WindowBound
 import PE.Impl.DualUse.Scheme
 import PE.Impl.DualUse.KeyGen
 import PE.Impl.DualUse.Noise
@@ -32,7 +27,6 @@ import PE.Impl.DualUse.ImplCorrect
 import PE.Impl.DualUse.ParamSupport
 import PE.Impl.DualUse.KeyBoxes
 import PE.Impl.DualUse.ConcreteNoise
-import PE.Impl.DualUse.Concrete
 import PE.Impl.DualUse.FinalView
 import PE.Impl.DualUse.IdealViews
 import PE.Impl.DualUse.RealBridge
@@ -73,7 +67,6 @@ import PE.Impl.DualUse.Algo.KeyMatrix
 import PE.Impl.DualUse.Algo.KeyCoins
 import PE.Impl.DualUse.Algo.SimKey
 import PE.Impl.DualUse.Prog.SimKeyStore
-import PE.Impl.DualUse.Prog.KeyFront
 import PE.Impl.DualUse.Prog.PsiBits
 import PE.Impl.DualUse.Prog.KeySumStore
 import PE.Impl.DualUse.Algo.Gates
@@ -98,7 +91,6 @@ import PE.Impl.Game.Handlers
 import PE.Impl.Game.HandlersLaw
 import PE.Impl.Game.HandlersMain
 import PE.Impl.Game.HandlersCost
-import PE.Impl.Game.HandlersDate
 import PE.Impl.Game.HandlersP
 import PE.Impl.Game.HandlersPCost
 import PE.Impl.Game.HandlersPSize
@@ -111,7 +103,6 @@ import PE.Impl.DualUse.Prog.DecodeWord
 import PE.Impl.DualUse.Prog.Decode
 import PE.Impl.DualUse.Prog.DecodeLaw
 import PE.Impl.DualUse.Prog.Chi
-import PE.Impl.DualUse.Prog.Auth
 import PE.Impl.DualUse.Prog.ChalI
 import PE.Impl.DualUse.Prog.SetupTime
 import PE.Impl.DualUse.Prog.SetupTime3
@@ -127,7 +118,6 @@ import PE.Impl.DualUse.Prog.KeyCostC
 import PE.Impl.DualUse.Prog.KeyCostP
 import PE.Impl.DualUse.Prog.KeyWfWords
 import PE.Impl.DualUse.Prog.WfLib
-import PE.Impl.DualUse.Prog.WfPred
 import PE.Impl.DualUse.Prog.WfIns
 import PE.Impl.DualUse.Prog.WfB
 import PE.Impl.DualUse.Prog.WfTime

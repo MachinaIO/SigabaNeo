@@ -15,7 +15,7 @@ otherwise the bit is `0` (`psiBitsW_sd`, `psiBitsW_sd_ge`).
 `psiBitP j : Prog 3` (tape `0` the word `sdEnc d`, `1` scratch, `2` the output) writes
 `psiBitsW … j` (`run_psiBitP`), the bit by `bitAtP` (a copy, `posBit j` drops, one bit, then
 `N K - 1` zeros): at most `posBit j + N K + 4` primitives (`pcount_psiBitP_le`). Likewise
-`xBitP i` writes the ring word `constW N K (bitW K (bitsOf d.x i))` of the bit `i` of the attribute
+`xBitP i` writes the ring word `constW N K (bitW K (attrBits d.x i))` of the bit `i` of the attribute
 (the inputs of the Ring-GSW simulation, `run_xBitP`), read at `posX i` (the last field).
 -/
 
@@ -23,7 +23,7 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo Matrix
   AdvancedEncryption.RingBTVW SigabaNeo.Tape SigabaNeo.Tape.Prog
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
@@ -143,10 +143,10 @@ def psiBitP (N K k : ℕ) (pos : Fin nA × BI N k → ℕ) (j : Fin nA × BI N k
 theorem length_sdEnc (d : SimData hk c) :
     ((sdEnc hk c).enc d).length = offPsi hk c + (nA * lenPsi N K k + nA) := by
   rw [sdEnc_enc]
-  simp only [List.length_append, length_enc_fixLen, offPsi, length_encDate]
+  simp only [List.length_append, length_enc_fixLen, offPsi, length_encAttr]
   have : fixLen (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))) =
       nA * lenPsi N K k := by simp [fixLen, Enum.list]
-  have h1 : fixLen (dateEnc) = nA := rfl
+  have h1 : fixLen (attrEnc) = nA := rfl
   rw [this, h1]
   omega
 
@@ -220,7 +220,7 @@ theorem timeBoundT_psiBitP (pos : Fin nA × BI N k → ℕ) (j : Fin nA × BI N 
 def posX (i : Fin nA) : ℕ := offPsi hk c + (nA * lenPsi N K k + i.val)
 
 theorem getD_sd_posX (d : SimData hk c) (i : Fin nA) :
-    ((sdEnc hk c).enc d).getD (posX hk c i) false = bitsOf d.x i := by
+    ((sdEnc hk c).enc d).getD (posX hk c i) false = attrBits d.x i := by
   rw [sdEnc_enc]
   have hpos : posX hk c i = fixLen (pkEnc hk c) +
       (fixLen (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)) + (fixLen (rmEnc c) +
@@ -248,7 +248,7 @@ def xBitP (N K : ℕ) (pos : Fin nA → ℕ) (i : Fin nA) : Prog 3 := bitAtP 0 1
 theorem run_xBitP (hN : 0 < N) (hK : 0 < K) (d : SimData hk c) (i : Fin nA) (s : Store 3)
     (h0 : s 0 = (sdEnc hk c).enc d) :
     run (xBitP N K (posX hk c) i) s =
-      Function.update (Function.update s 2 (constW N K (bitW K (bitsOf d.x i)))) 1 [] := by
+      Function.update (Function.update s 2 (constW N K (bitW K (attrBits d.x i)))) 1 [] := by
   rw [xBitP, run_bitAtP (by decide) (by decide), constW_bitW _ hN hK, h0,
     take_one_drop (posX_lt hk c d i), getD_sd_posX]
   rfl

@@ -32,7 +32,7 @@ expressiveness on nothing. The claimed cost is `N = 2^1002`.
 
 namespace AdvancedEncryption.DualUse.Sub
 
-open SigabaNeo SigabaNeo.Lattices SigabaNeo.Tape AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open SigabaNeo SigabaNeo.Lattices SigabaNeo.Tape AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 open AdvancedEncryption.DualUse.Prog AdvancedEncryption.DualUse.Params
 open AdvancedEncryption.DualUse.Params.Strength
 
@@ -120,9 +120,9 @@ theorem cost_implC : PE.cost params implC ≤ 2 ^ 1002 := by
 
 /-- `Spec` from its four parts, for any submission. -/
 theorem spec_of {u : Submission DateWindow.primitive registry}
-    (hc : Correct dateUniverse params u.impl)
-    (ha : (∀ d ∈ u.deps .attributeHiding, d.Holds) → AttributeHiding dateUniverse params u.impl)
-    (he : Expressive dateUniverse params u.impl) (hcost : PE.cost params u.impl ≤ u.N) :
+    (hc : Correct PUniv params u.impl)
+    (ha : (∀ d ∈ u.deps .attributeHiding, d.Holds) → AttributeHiding PUniv params u.impl)
+    (he : Expressive PUniv params u.impl) (hcost : PE.cost params u.impl ≤ u.N) :
     Spec DateWindow.primitive registry u := by
   refine ⟨fun i hi => ?_, hcost⟩
   cases i with
@@ -137,14 +137,14 @@ noncomputable abbrev msC : Machines hkp confP :=
 
 theorem implC_eq : implC = impl hkp confP msC := rfl
 
-theorem correct_implC : Correct dateUniverse params implC := by
+theorem correct_implC : Correct PUniv params implC := by
   rw [implC_eq]; exact correct_conf
 
-theorem expressive_implC : Expressive dateUniverse params implC := by
+theorem expressive_implC : Expressive PUniv params implC := by
   rw [implC_eq]; exact expressive_conf
 
 theorem attributeHiding_implC (h3 : prem3.Holds) (h5 : prem5.Holds) :
-    AttributeHiding dateUniverse params implC := by
+    AttributeHiding PUniv params implC := by
   rw [implC_eq]; exact attributeHiding_conf_rlwe 2645 le_rfl h3 h5
 
 theorem submission_impl : submission.impl = implC := rfl

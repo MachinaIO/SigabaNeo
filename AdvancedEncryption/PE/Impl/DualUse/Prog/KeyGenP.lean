@@ -26,8 +26,8 @@ namespace AdvancedEncryption.DualUse.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo Matrix AdvancedEncryption.RingBTVW AdvancedEncryption.DualUse.Algo
   Turing Cslib
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 /-! ### Parsing -/
@@ -469,7 +469,7 @@ end AdvancedEncryption.DualUse.Prog
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog Turing
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
 

@@ -38,8 +38,8 @@ namespace AdvancedEncryption.DualUse.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
   AdvancedEncryption.DualUse.Algo
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 /-! ### Generic helpers -/
 
@@ -518,7 +518,7 @@ variable {Sec Inst : Type}
 
 /-- **The key component of the packed challenger** (`Comps.law_key` for `spPack`, `R = 254`): the
 secret word `encS (inst, σ)` of the codes. -/
-theorem law_keyP_spPack [NeZero c.d] (st : dateUniverse.Attr → PMF (Inst × Sec))
+theorem law_keyP_spPack [NeZero c.d] (st : PUniv.Attr → PMF (Inst × Sec))
     (viewI : Inst → Sec → PK hk c × CT hk c) (sdI : Inst → Sec → SimData hk c)
     {sdP : XProg 82} {encS : Inst × Sec → List Bool} {Ok : Inst × Sec → Prop}
     (hsd : SdSpec hk c sdP encS (fun p => sdI p.1 p.2) Ok)

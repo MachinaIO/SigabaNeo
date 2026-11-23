@@ -23,8 +23,8 @@ namespace AdvancedEncryption.DualUse.Prog
 namespace WB2
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.ValVM SigabaNeo.Tape.Prog
-  SigabaNeo.Lattices SigabaNeo.Lattices.SLP AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
-  AdvancedEncryption.PE.Gates.DateWindow AdvancedEncryption.DualUse.Params
+  SigabaNeo.Lattices SigabaNeo.Lattices.SLP AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+  AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.DualUse.Params
 
 set_option maxRecDepth 100000
 
@@ -32,7 +32,7 @@ set_option maxRecDepth 100000
 
 /-- **The gate list of the window predicate of two dates**: nonempty, at most `375` gates, wire
 indices at most `385`. -/
-theorem gates_facts (a b : Date) :
+theorem gates_facts (a b : PUniv.Attr) :
     predGates (compile [] (winExp a b)).1 (compile [] (winExp a b)).2 ≠ [] ∧
       (predGates (compile [] (winExp a b)).1 (compile [] (winExp a b)).2).length ≤ 375 ∧
       ∀ x ∈ predGates (compile [] (winExp a b)).1 (compile [] (winExp a b)).2,
@@ -49,7 +49,7 @@ theorem gates_facts (a b : Date) :
   have := hb x hx
   omega
 
-theorem parse_pairWord (p : Date × Date) :
+theorem parse_pairWord (p : PUniv.Attr × PUniv.Attr) :
     parse (pairWord p) = predGates (compile [] (winExp p.1 p.2)).1 (compile [] (winExp p.1 p.2)).2 := by
   rw [pairWord, parse_unparse]
 
@@ -109,10 +109,10 @@ theorem dateBound_le : dateBound ≤ 2 ^ 20 := by
   apply Finset.sup_le
   rintro ⟨w, x⟩ -
   rw [length_encodeTuple3]
-  have hp : (paramsWord dateUniverse params).length = 515 := by
+  have hp : (paramsWord PUniv params).length = 515 := by
     rw [paramsWord, length_encodeTuple3]
-    simp [params, dateUniverse]
-  have hx : (dateUniverse.encAttr x).length = 10 := length_encDate x
+    simp [params, PUniv]
+  have hx : (PUniv.encAttr x).length = 10 := length_encAttr x
   have hw := length_winWord w
   simp only at hp hx hw ⊢
   omega

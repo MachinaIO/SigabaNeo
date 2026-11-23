@@ -9,14 +9,14 @@ The words that the phases of `encCoreP` compute are those of the fields of `encr
 * `c0_wordS`, `row_affine`: `c₀ = s B₀ + e₀`, `c₁ = s B₁ + e₁` (rows over any enumerated columns);
 * `halfW_eq`, `kap_word`: `κ = s p + e' + M ⌊q/2⌋`;
 * **`encCore_out`**: from the words of `mpk`, the date, the message bit and the coins, the output
-  register of `encCoreP` is the word `ctEnc` of `encrypt mpk (bitsOf x) M r`.
+  register of `encCoreP` is the word `ctEnc` of `encrypt mpk (attrBits x) M r`.
 -/
 
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   Matrix AdvancedEncryption.RingBTVW Cslib
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 variable {N K k : ℕ}
 
@@ -119,9 +119,9 @@ abbrev nJenc : ℕ := (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) 
 def ctLen : ℕ := nA * (2 * (2 * k) * (N * K)) + 1 * c.d * (N * K) + 1 * nTrap k * (N * K) +
   nJenc (N := N) hk * (1 * (2 * k) * (N * K)) + N * K
 
-theorem encDate_bits (x : Date) :
-    encDate x = (List.finRange nA).map (Gates.DateWindow.bitsOf x) := by
-  apply List.ext_getElem (by simp [Gates.DateWindow.length_encDate])
+theorem encAttr_bits (x : PUniv.Attr) :
+    encAttr x = (List.finRange nA).map (Gates.DateWindow.attrBits x) := by
+  apply List.ext_getElem (by simp [Gates.DateWindow.length_encAttr])
   intro i h1 h2
   simp [Gates.DateWindow.bitsOf, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h1]
 
@@ -142,8 +142,8 @@ theorem reg5 (R A B C D E : List Bool) (hR : R.length = A.length + B.length + C.
 set_option maxHeartbeats 16000000 in
 /-- **The core of `Enc`**: on the words of the public key, the date, the message bit and the
 coins (with `Rm = rMat rr`), and templates of the right lengths, the output register holds the word
-of `encrypt mpk (bitsOf x) b r`. -/
-theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bool)
+of `encrypt mpk (attrBits x) b r`. -/
+theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : PUniv.Attr) (b : Bool)
     (r : EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k))
     (rr : (Sdw (N := N) hk).Attr × RingBTVW.Col k → (Fin c.d → Bool)) (hRm : r.Rm = rMat rr)
     (S : Store 120) (hS : ∀ i : Fin 120, 39 ≤ i.val → S i = [])
@@ -152,7 +152,7 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bo
     (h2 : S 2 = (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc mpk.B₁)
     (h3 : S 3 = (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
       (matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k))).enc mpk.Bj)
-    (h4 : S 4 = (ringEnc N K).enc mpk.p) (h5 : S 5 = encDate x) (h6 : S 6 = [b])
+    (h4 : S 4 = (ringEnc N K).enc mpk.p) (h5 : S 5 = encAttr x) (h6 : S 6 = [b])
     (h7 : S 7 = (ringEnc N K).enc r.s)
     (h8 : S 8 = (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc r.e₀)
     (h9 : S 9 = (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc r.e₁)
@@ -172,7 +172,7 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bo
     (t35 : S 35 = List.replicate (nA * (2 * (2 * k)) * (k * N)) false)
     (t36 : S 36 = List.replicate (nJenc (N := N) hk * (1 * (2 * k) * (N * K))) false)
     (t37 : (S 37).length = N * K - K) (t38 : (S 38).length = k * (N * K)) :
-    (Prog.run encCoreP S) 0 = (ctEnc hk c).enc (encrypt mpk (Gates.DateWindow.bitsOf x) b r) := by
+    (Prog.run encCoreP S) 0 = (ctEnc hk c).enc (encrypt mpk (Gates.DateWindow.attrBits x) b r) := by
   have t15l : (S 15).length = N * K := by rw [t15, List.length_replicate]
   simp only [encCoreP, Prog.run_seq]
   rw [run_gadPh S (fun i hi => hS i (by omega)) t13 t14 t15l t18 (by rw [t23]; simp)
@@ -229,7 +229,7 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bo
   rw [run_ctPh_out _ (by simp [hS]) (by simp [hS])]
   simp (config := { decide := true }) only [Function.update_apply, ite_true, ite_false]
   have hKk : K ≤ k := ((Nat.pow_lt_pow_iff_right (by norm_num)).mp hk).le
-  set Ψ := gswCts mpk (Gates.DateWindow.bitsOf x) r with hΨ
+  set Ψ := gswCts mpk (Gates.DateWindow.attrBits x) r with hΨ
   have hc0 : addRW (c.d * N) K (matMulW N K 1 1 c.d (S 7) (S 1)) (S 8) =
       (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc (scalar r.s * mpk.B₀ + r.e₀) := by
     rw [h7, h1, h8]
@@ -244,10 +244,10 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bo
       (addRW (c.d * N) K (matMulW N K 1 1 c.d (S 7) (S 1)) (S 8)) (gswW N K k))^[(S 22).length]
       (S 34, S 10, S 5)).1 =
       (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ := by
-    rw [hc0, h1, flatMap_enc_row, flatMap_enc_row, h10, rmTEnc_cols hk c rr, h5, encDate_bits, t22,
+    rw [hc0, h1, flatMap_enc_row, flatMap_enc_row, h10, rmTEnc_cols hk c rr, h5, encAttr_bits, t22,
       t34]
     have := iStepB_list hk hN hK mpk.B₀ (scalar r.s * mpk.B₀ + r.e₀) rr
-      (Gates.DateWindow.bitsOf x) (List.finRange nA)
+      (Gates.DateWindow.attrBits x) (List.finRange nA)
       (List.replicate (nA * (2 * (2 * k) * (N * K))) false) [] []
     simp only [List.append_nil, List.length_finRange] at this
     rw [this, List.drop_left' (by simp)]

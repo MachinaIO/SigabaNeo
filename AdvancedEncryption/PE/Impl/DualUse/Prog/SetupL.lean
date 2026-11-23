@@ -20,7 +20,7 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.XProg Matrix
   AdvancedEncryption.RingBTVW Cslib Cslib.Probability AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-- Drop the first bit of tape `0`, run `p`, clear every tape but `0`. -/
 def dropHead (p : XProg 7) : XProg 7 := seq (prog (.prim (.tail 0))) (seq p clrS)
@@ -113,24 +113,24 @@ theorem wf_setup3D : setup3D.WF := wf_dropHead wf_setup3P_conf
 theorem wf_setup5D : setup5D.WF := wf_dropHead (wf_setup5P hkp confP)
 theorem wf_setupID : setupID.WF := wf_dropHead wf_setupIP_conf
 
-theorem law_setup3D (ab : Inst3T Np Kp kp) (x : Date) :
+theorem law_setup3D (ab : Inst3T Np Kp kp) (x : PUniv.Attr) :
     setup3D.law (io2 (R := 254) (true :: (inst3Enc (N := Np) (K := Kp) (k := kp)).enc ab)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setup3 hkp confP x).map fun σ => io2 (R := 254)
         (((inst3Enc (N := Np) (K := Kp) (k := kp)).prod (sec3Enc hkp confP)).enc (ab, σ)) [] [] :=
   law_liftP_map _ (law_dropHead _ _ _ (law_setup3P_conf ab x))
 
-theorem law_setupID (ab : Inst3T Np Kp kp) (x : Date) :
+theorem law_setupID (ab : Inst3T Np Kp kp) (x : PUniv.Attr) :
     setupID.law (io2 (R := 254) (true :: (inst3Enc (N := Np) (K := Kp) (k := kp)).enc ab)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setupI hkp confP x).map fun σ => io2 (R := 254)
         (((inst3Enc (N := Np) (K := Kp) (k := kp)).prod (secIEnc hkp confP)).enc (ab, σ)) [] [] :=
   law_liftP_map _ (law_dropHead _ _ _ (law_setupIP_conf ab x))
 
 theorem law_setup5D (i : Pub (Fin confP.d) (Rg Np Kp) kp × Pub (Fin confP.d) (Rg Np Kp) kp)
-    (x : Date) :
+    (x : PUniv.Attr) :
     setup5D.law (io2 (R := 254) (true :: (inst5Enc (N := Np) (K := Kp) (k := kp) confP.d).enc i)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setup5 hkp confP x).map fun σ => io2 (R := 254)
         (((inst5Enc (N := Np) (K := Kp) (k := kp) confP.d).prod (sec5Enc hkp confP)).enc (i, σ))
           [] [] :=
@@ -142,7 +142,7 @@ end AdvancedEncryption.DualUse.Prog
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 open SigabaNeo.Encode in
 theorem confP_w : confP.w = 512 := rfl
@@ -448,7 +448,7 @@ end AdvancedEncryption.DualUse.Prog
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-! ### State counts of the setups -/
 

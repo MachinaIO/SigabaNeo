@@ -22,8 +22,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Lattices Matrix
   AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open SigabaNeo.Tape.Prog (tailsP run_tailsP coinFree_tailsP wf_tailsP)
 
 /-! ### The word of the crafted data -/

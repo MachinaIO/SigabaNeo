@@ -20,8 +20,8 @@ namespace AdvancedEncryption.DualUse.ProgKeyR
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo AdvancedEncryption.DualUse.Algo AdvancedEncryption.DualUse.ProgKey Matrix
-  Cslib AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-  AdvancedEncryption.PE.Gates.DateWindow
+  Cslib AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+  AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 variable {N K k : ℕ}

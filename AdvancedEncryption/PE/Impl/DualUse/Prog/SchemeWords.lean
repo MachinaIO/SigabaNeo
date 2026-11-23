@@ -20,8 +20,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape Matrix
   AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ}
 
@@ -240,11 +240,11 @@ theorem gswG_word :
   simp only [List.append_assoc]
   rfl
 
-theorem encDate_map (x : Date) : encDate x = (List.finRange nA).map (bitsOf x) := by
-  apply List.ext_getElem (by simp [length_encDate])
+theorem encAttr_map (x : PUniv.Attr) : encAttr x = (List.finRange nA).map (attrBits x) := by
+  apply List.ext_getElem (by simp [length_encAttr])
   intro i h1 h2
   rw [List.getElem_map, List.getElem_finRange]
-  show _ = (encDate x).getD i false
+  show _ = (encAttr x).getD i false
   simp [List.getD_eq_getElem?_getD, h1]
 
 theorem bitR_smul_word {r s : Type} [Enum r] [Enum s] {L : ℕ}
@@ -258,15 +258,15 @@ theorem bitR_smul_word {r s : Type} [Enum r] [Enum s] {L : ℕ}
   · simp [bitR, takeD_of_length' (length_matEnc M)]
 
 /-- **The shifts `xᵢ G`**: blocks selected by the bits of the date. -/
-theorem psiSel (x : Date) :
-    selW nA (2 * (2 * k) * (N * K)) (encDate x)
+theorem psiSel (x : PUniv.Attr) :
+    selW nA (2 * (2 * k) * (N * K)) (encAttr x)
         ((DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (Sdw (N := N) hk).Γ.G) [] =
       (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
-        fun i => bitR (R := Rg N K) (bitsOf x i) • (Sdw (N := N) hk).Γ.G := by
-  have h := selW_map (List.finRange nA) (bitsOf x) (2 * (2 * k) * (N * K))
+        fun i => bitR (R := Rg N K) (attrBits x i) • (Sdw (N := N) hk).Γ.G := by
+  have h := selW_map (List.finRange nA) (attrBits x) (2 * (2 * k) * (N * K))
     ((DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (Sdw (N := N) hk).Γ.G) []
   simp only [List.length_finRange] at h
-  rw [encDate_map, h, funEnc_flatMap]
+  rw [encAttr_map, h, funEnc_flatMap]
   show _ = (List.finRange nA).flatMap _
   congr 1
   funext i

@@ -2,54 +2,30 @@ import PE.Impl.DualUse.Params.Conf
 import PE.Impl.DualUse.AHMath
 
 /-!
-# Parameters for simulated keys: the statistical terms and Ring-LWE
+# Parameters for simulated keys: the statistical terms
 
-For the configuration `confP` (`K = 2^25`, `N = 2^34`, `|Wd| = 2^61`, flooding width `2^512`):
+For the configuration `confP` (`K = 2^27`, `N = 2^36`, `|Wd| = 2^65`, flooding width `2^768`,
+`nA = 128` attribute bits):
 
 * **Flooding** (`flood_conf`): the hypothesis `hflood` of `DualUse.advantage_le` holds with
-  `ε = 2^{-148}` (the shift `e₀ W_j` is within `|Wd| N 16 = 2^99`, and
-  `|JC| N 2^99 / 2^512 ≤ 2^{119 + 34 + 99 − 512} = 2^{-260}`).
-* **Leftover hash** (`delta1_le`, `delta6_le`): `|R_q| = 2^{K N} = 2^{2^59}` and
-  `|Wd| ≥ 2 K N + 600`, so `δ₁, δ₆ ≤ 2^{120} · 2^{-300} / 2 ≤ 2^{-180}`.
+  `ε = 2^{-499}` (the shift `e₀ W_j` is within `|Wd| N 16 = 2^105`, and
+  `|JC| N 2^105 / 2^768 ≤ 2^{128 + 36 + 105 − 768}`).
+* **Leftover hash** (`delta1_le`, `delta6_le`): `|R_q| = 2^{K N} = 2^{2^63}` and
+  `|Wd| ≥ 2 K N + 1000`, so `δ₁, δ₆ ≤ 2^{-370}`.
 * **Real keys are covered** (`realCovered_conf`), the hypothesis `RealCovered` of
   `DualUse.advantage_le`.
 
-## Ring-LWE at `q = 2^K`, `K = 2^25`, ring degree `N = 2^34` (not formalized)
-
-The errors are centered binomial of width `16` (`σ = 2√2`), and the secret follows the same law
-(normal form). The Ring-LWE instances of the reductions are `params3 Np (2^Kp) kp (cbd 16)`
-(`2k` samples) and `params5 Np (2^Kp) kp (Fin dp) (cbd 16)` (`|Wd| + 4k + 1` samples) of
-`DualUse/Registry.lean`.
-
-* **Conservative bound** (`SigabaNeo/Lib/Lattices/Hardness.lean`, `Hardness.securityBits`; its
-  mirror `python/lwe_hardness.py`): at both instances it gives `153` bits at `N = 2^31`, `434` at
-  `N = 2^32` and `991` at `N = 2^33`. At `N = 2^33` this is the cap `bitsCap − log₂ N = 1024 − 33`:
-  every modelled attack costs more than `2^{1024}`. Hence `N = 2^33`.
-* **The registry's `RingLWE.H`** is `ModuleLWE.H`, the floor of the minimum over the formalized
-  attacks of the lattice estimator (`SigabaNeo/Lib/Lattices/Estimator`, mirror
-  `python/lwemodel`), not `Hardness.securityBits`. It cannot be evaluated at these sizes (the
-  hybrids, Arora–GB and the dual hybrid search spaces of size `N`), but it is bounded from below
-  without evaluation (`Estimator.cbd16_estimatorBits_ge`, `docs/LWE_ESTIMATOR.md`). At ring degree
-  `N = 2^34`: **`2650 ≤ RingLWE.H`** at both instances (`Params/Strength.lean`:
-  `ringLWE_H_registry3`, `ringLWE_H_registry5`, at explicit parameters independent of `confP`);
-  the mirror gives about `2691` (`bdd`, `β ≈ 9400`). At `N = 2^33` the uSVP estimate is about
-  `1193` bits (`β ≈ 4041`), not certified here.
-
-Heuristically, the root Hermite factor a BKZ attack must reach is about `δ` with
-`log₂ δ ≈ log₂ q / (4 n)` (distinguishing attack, `q ≫ σ`): here
-`log₂ δ ≈ 2^25 / 2^36 = 2^{-11}`, which requires block size `β ≈ 9312` by
-`δ(β) = ((β / 2πe) (πβ)^{1/β})^{1/(2(β−1))}` (core-SVP `≈ 0.292 β ≈ 2719` bits, classical), against
-`β ≈ 685` (`≈ 200` bits) at `N = 2^31`.
-The modulus `K = 2^25` is the fixed point of the noise analysis: `K` must exceed
-`2 · 375 · log₂ G + O(log)` with `log₂ G ≈ 63 · (2 log₂ (4k + 14) + 10 log₂ (2kN + 1)) + 62 ≈ 42776`
-(`Params.noise_ok`: `2^{32083266} < 2^K`), and `K = 2^24` does not suffice.
+The Ring-LWE strength of the two instances of the reductions (`params3`, `params5` at `N = 2^36`,
+`q = 2^(2^27)`) is certified in `Params/Strength.lean` (`2650 ≤ RingLWE.H`). The ratio
+`log₂ q / N = 2^{-9}` is that of the earlier configuration; the modulus `K = 2^27` is fixed by the
+noise of the depth-`1054` circuits (`Params.noise_ok`: `2^{102113082} < 2^K`).
 -/
 
 namespace AdvancedEncryption.DualUse.Params
 
 open SigabaNeo SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open AdvancedEncryption.DualUse.Concrete (pow_mul_le' pow_mul_le pow_le_pow')
 open AdvancedEncryption.DualUse.Params.Gen (card_col)
 open scoped ENNReal
@@ -57,7 +33,7 @@ open scoped ENNReal
 instance : NeZero confP.d := ⟨by show dp ≠ 0; rw [dp_def]; positivity⟩
 
 /-- **Real keys are covered.** -/
-theorem realCovered_conf : RealCovered hkp confP := fun v hv w => goodTrap_real v hv w
+theorem realCovered_conf : RealCovered hkp confP := fun v hv C _ => goodTrap_real v hv C
 
 /-! ### Generic bounds
 
@@ -141,29 +117,34 @@ theorem lhl_le {C a d s : ℕ} (hC : C ≤ 2 ^ 130) (had : a + 2 * s ≤ d) (hs 
 
 /-! ### At `confP` -/
 
-/-- `n ≤ 2^4` attributes (`n = 10`). -/
-def eAttrBits : ℕ := 4
+/-- `nA ≤ 2^7` attributes bits (`nA = 128`). -/
+def eAttrBits : ℕ := 7
 /-- The slack of the leftover hash lemma: `|Wd| ≥ 2 K N + 2 sP`. -/
-def sP : ℕ := 300
+def sP : ℕ := 500
 
-theorem card_JC : Fintype.card (JC (Sdw (N := Np) hkp)) ≤ 2 ^ 119 :=
-  card_JC_le hkp (by norm_num [eAttrBits] : 10 ≤ 2 ^ eAttrBits)
-    (by have := kp_le; calc 8 * kp ^ 3 ≤ 8 * (2 ^ ak) ^ 3 := by gcongr
-                            _ = 2 ^ (3 + 3 * ak) := by rw [← pow_mul, pow_add]; ring_nf
-    ) Np_le (by norm_num [eAttrBits, ak, an])
+theorem kp_le' : kp ≤ 2 ^ 27 + 1 := by rw [kp, Kp_def]
 
-theorem card_HC : Fintype.card (HC (Sdw (N := Np) hkp)) ≤ 2 ^ 120 :=
+theorem k3_le : 8 * kp ^ 3 ≤ 2 ^ 85 := by
+  calc 8 * kp ^ 3 ≤ 8 * (2 ^ 27 + 1) ^ 3 := by gcongr; exact kp_le'
+    _ ≤ 2 ^ 85 := by norm_num
+
+/-- `|JC| ≤ 2^128` for `128` attribute bits. -/
+theorem card_JC : Fintype.card (JC (Sdw (N := Np) hkp)) ≤ 2 ^ 128 :=
+  card_JC_le hkp (by norm_num : nA ≤ 2 ^ 7) k3_le Np_le (by norm_num [an])
+
+/-- `|HC| ≤ 2^129`. -/
+theorem card_HC : Fintype.card (HC (Sdw (N := Np) hkp)) ≤ 2 ^ 129 :=
   card_HC_le hkp card_JC (by
     have := kp_le
-    calc 10 * (2 * kp) ≤ 10 * (2 * 2 ^ ak) := by gcongr
-      _ ≤ 2 ^ 119 := by norm_num [ak])
+    calc nA * (2 * kp) ≤ nA * (2 * 2 ^ ak) := by gcongr
+      _ ≤ 2 ^ 128 := by norm_num [ak])
 
-set_option exponentiation.threshold 600 in
-/-- **The flooding hypothesis** with `ε = 2^{-148}`. -/
+set_option exponentiation.threshold 1000 in
+/-- **The flooding hypothesis** with `ε = 2^{-499}`. -/
 theorem flood_conf : ∀ rest ∈ (lawRestC hkp confP).support,
     ∀ w : JC (Sdw (N := Np) hkp) → (Fin confP.d → Bool),
       CloseTo ((lawEc hkp confP).map fun e j => e j + rest.2.1 * wMat w j) (lawEc hkp confP)
-        ((2 : ℝ≥0∞) ^ 148)⁻¹ := by
+        ((2 : ℝ≥0∞) ^ 499)⁻¹ := by
   intro rest hrest w
   have he₀ : rnorm rest.2.1 ≤ 16 := by
     simp only [lawRestC, lawRestNF, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
@@ -176,12 +157,12 @@ theorem flood_conf : ∀ rest ∈ (lawRestC hkp confP).support,
   rw [← ofReal_inv_two_pow]
   refine ENNReal.ofReal_le_ofReal ?_
   have hA : Fintype.card (JC (Sdw (N := Np) hkp)) * Np * (Fintype.card (Fin confP.d) * Np * 16)
-      ≤ 2 ^ (119 + an + (ad + an + 4)) := by
+      ≤ 2 ^ (128 + an + (ad + an + 4)) := by
     have hd : Fintype.card (Fin confP.d) * Np * 16 ≤ 2 ^ (ad + an + 4) := by
       rw [Fintype.card_fin]
       exact pow_mul_le (pow_mul_le dp_le Np_le) (le_refl (2 ^ 4))
     exact pow_mul_le (pow_mul_le card_JC Np_le) hd
-  have := rpow_div_le hA (show 119 + an + (ad + an + 4) + 148 ≤ confP.w by
+  have := rpow_div_le hA (show 128 + an + (ad + an + 4) + 499 ≤ confP.w by
     show _ ≤ wP; norm_num [an, ad, wP])
   push_cast at this ⊢
   exact this
@@ -195,23 +176,23 @@ theorem KN_le : Kp * Np + 2 * sP ≤ dp := by rw [Kp_def, Np_def, dp_def]; norm_
 
 theorem KN2_le : 2 * (Kp * Np) + 2 * sP ≤ dp := by rw [Kp_def, Np_def, dp_def]; norm_num [sP]
 
-/-- **The statistical term of hybrid 1** is at most `2^{-180}`. -/
-theorem delta1_le : delta1 (Sdw (N := Np) hkp) (Fin confP.d) ≤ ((2 : ℝ≥0∞) ^ 180)⁻¹ := by
+/-- **The statistical term of hybrid 1** is at most `2^{-370}`. -/
+theorem delta1_le : delta1 (Sdw (N := Np) hkp) (Fin confP.d) ≤ ((2 : ℝ≥0∞) ^ 370)⁻¹ := by
   rw [← ofReal_inv_two_pow, delta1]
   refine ENNReal.ofReal_le_ofReal ?_
   have hc : (Fintype.card (Fin 1 → Rg Np Kp) : ℝ) = (2 : ℝ) ^ (Kp * Np) := by
     rw [Fintype.card_fun, card_Rg, Fintype.card_fin, pow_one]; push_cast; rfl
   rw [hc, Fintype.card_fin]
-  exact lhl_le_gen card_JC KN_le (by norm_num [sP])
+  exact lhl_le_gen (c := 130) (card_JC.trans (by norm_num)) KN_le (by norm_num [sP])
 
-/-- **The statistical term of hybrid 6** is at most `2^{-180}`. -/
-theorem delta6_le : delta6 (Sdw (N := Np) hkp) (Fin confP.d) ≤ ((2 : ℝ≥0∞) ^ 180)⁻¹ := by
+/-- **The statistical term of hybrid 6** is at most `2^{-370}`. -/
+theorem delta6_le : delta6 (Sdw (N := Np) hkp) (Fin confP.d) ≤ ((2 : ℝ≥0∞) ^ 370)⁻¹ := by
   rw [← ofReal_inv_two_pow, delta6]
   refine ENNReal.ofReal_le_ofReal ?_
   have hc : (Fintype.card (Fin 2 → Rg Np Kp) : ℝ) = (2 : ℝ) ^ (2 * (Kp * Np)) := by
     rw [Fintype.card_fun, card_Rg, Fintype.card_fin, ← pow_mul, mul_comm (Kp * Np) 2]
     push_cast; rfl
   rw [hc, Fintype.card_fin]
-  exact lhl_le_gen card_HC KN2_le (by norm_num [sP])
+  exact lhl_le_gen (c := 130) (card_HC.trans (by norm_num)) KN2_le (by norm_num [sP])
 
 end AdvancedEncryption.DualUse.Params

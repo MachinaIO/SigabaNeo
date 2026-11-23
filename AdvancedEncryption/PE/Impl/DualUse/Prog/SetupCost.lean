@@ -204,7 +204,7 @@ generically (`lin_bRest`, `lin_bTail3`, `lin_bTailI`) and evaluated at `confP` b
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Encode SigabaNeo.Lattices
-open AdvancedEncryption.RingBTVW AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.RingBTVW AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-- A weight and an offset. -/
 structure LB where
@@ -326,7 +326,7 @@ end AdvancedEncryption.DualUse.Prog
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Encode SigabaNeo.Lattices
-open AdvancedEncryption.RingBTVW AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.RingBTVW AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-! ### The setup of hybrid 5 -/
 
@@ -436,7 +436,7 @@ end AdvancedEncryption.DualUse.Prog
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Encode SigabaNeo.Lattices
-open AdvancedEncryption.RingBTVW AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.RingBTVW AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (Bχ : Bnd)
 

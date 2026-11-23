@@ -19,8 +19,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Matrix AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ}
 
@@ -81,7 +81,7 @@ def pub3Body : XProg 82 :=
   seq (frame ⟨vMm 15 7 2, by decide⟩ (mmB (1) (1) (c.d) N K)) <|
   seq (frame ⟨vAdd 3 15 14, by decide⟩ (addB (1 * c.d) N K)) <|
   seq (frame ⟨vGet 4 0, by decide⟩ (getB (o3R hk c) (fencLen (rmTEnc c)))) <|
-  seq (frame ⟨vGet 5 0, by decide⟩ (getB (o3x (N := N) (K := K) (k := k)) (fencLen dateEnc))) <|
+  seq (frame ⟨vGet 5 0, by decide⟩ (getB (o3x (N := N) (K := K) (k := k)) (fencLen attrEnc))) <|
   seq (frame ⟨vGet 6 0, by decide⟩ (getB (o3w c) (fencLen (wEnc hk c)))) <|
   seq (psiCore N K k c.d) <|
   seq (bjCore N K k c.d) <|
@@ -107,7 +107,7 @@ def sizepub3 : ℕ :=
     sizeMmB (1) (1) (c.d) N K +
     sizeAddB (1 * c.d) N K +
     ((o3R hk c) + (fencLen (rmTEnc c))) +
-    ((o3x (N := N) (K := K) (k := k)) + (fencLen dateEnc)) +
+    ((o3x (N := N) (K := K) (k := k)) + (fencLen attrEnc)) +
     ((o3w c) + (fencLen (wEnc hk c))) +
     sizePsiCore N K k c.d +
     sizeBjCore N K k c.d +
@@ -123,7 +123,7 @@ def sizepub3 : ℕ :=
 
 /-- The time of `pub3Body` from tapes below `M`. -/
 def timepub3 (M : ℕ) : ℕ :=
-  timeGetB (o3B (N := N) (K := K) (k := k)) (fD N K c.d) M + (timeGetB (o3s hk c) (fR N K) M + (timeGetB (o3e0 hk c) (fD N K c.d) M + (timeMmB (1) (1) (c.d) N K M + (timeAddB (1 * c.d) N K M + (timeGetB (o3R hk c) (fencLen (rmTEnc c)) M + (timeGetB (o3x (N := N) (K := K) (k := k)) (fencLen dateEnc) M + (timeGetB (o3w c) (fencLen (wEnc hk c)) M + (timePsiCore N K k c.d M + (timeBjCore N K k c.d M + (timeGetB (0) (fC N K k) M + (timeGetB (fC N K k + 0) (fC N K k) M + (timeGadB N K k M + (timeSubB (1 * (2 * k)) N K M + (timeOneB N K M + (timeJoinB (N * K) (rowL N K k) (rowL N K k) M + (timeGetB (o3p hk c) (fR N K) M + (timeJoinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M + (timeJoinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M))))))))))))))))))
+  timeGetB (o3B (N := N) (K := K) (k := k)) (fD N K c.d) M + (timeGetB (o3s hk c) (fR N K) M + (timeGetB (o3e0 hk c) (fD N K c.d) M + (timeMmB (1) (1) (c.d) N K M + (timeAddB (1 * c.d) N K M + (timeGetB (o3R hk c) (fencLen (rmTEnc c)) M + (timeGetB (o3x (N := N) (K := K) (k := k)) (fencLen attrEnc) M + (timeGetB (o3w c) (fencLen (wEnc hk c)) M + (timePsiCore N K k c.d M + (timeBjCore N K k c.d M + (timeGetB (0) (fC N K k) M + (timeGetB (fC N K k + 0) (fC N K k) M + (timeGadB N K k M + (timeSubB (1 * (2 * k)) N K M + (timeOneB N K M + (timeJoinB (N * K) (rowL N K k) (rowL N K k) M + (timeGetB (o3p hk c) (fR N K) M + (timeJoinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M + (timeJoinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M))))))))))))))))))
 
 theorem ub_pub3Body (M : ℕ) (hM : sizepub3 hk c ≤ M) :
     UBZ 20 (pub3Body hk c) M (timepub3 hk c M) M := by
@@ -134,7 +134,7 @@ theorem ub_pub3Body (M : ℕ) (hM : sizepub3 hk c ≤ M) :
     (UBZ.frame _ (by decide) (ub_mmB (1) (1) (c.d) N K M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_addB (1 * c.d) N K M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_getB (o3R hk c) (fencLen (rmTEnc c)) M (by omega)) le_rfl).seq <|
-    (UBZ.frame _ (by decide) (ub_getB (o3x (N := N) (K := K) (k := k)) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o3x (N := N) (K := K) (k := k)) (fencLen attrEnc) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_getB (o3w c) (fencLen (wEnc hk c)) M (by omega)) le_rfl).seq <|
     (ub_psiCore N K k c.d M (by omega)).seq <|
     (ub_bjCore N K k c.d M (by omega)).seq <|
@@ -157,7 +157,7 @@ theorem sz_pub3Body (M : ℕ) (hM : sizepub3 hk c ≤ M) (hB : M < 2 ^ 240) :
     (SZ.frame _ (sz_mmB (1) (1) (c.d) N K M (by omega) hB)).seq <|
     (SZ.frame _ (sz_addB (1 * c.d) N K M (by omega) hB)).seq <|
     (SZ.frame _ (sz_getB (o3R hk c) (fencLen (rmTEnc c)) M (by omega) hB)).seq <|
-    (SZ.frame _ (sz_getB (o3x (N := N) (K := K) (k := k)) (fencLen dateEnc) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o3x (N := N) (K := K) (k := k)) (fencLen attrEnc) M (by omega) hB)).seq <|
     (SZ.frame _ (sz_getB (o3w c) (fencLen (wEnc hk c)) M (by omega) hB)).seq <|
     (sz_psiCore N K k c.d M (by omega) hB).seq <|
     (sz_bjCore N K k c.d M (by omega) hB).seq <|
@@ -207,7 +207,7 @@ theorem pk3_word (ab : Inst3T N K k) (σ : Sec3 hk c) :
   have hBj : (view3 hk c ab σ).1.Bj = fun j => σ.2.1 * wMat σ.2.2.1 j +
       RingBTVW.bitsOf (Sdw (N := N) hk) (psi3 hk c σ) j •
         (Sdw (N := N) hk).Γ₁.G := funext fun j => by
-    show bjOf σ.2.1 (bitsOf σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
+    show bjOf σ.2.1 (attrBits σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
     unfold bjOf
     rw [of_hashCols]
     rfl
@@ -224,12 +224,12 @@ arbitrary): the public key on tape `15`, and `c₀`, the `Rᵢ`, `x`, `w`, the `
 `3, 4, 5, 6, 8`. -/
 theorem law_pub3Body (hN : 0 < N) (hK : 0 < K) (W m : List Bool) (ab : Inst3T N K k)
     (B₀ e₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (s p : Rg N K)
-    (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : Date)
+    (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : PUniv.Attr)
     (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
     (ha : takeD (fC N K k) (W.drop 0) = (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1)
     (hb : takeD (fC N K k) (W.drop (fC N K k + 0)) =
       (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2)
-    (hx : takeD (fencLen dateEnc) (W.drop (o3x (N := N) (K := K) (k := k))) = encDate x)
+    (hx : takeD (fencLen attrEnc) (W.drop (o3x (N := N) (K := K) (k := k))) = encAttr x)
     (hB : takeD (fD N K c.d) (W.drop (o3B (N := N) (K := K) (k := k))) =
       (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀)
     (hw : takeD (fencLen (wEnc hk c)) (W.drop (o3w c)) = (wEnc hk c).enc w)
@@ -240,7 +240,7 @@ theorem law_pub3Body (hN : 0 < N) (hK : 0 < K) (W m : List Bool) (ab : Inst3T N 
     (hR : takeD (fencLen (rmTEnc c)) (W.drop (o3R hk c)) = (rmTEnc c).enc Rm) :
     ∃ S, (pub3Body hk c).law (ioS (R := 80) W m []) = PMF.pure S ∧ Blank20 S ∧ S 1 = m ∧ S 0 = W ∧
       S 3 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc (RingBTVW.scalar s * B₀ + e₀) ∧
-      S 4 = (rmTEnc c).enc Rm ∧ S 5 = encDate x ∧ S 6 = (wEnc hk c).enc w ∧
+      S 4 = (rmTEnc c).enc Rm ∧ S 5 = encAttr x ∧ S 6 = (wEnc hk c).enc w ∧
       S 8 = (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
         (psiOf hk c B₀ (RingBTVW.scalar s * B₀ + e₀) Rm x) ∧ S 19 = [] ∧
       S 7 = (ringEnc N K).enc s ∧
@@ -333,7 +333,7 @@ theorem pkI_word (ab : Inst3T N K k) (σ : SecI hk c) :
       RingBTVW.bitsOf (Sdw (N := N) hk) (psiOf hk c σ.2.1
           (RingBTVW.scalar σ.2.2.2.2.1.s * σ.2.1 + σ.2.2.2.2.1.e₀) σ.2.2.2.2.1.Rm σ.1) j •
         (Sdw (N := N) hk).Γ₁.G := funext fun j => by
-    show bjOf σ.2.1 (bitsOf σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
+    show bjOf σ.2.1 (attrBits σ.1) _ (hashCols σ.2.1 σ.2.2.1) j = _
     unfold bjOf
     rw [of_hashCols]
     rfl

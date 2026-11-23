@@ -23,8 +23,7 @@ sizes `(N, K, k, d, B)` and the radius `S` (given by its word `sW`):
 
 For `confP` (`keyM_words`): the law of the words of the keys of `KeyGen` is the image of `mBp` fair
 coins under `keyTryMskW` with the radius word `toBits Kp Sp` (the big boxes of `keyEmb` and of the
-explicit layout `keyEmbE` are equal, `univ_map_keyEmbE_eq`). `keyM_words_keyMatrix`: the same with
-`B_f̂` computed by `keyMatrixW` from the words of the `B_j`.
+explicit layout `keyEmbE` are equal, `univ_map_keyEmbE_eq`). (`B_f̂` is given by its word.)
 
 Step count: `keyTrySteps` (sum of the steps of the parts).
 -/
@@ -33,7 +32,7 @@ namespace AdvancedEncryption.DualUse.Algo
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo Matrix Cslib
   Cslib.Probability AdvancedEncryption.RingBTVW AdvancedEncryption.PE
-  AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.DateWindow
+  AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ}
 
@@ -362,16 +361,6 @@ theorem keyM_words (msk : DualUse.SKey hkp confP) (C : List Bool) (inC : Bool)
   funext l
   exact (keyTryMskW_eq hkp (Nat.succ_pos _) confP Bp hBp mBp hmE length_SpW val_SpW rfl decp_eq
     msk C inC hC bfW hbf l).symm
-
-/-- **The same, with `B_f̂` computed on words** by `keyMatrixW` from the words of the `B_j`. -/
-theorem keyM_words_keyMatrix (msk : DualUse.SKey hkp confP) (C : List Bool) (inC : Bool)
-    (hC : inC = true ↔ ValidC C)
-    (bjW : Fin nA × BI Np kp → List Bool) (hbj : bjW = fun j => rowW Np Kp kp (msk.1.Bj j)) :
-    (DualUse.keyM hkp confP msk C).map (DualUse.skEnc hkp confP).enc =
-      (BitString.uniformList mBp).map
-        (keyTryMskW Np Kp kp dp Bp SpW inC ((DualUse.mskEnc hkp confP).enc msk)
-          (keyMatrixW Np Kp kp (ordT₀ Np kp) (ordO₀ Np kp) (parse C) bjW)) :=
-  keyM_words msk C inC hC _ (by subst hbj; exact keyMatrixW_eq hkp msk.1 (parse C))
 
 end Params
 

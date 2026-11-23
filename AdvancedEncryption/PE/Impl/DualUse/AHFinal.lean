@@ -21,8 +21,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow AdvancedEncryption.PE.Generic
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.PE.Generic
 open AdvancedEncryption.DualUse.Prog AdvancedEncryption.DualUse.Params
 
 /-- **The cost of the block-structured `W_f` block at `confP`**: at most `2^556` steps, every

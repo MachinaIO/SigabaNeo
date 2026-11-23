@@ -16,7 +16,7 @@ the instance (`spPack`, `setupPack`). Started from `(w, {})`, this oracle has th
 namespace AdvancedEncryption.DualUse
 
 open SigabaNeo Cslib
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
 variable {Sec Inst : Type}

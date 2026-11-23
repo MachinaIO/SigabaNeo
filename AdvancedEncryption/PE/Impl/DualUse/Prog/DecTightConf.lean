@@ -13,7 +13,7 @@ block-structured `W_f` block and its per-tape output (`WB2.wfB2_out_conf`):
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open AdvancedEncryption.DualUse.Params
 open SigabaNeo.Tape.Prog (leT unfrT)
 

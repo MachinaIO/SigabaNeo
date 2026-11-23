@@ -18,7 +18,7 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
 open SigabaNeo.Tape.Prog (leP unfrP frP leT unfrT frT tailsP)
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open SigabaNeo.Lattices.Algo
 open scoped SigabaNeo.Tape.Prog
 

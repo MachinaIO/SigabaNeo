@@ -1,5 +1,5 @@
 import PE.Impl.DualUse.ReductionMachine
-import PE.Impl.Game.HandlersDate
+import PE.Impl.Game.HandlersBP
 import SigabaNeo.Lib.Machines.Prog.Pass
 
 /-!
@@ -793,7 +793,7 @@ bits), with `Post A.time E 10 1`. -/
 theorem hPost_post {Sig : Type} {nS : ℕ} (sig : Encode.FixedEnc Sig nS) (IW : List Bool → Prop)
     (W : ℕ) (Ok : Sig → Prop) (n E : ℕ)
     (hE : ∀ st, InvS IW W Ok st → ((dateCodes sig).encState st).length ≤ E) :
-    ∀ (o : List Bool) (st : List Bool × GState PE.DateWindow.dateUniverse Sig), o.length ≤ n →
+    ∀ (o : List Bool) (st : List Bool × GState PE.DateWindow.PUniv Sig), o.length ≤ n →
       InvS IW W Ok st →
       (Post n E 10 1).run (pairOut o ((dateCodes sig).encState st)) =
         PMF.pure (postW (Generic.obs (o, st.2))) :=

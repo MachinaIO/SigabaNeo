@@ -1,12 +1,12 @@
 import PE.Impl.DualUse.Impl
 
 /-!
-# Correctness of the dual-use implementation for date windows
+# Correctness of the dual-use implementation for branching programs
 
 The scheme's bound of `correct_of_scheme` from the conditions on the parameters
 (`scheme_bound`): the gadget decomposition inverts the gadget, the big box covers the small box
 shifted by the real trapdoor, the coins of `Enc`, the small box and the decompositions are short,
-the noise bound of every window predicate stays below `q / 4`, and an inner box of
+the noise bound of every program predicate stays below `q / 4`, and an inner box of
 the big box, whose shift by the trapdoor stays in the small box, leaves an abort probability at
 most `2^{-κ}`. Then the implementation is correct (`correct`).
 -/
@@ -14,22 +14,12 @@ most `2^{-κ}`. Then the implementation is correct (`correct`).
 namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped ENNReal
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 variable {ms : Machines hk c}
-
-/-- A gate list whose last gate is `false` on `x` gives a predicate that is `false` on `x`. -/
-theorem evalBool_predC {x : Date} {C : List Bool} (h : evalGates (encDate x, parse C) = false) :
-    SLP.evalBool (bitsOf x) (predC C).1 (predC C).2 = false := by
-  have hne : parse C ≠ [] := by
-    intro he
-    rw [he] at h
-    exact absurd h (by simp [evalGates])
-  rw [predC, ← evalGates_predOf (bitsOf x) _ hne, ofFn_bitsOf]
-  exact h
 
 /-- The trapdoor of `msk` is a trapdoor of the key row. -/
 theorem realTrap_spec (mpk : PK hk c) (Tm : Matrix (TrapCol k) (Col k) (Rg N K))
@@ -60,27 +50,27 @@ theorem PMF.bind_apply_ge {α β : Type} (μ : PMF α) (F : α → PMF β) (a : 
 theorem scheme_bound (hd : 0 < c.d)
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (Bχ Kb : ℕ) (Inner : Finset (KeyShort (Fin c.d) (TrapCol k) (Rg N K))) (hIn : Inner ⊆ c.Big)
-    (hcov : ∀ v ∈ (setupM hk c).support, ∀ w : Window,
+    (hcov : ∀ v ∈ (setupM hk c).support, ∀ C : List Bool, ValidC C →
       ∀ y ∈ c.Small, ∀ u, y + realTrap (S := Sdw (N := N) hk) (trapMat v.2.2.1 v.2.2.2)
-        (keyMatrix v.1 (predC (winWord w))) (c.dec u) ∈ c.Big)
-    (hInner : ∀ v ∈ (setupM hk c).support, ∀ w : Window,
+        (keyMatrix v.1 (predC C)) (c.dec u) ∈ c.Big)
+    (hInner : ∀ v ∈ (setupM hk c).support, ∀ C : List Bool, ValidC C →
       ∀ p ∈ Inner, ∀ u, p - realTrap (S := Sdw (N := N) hk) (trapMat v.2.2.1 v.2.2.2)
-        (keyMatrix v.1 (predC (winWord w))) (c.dec u) ∈ c.Small)
+        (keyMatrix v.1 (predC C)) (c.dec u) ∈ c.Small)
     (habort : ((c.Big.card - Inner.card : ℕ) : ℝ≥0∞) / c.Big.card ≤
       ((2 : ℝ≥0∞) ^ params.corrBits)⁻¹)
     (hSmall : ∀ v ∈ c.Small, (∀ i, cnorm (v.1 i) ≤ Kb) ∧ ∀ i, cnorm (v.2 i) ≤ Kb)
     (hdecK : ∀ u i, cnorm (c.dec u i) ≤ Kb)
     (hr : ∀ r ∈ (coinsM hk c).support, cnorm r.e' ≤ Bχ ∧ rnorm r.e₀ ≤ Bχ ∧ rnorm r.e₁ ≤ Bχ ∧
       (∀ i a b, cnorm (r.Rm i a b) ≤ 1) ∧ ∀ j, rnorm (r.ej j) ≤ Bχ)
-    (hq : ∀ w : Window, 4 * noiseBound (Wd := Fin c.d) (Wt := TrapCol k) (N := N) hk Bχ Kb
-      (predC (winWord w)) + 2 < 2 ^ K)
-    (x : Date) (w : Window) (hev : evalGates (encDate x, parse (winWord w)) = false) (b : Bool) :
+    (hq : ∀ C : List Bool, ValidC C → 4 * noiseBound (Wd := Fin c.d) (Wt := TrapCol k) (N := N) hk Bχ Kb
+      (predC C) + 2 < 2 ^ K)
+    (x : PUniv.Attr) (C : List Bool) (hC : ValidC C) (hev : output (tablesOf C) x = false)
+    (b : Bool) :
     1 - ((2 : ℝ) ^ params.corrBits)⁻¹ ≤
-      (((setupM hk c).bind fun v => (keyM hk c v.2 (winWord w)).bind fun sk =>
-        (encM hk c v.1 x b).map fun ct => decM hk c sk (winWord w) ct) [b]).toReal := by
-  set C := winWord w
+      (((setupM hk c).bind fun v => (keyM hk c v.2 C).bind fun sk =>
+        (encM hk c v.1 x b).map fun ct => decM hk c sk C ct) [b]).toReal := by
   set ε : ℝ≥0∞ := ((2 : ℝ≥0∞) ^ params.corrBits)⁻¹
-  have hfx := evalBool_predC hev
+  have hfx := (evalBool_predC x C).trans hev
   have key : 1 - ε ≤ ((setupM hk c).bind fun v => (keyM hk c v.2 C).bind fun sk =>
       (encM hk c v.1 x b).map fun ct => decM hk c sk C ct) [b] := by
     refine PMF.bind_apply_ge _ _ _ _ fun v hv => ?_
@@ -88,25 +78,25 @@ theorem scheme_bound (hd : 0 < c.d)
     set T := realTrap (S := Sdw (N := N) hk) (trapMat v.2.2.1 v.2.2.2) (keyMatrix v.1 (predC C))
     have hTv : ∀ z, shortMap v.1 (T z) + gadgetMap (S := Sdw (N := N) hk) z =
         (keyMatrix v.1 (predC C) *ᵥ z) 0 := realTrap_spec hk c v.1 _ hT _
-    have hfail := decrypt_fail_le hk c.hN (by simpa using hd) v.1 (bitsOf x) b (predC C) hfx
-      c.Big c.Small c.hBig c.dec hdec T hTv (hcov v hv w) (coinsM hk c) Bχ Kb hSmall hdecK hr
-      (hq w)
+    have hfail := decrypt_fail_le hk c.hN (by simpa using hd) v.1 (attrBits x) b (predC C) hfx
+      c.Big c.Small c.hBig c.dec hdec T hTv (hcov v hv C hC) (coinsM hk c) Bχ Kb hSmall hdecK hr
+      (hq C hC)
     have hab := boxSample_none_le c.Big c.hBig c.Small (shortMap v.1) c.dec T v.1.p Inner hIn
-      (hInner v hv w)
+      (hInner v hv C hC)
     -- the law of the output is the image of the law of success
     have hlaw : ((keyM hk c v.2 C).bind fun sk => (encM hk c v.1 x b).map fun ct =>
         decM hk c sk C ct) = ((keyLaw c.Big c.Small c.hBig c.dec v.1 T).bind fun o =>
           (coinsM hk c).map fun r => decide (decodeBit c.hN (decryptRaw v.1 (predC C)
-            (keyOfOutput o) (encrypt v.1 (bitsOf x) b r)) = b)).map
+            (keyOfOutput o) (encrypt v.1 (attrBits x) b r)) = b)).map
           fun β => if β then [b] else [!b] := by
-      rw [keyM_eq hk c _ _ ⟨w, rfl⟩, hm, PMF.bind_map, PMF.map_bind]
+      rw [keyM_eq hk c _ _ hC, hm, PMF.bind_map, PMF.map_bind]
       refine congrArg (PMF.bind _) (funext fun o => ?_)
       simp only [Function.comp_apply, encM, PMF.map_comp]
       refine congrArg (fun g => PMF.map g (coinsM hk c)) (funext fun r => ?_)
       simp only [Function.comp_apply]
-      rw [decM_win hk c _ _ _ ⟨w, rfl⟩]
+      rw [decM_win hk c _ _ _ hC]
       cases decodeBit c.hN (decryptRaw v.1 (predC C) (keyOfOutput o)
-        (encrypt v.1 (bitsOf x) b r)) <;> cases b <;> rfl
+        (encrypt v.1 (attrBits x) b r)) <;> cases b <;> rfl
     rw [hlaw, PMF.map_apply, tsum_bool]
     rw [PMF.apply_true_eq]
     simp only [Bool.false_eq_true, ↓reduceIte, List.cons.injEq, and_true,
@@ -120,25 +110,25 @@ theorem scheme_bound (hd : 0 < c.d)
   simpa [ε, ENNReal.toReal_inv, ENNReal.toReal_pow] using this
 
 /-- **Correctness** of the implementation under the conditions on the parameters. -/
-theorem correct (hd : 0 < c.d)
+theorem correct (hL : bpLen ≤ c.L) (hd : 0 < c.d)
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (Bχ Kb : ℕ) (Inner : Finset (KeyShort (Fin c.d) (TrapCol k) (Rg N K))) (hIn : Inner ⊆ c.Big)
-    (hcov : ∀ v ∈ (setupM hk c).support, ∀ w : Window,
+    (hcov : ∀ v ∈ (setupM hk c).support, ∀ C : List Bool, ValidC C →
       ∀ y ∈ c.Small, ∀ u, y + realTrap (S := Sdw (N := N) hk) (trapMat v.2.2.1 v.2.2.2)
-        (keyMatrix v.1 (predC (winWord w))) (c.dec u) ∈ c.Big)
-    (hInner : ∀ v ∈ (setupM hk c).support, ∀ w : Window,
+        (keyMatrix v.1 (predC C)) (c.dec u) ∈ c.Big)
+    (hInner : ∀ v ∈ (setupM hk c).support, ∀ C : List Bool, ValidC C →
       ∀ p ∈ Inner, ∀ u, p - realTrap (S := Sdw (N := N) hk) (trapMat v.2.2.1 v.2.2.2)
-        (keyMatrix v.1 (predC (winWord w))) (c.dec u) ∈ c.Small)
+        (keyMatrix v.1 (predC C)) (c.dec u) ∈ c.Small)
     (habort : ((c.Big.card - Inner.card : ℕ) : ℝ≥0∞) / c.Big.card ≤
       ((2 : ℝ≥0∞) ^ params.corrBits)⁻¹)
     (hSmall : ∀ v ∈ c.Small, (∀ i, cnorm (v.1 i) ≤ Kb) ∧ ∀ i, cnorm (v.2 i) ≤ Kb)
     (hdecK : ∀ u i, cnorm (c.dec u i) ≤ Kb)
     (hr : ∀ r ∈ (coinsM hk c).support, cnorm r.e' ≤ Bχ ∧ rnorm r.e₀ ≤ Bχ ∧ rnorm r.e₁ ≤ Bχ ∧
       (∀ i a b, cnorm (r.Rm i a b) ≤ 1) ∧ ∀ j, rnorm (r.ej j) ≤ Bχ)
-    (hq : ∀ w : Window, 4 * noiseBound (Wd := Fin c.d) (Wt := TrapCol k) (N := N) hk Bχ Kb
-      (predC (winWord w)) + 2 < 2 ^ K) :
+    (hq : ∀ C : List Bool, ValidC C → 4 * noiseBound (Wd := Fin c.d) (Wt := TrapCol k) (N := N) hk Bχ Kb
+      (predC C) + 2 < 2 ^ K) :
     Correct PUniv params (impl hk c ms) :=
-  correct_of_scheme hk c fun x w _ hev b => scheme_bound hk c hd hdec Bχ Kb Inner hIn hcov hInner
-    habort hSmall hdecK hr hq x w hev b
+  correct_of_scheme hk c hL fun x C hC _ hev b => scheme_bound hk c hd hdec Bχ Kb Inner hIn hcov
+    hInner habort hSmall hdecK hr hq x C hC hev b
 
 end AdvancedEncryption.DualUse

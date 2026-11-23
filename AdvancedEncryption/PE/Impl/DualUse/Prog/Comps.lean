@@ -18,7 +18,7 @@ their output length bounds `io2 L 0 0` (`CompBoundsP`). The simulation-data comp
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 theorem eighty_le : (80 : ℕ) ≤ 254 := by norm_num
 
@@ -50,13 +50,13 @@ def chal3L : XProg 256 := lift256 (chal3P hk c)
 theorem wf_pub3L : (pub3L hk c).WF := wf_pub3P hk c
 theorem wf_chal3L : (chal3L hk c).WF := wf_chal3P hk c
 
-theorem law_pub3L [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (st : dateUniverse.Attr → PMF (Inst3T N K k × Sec3 hk c))
+theorem law_pub3L [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (st : PUniv.Attr → PMF (Inst3T N K k × Sec3 hk c))
     (p : Inst3T N K k × Sec3 hk c) :
     (pub3L hk c).law (io2 (R := 254) (((inst3Enc (N := N) (K := K) (k := k)).prod (sec3Enc hk c)).enc p) [] []) =
       PMF.pure (io2 (R := 254) ((spPack st (view3 hk c) (sd3 hk c)).pub p) [] []) :=
   law_lift256 (law_pub3P hk c hN hK p.1 p.2)
 
-theorem law_chal3L [NeZero c.d] (hN : 0 < N) (hK : 1 ≤ K) (st : dateUniverse.Attr → PMF (Inst3T N K k × Sec3 hk c))
+theorem law_chal3L [NeZero c.d] (hN : 0 < N) (hK : 1 ≤ K) (st : PUniv.Attr → PMF (Inst3T N K k × Sec3 hk c))
     (p : Inst3T N K k × Sec3 hk c) (μ : Bool) :
     (chal3L hk c).law (io2 (R := 254) (((inst3Enc (N := N) (K := K) (k := k)).prod (sec3Enc hk c)).enc p)
       (encMsg μ) []) =
@@ -95,7 +95,7 @@ def pubIL : XProg 256 := lift256 (pubIP hk c)
 
 theorem wf_pubIL : (pubIL hk c).WF := wf_pubIP hk c
 
-theorem law_pubIL [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (st : dateUniverse.Attr → PMF (Inst3T N K k × SecI hk c))
+theorem law_pubIL [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (st : PUniv.Attr → PMF (Inst3T N K k × SecI hk c))
     (p : Inst3T N K k × SecI hk c) :
     (pubIL hk c).law (io2 (R := 254) (((inst3Enc (N := N) (K := K) (k := k)).prod (secIEnc hk c)).enc p) [] []) =
       PMF.pure (io2 (R := 254) ((spPack st (viewI hk c) (sdI hk c)).pub p) [] []) :=
@@ -115,7 +115,7 @@ def chalIL2 : XProg 256 := lift256 (chalIL hk c)
 
 theorem wf_chalIL2 : (chalIL2 hk c).WF := wf_chalIL hk c
 
-theorem law_chalIL2 (hN : 0 < N) (hK : 1 ≤ K) (st : dateUniverse.Attr → PMF (Inst3T N K k × SecI hk c))
+theorem law_chalIL2 (hN : 0 < N) (hK : 1 ≤ K) (st : PUniv.Attr → PMF (Inst3T N K k × SecI hk c))
     (p : Inst3T N K k × SecI hk c) (μ : Bool) :
     (chalIL2 hk c).law (io2 (R := 254) (((inst3Enc (N := N) (K := K) (k := k)).prod (secIEnc hk c)).enc p)
       (encMsg μ) []) =
@@ -149,7 +149,7 @@ theorem wf_pub5L : (pub5L hk c).WF := wf_pub5P hk c
 theorem wf_chal5L : (chal5L hk c).WF := wf_chal5P hk c
 
 theorem law_pub5L [NeZero c.d] (hN : 0 < N) (hK : 0 < K)
-    (st : dateUniverse.Attr → PMF ((Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) × Sec5 hk c))
+    (st : PUniv.Attr → PMF ((Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) × Sec5 hk c))
     (p : (Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) × Sec5 hk c) :
     (pub5L hk c).law (io2 (R := 254)
       (((inst5Enc (N := N) (K := K) (k := k) c.d).prod (sec5Enc hk c)).enc p) [] []) =
@@ -157,7 +157,7 @@ theorem law_pub5L [NeZero c.d] (hN : 0 < N) (hK : 0 < K)
   law_lift256 (law_pub5P hk c hN hK p.1 p.2)
 
 theorem law_chal5L [NeZero c.d] (hN : 0 < N) (hK : 1 ≤ K)
-    (st : dateUniverse.Attr → PMF ((Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) × Sec5 hk c))
+    (st : PUniv.Attr → PMF ((Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) × Sec5 hk c))
     (p : (Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) × Sec5 hk c) (μ : Bool) :
     (chal5L hk c).law (io2 (R := 254)
       (((inst5Enc (N := N) (K := K) (k := k) c.d).prod (sec5Enc hk c)).enc p) (encMsg μ) []) =

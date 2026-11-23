@@ -14,8 +14,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Matrix AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
@@ -27,7 +27,7 @@ def pub5Body : XProg 82 :=
   seq (frame ⟨vMm 15 7 2, by decide⟩ (mmB (1) (1) (c.d) N K)) <|
   seq (frame ⟨vAdd 3 15 14, by decide⟩ (addB (1 * c.d) N K)) <|
   seq (frame ⟨vGet 4 0, by decide⟩ (getB (o5R hk c) (fencLen (rmTEnc c)))) <|
-  seq (frame ⟨vGet 5 0, by decide⟩ (getB (o5x c) (fencLen dateEnc))) <|
+  seq (frame ⟨vGet 5 0, by decide⟩ (getB (o5x c) (fencLen attrEnc))) <|
   seq (frame ⟨vGet 6 0, by decide⟩ (getB (o5w c) (fencLen (wEnc hk c)))) <|
   seq (psiCore N K k c.d) <|
   seq (bjCore N K k c.d) <|
@@ -51,7 +51,7 @@ def sizepub5 : ℕ :=
     sizeMmB (1) (1) (c.d) N K +
     sizeAddB (1 * c.d) N K +
     ((o5R hk c) + (fencLen (rmTEnc c))) +
-    ((o5x c) + (fencLen dateEnc)) +
+    ((o5x c) + (fencLen attrEnc)) +
     ((o5w c) + (fencLen (wEnc hk c))) +
     sizePsiCore N K k c.d +
     sizeBjCore N K k c.d +
@@ -65,7 +65,7 @@ def sizepub5 : ℕ :=
 
 /-- The time of `pub5Body` from tapes below `M`. -/
 def timepub5 (M : ℕ) : ℕ :=
-  timeGetB (0) (fD N K c.d) M + (timeGetB (o5u c) (fR N K) M + (timeGetB (o5v c) (fD N K c.d) M + (timeMmB (1) (1) (c.d) N K M + (timeAddB (1 * c.d) N K M + (timeGetB (o5R hk c) (fencLen (rmTEnc c)) M + (timeGetB (o5x c) (fencLen dateEnc) M + (timeGetB (o5w c) (fencLen (wEnc hk c)) M + (timePsiCore N K k c.d M + (timeBjCore N K k c.d M + (timeGetB (o5a c) (fC N K k) M + (timeGetB (o5z c) (fC N K k) M + (timeOneB N K M + (timeJoinB (N * K) (rowL N K k) (rowL N K k) M + (timeGetB (o5p c) (fR N K) M + (timeJoinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M + (timeJoinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M))))))))))))))))
+  timeGetB (0) (fD N K c.d) M + (timeGetB (o5u c) (fR N K) M + (timeGetB (o5v c) (fD N K c.d) M + (timeMmB (1) (1) (c.d) N K M + (timeAddB (1 * c.d) N K M + (timeGetB (o5R hk c) (fencLen (rmTEnc c)) M + (timeGetB (o5x c) (fencLen attrEnc) M + (timeGetB (o5w c) (fencLen (wEnc hk c)) M + (timePsiCore N K k c.d M + (timeBjCore N K k c.d M + (timeGetB (o5a c) (fC N K k) M + (timeGetB (o5z c) (fC N K k) M + (timeOneB N K M + (timeJoinB (N * K) (rowL N K k) (rowL N K k) M + (timeGetB (o5p c) (fR N K) M + (timeJoinB (fD N K c.d) (fT N K k) (fJ (N := N) hk) M + (timeJoinB (fD N K c.d + fT N K k + fJ (N := N) hk) (fR N K) (0) M))))))))))))))))
 
 theorem ub_pub5Body (M : ℕ) (hM : sizepub5 hk c ≤ M) :
     UBZ 20 (pub5Body hk c) M (timepub5 hk c M) M := by
@@ -76,7 +76,7 @@ theorem ub_pub5Body (M : ℕ) (hM : sizepub5 hk c ≤ M) :
     (UBZ.frame _ (by decide) (ub_mmB (1) (1) (c.d) N K M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_addB (1 * c.d) N K M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_getB (o5R hk c) (fencLen (rmTEnc c)) M (by omega)) le_rfl).seq <|
-    (UBZ.frame _ (by decide) (ub_getB (o5x c) (fencLen dateEnc) M (by omega)) le_rfl).seq <|
+    (UBZ.frame _ (by decide) (ub_getB (o5x c) (fencLen attrEnc) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_getB (o5w c) (fencLen (wEnc hk c)) M (by omega)) le_rfl).seq <|
     (ub_psiCore N K k c.d M (by omega)).seq <|
     (ub_bjCore N K k c.d M (by omega)).seq <|
@@ -97,7 +97,7 @@ theorem sz_pub5Body (M : ℕ) (hM : sizepub5 hk c ≤ M) (hB : M < 2 ^ 240) :
     (SZ.frame _ (sz_mmB (1) (1) (c.d) N K M (by omega) hB)).seq <|
     (SZ.frame _ (sz_addB (1 * c.d) N K M (by omega) hB)).seq <|
     (SZ.frame _ (sz_getB (o5R hk c) (fencLen (rmTEnc c)) M (by omega) hB)).seq <|
-    (SZ.frame _ (sz_getB (o5x c) (fencLen dateEnc) M (by omega) hB)).seq <|
+    (SZ.frame _ (sz_getB (o5x c) (fencLen attrEnc) M (by omega) hB)).seq <|
     (SZ.frame _ (sz_getB (o5w c) (fencLen (wEnc hk c)) M (by omega) hB)).seq <|
     (sz_psiCore N K k c.d M (by omega) hB).seq <|
     (sz_bjCore N K k c.d M (by omega) hB).seq <|
@@ -140,7 +140,7 @@ theorem law_pub5Body (hN : 0 < N) (hK : 0 < K) (m : List Bool)
     ∃ S, (pub5Body hk c).law (ioS (R := 80) (W5 hk c i σ) m []) = PMF.pure S ∧ Blank20 S ∧
       S 0 = W5 hk c i σ ∧ S 1 = m ∧
       S 3 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc (c05 hk c i σ) ∧
-      S 4 = (rmTEnc c).enc σ.2.2.2.1 ∧ S 5 = encDate σ.1 ∧ S 6 = (wEnc hk c).enc σ.2.2.1 ∧
+      S 4 = (rmTEnc c).enc σ.2.2.2.1 ∧ S 5 = encAttr σ.1 ∧ S 6 = (wEnc hk c).enc σ.2.2.1 ∧
       S 7 = (ringEnc N K).enc σ.2.1 ∧
       S 8 = (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
         (psi5 hk c i σ) ∧

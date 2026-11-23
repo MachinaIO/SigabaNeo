@@ -18,7 +18,7 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   AdvancedEncryption.DualUse.Algo SigabaNeo.Lattices.FhatGen SigabaNeo.Tape.XProg
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
 open scoped SigabaNeo.Tape.Prog
 
 /-! ### The input positions of `f̂` -/

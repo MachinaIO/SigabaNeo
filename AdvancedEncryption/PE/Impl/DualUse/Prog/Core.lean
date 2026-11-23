@@ -17,8 +17,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Matrix AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 /-- Discharge `Blank20` of an updated store. -/
 macro "bl20" : tactic => `(tactic| ((repeat (refine Blank20.upd ?_ (by decide) _)); assumption))
@@ -54,16 +54,16 @@ variable (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-- The Ring-GSW ciphertexts of `(B₀, c₀, R, x)`. -/
 noncomputable def psiOf (B₀ c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K))
-    (x : Date) : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K) :=
-  fun i => gswPK B₀ c₀ * Rm i + bitR (R := Rg N K) (bitsOf x i) • (Sdw (N := N) hk).Γ.G
+    (x : PUniv.Attr) : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K) :=
+  fun i => gswPK B₀ c₀ * Rm i + bitR (R := Rg N K) (attrBits x i) • (Sdw (N := N) hk).Γ.G
 
 set_option maxHeartbeats 4000000 in
 /-- **The law of `psiCore`.** -/
 theorem law_psiCore (s : Store 82) (hS : Blank20 s) (B₀ c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K))
-    (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : Date)
+    (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : PUniv.Attr)
     (h2 : s 2 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀)
     (h3 : s 3 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc c₀)
-    (h4 : s 4 = (rmTEnc c).enc Rm) (h5 : s 5 = encDate x)
+    (h4 : s 4 = (rmTEnc c).enc Rm) (h5 : s 5 = encAttr x)
     (h10 : s 10 = []) (h11 : s 11 = []) (h12 : s 12 = []) (h13 : s 13 = []) (h19 : s 19 = []) :
     (psiCore N K k c.d).law s = PMF.pure (Function.update s 8
       ((FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
@@ -98,7 +98,7 @@ theorem law_psiCore (s : Store 82) (hS : Blank20 s) (B₀ c₀ : Matrix (Fin 1) 
     (by simp) (by simp [h19]) (psiSel hk x), PMF.pure_bind]
   rw [law_seq, plc_addB' _ _ _ _ _ _ (by bl20) (by simp) (by simp)
     (hlF _) (hlF _)
-    (psiAdd (fun i => gswPK B₀ c₀ * Rm i) (fun i => bitR (R := Rg N K) (bitsOf x i) • (Sdw (N := N) hk).Γ.G)),
+    (psiAdd (fun i => gswPK B₀ c₀ * Rm i) (fun i => bitR (R := Rg N K) (attrBits x i) • (Sdw (N := N) hk).Γ.G)),
     PMF.pure_bind]
   rw [law_seq, law_clr82, PMF.pure_bind, law_seq, law_clr82, PMF.pure_bind, law_seq, law_clr82,
     PMF.pure_bind, law_clr82]

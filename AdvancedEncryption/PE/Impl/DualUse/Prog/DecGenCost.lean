@@ -13,7 +13,7 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
 open SigabaNeo.Tape.Prog (leP unfrP frP leT unfrT frT tailsP ubp_tailsP ubp_prim0)
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 theorem tbD_decFP : SigabaNeo.Tape.Prog.tbD ProgKeyR.decFP = 8 := by

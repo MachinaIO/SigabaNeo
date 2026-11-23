@@ -38,8 +38,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow AdvancedEncryption.PE.Generic
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.PE.Generic
 open AdvancedEncryption.DualUse.Prog AdvancedEncryption.DualUse.Params
 open scoped ENNReal NNReal
 
@@ -68,7 +68,7 @@ instance : NeZero confP.d := dp_ne
 
 /-- **The boxes cover the simulated trapdoor** at `confP` (the data are binary, `SimValid`). -/
 theorem simCovered_conf : SimCovered hkp confP := fun d hv w hev y hy u =>
-  (goodTrap_sim d.mpk d.Rm (bitsOf d.x) d.W d.Ψ hv.2.2.1 hv.2.2.2 w
+  (goodTrap_sim d.mpk d.Rm (attrBits d.x) d.W d.Ψ hv.2.2.1 hv.2.2.2 w
     (keyMatrix_simW d hv w hev)).2 y hy u
 
 /-- The statistical part at `confP` with the flooding `ε = 2^{-148}`. -/
@@ -76,7 +76,7 @@ theorem statTerm_conf : statTerm confP hkp ((2 : ℝ≥0∞) ^ 148)⁻¹ ≤ ((2
   set x : ℝ≥0∞ := ((2 : ℝ≥0∞) ^ 138)⁻¹
   have h1 := date_mul_le delta1_le
   have h6 := date_mul_le delta6_le
-  have hε : (Fintype.card Date : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ 148)⁻¹ ≤ x := by
+  have hε : (Fintype.card PUniv.Attr : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ 148)⁻¹ ≤ x := by
     rw [card_date]; exact le_of_eq (two_pow_mul_inv 10 138)
   rw [statTerm_eq_date]
   calc _ ≤ x + x + x + x + x := by gcongr

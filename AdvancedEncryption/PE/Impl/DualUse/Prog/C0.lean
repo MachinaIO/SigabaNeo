@@ -219,17 +219,17 @@ theorem law_c0IP (ab : Inst3T N K k) (σ : SecI hk c) :
   have hm : (matMulW N K 1 1 c.d ((ringEnc N K).enc r.s)
       ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀)).length = 1 * c.d * N * K := by
     rw [hsw, matEnc_fin_eq_matW, matMulW_enc, length_matW]; ring
-  rw [c0IP, law_c0P_words _ ((inst3Enc (N := N) (K := K) (k := k)).enc ab ++ dateEnc.enc σ.1)
+  rw [c0IP, law_c0P_words _ ((inst3Enc (N := N) (K := K) (k := k)).enc ab ++ attrEnc.enc σ.1)
     ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀) _
-    ((inst3Enc (N := N) (K := K) (k := k)).enc ab ++ (dateEnc.enc σ.1 ++
+    ((inst3Enc (N := N) (K := K) (k := k)).enc ab ++ (attrEnc.enc σ.1 ++
       ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀ ++ ((wEnc hk c).enc σ.2.2.1 ++
         (ringEnc N K).enc σ.2.2.2.1))))
     ((ringEnc N K).enc r.s) ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc r.e₀) _
     (by simp only [FixedEnc.prod, secIEnc, List.append_assoc]; rfl)
-    (by simp [length_enc, (dateEnc).length, oB0I])
+    (by simp [length_enc, (attrEnc).length, oB0I])
     (length_matEnc_row _ _)
     (by simp only [FixedEnc.prod, secIEnc, coinsEnc, FixedEnc.comap, coinsTuple, List.append_assoc]; rfl)
-    (by simp [length_enc, (dateEnc).length, (ringEnc N K).length, oSI, oB0I, Nat.add_assoc])
+    (by simp [length_enc, (attrEnc).length, (ringEnc N K).length, oSI, oB0I, Nat.add_assoc])
     ((ringEnc N K).length _) (length_matEnc_row _ _) hm]
   congr 2
   rw [hsw, matEnc_fin_eq_matW, matEnc_fin_eq_matW, matMulW_enc, matAddW_enc, matEnc_fin_eq_matW]

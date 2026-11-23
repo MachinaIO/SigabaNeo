@@ -24,8 +24,8 @@ namespace AdvancedEncryption.DualUse.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
 open AdvancedEncryption.DualUse.Algo AdvancedEncryption.DualUse.Algo.Params
 open SigabaNeo.Lattices.Algo
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 set_option maxRecDepth 100000
 set_option exponentiation.threshold 3000
@@ -38,16 +38,16 @@ theorem dateBound_le : dateBound ≤ 2 ^ 20 := by
   unfold dateBound
   apply Finset.sup_le
   intro wx _
-  have h0 := length_encodeTuple3 (paramsWord dateUniverse params) (winWord wx.1)
-    (dateUniverse.encAttr wx.2)
+  have h0 := length_encodeTuple3 (paramsWord PUniv params) (winWord wx.1)
+    (PUniv.encAttr wx.2)
   have h3 := length_paramsWord_date
   have h1 := length_winWord_le wx.1
-  have h2 : (dateUniverse.encAttr wx.2).length = 10 := length_encDate wx.2
-  generalize (encodeTuple [paramsWord dateUniverse params, winWord wx.1,
-    dateUniverse.encAttr wx.2]).length = E at *
-  generalize (paramsWord dateUniverse params).length = P at *
+  have h2 : (PUniv.encAttr wx.2).length = 10 := length_encAttr wx.2
+  generalize (encodeTuple [paramsWord PUniv params, winWord wx.1,
+    PUniv.encAttr wx.2]).length = E at *
+  generalize (paramsWord PUniv params).length = P at *
   generalize (winWord wx.1).length = Q at *
-  generalize (dateUniverse.encAttr wx.2).length = R at *
+  generalize (PUniv.encAttr wx.2).length = R at *
   have : (2 : ℕ) ^ 20 = 1048576 := by norm_num
   omega
 

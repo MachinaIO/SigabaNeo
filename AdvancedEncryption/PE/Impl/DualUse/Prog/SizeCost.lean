@@ -14,7 +14,7 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
 open SigabaNeo.Tape.Prog (tailsP)
-open AdvancedEncryption.PE.Gates.DateWindow SigabaNeo.Lattices.Algo
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord SigabaNeo.Lattices.Algo
 
 theorem size_tailsP {k : ℕ} (i : Fin k) : ∀ n, (tailsP i n).size = 36 * (n + 1)
   | 0 => by simp [tailsP, Prog.size, Prim.pad]

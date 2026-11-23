@@ -24,8 +24,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.Prog Matrix AdvancedEncryption.RingBTVW AdvancedEncryption.DualUse.Algo
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 set_option linter.unusedSimpArgs false
@@ -217,7 +217,7 @@ theorem sd_dropB (sd : SimData hk c) :
       (Enum.list (α := JT N K k hk)).flatMap (fun j => rowW N K k (sd.mpk.Bj j)) ++
         ((ringEnc N K).enc sd.mpk.p ++ ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc sd.c₀ ++
         ((rmEnc c).enc sd.Rm ++ ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin c.d) (RingBTVW.Col k))).enc sd.W ++
-        ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc sd.Ψ ++ dateEnc.enc sd.x))))) := by
+        ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc sd.Ψ ++ attrEnc.enc sd.x))))) := by
   rw [sdEnc_enc]
   have e : (pkEnc hk c).enc sd.mpk = (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc sd.mpk.B₀ ++
       ((matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc sd.mpk.B₁ ++
@@ -233,7 +233,7 @@ theorem sd_dropB (sd : SimData hk c) :
 theorem sd_dropW (sd : SimData hk c) :
     ((sdEnc hk c).enc sd).drop (offW hk c) =
       (Enum.list (α := JT N K k hk)).flatMap (fun j => colsW N K k c.d (sd.W j)) ++
-        ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc sd.Ψ ++ dateEnc.enc sd.x) := by
+        ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc sd.Ψ ++ attrEnc.enc sd.x) := by
   rw [sdEnc_enc, offW, drop_app3 (length_enc_fixLen _ _) (length_enc_fixLen _ _)
     (length_enc_fixLen _ _), fun_enc_flatMap]
   congr 1
@@ -244,7 +244,7 @@ theorem sd_dropR (sd : SimData hk c) :
     ((sdEnc hk c).enc sd).drop (offR hk c) =
       (List.finRange 10).flatMap (fun i => colsW N K k c.d (sd.Rm i)) ++
         ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin c.d) (RingBTVW.Col k))).enc sd.W ++
-        ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc sd.Ψ ++ dateEnc.enc sd.x)) := by
+        ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc sd.Ψ ++ attrEnc.enc sd.x)) := by
   rw [sdEnc_enc, offR, drop_app2 (length_enc_fixLen _ _) (length_enc_fixLen _ _), rmEnc,
     fun_enc_flatMap]
   congr 1
@@ -253,7 +253,7 @@ theorem sd_dropR (sd : SimData hk c) :
 
 theorem sd_dropPsi (sd : SimData hk c) :
     ((sdEnc hk c).enc sd).drop (offPsi hk c) =
-      (List.finRange 10).flatMap (fun i => colsW N K k 2 (sd.Ψ i)) ++ dateEnc.enc sd.x := by
+      (List.finRange 10).flatMap (fun i => colsW N K k 2 (sd.Ψ i)) ++ attrEnc.enc sd.x := by
   rw [sdEnc_enc, offPsi, drop_app4 (length_enc_fixLen _ _) (length_enc_fixLen _ _)
     (length_enc_fixLen _ _) (length_enc_fixLen _ _), fun_enc_flatMap]
   congr 1
@@ -307,7 +307,7 @@ theorem run_insGP (hN : 0 < N) (hK : 0 < K) (sd : SimData hk c) (s : Store 9)
         (insGW sd ++ [simOneW N K k c.d (gswGadW N K k)]).flatten) := by
   rw [insGP]
   refine Eq.trans (run_bldP (fA := fun i => colsW N K k 2 (sd.Ψ i)) (fB := fun i => colsW N K k c.d (sd.Rm i))
-    (fC := fun i => constW N K (bitW K (DateWindow.bitsOf sd.x i))) (sd := (sdEnc hk c).enc sd)
+    (fC := fun i => constW N K (bitW K (DateWindow.attrBits sd.x i))) (sd := (sdEnc hk c).enc sd)
     (fun _ => length_colsW' _ _) (fun _ => length_colsW' _ _)
     (fun _ => SigabaNeo.Tape.Prog.length_constW (length_bitW _ _))
     (fun i r hr0 hr1 => by

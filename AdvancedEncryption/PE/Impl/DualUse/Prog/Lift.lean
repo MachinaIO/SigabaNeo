@@ -22,8 +22,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.XProg Matrix
   AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 /-! ### The lift -/
 
@@ -197,9 +197,9 @@ variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 def setup3L (Pχ : XProg 7) : XProg 82 := lift82 (setup3P hk c Pχ)
 
 theorem law_setup3L {Pχ : XProg 7} (hχ : AppendLaw Pχ 0 P3 (μχ c)) [NeZero c.d] (hN : 0 < N)
-    (hK : 0 < K) (ab : Inst3T N K k) (x : Date) :
+    (hK : 0 < K) (ab : Inst3T N K k) (x : PUniv.Attr) :
     (setup3L hk c Pχ).law (ioS (R := 80) ((inst3Enc (N := N) (K := K) (k := k)).enc ab)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setup3 hk c x).map fun σ =>
         ioS (R := 80) (((inst3Enc (N := N) (K := K) (k := k)).prod (sec3Enc hk c)).enc (ab, σ))
           [] [] :=
@@ -216,9 +216,9 @@ theorem time_setup3L (Bχ : Bnd) {Pχ : XProg 7} (hχ : ATBb Pχ Bχ) (h6 : Pχ.
 def setup5L : XProg 82 := lift82 (setup5P hk c)
 
 theorem law_setup5L [NeZero c.d] (hN : 0 < N) (hK : 0 < K)
-    (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) (x : Date) :
+    (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) (x : PUniv.Attr) :
     (setup5L hk c).law (ioS (R := 80) ((inst5Enc (N := N) (K := K) (k := k) c.d).enc i)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setup5 hk c x).map fun σ =>
         ioS (R := 80) (((inst5Enc (N := N) (K := K) (k := k) c.d).prod (sec5Enc hk c)).enc (i, σ))
           [] [] :=
@@ -234,9 +234,9 @@ theorem time_setup5L (a b : ℕ) :
 def setupIL (Pχ : XProg 7) : XProg 82 := lift82 (setupIP hk c Pχ)
 
 theorem law_setupIL {Pχ : XProg 7} (hχ : AppendLaw Pχ 0 P3 (μχ c)) [NeZero c.d] (hN : 0 < N)
-    (hK : 0 < K) (ab : Inst3T N K k) (x : Date) :
+    (hK : 0 < K) (ab : Inst3T N K k) (x : PUniv.Attr) :
     (setupIL hk c Pχ).law (ioS (R := 80) ((inst3Enc (N := N) (K := K) (k := k)).enc ab)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setupI hk c x).map fun σ =>
         ioS (R := 80) (((inst3Enc (N := N) (K := K) (k := k)).prod (secIEnc hk c)).enc (ab, σ))
           [] [] :=

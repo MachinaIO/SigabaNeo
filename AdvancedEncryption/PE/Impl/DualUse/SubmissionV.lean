@@ -15,7 +15,7 @@ the premises `prem3V`, `prem5V` at `949` bits.
 
 namespace AdvancedEncryption.DualUse.Sub
 
-open SigabaNeo SigabaNeo.Lattices SigabaNeo.Tape AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open SigabaNeo SigabaNeo.Lattices SigabaNeo.Tape AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 open AdvancedEncryption.DualUse.Prog AdvancedEncryption.DualUse.Params
 open AdvancedEncryption.DualUse.Params.Strength
 
@@ -40,7 +40,7 @@ noncomputable def submissionV : Submission DateWindow.primitive registry where
   N := Ncost
 
 theorem attributeHiding_implCV (h3 : prem3V.Holds) (h5 : prem5V.Holds) :
-    AttributeHiding dateUniverse params implC := by
+    AttributeHiding PUniv params implC := by
   rw [implC_eq]; exact attributeHiding_conf_rlwe' 949 le_rfl h3 h5
 
 theorem submissionV_deps : submissionV.deps .attributeHiding = [prem3V, prem5V] := rfl

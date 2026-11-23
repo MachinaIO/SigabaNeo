@@ -15,8 +15,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
 
@@ -35,7 +35,7 @@ theorem DcB_bad (D : Machine) (o : List Bool × Option PUniv.Attr × Option PUni
     (hb : o.2.2.2 = true) : DcB D o true = 0 := by
   simp [DcB, DcStar, hb]
 
-variable {Sec : Type} (setupS : Date → PMF Sec) (view : Sec → PK hk c × CT hk c)
+variable {Sec : Type} (setupS : PUniv.Attr → PMF Sec) (view : Sec → PK hk c × CT hk c)
   (sd : Sec → SimData hk c)
 
 /-- **The reduction's challenger.** -/
@@ -49,7 +49,7 @@ noncomputable def specSim : Generic.Spec PUniv Sec where
 /-- **The reduction runs the hybrid**, as far as the distinguisher rejecting runs whose flag is up
 can tell. -/
 theorem accept_sim (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
-    (hL : dateBound ≤ c.L) (hcov : SimCovered hk c)
+    (hL : bpLen ≤ c.L) (hcov : SimCovered hk c)
     (hmpk : ∀ σ, (sd σ).mpk = (view σ).1)
     (hx : ∀ x, ∀ σ ∈ (setupS x).support, (sd σ).x = x)
     (hvalid : ∀ x, ∀ σ ∈ (setupS x).support, SimValid (sd σ)) (A : Machine 3) (D : Machine) :
@@ -73,14 +73,14 @@ theorem accept_sim (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u
   intro x σ hσ C hC
   show KGsim (sd σ) C = KGi hk c (view σ).1 C
   rw [← hmpk σ]
-  exact KGsim_eq_KGi hdec hL hcov (sd σ) (hvalid x σ hσ) C (by rw [hx x σ hσ]; exact hC)
+  exact KGsim_eq_KGi hdec hcov (sd σ) (hvalid x σ hσ) C (by rw [hx x σ hσ]; exact hC)
 
 /-- **The acceptance of a Ring-LWE step is that of the reduction's experiment**, averaged over the
 instance. -/
 theorem accOn_sim {Inst : Type} (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
-    (hL : dateBound ≤ c.L) (hcov : SimCovered hk c) (A : Machine 3) (D : Machine)
-    (inst : PMF Inst) (F : Date → Inst → PMF (PK hk c × CT hk c))
-    (setupI : Inst → Date → PMF Sec) (viewI : Inst → Sec → PK hk c × CT hk c)
+    (hL : bpLen ≤ c.L) (hcov : SimCovered hk c) (A : Machine 3) (D : Machine)
+    (inst : PMF Inst) (F : PUniv.Attr → Inst → PMF (PK hk c × CT hk c))
+    (setupI : Inst → PUniv.Attr → PMF Sec) (viewI : Inst → Sec → PK hk c × CT hk c)
     (sdI : Inst → Sec → SimData hk c) (hF : ∀ x i, F x i = (setupI i x).map (viewI i))
     (hmpk : ∀ i σ, (sdI i σ).mpk = (viewI i σ).1)
     (hx : ∀ i x, ∀ σ ∈ (setupI i x).support, (sdI i σ).x = x)

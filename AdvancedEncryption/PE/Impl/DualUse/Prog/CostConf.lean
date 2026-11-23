@@ -13,7 +13,7 @@ primitive programs are bounded by `tbC · (L + 1) ^ tbD` (constants by the kerne
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-! ### The primitive programs -/
 

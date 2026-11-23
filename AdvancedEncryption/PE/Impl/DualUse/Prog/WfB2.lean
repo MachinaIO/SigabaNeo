@@ -34,8 +34,8 @@ namespace AdvancedEncryption.DualUse.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.Prog Matrix AdvancedEncryption.RingBTVW AdvancedEncryption.DualUse.Algo
   Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 set_option linter.unusedSimpArgs false
@@ -986,9 +986,9 @@ theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) :
     t10 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     bst := eq_append_drop (by rw [oB, sd_dropB]; rfl)
     wst := eq_append_drop (by rw [oW, sd_dropW]; rfl)
-    pst := eq_append_drop (R := dateEnc.enc sd.x) (by
+    pst := eq_append_drop (R := attrEnc.enc sd.x) (by
       rw [oP, sd_dropPsi, flatten_flatMap]
-      refine congrArg (· ++ dateEnc.enc sd.x) (List.flatMap_congr fun i _ => ?_)
+      refine congrArg (· ++ attrEnc.enc sd.x) (List.flatMap_congr fun i _ => ?_)
       exact (qsL_entries N K (K + 1) _ (by rw [length_colsW'])).symm)
     insw := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     tsl := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
@@ -1764,7 +1764,7 @@ section IdG
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (sd : SimData hk c)
 
 theorem xs_eq (i : Fin nA) :
-    (((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false = DateWindow.bitsOf sd.x i := by
+    (((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false = DateWindow.attrBits sd.x i := by
   rw [← getD_sd_posX hk c sd i, List.getD_eq_getElem?_getD, List.getElem?_drop,
     ← List.getD_eq_getElem?_getD, posX, oXG]
   simp only [Nat.add_assoc]

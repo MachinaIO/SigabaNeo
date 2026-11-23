@@ -1,7 +1,7 @@
 import PE.Impl.DualUse.ReductionPerQuery
 import PE.Impl.DualUse.ReductionOracle
 import PE.Impl.Game.HandlersPCost
-import PE.Impl.Game.HandlersDate
+import PE.Impl.Game.HandlersBP
 import PE.Impl.DualUse.PUCodes
 
 /-!
@@ -26,8 +26,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability SigabaNeo.Tape
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow AdvancedEncryption.PE.Generic
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.PE.Generic
 open SigabaNeo.Inline
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
