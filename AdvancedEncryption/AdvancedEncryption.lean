@@ -166,3 +166,6 @@ import PE.Impl.DualUse.Prog.KeyCostConf
 import PE.Impl.DualUse.Prog.DecCostConf
 import PE.Impl.DualUse.Prog.DescConf
 import PE.Impl.DualUse.Submission
+import PE.Impl.DualUse.Prog.TightApp
+import PE.Impl.DualUse.Prog.TightC0
+import PE.Impl.DualUse.Prog.TightB1
