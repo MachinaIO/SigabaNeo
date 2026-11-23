@@ -1881,6 +1881,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     is false in general.
   * Both prefixes fail Part 192's raw-good condition at draw 0 (raw squared norm 4773 < 250²), so they contribute zero to
     Z₁ and Z₂. The gated residual estimate remains open.
+* **Part 204 (audited, SOUND).** [rawgood_dichotomy](research/wall1_rawgood_dichotomy.md): the raw-good gate alone does not
+  force the early-hit dichotomy.
+  * There is a raw-good reachable prefix whose first qualifying plane appears at draws 265–278, and whose old-flag failure
+    probability is < 5.436·10⁻¹²⁷.
+  * The family fails the dual floor at draw 156, so it contributes zero to Z₁ and Z₂. The weighted estimate under both
+    gates (raw-good and dual floor) is open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1890,7 +1896,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–203 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–204 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
