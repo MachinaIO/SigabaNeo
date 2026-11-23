@@ -1923,7 +1923,8 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     of second marks, replaced by a plane of area 28√19346/5 with internal spacing 28. Audit correction: the example is
     unreachable (restart probability 0). Whether collapse-and-replace happens on reachable doubly gated histories is open.
   * Haar benchmark × 3329¹⁵ for internal spacing ≤ 26 exceeds the allowance by 9.5613. For the terminal-area event the
-    conservative factor is 3329^13.49584. A comparison factor ≤ 3329^14.72 would close this route.
+    conservative factor is 3329^13.49584. A factor ≤ 3329^14.72 covers only the spacing part; the residual needs an
+    area hit (see Part 210).
 * **Part 209 (audited, CONFIRMED with correction).** [zrem_flag_moment](research/wall1_zrem_flag_moment.md):
   line-conditioned first moment for Z_rem.
   * Conditioning on a primitive line removes the divergent second moment of Part 207. Counting a shortest line of each
@@ -1932,6 +1933,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     permitted distortion 2094.97) and 9.3340·10⁻¹⁸ (line plus plane; permitted 6,947,681).
   * Part 193's abstract example (which needs a factor > 3.3022·10¹⁰) is unreachable: every reachable prefix has
     qM* ⊆ ℤᴺ, which the example violates. Open: an upper bound on the test means over reachable doubly gated prefixes.
+* **Part 210 (audited, CONFIRMED).** [distortion_sharpening](research/wall1_distortion_sharpening.md): origin and
+  slack of the 3329¹⁵ comparison factor.
+  * 3329¹⁵ is Part 187's round-down of the allowed exponent 15.06928; Part 190 leaves the comparison conjectural. At draw
+    406 there are ≥ 3329¹¹¹ incoming marks; the missing quantity is the fraction that pass the selected-history tests.
+  * Refining the Haar spacing count gains < 1 + 2.37·10⁻¹³. More than 99.995% of Haar area hits at the determinant floor
+    have spacing > 26, so a spacing bound does not cover the residuals.
+  * Sufficient exponents (zero additive error): spacing 14.72162705 (horizontal) / 14.70997924 (vertical); terminal area
+    13.49584267 / 13.48419485.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
