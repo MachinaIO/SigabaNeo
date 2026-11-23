@@ -43,10 +43,19 @@ theorem bind_DcB_true (μ : PMF (List Bool × Option dateUniverse.Attr × Option
 
 /-- The statistical part of the bound. -/
 noncomputable def statTerm (c : Conf N K k) (hk : 2 ^ K < 2 ^ k) (ε : ℝ≥0∞) : ℝ≥0∞ :=
-  Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε +
-    Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d) +
-    Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) +
-    Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d)
+  Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card PUniv.Attr * ε +
+    Fintype.card PUniv.Attr * delta6 (Sdw (N := N) hk) (Fin c.d) +
+    Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) +
+    Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d)
+
+/-- `statTerm` with the attributes of the game chain (`GameChain` counts `Date`, the universe's
+attributes in Stage I). -/
+theorem statTerm_eq_date (c : Conf N K k) (hk : 2 ^ K < 2 ^ k) (ε : ℝ≥0∞) :
+    statTerm c hk ε =
+      Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε +
+        Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d) +
+        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) +
+        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) := rfl
 
 /-- **The advantage in terms of acceptance probabilities.** -/
 theorem advantage_le_acc (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
@@ -77,7 +86,7 @@ theorem advantage_le_acc (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec 
   rw [hR, hI]
   have hfin : ∀ x : ℝ, ENNReal.ofReal x ≠ ⊤ := fun _ => ENNReal.ofReal_ne_top
   have hS' := hS
-  unfold statTerm at hS'
+  rw [statTerm_eq_date] at hS'
   have key := abs_sub_le_of_closeTo h (by
     simp only [ne_eq, ENNReal.add_eq_top, not_or, ENNReal.ofReal_ne_top, not_false_eq_true,
       and_true] at hS' ⊢
@@ -85,7 +94,7 @@ theorem advantage_le_acc (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec 
   refine key.trans (le_of_eq ?_)
   simp only [ne_eq, ENNReal.add_eq_top, not_or] at hS'
   obtain ⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩ := hS'
-  simp only [statTerm, accOn, G, ENNReal.toReal_add, ne_eq, ENNReal.add_eq_top, h1, h2, h3, h4, h5,
+  simp only [statTerm_eq_date, accOn, G, ENNReal.toReal_add, ne_eq, ENNReal.add_eq_top, h1, h2, h3, h4, h5,
     ENNReal.ofReal_ne_top, not_false_eq_true, or_self, ENNReal.toReal_ofReal (abs_nonneg _)]
   ring
 

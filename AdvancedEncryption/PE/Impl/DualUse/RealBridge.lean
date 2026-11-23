@@ -36,7 +36,7 @@ noncomputable def KGi (mpk : PK hk c) (C : List Bool) : PMF (List Bool) :=
 open Classical in
 /-- The flag of the experiment: the query is authorized for the selected attribute. -/
 noncomputable def authI (C : List Bool) (x : Date) : Bool :=
-  decide (Authorized (U := dateUniverse) params (impl hk c) C x)
+  decide (Authorized (U := PUniv) params (impl hk c) C x)
 
 /-- **Long predicates are never authorized**: `Eval` rejects inputs longer than `L`. -/
 theorem authI_long (C : List Bool) (x : Date) (hC : c.L < C.length) : authI hk c C x = false := by
@@ -45,7 +45,7 @@ theorem authI_long (C : List Bool) (x : Date) (hC : c.L < C.length) : authI hk c
   intro h
   obtain ⟨h1, -, -⟩ := (win_authorized_iff (impl hk c) rfl C x).mp h
   have := (length_le_encodeTuple (C := C)
-    (xs := [paramsWord dateUniverse params, C, encDate x]) (by simp)).trans h1
+    (xs := [paramsWord PUniv params, C, encDate x]) (by simp)).trans h1
   omega
 
 /-- The real trapdoor is covered for every key of `Setup` and every window predicate. -/
@@ -92,7 +92,7 @@ noncomputable def CHreal (mpk : PK hk c) (x : Date) (μ : Bool) : PMF (List Bool
 
 /-- The challenger of the implementation, as a generic challenger. -/
 noncomputable def realSpec :=
-  Generic.implSpec (U := dateUniverse) params (impl hk c) (pkEnc hk c).enc (setupM hk c)
+  Generic.implSpec (U := PUniv) params (impl hk c) (pkEnc hk c).enc (setupM hk c)
     (KGreal hk c) (CHreal hk c)
 
 /-- The challenge with given coins. -/
@@ -110,7 +110,7 @@ variable {hk c}
 /-- **The real experiment is the experiment of the first hybrid.** -/
 theorem real_eq_gameV (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) (A : Machine 3) :
-    (PE.real dateUniverse params (impl hk c ms) A).map (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad)) =
+    (PE.real PUniv params (impl hk c ms) A).map (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad)) =
       gameV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A (V0 hk c) := by
   -- the generic challenger of the implementation
   have b1 := Generic.game_eq_generic params (impl hk c ms) (pkEnc hk c).enc (mskEnc hk c).enc
@@ -126,10 +126,10 @@ theorem real_eq_gameV (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) 
     unfold encM
     rw [PMF.map_comp]
     rfl
-  rw [show Generic.implSpec (U := dateUniverse) params (impl hk c ms) (pkEnc hk c).enc (setupM hk c)
+  rw [show Generic.implSpec (U := PUniv) params (impl hk c ms) (pkEnc hk c).enc (setupM hk c)
       (KGreal hk c) (CHreal hk c) = realSpec hk c from rfl,
     Generic.runWith_eagerCoins (realSpec hk c) (coinsM hk c) (gReal hk c) hchal]
-  set prog := A.machine.runOracle A.time (paramsWord dateUniverse params)
+  set prog := A.machine.runOracle A.time (paramsWord PUniv params)
   set eag := Generic.eagerCoins (realSpec hk c) (coinsM hk c) (gReal hk c)
   set sp3 := (specV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) (V0 hk c)).comap
     (toView hk c) eag.setup

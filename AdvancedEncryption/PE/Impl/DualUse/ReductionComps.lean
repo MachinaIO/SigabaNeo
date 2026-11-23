@@ -2,16 +2,17 @@ import PE.Impl.DualUse.ReductionPerQuery
 import PE.Impl.DualUse.ReductionOracle
 import PE.Impl.Game.HandlersPCost
 import PE.Impl.Game.HandlersDate
+import PE.Impl.DualUse.PUCodes
 
 /-!
 # A reduction from component programs
 
 For a step of the hybrid chain whose challenger is `specSim (setupI i) (viewI i) (sdI i)` on the
-instance `i`, the component programs `cs : Comps R (dateCodes sig) (spPack st viewI sdI)
+instance `i`, the component programs `cs : Comps R (puCodes sig) (spPack st viewI sdI)
 (setupPack inst setupI) IW Ok` (with length bounds `cb`) and a decoder `P` turning the instance
 words of the decision problem into admissible state words give a reduction (`Reduces`):
 
-* the machine is `reductionP P (Post A.time E 10 1) A (handlersP …) E q₀ q₁ L D`;
+* the machine is `reductionP P (Post A.time E nA 1) A (handlersP …) E q₀ q₁ L D`;
 * it accepts the real and the uniform words with `accOn A D Ir F` and `accOn A D Iu F`
   (`acceptProb_reductionP_accOn`, `handlesP`, `hgame_oracleW`, `hPost_post`);
 * its cost is at most `redConstP … · cost A · cost D ≤ C · (cost A + cost D)²`
@@ -35,42 +36,42 @@ set_option linter.unusedSectionVars false
 
 /-- The handlers of the components, with the cut `c.L` of the key queries. -/
 noncomputable def compHandlers {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) (W : ℕ) :
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) (W : ℕ) :
     Fin 3 → Routine (R + 5 + 3) :=
-  handlersP (dateCodes sig) cs c.L [] W
+  handlersP (puCodes sig) cs c.L [] W
 
 /-- The reduction machine of the components. -/
 noncomputable def compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ) (A : Machine 3) (D : Machine) : Machine :=
-  reductionP P (Post A.time (stateBound (dateCodes sig) W) 10 1) A (compHandlers (c := c) cs W)
-    (stateBound (dateCodes sig) W) (handlerQ0 cb []) (handlerQ1 (dateCodes sig) c.L []) L D
+  reductionP P (Post A.time (stateBound (puCodes sig) W) nA 1) A (compHandlers (c := c) cs W)
+    (stateBound (puCodes sig) W) (handlerQ0 cb []) (handlerQ1 (puCodes sig) c.L []) L D
 
 /-- The constant of the cost of the reduction of the components. -/
 noncomputable def compConst {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ) : ℕ :=
-  redConstP P (Post 0 0 10 1) (compHandlers (c := c) cs W) (stateBound (dateCodes sig) W)
-    (handlerQ0 cb []) (handlerQ1 (dateCodes sig) c.L []) L
-    (postA (stateBound (dateCodes sig) W) 10 1 + postB (stateBound (dateCodes sig) W) 10 1)
+  redConstP P (Post 0 0 nA 1) (compHandlers (c := c) cs W) (stateBound (puCodes sig) W)
+    (handlerQ0 cb []) (handlerQ1 (puCodes sig) c.L []) L
+    (postA (stateBound (puCodes sig) W) nA 1 + postB (stateBound (puCodes sig) W) nA 1)
 
 /-- **Acceptance of the reduction of the components**: on a law `μ` of words that the decoder
 maps to admissible state words `dw w` whose instances have the law `instLaw`, it accepts with
 `accOn A D instLaw F`. -/
 theorem acceptProb_compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ)
     (hpubL : ∀ σ, Ok σ → ((spPack st viewI sdI).pub σ).length ≤ L)
     (hkeyL : ∀ σ C, Ok σ → C.length ≤ c.L → ∀ sk ∈ ((spPack st viewI sdI).key σ C).support,
@@ -80,7 +81,7 @@ theorem acceptProb_compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     (hP : ∀ w ∈ μ.support, P.run w = PMF.pure (dw w))
     (hIW : ∀ w ∈ μ.support, IW (dw w) ∧ (dw w).length ≤ W ∧ (dw w).head? ≠ some false)
     (instLaw : PMF Inst) (hinst : μ.map (inst ∘ dw) = instLaw)
-    (F : Date → Inst → PMF (PK hk c × CT hk c))
+    (F : PUniv.Attr → Inst → PMF (PK hk c × CT hk c))
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hL : dateBound ≤ c.L) (hcov : SimCovered hk c)
     (hF : ∀ x i, F x i = (setupI i x).map (viewI i))
@@ -90,8 +91,8 @@ theorem acceptProb_compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     (compReduction cs cb P L A D).acceptProb μ = accOn A D instLaw F := by
   have hH := handlesP cs c.L [] (longKeys_spPack st viewI sdI Ok) cb A L hpubL
     hkeyL (by simp) hchalL
-  have hE : ∀ s, InvS IW W Ok s → ((dateCodes sig).encState s).length ≤
-      stateBound (dateCodes sig) W := fun s h => length_encState_le h
+  have hE : ∀ s, InvS IW W Ok s → ((puCodes sig).encState s).length ≤
+      stateBound (puCodes sig) W := fun s h => length_encState_le h
   unfold compReduction compHandlers
   refine acceptProb_reductionP_accOn P _ A _ _ _ _ _ _ _ L hH hE
     (fun o s => Generic.obs (o, s.2)) D μ (fun w => (dw w, {}))
@@ -104,15 +105,15 @@ theorem acceptProb_compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
 
 /-- **Cost of the reduction of the components.** -/
 theorem cost_compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ) (A : Machine 3) (D : Machine) :
     ((compReduction cs cb P L A D).cost : ℝ) ≤
       (compConst cs cb P L : ℝ) * ((A.cost + D.cost : ℕ) : ℝ) ^ 2 := by
   have h := cost_reductionP_post_struct P A (compHandlers (c := c) cs W)
-    (stateBound (dateCodes sig) W) (handlerQ0 cb []) (handlerQ1 (dateCodes sig) c.L []) L D
+    (stateBound (puCodes sig) W) (handlerQ0 cb []) (handlerQ1 (puCodes sig) c.L []) L D
   have h' : (compReduction cs cb P L A D).cost ≤ compConst cs cb P L * (A.cost * D.cost) := by
     rw [← mul_assoc]; exact h
   have hq : A.cost * D.cost ≤ (A.cost + D.cost) ^ 2 := by nlinarith
@@ -123,10 +124,10 @@ theorem cost_compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
 `accOn A D Ir F` and `accOn A D Iu F`, at cost at most `C · (cost A + cost D)²` for any
 `C ≥ compConst`. -/
 theorem reduces_of_comps {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ)
     (hpubL : ∀ σ, Ok σ → ((spPack st viewI sdI).pub σ).length ≤ L)
     (hkeyL : ∀ σ C, Ok σ → C.length ≤ c.L → ∀ sk ∈ ((spPack st viewI sdI).key σ C).support,
@@ -139,7 +140,7 @@ theorem reduces_of_comps {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     (hIWr : ∀ w ∈ μr.support, IW (dw w) ∧ (dw w).length ≤ W ∧ (dw w).head? ≠ some false)
     (hIWu : ∀ w ∈ μu.support, IW (dw w) ∧ (dw w).length ≤ W ∧ (dw w).head? ≠ some false)
     (hir : μr.map (inst ∘ dw) = Ir) (hiu : μu.map (inst ∘ dw) = Iu)
-    (F : Date → Inst → PMF (PK hk c × CT hk c))
+    (F : PUniv.Attr → Inst → PMF (PK hk c × CT hk c))
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hL : dateBound ≤ c.L) (hcov : SimCovered hk c)
     (hF : ∀ x i, F x i = (setupI i x).map (viewI i))

@@ -33,7 +33,7 @@ open SigabaNeo.Inline
 open scoped ENNReal
 
 /-- The observations of a run. -/
-abbrev Ob := List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool
+abbrev Ob := List Bool × Option PUniv.Attr × Option PUniv.Msg × Bool
 
 /-- The word `Post` writes for an observation. -/
 def postW (ob : Ob) : List Bool := if ob.2.2.2 then [false] else true :: viewObs ob
@@ -73,7 +73,7 @@ variable {m : ℕ} {σ : Type}
 /-- **The reduction machine.** -/
 noncomputable def reduction (P Post : Machine) (A : Machine 3) (H : Fin 3 → Routine (m + 3))
     (E Q L : ℕ) (D : Machine) : Machine :=
-  P.andThenLin (((A.inlineOracleInit H (paramsWord dateUniverse params) E Q L).andThenLin Post).andThenGuard D)
+  P.andThenLin (((A.inlineOracleInit H (paramsWord PUniv params) E Q L).andThenLin Post).andThenGuard D)
 
 /-- **Acceptance of the reduction machine.** -/
 theorem acceptProb_reduction {Sec Inst : Type} (P Post : Machine) (A : Machine 3)
@@ -85,16 +85,16 @@ theorem acceptProb_reduction {Sec Inst : Type} (P Post : Machine) (A : Machine 3
     (hP : ∀ w ∈ μ.support, P.run w = PMF.pure (enc (s₀ w)))
     (hPost : ∀ o s, o.length ≤ A.time → InvS s →
       Post.run (pairOut o (enc s)) = PMF.pure (postW (obsOf o s)))
-    (inst : List Bool → Inst) (setupI : Inst → Date → PMF Sec)
+    (inst : List Bool → Inst) (setupI : Inst → PUniv.Attr → PMF Sec)
     (viewI : Inst → Sec → PK hk c × CT hk c) (sdI : Inst → Sec → SimData hk c)
     (hgame : ∀ w ∈ μ.support,
-      (A.runWith orc (paramsWord dateUniverse params) (s₀ w)).map (fun r => obsOf r.1 r.2) =
+      (A.runWith orc (paramsWord PUniv params) (s₀ w)).map (fun r => obsOf r.1 r.2) =
         (A.runWith (Generic.oracle (specSim (setupI (inst w)) (viewI (inst w)) (sdI (inst w))))
-          (paramsWord dateUniverse params) {}).map Generic.obs) :
+          (paramsWord PUniv params) {}).map Generic.obs) :
     (reduction P Post A H E Q L D).acceptProb μ =
       (((μ.map inst).bind fun i =>
         ((A.runWith (Generic.oracle (specSim (setupI i) (viewI i) (sdI i)))
-          (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal := by
+          (paramsWord PUniv params) {}).map Generic.obs).bind (DcB D)) true).toReal := by
   unfold reduction
   rw [Machine.acceptProb_andThenLin_andThenGuard]
   congr 1
@@ -105,9 +105,9 @@ theorem acceptProb_reduction {Sec Inst : Type} (P Post : Machine) (A : Machine 3
     rw [hP w hw, PMF.pure_bind, Machine.run_andThenLin,
       Machine.run_inlineOracleInit A H _ orc enc InvS E Q L hH hE (s₀ w) (hs₀ w hw) _ rfl,
       PMF.bind_map, PMF.bind_bind]
-    have h1 : ((A.runWith orc (paramsWord dateUniverse params) (s₀ w)).bind
+    have h1 : ((A.runWith orc (paramsWord PUniv params) (s₀ w)).bind
         fun r => (Post.run (pairOut r.1 (enc r.2))).bind D.guardK) =
-        (((A.runWith orc (paramsWord dateUniverse params) (s₀ w)).map
+        (((A.runWith orc (paramsWord PUniv params) (s₀ w)).map
           (fun r => obsOf r.1 r.2))).bind (fun ob => D.guardK (postW ob)) := by
       rw [PMF.bind_map]
       refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ (fun r hr => ?_)
@@ -132,13 +132,13 @@ theorem acceptProb_reduction_accOn {Sec Inst : Type} (P Post : Machine) (A : Mac
     (hPost : ∀ o s, o.length ≤ A.time → InvS s →
       Post.run (pairOut o (enc s)) = PMF.pure (postW (obsOf o s)))
     (inst : List Bool → Inst) (instLaw : PMF Inst) (hinst : μ.map inst = instLaw)
-    (F : Date → Inst → PMF (PK hk c × CT hk c))
-    (setupI : Inst → Date → PMF Sec)
+    (F : PUniv.Attr → Inst → PMF (PK hk c × CT hk c))
+    (setupI : Inst → PUniv.Attr → PMF Sec)
     (viewI : Inst → Sec → PK hk c × CT hk c) (sdI : Inst → Sec → SimData hk c)
     (hgame : ∀ w ∈ μ.support,
-      (A.runWith orc (paramsWord dateUniverse params) (s₀ w)).map (fun r => obsOf r.1 r.2) =
+      (A.runWith orc (paramsWord PUniv params) (s₀ w)).map (fun r => obsOf r.1 r.2) =
         (A.runWith (Generic.oracle (specSim (setupI (inst w)) (viewI (inst w)) (sdI (inst w))))
-          (paramsWord dateUniverse params) {}).map Generic.obs)
+          (paramsWord PUniv params) {}).map Generic.obs)
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hL : dateBound ≤ c.L) (hcov : SimCovered hk c)
     (hF : ∀ x i, F x i = (setupI i x).map (viewI i))
@@ -154,7 +154,7 @@ theorem acceptProb_reduction_accOn {Sec Inst : Type} (P Post : Machine) (A : Mac
 length `Post.descLen` and time at most `pt · cost A` (it reads `A`'s output). -/
 noncomputable def redFactor (P Post : Machine) (H : Fin 3 → Routine (m + 3)) (E Q L pt : ℕ) : ℕ :=
   P.andThenLinFactor * 650000 *
-    (initFactor H Q L (paramsWord dateUniverse params).length E * (11 + 498960 * Post.descLen) +
+    (initFactor H Q L (paramsWord PUniv params).length E * (11 + 498960 * Post.descLen) +
       pt + 10)
 
 /-- **Cost of the reduction**: at most a constant (independent of `A` and `D`) times
@@ -163,29 +163,29 @@ theorem cost_reduction_le (P Post : Machine) (A : Machine 3) (H : Fin 3 → Rout
     (E Q L pt : ℕ) (D : Machine) (hPostT : Post.time ≤ pt * A.cost) :
     (reduction P Post A H E Q L D).cost ≤ redFactor P Post H E Q L pt * A.cost * D.cost := by
   unfold reduction redFactor
-  set Inl := A.inlineOracleInit H (paramsWord dateUniverse params) E Q L
+  set Inl := A.inlineOracleInit H (paramsWord PUniv params) E Q L
   have h1 := Machine.cost_andThenLin_andThenGuard_le P (Inl.andThenLin Post) D
   have ht := Machine.time_andThenLin_le Inl Post
   have hd := Machine.descLen_andThenLin_le Inl Post
-  have h3 := A.cost_inlineOracleInit_le H (paramsWord dateUniverse params) E Q L
+  have h3 := A.cost_inlineOracleInit_le H (paramsWord PUniv params) E Q L
   have hA := A.one_le_cost
   have hIt : Inl.time ≤ Inl.cost := by unfold Machine.cost; omega
   have hM : (Inl.andThenLin Post).cost ≤
-      (initFactor H Q L (paramsWord dateUniverse params).length E * (11 + 498960 * Post.descLen) +
+      (initFactor H Q L (paramsWord PUniv params).length E * (11 + 498960 * Post.descLen) +
         pt + 10) * A.cost := by
     have e : (Inl.andThenLin Post).cost = (Inl.andThenLin Post).time + (Inl.andThenLin Post).descLen :=
       rfl
     rw [e]
     have h4 : 498960 * Inl.cost * Post.descLen ≤
-        498960 * Post.descLen * (initFactor H Q L (paramsWord dateUniverse params).length E * A.cost) := by
+        498960 * Post.descLen * (initFactor H Q L (paramsWord PUniv params).length E * A.cost) := by
       calc 498960 * Inl.cost * Post.descLen = 498960 * Post.descLen * Inl.cost := by ring
         _ ≤ _ := Nat.mul_le_mul_left _ h3
-    have h5 : 11 * Inl.time ≤ 11 * (initFactor H Q L (paramsWord dateUniverse params).length E * A.cost) :=
+    have h5 : 11 * Inl.time ≤ 11 * (initFactor H Q L (paramsWord PUniv params).length E * A.cost) :=
       Nat.mul_le_mul_left _ (hIt.trans h3)
     nlinarith
   calc _ ≤ _ := h1
     _ ≤ P.andThenLinFactor * 650000 *
-          ((initFactor H Q L (paramsWord dateUniverse params).length E * (11 + 498960 * Post.descLen) +
+          ((initFactor H Q L (paramsWord PUniv params).length E * (11 + 498960 * Post.descLen) +
             pt + 10) * A.cost) * D.cost := by gcongr
     _ = _ := by ring
 

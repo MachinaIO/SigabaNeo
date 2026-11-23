@@ -26,7 +26,7 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncr
 open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
 
 theorem len_Attr {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) :
-    (Enum.list (α := (Sdw (N := N) hk).Attr)).length = 10 := len_fin 10
+    (Enum.list (α := (Sdw (N := N) hk).Attr)).length = nA := len_fin nA
 
 theorem len_Index {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) :
     (Enum.list (α := (Sdw (N := N) hk).ctBits.Index)).length = 2 * (2 * k * (k * N)) := by

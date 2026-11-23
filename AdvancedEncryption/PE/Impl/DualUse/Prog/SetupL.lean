@@ -155,18 +155,18 @@ section Counts
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
-theorem nW_eq : nW hk c = 10 * (2 * (2 * k * (k * N))) * (2 * k) * c.d := by
+theorem nW_eq : nW hk c = nA * (2 * (2 * k * (k * N))) * (2 * k) * c.d := by
   simp [nW, len_JC, len_fin]
 
-theorem nR_eq : nR hk c = 10 * (2 * k) * c.d := by
-  show (Enum.list (α := Fin 10 × RingBTVW.Col k)).length * (List.finRange c.d).length = _
+theorem nR_eq : nR hk c = nA * (2 * k) * c.d := by
+  show (Enum.list (α := Fin nA × RingBTVW.Col k)).length * (List.finRange c.d).length = _
   simp [Enum.length_prod, len_fin, len_col]
 
-theorem nE_eq : nE (N := N) hk = 10 * (2 * (2 * k * (k * N))) * (2 * k) * N := by
+theorem nE_eq : nE (N := N) hk = nA * (2 * (2 * k * (k * N))) * (2 * k) * N := by
   simp only [nE, Enum.length_prod, len_Attr, len_Index, len_col, len_fin]
 
-theorem nPsi_eq : nPsi (N := N) hk = 10 * (2 * (2 * k * (N * K))) := by
-  show (Enum.list (α := Fin 10)).length * ((Enum.list (α := Fin 2)).length *
+theorem nPsi_eq : nPsi (N := N) hk = nA * (2 * (2 * k * (N * K))) := by
+  show (Enum.list (α := Fin nA)).length * ((Enum.list (α := Fin 2)).length *
     ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) = _
   simp only [len_fin, len_col]
 
@@ -175,7 +175,7 @@ theorem nC0_eq : nC0 (N := N) (K := K) c = c.d * (N * K) := by simp [nC0, len_fi
 theorem nC1_eq : nC1 (N := N) (K := K) (k := k) = (1 + (2 * k + 2 * k)) * (N * K) := by
   simp [nC1, len_fin, len_trap]
 
-theorem nCj_eq : nCj (N := N) hk = 10 * (2 * (2 * k * (k * N))) * (2 * k * (N * K)) := by
+theorem nCj_eq : nCj (N := N) hk = nA * (2 * (2 * k * (k * N))) * (2 * k * (N * K)) := by
   simp only [nCj, len_AI, len_fin, len_col]; ring
 
 theorem lenFin (n : ℕ) : (Enum.list (α := Fin n)).length = n := len_fin n

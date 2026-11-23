@@ -19,7 +19,7 @@ components' sizes `≤ 2 ^ s`; their time `compTimeP cb ≤ 2 ^ τ`; the length 
 
 * the handler states (`states_handlersP`, `size_handlerProgP_le`): each at most
   `10638 + 264 c.L + 10 · 2 ^ s`;
-* the post-processing `Post 0 0 10 1`: `4714` states and `8` tapes (`states_post_date`,
+* the post-processing `Post 0 0 nA 1`: `4714` states and `8` tapes (`states_post_date`,
   `tapes_post_eq`);
 * the parameter word: `515` bits (`length_paramsWord_date`);
 * the slope of the clock (`chainSlope_comp_le`): at most `11 · compTimeP cb + 898942 · 4 ^ ℓ`.
@@ -38,41 +38,39 @@ variable {Sec Inst : Type} {nS : ℕ}
 set_option linter.unusedSectionVars false
 
 /-- The parameter word of the date-window universe has `515` bits. -/
-theorem length_paramsWord_date : (paramsWord dateUniverse params).length = 515 := by
-  rw [paramsWord, encodeTuple, Turing.MultiTapeTM.length_encList]
-  simp [params, dateUniverse, Turing.MultiTapeTM.encBits]
+theorem length_paramsWord_date : (paramsWord dateUniverse params).length = 515 := length_paramsWord_pu
 
-theorem nA_dateCodes {Sig : Type} (sig : FixedEnc Sig nS) : (dateCodes sig).nA = 10 := rfl
-theorem nM_dateCodes {Sig : Type} (sig : FixedEnc Sig nS) : (dateCodes sig).nM = 1 := rfl
-theorem nS_dateCodes {Sig : Type} (sig : FixedEnc Sig nS) : (dateCodes sig).nS = nS := rfl
+theorem nA_dateCodes {Sig : Type} (sig : FixedEnc Sig nS) : (puCodes sig).nA = 10 := rfl
+theorem nM_dateCodes {Sig : Type} (sig : FixedEnc Sig nS) : (puCodes sig).nM = 1 := rfl
+theorem nS_dateCodes {Sig : Type} (sig : FixedEnc Sig nS) : (puCodes sig).nS = nS := rfl
 
-theorem postPc_date : postPc 10 1 = 94 := by decide
+theorem postPc_date : postPc nA 1 = 94 := by decide
 
 /-- The slope of the post-processing of the date-window codes. -/
 theorem postSlope_date (E : ℕ) :
-    postA E 10 1 + postB E 10 1 = 19939 + 1198 * E + 70 * (E * E) := by
+    postA E nA 1 + postB E nA 1 = 19939 + 1198 * E + 70 * (E * E) := by
   simp only [postA, postB, postClock, postProgTime, postM, postPc_date]
   ring
 
 /-- The bound on the encoded states, for the date-window codes. -/
 theorem stateBound_date_le {Sig : Type} (sig : FixedEnc Sig nS) {W X : ℕ} (hW : W ≤ X)
-    (hnS : nS ≤ X) : stateBound (dateCodes sig) W ≤ X + 14 := by
+    (hnS : nS ≤ X) : stateBound (puCodes sig) W ≤ X + 14 := by
   simp only [stateBound, nA_dateCodes, nM_dateCodes, nS_dateCodes]
   omega
 
 /-- **The handler states of the components**: each at most `10638 + 264 c.L + 10 · 2 ^ s`. -/
 theorem states_compHandlers_le {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) (W s : ℕ)
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) (W s : ℕ)
     (hsetup : cs.setupP.size ≤ 2 ^ s) (hpub : cs.pubP.size ≤ 2 ^ s)
     (hkey : cs.keyP.size ≤ 2 ^ s) (hauth : cs.authP.size ≤ 2 ^ s) (hchal : cs.chalP.size ≤ 2 ^ s)
     (o : Fin 3) :
     (compHandlers (c := c) cs W o).states ≤ 10638 + 264 * c.L + 10 * 2 ^ s := by
   unfold compHandlers
   rw [states_handlersP]
-  have h := size_handlerProgP_le (dateCodes sig) cs c.L [] o
+  have h := size_handlerProgP_le (puCodes sig) cs c.L [] o
   simp only [glueSize, nA_dateCodes, nM_dateCodes, List.length_nil] at h
   omega
 
@@ -96,16 +94,16 @@ theorem slope_arith (N M E L T X : ℕ) (hX : 1 ≤ X) (hN : N ≤ 177 * X) (hM 
 /-- **The slope of the clock of the reduction from components**: at most
 `11 · compTimeP cb + 898942 X²` when every length bound is at most `X ≥ 1`. -/
 theorem chainSlope_comp_le {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (L X : ℕ) (hX : 1 ≤ X)
     (hSsig : cb.Ssig ≤ X) (hLp : cb.Lp ≤ X) (hLk : cb.Lk ≤ X) (hLa : cb.La ≤ X) (hLc : cb.Lc ≤ X)
     (hW : W ≤ X) (hnS : nS ≤ X) (hcL : c.L ≤ X) (hL : L ≤ X) :
-    chainSlope 3 (handlerQ0 cb [] + handlerQ1 (dateCodes sig) c.L [] * 3) L
-        (stateBound (dateCodes sig) W)
-        (postA (stateBound (dateCodes sig) W) 10 1 + postB (stateBound (dateCodes sig) W) 10 1) ≤
+    chainSlope 3 (handlerQ0 cb [] + handlerQ1 (puCodes sig) c.L [] * 3) L
+        (stateBound (puCodes sig) W)
+        (postA (stateBound (puCodes sig) W) nA 1 + postB (stateBound (puCodes sig) W) nA 1) ≤
       11 * compTimeP cb + 898942 * (X * X) := by
   have hE := stateBound_date_le sig hW hnS
   rw [postSlope_date]
@@ -118,10 +116,10 @@ bounds on the decoder `P` (states `≤ 2 ^ r`, time `≤ 2 ^ t`, tapes `≤ p`),
 (sizes `≤ 2 ^ s`, time `compTimeP cb ≤ 2 ^ τ`), on the lengths (`≤ 2 ^ ℓ`) and on the cut `c.L ≤ 2 ^ lc`
 (which alone enters the states of the handlers, so `ℓ` need not be below `r`). -/
 theorem compConst_le_two_pow {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ) (r t p s τ ℓ lc k' g : ℕ)
     (hsP : P.states ≤ 2 ^ r) (htP : P.time ≤ 2 ^ t) (hpP : P.tapes ≤ p)
     (hsetup : cs.setupP.size ≤ 2 ^ s) (hpub : cs.pubP.size ≤ 2 ^ s)
@@ -142,8 +140,8 @@ theorem compConst_le_two_pow {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
   have hr13 : 2 ^ 13 ≤ 2 ^ r := Nat.pow_le_pow_right (by norm_num) (by omega)
   -- the handler term
   have hZ : 27 * (1 + ∑ o, (9 + (compHandlers (c := c) cs W o).states)) *
-      ((paramsWord dateUniverse params).length + 3) ≤ 2 ^ r := by
-    rw [length_paramsWord_date, Fin.sum_univ_three]
+      ((paramsWord PUniv params).length + 3) ≤ 2 ^ r := by
+    rw [length_paramsWord_pu, Fin.sum_univ_three]
     have h0 := states_compHandlers_le (c := c) cs W s hsetup hpub hkey hauth hchal 0
     have h1 := states_compHandlers_le (c := c) cs W s hsetup hpub hkey hauth hchal 1
     have h2 := states_compHandlers_le (c := c) cs W s hsetup hpub hkey hauth hchal 2
@@ -160,7 +158,7 @@ theorem compConst_le_two_pow {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
   have hτ : 2 ^ τ * 2 ^ 5 ≤ 2 ^ t := by
     rw [← pow_add]; exact Nat.pow_le_pow_right (by norm_num) (by omega)
   unfold compConst
-  refine redConstP_le_two_pow P (Post 0 0 10 1) (compHandlers (c := c) cs W) _ _ _ L _ r t k' g
+  refine redConstP_le_two_pow P (Post 0 0 nA 1) (compHandlers (c := c) cs W) _ _ _ L _ r t k' g
     hsP (by rw [states_post_date]; exact le_trans (by norm_num) hr13) hZ htP ?_ (by omega)
     (by rw [tapes_post_eq]; omega) hg
   refine hc.trans ?_

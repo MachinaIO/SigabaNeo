@@ -47,13 +47,13 @@ bits: `attributeHiding_conf` with the `W_f` block `wfB2 hkp confP 512`. -/
 theorem attributeHiding_conf_rlwe (kb : ℕ) (hkb : 2645 ≤ kb)
     (hard3 : RingLWE.decision.HardAt (params3 Np (2 ^ Kp) kp (.cbd 16)) kb)
     (hard5 : RingLWE.decision.HardAt (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16)) kb) :
-    AttributeHiding dateUniverse params (impl hkp confP ms) :=
+    AttributeHiding PUniv params (impl hkp confP ms) :=
   attributeHiding_conf wfSpec_wfB2_confP wfCost_wfB2 (by norm_num) Wc_ge Wc_le kb hkb hard3 hard5
 
 /-- **Attribute hiding of the concrete scheme from the registry's decision Ring-LWE alone**:
 the only hypothesis is the assumption `RingLWE.decision.Holds`. -/
 theorem attributeHiding_conf_registry' (hR : RingLWE.decision.Holds) :
-    AttributeHiding dateUniverse params (impl hkp confP ms) :=
+    AttributeHiding PUniv params (impl hkp confP ms) :=
   attributeHiding_conf_registry hR wfSpec_wfB2_confP wfCost_wfB2 (by norm_num) Wc_ge Wc_le
 
 /-- **Attribute hiding of the compiled implementation** `implP` at `confP` from the registry's
@@ -61,7 +61,7 @@ decision Ring-LWE, with the `W_f` block `wfB2 hkp confP 512` in the reductions. 
 theorem attributeHiding_implP_registry' (hR : RingLWE.decision.Holds) (X : ChiSampler confP)
     {bfX cfX : XProg 256} {W W' : ℕ} (hbf : BfSpec hkp confP bfX W) (hcfX : CfSpec hkp confP cfX W')
     (hK2 : 2 ≤ Kp) :
-    AttributeHiding dateUniverse params (implP hkp confP X hbf hcfX cfP cfP_valid hK2) :=
+    AttributeHiding PUniv params (implP hkp confP X hbf hcfX cfP cfP_valid hK2) :=
   attributeHiding_implP_registry hR X hbf hcfX hK2 wfSpec_wfB2_confP wfCost_wfB2 (by norm_num)
     Wc_ge Wc_le
 

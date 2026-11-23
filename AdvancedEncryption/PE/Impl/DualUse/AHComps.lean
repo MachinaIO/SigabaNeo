@@ -27,16 +27,16 @@ variable {ms : Machines hk c}
 /-- The components of a reduction whose challenger is `spPack · viewI sdI` on instances `Inst`
 encoded by `ienc` behind a `true`, with the setup `setupI`. -/
 structure Bundle {Inst Sec : Type} {nI : ℕ} (ienc : FixedEnc Inst nI)
-    (setupI : Date → PMF Sec) (viewI : Inst → Sec → PK hk c × CT hk c)
+    (setupI : PUniv.Attr → PMF Sec) (viewI : Inst → Sec → PK hk c × CT hk c)
     (sdI : Inst → Sec → SimData hk c) where
   R : ℕ
   nS : ℕ
   sig : FixedEnc (Inst × Sec) nS
-  st : dateUniverse.Attr → PMF (Inst × Sec)
+  st : PUniv.Attr → PMF (Inst × Sec)
   inst : List Bool → Inst
   IW : List Bool → Prop
   Ok : Inst × Sec → Prop
-  cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst fun _ => setupI) IW Ok
+  cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst fun _ => setupI) IW Ok
   W : ℕ
   cb : CompBoundsP cs c.L W
   L : ℕ
@@ -51,7 +51,7 @@ variable {hk c}
 
 /-- The constant of a bundle with the decoder `P`. -/
 noncomputable def Bundle.const {Inst Sec : Type} {nI : ℕ} {ienc : FixedEnc Inst nI}
-    {setupI : Date → PMF Sec} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {setupI : PUniv.Attr → PMF Sec} {viewI : Inst → Sec → PK hk c × CT hk c}
     {sdI : Inst → Sec → SimData hk c} (B : Bundle hk c ienc setupI viewI sdI) (P : Machine) : ℕ :=
   compConst B.cs B.cb P B.L
 
@@ -79,7 +79,7 @@ theorem attributeHiding_of_comps
       (ModuleLWE.idealLaw (params3 N (2 ^ K) k err).toModule)).HardAt kb)
     (hard5 : (Problem.decision (ModuleLWE.realLaw (params5 N (2 ^ K) k (Fin c.d) err).toModule)
       (ModuleLWE.idealLaw (params5 N (2 ^ K) k (Fin c.d) err).toModule)).HardAt kb) :
-    AttributeHiding dateUniverse params (impl hk c ms) :=
+    AttributeHiding PUniv params (impl hk c ms) :=
   attributeHiding_of_reductions hdec hcov hflood hS hstat _ _ _ _ _ _ kb C hC hk64 hard3 hard5 hard3
     fun A D _ =>
       ⟨reduces3_of_comps B3.cs B3.cb B3.L B3.hpubL B3.hkeyL B3.hchalL B3.hinv B3.hIW err hχ hdec
@@ -111,7 +111,7 @@ theorem attributeHiding_of_comps_rlwe
     (hk64 : 64 * ((2 : ℝ) ^ params.secBits) ^ 2 * C ≤ (2 : ℝ) ^ kb)
     (hard3 : RingLWE.decision.HardAt (params3 N (2 ^ K) k err) kb)
     (hard5 : RingLWE.decision.HardAt (params5 N (2 ^ K) k (Fin c.d) err) kb) :
-    AttributeHiding dateUniverse params (impl hk c ms) :=
+    AttributeHiding PUniv params (impl hk c ms) :=
   attributeHiding_of_comps hdec hcov hL hscov hflood hS hstat err hχ B3 B5 BI kb C hC hC3 hC5 hCI
     hk64 hard3 hard5
 

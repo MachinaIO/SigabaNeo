@@ -71,10 +71,10 @@ theorem compBound_mono {sP tP p R Sz Lc Tc X t sP' tP' Sz' Lc' Tc' X' : ℕ} (h1
 `chainConst`, with the handlers' states bounded by the glue and twice the sum of the components'
 sizes. -/
 theorem compConst_le_explicit {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ) (sP tP p Sz Lc Tc X t : ℕ)
     (hsP : P.states ≤ sP) (htP : P.time ≤ tP) (hpP : P.tapes ≤ p)
     (hSz : cs.setupP.size + cs.pubP.size + cs.keyP.size + cs.authP.size + cs.chalP.size ≤ Sz)
@@ -85,26 +85,26 @@ theorem compConst_le_explicit {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     compConst cs cb P L ≤ compBound sP tP p R Sz Lc Tc X t := by
   -- the slope
   have hc := chainSlope_comp_le (c := c) cs cb L X hX hSsig hLp hLk hLa hLc hW hnS hcL hL
-  have hc' : chainSlope 3 (handlerQ0 cb [] + handlerQ1 (dateCodes sig) c.L [] * 3) L
-      (stateBound (dateCodes sig) W)
-      (postA (stateBound (dateCodes sig) W) 10 1 + postB (stateBound (dateCodes sig) W) 10 1) ≤
+  have hc' : chainSlope 3 (handlerQ0 cb [] + handlerQ1 (puCodes sig) c.L [] * 3) L
+      (stateBound (puCodes sig) W)
+      (postA (stateBound (puCodes sig) W) nA 1 + postB (stateBound (puCodes sig) W) nA 1) ≤
       11 * Tc + 898942 * (X * X) := hc.trans (by omega)
   -- the handlers
   have hH : ∀ o, (compHandlers (c := c) cs W o).states ≤ 10638 + 264 * Lc + 2 * Sz := by
     intro o
     unfold compHandlers
     rw [states_handlersP]
-    have h := size_handlerProgP_le (dateCodes sig) cs c.L [] o
+    have h := size_handlerProgP_le (puCodes sig) cs c.L [] o
     simp only [glueSize, nA_dateCodes, nM_dateCodes, List.length_nil] at h
     omega
   -- the states of the chain
-  set Q := handlerQ0 cb [] + handlerQ1 (dateCodes sig) c.L [] * 3
-  set E := stateBound (dateCodes sig) W
-  set pt := postA E 10 1 + postB E 10 1
-  have hS : chainStates P (Post 0 0 10 1) (compHandlers (c := c) cs W) Q L E pt
-      (paramsWord dateUniverse params).length ≤ compStatesB sP Sz Lc t := by
+  set Q := handlerQ0 cb [] + handlerQ1 (puCodes sig) c.L [] * 3
+  set E := stateBound (puCodes sig) W
+  set pt := postA E nA 1 + postB E nA 1
+  have hS : chainStates P (Post 0 0 nA 1) (compHandlers (c := c) cs W) Q L E pt
+      (paramsWord PUniv params).length ≤ compStatesB sP Sz Lc t := by
     unfold chainStates compStatesB
-    rw [length_paramsWord_date, Fin.sum_univ_three, states_post_date]
+    rw [length_paramsWord_pu, Fin.sum_univ_three, states_post_date]
     have hP := (clockDigits_length_le_size P.tapes P.time).trans
       (size_le_of_le_two_pow (htP.trans htt))
     have hcI : inlSlope 3 Q L E ≤ 2 ^ t := by
@@ -121,16 +121,16 @@ theorem compConst_le_explicit {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     have : 4 * (27 * (1 + (9 + a + (9 + b) + (9 + d)))) * (515 + 3) ≤ 55944 * (28 + 3 * Y) := by
       omega
     omega
-  have hk : chainTapes P (Post 0 0 10 1) 3 (R + 5) ≤ p + R + 30 := by
+  have hk : chainTapes P (Post 0 0 nA 1) 3 (R + 5) ≤ p + R + 30 := by
     unfold chainTapes; rw [tapes_post_eq]; omega
   unfold compConst redConstP chainConst
   unfold compBound
   have hsz := Nat.size_le_size hS
   have h3 := Nat.pow_le_pow_right (show 0 < 3 by norm_num) hk
-  have hm : 60 * chainStates P (Post 0 0 10 1) (compHandlers (c := c) cs W) Q L E pt
-        (paramsWord dateUniverse params).length * 3 ^ chainTapes P (Post 0 0 10 1) 3 (R + 5) *
-      (5 + 4 * chainTapes P (Post 0 0 10 1) 3 (R + 5) + Nat.size (chainStates P (Post 0 0 10 1)
-        (compHandlers (c := c) cs W) Q L E pt (paramsWord dateUniverse params).length)) ≤
+  have hm : 60 * chainStates P (Post 0 0 nA 1) (compHandlers (c := c) cs W) Q L E pt
+        (paramsWord PUniv params).length * 3 ^ chainTapes P (Post 0 0 nA 1) 3 (R + 5) *
+      (5 + 4 * chainTapes P (Post 0 0 nA 1) 3 (R + 5) + Nat.size (chainStates P (Post 0 0 nA 1)
+        (compHandlers (c := c) cs W) Q L E pt (paramsWord PUniv params).length)) ≤
       60 * compStatesB sP Sz Lc t * 3 ^ (p + R + 30) *
         (5 + 4 * (p + R + 30) + Nat.size (compStatesB sP Sz Lc t)) := by
     gcongr
@@ -142,10 +142,10 @@ theorem compConst_le_explicit {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
 /-- **The states of the three handlers together**: the glue, the selection's components twice
 (both branches of its state test), the key, authorization and challenge components once. -/
 theorem sum_states_compHandlers {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) (W : ℕ) :
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) (W : ℕ) :
     (compHandlers (c := c) cs W 0).states + (compHandlers (c := c) cs W 1).states +
         (compHandlers (c := c) cs W 2).states =
       22023 + 264 * c.L + (2 * (cs.setupP.size + cs.pubP.size) + cs.keyP.size + cs.authP.size +
@@ -173,10 +173,10 @@ def compBound2 (sP tP p R Sz2 Lc Tc X t : ℕ) : ℕ :=
 charged its own components: as `compConst_le_explicit` with
 `2 (|setupP| + |pubP|) + |keyP| + |authP| + |chalP| ≤ Sz2` (the key component counted once). -/
 theorem compConst_le_explicit2 {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
-    {st : dateUniverse.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
-    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → Date → PMF Sec}
+    {st : PUniv.Attr → PMF (Inst × Sec)} {viewI : Inst → Sec → PK hk c × CT hk c}
+    {sdI : Inst → Sec → SimData hk c} {inst : List Bool → Inst} {setupI : Inst → PUniv.Attr → PMF Sec}
     {IW : List Bool → Prop} {Ok : Inst × Sec → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
+    (cs : Comps R (puCodes sig) (spPack st viewI sdI) (setupPack inst setupI) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (P : Machine) (L : ℕ) (sP tP p Sz2 Lc Tc X t : ℕ)
     (hsP : P.states ≤ sP) (htP : P.time ≤ tP) (hpP : P.tapes ≤ p)
     (hSz : 2 * (cs.setupP.size + cs.pubP.size) + cs.keyP.size + cs.authP.size + cs.chalP.size ≤ Sz2)
@@ -186,18 +186,18 @@ theorem compConst_le_explicit2 {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     (hcL' : c.L ≤ Lc) (htt : tP ≤ 2 ^ t) (hst : 11 * Tc + 898942 * (X * X) ≤ 2 ^ t) :
     compConst cs cb P L ≤ compBound2 sP tP p R Sz2 Lc Tc X t := by
   have hc := chainSlope_comp_le (c := c) cs cb L X hX hSsig hLp hLk hLa hLc hW hnS hcL hL
-  have hc' : chainSlope 3 (handlerQ0 cb [] + handlerQ1 (dateCodes sig) c.L [] * 3) L
-      (stateBound (dateCodes sig) W)
-      (postA (stateBound (dateCodes sig) W) 10 1 + postB (stateBound (dateCodes sig) W) 10 1) ≤
+  have hc' : chainSlope 3 (handlerQ0 cb [] + handlerQ1 (puCodes sig) c.L [] * 3) L
+      (stateBound (puCodes sig) W)
+      (postA (stateBound (puCodes sig) W) nA 1 + postB (stateBound (puCodes sig) W) nA 1) ≤
       11 * Tc + 898942 * (X * X) := hc.trans (by omega)
   have hH := sum_states_compHandlers (c := c) cs W
-  set Q := handlerQ0 cb [] + handlerQ1 (dateCodes sig) c.L [] * 3
-  set E := stateBound (dateCodes sig) W
-  set pt := postA E 10 1 + postB E 10 1
-  have hS : chainStates P (Post 0 0 10 1) (compHandlers (c := c) cs W) Q L E pt
-      (paramsWord dateUniverse params).length ≤ compStatesB2 sP Sz2 Lc t := by
+  set Q := handlerQ0 cb [] + handlerQ1 (puCodes sig) c.L [] * 3
+  set E := stateBound (puCodes sig) W
+  set pt := postA E nA 1 + postB E nA 1
+  have hS : chainStates P (Post 0 0 nA 1) (compHandlers (c := c) cs W) Q L E pt
+      (paramsWord PUniv params).length ≤ compStatesB2 sP Sz2 Lc t := by
     unfold chainStates compStatesB2
-    rw [length_paramsWord_date, Fin.sum_univ_three, states_post_date]
+    rw [length_paramsWord_pu, Fin.sum_univ_three, states_post_date]
     have hP := (clockDigits_length_le_size P.tapes P.time).trans
       (size_le_of_le_two_pow (htP.trans htt))
     have hcI : inlSlope 3 Q L E ≤ 2 ^ t := by
@@ -214,16 +214,16 @@ theorem compConst_le_explicit2 {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     have : 4 * (27 * (1 + (9 + a + (9 + b) + (9 + d)))) * (515 + 3) ≤
         55944 * (28 + 22023 + 264 * Lc + Sz2) := by omega
     omega
-  have hk : chainTapes P (Post 0 0 10 1) 3 (R + 5) ≤ p + R + 30 := by
+  have hk : chainTapes P (Post 0 0 nA 1) 3 (R + 5) ≤ p + R + 30 := by
     unfold chainTapes; rw [tapes_post_eq]; omega
   unfold compConst redConstP chainConst
   unfold compBound2
   have hsz := Nat.size_le_size hS
   have h3 := Nat.pow_le_pow_right (show 0 < 3 by norm_num) hk
-  have hm : 60 * chainStates P (Post 0 0 10 1) (compHandlers (c := c) cs W) Q L E pt
-        (paramsWord dateUniverse params).length * 3 ^ chainTapes P (Post 0 0 10 1) 3 (R + 5) *
-      (5 + 4 * chainTapes P (Post 0 0 10 1) 3 (R + 5) + Nat.size (chainStates P (Post 0 0 10 1)
-        (compHandlers (c := c) cs W) Q L E pt (paramsWord dateUniverse params).length)) ≤
+  have hm : 60 * chainStates P (Post 0 0 nA 1) (compHandlers (c := c) cs W) Q L E pt
+        (paramsWord PUniv params).length * 3 ^ chainTapes P (Post 0 0 nA 1) 3 (R + 5) *
+      (5 + 4 * chainTapes P (Post 0 0 nA 1) 3 (R + 5) + Nat.size (chainStates P (Post 0 0 nA 1)
+        (compHandlers (c := c) cs W) Q L E pt (paramsWord PUniv params).length)) ≤
       60 * compStatesB2 sP Sz2 Lc t * 3 ^ (p + R + 30) *
         (5 + 4 * (p + R + 30) + Nat.size (compStatesB2 sP Sz2 Lc t)) := by
     gcongr

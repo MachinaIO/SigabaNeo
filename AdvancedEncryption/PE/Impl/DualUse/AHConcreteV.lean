@@ -95,7 +95,7 @@ theorem compBound_conf :
 section Step
 
 variable {Inst Sec : Type} [Nonempty Inst] {nI nσ : ℕ} {ienc : FixedEnc Inst nI}
-  {senc : FixedEnc Sec nσ} {setupI : Date → PMF Sec}
+  {senc : FixedEnc Sec nσ} {setupI : PUniv.Attr → PMF Sec}
   {viewI : Inst → Sec → PK hkp confP × CT hkp confP} {sdI : Inst → Sec → SimData hkp confP}
 variable (S : StepComps ienc senc setupI viewI sdI) {wfB : XProg 256} {Wg : ℕ}
   (hwf : WfSpec hkp confP wfB Wg)
@@ -107,7 +107,7 @@ theorem hW2' : Wg ≤ 2 ^ 200 := hW2.trans (Nat.pow_le_pow_right (by norm_num) (
 /-- **The key component of a step, per tape**: at most `2^T + 2^520` steps. -/
 theorem key_timeV :
     timeBoundT (keyP hkp confP S.sdP wfB Wg cfP)
-        (io2 (R := 254) (sigBound (dateCodes (ienc.prod senc)) (2 ^ 180)) confP.L 0) ≤
+        (io2 (R := 254) (sigBound (puCodes (ienc.prod senc)) (2 ^ 180)) confP.L 0) ≤
       2 ^ T + 2 ^ 520 :=
   (time_keyP_confV (S.time_sd (sigBound_le S) (by positivity))
     (S.len_sd (sigBound_le S) (by positivity)) hW1 (hW2' hcost hW1 hW2) hcost.time hcost.len).1
@@ -118,8 +118,8 @@ theorem compTime_leV (hT : T ≤ 650) :
   have h1 := S.time_setup (stateBound_le S) le_rfl
   have h2 := S.time_pub (a := 2 ^ 182) (b := 0) le_rfl (by positivity)
   have h3 := key_timeV S hcost hW1 hW2
-  have h4 := time_authL (a := confP.L) (b := 10) (confP_L_le.trans (by norm_num)) le_rfl
-  have h5 := S.time_chal (a := sigBound (dateCodes (ienc.prod senc)) (2 ^ 180)) (b := 1)
+  have h4 := authC_spec.time (a := confP.L) (b := nA) (confP_L_le.trans (by norm_num)) le_rfl
+  have h5 := S.time_chal (a := sigBound (puCodes (ienc.prod senc)) (2 ^ 180)) (b := 1)
     (sigBound_le S) (by show (1 : ℕ) ≤ 2 ^ 180; norm_num)
   have hT' : (2 : ℕ) ^ T ≤ 2 ^ 650 := Nat.pow_le_pow_right (by norm_num) hT
   have hk' := h3.trans (Nat.add_le_add_right hT' (2 ^ 520))
@@ -135,14 +135,14 @@ theorem sizes_leV :
   rw [lenPK_eq] at hk
   have h1 := S.size_setup
   have h2 := S.size_pub
-  have h4 := size_authL
+  have h4 := authC_spec.size
   have h5 := S.size_chal
-  show 2 * (S.setupP.size + S.pubP.size) + (keyP hkp confP S.sdP wfB Wg cfP).size + authL.size +
+  show 2 * (S.setupP.size + S.pubP.size) + (keyP hkp confP S.sdP wfB Wg cfP).size + authC.size +
     S.chalP.size ≤ SzP
   generalize S.setupP.size = a at *
   generalize S.pubP.size = b at *
   generalize (keyP hkp confP S.sdP wfB Wg cfP).size = d at *
-  generalize authL.size = e at *
+  generalize authC.size = e at *
   generalize S.chalP.size = f at *
   have : 2 * ((2 : ℕ) ^ 25 + 2 ^ 25) + 2 ^ 140 + 2 ^ 19 + 2 ^ 25 ≤ 2 ^ 141 := by norm_num
   unfold SzP
@@ -186,10 +186,10 @@ theorem attributeHiding_conf' {wfB : XProg 256} {Wg T : ℕ} (hwf : WfSpec hkp c
     (kb : ℕ) (hkb : 949 ≤ kb)
     (hard3 : RingLWE.decision.HardAt (params3 Np (2 ^ Kp) kp (.cbd 16)) kb)
     (hard5 : RingLWE.decision.HardAt (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16)) kb) :
-    AttributeHiding dateUniverse params (impl hkp confP ms) := by
+    AttributeHiding PUniv params (impl hkp confP ms) := by
   have hW2' : Wg ≤ 2 ^ 200 := hW2.trans (Nat.pow_le_pow_right (by norm_num) (by norm_num))
   have hC : ∀ {Inst Sec : Type} [Nonempty Inst] {nI nσ : ℕ} {ienc : FixedEnc Inst nI}
-      {senc : FixedEnc Sec nσ} {setupI : Date → PMF Sec}
+      {senc : FixedEnc Sec nσ} {setupI : PUniv.Attr → PMF Sec}
       {viewI : Inst → Sec → PK hkp confP × CT hkp confP} {sdI : Inst → Sec → SimData hkp confP}
       (S : StepComps ienc senc setupI viewI sdI) (P : Machine), P.states ≤ 2 ^ 16 →
       P.time ≤ 2 ^ 350 → P.tapes ≤ 14 →
@@ -211,7 +211,7 @@ theorem attributeHiding_conf' {wfB : XProg 256} {Wg T : ℕ} (hwf : WfSpec hkp c
 theorem attributeHiding_conf_rlwe' (kb : ℕ) (hkb : 949 ≤ kb)
     (hard3 : RingLWE.decision.HardAt (params3 Np (2 ^ Kp) kp (.cbd 16)) kb)
     (hard5 : RingLWE.decision.HardAt (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16)) kb) :
-    AttributeHiding dateUniverse params (impl hkp confP ms) :=
+    AttributeHiding PUniv params (impl hkp confP ms) :=
   attributeHiding_conf' wfSpec_wfB2_confP wfCostV_wfB2 (by norm_num) Wc_ge Wc_le' kb hkb hard3 hard5
 
 /-- **The registry's strength covers the strength needed**: `949 ≤ 2650 ≤ RingLWE.H` at the
@@ -226,7 +226,7 @@ theorem registry_covers_kb :
 /-- **Attribute hiding of the concrete scheme from the registry's decision Ring-LWE alone**, via
 the `949`-bit reductions: `HardAt` at `949 ≤ 2650 ≤ RingLWE.H` bits. -/
 theorem attributeHiding_conf_registry'' (hR : RingLWE.decision.Holds) :
-    AttributeHiding dateUniverse params (impl hkp confP ms) :=
+    AttributeHiding PUniv params (impl hkp confP ms) :=
   attributeHiding_conf_rlwe' 949 le_rfl
     (hR.hardAt (p := params3 Np (2 ^ Kp) kp (.cbd 16)) registry_covers_kb.1)
     (hR.hardAt (p := params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16)) registry_covers_kb.2)

@@ -114,4 +114,29 @@ theorem len_authL {a b : ℕ} (ha : a ≤ 2 ^ 240) (hb : b ≤ 10) :
 theorem size_authL : authL.size ≤ 2 ^ 19 := by
   rw [authL, liftP, XProg.size_frame, Prog.size_toX]; exact size_authMain
 
+/-! ### The interface of the authorization component -/
+
+/-- **The specification of an authorization component** at the handlers' width (`R = 254`): the
+law of `Comps.law_auth` (the bit `authI hk c C x`), and, from a query of at most `Lq` bits and an
+attribute of at most `nA` bits, at most `2 ^ Ta` steps, the output one bit, at most `2 ^ Sa`
+states. The reductions use the authorization component only through this interface: `authL`
+(date windows, `authSpec_authL`) now, the framed `authBPC` (branching programs, WS7) after the
+switch. -/
+structure AuthSpec (authP : XProg 256) (Lq Ta Sa : ℕ) : Prop where
+  wf : authP.WF
+  law : ∀ (C : List Bool) (x : PUniv.Attr), authP.law (io2 (R := 254) C (PUniv.encAttr x) []) =
+    PMF.pure (io2 (R := 254) [authI hk c C x] [] [])
+  time : ∀ {a b : ℕ}, a ≤ Lq → b ≤ nA → XProg.timeBoundT authP (io2 (R := 254) a b 0) ≤ 2 ^ Ta
+  len : ∀ {a b : ℕ}, a ≤ Lq → b ≤ nA → XProg.lenBoundT authP (io2 (R := 254) a b 0) ≤ io2 1 0 0
+  size : authP.size ≤ 2 ^ Sa
+
+/-- **`authL` meets the interface**: queries of at most `2^240` bits, `2^275` steps, `2^19`
+states. -/
+theorem authSpec_authL (hL : dateBound ≤ c.L) : AuthSpec hk c authL (2 ^ 240) 275 19 where
+  wf := wf_authL
+  law := law_authL hk c hL
+  time ha hb := time_authL ha hb
+  len ha hb := len_authL ha hb
+  size := size_authL
+
 end AdvancedEncryption.DualUse.Prog
