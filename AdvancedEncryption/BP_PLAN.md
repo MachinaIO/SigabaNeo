@@ -766,3 +766,45 @@ WS1 (M0) ─┬─ WS1 (M3) ─┼─ switch ─ M6 ─┬─ WS4 ─┐   │
 
 * **The cost claim**: prove `≈ 2^952` (the formulas' exponents) or keep the statement `2^1002`
   with today's rounding. The plan aims at the first and accepts the second.
+
+## 12. Switch and Stage II status (lead, branch `t3/bp-switch`)
+
+### Done (commits `b1940271`, `aed92e0a`, tree not green yet)
+
+* `ImplBase`: `PUniv := bpUniverse`, `nA := 128`, `ValidC C := C.length = bpLen`,
+  `predC C := bpPred (tablesOf C)`, `attrBits x := bitsOfBP x` (the old `bitsOf` of dates; the name
+  `bitsOf` stays `RingBTVW.bitsOf`), `attr0`, `bit0 C := output (tablesOf C) attr0`,
+  **`blockWord W C := bit0 C :: RP.rpW W (bpRP (tablesOf C))`** (see below), `evalBool_predC`,
+  `export BPWord (bpLen tablesOf)`, `export BranchingProgram (output)` (beware: the project has
+  `autoImplicit` on — an unknown name such as `bpLen` silently becomes a variable).
+* Deleted: `PE/DateWindow`, `Gates/{DateWindow, ProgWindow, WindowBound, WindowTest, AuthGen,
+  AuthProg}`, `Prog/{Auth, AuthL, WfPred}`, `Concrete`, `Game/HandlersDate` (`head_paramsWord`
+  moved to `HandlersBP`). `Prog/KeyFront` rewritten (generic `KGsim_eq_front`, `authI_eq` for
+  programs). The date-front instances `keyGenP`, `keyMachineP`, `decGenP`, `decMachineP` (and their
+  laws) are removed from `KeyGenP`/`DecGenP`; `keyP` removed from `KeyP` (`law_keyPF`,
+  `law_keyP_spPack` take any front end with `FrontSpec`).
+* Math layer: `Impl` (`bpEvalMachine`, `correct_of_scheme (hL : bpLen ≤ c.L)`, `expressive`),
+  `ImplCorrect`, `GameChain`, `RealBridge`, `SimKeyGame`, `SimGame*`, `AHAssembly`, `IdealBridge`,
+  `AHMath`, `Algo/*`. `Params/Sizes` at confA values (WS2 table), `Params/Conf`
+  (**`correct_conf`, `expressive_conf` for `bpUniverse`**, `confP.L = bpLen`, `eCoef = 102`),
+  `Params/Stat` (`flood_conf ≤ 2^-499`, `delta1_le`, `delta6_le ≤ 2^-370`), `Params/Advantage`
+  (`≤ δ₃ + δ₅ + δ_I + 2^-239`).
+* Hidden literal `10`s (= `nA`) fixed in `SetupLaws`, `ChalI`, `C0`, `Sd3`, `Chal3`, `BfX`, `CfX`,
+  `BlockCost`, and `Fin 10 →` everywhere.
+
+### The `f(0)` term (found at the switch, not in §5)
+
+Real `KeyGen`/`Dec` compute `B_f̂` and `c_f̂` from crafted simulation data at the attribute `0`
+(`Algo/RowSim`): `B_f̂ = row(W_f) + f(0) G̲`, `c_f̂ = row(W_f) + f(0) · (row 1 of G)`. The date
+windows all reject `(0,0)`, so `f(0) = 1` was hard-wired (the post blocks add `G̲`). A branching
+program may output `0` on `attr0`. Now `keyMatrix_sdB`, `evalCiphertext_sdC` (`Algo/RowSimData`)
+state `… + bitR (bit0 C) • …`. Machines:
+
+* the front end emits `true :: bit0 C :: stream` (that is `blockWord`); `frontBP` must compute
+  `bit0 C` = `!authA C 0^128` with `authBPC` (WS7) on a copy of `C` and `128` zeros;
+* `bfX`/`cfX`: first move the head bit of tape `1` to the end of tape `0`
+  (`snocHead 0 1 ⨾ tail 1`); the pre block stashes it with the trapdoor (`LT := lenT + 1`), the
+  `W_f` block sees the stream only (spec `WfSpecS`: law on `(blockWord W C).tail`), the post block
+  reads the bit back and adds the gadget only if it is set (`ifBit`);
+* the reductions' key component (`keyPF`, simulated keys, `f(x*) = 1`) does not need the bit: its
+  block is `tail 1` then the stream block (`WfSpec` on `blockWord`, from `WfSpecR`).
