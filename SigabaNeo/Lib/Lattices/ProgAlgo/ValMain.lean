@@ -96,7 +96,7 @@ def zkvC : Code := fillC ZKV 11 10 14 12
 def ttkC : Code := fillC TTk OB 29 12 12
 /-- `TT2 := [true, true]`. -/
 def tt2C : Code := fillC TT2 OB 29 27 27
-/-- The store `C :: ins ++ C^(W − 10)`. -/
+/-- The store `C :: ins ++ C^(W − n)`. -/
 def stC : Code := ofList [.cp GST TST, shiftOne GST CBW rX TSl, .mv GST INSW TINS, .cp CQ TW9, .tl CQ,
   .rep CQ (shiftOne GST CBW rX TSl)]
 
@@ -105,16 +105,16 @@ def fhatC : Code :=
   ofList [.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC,
     rloopG T10 nandC]
 
-theorem exec_stC {S W : ℕ} (hW : 10 ≤ W) (w : St) {C : List Bool} (hC : w CBW = C)
+theorem exec_stC {n S W : ℕ} (hW : n ≤ W) (w : St) {C : List Bool} (hC : w CBW = C)
     (hCl : C.length = S) (hts : (w TSl).length = S) (htst : (w TST).length = (W + 1) * S)
-    (htw9 : (w TW9).length = W - 9) {ins : List (List Bool)} (hins : UV S ins)
-    (hinsl : ins.length = 10) (hI : w INSW = ins.flatten) (htins : (w TINS).length = 10 * S) :
-    exec V f stC w GST = (C :: ins ++ List.replicate (W - 10) C).flatten ∧
+    (htw9 : (w TW9).length = W - n + 1) {ins : List (List Bool)} (hins : UV S ins)
+    (hinsl : ins.length = n) (hI : w INSW = ins.flatten) (htins : (w TINS).length = n * S) :
+    exec V f stC w GST = (C :: ins ++ List.replicate (W - n) C).flatten ∧
       ∀ j, j ≠ GST → j ≠ CQ → j ≠ rX → j ≠ INSW → exec V f stC w j = w j := by
   rw [show stC = ofList ([.cp GST TST] ++ ([shiftOne GST CBW rX TSl, .mv GST INSW TINS] ++
     ([.cp CQ TW9, .tl CQ] ++ [.rep CQ (shiftOne GST CBW rX TSl)]))) from rfl, exec_ofList_append,
     exec_ofList_append, exec_ofList_append, exec_ofList_single]
-  have hInsF : ins.flatten.length = 10 * S := by rw [length_flatten_of hins, hinsl]
+  have hInsF : ins.flatten.length = n * S := by rw [length_flatten_of hins, hinsl]
   -- `C`, then the inputs
   set w1 := exec V f (ofList [.cp GST TST]) w with hw1
   have e1 : ∀ j, j ≠ GST → w1 j = w j := fun j a => by
@@ -123,7 +123,7 @@ theorem exec_stC {S W : ℕ} (hW : 10 ≤ W) (w : St) {C : List Bool} (hC : w CB
   set w2 := exec V f (ofList [shiftOne GST CBW rX TSl, .mv GST INSW TINS]) w1 with hw2
   have hrx : (Function.update w1 rX (w1 CBW)) rX = C := by
     rw [Function.update_self, e1 CBW (by decide), hC]
-  have g2 : w2 GST = ((w TST ++ C).drop S ++ ins.flatten).drop (10 * S) ∧
+  have g2 : w2 GST = ((w TST ++ C).drop S ++ ins.flatten).drop (n * S) ∧
       ∀ j, j ≠ GST → j ≠ rX → j ≠ INSW → w2 j = w j := by
     simp only [hw2, exec_ofList, List.foldl_cons, List.foldl_nil, shiftOne, exec_cp']
     rw [exec_mv_shift (d := GST) (s := rX) (c := TSl) (x := C) (L := []) (by decide)
@@ -140,14 +140,13 @@ theorem exec_stC {S W : ℕ} (hW : 10 ≤ W) (w : St) {C : List Bool} (hC : w CB
     · simp only [Function.update_apply, if_neg a1, if_neg a2, if_neg a3]; exact e1 j a1
   obtain ⟨g2a, g2b⟩ := g2
   generalize w2 = v2 at g2a g2b
-  -- `C^(W − 10)`
+  -- `C^(W − n)`
   set v3 := exec V f (ofList [.cp CQ TW9, .tl CQ]) v2 with hv3
   have e3 : ∀ j, j ≠ CQ → v3 j = v2 j := fun j a => by
     simp [hv3, exec_ofList, exec_cp', exec_tl', Function.update_apply, a]
-  have hCQ : (v3 CQ).length = W - 10 := by
+  have hCQ : (v3 CQ).length = W - n := by
     simp (config := {decide := true}) [hv3, exec_ofList, exec_cp', exec_tl', Function.update_apply,
       g2b TW9 (by decide) (by decide) (by decide), htw9]
-    omega
   obtain ⟨R1, R2⟩ := exec_shiftRep (V := V) (f := f) (dst := GST) (src := CBW) (sc := rX) (cl := TSl)
     (ctr := CQ) (by decide) (by decide) (by decide) v3
     (by rw [e3 CBW (by decide), e3 TSl (by decide), g2b CBW (by decide) (by decide) (by decide),
@@ -157,33 +156,33 @@ theorem exec_stC {S W : ℕ} (hW : 10 ≤ W) (w : St) {C : List Bool} (hC : w CB
     hts] at R1
   refine ⟨?_, fun j a1 a2 a3 a4 => ?_⟩
   · rw [R1]
-    have hrep : UV S (List.replicate (W - 10) C) := fun x hx => by
+    have hrep : UV S (List.replicate (W - n) C) := fun x hx => by
       rw [List.eq_of_mem_replicate hx, hCl]
-    have hCf : (List.replicate (W - 10) C).flatten.length = (W - 10) * S := by
+    have hCf : (List.replicate (W - n) C).flatten.length = (W - n) * S := by
       rw [length_flatten_of hrep]; simp
     have hT1 : S ≤ (w TST ++ C).length := by simp [htst, hCl] <;> nlinarith
     rw [drop_append_drop' hT1]
-    have hT2 : S + 10 * S ≤ (w TST ++ C ++ ins.flatten).length := by
+    have hT2 : S + n * S ≤ (w TST ++ C ++ ins.flatten).length := by
       simp [htst, hCl, hInsF] <;> nlinarith
     rw [drop_append_drop' hT2, List.flatten_append, List.flatten_cons, List.append_assoc,
       List.append_assoc, List.append_assoc]
     rw [List.drop_left' (by
       simp only [htst]
-      have : (W - 10) * S + 10 * S = W * S := by rw [← Nat.add_mul]; congr 1; omega
+      have : (W - n) * S + n * S = W * S := by rw [← Nat.add_mul]; congr 1; omega
       nlinarith)]
   · rw [R2 j a1 a3 a2, e3 j a2, g2b j a1 a3 a4]
 
 /-- The bundle of the input `i` of `f̂`. -/
-def inBW {N K : ℕ} (bW wW : Fin 10 × BI N (K + 1) → List Bool)
-    (ent : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) (i : Fin 10) (b : BI N (K + 1)) :
+def inBW {n N K : ℕ} (bW wW : Fin n × BI N (K + 1) → List Bool)
+    (ent : Fin n → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) (i : Fin n) (b : BI N (K + 1)) :
     List Bool :=
   jw (bW (i, b)) (wW (i, b)) (bitE K (ent i (b.1, b.2.1)) b.2.2.1.val b.2.2.2.val) N K
 
-theorem insWords_flatten {N K : ℕ} (bW wW : Fin 10 × BI N (K + 1) → List Bool)
-    (ent : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) :
-    (insWords bW wW ent).flatten = ((List.finRange 10).map fun i => bw (inBW bW wW ent i)).flatten := by
-  have h : (Enum.list (α := Fin 10 × BI N (K + 1))) =
-      List.finRange 10 ×ˢ (Enum.list (α := BI N (K + 1))) := rfl
+theorem insWords_flatten {n N K : ℕ} (bW wW : Fin n × BI N (K + 1) → List Bool)
+    (ent : Fin n → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) :
+    (insWords bW wW ent).flatten = ((List.finRange n).map fun i => bw (inBW bW wW ent i)).flatten := by
+  have h : (Enum.list (α := Fin n × BI N (K + 1))) =
+      List.finRange n ×ˢ (Enum.list (α := BI N (K + 1))) := rfl
   rw [insWords, h, product_def', List.map_flatMap, flatten_flatMap']
   congr 1
   apply List.map_congr_left
@@ -192,9 +191,9 @@ theorem insWords_flatten {N K : ℕ} (bW wW : Fin 10 × BI N (K + 1) → List Bo
   rfl
 
 /-- **The initial words of the run of `f̂`.** -/
-structure FInit (V K N W A1 Ad : ℕ) (one : List Bool) (gs : GateList)
-    (bW wW : Fin 10 × BI N (K + 1) → List Bool)
-    (ent : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) (RB RW RP : List Bool) (w : St) :
+structure FInit {n : ℕ} (V K N W A1 Ad : ℕ) (one : List Bool) (G : List Bool) (m : ℕ)
+    (bW wW : Fin n × BI N (K + 1) → List Bool)
+    (ent : Fin n → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool) (RB RW RP : List Bool) (w : St) :
     Prop where
   tm : Tmpl V K w
   vone : w 10 = one
@@ -221,19 +220,19 @@ structure FInit (V K N W A1 Ad : ℕ) (one : List Bool) (gs : GateList)
   hK : 0 < K
   tnk : (w TNK).length = N * K
   t4k : (w T4k).length = 2 * (2 * (K + 1))
-  t10 : (w T10).length = 10
-  bst : w BSt = ((Enum.list (α := Fin 10 × BI N (K + 1))).map bW).flatten ++ RB
-  wst : w WSt = ((Enum.list (α := Fin 10 × BI N (K + 1))).map wW).flatten ++ RW
-  pst : w PSt = ((List.finRange 10).flatMap fun i => (qsL (K + 1)).map (ent i)).flatten ++ RP
-  insw : (w INSW).length = 10 * ((Enum.list (α := BI N (K + 1))).length * V)
+  t10 : (w T10).length = n
+  bst : w BSt = ((Enum.list (α := Fin n × BI N (K + 1))).map bW).flatten ++ RB
+  wst : w WSt = ((Enum.list (α := Fin n × BI N (K + 1))).map wW).flatten ++ RW
+  pst : w PSt = ((List.finRange n).flatMap fun i => (qsL (K + 1)).map (ent i)).flatten ++ RP
+  insw : (w INSW).length = n * ((Enum.list (α := BI N (K + 1))).length * V)
   tsl : (w TSl).length = (Enum.list (α := BI N (K + 1))).length * V
   tst : (w TST).length = (W + 1) * ((Enum.list (α := BI N (K + 1))).length * V)
   td2 : (w TD2).length = 2 * ((W + 1) * ((Enum.list (α := BI N (K + 1))).length * V))
   tw : w TW = List.replicate W false
-  tw9 : (w TW9).length = W - 9
-  tins : (w TINS).length = 10 * ((Enum.list (α := BI N (K + 1))).length * V)
-  gsw : w GS = gsW W gs
-  gcnt : (w GCNT).length = gs.length
+  tw9 : (w TW9).length = W - n + 1
+  tins : (w TINS).length = n * ((Enum.list (α := BI N (K + 1))).length * V)
+  gsw : w GS = G
+  gcnt : (w GCNT).length = m
 
 theorem flatten_replicate_single (n : ℕ) (b : Bool) :
     (List.replicate n [b]).flatten = List.replicate n b := by
@@ -241,28 +240,37 @@ theorem flatten_replicate_single (n : ℕ) (b : Bool) :
   | zero => rfl
   | succ n ih => rw [List.replicate_succ, List.flatten_cons, ih]; rfl
 
-/-- **The run of `f̂` on the machine**: `OUTW` ends with the word of the output bundle of `f̂`
-(`fhatV` at the orders `enumT`, `enumO`, the coefficients `gvExp q`, the step `fV V f`), for the
-input bundles `inBW` built from the streams. -/
-theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
-    {N K W A1 Ad : ℕ} (hN : 0 < N) {one : List Bool} {gs : GateList} (hgs : gs.length + 10 ≤ W)
-    (hbnd : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W) (hne : gs ≠ [])
-    {bW wW : Fin 10 × BI N (K + 1) → List Bool} (hb : ∀ j, (bW j).length = A1)
-    (hx : ∀ j, (wW j).length = Ad) {ent : Fin 10 → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool}
+/-- The code of the run of `f̂` before the gate loop: `zv`, the templates, the inputs, the
+constant bundle, the store. -/
+def fhatPreL : List Code :=
+  [.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC]
+
+theorem fhatC_eq : fhatC = ofList (fhatPreL ++ [rloopG T10 nandC]) := rfl
+
+/-- **Before the gate loop of `f̂`**: the store `GST` holds the constant bundle, the input bundles
+`inBW` built from the streams and the padding, and the context of the NAND block holds. -/
+theorem exec_fhatPre (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {n N K W A1 Ad : ℕ} (hN : 0 < N) {one G : List Bool} {m : ℕ} (hW : n ≤ W)
+    {bW wW : Fin n × BI N (K + 1) → List Bool} (hb : ∀ j, (bW j).length = A1)
+    (hx : ∀ j, (wW j).length = Ad) {ent : Fin n → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool}
     (he : ∀ i q, (ent i q).length = N * K) {RB RW RP : List Bool} (w : St)
-    (h : FInit V K N W A1 Ad one gs bW wW ent RB RW RP w) :
-    exec V f fhatC w OUTW = bw (fhatV one (fV V f) (inBW bW wW ent) (enumT N (K + 1))
-      (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1 (predOf 10 gs).2) := by
+    (h : FInit V K N W A1 Ad one G m bW wW ent RB RW RP w) :
+    exec V f (ofList fhatPreL) w GST =
+        (bw (N := N) (k := K + 1) (constRepVV one (fV V f one one) (gvExp (2 ^ K))) ::
+          (List.finRange n).map (fun i => bw (inBW bW wW ent i)) ++
+          List.replicate (W - n) (bw (N := N) (k := K + 1)
+            (constRepVV one (fV V f one one) (gvExp (2 ^ K))))).flatten ∧
+      NCtx V K N one (fV V f one one) (exec V f (ofList fhatPreL) w) := by
   set S := (Enum.list (α := BI N (K + 1))).length * V with hS
   have h1 : one.length = V := by rw [← h.vone]; exact h.tm.h10
   set zv := fV V f one one with hzv
   have hz : zv.length = V := by rw [hzv, fV]; exact hf _ _ (by simp) (by simp)
   have hin : ∀ i b, (inBW bW wW ent i b).length = V := fun i b => by
     simp [inBW, jw, hb, hx, h.hV]; have := h.hNK; omega
-  rw [fhatC, show [Code.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC,
-    rloopG T10 nandC] = [Code.gate 11 10 10, zkvC, ttkC, tt2C] ++ ([insC] ++ ([.cp RES TSl, cbC,
-    .cp CBW RES] ++ ([stC] ++ [rloopG T10 nandC]))) from rfl, exec_ofList_append, exec_ofList_append,
-    exec_ofList_append, exec_ofList_append]
+  rw [fhatPreL, show [Code.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES,
+    stC] = [Code.gate 11 10 10, zkvC, ttkC, tt2C] ++ ([insC] ++ ([.cp RES TSl, cbC,
+    .cp CBW RES] ++ [stC])) from rfl, exec_ofList_append, exec_ofList_append,
+    exec_ofList_append]
   -- `zv`, `zv^k`, `true^k`, `[true, true]`
   have P1 : NCtx V K N one zv (exec V f (ofList [Code.gate 11 10 10, zkvC, ttkC, tt2C]) w) ∧
       ∀ j, j ≠ 11 → j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → j ≠ CQ →
@@ -343,14 +351,14 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
     (by rw [E1 BSt (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.bst])
     (by rw [E1 WSt (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.wst])
     (by rw [E1 PSt (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.pst])
-  have hIW : (insWords bW wW ent).flatten.length = 10 * S := by
+  have hIW : (insWords bW wW ent).flatten.length = n * S := by
     rw [length_flatten_of (V := V) (fun y hy => by
       simp only [insWords, List.mem_map] at hy
       obtain ⟨j, -, rfl⟩ := hy
       simp [jw, hb, hx, h.hV]; have := h.hNK; omega), insWords, List.length_map]
-    rw [show (Enum.list (α := Fin 10 × BI N (K + 1))).length =
-      10 * (Enum.list (α := BI N (K + 1))).length by
-        show (List.finRange 10 ×ˢ Enum.list (α := BI N (K + 1))).length = _
+    rw [show (Enum.list (α := Fin n × BI N (K + 1))).length =
+      n * (Enum.list (α := BI N (K + 1))).length by
+        show (List.finRange n ×ˢ Enum.list (α := BI N (K + 1))).length = _
         rw [List.length_product, List.length_finRange], hS]; ring
   rw [E1 INSW (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),
     List.drop_left' (by rw [h.insw, hIW])] at I1
@@ -384,12 +392,12 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
       j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → j ≠ CQ → w3 j = w j :=
     fun j h00 h0 hj a2 a3 a4 a5 a6 => by rw [p33 j h00, E2 j h0 hj a2 a3 a4 a5 a6]
   -- the store
-  set ins := (List.finRange 10).map fun i => bw (inBW bW wW ent i) with hins
+  set ins := (List.finRange n).map fun i => bw (inBW bW wW ent i) with hins
   have hinsu : UV S ins := fun x hx => by
     simp only [hins, List.mem_map] at hx
     obtain ⟨i, -, rfl⟩ := hx
     exact length_bw (hin i)
-  have hinsl : ins.length = 10 := by simp [hins]
+  have hinsl : ins.length = n := by simp [hins]
   obtain ⟨S1, S2⟩ := exec_stC (V := V) (f := f) (S := S) (W := W) (by omega) w3 p31 hcl
     (by rw [E3 TSl (by decide +kernel) (by decide +kernel) (by decide) (by decide) (by decide)
       (by decide) (by decide) (by decide), h.tsl])
@@ -400,19 +408,43 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
     (by rw [p33 INSW (by decide +kernel), I1', insWords_flatten])
     (by rw [E3 TINS (by decide +kernel) (by decide +kernel) (by decide) (by decide) (by decide)
       (by decide) (by decide) (by decide), h.tins])
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil] at S1 S2 ⊢
+  refine ⟨by rw [S1, hins], c3.of_eq fun j hj => S2 j (by revert j hj; decide)
+    (by revert j hj; decide) (by revert j hj; decide) (by revert j hj; decide)⟩
+
+/-- **The run of `f̂` on the machine**: `OUTW` ends with the word of the output bundle of `f̂`
+(`fhatV` at the orders `enumT`, `enumO`, the coefficients `gvExp q`, the step `fV V f`), for the
+input bundles `inBW` built from the streams. -/
+theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {n N K W A1 Ad : ℕ} (hN : 0 < N) {one : List Bool} {gs : GateList} (hgs : gs.length + n ≤ W)
+    (hbnd : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W) (hne : gs ≠ [])
+    {bW wW : Fin n × BI N (K + 1) → List Bool} (hb : ∀ j, (bW j).length = A1)
+    (hx : ∀ j, (wW j).length = Ad) {ent : Fin n → Fin 2 × (Fin 2 × Fin (K + 1)) → List Bool}
+    (he : ∀ i q, (ent i q).length = N * K) {RB RW RP : List Bool} (w : St)
+    (h : FInit V K N W A1 Ad one (gsW W gs) gs.length bW wW ent RB RW RP w) :
+    exec V f fhatC w OUTW = bw (fhatV one (fV V f) (inBW bW wW ent) (enumT N (K + 1))
+      (enumO N (K + 1)) (gvExp (2 ^ K)) (2 ^ K) (predOf n gs).1 (predOf n gs).2) := by
+  set S := (Enum.list (α := BI N (K + 1))).length * V with hS
+  have h1 : one.length = V := by rw [← h.vone]; exact h.tm.h10
+  set zv := fV V f one one with hzv
+  have hz : zv.length = V := by rw [hzv, fV]; exact hf _ _ (by simp) (by simp)
+  have hin : ∀ i b, (inBW bW wW ent i b).length = V := fun i b => by
+    simp [inBW, jw, hb, hx, h.hV]; have := h.hNK; omega
+  obtain ⟨S1, c4⟩ := exec_fhatPre hf hN (by omega) hb hx he w h
+  rw [fhatC_eq, exec_ofList_append]
+  have E4 : ∀ j, j ∉ wr (ofList fhatPreL) → exec V f (ofList fhatPreL) w j = w j :=
+    fun j hj => exec_not_mem _ _ _ hj
+  generalize exec V f (ofList fhatPreL) w = w4 at S1 c4 E4
   simp only [exec_ofList, List.foldl_cons, List.foldl_nil]
-  generalize exec V f stC w3 = w4 at S1 S2
-  have E4 : ∀ j, j ≠ GST → j ≠ CQ → j ≠ rX → j ≠ INSW →
-      j ∉ wr (ofList [.cp RES TSl, cbC, .cp CBW RES]) → j ∉ wr insC → j.val ≥ 61 →
-      j ≠ ZKV → j ≠ TTk → j ≠ TT2 → j ≠ rY → w4 j = w j :=
-    fun j b1 b2 b3 b4 h00 h0 hj a2 a3 a4 a5 => by
-      rw [S2 j b1 b2 b3 b4, E3 j h00 h0 hj a2 a3 a4 a5 b2]
-  have c4 : NCtx V K N one zv w4 := c3.of_eq fun j hj => S2 j (by revert j hj; decide)
-    (by revert j hj; decide) (by revert j hj; decide) (by revert j hj; decide)
-  -- the gates
-  have hTW4 : w4 TW = List.replicate W false := by
-    rw [E4 TW (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tw]
+  set cst := constRepVV (N := N) (k := K + 1) one zv (gvExp (2 ^ K)) with hcst
+  have hcl : (bw cst).length = S := length_bw (constRepVV_len one zv h1 hz _)
+  set ins := (List.finRange n).map fun i => bw (inBW bW wW ent i) with hins
+  have hinsu : UV S ins := fun x hx => by
+    simp only [hins, List.mem_map] at hx
+    obtain ⟨i, -, rfl⟩ := hx
+    exact length_bw (hin i)
+  have hinsl : ins.length = n := by simp [hins]
+  have hTW4 : w4 TW = List.replicate W false := by rw [E4 TW (by decide +kernel), h.tw]
   have hD : RegData S W (bw cst) (bw cst :: ins ++ List.replicate (W - ins.length) (bw cst))
       (gsSP ins.length gs) w4 := ⟨hcl, by
       intro x hx
@@ -422,21 +454,15 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
       · exact hinsu x hx
       · rw [List.eq_of_mem_replicate hx, hcl], by simp [hinsl]; omega,
     bnd_gsSP (by rw [hinsl]; omega) hbnd,
-    by rw [E4 TSl (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tsl],
-    by rw [E4 TST (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tst],
-    by rw [E4 TD2 (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.td2],
+    by rw [E4 TSl (by decide +kernel), h.tsl],
+    by rw [E4 TST (by decide +kernel), h.tst],
+    by rw [E4 TD2 (by decide +kernel), h.td2],
     by rw [hTW4, List.length_replicate]⟩
   obtain ⟨-, G2, -, -⟩ := exec_rloopG (T := T10) (V := V) (f := f)
     (blockSpec_nandC hf hN one zv h1 hz) w4 (by rw [hinsl]; omega) hD c4 (by rw [S1, hinsl])
-    (by rw [E4 GS (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.gsw])
-    (by rw [E4 GCNT (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.gcnt])
-    (by rw [E4 T10 (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.t10, hinsl])
+    (by rw [E4 GS (by decide +kernel), h.gsw])
+    (by rw [E4 GCNT (by decide +kernel), h.gcnt])
+    (by rw [E4 T10 (by decide +kernel), h.t10, hinsl])
     hTW4 c4.ob (by decide)
   rw [G2 hne, hcst, getLast_gl_nandW one zv (inBW bW wW ent) hf h1 rfl hin gs hne]
 
@@ -446,59 +472,82 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
 def gswC : Code := ofList [insGC, .cp CBW 10, stC, rloopG T10 (.gate RES IA IB)]
 
 /-- **The initial words of the run of the predicate** (`M = N K`). -/
-structure GInit (V W A2 Ad M : ℕ) (one : List Bool) (gs : GateList) (pW rW : Fin 10 → List Bool)
+structure GInit {n : ℕ} (V W A2 Ad M : ℕ) (one : List Bool) (G : List Bool) (m : ℕ) (pW rW : Fin n → List Bool)
     (xs RB RW : List Bool) (w : St) : Prop where
   it : ITmpl V A2 Ad M 1 w
   vone : w 10 = one
-  t10 : (w T10).length = 10
-  bst : w BSt = ((List.finRange 10).map pW).flatten ++ RB
-  wst : w WSt = ((List.finRange 10).map rW).flatten ++ RW
+  t10 : (w T10).length = n
+  bst : w BSt = ((List.finRange n).map pW).flatten ++ RB
+  wst : w WSt = ((List.finRange n).map rW).flatten ++ RW
   zs : w rZ = xs
-  insw : (w INSW).length = 10 * V
+  insw : (w INSW).length = n * V
   tsl : (w TSl).length = V
   tst : (w TST).length = (W + 1) * V
   td2 : (w TD2).length = 2 * ((W + 1) * V)
   tw : w TW = List.replicate W false
   ob : w OB = [true]
-  tw9 : (w TW9).length = W - 9
-  tins : (w TINS).length = 10 * V
-  gsw : w GS = gsW W gs
-  gcnt : (w GCNT).length = gs.length
+  tw9 : (w TW9).length = W - n + 1
+  tins : (w TINS).length = n * V
+  gsw : w GS = G
+  gcnt : (w GCNT).length = m
 
-/-- **The run of the predicate on the machine**: `OUTW` ends with the value of the predicate's
-output wire for the step `fV V f`. -/
-theorem exec_gswC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
-    {W A2 Ad M : ℕ} {one : List Bool} {gs : GateList} (hgs : gs.length + 10 ≤ W)
-    (hbnd : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W) (hne : gs ≠ []) {pW rW : Fin 10 → List Bool}
+def gswPreL : List Code := [insGC, .cp CBW 10, stC]
+
+theorem gswC_eq : gswC = ofList (gswPreL ++ [rloopG T10 (.gate RES IA IB)]) := rfl
+
+/-- **Before the gate loop of the predicate**: the store `GST` holds `one`, the joint words of the
+inputs and the padding. -/
+theorem exec_gswPre {n W A2 Ad M : ℕ} {one G : List Bool} {m : ℕ} (hW : n ≤ W)
+    {pW rW : Fin n → List Bool}
     (hp : ∀ i, (pW i).length = A2) (hr : ∀ i, (rW i).length = Ad) {xs RB RW : List Bool} (w : St)
-    (h : GInit V W A2 Ad M one gs pW rW xs RB RW w) :
-    exec V f gswC w OUTW = valueOf (fun i : Fin 10 =>
-        ((List.finRange 10).map fun i => jw (pW i) (rW i) (xs.getD i.val false) M 1).getD i.val [])
-      one (fV V f) (predOf 10 gs).1 (predOf 10 gs).2 := by
+    (h : GInit V W A2 Ad M one G m pW rW xs RB RW w) :
+    exec V f (ofList gswPreL) w GST = (one :: (List.finRange n).map (fun i =>
+      jw (pW i) (rW i) (xs.getD i.val false) M 1) ++ List.replicate (W - n) one).flatten := by
   have h1 : one.length = V := by rw [← h.vone]; exact h.it.h10
-  set ins := (List.finRange 10).map fun i => jw (pW i) (rW i) (xs.getD i.val false) M 1 with hins
+  set ins := (List.finRange n).map fun i => jw (pW i) (rW i) (xs.getD i.val false) M 1 with hins
   have hinsu : UV V ins := fun x hx => by
     simp only [hins, List.mem_map] at hx
     obtain ⟨i, -, rfl⟩ := hx
     simp [jw, hp, hr, h.it.hV]; have := h.it.hNK; omega
-  have hinsl : ins.length = 10 := by simp [hins]
-  simp only [gswC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  have hinsl : ins.length = n := by simp [hins]
+  simp only [gswPreL, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
   obtain ⟨I1, I2⟩ := exec_insGC (V := V) (f := f) w h.it h.t10 pW rW hp hr xs h.bst h.wst h.zs
   rw [List.drop_left' (by rw [h.insw])] at I1
   generalize exec V f insGC w = w1 at I1 I2
   have hone1 : w1 10 = one := by rw [I2 10 (by decide), h.vone]
-  obtain ⟨S1, S2⟩ := exec_stC (V := V) (f := f) (S := V) (W := W) (by omega)
+  obtain ⟨S1, -⟩ := exec_stC (V := V) (f := f) (S := V) (W := W) hW
     (Function.update w1 CBW (w1 10)) (by rw [Function.update_self, hone1]) h1
     (by rw [Function.update_of_ne (by decide), I2 TSl (by decide), h.tsl])
     (by rw [Function.update_of_ne (by decide), I2 TST (by decide), h.tst])
     (by rw [Function.update_of_ne (by decide), I2 TW9 (by decide), h.tw9]) hinsu hinsl
     (by rw [Function.update_of_ne (by decide), I1])
     (by rw [Function.update_of_ne (by decide), I2 TINS (by decide), h.tins])
-  generalize exec V f stC (Function.update w1 CBW (w1 10)) = w2 at S1 S2
-  have E2 : ∀ j, j ≠ GST → j ≠ CQ → j ≠ rX → j ≠ INSW → j ≠ CBW → j ∉ wr insGC → w2 j = w j :=
-    fun j a1 a2 a3 a4 a5 a6 => by rw [S2 j a1 a2 a3 a4, Function.update_of_ne a5, I2 j a6]
-  have hTW2 : w2 TW = List.replicate W false := by
-    rw [E2 TW (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tw]
+  exact S1
+
+/-- **The run of the predicate on the machine**: `OUTW` ends with the value of the predicate's
+output wire for the step `fV V f`. -/
+theorem exec_gswC (hf : ∀ a b, a.length = V → b.length = V → (f a b).length = V)
+    {n W A2 Ad M : ℕ} {one : List Bool} {gs : GateList} (hgs : gs.length + n ≤ W)
+    (hbnd : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W) (hne : gs ≠ []) {pW rW : Fin n → List Bool}
+    (hp : ∀ i, (pW i).length = A2) (hr : ∀ i, (rW i).length = Ad) {xs RB RW : List Bool} (w : St)
+    (h : GInit V W A2 Ad M one (gsW W gs) gs.length pW rW xs RB RW w) :
+    exec V f gswC w OUTW = valueOf (fun i : Fin n =>
+        ((List.finRange n).map fun i => jw (pW i) (rW i) (xs.getD i.val false) M 1).getD i.val [])
+      one (fV V f) (predOf n gs).1 (predOf n gs).2 := by
+  have h1 : one.length = V := by rw [← h.vone]; exact h.it.h10
+  set ins := (List.finRange n).map fun i => jw (pW i) (rW i) (xs.getD i.val false) M 1 with hins
+  have hinsu : UV V ins := fun x hx => by
+    simp only [hins, List.mem_map] at hx
+    obtain ⟨i, -, rfl⟩ := hx
+    simp [jw, hp, hr, h.it.hV]; have := h.it.hNK; omega
+  have hinsl : ins.length = n := by simp [hins]
+  have S1 := exec_gswPre (V := V) (f := f) (by omega) hp hr w h
+  rw [gswC_eq, exec_ofList_append]
+  have E2 : ∀ j, j ∉ wr (ofList gswPreL) → exec V f (ofList gswPreL) w j = w j :=
+    fun j hj => exec_not_mem _ _ _ hj
+  generalize exec V f (ofList gswPreL) w = w2 at S1 E2
+  simp only [exec_ofList, List.foldl_cons, List.foldl_nil]
+  have hTW2 : w2 TW = List.replicate W false := by rw [E2 TW (by decide +kernel), h.tw]
   have hD : RegData V W one (one :: ins ++ List.replicate (W - ins.length) one)
       (gsSP ins.length gs) w2 := ⟨h1, by
       intro x hx
@@ -508,17 +557,16 @@ theorem exec_gswC (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
       · exact hinsu x hx
       · rw [List.eq_of_mem_replicate hx, h1], by simp [hinsl]; omega,
     bnd_gsSP (by rw [hinsl]; omega) hbnd,
-    by rw [E2 TSl (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tsl],
-    by rw [E2 TST (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tst],
-    by rw [E2 TD2 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.td2],
+    by rw [E2 TSl (by decide +kernel), h.tsl],
+    by rw [E2 TST (by decide +kernel), h.tst],
+    by rw [E2 TD2 (by decide +kernel), h.td2],
     by rw [hTW2, List.length_replicate]⟩
   obtain ⟨-, G2, -, -⟩ := exec_rloopG (T := T10) (V := V) (f := f) (blockSpec_gate hf) w2
     (by rw [hinsl]; omega) hD trivial (by rw [S1, hinsl])
-    (by rw [E2 GS (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.gsw])
-    (by rw [E2 GCNT (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.gcnt])
-    (by rw [E2 T10 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.t10,
-      hinsl])
-    hTW2 (by rw [E2 OB (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.ob])
+    (by rw [E2 GS (by decide +kernel), h.gsw])
+    (by rw [E2 GCNT (by decide +kernel), h.gcnt])
+    (by rw [E2 T10 (by decide +kernel), h.t10, hinsl])
+    hTW2 (by rw [E2 OB (by decide +kernel), h.ob])
     (by decide)
   rw [G2 hne, getLast_gl_values (fV V f) one ins hinsl gs hne]
 

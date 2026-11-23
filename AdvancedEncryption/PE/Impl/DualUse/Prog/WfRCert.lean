@@ -1,5 +1,5 @@
 import PE.Impl.DualUse.Prog.WfB2Conf
-import SigabaNeo.Lib.Lattices.ProgAlgo.ValRegRP
+import PE.Impl.DualUse.Prog.WfB2S
 
 /-!
 # Stage II: the runs of the `W_f` block on register streams, at the numbers of `confA`
@@ -34,18 +34,10 @@ open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.ValVM SigabaNeo.Tape.Prog SigabaNeo
 
 set_option maxRecDepth 100000
 
-/-! ### The stage-II codes -/
+/-! ### The stage-II codes
 
-/-- The run of `f̂` on a register stream. -/
-def fhatCR : Code :=
-  ofList [.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC, rloopC nandC]
-def fhatFullCR : Code := ofList [streamsT, oneC, fhatCR, .cp FOUT OUTW]
-/-- The predicate's run on a register stream. -/
-def gswCR : Code := ofList [insGC, .cp CBW 10, stC, rloopC (.gate RES IA IB)]
-def gswFullCR : Code := ofList [.cp GS GSC, streamsG, oneC, gswCR, posC]
-
-noncomputable def runTR : XProg 256 := (compileA (nocert (simStepP ginvTopP)) fhatFullCR).toX
-noncomputable def runGR : XProg 256 := (compileA (nocert (simStepP ginvGswP)) gswFullCR).toX
+The codes `fhatFullCR`, `gswFullCR` and the runs `runTR`, `runGR` are those of `WfB2S` (the
+register loop `rloopC`, `ValMainR`). -/
 
 theorem ph_runTR (N K k d Ms fuel : ℕ) (L L' : List ℕ) (T : ℕ) (hL : L.length = 120)
     (hV1 : VT N K k d ≤ bsT N K k d 1) (hV2 : VT N K k d ≤ bsT N K k d 2)
