@@ -180,7 +180,7 @@ constants at most `C`, `64 · (2^λ)² · C ≤ 2^kb`, the statistical part at m
 (`compBoundBP_le`) and `statTerm_bp`. -/
 theorem attributeHiding_of_constBound
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u) (hcov : RealCovered hk c)
-    (hL : dateBound ≤ c.L) (hscov : SimCovered hk c) {ε : ℝ≥0∞}
+    (hL : bpLen ≤ c.L) (hscov : SimCovered hk c) {ε : ℝ≥0∞}
     (hflood : ∀ rest ∈ (lawRestC hk c).support, ∀ w : JC (Sdw (N := N) hk) → (Fin c.d → Bool),
       CloseTo ((lawEc hk c).map fun e j => e j + rest.2.1 * wMat w j) (lawEc hk c) ε)
     (s : ℕ) (hS : statTerm c hk ε ≤ ((2 : ℝ≥0∞) ^ s)⁻¹) (hs : params.secBits + 2 ≤ 2 * s)

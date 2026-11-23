@@ -82,13 +82,13 @@ variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
 theorem ph_bfX {wfB : XProg 256} {Lw LF Tw Gw a Mβ X : ℕ}
     (hwT : timeBoundT wfB (wfIn Lw LF) ≤ Tw) (hwL : ∀ i, lenBoundT wfB (wfIn Lw LF) i ≤ Gw)
     (hX : a + 3 + lenPK hk c + lenT N K k + nJ (N := N) hk * DualUse.rowL N K k +
-      c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k) +
-      nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + 10 * (2 * DualUse.rowL N K k) + 10 +
-      lenZ c + DualUse.rowL N K k + (lenZ c - lenT N K k) + 10 ≤ X)
-    (hoB : offBk c ≤ X) (hRM : 10 * (c.d * DualUse.rowL N K k) ≤ X)
-    (hPS : 10 * (2 * DualUse.rowL N K k) ≤ X) (hnT : nJ (N := N) hk ≤ X)
-    (hLw : a + 1 + lenPK hk c + c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k) +
-      nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + 10 * (2 * DualUse.rowL N K k) + 10 ≤ Lw)
+      c.d * (N * K) + nA * (c.d * DualUse.rowL N K k) +
+      nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + nA * (2 * DualUse.rowL N K k) + nA +
+      lenZ c + DualUse.rowL N K k + (lenZ c - lenT N K k) + nA ≤ X)
+    (hoB : offBk c ≤ X) (hRM : nA * (c.d * DualUse.rowL N K k) ≤ X)
+    (hPS : nA * (2 * DualUse.rowL N K k) ≤ X) (hnT : nJ (N := N) hk ≤ X)
+    (hLw : a + 1 + lenPK hk c + c.d * (N * K) + nA * (c.d * DualUse.rowL N K k) +
+      nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + nA * (2 * DualUse.rowL N K k) + nA ≤ Lw)
     (hG : ∀ x ∈ postTmpl N K k, x.2 ≤ Gw)
     {β : Fin 256 → ℕ} (h0 : β 0 ≤ a) (h1 : β 1 ≤ LF) (hβ : ∀ i, β i ≤ Mβ) :
     Ph (bfX hk c wfB) β (256 * (2 * (Mβ + 1) + 3) + (2 * (Mβ + 1) + 3) + (preTX X + (Tw +
@@ -96,12 +96,12 @@ theorem ph_bfX {wfB : XProg 256} {Lw LF Tw Gw a Mβ X : ℕ}
       (fun _ => Gw + 1 + lenPK hk c + 1 + lenT N K k + 1 + lenPK hk c + 1 + lenT N K k) := by
   have p1 := ph_clr01 h0 h1 hβ
   have p2 : Ph (preB hk c) (io2 (R := 254) a LF 0) (preTX X) (io2 (R := 254)
-      (a + 1 + lenPK hk c + c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k) +
-        nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + 10 * (2 * DualUse.rowL N K k) + 10) LF 0) := by
+      (a + 1 + lenPK hk c + c.d * (N * K) + nA * (c.d * DualUse.rowL N K k) +
+        nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + nA * (2 * DualUse.rowL N K k) + nA) LF 0) := by
     have h := ph_frame (eLo 18 eLo18) (β := io2 (R := 254) a LF 0) (T := preTX X)
       (p := preCoreB (lenPK hk c) (lenT N K k) (offBk c) (nJ (N := N) hk * DualUse.rowL N K k)
         (lenZ c) (DualUse.rowL N K k) (nJ (N := N) hk) (c.d * (N * K))
-        (10 * (c.d * DualUse.rowL N K k)) (10 * (2 * DualUse.rowL N K k)) (lenZ c - lenT N K k))
+        (nA * (c.d * DualUse.rowL N K k)) (nA * (2 * DualUse.rowL N K k)) (lenZ c - lenT N K k))
       (by
         rw [io2_eLo_nat, ← vec18_eq]
         exact (ph_preCoreB _ _ _ _ _ _ _ _ _ _ _ a X hX hoB hRM hPS hnT).mono le_rfl le_rfl
@@ -119,18 +119,18 @@ theorem ph_bfX {wfB : XProg 256} {Lw LF Tw Gw a Mβ X : ℕ}
 theorem ph_cfX {wfB : XProg 256} {Lw LF Tw Gw a Mβ X : ℕ}
     (hwT : timeBoundT wfB (wfIn Lw LF) ≤ Tw) (hwL : ∀ i, lenBoundT wfB (wfIn Lw LF) i ≤ Gw)
     (hX : 2 * (a + 6 + lenPK hk c + lenKA hk c + N * K + 2 * lPsi (N := N) (K := K) hk +
-      c.d * (N * K) + 10 * ((c.d - 2) * DualUse.rowL N K k + 2 * DualUse.rowL N K k) +
+      c.d * (N * K) + nA * ((c.d - 2) * DualUse.rowL N K k + 2 * DualUse.rowL N K k) +
       (lenZ c - (lenKA hk c + N * K)) + lenZ c + DualUse.rowL N K k +
-      (c.d - 2) * DualUse.rowL N K k + 2 * DualUse.rowL N K k + lPsi (N := N) (K := K) hk + 10 +
-      c.d * (N * K) + (lenZ c - (lenKA hk c + N * K)) + nJ (N := N) hk + 10) +
+      (c.d - 2) * DualUse.rowL N K k + 2 * DualUse.rowL N K k + lPsi (N := N) (K := K) hk + nA +
+      c.d * (N * K) + (lenZ c - (lenKA hk c + N * K)) + nJ (N := N) hk + nA) +
       lenCj (N := N) hk + nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) +
-      lPsi (N := N) (K := K) hk + 10 ≤ X)
+      lPsi (N := N) (K := K) hk + nA ≤ X)
     (hoK : lenPK hk c + lenKA hk c + lenCj (N := N) hk ≤ X)
     (hoP : lenPK hk c + fixLen (keyEnc (N := N) (K := K) c) ≤ X)
     (hoJ : lenPK hk c + lenKA hk c ≤ X)
     (hLw : a + 1 + lenPK hk c + c.d * (N * K) +
-      10 * ((c.d - 2) * DualUse.rowL N K k + 2 * DualUse.rowL N K k) +
-      nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + lPsi (N := N) (K := K) hk + 10 ≤ Lw)
+      nA * ((c.d - 2) * DualUse.rowL N K k + 2 * DualUse.rowL N K k) +
+      nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + lPsi (N := N) (K := K) hk + nA ≤ Lw)
     (hG : ∀ x ∈ postTmplC N K k (lenZ c) (DualUse.rowL N K k) (nJ (N := N) hk), x.2 ≤ Gw)
     {β : Fin 256 → ℕ} (h0 : β 0 ≤ a) (h1 : β 1 ≤ LF) (hβ : ∀ i, β i ≤ Mβ) :
     Ph (cfX hk c wfB) β (256 * (2 * (Mβ + 1) + 3) + (2 * (Mβ + 1) + 3) + (preTCX X + (Tw +
@@ -143,8 +143,8 @@ theorem ph_cfX {wfB : XProg 256} {Lw LF Tw Gw a Mβ X : ℕ}
   have p1 := ph_clr01 h0 h1 hβ
   have p2 : Ph (preC hk c) (io2 (R := 254) a LF 0) (preTCX X) (io2 (R := 254)
       (a + 1 + lenPK hk c + c.d * (N * K) +
-        10 * ((c.d - 2) * DualUse.rowL N K k + 2 * DualUse.rowL N K k) +
-        nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + lPsi (N := N) (K := K) hk + 10) LF 0) := by
+        nA * ((c.d - 2) * DualUse.rowL N K k + 2 * DualUse.rowL N K k) +
+        nJ (N := N) hk * (lenZ c + DualUse.rowL N K k) + lPsi (N := N) (K := K) hk + nA) LF 0) := by
     have h := ph_frame (eLo 21 eLo21) (β := io2 (R := 254) a LF 0) (T := preTCX X)
       (p := preCoreC (lenPK hk c) (lenKA hk c) (lenPK hk c + lenKA hk c + lenCj (N := N) hk) (N * K)
         (lenPK hk c + fixLen (keyEnc (N := N) (K := K) c)) (lPsi (N := N) (K := K) hk)

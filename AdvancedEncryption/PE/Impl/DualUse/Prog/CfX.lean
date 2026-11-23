@@ -30,7 +30,7 @@ open SigabaNeo.Tape.Prog (tailsP run_tailsP coinFree_tailsP wf_tailsP)
 
 /-- The templates of `preCoreC`. -/
 def preTmplC (Z R nJ C0 Z2 R2 PAD LΨ : ℕ) : List (Fin 21 × ℕ) :=
-  [(7, Z), (8, R), (9, nJ), (10, C0), (11, Z2), (12, R2), (13, 10), (14, PAD), (20, LΨ)]
+  [(7, Z), (8, R), (9, nJ), (10, C0), (11, Z2), (12, R2), (13, nA), (14, PAD), (20, LΨ)]
 
 /-- **The crafted data of `Dec` as a program on 21 tapes.** -/
 def preCoreC (L A oK NK oP LΨ oJ Lcj Z R nJ C0 Z2 R2 PAD : ℕ) : XProg 21 :=
@@ -53,7 +53,7 @@ def preCoreC (L A oK NK oP LΨ oJ Lcj Z R nJ C0 Z2 R2 PAD : ℕ) : XProg 21 :=
 
 theorem law_preCoreC (L A oK NK oP LΨ oJ Lcj Z R nJ C0 Z2 R2 PAD : ℕ) (w : List Bool)
     (prows : List (List Bool)) (hP : (w.drop oP).take LΨ = prows.flatten)
-    (hpr : ∀ r ∈ prows, r.length = R2) (hpn : prows.length = 10)
+    (hpr : ∀ r ∈ prows, r.length = R2) (hpn : prows.length = nA)
     (rows : List (List Bool)) (hF : (w.drop oJ).take Lcj = rows.flatten)
     (hr : ∀ r ∈ rows, r.length = R) (hn : rows.length = nJ)
     (hX : ((w.drop L).take A ++ (w.drop oK).take NK).length + PAD = Z)
@@ -62,7 +62,7 @@ theorem law_preCoreC (L A oK NK oP LΨ oJ Lcj Z R nJ C0 Z2 R2 PAD : ℕ) (w : Li
       PMF.pure (io1 (w.take L ++ List.replicate C0 false ++
         wPart (List.replicate Z2 false) (List.replicate Z2 false) prows ++
         wPart ((w.drop L).take A ++ (w.drop oK).take NK ++ List.replicate PAD false)
-          (List.replicate Z false) rows ++ prows.flatten ++ List.replicate 10 false)) := by
+          (List.replicate Z false) rows ++ prows.flatten ++ List.replicate nA false)) := by
   rw [io1_sto, io1_sto, preCoreC]
   rw [XProg.law_seq_pure (law_getAt 0 L (by decide) (by decide) (by decide) (by decide) (by decide)
       (by decide) _ (by simp) (by simp) (by simp))]
@@ -93,7 +93,7 @@ theorem law_preCoreC (L A oK NK oP LΨ oJ Lcj Z R nJ C0 Z2 R2 PAD : ℕ) (w : Li
     (List.take L w ++ List.replicate C0 false) (List.replicate Z2 false) [] (by simp)
   rw [List.append_nil, hpn] at h1 h2
   rw [hP, h1, h2]
-  generalize ((wStep Z2 R2)^[10] _).2.2 = X'
+  generalize ((wStep Z2 R2)^[nA] _).2.2 = X'
   rw [XProg.law_seq_pure (law_getAt oJ Lcj (by decide) (by decide) (by decide) (by decide)
       (by decide) (by decide) _ (by simp) (by simp) (by simp))]
   norm_sto
@@ -290,7 +290,7 @@ def cjRowsC (ct : CT hk c) : List (List Bool) :=
 
 /-- The rows `Ψᵢ`. -/
 def psiRowsC (ct : CT hk c) : List (List Bool) :=
-  (List.finRange 10).map fun i => (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (ct.Ψ i)
+  (List.finRange nA).map fun i => (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (ct.Ψ i)
 
 theorem length_wKA (sk : SK hk c) (ct : CT hk c) : (wKA sk ct).length = lenKA hk c := by
   rw [wKA, List.length_append, List.length_append, List.length_append, length_enc_fixLen,
@@ -315,12 +315,12 @@ theorem flatten_cjRows (ct : CT hk c) :
 
 theorem flatten_psiRows10 (ct : CT hk c) :
     (psiRowsC ct).flatten =
-      (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc ct.Ψ := by
-  show _ = ((Enum.list (α := Fin 10)).map ct.Ψ).flatMap
+      (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc ct.Ψ := by
+  show _ = ((Enum.list (α := Fin nA)).map ct.Ψ).flatMap
     (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc
   rw [flatMap_eq_flatten]
   exact congrArg List.flatten (List.map_map (g := (matEnc (N := N) (K := K) (Fin 2)
-    (RingBTVW.Col k)).enc) (f := ct.Ψ) (l := List.finRange 10)).symm
+    (RingBTVW.Col k)).enc) (f := ct.Ψ) (l := List.finRange nA)).symm
 
 theorem flatten_psiRows (ct : CT hk c) :
     (psiRowsC ct).flatten =
@@ -385,7 +385,7 @@ theorem sdEnc_sdC (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) (sk : SK
         wPart (wKA sk ct ++ (ringEnc N K).enc ct.κ ++
             List.replicate (lenZ c - (lenKA hk c + N * K)) false)
           (List.replicate (lenZ c) false) (cjRowsC ct) ++
-        (psiRowsC ct).flatten ++ List.replicate 10 false := by
+        (psiRowsC ct).flatten ++ List.replicate nA false := by
   have h := sdEnc_sdOf (hk := hk) (c := c) sk.1 (rmW := fun i =>
       List.replicate ((c.d - 2) * DualUse.rowL N K k) false ++
         (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (ct.Ψ i)) (fun i => by
@@ -471,7 +471,7 @@ theorem law_postC (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) (sk : SK
   have hS' := length_stashC hS sk ct
   have hZ2 : (wPart (List.replicate ((c.d - 2) * DualUse.rowL N K k) false)
       (List.replicate ((c.d - 2) * DualUse.rowL N K k) false) (psiRowsC ct)).length =
-        10 * (c.d * DualUse.rowL N K k) := by
+        nA * (c.d * DualUse.rowL N K k) := by
     rw [length_wPart (Z := (c.d - 2) * DualUse.rowL N K k) (by simp) (by simp) _ (length_psiRows ct)]
     simp only [psiRowsC, List.length_map, List.length_finRange]
     congr 1
@@ -487,7 +487,7 @@ theorem law_postC (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) (sk : SK
   obtain ⟨r0, rs, hrs⟩ := List.exists_cons_of_ne_nil hne
   have hsd : ((sdEnc hk c).enc (sdC hk c sk.1 ct (stashC hk c sk ct))).drop (offWk hk c) =
       wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRowsC ct) ++
-        ((psiRowsC ct).flatten ++ List.replicate 10 false) := by
+        ((psiRowsC ct).flatten ++ List.replicate nA false) := by
     rw [sdEnc_sdC hd hS, offWk]
     simp only [List.append_assoc]
     rw [← List.drop_drop, ← List.drop_drop, List.drop_left' (lenPK_eq_pk sk),
@@ -503,10 +503,10 @@ theorem law_postC (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) (sk : SK
   rw [← List.drop_drop, hsd, hpk, List.take_left' hW, hlen] at *
   rw [hit, List.nil_append, List.take_of_length_le (le_of_eq (length_cj ct))]
   have e1 : (wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRowsC ct) ++
-      ((psiRowsC ct).flatten ++ List.replicate 10 false)).take (lenKA hk c) = wKA sk ct := by
+      ((psiRowsC ct).flatten ++ List.replicate nA false)).take (lenKA hk c) = wKA sk ct := by
     rw [hrs, wPart, stashC]; simp only [List.append_assoc]; rw [List.take_left' (length_wKA sk ct)]
   have e2 : ((wPart (stashC hk c sk ct) (List.replicate (lenZ c) false) (cjRowsC ct) ++
-      ((psiRowsC ct).flatten ++ List.replicate 10 false)).drop (lenKA hk c)).take (N * K) =
+      ((psiRowsC ct).flatten ++ List.replicate nA false)).drop (lenKA hk c)).take (N * K) =
         (ringEnc N K).enc ct.κ := by
     rw [hrs, wPart, stashC]; simp only [List.append_assoc]
     rw [List.drop_left' (length_wKA sk ct), List.take_left' (length_kappa ct)]

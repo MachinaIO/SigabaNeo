@@ -91,11 +91,6 @@ noncomputable def decGenF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) (fr : XProg (R
       (XProg.seq (XProg.prog parse4P) <| XProg.seq (XProg.frame e fr) <|
         XProg.seq (branchD hk c cfX) (clearL clrAll)))
 
-variable (hk c) in
-/-- **The program of `Dec`** with the date-window front end `frontP c.L W`. -/
-noncomputable def decGenP (cfX : XProg 256) (W : ℕ) : XProg 256 :=
-  decGenF hk c eFr (frontP c.L W) cfX
-
 theorem length_encodeTuple_Dec (sk : SK hk c) (C : List Bool) (ct : CT hk c) :
     (SigabaNeo.encodeTuple [pw, (skEnc hk c).enc sk, C, (ctEnc hk c).enc ct]).length =
       (2 * (pw).length + 1) + (2 * fixLen (skEnc hk c) + 1) + (2 * C.length + 1) +
@@ -162,15 +157,6 @@ theorem law_decGenF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr :
       simp only [mem_clrAll, ne_eq, t0, not_false_eq_true, if_true, io2, t0', if_false]
       split_ifs <;> rfl
 
-/-- **The law of `Dec` as a tape program** (date-window front end). -/
-theorem law_decGenP {cfX : XProg 256} {W : ℕ} (hcf : CfSpec hk c cfX W) (hK2 : 2 ≤ K)
-    (sk : SK hk c) (C : List Bool) (ct : CT hk c) (hL : C.length ≤ c.L) :
-    (decGenP hk c cfX W).law (inputStore 255
-        ((SigabaNeo.encodeTuple [pw, (skEnc hk c).enc sk, C, (ctEnc hk c).enc ct]).take
-          (nDec hk c + 1))) =
-      PMF.pure (io2 (R := 254) (SigabaNeo.encodeTuple [decM hk c sk C ct]) [] []) :=
-  law_decGenF frEmb_eFr (frontSpec_frontP c.L W) hcf hK2 sk C ct hL
-
 /-! ### The machine -/
 
 theorem wf_getP (o L : ℕ) (dst : Fin 256) : (getP o L dst).WF :=
@@ -193,10 +179,6 @@ theorem wf_decGenF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) {fr : XProg (R + 2)} 
     hfr,
     ⟨⟨trivial, hcf.wf, wf_decFinB⟩, wf_clearL _, ⟨trivial, wf_putW _ _⟩⟩, wf_clearL _⟩
 
-theorem wf_decGenP {cfX : XProg 256} {W : ℕ} (hcf : CfSpec hk c cfX W) :
-    (decGenP hk c cfX W).WF :=
-  wf_decGenF eFr (Gates.DateWindow.wf_frontP _ _) hcf
-
 theorem coinFree_decGenF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) {fr : XProg (R + 2)}
     (hfr : fr.CoinFree) {cfX : XProg 256} {W : ℕ} (hcf : CfSpec hk c cfX W) :
     (decGenF hk c e fr cfX).CoinFree := by
@@ -211,10 +193,6 @@ theorem coinFree_decGenF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) {fr : XProg (R 
       (XProg.coinFree_ifBit _ (XProg.coinFree_seq rfl (XProg.coinFree_seq hcf.coinFree cfX_decFinB))
         (XProg.coinFree_ifBlank _ (cfX_clearL _) (XProg.coinFree_seq rfl (cfX_putW _ _))))
       (cfX_clearL _)))))
-
-theorem coinFree_decGenP {cfX : XProg 256} {W : ℕ} (hcf : CfSpec hk c cfX W) :
-    (decGenP hk c cfX W).CoinFree :=
-  coinFree_decGenF eFr (cfX_frontP _ _) hcf
 
 variable (hk c) in
 /-- **The machine of `Dec`** for a framed front end: input on tape `255` (at most `nDec + 1` bits
@@ -237,25 +215,6 @@ theorem decMachineF_law {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {
       PMF.pure (SigabaNeo.encodeTuple [decM hk c sk C ct]) := by
   rw [decMachineF, XProg.run_toMachineB _ (wf_decGenF e hfr.wf hcf),
     law_decGenF he hfr hcf hK2 sk C ct hL, PMF.pure_map]
-  rfl
-
-variable (hk c) in
-/-- **The machine of `Dec`**: input on tape `255` (at most `nDec + 1` bits loaded), output on
-tape `0`. -/
-noncomputable def decMachineP (cfX : XProg 256) (W : ℕ) : Machine :=
-  (decGenP hk c cfX W).toMachineB 255 0 (nDec hk c)
-
-theorem deterministic_decMachineP {cfX : XProg 256} {W : ℕ} (hcf : CfSpec hk c cfX W) :
-    (decMachineP hk c cfX W).Deterministic :=
-  XProg.deterministic_toMachineB _ (coinFree_decGenP hcf) _ _ _
-
-theorem decMachineP_law {cfX : XProg 256} {W : ℕ} (hcf : CfSpec hk c cfX W) (hK2 : 2 ≤ K)
-    (sk : SK hk c) (C : List Bool) (ct : CT hk c) (hL : C.length ≤ c.L) :
-    (decMachineP hk c cfX W).run
-        (SigabaNeo.encodeTuple [pw, (skEnc hk c).enc sk, C, (ctEnc hk c).enc ct]) =
-      PMF.pure (SigabaNeo.encodeTuple [decM hk c sk C ct]) := by
-  rw [decMachineP, XProg.run_toMachineB _ (wf_decGenP hcf), law_decGenP hcf hK2 sk C ct hL,
-    PMF.pure_map]
   rfl
 
 end AdvancedEncryption.DualUse.Prog

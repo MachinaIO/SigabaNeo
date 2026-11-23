@@ -20,11 +20,11 @@ open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 variable {N K k : ℕ}
 
 /-- The number of the encodings' positions `Attr × Index`. -/
-abbrev P1 (N k : ℕ) : ℕ := 10 * (2 * (2 * k * (k * N)))
+abbrev P1 (N k : ℕ) : ℕ := nA * (2 * (2 * k * (k * N)))
 
 /-- The length of the word of the `Ψᵢ`. -/
 abbrev fPsi (N K k : ℕ) : ℕ :=
-  fencLen (FixedEnc.fun (α := Fin 10) (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)))
+  fencLen (FixedEnc.fun (α := Fin nA) (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)))
 
 variable (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
@@ -35,7 +35,7 @@ abbrev fWm : ℕ :=
 
 /-- The tail of the simulation-data components after a public-key body (output on tape `13`). -/
 def sdTailBody : XProg 82 :=
-  seq (frame ⟨vTr 16 4, by decide⟩ (trB (10) (2 * k) (c.d) (N * K) (0))) <|
+  seq (frame ⟨vTr 16 4, by decide⟩ (trB (nA) (2 * k) (c.d) (N * K) (0))) <|
   seq (frame ⟨vTr 17 6, by decide⟩ (trB (P1 N k) (2 * k) (c.d) (1) (0))) <|
   seq (frame ⟨vOne 18, by decide⟩ (oneB N K)) <|
   seq (frame ⟨vSel 10 17 18 19, by decide⟩ (selB (P1 N k * (c.d * (2 * k))) (N * K))) <|
@@ -49,7 +49,7 @@ theorem wf_sdTailBody : (sdTailBody hk c).WF := by
 
 /-- The sizes of the templates of `sdTailBody`. -/
 def sizesdTail : ℕ :=
-  sizeTrB (10) (2 * k) (c.d) (N * K) (0) +
+  sizeTrB (nA) (2 * k) (c.d) (N * K) (0) +
     sizeTrB (P1 N k) (2 * k) (c.d) (1) (0) +
     (N * K + 1) +
     sizeSelB (P1 N k * (c.d * (2 * k))) (N * K) +
@@ -59,12 +59,12 @@ def sizesdTail : ℕ :=
 
 /-- The time of `sdTailBody` from tapes below `M`. -/
 def timesdTail (M : ℕ) : ℕ :=
-  timeTrB (10) (2 * k) (c.d) (N * K) (0) M + (timeTrB (P1 N k) (2 * k) (c.d) (1) (0) M + (timeOneB N K M + (timeSelB (P1 N k * (c.d * (2 * k))) (N * K) M + (timeJoinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M + (timeJoinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen attrEnc) M + (timeJoinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen attrEnc) (0) M))))))
+  timeTrB (nA) (2 * k) (c.d) (N * K) (0) M + (timeTrB (P1 N k) (2 * k) (c.d) (1) (0) M + (timeOneB N K M + (timeSelB (P1 N k * (c.d * (2 * k))) (N * K) M + (timeJoinB (fencLen (rmEnc c)) (fWm (N := N) hk c) (fPsi N K k) M + (timeJoinB (fD N K c.d) (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) (fencLen attrEnc) M + (timeJoinB (fencLen (pkEnc hk c)) (fD N K c.d + (fencLen (rmEnc c) + fWm (N := N) hk c + fPsi N K k) + fencLen attrEnc) (0) M))))))
 
 theorem ub_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) :
     UBZ 20 (sdTailBody hk c) M (timesdTail hk c M) M := by
   unfold sizesdTail at hM
-  exact (UBZ.frame _ (by decide) (ub_trB (10) (2 * k) (c.d) (N * K) (0) M (by omega)) le_rfl).seq <|
+  exact (UBZ.frame _ (by decide) (ub_trB (nA) (2 * k) (c.d) (N * K) (0) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_trB (P1 N k) (2 * k) (c.d) (1) (0) M (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_oneB' N K M (by omega) (by omega)) le_rfl).seq <|
     (UBZ.frame _ (by decide) (ub_selB (P1 N k * (c.d * (2 * k))) (N * K) M (by omega)) le_rfl).seq <|
@@ -75,7 +75,7 @@ theorem ub_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) :
 theorem sz_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) (hB : M < 2 ^ 240) :
     SZ (sdTailBody hk c) (2 ^ 21) := by
   unfold sizesdTail at hM
-  exact ((SZ.frame _ (sz_trB (10) (2 * k) (c.d) (N * K) (0) M (by omega) hB)).seq <|
+  exact ((SZ.frame _ (sz_trB (nA) (2 * k) (c.d) (N * K) (0) M (by omega) hB)).seq <|
     (SZ.frame _ (sz_trB (P1 N k) (2 * k) (c.d) (1) (0) M (by omega) hB)).seq <|
     (SZ.frame _ (sz_oneB' N K M (by omega) hB)).seq <|
     (SZ.frame _ (sz_selB (P1 N k * (c.d * (2 * k))) (N * K) M (by omega) hB)).seq <|
@@ -87,9 +87,9 @@ theorem sz_sdTailBody (M : ℕ) (hM : sizesdTail hk c ≤ M) (hB : M < 2 ^ 240) 
 set_option maxHeartbeats 4000000 in
 /-- **The law of the tail.** -/
 theorem law_sdTail (hN : 0 < N) (hK : 0 < K) (S : Store 82) (hS : Blank20 S)
-    (c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K))
+    (c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K))
     (x : PUniv.Attr) (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
-    (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) (pk : PK hk c)
+    (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) (pk : PK hk c)
     (h3 : S 3 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc c₀)
     (h4 : S 4 = (rmTEnc c).enc Rm) (h5 : S 5 = encAttr x) (h6 : S 6 = (wEnc hk c).enc w)
     (h8 : S 8 = (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ)

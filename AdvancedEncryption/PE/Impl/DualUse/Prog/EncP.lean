@@ -153,7 +153,7 @@ theorem law_encParseP (mpk : PK hk c) (x : PUniv.Attr) (b : Bool) (s : Store 124
     ((ringEnc N K).length _), PMF.pure_bind]
   rw [law_seq, law_prim, PMF.pure_bind]
   rw [law_seq, law_ufChunk 5 (by decide) _ _ (by simp [Prim.apply, h121]) (by simp [Prim.apply, h123])
-    (encAttr x) _ (by simp only [Prim.apply, Function.update_self, List.tail_cons]; rfl) (Gates.DateWindow.length_encAttr x), PMF.pure_bind]
+    (encAttr x) _ (by simp only [Prim.apply, Function.update_self, List.tail_cons]; rfl) (BranchingProgram.length_encAttr x), PMF.pure_bind]
   rw [law_seq, law_prim, PMF.pure_bind]
   rw [law_ufChunk 6 (by decide) 1 _ ?q1 ?q2 [b] [false] ?q3 rfl]
   · congr 1
@@ -228,6 +228,7 @@ theorem tmpl_lt : ∀ p ∈ tmplList hk c, ∀ t : Fin 124, 39 ≤ t.val → p.1
     (intro h; rw [← h] at ht; simp at ht)
 
 set_option maxHeartbeats 16000000 in
+set_option maxRecDepth 100000 in
 /-- **The tail of `Enc`**: from the words of the fields and the coins on the tapes `1 … 12` (the
 other tapes below `124` blank but `120`), the output tape receives the tuple of the ciphertext. -/
 theorem law_encTail (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : PUniv.Attr) (b : Bool)
@@ -245,7 +246,7 @@ theorem law_encTail (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : PUniv.Attr) (
     (h10 : s 10 = (rmTEnc c).enc (rMat (R := Rg N K) rr))
     (h11 : s 11 = (eEnc (N := N) hk).enc r.ej) (h12 : s 12 = (ringEnc N K).enc r.e') :
     ((encTail hk c).law s).map (fun s => s 122) =
-      PMF.pure (encodeTuple [(ctEnc hk c).enc (encrypt mpk (Gates.DateWindow.attrBits x) b r)]) := by
+      PMF.pure (encodeTuple [(ctEnc hk c).enc (encrypt mpk (attrBits x) b r)]) := by
   rw [encTail, law_seq, law_natL _ s (tmplList_ne hk c) (hS 123 (by simp) (by simp)),
     PMF.pure_bind, law_seq, law_frame, law_prog_run _ noGrow_encCoreP, PMF.pure_map, PMF.pure_bind,
     law_frameApP (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) _ ?q1 ?q2,
@@ -260,8 +261,8 @@ theorem law_encTail (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : PUniv.Attr) (
       · exact absurd (congrArg Fin.val hj) (by simp; omega)
     simp only [Function.update_self, h122, List.nil_append, h0]
     rw [encCore_out hk c hN hK mpk x b r rr hRm]
-    · rw [show encodeTuple [(ctEnc hk c).enc (encrypt mpk (Gates.DateWindow.attrBits x) b r)] =
-        Turing.MultiTapeTM.frame ((ctEnc hk c).enc (encrypt mpk (Gates.DateWindow.attrBits x) b r)) ++ []
+    · rw [show encodeTuple [(ctEnc hk c).enc (encrypt mpk (attrBits x) b r)] =
+        Turing.MultiTapeTM.frame ((ctEnc hk c).enc (encrypt mpk (attrBits x) b r)) ++ []
         from rfl, List.append_nil]
     · intro i hi
       show S1 (e120 i) = []
@@ -350,7 +351,7 @@ end AdvancedEncryption.DualUse.Prog
 
 namespace AdvancedEncryption.DualUse.Prog
 
-open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg
+open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.PE.BranchingProgram
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
@@ -387,11 +388,11 @@ def nInE : ℕ :=
       ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) +
       N * K))) + 1) + ((2 * nA + 1) + ((2 * 1 + 1) + 0)))
 
-theorem length_encIn (mpk : PK hk c) (x : PE.DateWindow.PUniv.Attr) (b : Bool) :
-    (encodeTuple [pw, (pkEnc hk c).enc mpk, PE.DateWindow.encAttr x, [b]]).length = nInE hk c := by
+theorem length_encIn (mpk : PK hk c) (x : PUniv.Attr) (b : Bool) :
+    (encodeTuple [pw, (pkEnc hk c).enc mpk, encAttr x, [b]]).length = nInE hk c := by
   show (Turing.MultiTapeTM.frame pw ++ (Turing.MultiTapeTM.frame ((pkEnc hk c).enc mpk) ++
-    (Turing.MultiTapeTM.frame (PE.DateWindow.encAttr x) ++ (Turing.MultiTapeTM.frame [b] ++ [])))).length = _
-  simp only [List.length_append, length_frameE, PE.Gates.DateWindow.length_encAttr, List.length_nil,
+    (Turing.MultiTapeTM.frame (encAttr x) ++ (Turing.MultiTapeTM.frame [b] ++ [])))).length = _
+  simp only [List.length_append, length_frameE, PE.BranchingProgram.length_encAttr, List.length_nil,
     List.length_singleton]
   rw [(pkEnc hk c).length]
   rfl
@@ -401,8 +402,8 @@ noncomputable def encMP (X : ChiSampler c) : Machine := (encP hk c X).toMachineT
 
 /-- **The law of the machine of `Enc`.** -/
 theorem run_encMP [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (X : ChiSampler c) (mpk : PK hk c)
-    (x : PE.DateWindow.PUniv.Attr) (b : Bool) :
-    (encMP hk c X).run (encodeTuple [pw, (pkEnc hk c).enc mpk, PE.DateWindow.encAttr x, [b]]) =
+    (x : PUniv.Attr) (b : Bool) :
+    (encMP hk c X).run (encodeTuple [pw, (pkEnc hk c).enc mpk, encAttr x, [b]]) =
       (encM hk c mpk x b).map fun ct => encodeTuple [(ctEnc hk c).enc ct] := by
   rw [encMP, XProg.run_toMachineT _ (wf_encP hk c X) 120 122 (nInE hk c) _
     (le_of_eq (length_encIn hk c mpk x b)), law_encP hk c hN hK X mpk x b]

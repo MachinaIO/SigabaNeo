@@ -1,5 +1,4 @@
 import PE.Impl.DualUse.Prog.KeyPTime
-import PE.Impl.Gates.WindowBound
 import SigabaNeo.Lib.Machines.Prog.MacroSize
 import SigabaNeo.Lib.Machines.Prog.VecBound
 

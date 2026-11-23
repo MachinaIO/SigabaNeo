@@ -311,7 +311,7 @@ theorem wf_chalBodyP (D P : ℕ) : (chalBodyP D P).WF := by
 
 /-- The prefix of the packed secret of the ideal side before the challenge. -/
 def preI : ℕ :=
-  fencLen (inst3Enc (N := N) (K := K) (k := k)) + (10 + (fencLen (matEnc (N := N) (K := K) (Fin 1)
+  fencLen (inst3Enc (N := N) (K := K) (k := k)) + (nA + (fencLen (matEnc (N := N) (K := K) (Fin 1)
     (Fin c.d)) + (fencLen (wEnc hk c) + (N * K + fencLen (coinsEnc hk c)))))
 
 /-- **The challenge component of the ideal side.** -/

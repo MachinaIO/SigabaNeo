@@ -186,7 +186,7 @@ variable {ienc senc setupI viewI sdI}
 variable (S : StepComps ienc senc setupI viewI sdI) (wfB : XProg 256) (Wg : ℕ)
   (hwf : WfSpec hkp confP wfB Wg)
 
-theorem hL_conf : dateBound ≤ confP.L := by rw [confP_L]
+theorem hL_conf : bpLen ≤ confP.L := by rw [confP_L]
 
 /-- **The authorization component of the reductions** and its interface (`AuthSpec`): the
 reductions use only `authC_spec`. -/

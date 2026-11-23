@@ -83,11 +83,11 @@ theorem ixT_eq (i : Fin 10) (b : BI N k) : ixT N K k hk (i, b) = i.val * (4 * k 
   refine (enumIx_prod (α := (Sdw (N := N) hk).Attr) (β := (Sdw (N := N) hk).ctBits.Index) i b).trans ?_
   rw [length_enum_BI]
   congr 1
-  · show enumIx (α := Fin 10) i * _ = _
+  · show enumIx (α := Fin nA) i * _ = _
     rw [enumIx_fin]
   · exact enumIx_BI b
 
-theorem ixT_lt (j : Fin 10 × BI N k) : ixT N K k hk j < nT N K k hk := enumIx_lt _
+theorem ixT_lt (j : Fin nA × BI N k) : ixT N K k hk j < nT N K k hk := enumIx_lt _
 
 /-! ### The generator -/
 

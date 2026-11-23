@@ -120,10 +120,10 @@ def ctLen : ℕ := nA * (2 * (2 * k) * (N * K)) + 1 * c.d * (N * K) + 1 * nTrap 
   nJenc (N := N) hk * (1 * (2 * k) * (N * K)) + N * K
 
 theorem encAttr_bits (x : PUniv.Attr) :
-    encAttr x = (List.finRange nA).map (Gates.DateWindow.attrBits x) := by
-  apply List.ext_getElem (by simp [Gates.DateWindow.length_encAttr])
+    encAttr x = (List.finRange nA).map (attrBits x) := by
+  apply List.ext_getElem (by rw [List.length_map, List.length_finRange]; exact length_encAttr x)
   intro i h1 h2
-  simp [Gates.DateWindow.bitsOf, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h1]
+  simp [attrBits, Gates.BPCircuit.bitsOfBP, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h1]
 
 theorem drop2 (X Y Z : List Bool) (a b : ℕ) (h : a ≤ (X ++ Y).length) :
     ((X ++ Y).drop a ++ Z).drop b = (X ++ Y ++ Z).drop (a + b) := by
@@ -172,7 +172,7 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : PUniv.Attr) (
     (t35 : S 35 = List.replicate (nA * (2 * (2 * k)) * (k * N)) false)
     (t36 : S 36 = List.replicate (nJenc (N := N) hk * (1 * (2 * k) * (N * K))) false)
     (t37 : (S 37).length = N * K - K) (t38 : (S 38).length = k * (N * K)) :
-    (Prog.run encCoreP S) 0 = (ctEnc hk c).enc (encrypt mpk (Gates.DateWindow.attrBits x) b r) := by
+    (Prog.run encCoreP S) 0 = (ctEnc hk c).enc (encrypt mpk (attrBits x) b r) := by
   have t15l : (S 15).length = N * K := by rw [t15, List.length_replicate]
   simp only [encCoreP, Prog.run_seq]
   rw [run_gadPh S (fun i hi => hS i (by omega)) t13 t14 t15l t18 (by rw [t23]; simp)
@@ -229,7 +229,7 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : PUniv.Attr) (
   rw [run_ctPh_out _ (by simp [hS]) (by simp [hS])]
   simp (config := { decide := true }) only [Function.update_apply, ite_true, ite_false]
   have hKk : K ≤ k := ((Nat.pow_lt_pow_iff_right (by norm_num)).mp hk).le
-  set Ψ := gswCts mpk (Gates.DateWindow.attrBits x) r with hΨ
+  set Ψ := gswCts mpk (attrBits x) r with hΨ
   have hc0 : addRW (c.d * N) K (matMulW N K 1 1 c.d (S 7) (S 1)) (S 8) =
       (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc (scalar r.s * mpk.B₀ + r.e₀) := by
     rw [h7, h1, h8]
@@ -247,7 +247,7 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : PUniv.Attr) (
     rw [hc0, h1, flatMap_enc_row, flatMap_enc_row, h10, rmTEnc_cols hk c rr, h5, encAttr_bits, t22,
       t34]
     have := iStepB_list hk hN hK mpk.B₀ (scalar r.s * mpk.B₀ + r.e₀) rr
-      (Gates.DateWindow.attrBits x) (List.finRange nA)
+      (attrBits x) (List.finRange nA)
       (List.replicate (nA * (2 * (2 * k) * (N * K))) false) [] []
     simp only [List.append_nil, List.length_finRange] at this
     rw [this, List.drop_left' (by simp)]

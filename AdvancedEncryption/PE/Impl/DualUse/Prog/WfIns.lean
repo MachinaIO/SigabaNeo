@@ -14,7 +14,7 @@ counter, `3` … `8` scratch) appends the padding `replicate (|s 2| · V) false`
 `2` the output), then `one` (`run_bldP`).
 
 * `insTP`: the streams of the `B_j` (in `mpk`) and of the `W_j`, the bits `ψ_j` (`psiBitP`), the
-  items `Enum.list` of `Fin 10 × BI N k`: **`run_insTP`** writes
+  items `Enum.list` of `Fin nA × BI N k`: **`run_insTP`** writes
   `replicate (|s 2| · VT) false ++ (insTW sd ++ [simOneW … gadW]).flatten`;
 * `insGP`: the streams of the `Ψᵢ` and of the `Rᵢ`, the bits `xᵢ` (`xBitP`), the items
   `List.finRange 10`: **`run_insGP`** writes `… ++ (insGW sd ++ [simOneW … gswGadW]).flatten`.
@@ -307,7 +307,7 @@ theorem run_insGP (hN : 0 < N) (hK : 0 < K) (sd : SimData hk c) (s : Store 9)
         (insGW sd ++ [simOneW N K k c.d (gswGadW N K k)]).flatten) := by
   rw [insGP]
   refine Eq.trans (run_bldP (fA := fun i => colsW N K k 2 (sd.Ψ i)) (fB := fun i => colsW N K k c.d (sd.Rm i))
-    (fC := fun i => constW N K (bitW K (DateWindow.attrBits sd.x i))) (sd := (sdEnc hk c).enc sd)
+    (fC := fun i => constW N K (bitW K (attrBits sd.x i))) (sd := (sdEnc hk c).enc sd)
     (fun _ => length_colsW' _ _) (fun _ => length_colsW' _ _)
     (fun _ => SigabaNeo.Tape.Prog.length_constW (length_bitW _ _))
     (fun i r hr0 hr1 => by

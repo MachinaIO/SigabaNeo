@@ -121,7 +121,7 @@ noncomputable def c05 (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k)
 
 /-- The Ring-GSW ciphertexts of hybrid 5. -/
 noncomputable def psi5 (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) (σ : Sec5 hk c) :
-    Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K) :=
+    Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K) :=
   psiOf hk c i.1.1 (c05 hk c i σ) σ.2.2.2.1 σ.1
 
 theorem pk5_word (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) (σ : Sec5 hk c) :

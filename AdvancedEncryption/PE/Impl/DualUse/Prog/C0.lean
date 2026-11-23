@@ -190,7 +190,7 @@ section Ideal
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-- The offset of `B₀` in the packed secret of the ideal side. -/
-def oB0I : ℕ := fencLen (inst3Enc (N := N) (K := K) (k := k)) + 10
+def oB0I : ℕ := fencLen (inst3Enc (N := N) (K := K) (k := k)) + nA
 
 /-- The offset of the secret `s` of the coins in the packed secret of the ideal side. -/
 def oSI : ℕ := oB0I (N := N) (K := K) (k := k) + fencLen (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)) +

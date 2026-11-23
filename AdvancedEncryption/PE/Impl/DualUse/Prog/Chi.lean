@@ -519,9 +519,9 @@ theorem dp_ne : NeZero Params.confP.d := ⟨by show Params.dp ≠ 0; rw [Params.
 theorem Kp_pos : 0 < Params.Kp := by rw [Params.Kp_def]; positivity
 
 /-- **The setup of hybrid 3 for `confP`**, with the sampler `chiP`. -/
-theorem law_setup3P_conf (ab : Inst3T Params.Np Params.Kp Params.kp) (x : PE.DateWindow.PUniv.Attr) :
+theorem law_setup3P_conf (ab : Inst3T Params.Np Params.Kp Params.kp) (x : PUniv.Attr) :
     (setup3P Params.hkp Params.confP chiP).law (ioS (R := 5)
-      ((inst3Enc (N := Params.Np) (K := Params.Kp) (k := Params.kp)).enc ab) (PE.DateWindow.encAttr x) []) =
+      ((inst3Enc (N := Params.Np) (K := Params.Kp) (k := Params.kp)).enc ab) (AdvancedEncryption.PE.BranchingProgram.encAttr x) []) =
       (setup3 Params.hkp Params.confP x).map fun σ => ioS (R := 5)
         (((inst3Enc (N := Params.Np) (K := Params.Kp) (k := Params.kp)).prod
           (sec3Enc Params.hkp Params.confP)).enc (ab, σ)) [] [] :=
@@ -529,9 +529,9 @@ theorem law_setup3P_conf (ab : Inst3T Params.Np Params.Kp Params.kp) (x : PE.Dat
   law_setup3P Params.hkp Params.confP chiP law_chiP Params.Np_pos Kp_pos ab x
 
 /-- **The setup of the ideal side for `confP`**, with the sampler `chiP`. -/
-theorem law_setupIP_conf (ab : Inst3T Params.Np Params.Kp Params.kp) (x : PE.DateWindow.PUniv.Attr) :
+theorem law_setupIP_conf (ab : Inst3T Params.Np Params.Kp Params.kp) (x : PUniv.Attr) :
     (setupIP Params.hkp Params.confP chiP).law (ioS (R := 5)
-      ((inst3Enc (N := Params.Np) (K := Params.Kp) (k := Params.kp)).enc ab) (PE.DateWindow.encAttr x) []) =
+      ((inst3Enc (N := Params.Np) (K := Params.Kp) (k := Params.kp)).enc ab) (AdvancedEncryption.PE.BranchingProgram.encAttr x) []) =
       (setupI Params.hkp Params.confP x).map fun σ => ioS (R := 5)
         (((inst3Enc (N := Params.Np) (K := Params.Kp) (k := Params.kp)).prod
           (secIEnc Params.hkp Params.confP)).enc (ab, σ)) [] [] :=

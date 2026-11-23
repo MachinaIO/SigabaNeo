@@ -104,6 +104,9 @@ the class can be replaced in one place: the universe `PUniv`, the number of attr
 the class test `ValidC` of `KeyGen`, `Dec` and `Eval`, and the word `blockWord W C` the `W_f`
 block reads for a predicate `C`. -/
 
+export AdvancedEncryption.PE.Gates.BPWord (bpLen tablesOf)
+export AdvancedEncryption.PE.BranchingProgram (output)
+
 /-- The universe of the primitive. -/
 abbrev PUniv : Universe := bpUniverse
 

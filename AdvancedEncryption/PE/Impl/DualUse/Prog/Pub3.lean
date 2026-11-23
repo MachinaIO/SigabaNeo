@@ -58,7 +58,7 @@ variable (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-- The word of the `B_j` of `(B₀, w, Ψ)`. -/
 noncomputable def bjW (B₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
-    (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) : List Bool :=
+    (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) : List Bool :=
   (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
       (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k))).enc
     fun j => B₀ * wMat w j + RingBTVW.bitsOf (Sdw (N := N) hk) Ψ j • (Sdw (N := N) hk).Γ₁.G
@@ -184,11 +184,11 @@ noncomputable def c03 (σ : Sec3 hk c) : Matrix (Fin 1) (Fin c.d) (Rg N K) :=
   RingBTVW.scalar σ.2.2.2.2.1.1 * σ.2.1 + σ.2.2.2.2.1.2.1
 
 /-- The Ring-GSW ciphertexts of hybrid 3. -/
-noncomputable def psi3 (σ : Sec3 hk c) : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K) :=
+noncomputable def psi3 (σ : Sec3 hk c) : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K) :=
   psiOf hk c σ.2.1 (c03 hk c σ) σ.2.2.2.2.1.2.2.2.1 σ.1
 
 theorem length_bjW (B₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
-    (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) : (bjW hk c B₀ w Ψ).length = fJ (N := N) hk :=
+    (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) : (bjW hk c B₀ w Ψ).length = fJ (N := N) hk :=
   length_enc _ _
 
 theorem pkEnc_enc (m : PK hk c) : (pkEnc hk c).enc m =
@@ -224,7 +224,7 @@ arbitrary): the public key on tape `15`, and `c₀`, the `Rᵢ`, `x`, `w`, the `
 `3, 4, 5, 6, 8`. -/
 theorem law_pub3Body (hN : 0 < N) (hK : 0 < K) (W m : List Bool) (ab : Inst3T N K k)
     (B₀ e₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (s p : Rg N K)
-    (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : PUniv.Attr)
+    (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : PUniv.Attr)
     (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
     (ha : takeD (fC N K k) (W.drop 0) = (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1)
     (hb : takeD (fC N K k) (W.drop (fC N K k + 0)) =

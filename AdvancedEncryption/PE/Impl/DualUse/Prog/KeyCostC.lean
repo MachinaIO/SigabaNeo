@@ -8,7 +8,7 @@ import PE.Impl.DualUse.ReductionCompsBound
 
 At `confP` with the key-try configuration `cfP` and a window width `384 ≤ Wg ≤ 2^200`:
 
-* the cut of the key queries: `confP.L = dateBound ≤ 2^20` (`dateBound_le`, `confP_L_le`);
+* the cut of the key queries: `confP.L = bpLen ≤ 2^20` (`bpLen_le`, `confP_L_le`);
 * the front end: at most `2^231` primitives in its table, its output at most `2^232` bits, its time
   at most `2^470`, at most `2^238` states (`lookCount_conf`, `frontL_conf`, `frontT_conf`,
   `size_frontP_conf`);
@@ -34,8 +34,8 @@ set_option exponentiation.threshold 3000
 
 /-- **The cut of the key queries**: every window predicate with a date, encoded with the
 parameters, has at most `2^20` bits. -/
-theorem dateBound_le : dateBound ≤ 2 ^ 20 := by
-  unfold dateBound
+theorem bpLen_le : bpLen ≤ 2 ^ 20 := by
+  unfold bpLen
   apply Finset.sup_le
   intro wx _
   have h0 := length_encodeTuple3 (paramsWord PUniv params) (winWord wx.1)
@@ -51,7 +51,7 @@ theorem dateBound_le : dateBound ≤ 2 ^ 20 := by
   have : (2 : ℕ) ^ 20 = 1048576 := by norm_num
   omega
 
-theorem confP_L_le : confP.L ≤ 2 ^ 20 := by rw [confP_L]; exact dateBound_le
+theorem confP_L_le : confP.L ≤ 2 ^ 20 := by rw [confP_L]; exact bpLen_le
 
 section Front
 

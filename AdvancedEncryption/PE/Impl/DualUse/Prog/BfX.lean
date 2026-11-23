@@ -35,7 +35,7 @@ open SigabaNeo.Tape.Prog (tailsP run_tailsP coinFree_tailsP wf_tailsP)
 
 /-- The templates of `preCoreB`. -/
 def preTmpl (Z R nT C0 RM0 PS0 PAD : ℕ) : List (Fin 18 × ℕ) :=
-  [(7, Z), (8, R), (9, nT), (10, C0), (11, RM0), (12, PS0), (13, 10), (14, PAD)]
+  [(7, Z), (8, R), (9, nT), (10, C0), (11, RM0), (12, PS0), (13, nA), (14, PAD)]
 
 /-- **The crafted data of `KeyGen` as a program on 18 tapes**: the `pk` prefix (`L` bits) to the
 output `1`, the trapdoor `T` (`LT` bits after it) to the stash `3`, the rows `F` (`nTR` bits at
@@ -62,7 +62,7 @@ theorem law_preCoreB (L LT oB nTR Z R nT C0 RM0 PS0 PAD : ℕ) (w : List Bool)
     (preCoreB L LT oB nTR Z R nT C0 RM0 PS0 PAD).law (io1 w) =
       PMF.pure (io1 (w.take L ++ List.replicate C0 false ++ List.replicate RM0 false ++
         wPart ((w.drop L).take LT ++ List.replicate PAD false) (List.replicate Z false) rows ++
-        List.replicate PS0 false ++ List.replicate 10 false)) := by
+        List.replicate PS0 false ++ List.replicate nA false)) := by
   rw [io1_sto, io1_sto, preCoreB,
     XProg.law_seq_pure (law_getAt 0 L (by decide) (by decide) (by decide) (by decide) (by decide)
       (by decide) _ (by simp) (by simp) (by simp))]
@@ -197,7 +197,7 @@ abbrev lenZ (c : Conf N K k) : ℕ := (c.d - 1) * DualUse.rowL N K k
 
 variable (hk c) in
 /-- The offset of the `W_j` in the word of the simulation data. -/
-def offWk : ℕ := lenPK hk c + c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k)
+def offWk : ℕ := lenPK hk c + c.d * (N * K) + nA * (c.d * DualUse.rowL N K k)
 
 theorem eLo18 : 18 + 1 ≤ 256 := by norm_num
 theorem eLo54 : 54 + 1 ≤ 256 := by norm_num
@@ -206,8 +206,8 @@ variable (hk c) in
 /-- **The crafted data of `KeyGen`**, framed off tape `1`. -/
 def preB : XProg 256 :=
   XProg.frame (eLo 18 eLo18) (preCoreB (lenPK hk c) (lenT N K k) (offBk c) (nJ (N := N) hk * DualUse.rowL N K k)
-    (lenZ c) (DualUse.rowL N K k) (nJ (N := N) hk) (c.d * (N * K)) (10 * (c.d * DualUse.rowL N K k))
-    (10 * (2 * DualUse.rowL N K k)) (lenZ c - lenT N K k))
+    (lenZ c) (DualUse.rowL N K k) (nJ (N := N) hk) (c.d * (N * K)) (nA * (c.d * DualUse.rowL N K k))
+    (nA * (2 * DualUse.rowL N K k)) (lenZ c - lenT N K k))
 
 variable (hk c) in
 /-- **Reading the key row back**, framed off tape `1`. -/
@@ -311,20 +311,20 @@ theorem length_stashB (hd : 3 ≤ c.d) (msk : SKey hk c) : (stashB hk c msk).len
   omega
 
 theorem psi0_word :
-    (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
-      (fun _ => (0 : Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))) = List.replicate (10 * (2 * DualUse.rowL N K k)) false := by
+    (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
+      (fun _ => (0 : Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))) = List.replicate (nA * (2 * DualUse.rowL N K k)) false := by
   rw [fun_enc_const _ _ (matEnc_zero _ _), Algo.len_fin, len_matEnc_col]
 
 /-- **The word written by `preB`** is that of the crafted data `sdB`. -/
 theorem sdEnc_sdB (hd : 3 ≤ c.d) (msk : SKey hk c) :
     (sdEnc hk c).enc (sdB hk c msk.1 (stashB hk c msk)) =
       ((mskEnc hk c).enc msk).take (lenPK hk c) ++ List.replicate (c.d * (N * K)) false ++
-        List.replicate (10 * (c.d * DualUse.rowL N K k)) false ++
+        List.replicate (nA * (c.d * DualUse.rowL N K k)) false ++
         wPart ((((mskEnc hk c).enc msk).drop (lenPK hk c)).take (lenT N K k) ++
             List.replicate (lenZ c - lenT N K k) false) (List.replicate (lenZ c) false)
           ((Enum.list (α := JIx (N := N) hk)).map
             fun j => (matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc (msk.1.Bj j)) ++
-        List.replicate (10 * (2 * DualUse.rowL N K k)) false ++ List.replicate 10 false := by
+        List.replicate (nA * (2 * DualUse.rowL N K k)) false ++ List.replicate nA false := by
   have hp : ((pkEnc hk c).enc msk.1).length = lenPK hk c := length_enc_fixLen _ _
   rw [sdB, sdEnc_sdOf msk.1 (fun _ => by simp) _ (length_stashB hd msk) (by omega), psi0_word,
     msk_split, List.take_left' hp, List.drop_left' hp, List.take_of_length_le
@@ -375,8 +375,8 @@ theorem law_postB (hd : 3 ≤ c.d) (msk : SKey hk c) (wf : List Bool)
   simp only [List.append_assoc]
   rw [List.take_left' hp]
   congr 1
-  rw [offWk, show lenPK hk c + c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k) =
-    lenPK hk c + (c.d * (N * K) + 10 * (c.d * DualUse.rowL N K k)) by ring, ← List.drop_drop,
+  rw [offWk, show lenPK hk c + c.d * (N * K) + nA * (c.d * DualUse.rowL N K k) =
+    lenPK hk c + (c.d * (N * K) + nA * (c.d * DualUse.rowL N K k)) by ring, ← List.drop_drop,
     List.drop_left' hp, ← List.drop_drop, List.drop_left' (by simp), List.drop_left' (by simp),
     List.take_left' (length_mskT msk)]
 

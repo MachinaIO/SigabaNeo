@@ -8,13 +8,13 @@ import PE.Impl.DualUse.ReductionOracle
 /-!
 # The key component of the reduction's handlers
 
-`keyP sdP wfB … : XProg 256` answers a key query `C` (tape `1`) from the packed secret `p`
+`keyPF sdP e fr wfB … : XProg 256` answers a key query `C` (tape `1`) from the packed secret `p`
 (tape `0`):
 
 1. `sdP` (framed on the tapes `0, 2, …, 82`) turns the packed secret into the word
    `sdEnc (sdOf p)` of the simulation data (`SdSpec`; written by WS-M4);
-2. the front end `frontP c.L W` (framed on the tapes `1, 83, …, 89`) replaces `C` by
-   `frontV c.L W C` (`PE.Gates.DateWindow.law_frontP`);
+2. a front end `fr` meeting `FrontSpec` (framed by `e`) replaces `C` by `frontW c.L W C`
+   (the branching-program front end is `frontBP`, `Prog/FrontBP.lean`);
 3. on the first bit of the front end's output:
    * **a window predicate** (`true :: gsW W (parse C)`): the block `wfB` writes the word of
      `W_f = simW sd C` on tape `2` (`WfSpec`), the public key (the first `|pkEnc|` bits of
@@ -24,7 +24,7 @@ import PE.Impl.DualUse.ReductionOracle
    * **a long predicate** (`[]`): the empty word;
 4. every tape but `0` is cleared.
 
-**`law_keyP`**: on `io2 (encS p) C []` the law of `keyP` is `(KGsim (sdOf p) C).map (io2 · [] [])`
+**`law_keyPF`**: on `io2 (encS p) C []` the law of `keyPF` is `(KGsim (sdOf p) C).map (io2 · [] [])`
 for every `C` (`Comps.law_key`), **`law_keyP_spPack`** in the form of the packed challenger.
 
 The width: the SLP evaluator of the simulations (`slpEvalP`, 132 injective tapes), `simKeyP`
@@ -277,11 +277,6 @@ noncomputable def keyPF {R : ℕ} (sdP : XProg 82) (e : Fin (R + 2) ↪ Fin 256)
     (wfB : XProg 256) (cf : KeyCfg) : XProg 256 :=
   seq (frame eSd sdP) <| seq (frame e fr) <| seq (branchB hk c wfB cf) (clearL clrAll)
 
-variable (hk c) in
-/-- **The key component** with the date-window front end `frontP c.L W` (framed by `eFr`). -/
-noncomputable def keyP (sdP : XProg 82) (wfB : XProg 256) (W : ℕ) (cf : KeyCfg) : XProg 256 :=
-  keyPF hk c sdP eFr (frontP c.L W) wfB cf
-
 /-! ### The laws of the branches -/
 
 theorem law_longB (a : List Bool) : longB.law (io2 (R := 254) a [] []) =
@@ -486,28 +481,10 @@ theorem law_keyPF {Sig : Type} {sdP : XProg 82} {encS : Sig → List Bool}
       PMF.pure ∘ (fun w => io2 (R := 254) w [] []) := funext law_clrAll
   rw [e, PMF.bind_pure_comp]
 
-variable (hk c) in
-/-- **The law of the key component**: for every query `C`, the image of the simulated key oracle
-`KGsim (sdOf p) C` of the simulation data of the packed secret. -/
-theorem law_keyP {Sig : Type} {sdP : XProg 82} {encS : Sig → List Bool}
-    {sdOf : Sig → SimData hk c} {Ok : Sig → Prop} (hsd : SdSpec hk c sdP encS sdOf Ok)
-    {wfB : XProg 256} {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg) (hcf : cf.Valid hk c)
-    (p : Sig) (hp : Ok p) (C : List Bool) :
-    (keyP hk c sdP wfB W cf).law (io2 (R := 254) (encS p) C []) =
-      (KGsim (sdOf p) C).map fun w => io2 (R := 254) w [] [] :=
-  law_keyPF hk c hsd frEmb_eFr (frontSpec_frontP c.L W) hwf cf hcf p hp C
-
 theorem wf_keyPF {sdP : XProg 82} (hsd : sdP.WF) {R : ℕ} (e : Fin (R + 2) ↪ Fin 256)
     {fr : XProg (R + 2)} (hfr : fr.WF) {wfB : XProg 256}
     (hwf : wfB.WF) (cf : KeyCfg) : (keyPF hk c sdP e fr wfB cf).WF :=
   ⟨hsd, hfr,
-    ⟨⟨trivial, hwf, wf_prefP _ _ _ _ _, wf_putW _ _, wf_putW _ _,
-      wf_tmplP _ _ (keyTmpl_ne (Or.inr (Or.inr rfl))), ProgKey.wf_keyTrySimCoinsP, wf_clearL _⟩,
-    wf_clearL _, trivial, wf_prefP _ _ _ _ _, wf_putW _ _, trivial, trivial⟩, wf_clearL _⟩
-
-theorem wf_keyP {sdP : XProg 82} (hsd : sdP.WF) {wfB : XProg 256} (hwf : wfB.WF) (W : ℕ)
-    (cf : KeyCfg) : (keyP hk c sdP wfB W cf).WF :=
-  ⟨hsd, wf_frontP _ _,
     ⟨⟨trivial, hwf, wf_prefP _ _ _ _ _, wf_putW _ _, wf_putW _ _,
       wf_tmplP _ _ (keyTmpl_ne (Or.inr (Or.inr rfl))), ProgKey.wf_keyTrySimCoinsP, wf_clearL _⟩,
     wf_clearL _, trivial, wf_prefP _ _ _ _ _, wf_putW _ _, trivial, trivial⟩, wf_clearL _⟩
@@ -522,10 +499,12 @@ theorem law_keyP_spPack [NeZero c.d] (st : PUniv.Attr → PMF (Inst × Sec))
     (viewI : Inst → Sec → PK hk c × CT hk c) (sdI : Inst → Sec → SimData hk c)
     {sdP : XProg 82} {encS : Inst × Sec → List Bool} {Ok : Inst × Sec → Prop}
     (hsd : SdSpec hk c sdP encS (fun p => sdI p.1 p.2) Ok)
-    {wfB : XProg 256} {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg) (hcf : cf.Valid hk c)
+    {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr : XProg (R + 2)} {W : ℕ}
+    {FT FL : ℕ → ℕ} {FS : ℕ} (hfr : FrontSpec fr c.L W FT FL FS)
+    {wfB : XProg 256} (hwf : WfSpec hk c wfB W) (cf : KeyCfg) (hcf : cf.Valid hk c)
     (p : Inst × Sec) (hp : Ok p) (C : List Bool) :
-    (keyP hk c sdP wfB W cf).law (io2 (R := 254) (encS p) C []) =
+    (keyPF hk c sdP e fr wfB cf).law (io2 (R := 254) (encS p) C []) =
       ((spPack st viewI sdI).key p C).map fun sk => io2 (R := 254) sk [] [] :=
-  law_keyP hk c hsd hwf cf hcf p hp C
+  law_keyPF hk c hsd he hfr hwf cf hcf p hp C
 
 end AdvancedEncryption.DualUse.Prog

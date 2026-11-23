@@ -17,7 +17,7 @@ blocks of *coefficient words*:
 Field laws: `wLaw_eq` (binary columns), `rmLaw_eq` (`lawRmBin`, column-major `rmTEnc`),
 `eLaw_eq` (`lawEc`). **`setup5_enc`**: the word of the secret of hybrid 5,
 `(setup5 x).map sec5Enc.enc`, is the concatenation of `encAttr x`, `N · K` fair bits (`u₀`),
-`|JC| · d` fair bits (`w`), `10 · 2k · d` independent `μB` (the `Rᵢ`), and `|JC| · N` independent
+`|JC| · d` fair bits (`w`), `nA · 2k · d` independent `μB` (the `Rᵢ`), and `|JC| · N` independent
 `μF` (the errors).
 -/
 
@@ -157,9 +157,9 @@ theorem rmTEnc_rMat (r : (Sdw (N := N) hk).Attr × Col k → (Fin c.d → Bool))
       ((Enum.list (α := (Sdw (N := N) hk).Attr × Col k)).map r).flatMap
         (fun f => ((List.finRange c.d).map f).flatMap
           (fun b => (ringEnc N K).enc (bitVal (R := Rg N K) b))) := by
-  refine Eq.trans ?_ (flatMap_map_product (List.finRange 10) (Enum.list (α := Col k)) r _).symm
+  refine Eq.trans ?_ (flatMap_map_product (List.finRange nA) (Enum.list (α := Col k)) r _).symm
   refine Eq.trans (List.flatMap_map (f := rMat (R := Rg N K) r)
-    (g := (matTEnc (N := N) (K := K) (Fin c.d) (Col k)).enc) (l := List.finRange 10)) ?_
+    (g := (matTEnc (N := N) (K := K) (Fin c.d) (Col k)).enc) (l := List.finRange nA)) ?_
   refine List.flatMap_congr fun i _ => ?_
   refine (matTEnc_enc _).trans ?_
   simp only [List.flatMap_map]

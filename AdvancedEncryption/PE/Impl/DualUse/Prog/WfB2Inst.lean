@@ -12,7 +12,7 @@ parameters `confP`:
   `375` gates, every wire index at most `385` (`gates_facts`, through `bnd_predGates`);
 * `treeHeight Np kp = 61 ≤ 64` (`treeHeight_conf`);
 * the stream offsets and `|sdEnc|` below `2^238 ≤ Lb = 2^240` (`offs_conf`, closed forms of the encodings);
-* `dateBound ≤ 2^20` and the front end's output `frontL dateBound 512 ≤ 2^64` (`frontL_le`).
+* `bpLen ≤ 2^20` and the front end's output `frontL bpLen 512 ≤ 2^64` (`frontL_le`).
 
 **`wfB2_confP`**: at `confP` the block meets its specification `WfSpec`, has at most `2^25`
 states and runs in at most `2^556` steps; **`time_keyP_confP`**: the key component with it.
@@ -104,8 +104,8 @@ theorem length_winWord (w : Window) : (winWord w).length ≤ 375 * 772 := by
   exact this.trans (Nat.mul_le_mul_right _ h2)
 
 /-- **The longest input word of `Eval` on a window predicate** has at most `2^20` bits. -/
-theorem dateBound_le : dateBound ≤ 2 ^ 20 := by
-  rw [dateBound]
+theorem bpLen_le : bpLen ≤ 2 ^ 20 := by
+  rw [bpLen]
   apply Finset.sup_le
   rintro ⟨w, x⟩ -
   rw [length_encodeTuple3]
@@ -157,7 +157,7 @@ theorem frontL_le' {n : ℕ} (hn : n ≤ 2 ^ 20) : frontL n Wc ≤ Lgc := by
   omega
 
 /-- **The front end's output at `confP`** has at most `2^64` bits. -/
-theorem frontL_le : frontL dateBound Wc ≤ Lgc := frontL_le' dateBound_le
+theorem frontL_le : frontL bpLen Wc ≤ Lgc := frontL_le' bpLen_le
 
 /-! ### At `confP` -/
 

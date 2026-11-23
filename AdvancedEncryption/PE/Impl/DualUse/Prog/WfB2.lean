@@ -1764,7 +1764,7 @@ section IdG
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (sd : SimData hk c)
 
 theorem xs_eq (i : Fin nA) :
-    (((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false = DateWindow.attrBits sd.x i := by
+    (((sdEnc hk c).enc sd).drop (oXG hk c)).getD i.val false = attrBits sd.x i := by
   rw [← getD_sd_posX hk c sd i, List.getD_eq_getElem?_getD, List.getElem?_drop,
     ← List.getD_eq_getElem?_getD, posX, oXG]
   simp only [Nat.add_assoc]

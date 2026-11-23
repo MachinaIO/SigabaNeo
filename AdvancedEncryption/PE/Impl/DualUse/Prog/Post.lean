@@ -787,17 +787,17 @@ open SigabaNeo SigabaNeo.Inline AdvancedEncryption.PE AdvancedEncryption.PE.Gene
 
 theorem postW_eq_postG (ob : Ob) : postW ob = postG ob := rfl
 
-/-- **The hypothesis `hPost` of `acceptProb_reduction`** for the handlers of the date universe
-(state encoding `(dateCodes sig).encState`, invariant `InvS IW W Ok`, encoded states of at most `E`
-bits), with `Post A.time E 10 1`. -/
+/-- **The hypothesis `hPost` of `acceptProb_reduction`** for the handlers of the branching-program
+universe (state encoding `(bpCodes sig).encState`, invariant `InvS IW W Ok`, encoded states of at
+most `E` bits), with `Post A.time E 128 1`. -/
 theorem hPost_post {Sig : Type} {nS : ℕ} (sig : Encode.FixedEnc Sig nS) (IW : List Bool → Prop)
     (W : ℕ) (Ok : Sig → Prop) (n E : ℕ)
-    (hE : ∀ st, InvS IW W Ok st → ((dateCodes sig).encState st).length ≤ E) :
-    ∀ (o : List Bool) (st : List Bool × GState PE.DateWindow.PUniv Sig), o.length ≤ n →
+    (hE : ∀ st, InvS IW W Ok st → ((bpCodes sig).encState st).length ≤ E) :
+    ∀ (o : List Bool) (st : List Bool × GState AdvancedEncryption.PE.BranchingProgram.bpUniverse Sig), o.length ≤ n →
       InvS IW W Ok st →
-      (Post n E 10 1).run (pairOut o ((dateCodes sig).encState st)) =
+      (Post n E 128 1).run (pairOut o ((bpCodes sig).encState st)) =
         PMF.pure (postW (Generic.obs (o, st.2))) :=
-  fun o st ho hst => run_post (dateCodes sig) n E o st ho (postOK_of_invS _ hst (hE st hst))
+  fun o st ho hst => run_post (bpCodes sig) n E o st ho (postOK_of_invS _ hst (hE st hst))
 
 /-- **The time of the post-processing against the cost of `A`.** -/
 theorem time_post_le_cost {ops : ℕ} (A : Machine ops) (E nA nM : ℕ) :

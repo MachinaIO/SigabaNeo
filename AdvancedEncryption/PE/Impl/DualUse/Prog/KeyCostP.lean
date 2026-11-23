@@ -7,7 +7,7 @@ At `confP` with the key-try configuration `cfP`, a window width `384 ≤ Wg ≤ 
 block bounded by `2^500` steps and `2^240` bits, and the `W_f` block bounded at its input
 (`wfIn (2^240) (frontL confP.L Wg)`) by `2^T` steps and `2^250` bits per tape:
 
-* the cut of the key queries: `confP.L = dateBound ≤ 2^20` (`dateBound_le`);
+* the cut of the key queries: `confP.L = bpLen ≤ 2^20` (`bpLen_le`);
 * the front end: at most `2^231` primitives in its table, its output at most `2^232` bits, its time
   at most `2^470` (`lookCount_conf`, `frontL_conf`, `frontT_conf`);
 * **`time_keyP_conf`**: the key component takes at most `2^T + 2^2045` steps on queries of at most

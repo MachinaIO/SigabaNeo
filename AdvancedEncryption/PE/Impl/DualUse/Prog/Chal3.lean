@@ -121,7 +121,7 @@ theorem sz_chal3TailBody (M : ℕ) (hM : sizechal3Tail hk c ≤ M) (hB : M < 2 ^
 
 
 /-- The ciphertext computed by the tail. -/
-noncomputable def ctOf (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
+noncomputable def ctOf (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
     (c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (B₁ e₁ : Matrix (Fin 1) (TrapCol k) (Rg N K)) (s p e' : Rg N K)
     (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
     (e : (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index → Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) :
@@ -131,7 +131,7 @@ noncomputable def ctOf (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)
 set_option maxHeartbeats 8000000 in
 /-- **The law of the tail.** -/
 theorem law_chal3Tail (hN : 0 < N) (hK : 1 ≤ K) (S : Store 82) (hS : Blank20 S) (W : List Bool)
-    (μ : Bool) (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
+    (μ : Bool) (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
     (c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (B₁ e₁ : Matrix (Fin 1) (TrapCol k) (Rg N K))
     (s p e' : Rg N K) (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
     (e : (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index → Matrix (Fin 1) (RingBTVW.Col k) (Rg N K))

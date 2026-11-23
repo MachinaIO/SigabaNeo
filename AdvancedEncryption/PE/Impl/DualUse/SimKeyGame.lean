@@ -10,7 +10,7 @@ ciphertexts `Ψᵢ = [B₀; c₀] Rᵢ + xᵢ G` and the keys `B_j = B₀ W_j + 
 They answer a key query `C` with one try of box rejection with the trapdoor
 `W_f = simKeyMat …` (`KGsim`). For a query that is not authorized for `x`, this is the ideal key
 law (`KGsim_eq_KGi`) as soon as the boxes cover the simulated trapdoor (`SimCovered`): a window
-predicate of at most `L ≥ dateBound` bits that is not authorized has `f(x) = 1`, so
+predicate of at most `L ≥ bpLen` bits that is not authorized has `f(x) = 1`, so
 `B_f̂ = B₀ W_f + G̲`.
 -/
 
