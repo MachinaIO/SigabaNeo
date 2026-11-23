@@ -169,6 +169,8 @@ import PE.Impl.DualUse.Prog.KeyTightPost
 import PE.Impl.DualUse.Prog.KeyTightTry
 import PE.Impl.DualUse.Prog.KeyTightBfX
 import PE.Impl.DualUse.Prog.KeyTightWin
+import PE.Impl.DualUse.Prog.KeyTightGen
+import PE.Impl.DualUse.Prog.KeyTightConf
 import PE.Impl.DualUse.Prog.DecCostConf
 import PE.Impl.DualUse.Prog.DescConf
 import PE.Impl.DualUse.Submission
