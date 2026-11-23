@@ -2232,6 +2232,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     C₁ > 72.137. Error averaging is justified, but the selection frequency of such geometries is uncontrolled.
   * Open: the two rejection probabilities, the shared residual mean 5.2408·10⁻⁷, and the extra prefix rejection (the
     511-row transfer charges 111 axes).
+* **Part 242 (audited, CONFIRMED; negative).** [score_first_moment](research/wall1_score_first_moment.md): a
+  selection-free first moment for the width-506 score fails.
+  * Every design admits a rank-407 prefix within the terminal covolume cap with primitive old-line spacing
+    < 7.077·10⁻¹⁰⁷ and deficiency ≥ 140. After removing raw lifts ≤ 250, the height-0/1 mean over designs and plants
+    exceeds 2.23·10¹⁰⁶ (> 4.26·10¹¹² × the 5.2408·10⁻⁷ allowance).
+  * With chronological supports and all 407 caps, the height-zero incidence sum still exceeds 10^355.83 before the
+    shortestness and raw-lift tests.
+  * Only the residual at the actually selected prefix can fit the allowance; rejection and lifting remain open too.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
