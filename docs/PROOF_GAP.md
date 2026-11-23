@@ -2157,6 +2157,22 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     C ≥ 3329⁴⁰⁰ there are ≥ C(911,406) > 2^897 coordinate sections.
   * For a fixed horizontal lattice, a unique (or tied) shortest height-one terminal pair has probability O(C^{-n}) (Kim),
     so large cutoffs destroy recovery. No intermediate cutoff is certified.
+* **Part 236 (audited, CONFIRMED; POSITIVE — alternative rigorous attack).** [selfdual_envelope](research/wall1_selfdual_envelope.md):
+  exact-CVP primal decoding at width 638, without analyzing any reduction output law.
+  * The attack uses four disjoint groups of 127 samples. On each group it solves exact CVP in the rank-638 graph lattice
+    (secret retained), then validates on four held-out rows.
+  * Success > 64.3162094%, reproduced with independent integer arithmetic.
+    * Proof: a translated-ball first moment over uniform A, with ties charged as failures and zero-secret-residue points
+      of membership probability 0.
+    * The groups are conditionally independent given the shared secret; validation costs 4(7/3329)⁴.
+    * Discarded coordinates lift correctly since |eᵢ| ≤ 3 < q/2.
+  * Variants: width 632 → 1.8988940%; one 128-row group at width 639 → 61.4728334%. At width 506 this method's
+    terminal-minimum floor stays < 0.879.
+  * Cost:
+    * Bounded enumeration gives < 2^1298 word operations. CBD-aware exhaustive search (squared norm ≤ 785) gets
+      > 67.22% in < 2^1226, against a secret entropy of ≈ 1192.35 bits.
+    * Randomized exact CVP (ADS, Cor. 5.7) costs 2^640 time and 2^638 space for four rank-638 calls, up to lower-order
+      factors that still need finite bounds.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
