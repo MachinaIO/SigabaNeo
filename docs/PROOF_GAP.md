@@ -2187,6 +2187,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
       gives only the conditional lift.
   * Already proved: `failure_lt_score506` (terminal failure < 0.000607731 on acceptance), `restartScore_lwe`
     (composition), `terminal_bound_unconditional`.
+* **Part 238 (audited, CONFIRMED; FIRST COMPLETE RIGOROUS ATTACK on plain LWE (511, 512, 3329), CBD(3)).**
+  [cvp638_cost](research/wall1_cvp638_cost.md): the Part 236 attack, with an explicit finite cost.
+  * The attack runs four sequential rank-638 exact-CVP calls (shifted discrete-Gaussian sampling following ADS15, with
+    the ASD18 domination gap handled by an explicit joint coupling and an integral-midpoint terminal guarantee), plus
+    validation.
+  * Cost: < 2^778.825 word operations and < 2^766 words of space on a 768-bit word-RAM.
+  * Each call returns a closest point for every admissible (A, b), with failure probability < 2⁻¹⁶⁸.
+  * Recovery probability under the iid design and CBD(3) planting: > 64.31620941663886%. This includes validation and all
+    solver failures, and was confirmed by exact integer arithmetic.
+  * Ties: the guarantee holds for whichever closest point is returned.
+  * Comparison: more than 447 bits below CBD-aware exhaustive search (< 2^1226 for 67.22%).
+  * Unconditional, with no heuristics and no reduction-output law. The heuristic width-506 BKZ attack remains open
+    (Part 237).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
