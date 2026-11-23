@@ -47,10 +47,6 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.Rin
 open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
 open AdvancedEncryption.PE.Gates.DateWindow
 
-/-- **The number of attribute bits** (placeholder until the neutral name of `ImplBase` lands; the
-programs, layouts and closed forms of `Setup` and `Enc` are stated in it). -/
-abbrev nA : ℕ := 10
-
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-! ### Atoms -/
