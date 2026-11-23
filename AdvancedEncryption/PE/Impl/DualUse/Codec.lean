@@ -15,7 +15,7 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.Rin
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
-instance : Enum (Sdw (N := N) hk).Attr := inferInstanceAs (Enum (Fin 10))
+instance : Enum (Sdw (N := N) hk).Attr := inferInstanceAs (Enum (Fin nA))
 instance : Enum (Sdw (N := N) hk).ctBits.Index := inferInstanceAs (Enum (Fin 2 × Col k × Fin k × Fin N))
 
 /-- Matrices over the ring. -/

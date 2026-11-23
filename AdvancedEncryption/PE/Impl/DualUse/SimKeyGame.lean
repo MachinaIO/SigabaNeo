@@ -31,11 +31,11 @@ structure SimData where
   /-- The second row of `A`. -/
   c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)
   /-- The matrices `Rᵢ`. -/
-  Rm : Fin 10 → Matrix (Fin c.d) (Col k) (Rg N K)
+  Rm : Fin nA → Matrix (Fin c.d) (Col k) (Rg N K)
   /-- The matrices `W_j`. -/
   W : (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index → Matrix (Fin c.d) (Col k) (Rg N K)
   /-- The attribute ciphertexts. -/
-  Ψ : Fin 10 → Matrix (Fin 2) (Col k) (Rg N K)
+  Ψ : Fin nA → Matrix (Fin 2) (Col k) (Rg N K)
   /-- The selected attribute. -/
   x : Date
 
@@ -81,7 +81,7 @@ open Classical in
 /-- **The simulated key oracle.** -/
 noncomputable def KGsim (d : SimData hk c) (C : List Bool) : PMF (List Bool) :=
   if C.length ≤ c.L then
-    if ∃ w : Window, winWord w = C then
+    if ValidC C then
       (keyLaw c.Big c.Small c.hBig c.dec d.mpk (simTrap (Wt := TrapCol k) (simW d C))).map
         fun o => (skEnc hk c).enc (d.mpk, keyOfOutput o)
     else PMF.pure ((skEnc hk c).enc (d.mpk, dummyKey c))
@@ -100,7 +100,7 @@ theorem evalGates_of_not_auth (hL : dateBound ≤ c.L) (w : Window) (x : Date)
   simp only [decide_eq_false_iff_not] at h
   rw [win_authorized_iff (impl hk c) rfl] at h
   have hlen := (Finset.le_sup (f := fun wx : Window × Date =>
-      (encodeTuple [paramsWord dateUniverse params, winWord wx.1, dateUniverse.encAttr wx.2]).length)
+      (encodeTuple [paramsWord PUniv params, winWord wx.1, PUniv.encAttr wx.2]).length)
       (Finset.mem_univ (α := Window × Date) (w, x))).trans hL
   by_contra hne
   exact h ⟨hlen, ⟨w, rfl⟩, by simpa using hne⟩
@@ -110,16 +110,16 @@ theorem keyMatrix_simW (d : SimData hk c) (hv : SimValid d) (w : Window)
     (hev : evalGates (encDate d.x, parse (winWord w)) = true) :
     keyMatrix d.mpk (predC (winWord w)) =
       d.mpk.B₀ * simW d (winWord w) + (Sdw (N := N) hk).Γ₁.G := by
-  have h := keyMatrix_eq_sim (ringSetting_fhatCorrect hk (Fin 10)) d.mpk d.c₀ d.Rm (bitsOf d.x)
+  have h := keyMatrix_eq_sim (ringSetting_fhatCorrect hk (Fin nA)) d.mpk d.c₀ d.Rm (bitsOf d.x)
     d.W d.Ψ hv.1 hv.2.1 (predC (winWord w))
   have hne : parse (winWord w) ≠ [] := by
     rw [winWord, parse_unparse, winGates, predGates, toGates]
     simp
   have hb : SLP.evalBool (bitsOf d.x) (predC (winWord w)).1 (predC (winWord w)).2 = true := by
     rw [predC, ← evalGates_predOf (bitsOf d.x) _ hne, ofFn_bitsOf]; exact hev
-  have hcirc : (ringSetting N (2 ^ K) k hk (Fin 10)).circ (predC (winWord w)) =
+  have hcirc : (ringSetting N (2 ^ K) k hk (Fin nA)).circ (predC (winWord w)) =
       (predC (winWord w)).1.circuit (predC (winWord w)).2 := by simp only [ringSetting]
-  have heval : ((ringSetting N (2 ^ K) k hk (Fin 10)).circ (predC (winWord w))).eval
+  have heval : ((ringSetting N (2 ^ K) k hk (Fin nA)).circ (predC (winWord w))).eval
       (fun i => bitR (R := Rg N K) (bitsOf d.x i)) = 1 := by
     rw [hcirc, SLP.eval_circuit]
     have := SLP.eval_bits (R := Rg N K) (bitsOf d.x) (predC (winWord w)).1 (predC (winWord w)).2

@@ -19,7 +19,7 @@ the circuit of the predicate (`evalSim`), which is the joint run of the predicat
 explicit loops: it generates `f̂` (`fhatProg`), computes the bits `ψ_j` of the `Ψᵢ` from their words
 (`bitsW`), runs the two simulations on words (`slpSimRunW`, with the top-row and the Ring-GSW
 binary gadgets) and sums (`keySumMW`). `simKeyW_eq`: at the orders of `fhatSLP` it is the word of
-`simKeyMat … (predOf 10 gs)`.
+`simKeyMat … (predOf nA gs)`.
 -/
 
 namespace AdvancedEncryption.DualUse.Algo
@@ -30,13 +30,13 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo Matri
 variable {N K k : ℕ}
 
 /-- The `0/1` ring words of the bits `ψ_j` of the attribute ciphertexts, from their words. -/
-def psiBitsW (N K k : ℕ) (ψW : Fin 10 → List Bool) (j : Fin 10 × BI N k) : List Bool :=
+def psiBitsW (N K k : ℕ) (ψW : Fin nA → List Bool) (j : Fin nA × BI N k) : List Bool :=
   bitsW N K k (ψW j.1) j.2.1 j.2.2.1.1 j.2.2.1.2 j.2.2.2.1 j.2.2.2.2
 
 /-- **`W_f` on words.** -/
 def simKeyW (N K k d : ℕ) (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : List (OI N k))
-    (gs : GateList) (bjW wW : Fin 10 × BI N k → List Bool) (ψW rmW : Fin 10 → List Bool)
-    (xs : Fin 10 → Bool) : List Bool :=
+    (gs : GateList) (bjW wW : Fin nA × BI N k → List Bool) (ψW rmW : Fin nA → List Bool)
+    (xs : Fin nA → Bool) : List Bool :=
   matAddW N K (d * (2 * k))
     (keySumMW N K k d fun c i j =>
       if h : c < 2 * k ∧ i < k ∧ j < N then
@@ -45,9 +45,9 @@ def simKeyW (N K k d : ℕ) (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : Li
           ((fhatProg K ordT ordO gs).2 (0, colE k ⟨c, h.1⟩, ⟨i, h.2.1⟩, ⟨j, h.2.2⟩))).2.1
       else [])
     (slpSimRunW N K k 2 d (gswGadW N K k) (ginvGswW N K k) ψW rmW
-      (fun i => constW N K (bitW K (xs i))) (predOf 10 gs).1 (predOf 10 gs).2).2.1
+      (fun i => constW N K (bitW K (xs i))) (predOf nA gs).1 (predOf nA gs).2).2.1
 
-theorem psiBitsW_enc (hk : 2 ^ K < 2 ^ k) (Ψ : Fin 10 → Matrix (Fin 2) (Col k) (DualUse.Rg N K)) :
+theorem psiBitsW_enc (hk : 2 ^ K < 2 ^ k) (Ψ : Fin nA → Matrix (Fin 2) (Col k) (DualUse.Rg N K)) :
     psiBitsW N K k (fun i => colsW N K k 2 (Ψ i)) =
       fun j => (ringEnc N K).enc (bitsOf (Sdw (N := N) hk) Ψ j) := by
   funext j
@@ -55,20 +55,20 @@ theorem psiBitsW_enc (hk : 2 ^ K < 2 ^ k) (Ψ : Fin 10 → Matrix (Fin 2) (Col k
 
 /-- **`simKeyW` computes `W_f`** at the orders of `fhatSLP`. -/
 theorem simKeyW_eq (hk : 2 ^ K < 2 ^ k) {d : ℕ}
-    (Rm : Fin 10 → Matrix (Fin d) (Col k) (DualUse.Rg N K)) (x : Fin 10 → Bool)
-    (W : Fin 10 × BI N k → Matrix (Fin d) (Col k) (DualUse.Rg N K))
-    (Ψ : Fin 10 → Matrix (Fin 2) (Col k) (DualUse.Rg N K))
-    (Bj : Fin 10 × BI N k → Matrix (Fin 1) (Col k) (DualUse.Rg N K)) (gs : GateList) :
+    (Rm : Fin nA → Matrix (Fin d) (Col k) (DualUse.Rg N K)) (x : Fin nA → Bool)
+    (W : Fin nA × BI N k → Matrix (Fin d) (Col k) (DualUse.Rg N K))
+    (Ψ : Fin nA → Matrix (Fin 2) (Col k) (DualUse.Rg N K))
+    (Bj : Fin nA × BI N k → Matrix (Fin 1) (Col k) (DualUse.Rg N K)) (gs : GateList) :
     simKeyW N K k d (ordT₀ N k) (ordO₀ N k) gs (fun j => rowW N K k (Bj j))
       (fun j => colsW N K k d (W j)) (fun i => colsW N K k 2 (Ψ i)) (fun i => colsW N K k d (Rm i))
       x =
-      colsW N K k d (simKeyMat (S := Sdw (N := N) hk) Rm x W Ψ Bj (predOf 10 gs)) := by
+      colsW N K k d (simKeyMat (S := Sdw (N := N) hk) Rm x W Ψ Bj (predOf nA gs)) := by
   rw [simKeyW, psiBitsW_enc hk]
   have h2 : (slpSimRunW N K k 2 d (gswGadW N K k) (ginvGswW N K k) (fun i => colsW N K k 2 (Ψ i))
-      (fun i => colsW N K k d (Rm i)) (fun i => constW N K (bitW K (x i))) (predOf 10 gs).1
-      (predOf 10 gs).2).2.1 =
+      (fun i => colsW N K k d (Rm i)) (fun i => constW N K (bitW K (x i))) (predOf nA gs).1
+      (predOf nA gs).2).2.1 =
       colsW N K k d (evalSim (Sdw (N := N) hk).Γ Ψ (fun i => bitR (R := DualUse.Rg N K) (x i)) Rm
-        ((Sdw (N := N) hk).circ (predOf 10 gs))) := by
+        ((Sdw (N := N) hk).circ (predOf nA gs))) := by
     have hx : (fun i => constW N K (bitW K (x i))) =
         fun i => (ringEnc N K).enc (bitR (R := DualUse.Rg N K) (x i)) := by
       funext i; exact (enc_bitR (x i)).symm
@@ -85,11 +85,11 @@ theorem simKeyW_eq (hk : 2 ^ K < 2 ^ k) {d : ℕ}
           ((fhatProg K (ordT₀ N k) (ordO₀ N k) gs).2 (0, colE k ⟨c, h.1⟩, ⟨i, h.2.1⟩, ⟨j, h.2.2⟩))).2.1
       else []) =
       colsW N K k d (∑ b, slpSim (Sdw (N := N) hk).Γ₁ Bj W (bitsOf (Sdw (N := N) hk) Ψ)
-        ((Sdw (N := N) hk).fhat (predOf 10 gs)).1 (((Sdw (N := N) hk).fhat (predOf 10 gs)).2 b) *
+        ((Sdw (N := N) hk).fhat (predOf nA gs)).1 (((Sdw (N := N) hk).fhat (predOf nA gs)).2 b) *
         (Sdw (N := N) hk).Γ₁.ginv ((Sdw (N := N) hk).rowBits.V b)) := by
     refine keySumMW_enc hk.le
       (fun b => slpSim (topBin N K k hk.le) Bj W (bitsOf (Sdw (N := N) hk) Ψ)
-        ((Sdw (N := N) hk).fhat (predOf 10 gs)).1 (((Sdw (N := N) hk).fhat (predOf 10 gs)).2 b))
+        ((Sdw (N := N) hk).fhat (predOf nA gs)).1 (((Sdw (N := N) hk).fhat (predOf nA gs)).2 b))
       _ ?_
     intro c i j
     rw [dite_eq_left_of_eq_true (eq_true ⟨c.isLt, i.isLt, j.isLt⟩), fhatProg, ← fhatSLP_eq_L hk]

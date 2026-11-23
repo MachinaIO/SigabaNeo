@@ -33,7 +33,7 @@ theorem evalBool_predC {x : Date} {C : List Bool} (h : evalGates (encDate x, par
 
 /-- The trapdoor of `msk` is a trapdoor of the key row. -/
 theorem realTrap_spec (mpk : PK hk c) (Tm : Matrix (TrapCol k) (Col k) (Rg N K))
-    (hT : mpk.B₁ * Tm = (Sdw (N := N) hk).Γ₁.G) (f : SLP (Fin 10) × Wire (Fin 10))
+    (hT : mpk.B₁ * Tm = (Sdw (N := N) hk).Γ₁.G) (f : SLP (Fin nA) × Wire (Fin nA))
     (z : Col k → Rg N K) :
     shortMap mpk (realTrap (S := Sdw (N := N) hk) Tm (keyMatrix mpk f) z) +
       gadgetMap (S := Sdw (N := N) hk) z = (keyMatrix mpk f *ᵥ z) 0 := by
@@ -137,7 +137,7 @@ theorem correct (hd : 0 < c.d)
       (∀ i a b, cnorm (r.Rm i a b) ≤ 1) ∧ ∀ j, rnorm (r.ej j) ≤ Bχ)
     (hq : ∀ w : Window, 4 * noiseBound (Wd := Fin c.d) (Wt := TrapCol k) (N := N) hk Bχ Kb
       (predC (winWord w)) + 2 < 2 ^ K) :
-    Correct dateUniverse params (impl hk c ms) :=
+    Correct PUniv params (impl hk c ms) :=
   correct_of_scheme hk c fun x w _ hev b => scheme_bound hk c hd hdec Bχ Kb Inner hIn hcov hInner
     habort hSmall hdecK hr hq x w hev b
 
