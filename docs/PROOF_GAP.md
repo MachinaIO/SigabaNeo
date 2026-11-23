@@ -2213,6 +2213,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * a winner of length ≤ 13 in the first 210 draws: < 4.929920·10⁻¹⁸.
   * Open: a remaining mean-score bound of 5.2408·10⁻⁷ (long raw lifts, higher deficiency); a score-accepted design with a
     late winner of length ≤ 13 and deficiency ≥ 133; the 0.005 rejection target; 99% recovery.
+* **Part 240 (audited, CONFIRMED; negative).** [high_deficiency](research/wall1_high_deficiency.md): the high-deficiency
+  region is typical and cannot be excluded deterministically.
+  * Every frozen prefix through draw 407 has deficiency ≥ 133 with probability > 1 − 10⁻¹⁰⁶⁹.
+  * A construction passes both raw gates, keeps two old vectors of length ≤ √65 after draw 406, selects at draw 407 an
+    old winner of deficiency ≥ 134, and leaves a short line of full-lift deficiency ≥ 133 with all raw lifts > 250. Its
+    two signs contribute > 1.98963754 to the score at plant height 0. The construction (with its column restrictions) has
+    probability in [10⁻²⁰⁰⁵⁰, 10⁻²⁰⁰⁴³].
+  * So the gates and shortestness cannot deterministically exclude high-deficiency contributors. The width-506 pieces
+    (score mean 5.2408·10⁻⁷, score-accepted lift, unpaid Z₁) need a genuine probability bound on this region.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
