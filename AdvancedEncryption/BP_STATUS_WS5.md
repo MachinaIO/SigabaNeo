@@ -49,6 +49,29 @@ Branch `t3/bp-ws5`, base `e5632ceb`.
   `decGenF hk c eF (frontBP c.L) …`, `keyPF hk c sdP eF (frontBP c.L) …` (`frEmb_eF`,
   `R = 70 ≤ 166`).
 
+* **Merged `t3/bp-ws6b`** (24df3c2a, stream block `wfB2S`, `WfSpecR`).
+* **`Prog/WfSpecBridge.lean`**: `wfSpec_of_wfSpecR`: `WfSpecR hk c wfB W Ic` gives
+  `WfSpec hk c wfB W` given, for every predicate of the class of at most `c.L` bits, a register
+  program `rp` with `blockWord W C = rpW W rp`, `nA + W' ≤ W`, `rp.length ≤ Ic`, last instruction
+  `ins'` and `predC C = predR rp ins'` (WS1's facts at the switch: `bpRP (tablesOf C)`,
+  `length_bpRP < 2^50`, `bnd_bpRP`).
+* **`KeyPTimeV.time_keyPFV`** (added lemma): WS9's per-tape `time_keyPV` for any front end
+  (`keyPF`, `FrEmb e`, front bounds `FT`, `FL`): with `frontBP` the block's input is
+  `wfIn Lsd (frontBA bpLen)`, `frontBA bpLen ≤ 2^63 ≤ Lgn = 2^64`, the shape of
+  `time_wfB2S_conf`.
+
+## Commits
+
+| What | Commit |
+| --- | --- |
+| Stage I (FrontSpec, generic shells), `FrontBP`, `FrontBPCost` | `64229c47` |
+| Merge `t3/bp-ws6b` | `bcd5e54e` |
+| `WfSpecBridge`, `time_keyPFV`, status | (this commit) |
+
+Axioms of `frontSpecG_frontBP`, `frontBTn_le`, `law_keyGenF`, `ph_keyGenF`, `law_decGenF`,
+`ph_decGenF`, `law_keyPF`, `time_keyPF`, `time_keyPFV`, `wfSpec_of_wfSpecR`, `frontSpec_frontP`:
+`propext`, `Classical.choice`, `Quot.sound`. Full build green after the merge.
+
 ## Tape counts (for WS9 / WS8)
 
 The compiler needs `64` tapes; the front end has `72` and is **framed** inside the shells on the
@@ -64,7 +87,13 @@ independent of the input bound of the shell. The front end costs `≤ 2^6 X^2` w
 
 ## Open (not done here)
 
-* `KeyTightWin`, `frontL`, `frontT` uses in `KeyCostConf`, `KeyTightConf`, `DecCostConf`,
-  `DecTightConf`, `DescConf` are still the date-window numerals; at the switch they take
-  `frontBT`, `frontBA`, `36 c.L + 2^28` (numerals of `confA`; `ksz_arith`, `dsz_arith` at
-  `X = 2^257`).
+* The numerals at `confA` are not done: `KeyTightWin`, and the `frontL`, `frontT`, `2^238` uses in
+  `KeyCostConf`, `KeyTightConf`, `DecCostConf`, `DecTightConf`, `DescConf` are still the
+  date-window numbers. At the switch they take `frontBTn c.L bpLen` (`frontBTn_le`:
+  `≤ 2^6 X^2`, `X ≥ 8 (nKG + 2)`), `frontBA bpLen ≤ 2^63`, `36 c.L + 2^56`, and the block bounds
+  of `time_wfB2S_conf`, `size_wfB2S_conf`; then `ksz_arith`, `dsz_arith` at `X = 2^257`. The
+  clocks `time_keyMachineP_conf'`, `time_decMachineP_conf'` (`≤ 2^629` expected) and the
+  description lengths (`≤ 2^951` expected) are therefore **not proved yet**.
+* `BfX`, `CfX` (the key-row and `c_f̂` blocks built on the `W_f` machinery) still take the gate
+  list; their stream versions (`BfSpec`, `CfSpec` from `WfSpecR`-like specs) follow WS6b's.
+* Not changed (other owners): nothing needs a change outside WS5 files for Stage I.
