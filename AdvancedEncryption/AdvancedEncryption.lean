@@ -222,3 +222,13 @@ import PE.Impl.RingBTVW.NoiseClosed
 import PE.Impl.RingBTVW.Scheme
 import PE.Impl.RingBTVW.Security
 import PE.Impl.RingBTVW.Simulation
+import PE.Impl.DualUse.Prog.CompLib
+import PE.Impl.DualUse.Prog.CostConf
+import PE.Impl.DualUse.Prog.EncConfA
+import PE.Impl.DualUse.Prog.EncCostConfT
+import PE.Impl.DualUse.Prog.SetupConfA
+import PE.Impl.DualUse.Prog.SetupEncDescA
+import PE.Impl.DualUse.Prog.SetupL
+import PE.Impl.DualUse.Prog.SizeConf
+import PE.Impl.DualUse.Prog.TightChain
+import PE.Impl.DualUse.Prog.TightConf

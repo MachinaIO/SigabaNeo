@@ -1,4 +1,5 @@
-import PE.Impl.DualUse.Prog.SizeConf
+import PE.Impl.DualUse.Prog.CompLib
+import PE.Impl.DualUse.Prog.SetupEncCost
 import PE.Impl.DualUse.Prog.SetupCostP
 import PE.Impl.DualUse.Prog.EncCostP
 
@@ -135,13 +136,6 @@ theorem setupST_le {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) {Bχ : Bn
 
 theorem chiB : chiSamplerP.B = bChi := rfl
 
-set_option maxRecDepth 100000 in
-set_option exponentiation.threshold 4000 in
-theorem setupS_conf : setupS hkp confP chiSamplerP.B (2 ^ 181) ≤ 2 ^ 182 := by
-  simp only [setupS, bCoins, Bnd.count, bCoin, chiB, bChi_a, bChi_s, nRowD, nRowC, nBj]
-  comp_unfold
-  norm_num
-
 end AdvancedEncryption.DualUse.Prog
 
 namespace AdvancedEncryption.DualUse.Prog
@@ -151,75 +145,8 @@ theorem detTL_mono (N K k : ℕ) {M M' : ℕ} (h : M ≤ M') : detTL N K k M ≤
   simp only [detTL, timeC0L, timeB1L, appT, forT, loopT, stepT, apGS]
   gcongr
 
-set_option maxRecDepth 100000 in
-set_option maxHeartbeats 0 in
-set_option exponentiation.threshold 4000 in
-theorem detTL_conf : detTL Np Kp kp (2 ^ 182) ≤ 2 ^ 3100 := by
-  rw [kp_eq, Np_def, Kp_def]
-  simp only [detTL, timeC0L, timeB1L, appT, forT, loopT, stepT, apGS, c0Tapes, b1Tapes, rowL]
-  norm_num
-
-theorem nRowD_conf : nRowD Np Kp confP.d = 2 ^ 61 * (2 ^ 34 * 2 ^ 25) := by
-  simp only [nRowD, len_fin, confP_d, Np_def, Kp_def, Nat.one_mul]
-theorem nRowC_conf : nRowC Np Kp kp = 2 * (2 ^ 25 + 1) * (2 ^ 34 * 2 ^ 25) := by
-  simp only [nRowC, len_fin, len_col, Np_def, kp_eq, Kp_def, Nat.one_mul]
-theorem nBj_conf : nBj (N := Np) (K := Kp) hkp = 10 * (2 * (2 * (2 ^ 25 + 1) * ((2 ^ 25 + 1) * 2 ^ 34))) *
-    (2 * (2 ^ 25 + 1) * (2 ^ 34 * 2 ^ 25)) := by
-  simp only [nBj, nRowC, Enum.length_prod, len_fin, len_col, len_Attr, len_Index, Np_def, kp_eq, Kp_def,
-    Nat.one_mul]
-set_option maxRecDepth 100000 in
-set_option maxHeartbeats 0 in
-set_option exponentiation.threshold 4000 in
-theorem setupSTL_conf : setupSTL hkp confP Kp 64 (2 ^ 40) (2 ^ 40) (2 ^ 181) ≤ 2 ^ 600 := by
-  unfold setupSTL
-  rw [nRowD_conf, nRowC_conf, nBj_conf, len_col, kp_eq, Np_def, Kp_def]
-  simp only [linC, linX]
-  norm_num
-
 theorem detG_le (M : ℕ) : detG M ≤ 2 ^ 30 * (M + 1) := by
   simp only [detG, apGS]; omega
-
-theorem nInS_le : nInS ≤ 2 ^ 181 := by
-  have h515 := length_paramsWord_date
-  simp only [nInS, DualUse.pw, encodeTuple, Turing.MultiTapeTM.length_encList] at h515 ⊢
-  norm_num at h515 ⊢
-  omega
-
-set_option exponentiation.threshold 4000 in
-/-- **The clock of `Setup` at `confP`.** -/
-theorem time_setupMP_conf : (setupMP hkp confP chiSamplerP).time ≤ 2 ^ 3200 := by
-  obtain ⟨c1, c2, c3, c4, c5, c6, -, -, -⟩ := setup_counts
-  have hK : bChi.S₀ ≤ 2 ^ 181 := bChi_S₀.trans (by rw [Kp_def]; norm_num)
-  have hn := nInS_le
-  have hSz : sizeC0 0 (2 * kp * (Np * Kp)) (2 * kp) Np Kp ≤ 2 ^ 181 ∧ sizeB1 Np Kp kp ≤ 2 ^ 181 := by
-    rw [kp_eq, Np_def, Kp_def]; simp only [sizeC0, sizeB1, rowL]; norm_num
-  have hS : 2 ^ 181 ≤ setupS hkp confP chiSamplerP.B (2 ^ 181) := by
-    simp only [setupS]; omega
-  have u := ub_setupP hkp confP (X := chiSamplerP) (2 ^ 181)
-    (by simp only [bCoins, Bnd.count, bCoin]; omega) (by simp only [bCoins, Bnd.count, bCoin]; omega)
-    (by show max bChi.S₀ _ ≤ _; omega) (by show max bChi.S₀ _ ≤ _; omega)
-    (by simp only [bCoins, Bnd.count, bCoin]; omega) (by simp only [bCoins, Bnd.count, bCoin]; omega)
-    preserves6_chiP (by simp only [apGS]; omega) (by simp only [apGS]; omega)
-    (Prog.inputBound 94 nInS) (fun i => by
-      simp only [Prog.inputBound, Function.update_apply]; split_ifs <;> omega)
-  rw [time_setupMP]
-  have hT := u.1
-  have hL := (u.2 91).trans (detG_le _)
-  have hST := (setupST_le hkp confP (Bχ := chiSamplerP.B) lin_bChi (2 ^ 181)).trans
-    (le_of_eq (by rw [chiB, bChi_a, bChi_s]))
-  have hSc := setupS_conf
-  have hD := (detT_le Np Kp kp (setupS hkp confP chiSamplerP.B (2 ^ 181))).trans
-    ((detTL_mono Np Kp kp hSc).trans detTL_conf)
-  have hST' := hST.trans setupSTL_conf
-  have hL' : 2 ^ 30 * (setupS hkp confP chiSamplerP.B (2 ^ 181) + 1) ≤ 2 ^ 30 * (2 ^ 182 + 1) := by
-    gcongr
-  calc 2 * nInS + 2 + timeBoundT (setupP hkp confP chiSamplerP) (Prog.inputBound 94 nInS) +
-        (2 * lenBoundT (setupP hkp confP chiSamplerP) (Prog.inputBound 94 nInS) 91 + 2)
-      ≤ 2 * 2 ^ 181 + 2 + (2 ^ 600 + 2 ^ 3100) + (2 * (2 ^ 30 * (2 ^ 182 + 1)) + 2) := by
-        gcongr
-        · exact hT.trans (Nat.add_le_add hST' hD)
-        · exact hL.trans hL'
-    _ ≤ 2 ^ 3200 := by norm_num
 
 /-! ### `Enc` -/
 
@@ -284,12 +211,6 @@ theorem lin_bEntF (K w : ℕ) : Lin (bEntF K w).T ((8 * min w K + 8 + min w K * 
     ((min w K * 1 + min w K * 0 + 3 + 3) + ((K - w) * 1 + (K - w) * 0 + 3 + 3) + min w K * 1 +
       min w K * 0) :=
   lin_Bseq (lin_bCoins _) (lin_bZeros _)
-
-theorem nR_conf : nR hkp confP = 10 * (2 * (2 ^ 25 + 1)) * 2 ^ 61 := by
-  rw [nR_eq, confP_d, kp_eq]
-theorem nE_conf : nE (N := Np) hkp =
-    10 * (2 * (2 * (2 ^ 25 + 1) * ((2 ^ 25 + 1) * 2 ^ 34))) * (2 * (2 ^ 25 + 1)) * 2 ^ 34 := by
-  rw [nE_eq, kp_eq, Np_def]
 
 theorem bEntB_as (N K : ℕ) : (bEntB N K).a = 1 + (N * K - 1) * 1 ∧
     (bEntB N K).s = 0 + (N * K - 1) * 0 := ⟨rfl, rfl⟩
@@ -414,92 +335,5 @@ theorem parseET_le (C M : ℕ) (h0 : 2 * DualUse.pw.length + 1 ≤ C)
   omega
 
 end EncGen2
-
-theorem natLT_conf (E : ℕ) : natLT (tmplList hkp confP) E ≤
-    27 * ((2 * 2 ^ 200 + 1) * (4 * E + 12)) + (2 * (E + 1) + 3) := by
-  have h := natLT_le (tmplList hkp confP) E (2 ^ 200) tmpl_conf
-  have hl : (tmplList hkp confP).length = 27 := rfl
-  rwa [hl] at h
-
-theorem encCounts_conf : EncCounts hkp confP Kp 64 (2 ^ 181) (2 ^ 60) := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, -⟩ := enc_counts
-  have hNK : Np * Kp = 2 ^ 59 := by rw [Np_def, Kp_def]; norm_num
-  have hK : Kp = 2 ^ 25 := Kp_def
-  have hw : confP.w = 512 := confP_w
-  refine ⟨h1, h2, h3, h4, h5, h6, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · rw [hK]; norm_num
-  · norm_num
-  · norm_num
-  · rw [(bEntB_as _ _).1, hNK]; norm_num
-  · rw [(bEntB_as _ _).2]; norm_num
-  · rw [(bEntF_as _ _).1, hw, hK]; norm_num
-  · rw [(bEntF_as _ _).2]; norm_num
-
-theorem nInE_le : nInE hkp confP ≤ 2 ^ 195 := by
-  obtain ⟨h0, h1, h2, h3⟩ := parse_counts
-  have h4 : Np * Kp ≤ 2 ^ 181 := enc_counts.1
-  have hA : nA ≤ 2 ^ 10 := by norm_num [nA]
-  unfold nInE
-  omega
-
-set_option maxRecDepth 100000 in
-set_option exponentiation.threshold 9000 in
-/-- **The clock of `Enc` at `confP`.** -/
-theorem time_encMP_conf : (encMP hkp confP chiSamplerP).time ≤ 2 ^ 8000 := by
-  obtain ⟨h0, h1, h2, h3⟩ := parse_counts
-  obtain ⟨e1, e2, e3, e4, e5, e6, e7⟩ := enc_counts
-  have hn := nInE_le
-  have hC : (2 : ℕ) ^ 181 ≤ 2 ^ 195 := by norm_num
-  have hK : bChi.S₀ ≤ 2 ^ 181 := bChi_S₀.trans (by rw [Kp_def]; norm_num)
-  have hPG := parseEG_eq (2 ^ 195)
-  have hSE : parseEG (2 ^ 195) ≤ encS hkp confP chiSamplerP.B (parseEG (2 ^ 195)) := by
-    rw [encS_eq]; dsimp only [encSN]; omega
-  have h200 : (2 : ℕ) ^ 200 ≤ 64 * 2 ^ 195 := by norm_num
-  have u := ub_encP hkp confP (X := chiSamplerP) (2 ^ 195) preserves6_chiP (by omega) (by omega)
-    (by omega) (by omega) (by omega) (by norm_num)
-    (by show max 1 _ ≤ _; rw [hPG]; omega) (by show max bChi.S₀ _ ≤ _; rw [hPG]; omega)
-    (by show max bChi.S₀ _ ≤ _; rw [hPG]; omega) (by show max bChi.S₀ _ ≤ _; rw [hPG]; omega)
-    (by simp only [Bnd.count, bEntB, Bnd.seq, bZeros, bCoin, Bnd.prim]; rw [hPG]; omega)
-    (by simp only [Bnd.count, bEntF, Bnd.seq, bZeros, bCoins, bCoin, Bnd.prim]; rw [hPG]; omega)
-    (fun p hp => (tmpl_conf p hp).trans (le_trans (by rw [hPG]; exact h200) hSE))
-    (Prog.inputBound 120 (nInE hkp confP)) (fun i => by
-      simp only [Prog.inputBound, Function.update_apply]; split_ifs <;> omega)
-  rw [time_encMP]
-  have hT := u.1
-  have hL := u.2 122
-  have hE : encS hkp confP chiSamplerP.B (parseEG (2 ^ 195)) ≤ 2 ^ 246 := by
-    rw [encS_eq, chiB, bChi_a, bChi_s]
-    refine (encSN_le hkp confP encCounts_conf _).trans ?_
-    rw [hPG]; norm_num
-  have hST : encST hkp confP chiSamplerP.B (parseEG (2 ^ 195)) ≤ 2 ^ 700 := by
-    refine (encST_le hkp confP (Bχ := chiSamplerP.B) lin_bChi (lin_bEntB _ _) (lin_bEntF _ _) _).trans ?_
-    rw [chiB, bChi_a, bChi_s]
-    have hNK : Np * Kp = 2 ^ 59 := by rw [Np_def, Kp_def]; norm_num
-    have hK : Kp = 2 ^ 25 := Kp_def
-    have hw : confP.w = 512 := confP_w
-    refine (encSTL_le hkp confP encCounts_conf (W := 2 ^ 64) (E' := 2 ^ 64) (by norm_num)
-      (by rw [hNK]; norm_num) (by rw [hw, hK]; norm_num) (by norm_num) (by norm_num)
-      (by rw [hNK]; norm_num) (by rw [hw, hK]; norm_num) (by norm_num) _).trans ?_
-    rw [hPG]; simp only [linX]; norm_num
-  have hPT : parseET hkp confP (2 ^ 195) ≤ 2 ^ 500 :=
-    (parseET_le hkp confP (2 ^ 181) _ h0 h1 h2 h3 e1 (by norm_num [nA])).trans (by norm_num)
-  have hTT : encTT hkp confP (encS hkp confP chiSamplerP.B (parseEG (2 ^ 195))) ≤ 2 ^ 7950 := by
-    unfold encTT
-    refine le_trans (Nat.add_le_add (natLT_conf _) (Nat.add_le_add (tb_encCoreP _) (appT_le _))) ?_
-    generalize encS hkp confP chiSamplerP.B (parseEG (2 ^ 195)) = X at hE ⊢
-    calc 27 * ((2 * 2 ^ 200 + 1) * (4 * X + 12)) + (2 * (X + 1) + 3) +
-          (2 ^ 40 * (X + 1) ^ 32 + 200 * (X + 1) ^ 2)
-        ≤ 27 * ((2 * 2 ^ 200 + 1) * (4 * 2 ^ 246 + 12)) + (2 * (2 ^ 246 + 1) + 3) +
-          (2 ^ 40 * (2 ^ 246 + 1) ^ 32 + 200 * (2 ^ 246 + 1) ^ 2) := by gcongr
-      _ ≤ 2 ^ 7950 := by norm_num
-  have hL' : lenBoundT (encP hkp confP chiSamplerP) (Prog.inputBound 120 (nInE hkp confP)) 122 ≤
-      4 * 2 ^ 246 + 1 := hL.trans (by omega)
-  calc 2 * nInE hkp confP + 2 + timeBoundT (encP hkp confP chiSamplerP)
-        (Prog.inputBound 120 (nInE hkp confP)) +
-        (2 * lenBoundT (encP hkp confP chiSamplerP) (Prog.inputBound 120 (nInE hkp confP)) 122 + 2)
-      ≤ 2 * 2 ^ 195 + 2 + (2 ^ 500 + (2 ^ 700 + 2 ^ 7950)) + (2 * (4 * 2 ^ 246 + 1) + 2) := by
-        gcongr
-        exact hT.trans (Nat.add_le_add hPT (Nat.add_le_add hST hTT))
-    _ ≤ 2 ^ 8000 := by norm_num
 
 end AdvancedEncryption.DualUse.Prog
