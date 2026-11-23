@@ -2120,6 +2120,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Two rank-505 examples share incoming distances mark by mark and the winner line, yet their voids are ≥ 602/3329 and
     ≤ 594/3329. They lie at scale 1.2815, below the reachable floor 32.428. A successful potential must track direction
     information (W1-R103).
+* **Part 232 (audited, CONFIRMED; negative/strategic).** [worstcase_decoding](research/wall1_worstcase_decoding.md):
+  worst-case reduction plus independent-error decoding.
+  * Sample-space lattice: with 3329 error cosets, even exact translation-equivariant CVP succeeds with probability
+    < 2^-847.47. This does not bound the usual graph-lattice decoder.
+  * No guarantee can hold uniformly in A: for the identity with a zero row appended, optimal full-secret recovery is
+    exactly (1716/4096)^511 < 2^-641.38.
+  * Certifying a width needs a (1−δ) fraction of designs with conditional success ≥ 1−ε for both terminal decoding and
+    lifting, with (1−δ)(1−ε) ≥ 1/2; the minimal β is open (W1-R105). Part 141's 2^794.98 covers its structured rank-647
+    call on the 511-sample / 512-secret design only.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
