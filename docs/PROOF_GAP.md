@@ -1771,6 +1771,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Remaining.** Draws 396–406 with 1 ≤ k ≤ 12, s > 30.5 and 0.945 < s/g < 1.032298. This needs ≤ 6.485·10⁻¹¹ and requires
     the old-plane distribution on surviving prefixes.
   * An exact example has 2 qualifying marks (141 and 3188) out of 3329.
+* **Part 194 (audited, SOUND).** [z1_horizontal](research/wall1_z1_horizontal.md): the horizontal-win residual Z₁.
+  * The controlled mixed cases contribute < 1.36697·10⁻¹¹.
+  * The angular argument fails in two ways:
+    * a wholly old plane can cross the cutoff after arbitrarily little compression;
+    * a mixed plane can take its second generator from the fresh column with zero compression.
+  * An exact membership-conditioned sum counts the rest once.
+  * **Remaining.** p_old (wholly old hits) + p_late (the mixed class on draws 403–406) ≤ 7.6330·10⁻¹¹.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1780,7 +1787,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–193 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–194 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
