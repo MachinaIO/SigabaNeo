@@ -1,4 +1,4 @@
-import PE.Impl.DualUse.Prog.BpComp
+import PE.Impl.DualUse.Prog.BpCompLaw
 import SigabaNeo.Lib.Machines.Prog.LenEq
 import SigabaNeo.Lib.Machines.Prog.CoinFreeX
 
@@ -14,11 +14,17 @@ the entry `256 z + a` (`a` the next 8 bits of `xs`) of table `i`, the `32` bits 
 
 The entry offset is built in unary by doubling along the bits of `z ‖ a` (`offP`), so no number
 is ever converted. **`run_authBP`**, **`law_authBP`**; `good_authBP`: coin-free, well formed.
+
+**`authA_encAttr`**: on attribute bits, `authA C (encAttr x) = decide (|C| = bpLen) &&
+!output (tablesOf C) x` (the states `zA` are the bits of `zs (tablesOf C) x`, `zA_encAttr`), hence
+**`law_authBPC`**.
 -/
 
 namespace AdvancedEncryption.DualUse.BpComp
 
-open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog
+open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices
+open AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates.BPCircuit
+  AdvancedEncryption.PE.Gates.BPWord
 open scoped Prog
 
 /-! ### The specification -/
@@ -544,5 +550,119 @@ theorem good_authBP : authBP.CoinFree ∧ authBP.WF := by
 theorem law_authBP (C xs : List Bool) :
     authBP.law (inA C xs) = PMF.pure (outA (authA C xs)) := by
   rw [law_eq_run_of_coinFree _ good_authBP.1, run_authBP]
+
+/-! ### The authorization bit is the program's output -/
+
+theorem take_drop_eq_ofFn (l : List Bool) (p n : ℕ) (h : p + n ≤ l.length) :
+    (l.drop p).take n = List.ofFn fun k : Fin n => l.getD (p + k) false := by
+  apply List.ext_getElem (by simp; omega)
+  intro k h1 h2
+  simp only [List.getElem_take, List.getElem_drop, List.getElem_ofFn]
+  rw [List.getD_eq_getElem _ _ (by simp at h2; omega)]
+
+/-- `n` bits of `v`, most significant first. -/
+def bitsN (v n : ℕ) : List Bool := List.ofFn fun k : Fin n => v.testBit (n - 1 - k)
+
+theorem numB_cons (b : Bool) (l : List Bool) : numB (b :: l) = b.toNat * 2 ^ l.length + numB l := by
+  have key : ∀ (l : List Bool) (acc : ℕ), l.foldl (fun acc b => 2 * acc + b.toNat) acc =
+      acc * 2 ^ l.length + l.foldl (fun acc b => 2 * acc + b.toNat) 0 := by
+    intro l
+    induction l with
+    | nil => intro acc; simp
+    | cons c l ih =>
+      intro acc
+      simp only [List.foldl_cons, List.length_cons]
+      rw [ih, ih (2 * 0 + c.toNat)]; ring
+  simp only [numB, List.foldl_cons]
+  rw [key]; simp
+
+theorem numB_append (l₁ l₂ : List Bool) : numB (l₁ ++ l₂) = numB l₁ * 2 ^ l₂.length + numB l₂ := by
+  induction l₁ with
+  | nil => simp [numB]
+  | cons b l ih =>
+    rw [List.cons_append, numB_cons, numB_cons, ih, List.length_append]; ring
+
+theorem numB_bitsN (v : ℕ) : ∀ n, numB (bitsN v n) = v % 2 ^ n
+  | 0 => by simp [bitsN, numB, Nat.mod_one]
+  | n + 1 => by
+    have e : bitsN v (n + 1) = v.testBit n :: bitsN v n := by
+      apply List.ext_getElem (by simp [bitsN])
+      intro k h1 h2
+      cases k with
+      | zero => simp [bitsN]
+      | succ k => simp only [bitsN, List.getElem_ofFn, List.getElem_cons_succ]; congr 1; omega
+    rw [e, numB_cons, numB_bitsN v n, show (bitsN v n).length = n by simp [bitsN]]
+    rw [Nat.pow_succ, Nat.mod_mul, Nat.testBit_eq_decide_div_mod_eq]
+    rcases Nat.mod_two_eq_zero_or_one (v / 2 ^ n) with h | h
+    · simp [h]
+    · simp [h]; omega
+
+theorem symA_encAttr (x : Attr) (i : ℕ) (hi : i < 16) :
+    symA (encAttr x) i = bitsN (x ⟨i, hi⟩).val 8 := by
+  rw [symA, take_drop_eq_ofFn _ _ _ (by rw [length_encAttr]; omega)]
+  apply List.ext_getElem (by simp [bitsN])
+  intro k h1 h2
+  simp only [List.getElem_ofFn, bitsN]
+  rw [getD_encAttr x hi (by simp at h1; omega)]
+
+theorem bitsN_32 (C : List Bool) (p : ℕ) :
+    bitsN (readNum C p).val 32 = List.ofFn fun k : Fin 32 => C.getD (p + k) false := by
+  apply List.ext_getElem (by simp [bitsN])
+  intro k h1 h2
+  simp only [bitsN, List.getElem_ofFn, readNum, MuxTree.testBit_idx]
+  have hk : k < 32 := by simpa [bitsN] using h1
+  simp only [show 32 - 1 - k < 32 by omega, decide_true, Bool.true_and]
+  congr 1; omega
+
+/-- **The states of the authorization program** are those of the program of the word. -/
+theorem zA_encAttr (C : List Bool) (hC : C.length = bpLen) (x : Attr) :
+    ∀ i, i ≤ 15 → zA C (encAttr x) i = bitsN (zs (tablesOf C) x i).val 32
+  | 0, _ => by
+    simp only [zA, zs]
+    apply List.ext_getElem (by simp [bitsN]); intro k h1 h2; simp [bitsN]
+  | i + 1, hi => by
+    rw [zA, zA_encAttr C hC x i (by omega), symA_encAttr x i (by omega), zs]
+    simp only [show i < 15 from by omega, dite_true]
+    simp only [tablesOf]
+    rw [bitsN_32, stepZ, numB_append, numB_bitsN, numB_bitsN, List.drop_drop,
+      take_drop_eq_ofFn _ _ _ ?_]
+    · congr 1; funext k; congr 1
+      have hz := (zs (tablesOf C) x i).isLt
+      have ha := (x ⟨i, by omega⟩).isLt
+      simp only [entryIdx, tblW, bitsN, List.length_ofFn]
+      omega
+    · have hz := (zs (tablesOf C) x i).isLt
+      have ha := (x ⟨i, by omega⟩).isLt
+      simp only [hC, bpLen, tblW, bitsN, List.length_ofFn]
+      omega
+
+/-- **The authorization bit is the negated output of the program**, within the class. -/
+theorem authA_encAttr (C : List Bool) (x : Attr) :
+    authA C (encAttr x) = (decide (C.length = bpLen) && !output (tablesOf C) x) := by
+  by_cases hC : C.length = bpLen
+  · have hl : lastBit C (encAttr x) = output (tablesOf C) x := by
+      rw [lastBit, zA_encAttr C hC x 15 le_rfl, symA_encAttr x 15 (by omega), numB_append, numB_bitsN,
+        numB_bitsN, List.drop_drop, hd_drop, output, run_eq_zs]
+      simp only [tablesOf]
+      congr 1
+      simp only [outOff, tblW, bitsN, List.length_ofFn]
+      generalize (zs _ x 15) = z
+      have hz := z.isLt
+      have ha := (x ⟨15, by omega⟩).isLt
+      have e : (x ⟨15, by omega⟩).val % 2 ^ 8 = (x (Fin.last 15)).val := Nat.mod_eq_of_lt ha
+      rw [Nat.mod_eq_of_lt hz, e]
+      omega
+    rw [authA, hl, show bpLenA = bpLen from rfl]
+  · rw [authA, show bpLenA = bpLen from rfl]; simp [hC]
+
+/-- **The authorization program** of the reductions and the handlers. -/
+def authBPC : Prog 16 := authBP
+
+/-- **The law of the authorization program**: from the predicate word `C` and the attribute bits
+`encAttr x`, the bit `decide (|C| = bpLen) && !output (tablesOf C) x` on tape `0`. -/
+theorem law_authBPC (C : List Bool) (x : Attr) :
+    authBPC.law (inA C (encAttr x)) =
+      PMF.pure (outA (decide (C.length = bpLen) && !output (tablesOf C) x)) := by
+  rw [authBPC, law_authBP, authA_encAttr]
 
 end AdvancedEncryption.DualUse.BpComp
