@@ -169,3 +169,5 @@ import PE.Impl.DualUse.Submission
 import PE.Impl.DualUse.Prog.TightApp
 import PE.Impl.DualUse.Prog.TightC0
 import PE.Impl.DualUse.Prog.TightB1
+import PE.Impl.DualUse.Prog.TightSetup
+import PE.Impl.DualUse.Prog.TightChain
