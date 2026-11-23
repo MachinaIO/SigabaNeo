@@ -2414,6 +2414,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     dimension 638 and any integral target.
   * Remaining: the PMF form of `recovery_randomized`, and the graph-specific `Correct` link to the shifted-Gaussian
     solver output.
+* **Lean (randomized solvers, arbitrary seed law).** Width638RandomizedPMF (axiom-clean). `recovery_randomized_pmf`:
+  for any seed PMF μ independent of the sample, if every input has μ{ω | ¬ Correct (S ω) A t} ≤ δ, then
+  Σ' μ(ω)·Pr[recovery with S ω] ≥ 0.643162094166 − 4δ. With δ = 2⁻¹⁶⁸ this is the Part 238 success bound for randomized
+  solvers. Remaining: connect `closest_point_failure` (IntegralShiftedGaussianCVP, via IntegerGridCoordinates) to
+  `Correct` on the rank-638 graph; samplerTV stays a hypothesis.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
