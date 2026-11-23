@@ -232,3 +232,4 @@ import PE.Impl.DualUse.Prog.SetupL
 import PE.Impl.DualUse.Prog.SizeConf
 import PE.Impl.DualUse.Prog.TightChain
 import PE.Impl.DualUse.Prog.TightConf
+import PE.Impl.DualUse.Prog.AuthBPX

@@ -822,8 +822,28 @@ state `… + bitR (bit0 C) • …`. Machines:
 | Setup/Enc at confA: `time_setupMP_conf' ≤ 2^387`, `time_encMP_confT ≤ 2^452`, `descLen_setupMP_conf`, `descLen_encMP_conf ≤ 2^300` | **done** | `Prog/SetupConfA.lean`, `Prog/EncConfA.lean` |
 | W_f stream block at confA (`time_wfB2S_conf ≤ 2^628`, `size_wfB2S_conf ≤ 2^25`, `wfSpecR_wfB2S`) | builds (WS6, hypotheses `nA = nAn` etc. now true by `rfl`) | `Prog/WfB2S*.lean`, `Prog/WfRCert.lean` |
 | KeyGen/Dec clocks and descLen at confA (KeyTight*, DecTight*, KeyCost*, DecCostConf, DescConf, BlockCost, PostCost, BfXCost, SizeCost, KeyGenCost, DecGenCost) | **open** (helpers `t3/bp-r-key`, `t3/bp-r-dec`) | `Attic/` |
-| reductions' components and kb at confA (CompCost, DecodeCost, ReductionCompsBound*, AHConcrete*, AHFinal), authorization interface `AuthSpec` for `authBPC` (old `AuthL` deleted) | **open** | `Attic/` |
+| authorization component: `AuthSpec`, **`authSpec_authBPX : AuthSpec hk c authBPX (2^49) 109 18`** (WS7's `authBPC` + output normalization, lifted to 256 tapes) | **done** | `Prog/AuthBPX.lean` |
+| reductions' components and kb at confA (CompCost, DecodeCost, ReductionCompsBound*, AHConcrete*, AHFinal) | **open** | `Attic/` |
 | `Submission` for `BranchingProgram.primitive` | **open** | `Attic/PE/Impl/DualUse/Submission*.lean` |
+
+Facts kept from the workstream status files (removed):
+
+* WS1: never `unfold bpPred`/`bpRP`/`RP.toSLP` of a concrete program (go through `RP.pred`,
+  `RP.valueOf_pred`, `RP.run_eq_valueOf` with a variable program); a kernel-cheap route for the
+  predicate of the stream block is `predC_eq_pred`, `predR_eq_pred` (both `rfl` on variables).
+* WS2: `Params/SizesA.lean` (generic confA chain) is now redundant with `Params/Sizes.lean`;
+  flooding is `2^-499` (`|JC| = 2^127 (1 + 2^-27)^3`).
+* WS5: KeyGen, Dec and the key component keep `256` tapes (`3^256` in `descLen`); the front end
+  costs `≤ 2^8 X²` (`frontBTn_le`), its output `≤ frontBA bpLen ≤ 2^63`, its states
+  `≤ 36 n + 2^56`; WS9's per-tape key clock for any front end is `KeyPTimeV.time_keyPFV`.
+* WS6: `time_wfB2S_conf ≤ 2^628` (every tape `≤ 2^262`), `size_wfB2S_conf ≤ 2^25`, for SimData
+  `≤ 2^260` and streams `≤ 2^64` bits of `≤ 2^50` instructions (`WfRCert`: f̂ run `≤ 2^627`).
+* WS7: compiler `≤ 2^126` steps, tapes `≤ 2^62`, `≤ 2^27` states; `authBPC` `≤ 2^108` steps,
+  `≤ 2^17` states.
+* WS8: the generic `kb` formula (`ReductionCompsBoundG`, now in `Attic/`) gives
+  `kb = 495 + ⌈1.585 (298 + tc)⌉` (`tc` = tapes the compiler adds to the key component; with the
+  front end framed inside the `256` tapes `tc = 0`, `kb ≈ 968`); `AHConcreteBP.statTerm_bp`
+  (`statTerm ≤ 2^-239`), `compBoundBP_le`, `attributeHiding_of_constBound`.
 
 `AdvancedEncryption/Attic/` holds the files not yet repaired (not built). A file is restored by
 `git mv` back under `PE/`, its import added to `AdvancedEncryption.lean`, then fixed or pruned of
