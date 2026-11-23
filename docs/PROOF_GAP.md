@@ -1831,11 +1831,18 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * The Haar floor means at draw 406 sum to < 2.221·10⁻¹³.
   * **Remaining.** The selected-chain probability on draws 162–406.
 * **Part 198 (audited, SOUND).** [flag_horizon](research/wall1_flag_horizon.md): extending the first-moment horizon.
-  * Pr[any saturated-plane hit] < 8.335·10⁻¹³ through draw 164 at 676√2, and < 5.054·10⁻¹² through draw 171 at 1352/√3.
+  * Pr[any saturated-plane hit] < 8.336·10⁻¹³ through draw 164 at 676√2, and < 5.055·10⁻¹² through draw 171 at 1352/√3.
   * The previous crossing was dominated by j = 0 terms, which dropped subsequent winner tests. The new bound keeps the
     overlapping shortest-vector constraints and the realized determinant recursion.
   * **Scaling.** Near the crossing, each extra draw multiplies the majorant by ≈ 2000. At draw 406 a single radial term
     exceeds 10⁶³¹, so this technique cannot reach 406 without a stronger joint-selection estimate.
+* **Part 199 (audited, SOUND).** [survival_constraint](research/wall1_survival_constraint.md): the joint-selection survival
+  constraint gives no improvement.
+  * Survival requires D_t ≥ D_{i−1}/R^{t−i+1}, which is compatible with the Blichfeldt floor. An explicit history keeps a
+    length-√2 vector through all 406 freezes.
+  * The vector in a j = 0 term wins immediately.
+  * Deleting all j = 0 terms buys at most one draw. At draw 406, single j = 1 terms exceed 10⁶⁰⁸. The horizons stay at
+    draws 164 and 171.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1845,7 +1852,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–198 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–199 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
