@@ -177,3 +177,9 @@ import PE.Impl.DualUse.Prog.DecTightGen
 import PE.Impl.DualUse.Prog.DecTightConf
 import PE.Impl.DualUse.Prog.DescConf
 import PE.Impl.DualUse.Submission
+import PE.Impl.DualUse.Prog.TightApp
+import PE.Impl.DualUse.Prog.TightC0
+import PE.Impl.DualUse.Prog.TightB1
+import PE.Impl.DualUse.Prog.TightSetup
+import PE.Impl.DualUse.Prog.TightChain
+import PE.Impl.DualUse.Prog.TightConf
