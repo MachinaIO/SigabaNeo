@@ -1744,6 +1744,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * `plane_disintegration`, a kernel on X_{n−2}, identified with Haar for n = 3;
   * a conditional count bound.
   Still open: a.e. SL_{n−2}-invariance of the kernel for n ≥ 4, the ShapeWindowLaw calibration, and OuterMinimumGeometry.
+* **Lean (Part 190, rank-two product law).** RankTwoTransport / OrderedIncidence / Product / OuterGeometry / PhysicalCount /
+  FrameVolume / AreaJacobian / ReducedWindow (axiom-clean) prove, for all n ≥ 4:
+  * `kernel_ae_invariant` and `kernel_ae_haar`, hence `haarProduct`: joint law = planeMarginal ⊗ Haar_{X_{n−2}};
+  * `outerMinimumGeometry`;
+  * `bounded_physical_count`, an unconditional bound on the expected number of saturated planes passing the three
+    physical gates.
+  Still open: the ShapeWindowLaw transfer to basisDomain (generic multiplicity 4 of Gauss-reduced bases, boundary ties).
 * **Part 191 (audited, SOUND).** [plane_comparison](research/wall1_plane_comparison.md): the chain-to-Haar comparison
   reduces to a single rank-2 Rankin lower-tail event, namely a saturated plane of area ≤ 1352/√3 in the penultimate lattice.
   Its Haar count loss is < 3329^{1.39}. The chain-side bound remains open.
