@@ -141,6 +141,7 @@ import PE.Impl.DualUse.Prog.RowSimP
 import PE.Impl.DualUse.Prog.BfX
 import PE.Impl.DualUse.Prog.BfXCost
 import PE.Impl.DualUse.Prog.KeyCostConf
+import PE.Impl.DualUse.Prog.BlockCost
 import PE.Impl.DualUse.Prog.CfX
 import PE.Impl.DualUse.Prog.WfB2CoinFree
 import PE.Impl.DualUse.Prog.CostTools
