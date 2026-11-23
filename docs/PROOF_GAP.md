@@ -2364,6 +2364,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     or fix the order of validation).
   * Integer-submodule realization with the squared-residual identity, a basis, and parity labels.
   * Remaining: the concrete rank-638 instance, and `samplerTV` (Σ(P−Q)₊ ≤ 2⁻⁹²³) as an explicit hypothesis.
+* **Lean (selector-uniform validation).** SelectorUniformValidation / ClosestSelectionEvents (axiom-clean).
+  * `any_selection_failure_le`: Pr[some closest-point choice gives a wrong output] ≤ Pr[all blocks bad] + E|C|·ε, where C
+    is the set of distinct wrong candidates over all blocks. This covers choices made after seeing validation.
+  * `minima_validation_le`: C is built from all tied minimizers, with ε = (7/q)^v.
+  * `transfer_four`: common event > 0.643162094166 plus four 2⁻¹⁶⁸ solver errors gives > 0.6431620941 (samplerTV
+    explicit).
+  * Remaining: a numerical bound on E|C|. It should follow from the translated-ball first moment already in the
+    certificate.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
