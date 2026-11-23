@@ -1738,6 +1738,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     was a valid upper bound for the same event.
   * Times 3329^15 this gives < 6.815·10⁻¹⁰. **Equation (5), the event-specific chain-to-Haar comparison, remains open.** It
     needs the history-weighted probability that the canonical pair wins both shortest-vector selections.
+* **Lean (Part 190, rank two).** RankTwoDivisors / Frames / Saturation / Mean / PlaneMean / Transverse / MinimumBound
+  (axiom-clean) formalize:
+  * `plane_mean` for all n ≥ 3: the primitive rank-2 mean value with normalization 1/(ζ(n)ζ(n−1));
+  * `plane_disintegration`, a kernel on X_{n−2}, identified with Haar for n = 3;
+  * a conditional count bound.
+  Still open: a.e. SL_{n−2}-invariance of the kernel for n ≥ 4, the ShapeWindowLaw calibration, and OuterMinimumGeometry.
 * **Part 191 (audited, SOUND).** [plane_comparison](research/wall1_plane_comparison.md): the chain-to-Haar comparison
   reduces to a single rank-2 Rankin lower-tail event, namely a saturated plane of area ≤ 1352/√3 in the penultimate lattice.
   Its Haar count loss is < 3329^{1.39}. The chain-side bound remains open.
