@@ -7,6 +7,7 @@ import PE.Impl.Gates.DateWindow
 import PE.Impl.Bridge
 import SigabaNeo.Lib.Machines.FiniteAlg
 import SigabaNeo.Lib.Machines.GatesSLP
+import SigabaNeo.Lib.Lattices.ProgAlgo.GateListLayout
 
 /-!
 # The dual-use scheme for date windows: configuration and laws
@@ -99,10 +100,34 @@ structure Conf (N K k : ℕ) where
   /-- The bound on the input words of `Eval`, and on the predicates of `KeyGen` and `Dec`. -/
   L : ℕ
 
+/-! ### Neutral names of the predicate class
+
+The rest of the implementation refers to the class of predicates only through these names, so that
+the class can be replaced in one place: the universe `PUniv`, the number of attribute bits `nA`,
+the class test `ValidC` of `KeyGen`, `Dec` and `Eval`, and the word `blockWord W C` the `W_f`
+block reads for a predicate `C`. -/
+
+/-- The universe of the primitive. -/
+abbrev PUniv : Universe := dateUniverse
+
+/-- The number of attribute bits. -/
+abbrev nA : ℕ := 10
+
+/-- The predicates of the class: the gate lists of windows. -/
+abbrev ValidC (C : List Bool) : Prop := ∃ w : Window, winWord w = C
+
+theorem validC_iff (C : List Bool) : ValidC C ↔ ∃ w : Window, winWord w = C := Iff.rfl
+
+/-- The word the `W_f` block reads for a predicate `C` (store width `W`). -/
+abbrev blockWord (W : ℕ) (C : List Bool) : List Bool := SigabaNeo.Tape.Prog.gsW W (parse C)
+
+theorem blockWord_eq (W : ℕ) (C : List Bool) :
+    blockWord W C = SigabaNeo.Tape.Prog.gsW W (parse C) := rfl
+
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
-/-- The setting: the attribute bits of a date. -/
-noncomputable abbrev Sdw : Setting (Rg N K) k := ringSetting N (2 ^ K) k hk (Fin 10)
+/-- The setting: the `nA` attribute bits. -/
+noncomputable abbrev Sdw : Setting (Rg N K) k := ringSetting N (2 ^ K) k hk (Fin nA)
 
 instance : DecidableEq (Sdw (N := N) hk).ctBits.Index :=
   inferInstanceAs (DecidableEq (Fin 2 × Col k × Fin k × Fin N))
@@ -122,7 +147,7 @@ theorem Conf.hBig : c.Big.Nonempty := Finset.univ_nonempty.map
 def pw : List Bool := paramsWord dateUniverse params
 
 /-- The predicate of a gate list. -/
-def predC (C : List Bool) : SLP (Fin 10) × Wire (Fin 10) := predOf 10 (parse C)
+def predC (C : List Bool) : SLP (Fin nA) × Wire (Fin nA) := predOf nA (parse C)
 
 /-! ### The laws of the scheme -/
 
