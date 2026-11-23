@@ -279,9 +279,9 @@ bit. -/
 def jBody : Prog 64 :=
   cp tTT tCUR ⨾ treeS R (rootE R) ⨾ tl tJZ ⨾ cp tJB tT31 ⨾ dropT tJB tJZ tA
 
-/-- Exchange the banks (through the blank cursor tape). -/
+/-- Exchange the banks (through the blank tape `JB`). -/
 def swapP : Prog 64 :=
-  cp tTT tPB ⨾ cp tPB tQB ⨾ cp tQB tTT ⨾ cp tTT tPZ ⨾ cp tPZ tQZ ⨾ cp tQZ tTT ⨾ clr tTT
+  cp tJB tPB ⨾ cp tPB tQB ⨾ cp tQB tJB ⨾ cp tJB tPZ ⨾ cp tPZ tQZ ⨾ cp tQZ tJB ⨾ clr tJB
 
 /-- **One step** `i < 15`. -/
 def stepP : Prog 64 :=

@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Prog.BpCompLaw
+import PE.Impl.DualUse.Prog.AuthBP
 
 /-!
 # The compiler of branching programs: cost
@@ -19,12 +20,12 @@ open scoped Prog
 /-- The bound of the small tapes. -/
 abbrev S0 : ℕ := 128
 
-/-- The per-tape bounds: output `a`, `IN`, `CUR`, `TT` at `L`, the rest at `S0`. -/
+/-- The per-tape bounds: output `a`, `IN`, `CUR`, `TT` at `L + a`, the rest at `S0`. -/
 def bnd (L a : ℕ) : Fin 64 → ℕ := fun t =>
-  if t = tO then a else if t = tIN ∨ t = tCUR ∨ t = tTT then L else S0
+  if t = tO then a else if t = tIN ∨ t = tCUR ∨ t = tTT then L + a else S0
 
 /-- One unit: a sweep of every tape. -/
-def Uc (M L : ℕ) : ℕ := 2 * (M + L + S0) + 5
+def Uc (M L : ℕ) : ℕ := 2 * (M + (L + M) + S0) + 5
 
 /-- **A cost triple.** -/
 def TB (M L : ℕ) (p : Prog 64) (n g : ℕ) : Prop :=
@@ -37,7 +38,7 @@ theorem bnd_mono {a a' : ℕ} (h : a ≤ a') : bnd L a ≤ bnd L a' := by
   intro t; simp only [bnd]; split_ifs <;> omega
 
 theorem supB_bnd_le {a : ℕ} (ha : a ≤ M) {ℓ : Fin 64 → ℕ} (hℓ : ℓ ≤ bnd L a) :
-    supB ℓ ≤ M + L + S0 :=
+    supB ℓ ≤ M + (L + M) + S0 :=
   Finset.sup_le fun t _ => (hℓ t).trans (by simp only [bnd]; split_ifs <;> omega)
 
 theorem two_le_Uc : 2 ≤ Uc M L := by unfold Uc; omega
@@ -105,11 +106,19 @@ theorem tb_copy_big {t x : Fin 64} (ht : t = tIN ∨ t = tCUR ∨ t = tTT)
     simp only [Prim.lenT, Function.update_apply, Nat.add_zero]
     split_ifs with h
     · subst h
-      have h1 : bnd L a x = L := by
+      have h1 : bnd L a x = L + a := by
         rcases hx with rfl | rfl | rfl <;> simp +decide [bnd]
-      have h2 : bnd L a u = L := by
+      have h2 : bnd L a u = L + a := by
         rcases ht with rfl | rfl | rfl <;> simp +decide [bnd]
       omega
+    · exact le_rfl
+
+/-- The output copied to tape `0`. -/
+theorem tb_copy_IN_O : TB M L (prim (.copy tIN tO)) 1 0 :=
+  tb_prim _ 0 fun a u => by
+    simp only [Prim.lenT, Function.update_apply, Nat.add_zero]
+    split_ifs with h
+    · subst h; simp +decide [bnd]
     · exact le_rfl
 
 theorem tb_pop_small {t b : Fin 64} (hb : Small b) : TB M L (prim (.pop t b)) 1 0 :=
@@ -358,12 +367,15 @@ theorem small_tc (m : ℕ) : Small (tc m) :=
 
 /-- **The cost of the tree code.** -/
 theorem tb_treeP (sE nsE : ℕ → Prog 64) (Y : SLay) (hY : Y.Fits)
-    (hs : ∀ ℓ, TB M L (sE ℓ) NE EG) (hns : ∀ ℓ, TB M L (nsE ℓ) NE EG) :
-    ∀ m dE, TB M L dE NE EG → TB M L (treeP sE nsE Y m dE) (nT m) (gT m)
-  | 0, dE, hd => by
+    (hs : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 40 → TB M L (sE ℓ) NE EG)
+    (hns : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 40 → TB M L (nsE ℓ) NE EG) :
+    ∀ m, m ≤ 38 → ∀ dE, TB M L dE NE EG → TB M L (treeP sE nsE Y m dE) (nT m) (gT m)
+  | 0, _, dE, hd => by
     have hsrc : ∀ b b', TB M L (srcP sE nsE Y b b') NP EG := fun b b' =>
-      tb_ifBit (tb_ifBit (tb_emitU' (by om)) (hns 1)) (tb_ifBit (hs 1) (tb_emitU' hY.1))
-    have hn := tb_nodeP sE nsE Y hY 2 ((hs 2).mono (by om) le_rfl) ((hns 2).mono (by om) le_rfl)
+      tb_ifBit (tb_ifBit (tb_emitU' (by om)) (hns 1 le_rfl (by om)))
+        (tb_ifBit (hs 1 le_rfl (by om)) (tb_emitU' hY.1))
+    have hn := tb_nodeP sE nsE Y hY 2 ((hs 2 (by om) (by om)).mono (by om) le_rfl)
+      ((hns 2 (by om) (by om)).mono (by om) le_rfl)
       (hsrc tb0 tb1) (hsrc tb2 tb3) (hd.mono (by om) le_rfl)
     have := (tb_readL (M := M) (L := L) (small_b (Or.inl rfl))).seq <|
       (tb_readL (small_b (Or.inr (Or.inl rfl)))).seq <|
@@ -371,14 +383,212 @@ theorem tb_treeP (sE nsE : ℕ → Prog 64) (Y : SLay) (hY : Y.Fits)
       (tb_readL (small_b (Or.inr (Or.inr (Or.inr rfl))))).seq <| hn.seq <|
       (tb_clear tb0).seq <| (tb_clear tb1).seq <| (tb_clear tb2).seq (tb_clear tb3)
     exact this.mono (by simp only [nT]; omega) (by simp [gT])
-  | m + 1, dE, hd => by
-    have hsub := tb_treeP sE nsE Y hY hs hns m _
+  | m + 1, hm, dE, hd => by
+    have hsub := tb_treeP sE nsE Y hY hs hns m (by omega) _
       ((tb_ifBlank (i := tc m) (tb_emitU514 (hY.2.2.2 (m + 2)).2)
         (tb_emitU514 (hY.2.2.2 (m + 2)).1)).mono (by om) (by om))
-    have hn := tb_nodeP sE nsE Y hY (m + 3) ((hs _).mono (by om) le_rfl)
-      ((hns _).mono (by om) le_rfl) ((tb_emitU' (hY.2.2.2 (m + 2)).1).mono (by om) le_rfl)
+    have hn := tb_nodeP sE nsE Y hY (m + 3) ((hs _ (by omega) (by omega)).mono (by om) le_rfl)
+      ((hns _ (by omega) (by omega)).mono (by om) le_rfl) ((tb_emitU' (hY.2.2.2 (m + 2)).1).mono (by om) le_rfl)
       ((tb_emitU' (hY.2.2.2 (m + 2)).2).mono (by om) le_rfl) (hd.mono (by om) le_rfl)
     exact (tb_setLoop (small_tc m) (R := 2) (by om) hsub hn).mono (by simp only [nT]; om)
       (by simp [gT])
+
+/-! ### The emitters of the compiler -/
+
+/-- The register slots fit in `512` bits. -/
+def RL.Fits (R : RL) : Prop :=
+  rs R.zero ≤ 512 ∧ rs R.x1 ≤ 512 ∧ rs R.x2 ≤ 512 ∧ rs R.out ≤ 512 ∧ rs (R.na + 8) ≤ 512 ∧
+    rs (R.nz + 32) ≤ 512 ∧ ∀ ℓ, rs (R.lo ℓ) ≤ 512 ∧ rs (R.hi ℓ) ≤ 512
+
+theorem SY_fits (R : RL) (hF : R.Fits) (i : ℕ) : (SY R i).Fits :=
+  ⟨hF.1, hF.2.1, hF.2.2.1, fun ℓ => hF.2.2.2.2.2.2 ℓ⟩
+
+theorem small_tapes : Small tIB ∧ Small tIZ ∧ Small tPB ∧ Small tPZ ∧ Small tQB ∧ Small tQZ ∧
+    Small tJB ∧ Small tJZ ∧ Small tJC ∧ Small tSC ∧ Small tT31 ∧ Small tT120 := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (unfold Small; decide)
+
+theorem tb_dynE' {a b : ℕ} {xs : List (Fin 64)} (hxs : ∀ x ∈ xs, Small x) (hl : xs.length ≤ 4)
+    (hab : a + b ≤ 512) : TB M L (dynE tO tA tB a xs b) NE EG := by
+  refine (tb_dynE a b hxs).mono ?_ ?_
+  · have := Nat.mul_le_mul_right (S0 * 4 + 4) hl; simp only [NE, S0] at *; omega
+  · have := Nat.mul_le_mul_right S0 hl; simp only [EG, S0] at *; omega
+
+theorem tb_sEd (R : RL) (hR : R.Ok) (ℓ : ℕ) (h1 : 1 ≤ ℓ) (h2 : ℓ ≤ 40) :
+    TB M L (sEd R ℓ) NE EG := by
+  have hz := hR.z
+  unfold sEd inE zE; split_ifs
+  · exact tb_dynE' (by simp [small_tapes]) (by simp) (by omega)
+  · exact tb_dynE' (by simp [small_tapes]) (by simp) (by simp only [rs] at *; omega)
+
+theorem tb_nsEd (R : RL) (hF : R.Fits) (ℓ : ℕ) (h1 : 1 ≤ ℓ) (h2 : ℓ ≤ 40) :
+    TB M L (nsEd R ℓ) NE EG := by
+  obtain ⟨-, -, -, -, h5, h6, -⟩ := hF
+  unfold nsEd nselS; split_ifs
+  · exact tb_emitU' (by simp only [rs] at *; omega)
+  · exact tb_emitU' (by simp only [rs] at *; omega)
+
+theorem tb_rootE (R : RL) (hR : R.Ok) : TB M L (rootE R) NE EG := by
+  have hz := hR.z
+  exact tb_dynE' (by simp [small_tapes]) (by simp) (by simp only [rs] at *; omega)
+
+theorem tb_treeS (R : RL) (hR : R.Ok) (hF : R.Fits) {dE : Prog 64} (hd : TB M L dE NE EG) :
+    TB M L (treeS R dE) (nT 38) (gT 38) :=
+  tb_treeP _ _ _ (SY_fits R hF 0) (tb_sEd R hR) (tb_nsEd R hF) 38 le_rfl dE hd
+
+theorem tb_insP {d a b : Prog 64} {n g : ℕ} (hd : TB M L d n g) (ha : TB M L a n g)
+    (hb : TB M L b n g) : TB M L (insP d a b) (3 * n) (3 * g) :=
+  (hd.seq (ha.seq hb)).mono (by omega) (by omega)
+
+theorem tb_insL_map (f : ℕ → Prog 64) {n g : ℕ} (rest : List (Prog 64)) {n' g' : ℕ}
+    (hr : TB M L (insL rest) n' g') :
+    ∀ l : List ℕ, (∀ j ∈ l, TB M L (f j) n g) →
+      TB M L (insL (l.map f ++ rest)) (l.length * n + n') (l.length * g + g')
+  | [], _ => by simpa using hr
+  | j :: l, h => by
+    rw [List.map_cons, List.cons_append, insL]
+    exact ((h j (by simp)).seq (tb_insL_map f rest hr l fun j' hj' => h j' (by simp [hj']))).mono
+      (by simp [Nat.succ_mul]; omega) (by simp [Nat.succ_mul]; omega)
+
+theorem tb_proP (R : RL) (hR : R.Ok) (hF : R.Fits) :
+    TB M L (proP R) (40 * (3 * NE) + 1) (40 * (3 * EG)) := by
+  obtain ⟨-, -, -, -, h5, h6, -⟩ := hF
+  have hz := hR.z
+  have h32 := tb_insL_map (M := M) (L := L)
+    (fun j => insP (emitU tO 512 (rs (R.nz + j))) (zE R j) (zE R j)) (n := 3 * NE) (g := 3 * EG) []
+    (tb_nop tO) (List.range 32) fun j hj => by
+      have := List.mem_range.mp hj
+      exact tb_insP (tb_emitU' (by simp only [rs] at *; omega))
+        (tb_dynE' (by simp [small_tapes]) (by simp) (by simp only [rs] at *; omega))
+        (tb_dynE' (by simp [small_tapes]) (by simp) (by simp only [rs] at *; omega))
+  have h8 := tb_insL_map (M := M) (L := L)
+    (fun m => insP (emitU tO 512 (rs (R.na + m))) (inE m) (inE m)) (n := 3 * NE) (g := 3 * EG) _ h32
+    (List.range 8) fun m hm => by
+      have := List.mem_range.mp hm
+      exact tb_insP (tb_emitU' (by simp only [rs] at *; omega))
+        (tb_dynE' (by simp [small_tapes]) (by simp) (by omega))
+        (tb_dynE' (by simp [small_tapes]) (by simp) (by omega))
+  simpa [proP, Nat.mul_comm, Nat.mul_assoc, Nat.add_mul] using
+    h8.mono (n' := 40 * (3 * NE) + 1) (g' := 40 * (3 * EG)) (by simp; omega) (by simp; omega)
+
+theorem tb_gProP (R : RL) (hR : R.Ok) (hF : R.Fits) :
+    TB M L (gProP R) (3 * NE + (32 * (3 * NE) + 1)) (3 * EG + 32 * (3 * EG)) := by
+  have hz := hR.z
+  have h0 := hF.1
+  have h32 := tb_insL_map (M := M) (L := L)
+    (fun j => insP (emitU tO 512 (zS R 0 j)) (emitU tO 512 0) (emitU tO 512 0)) (n := 3 * NE)
+    (g := 3 * EG) [] (tb_nop tO) (List.range 32) fun j hj => by
+      have := List.mem_range.mp hj
+      exact tb_insP (tb_emitU' (by simp only [zS, rs] at *; omega)) (tb_emitU' (by omega))
+        (tb_emitU' (by omega))
+  have h := (tb_insP (M := M) (L := L) (tb_emitU' h0) (tb_emitU' (j := 0) (by omega))
+    (tb_emitU' (j := 0) (by omega))).seq h32
+  simpa [gProP, insL] using h
+
+theorem tb_tlN (t : Fin 64) : ∀ n, TB M L (tlN t n) (n + 1) 0
+  | 0 => tb_nop t
+  | n + 1 => ((tb_tlN t n).seq (tb_tail t)).mono (by omega) le_rfl
+
+theorem tb_swapP : TB M L swapP 7 0 := by
+  obtain ⟨-, -, hPB, hPZ, hQB, hQZ, hJB, -⟩ := small_tapes
+  exact ((tb_copy_small hJB hPB).seq <| (tb_copy_small hPB hQB).seq <| (tb_copy_small hQB hJB).seq <|
+    (tb_copy_small hJB hPZ).seq <| (tb_copy_small hPZ hQZ).seq <| (tb_copy_small hQZ hJB).seq
+    (tb_clear tJB)).mono le_rfl le_rfl
+
+/-- Units of one round of the loop over the state bits. -/
+def jN : ℕ := nT 38 + 389
+
+theorem tb_jBody (R : RL) (hR : R.Ok) (hF : R.Fits) : TB M L (jBody R) jN (gT 38) := by
+  obtain ⟨-, -, -, -, -, -, hJB, hJZ, -, -, h31, -⟩ := small_tapes
+  exact ((tb_copy_big (Or.inr (Or.inr rfl)) (Or.inr (Or.inl rfl))).seq <|
+    (tb_treeS R hR hF (tb_rootE R hR)).seq <| (tb_tail tJZ).seq <| (tb_copy_small hJB h31).seq
+    (tb_dropT tJB hJZ)).mono (by have : jN = nT 38 + 389 := rfl; have : S0 = 128 := rfl; omega)
+    (by omega)
+
+/-- Units of a step. -/
+def stepN : ℕ := 40 * (3 * NE) + 1 + 1 + (32 * (jN + 2) + 1 + 407 + 32 + 2 + 31 + 2)
+
+/-- Growth of the output in a step. -/
+def stepG : ℕ := 40 * (3 * EG) + 32 * gT 38
+
+theorem tb_stepP (R : RL) (hR : R.Ok) (hF : R.Fits) : TB M L (stepP R) stepN stepG := by
+  obtain ⟨hIB, hIZ, -, -, -, -, hJB, hJZ, hJC, -, -, h120⟩ := small_tapes
+  have hrest : TB M L (cp tCUR tTT ⨾ clr tTT ⨾ clr tJB ⨾ clr tJZ ⨾ tlN tIZ 8 ⨾ cp tIB tT120 ⨾
+      dropT tIB tIZ tA ⨾ swapP) 407 0 :=
+    ((tb_copy_big (Or.inr (Or.inl rfl)) (Or.inr (Or.inr rfl))).seq <| (tb_clear tTT).seq <|
+      (tb_clear tJB).seq <| (tb_clear tJZ).seq <| (tb_tlN tIZ 8).seq <|
+      (tb_copy_small hIB h120).seq <| (tb_dropT tIB hIZ).seq tb_swapP).mono
+      (by have : S0 = 128 := rfl; omega) le_rfl
+  have h := (tb_proP R hR hF).seq <| (tb_clear tJB).seq <|
+    tb_setN hJZ false (R := 31) (by decide) <|
+    tb_setLoop hJC (R := 32) (by decide) (tb_jBody R hR hF) hrest
+  have e1 : stepN = 40 * (3 * NE) + 1 + 1 + (32 * (jN + 2) + 1 + 407 + 32 + 2 + 31 + 2) := rfl
+  have e2 : stepG = 40 * (3 * EG) + 32 * gT 38 := rfl
+  exact h.mono (by omega) (by omega)
+
+/-- Units of the last step. -/
+def lastN : ℕ := 40 * (3 * NE) + 1 + 1 + nT 38 + 1
+
+theorem tb_lastP (R : RL) (hR : R.Ok) (hF : R.Fits) :
+    TB M L (lastP R) lastN (40 * (3 * EG) + gT 38) := by
+  have h := (tb_proP (M := M) (L := L) R hR hF).seq <|
+    (tb_copy_big (Or.inr (Or.inr rfl)) (Or.inr (Or.inl rfl))).seq <|
+    (tb_treeS R hR hF (tb_emitU' hF.2.2.2.1)).seq (tb_clear tTT)
+  have e1 : lastN = 40 * (3 * NE) + 1 + 1 + nT 38 + 1 := rfl
+  exact h.mono (by omega) (by omega)
+
+/-- Units of the compiler. -/
+def allN : ℕ :=
+  3 * NE + (32 * (3 * NE) + 1) + 1 + 1 + (120 + 2) + (32 + 2) + (32 + 2) + (31 + 2) + (120 + 2) +
+    (15 * (stepN + 2) + 1 + (lastN + 13) + 15 + 2)
+
+/-- Growth of the output: the length bound of the instruction stream. -/
+def allG : ℕ := 3 * EG + 32 * (3 * EG) + (15 * stepG + (40 * (3 * EG) + gT 38))
+
+/-- **The cost of the compiler** in units. -/
+theorem tb_bpCompP (R : RL) (hR : R.Ok) (hF : R.Fits) : TB M L (bpCompP R) allN allG := by
+  obtain ⟨hIB, hIZ, hPB, hPZ, hQB, hQZ, -, -, -, hSC, h31, h120⟩ := small_tapes
+  have hfin : TB M L (cp tIN tO ⨾ clr tO ⨾ clr tCUR ⨾ clr tIB ⨾ clr tIZ ⨾ clr tPB ⨾ clr tPZ ⨾
+      clr tQB ⨾ clr tQZ ⨾ clr tT31 ⨾ clr tT120) 11 0 :=
+    (tb_copy_IN_O.seq <| (tb_clear tO).seq <| (tb_clear tCUR).seq <| (tb_clear tIB).seq <|
+      (tb_clear tIZ).seq <| (tb_clear tPB).seq <| (tb_clear tPZ).seq <| (tb_clear tQB).seq <|
+      (tb_clear tQZ).seq <| (tb_clear tT31).seq (tb_clear tT120)).mono le_rfl le_rfl
+  have h := (tb_gProP (M := M) (L := L) R hR hF).seq <|
+    (tb_copy_big (Or.inr (Or.inl rfl)) (Or.inl rfl)).seq <| (tb_clear tIN).seq <|
+    tb_setN hIZ false (R := 120) (by decide) <| tb_setN hPZ false (R := 32) (by decide) <|
+    tb_setN hQB true (R := 32) (by decide) <| tb_setN h31 true (R := 31) (by decide) <|
+    tb_setN h120 true (R := 120) (by decide) <|
+    tb_setLoop hSC (R := 15) (by decide) (tb_stepP R hR hF) ((tb_lastP R hR hF).seq hfin)
+  have e1 : allN = 3 * NE + (32 * (3 * NE) + 1) + 1 + 1 + (120 + 2) + (32 + 2) + (32 + 2) +
+    (31 + 2) + (120 + 2) + (15 * (stepN + 2) + 1 + (lastN + 13) + 15 + 2) := rfl
+  have e2 : allG = 3 * EG + 32 * (3 * EG) + (15 * stepG + (40 * (3 * EG) + gT 38)) := rfl
+  exact h.mono (by omega) (by omega)
+
+/-- The bounds of the input store: `L` bits on tape `0`. -/
+def inB (L : ℕ) : Fin 64 → ℕ := Function.update (fun _ => 0) tIN L
+
+theorem inB_le (L : ℕ) : inB L ≤ bnd L 0 := by
+  intro t; simp only [inB, bnd, Function.update_apply]; split_ifs <;> simp_all
+
+/-- **The time and tape bounds of the compiler** for inputs of at most `L` bits. -/
+theorem bounds_bpCompP (R : RL) (hR : R.Ok) (hF : R.Fits) (L : ℕ) :
+    timeBoundT (bpCompP R) (inB L) ≤ allN * Uc allG L ∧
+      ∀ t, lenBoundT (bpCompP R) (inB L) t ≤ L + allG + S0 := by
+  obtain ⟨h1, h2⟩ := tb_bpCompP (M := allG) (L := L) R hR hF 0 (by omega) (inB L) (inB_le L)
+  refine ⟨h1, fun t => (h2 t).trans ?_⟩
+  simp only [bnd, Nat.zero_add]; split_ifs <;> omega
+
+/-! ### The numbers for predicate words of `481 · 2^40` bits -/
+
+theorem allN_Uc_le : allN * Uc allG bpLenA ≤ 2 ^ 126 := by decide +kernel
+
+theorem allG_le : bpLenA + allG + S0 ≤ 2 ^ 62 := by decide +kernel
+
+/-- **The compiler at the predicate length**: at most `2^126` steps, every tape at most `2^62`
+bits, for inputs of at most `bpLenA = 481 · 2^40` bits. -/
+theorem bounds_bpCompP_conf (R : RL) (hR : R.Ok) (hF : R.Fits) :
+    timeBoundT (bpCompP R) (inB bpLenA) ≤ 2 ^ 126 ∧
+      ∀ t, lenBoundT (bpCompP R) (inB bpLenA) t ≤ 2 ^ 62 := by
+  obtain ⟨h1, h2⟩ := bounds_bpCompP R hR hF bpLenA
+  exact ⟨h1.trans allN_Uc_le, fun t => (h2 t).trans allG_le⟩
 
 end AdvancedEncryption.DualUse.BpComp
