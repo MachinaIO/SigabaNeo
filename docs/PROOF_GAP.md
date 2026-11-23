@@ -2034,6 +2034,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     docs/research/scripts/watson_pivot_certificate.py);
   * **`rank_five`: ‖v‖^{10} ≤ 8·covol(L)² for every rank-5 lattice**, and `sharp_five`, so γ₅⁵ = 8.
   * The Part 192 terminal theorem now depends only on γ₆, γ₇ and γ₂₄ (`terminal_bound_of_six_seven_twentyfour`).
+* **Lean (γ₆ closed).** WatsonRankSix / WatsonHigherChartBounds and supporting Watson* modules (axiom-clean) prove
+  `rank_six` (λ₁¹² ≤ (64/3)·covol² for every rank-6 lattice), `intrinsic_rank_six` and `sharp_six` (γ₆⁶ = 64/3). The
+  proof is a symmetry-reduced pivot and tangent-cone certificate over seven representative forms. The Part 192 terminal
+  theorem `terminal_bound_of_seven_twentyfour` now depends only on γ₇ and γ₂₄.
+  * Rank 7, partial: the finite residue-code test (d ≤ 10, max|zᵢ| ≤ 11d) and det G ≥ 1/64 for 33 representatives are
+    proved. Still open is `Seven.Coverage`, which says every chart extreme point is a congruence image of a
+    representative. It implies γ₇⁷ = 64 (`Seven.intrinsic_of_coverage`). The external walk did not finish at E₇, whose cone
+    has 79,900,912 facets in 157 orbits.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
