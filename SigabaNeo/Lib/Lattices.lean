@@ -10,6 +10,7 @@ import SigabaNeo.Lib.Lattices.LWE
 import SigabaNeo.Lib.Lattices.RingLWE
 import SigabaNeo.Lib.Lattices.ModuleLWE
 import SigabaNeo.Lib.Lattices.Estimator.Bound.Cbd
+import SigabaNeo.Lib.Lattices.Estimator.Bound.CbdQ
 import SigabaNeo.Lib.Lattices.Trapdoor
 import SigabaNeo.Lib.Lattices.Trapdoor.Family
 import SigabaNeo.Lib.Lattices.Homomorphic
@@ -62,6 +63,9 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.ValRounds
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoef
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoefFull
 import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenTape
+import SigabaNeo.Lib.Lattices.Automorphism.Interface
+import SigabaNeo.Lib.Lattices.Automorphism.Coeffs
+import SigabaNeo.Lib.Lattices.CircularRingLWE
 
 /-!
 # Lattice library
@@ -75,6 +79,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Gadget`: the gadget matrix and binary decomposition.
 * `LWE`, `RingLWE`, `ModuleLWE`: the assumptions, concrete (`SigabaNeo.Trusted.Assumption`:
   parameters, problem, security function) and asymptotic (cslib-frontier).
+* `CircularRingLWE`: circular Ring-LWE with automorphism keys (Assumption 1 of ePrint 2026/2539),
+  concrete, with Ring-LWE's security function; at `J = []` it is decision Ring-LWE.
 * `Reduction/`: lattice reduction and SVP tools shared by the attacks — `LLL`, `BKZ` (GSA-free bound on the first
   vector of a BKZ-reduced basis, `docs/PROOF_GAP.md`), `Hermite2`, `AvgBKZ`, `Slide`, `Sieve`, `SieveWide`,
   `QArySieve`, `Search`, `Rogers`.
@@ -82,7 +88,9 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   (`docs/ATTACK_PROOFS.md`).
 * `Research/`: the open walls and recorded obstructions — `Wall1`, `Wall2`, `Wall1Rej`, `PolyQ`, `Rerand`, `RevMink`.
 * `Estimator/`: the lattice estimator's attack cost models; `estimatorBits` is the `H` of the
-  concrete assumptions (`docs/LWE_ESTIMATOR.md`).
+  concrete assumptions (`docs/LWE_ESTIMATOR.md`). `Estimator/Bound/Cbd`, `Estimator/Bound/CbdQ`:
+  certified lower bounds at `CBD(16)` laws (`q = 2^e`, one sample count; any `q ≥ 2^1024` given
+  `log₂ q`, a range of sample counts).
 * `Hardness`: an earlier conservative bound, kept as a cross-check (`docs/LWE_HARDNESS.md`).
 * `Trapdoor`: the ideal preimage distribution and trapdoor samplers (`Trapdoor.Exists`);
   `Trapdoor/Family`: a sampler for one parameter family (`Trapdoor.Family.exists_sampler`).
@@ -122,5 +130,3 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   from the final store of an SLP evaluator, and `W_f`: the sum plus one block; bounds, per tape by
   the abstract interpreter, in `KeySumT`).
 -/
-import SigabaNeo.Lib.Lattices.Automorphism.Interface
-import SigabaNeo.Lib.Lattices.Automorphism.Coeffs
