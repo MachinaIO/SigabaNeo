@@ -65,22 +65,22 @@ theorem length_flatMap_const' {α β : Type} (g : α → List β) (c : ℕ) (l :
 
 /-- The bit `j = (i, a, c, b, t)` of the `Ψᵢ`: the bit `b` of the coefficient `t` of the entry
 `(a, c)` of `Ψᵢ`. -/
-def psiBit (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
-    (j : Fin 10 × (Fin 2 × (RingBTVW.Col k × (Fin k × Fin N)))) : Bool :=
+def psiBit (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
+    (j : Fin nA × (Fin 2 × (RingBTVW.Col k × (Fin k × Fin N)))) : Bool :=
   ((Ψ j.1 j.2.1 j.2.2.1).coeffs j.2.2.2.2).val.testBit j.2.2.2.1
 
 /-- The entries of the `Ψᵢ`, in their order. -/
-def entL (k : ℕ) : List (Fin 10 × (Fin 2 × RingBTVW.Col k)) :=
-  (List.finRange 10).flatMap fun i => (List.finRange 2).flatMap fun a =>
+def entL (k : ℕ) : List (Fin nA × (Fin 2 × RingBTVW.Col k)) :=
+  (List.finRange nA).flatMap fun i => (List.finRange 2).flatMap fun a =>
     (Enum.list (α := RingBTVW.Col k)).map fun cc => (i, (a, cc))
 
-theorem length_entL : (entL k).length = 10 * (2 * (2 * k)) := by
-  have h1 : ∀ i : Fin 10, ((List.finRange 2).flatMap fun a =>
+theorem length_entL : (entL k).length = nA * (2 * (2 * k)) := by
+  have h1 : ∀ i : Fin nA, ((List.finRange 2).flatMap fun a =>
       (Enum.list (α := RingBTVW.Col k)).map fun cc => (i, (a, cc))).length = 2 * (2 * k) := fun i => by
     rw [length_flatMap_const' _ (2 * k) _ (fun a => by rw [List.length_map, len_col])]; simp
   rw [entL, length_flatMap_const' _ _ _ h1]; simp
 
-theorem psi_entL (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
+theorem psi_entL (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
     (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ =
       (entL k).flatMap fun q => (ringEnc N K).enc (Ψ q.1 q.2.1 q.2.2) := by
   rw [funEnc_flatMap]
@@ -89,14 +89,14 @@ theorem psi_entL (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
 
 theorem enum_idx (hk : 2 ^ K < 2 ^ k) :
     (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)) =
-      (Enum.list (α := Fin 10 × (Fin 2 × (RingBTVW.Col k × (Fin k × Fin N))))) := rfl
+      (Enum.list (α := Fin nA × (Fin 2 × (RingBTVW.Col k × (Fin k × Fin N))))) := rfl
 
 theorem testBit_val_ge {K' : ℕ} (x : ZMod (2 ^ K')) {b : ℕ} (hb : K' ≤ b) : x.val.testBit b = false :=
   Nat.testBit_eq_false_of_lt ((ZMod.val_lt x).trans_le (Nat.pow_le_pow_right (by norm_num) hb))
 
 /-- **The bits `ψ_j`**, in the order of `Attr × Index`. -/
-theorem psiBits (hk : 2 ^ K < 2 ^ k) (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
-    trW (10 * (2 * (2 * k))) N K 1 ((k - K) * N)
+theorem psiBits (hk : 2 ^ K < 2 ^ k) (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
+    trW (nA * (2 * (2 * k))) N K 1 ((k - K) * N)
         ((FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ) =
       (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).map (psiBit Ψ) := by
   have hKk : K < k := (Nat.pow_lt_pow_iff_right (by norm_num)).mp hk
@@ -133,7 +133,7 @@ theorem psiBits (hk : 2 ^ K < 2 ^ k) (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.C
     rw [flatMap_replicate, List.length_finRange, Nat.mul_comm]
 
 /-- `ψ_j` is the bit `psiBit`. -/
-theorem bitsOf_psiBit (hk : 2 ^ K < 2 ^ k) (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
+theorem bitsOf_psiBit (hk : 2 ^ K < 2 ^ k) (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
     (j : (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index) :
     RingBTVW.bitsOf (Sdw (N := N) hk) Ψ j = bitR (R := Rg N K) (psiBit Ψ j) := by
   simp only [RingBTVW.bitsOf, Sdw, ringSetting, coeffBits, psiBit, bitR]
@@ -143,13 +143,13 @@ theorem bitsOf_psiBit (hk : 2 ^ K < 2 ^ k) (Ψ : Fin 10 → Matrix (Fin 2) (Ring
 
 theorem len_AI (hk : 2 ^ K < 2 ^ k) :
     (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length =
-      10 * (2 * (2 * k * (k * N))) := by
-  show (Enum.list (α := Fin 10 × (Fin 2 × (RingBTVW.Col k × (Fin k × Fin N))))).length = _
+      nA * (2 * (2 * k * (k * N))) := by
+  show (Enum.list (α := Fin nA × (Fin 2 × (RingBTVW.Col k × (Fin k × Fin N))))).length = _
   simp only [Enum.length_prod, len_fin]
 
 /-- **The rows `ψ_j G̲`**: blocks of `G̲` selected by the bits `ψ_j`. -/
-theorem psiRows (hk : 2 ^ K < 2 ^ k) (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
-    selW (10 * (2 * (2 * k * (k * N)))) (2 * k * (N * K))
+theorem psiRows (hk : 2 ^ K < 2 ^ k) (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
+    selW (nA * (2 * (2 * k * (k * N)))) (2 * k * (N * K))
         ((Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).map (psiBit Ψ))
         (gadW N K k) [] =
       (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
@@ -173,7 +173,7 @@ theorem enum_JC_eq (hk : 2 ^ K < 2 ^ k) :
         (Enum.list (α := RingBTVW.Col k)) := rfl
 
 theorem len_JC (hk : 2 ^ K < 2 ^ k) :
-    (Enum.list (α := DualUse.JC (Sdw (N := N) hk))).length = 10 * (2 * (2 * k * (k * N))) * (2 * k) := by
+    (Enum.list (α := DualUse.JC (Sdw (N := N) hk))).length = nA * (2 * (2 * k * (k * N))) * (2 * k) := by
   rw [Enum.length_prod, len_AI hk, len_col]
 
 variable (c : Conf N K k)
@@ -208,7 +208,7 @@ theorem rowsC_flatMap (hk : 2 ^ K < 2 ^ k)
 theorem hash_rows (hk : 2 ^ K < 2 ^ k) (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
     (V : Matrix (Fin 1) (Fin c.d) (Rg N K))
     (E : (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index → Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) :
-    hashW (10 * (2 * (2 * k * (k * N))) * (2 * k)) c.d N K ((wEnc hk c).enc w)
+    hashW (nA * (2 * (2 * k * (k * N))) * (2 * k)) c.d N K ((wEnc hk c).enc w)
         ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc V)
         ((FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
           (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k))).enc E) =
@@ -234,7 +234,7 @@ def posW (hk : 2 ^ K < 2 ^ k) :
     (List.finRange c.d).flatMap fun a => (Enum.list (α := RingBTVW.Col k)).map fun cc => (j, (a, cc))
 
 theorem length_posW (hk : 2 ^ K < 2 ^ k) :
-    (posW c hk).length = 10 * (2 * (2 * k * (k * N))) * (c.d * (2 * k)) := by
+    (posW c hk).length = nA * (2 * (2 * k * (k * N))) * (c.d * (2 * k)) := by
   have h1 : ∀ j : (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index,
       ((List.finRange c.d).flatMap fun a => (Enum.list (α := RingBTVW.Col k)).map fun cc =>
         (j, (a, cc))).length = c.d * (2 * k) := fun j => by
@@ -243,8 +243,8 @@ theorem length_posW (hk : 2 ^ K < 2 ^ k) :
 
 /-- **The word of the `W_j`**: the transposes of the bit blocks of `w`, bits expanded. -/
 theorem wMat_word (hk : 2 ^ K < 2 ^ k) (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool)) :
-    selW (10 * (2 * (2 * k * (k * N))) * (c.d * (2 * k))) (N * K)
-        (trW (10 * (2 * (2 * k * (k * N)))) (2 * k) c.d 1 0 ((wEnc hk c).enc w)) (oneW N K) [] =
+    selW (nA * (2 * (2 * k * (k * N))) * (c.d * (2 * k))) (N * K)
+        (trW (nA * (2 * (2 * k * (k * N)))) (2 * k) c.d 1 0 ((wEnc hk c).enc w)) (oneW N K) [] =
       (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
         (DualUse.matEnc (N := N) (K := K) (Fin c.d) (RingBTVW.Col k))).enc (wMat w) := by
   have hw : (wEnc hk c).enc w =
@@ -258,7 +258,7 @@ theorem wMat_word (hk : 2 ^ K < 2 ^ k) (w : DualUse.JC (Sdw (N := N) hk) → (Fi
     (Enum.list (α := RingBTVW.Col k)) (List.finRange c.d) (fun j cc a => [w (j, cc) a]) 1 0
     (fun _ _ _ => rfl)
   rw [len_AI hk, len_col, List.length_finRange] at h
-  have hT : trW (10 * (2 * (2 * k * (k * N)))) (2 * k) c.d 1 0 ((wEnc hk c).enc w) =
+  have hT : trW (nA * (2 * (2 * k * (k * N)))) (2 * k) c.d 1 0 ((wEnc hk c).enc w) =
       (posW c hk).map fun q => w (q.1, q.2.2) q.2.1 := by
     rw [hw, h, posW, List.map_flatMap]
     congr 1; funext j

@@ -118,19 +118,19 @@ theorem eStepC_list (hKk : K ≤ k) : ∀ (vs : List (Rg N K)) (z rest : List Bo
     rw [eStepC_list hKk vs, List.flatMap_cons, reg_shiftW _ _ _ (len_entryBits v)]
 
 /-- The entries of the ten `Ψᵢ`, in the order of their word. -/
-def psiEntries (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) : List (Rg N K) :=
-  (List.finRange 10).flatMap fun i => (List.finRange 2).flatMap fun a =>
+def psiEntries (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) : List (Rg N K) :=
+  (List.finRange nA).flatMap fun i => (List.finRange 2).flatMap fun a =>
     (Enum.list (α := RingBTVW.Col k)).map fun col => Ψ i a col
 
-theorem psiWord_eq (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
-    (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ =
+theorem psiWord_eq (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
+    (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ =
       (psiEntries Ψ).flatMap (ringEnc N K).enc := by
-  show ((List.finRange 10).map Ψ).flatMap (fun M => ((List.finRange 2).map (fun r => M r)).flatMap
+  show ((List.finRange nA).map Ψ).flatMap (fun M => ((List.finRange 2).map (fun r => M r)).flatMap
     (fun row => ((Enum.list (α := RingBTVW.Col k)).map row).flatMap (ringEnc N K).enc)) = _
   simp only [psiEntries, List.flatMap_map, List.flatMap_assoc]
 
-theorem len_psiEntries (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
-    (psiEntries Ψ).length = 10 * (2 * (2 * k)) := by
+theorem len_psiEntries (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
+    (psiEntries Ψ).length = nA * (2 * (2 * k)) := by
   simp [psiEntries, List.length_flatMap, len_enum_col]
   ring
 
@@ -138,11 +138,11 @@ variable (hk : 2 ^ K < 2 ^ k)
 
 /-- **The bits `ψ_j`**: the coefficient bits of the ten `Ψᵢ`, entry by entry, are the bits
 `coeffBool (Ψ j.1) j.2` along the enumeration of `Attr × Index`. -/
-theorem psiBits_eq (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
+theorem psiBits_eq (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
     (psiEntries Ψ).flatMap (entryBits k) =
       (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).map
         fun j => coeffBool (Ψ j.1) j.2 := by
-  show _ = ((List.finRange 10).product ((List.finRange 2).product ((Enum.list (α := RingBTVW.Col k)).product
+  show _ = ((List.finRange nA).product ((List.finRange 2).product ((Enum.list (α := RingBTVW.Col k)).product
     ((List.finRange k).product (List.finRange N))))).map fun j => coeffBool (Ψ j.1) j.2
   simp only [psiEntries, List.flatMap_assoc, List.flatMap_map, entryBits, List.product, List.map_flatMap,
     List.map_map, coeffBool]

@@ -99,7 +99,7 @@ def encParseP : XProg 124 :=
   seq (ufChunk 2 ((Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)))) <|
   seq (ufChunk 3 ((Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
     ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))))) <|
-  seq (ufChunk 4 (N * K)) <| seq (prog (.prim (.tail 120))) <| seq (ufChunk 5 10) <|
+  seq (ufChunk 4 (N * K)) <| seq (prog (.prim (.tail 120))) <| seq (ufChunk 5 nA) <|
   seq (prog (.prim (.tail 120))) <| ufChunk 6 1
 
 theorem flatMap_pairs_append (u v : List Bool) :
@@ -187,10 +187,10 @@ theorem wf_natL : ∀ (l : List (Fin 124 × ℕ)), (∀ p ∈ l, p.1 ≠ 123) �
 /-- The templates of the core and the output register. -/
 def tmplList : List (Fin 124 × ℕ) :=
   [(0, ctLen hk c), (13, K), (14, N), (15, N * K), (16, 1), (17, 1), (18, k), (19, c.d),
-    (20, nTrap k), (21, 2 * k), (22, 10), (23, 2 * k * (N * K)), (24, 2 * (2 * k) * (N * K)),
-    (25, 2 * (2 * k) * N), (26, 2 * k * N), (27, 10 * (2 * (2 * k))), (28, (k - K) * N),
+    (20, nTrap k), (21, 2 * k), (22, nA), (23, 2 * k * (N * K)), (24, 2 * (2 * k) * (N * K)),
+    (25, 2 * (2 * k) * N), (26, 2 * k * N), (27, nA * (2 * (2 * k))), (28, (k - K) * N),
     (29, nJenc (N := N) hk), (30, 1 * c.d * (N * K)), (31, c.d * N), (32, 1 * nTrap k * (N * K)),
-    (33, nTrap k * N), (34, 10 * (2 * (2 * k) * (N * K))), (35, 10 * (2 * (2 * k)) * (k * N)),
+    (33, nTrap k * N), (34, nA * (2 * (2 * k) * (N * K))), (35, nA * (2 * (2 * k)) * (k * N)),
     (36, nJenc (N := N) hk * (1 * (2 * k) * (N * K))), (37, N * K - K), (38, k * (N * K))]
 
 theorem tmplList_ne : ∀ p ∈ tmplList hk c, p.1 ≠ 123 := by
@@ -385,7 +385,7 @@ def nInE : ℕ :=
     (N * K)) + ((Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)) +
     ((Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
       ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) +
-      N * K))) + 1) + ((2 * 10 + 1) + ((2 * 1 + 1) + 0)))
+      N * K))) + 1) + ((2 * nA + 1) + ((2 * 1 + 1) + 0)))
 
 theorem length_encIn (mpk : PK hk c) (x : PE.DateWindow.Date) (b : Bool) :
     (encodeTuple [pw, (pkEnc hk c).enc mpk, PE.DateWindow.encDate x, [b]]).length = nInE hk c := by

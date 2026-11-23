@@ -116,11 +116,11 @@ abbrev nTrap (k : ℕ) : ℕ := (Enum.list (α := TrapCol k)).length
 abbrev nJenc : ℕ := (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length
 
 /-- The length of the word of a ciphertext, field by field as the output register is filled. -/
-def ctLen : ℕ := 10 * (2 * (2 * k) * (N * K)) + 1 * c.d * (N * K) + 1 * nTrap k * (N * K) +
+def ctLen : ℕ := nA * (2 * (2 * k) * (N * K)) + 1 * c.d * (N * K) + 1 * nTrap k * (N * K) +
   nJenc (N := N) hk * (1 * (2 * k) * (N * K)) + N * K
 
 theorem encDate_bits (x : Date) :
-    encDate x = (List.finRange 10).map (Gates.DateWindow.bitsOf x) := by
+    encDate x = (List.finRange nA).map (Gates.DateWindow.bitsOf x) := by
   apply List.ext_getElem (by simp [Gates.DateWindow.length_encDate])
   intro i h1 h2
   simp [Gates.DateWindow.bitsOf, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h1]
@@ -161,15 +161,15 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bo
     (t13 : (S 13).length = K) (t14 : (S 14).length = N) (t15 : S 15 = List.replicate (N * K) false)
     (t16 : (S 16).length = 1) (t17 : (S 17).length = 1) (t18 : (S 18).length = k)
     (t19 : (S 19).length = c.d) (t20 : (S 20).length = nTrap k) (t21 : (S 21).length = 2 * k)
-    (t22 : (S 22).length = 10) (t23 : S 23 = List.replicate (2 * k * (N * K)) false)
+    (t22 : (S 22).length = nA) (t23 : S 23 = List.replicate (2 * k * (N * K)) false)
     (t24 : S 24 = List.replicate (2 * (2 * k) * (N * K)) false)
     (t25 : (S 25).length = 2 * (2 * k) * N) (t26 : (S 26).length = 2 * k * N)
-    (t27 : (S 27).length = 10 * (2 * (2 * k))) (t28 : (S 28).length = (k - K) * N)
+    (t27 : (S 27).length = nA * (2 * (2 * k))) (t28 : (S 28).length = (k - K) * N)
     (t29 : (S 29).length = nJenc (N := N) hk) (t30 : (S 30).length = 1 * c.d * (N * K))
     (t31 : (S 31).length = c.d * N) (t32 : (S 32).length = 1 * nTrap k * (N * K))
     (t33 : (S 33).length = nTrap k * N)
-    (t34 : S 34 = List.replicate (10 * (2 * (2 * k) * (N * K))) false)
-    (t35 : S 35 = List.replicate (10 * (2 * (2 * k)) * (k * N)) false)
+    (t34 : S 34 = List.replicate (nA * (2 * (2 * k) * (N * K))) false)
+    (t35 : S 35 = List.replicate (nA * (2 * (2 * k)) * (k * N)) false)
     (t36 : S 36 = List.replicate (nJenc (N := N) hk * (1 * (2 * k) * (N * K))) false)
     (t37 : (S 37).length = N * K - K) (t38 : (S 38).length = k * (N * K)) :
     (Prog.run encCoreP S) 0 = (ctEnc hk c).enc (encrypt mpk (Gates.DateWindow.bitsOf x) b r) := by
@@ -243,28 +243,28 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bo
   have hpsi : ((Prog.iStepB N K c.d (2 * k) (S 1)
       (addRW (c.d * N) K (matMulW N K 1 1 c.d (S 7) (S 1)) (S 8)) (gswW N K k))^[(S 22).length]
       (S 34, S 10, S 5)).1 =
-      (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ := by
+      (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ := by
     rw [hc0, h1, flatMap_enc_row, flatMap_enc_row, h10, rmTEnc_cols hk c rr, h5, encDate_bits, t22,
       t34]
     have := iStepB_list hk hN hK mpk.B₀ (scalar r.s * mpk.B₀ + r.e₀) rr
-      (Gates.DateWindow.bitsOf x) (List.finRange 10)
-      (List.replicate (10 * (2 * (2 * k) * (N * K))) false) [] []
+      (Gates.DateWindow.bitsOf x) (List.finRange nA)
+      (List.replicate (nA * (2 * (2 * k) * (N * K))) false) [] []
     simp only [List.append_nil, List.length_finRange] at this
     rw [this, List.drop_left' (by simp)]
-    show _ = ((List.finRange 10).map (fun i : Fin 10 => Ψ i)).flatMap _
+    show _ = ((List.finRange nA).map (fun i : Fin nA => Ψ i)).flatMap _
     rw [List.flatMap_map]
     dsimp only
     simp only [hΨ, gswCts, hRm]
   have hz : ((Prog.eStepC N K ((k - K) * N))^[(S 27).length]
-      (S 35, (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
-        (fun i : Fin 10 => Ψ i))).1 =
+      (S 35, (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
+        (fun i : Fin nA => Ψ i))).1 =
       (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).map
         fun j => coeffBool (Ψ j.1) j.2 := by
-    have := eStepC_list (N := N) (K := K) hKk (psiEntries (fun i : Fin 10 => Ψ i)) (S 35) []
+    have := eStepC_list (N := N) (K := K) hKk (psiEntries (fun i : Fin nA => Ψ i)) (S 35) []
     rw [List.append_nil] at this
-    rw [psiWord_eq, t27, ← len_psiEntries (fun i : Fin 10 => Ψ i), this, t35,
+    rw [psiWord_eq, t27, ← len_psiEntries (fun i : Fin nA => Ψ i), this, t35,
       List.drop_left' (by simp [len_psiEntries])]
-    exact psiBits_eq hk (fun i : Fin 10 => Ψ i)
+    exact psiBits_eq hk (fun i : Fin nA => Ψ i)
   have hcj : ((Prog.jStepE N K (2 * k) (S 7) (gadW N K k))^[(S 29).length]
       (S 36, (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).map
         (fun j => coeffBool (Ψ j.1) j.2), S 3, S 11)).1 =
@@ -295,14 +295,14 @@ theorem encCore_out (hN : 0 < N) (hK : 0 < K) (mpk : PK hk c) (x : Date) (b : Bo
   rw [hpsi]
   erw [hz]
   rw [hcj, hc0, hc1, hkap]
-  set A := (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ
+  set A := (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ
   set B := (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc (scalar r.s * mpk.B₀ + r.e₀)
   set C := (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).enc (scalar r.s * mpk.B₁ + r.e₁)
   set D := (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
     (matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k))).enc
     (fun j => scalar r.s * (mpk.Bj j - bitsOf (Sdw (N := N) hk) Ψ j • (Sdw (N := N) hk).Γ₁.G) + r.ej j)
   set E := (ringEnc N K).enc (r.s * mpk.p + r.e' + (if b then (Sdw (N := N) hk).half else 0))
-  have lA := (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).length Ψ
+  have lA := (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).length Ψ
   have lB := (matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).length (scalar r.s * mpk.B₀ + r.e₀)
   have lC := (matEnc (N := N) (K := K) (Fin 1) (TrapCol k)).length (scalar r.s * mpk.B₁ + r.e₁)
   have lD := (FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)

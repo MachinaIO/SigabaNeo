@@ -47,6 +47,10 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.Rin
 open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
 open AdvancedEncryption.PE.Gates.DateWindow
 
+/-- **The number of attribute bits** (placeholder until the neutral name of `ImplBase` lands; the
+programs, layouts and closed forms of `Setup` and `Enc` are stated in it). -/
+abbrev nA : ℕ := 10
+
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-! ### Atoms -/
@@ -90,7 +94,7 @@ def inst5Enc (d : ℕ) := (pubEnc (N := N) (K := K) (k := k) d).prod (pubEnc (N 
 def wEnc := FixedEnc.fun (α := JC (Sdw (N := N) hk)) (FixedEnc.fun (α := Fin c.d) bitEnc)
 
 /-- The matrices `Rᵢ` (or the `Wⱼ`) as ring matrices `Fin d × Col k`. -/
-def rmEnc := FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin c.d) (Col k))
+def rmEnc := FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin c.d) (Col k))
 
 /-- A matrix by its columns (column-major): the transpose's row-major word. -/
 def matTEnc (r s : Type) [Enum r] [Enum s] :=
@@ -98,7 +102,7 @@ def matTEnc (r s : Type) [Enum r] [Enum s] :=
 
 /-- **The matrices `Rᵢ` in the secrets**: column-major (`i`, then the column `c`, then the row
 `a`), the order of the coins of `lawRmBin`. -/
-def rmTEnc := FixedEnc.fun (α := Fin 10) (matTEnc (N := N) (K := K) (Fin c.d) (Col k))
+def rmTEnc := FixedEnc.fun (α := Fin nA) (matTEnc (N := N) (K := K) (Fin c.d) (Col k))
 
 /-- The errors of the encodings, `e : Attr × Index → 1 × Col k`. -/
 def eEnc := FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
@@ -161,7 +165,7 @@ def sdEnc :=
   ((pkEnc hk c).prod ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).prod ((rmEnc c).prod
     ((FixedEnc.fun (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)
       (matEnc (N := N) (K := K) (Fin c.d) (Col k))).prod
-    ((FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (Col k))).prod dateEnc))))).comap
+    ((FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (Col k))).prod dateEnc))))).comap
     (sdTuple hk c) (sdTuple_injective hk c)
 
 theorem sdEnc_enc (s : SimData hk c) :

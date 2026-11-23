@@ -277,7 +277,7 @@ variable (hk : 2 ^ K < 2 ^ k)
 /-- **One Ring-GSW ciphertext**: the word `qB` of the rows of `A · Rᵢ` and the bit `xᵢ` is the
 word of `Ψᵢ = A Rᵢ + xᵢ G`. -/
 theorem qB_psi (hN : 0 < N) (hK : 0 < K) {d : ℕ} (B₀ c₀ : Matrix (Fin 1) (Fin d) (Rg N K))
-    (rr : (Sdw (N := N) hk).Attr × RingBTVW.Col k → (Fin d → Bool)) (i : Fin 10) (x : Bool)
+    (rr : (Sdw (N := N) hk).Attr × RingBTVW.Col k → (Fin d → Bool)) (i : Fin nA) (x : Bool)
     (rest : List Bool) :
     Prog.qB N K (2 * k) (gswW N K k) x
       (Prog.rowsB N K d (2 * k) ((List.finRange d).flatMap fun a => (ringEnc N K).enc (B₀ 0 a))
@@ -324,35 +324,35 @@ theorem reg_shiftW {W c : ℕ} (x y z : List Bool) (hy : y.length = W) :
 /-- The word of the `Rᵢ` (column-major), matrix by matrix, column by column. -/
 theorem rmTEnc_cols (c : Conf N K k) (rr : (Sdw (N := N) hk).Attr × RingBTVW.Col k → (Fin c.d → Bool)) :
     (rmTEnc c).enc (rMat (R := Rg N K) rr) =
-      (List.finRange 10).flatMap fun (i : Fin 10) =>
+      (List.finRange nA).flatMap fun (i : Fin nA) =>
         ((Enum.list (α := RingBTVW.Col k)).map fun col => rr (i, col)).flatMap
           (colWord (N := N) (K := K) c.d) := by
-  show ((List.finRange 10).map (fun (i : Fin 10) => rMat (R := Rg N K) rr i)).flatMap
+  show ((List.finRange nA).map (fun (i : Fin nA) => rMat (R := Rg N K) rr i)).flatMap
     (matTEnc (Fin c.d) (RingBTVW.Col k)).enc = _
   simp only [List.flatMap_map, matTEnc_enc, colWord, rMat, Matrix.of_apply]
   rfl
 
 /-- **The ten Ring-GSW ciphertexts**, matrix by matrix. -/
 theorem iStepB_list (hN : 0 < N) (hK : 0 < K) {d : ℕ} (B₀ c₀ : Matrix (Fin 1) (Fin d) (Rg N K))
-    (rr : (Sdw (N := N) hk).Attr × RingBTVW.Col k → (Fin d → Bool)) (xb : Fin 10 → Bool) :
-    ∀ (l : List (Fin 10)) (out rest xr : List Bool),
+    (rr : (Sdw (N := N) hk).Attr × RingBTVW.Col k → (Fin d → Bool)) (xb : Fin nA → Bool) :
+    ∀ (l : List (Fin nA)) (out rest xr : List Bool),
       (Prog.iStepB N K d (2 * k) ((List.finRange d).flatMap fun a => (ringEnc N K).enc (B₀ 0 a))
         ((List.finRange d).flatMap fun a => (ringEnc N K).enc (c₀ 0 a)) (gswW N K k))^[l.length]
-        (out, (l.flatMap fun (i : Fin 10) => ((Enum.list (α := RingBTVW.Col k)).map
+        (out, (l.flatMap fun (i : Fin nA) => ((Enum.list (α := RingBTVW.Col k)).map
           fun col => rr (i, col)).flatMap (colWord (N := N) (K := K) d)) ++ rest, l.map xb ++ xr) =
-      ((out ++ l.flatMap fun (i : Fin 10) => (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc
+      ((out ++ l.flatMap fun (i : Fin nA) => (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc
           (gswPK B₀ c₀ * rMat (R := Rg N K) rr i + bitR (R := Rg N K) (xb i) •
             (Sdw (N := N) hk).Γ.G)).drop (l.length * (2 * (2 * k) * (N * K))), rest, xr)
   | [], out, rest, xr => by simp
   | i :: l, out, rest, xr => by
     rw [List.length_cons, Function.iterate_succ_apply]
     have hstep := qB_psi hk hN hK B₀ c₀ rr i (xb i)
-      ((l.flatMap fun (i : Fin 10) => ((Enum.list (α := RingBTVW.Col k)).map
+      ((l.flatMap fun (i : Fin nA) => ((Enum.list (α := RingBTVW.Col k)).map
         fun col => rr (i, col)).flatMap (colWord (N := N) (K := K) d)) ++ rest)
     have hrows := rowsB_enc hN hK (fun a => B₀ 0 a) (fun a => c₀ 0 a)
       ((Enum.list (α := RingBTVW.Col k)).map fun col => rr (i, col))
       (by rw [List.length_map, len_enum_col])
-      ((l.flatMap fun (i : Fin 10) => ((Enum.list (α := RingBTVW.Col k)).map
+      ((l.flatMap fun (i : Fin nA) => ((Enum.list (α := RingBTVW.Col k)).map
         fun col => rr (i, col)).flatMap (colWord (N := N) (K := K) d)) ++ rest)
     simp only [Prog.iStepB, List.flatMap_cons, List.map_cons, List.cons_append, List.append_assoc,
       hd_cons, List.tail_cons]

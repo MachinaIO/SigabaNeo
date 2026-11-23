@@ -27,26 +27,26 @@ def lxB (n a s w E S : ℕ) : ℕ := (8 * n + 8 + n * (w + 3)) * (0 + S + (n * a
 
 /-- **The closed bound of the clock of `Setup`** in the sizes: the six samplers, the deterministic
 part (`detCostT`), the loader and the emitter. -/
-def setupF (N K k d nI G0 a s w E : ℕ) : ℕ :=
-  let ρ : List ℕ := [0, N, K, k, d, nI, G0, a, s]
+def setupF (N K k d nI G0 a s w E nA : ℕ) : ℕ :=
+  let ρ : List ℕ := [0, N, K, k, d, nI, G0, a, s, nA]
   (2 * nI + 2) +
   (countT (d * (N * K)) 1 0 tCoin 0 (pEval ρ Sp) + (countT (2 * k * (N * K)) 1 0 tCoin 0 (pEval ρ Sp) +
   (lxB N a s w E (pEval ρ Sp) + (lxB (2 * k * N) a s w E (pEval ρ S3) +
-  (countT (80 * (N ^ 2 * K * k ^ 3)) 1 0 tCoin 0 (pEval ρ S4) +
+  (countT (8 * (N ^ 2 * K * k ^ 3 * nA)) 1 0 tCoin 0 (pEval ρ S4) +
   (countT (N * K) 1 0 tCoin 0 (pEval ρ S4) + detCostT ρ)))))) +
   (2 * pEval ρ (aGet D17 91) + 2)
 
 /-- The closed bound unfolded. -/
-theorem setupF_eq (N K k d nI G0 a s w E : ℕ) : setupF N K k d nI G0 a s w E =
+theorem setupF_eq (N K k d nI G0 a s w E nA : ℕ) : setupF N K k d nI G0 a s w E nA =
     (2 * nI + 2) +
-    (countT (d * (N * K)) 1 0 tCoin 0 (pEval [0, N, K, k, d, nI, G0, a, s] Sp) +
-    (countT (2 * k * (N * K)) 1 0 tCoin 0 (pEval [0, N, K, k, d, nI, G0, a, s] Sp) +
-    (lxB N a s w E (pEval [0, N, K, k, d, nI, G0, a, s] Sp) +
-    (lxB (2 * k * N) a s w E (pEval [0, N, K, k, d, nI, G0, a, s] S3) +
-    (countT (80 * (N ^ 2 * K * k ^ 3)) 1 0 tCoin 0 (pEval [0, N, K, k, d, nI, G0, a, s] S4) +
-    (countT (N * K) 1 0 tCoin 0 (pEval [0, N, K, k, d, nI, G0, a, s] S4) +
-      detCostT [0, N, K, k, d, nI, G0, a, s])))))) +
-    (2 * pEval [0, N, K, k, d, nI, G0, a, s] (aGet D17 91) + 2) := rfl
+    (countT (d * (N * K)) 1 0 tCoin 0 (pEval [0, N, K, k, d, nI, G0, a, s, nA] Sp) +
+    (countT (2 * k * (N * K)) 1 0 tCoin 0 (pEval [0, N, K, k, d, nI, G0, a, s, nA] Sp) +
+    (lxB N a s w E (pEval [0, N, K, k, d, nI, G0, a, s, nA] Sp) +
+    (lxB (2 * k * N) a s w E (pEval [0, N, K, k, d, nI, G0, a, s, nA] S3) +
+    (countT (8 * (N ^ 2 * K * k ^ 3 * nA)) 1 0 tCoin 0 (pEval [0, N, K, k, d, nI, G0, a, s, nA] S4) +
+    (countT (N * K) 1 0 tCoin 0 (pEval [0, N, K, k, d, nI, G0, a, s, nA] S4) +
+      detCostT [0, N, K, k, d, nI, G0, a, s, nA])))))) +
+    (2 * pEval [0, N, K, k, d, nI, G0, a, s, nA] (aGet D17 91) + 2) := rfl
 
 section Generic
 
@@ -62,7 +62,7 @@ theorem setupCostT_le (nI G0 : ℕ) {w E : ℕ} (hLin : Lin X.B.T w E) :
       (countT (2 * k * (N * K)) 1 0 tCoin 0 (pEval (ρS c X nI G0) Sp) +
       (lxB N X.B.a X.B.s w E (pEval (ρS c X nI G0) Sp) +
       (lxB (2 * k * N) X.B.a X.B.s w E (pEval (ρS c X nI G0) S3) +
-      (countT (80 * (N ^ 2 * K * k ^ 3)) 1 0 tCoin 0 (pEval (ρS c X nI G0) S4) +
+      (countT (8 * (N ^ 2 * K * k ^ 3 * nA)) 1 0 tCoin 0 (pEval (ρS c X nI G0) S4) +
       (countT (N * K) 1 0 tCoin 0 (pEval (ρS c X nI G0) S4) + detCostT (ρS c X nI G0)))))) := by
   have x1 := z_bnd (ρS c X nI G0) σS0 (eB0 0) (by decide +kernel)
   have x2 := z_bnd (ρS c X nI G0) σS1 (eAa 0) (by decide +kernel)
@@ -79,7 +79,7 @@ theorem setupCostT_le (nI G0 : ℕ) {w E : ℕ} (hLin : Lin X.B.T w E) :
       countT (2 * k * (N * K)) 1 0 tCoin 0 (pEval (ρS c X nI G0) Sp) := by
     rw [← nRowC_eq]; rfl
   have c5 : (bCoins (nBj (N := N) hk)).T 0 (pEval (ρS c X nI G0) S4) =
-      countT (80 * (N ^ 2 * K * k ^ 3)) 1 0 tCoin 0 (pEval (ρS c X nI G0) S4) := by
+      countT (8 * (N ^ 2 * K * k ^ 3 * nA)) 1 0 tCoin 0 (pEval (ρS c X nI G0) S4) := by
     rw [← nBj_eq hk]; rfl
   have c3 := lin_Bcount hLin N 0 (pEval (ρS c X nI G0) Sp)
   have c4 := lin_Bcount hLin ((Enum.list (α := RingBTVW.Col k)).length * N) 0
@@ -123,8 +123,8 @@ theorem nInS_le_1031 : nInS ≤ 1031 := by
 set_option maxRecDepth 100000 in
 /-- The closed bound at `confP`, between `2^354` and `2^355`. -/
 theorem setupF_conf : 2 ^ 354 < setupF (2 ^ 34) (2 ^ 25) (2 ^ 25 + 1) (2 ^ 61) 1031 (2 ^ 25) (2 ^ 25) 64
-      (2 ^ 40) (2 ^ 40) ∧
-    setupF (2 ^ 34) (2 ^ 25) (2 ^ 25 + 1) (2 ^ 61) 1031 (2 ^ 25) (2 ^ 25) 64 (2 ^ 40) (2 ^ 40) <
+      (2 ^ 40) (2 ^ 40) 10 ∧
+    setupF (2 ^ 34) (2 ^ 25) (2 ^ 25 + 1) (2 ^ 61) 1031 (2 ^ 25) (2 ^ 25) 64 (2 ^ 40) (2 ^ 40) 10 <
       2 ^ 355 := by
   decide +kernel
 
@@ -133,12 +133,12 @@ theorem time_setupMP_conf' : (setupMP hkp confP chiSamplerP).time ≤ 2 ^ 355 :=
   have hK : 1 ≤ Kp := by rw [Kp_def]; norm_num
   have h := time_setupMP_tight hkp confP chiSamplerP 1031 Kp nInS_le_1031 hK bChi_S₀
   have h2 := setupCostT_le hkp confP chiSamplerP 1031 Kp lin_bChi
-  have eρ : ρS confP chiSamplerP 1031 Kp = [0, Np, Kp, kp, confP.d, 1031, Kp, bChi.a, bChi.s] :=
+  have eρ : ρS confP chiSamplerP 1031 Kp = [0, Np, Kp, kp, confP.d, 1031, Kp, bChi.a, bChi.s, nA] :=
     rfl
   rw [eρ] at h h2
   have h3 := h.trans (Nat.add_le_add (Nat.add_le_add_left h2 _) le_rfl)
   rw [chiB] at h3
-  have hF : setupF Np Kp kp confP.d 1031 Kp bChi.a bChi.s (2 ^ 40) (2 ^ 40) < 2 ^ 355 := by
+  have hF : setupF Np Kp kp confP.d 1031 Kp bChi.a bChi.s (2 ^ 40) (2 ^ 40) nA < 2 ^ 355 := by
     rw [confP_d, bChi_a, bChi_s, kp_eq, Np_def, Kp_def]
     exact setupF_conf.2
   rw [setupF_eq] at hF

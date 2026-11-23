@@ -179,6 +179,20 @@ theorem lin_bChi : Lin bChi.T (2 ^ 40) (2 ^ 40) := by
     simp only [Bnd.rep_a, Bnd.rep_s, bCoin2, bStep, Bnd.ite, Bnd.seq, Bnd.prim, Params.Kp_def] <;>
     norm_num
 
+set_option maxRecDepth 100000 in
+/-- **The χ sampler is linear with the same constants for any `K ≤ 2^27`** (the weight is about
+`429 K`), e.g. at `confA`. -/
+theorem lin_bChi_of_le (hK : Params.Kp ≤ 2 ^ 27) : Lin bChi.T (2 ^ 40) (2 ^ 40) := by
+  have hC := lin_bChain Params.Kp 6 (lin_bLeaf Params.Kp 6) (16 + 16)
+  have hD : Lin ((((Bnd.prim 0 0).ite (Bnd.prim 0 0)).seq (Bnd.prim 0 0))).T (2 + 2 + 1 + 2)
+      (3 + 3 + 1 + 3 + 0 + 0) := by
+    have h := lin_Bseq (lin_Bite (lin_Bprim 0 0) (lin_Bprim 0 0)) (lin_Bprim 0 0)
+    simpa [Bnd.ite, Bnd.prim] using h
+  have h := lin_Bseq (lin_Brep lin_bCoin2 (16 + 16)) (lin_Bseq (lin_Brep (lin_Bprim 0 1) 16)
+    (lin_Bseq (lin_Brep lin_bStep 16) (lin_Bseq (lin_Brep hD 16) hC)))
+  refine h.mono ?_ ?_ <;>
+    (try simp only [Bnd.rep_a, Bnd.rep_s, bCoin2, bStep, Bnd.ite, Bnd.seq, Bnd.prim]) <;> omega
+
 end AdvancedEncryption.DualUse.Prog
 
 /-! ### Linear bounds as data

@@ -4,8 +4,9 @@ import PE.Impl.DualUse.Prog.CompCost
 /-!
 # The per-tape bounds of `Setup`, step by step
 
-Symbolic stores over the variables `ρ = [0, N, K, k, d, n_in, G₀, a_χ, s_χ]` (`n_in` the input
-length, `G₀` a bound of the thresholds of the χ sampler, `a_χ`, `s_χ` its shape): the six framed
+Symbolic stores over the variables `ρ = [0, N, K, k, d, n_in, G₀, a_χ, s_χ, n_A]` (`n_in` the input
+length, `G₀` a bound of the thresholds of the χ sampler, `a_χ`, `s_χ` its shape, `n_A` the number of
+attribute bits): the six framed
 samplers (`σS1 … σS6`), then the seventeen steps of `setupDet` (`D1 … D17`). Every side condition is
 a closed check (`chk_*`, `decide +kernel`).
 -/
@@ -16,7 +17,7 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Ta
 
 namespace TightS
 
-/-- The monomial `c · N^a K^b k^c d^e n^f G₀^g a_χ^h s_χ^i`. -/
+/-- The monomial `c · N^a K^b k^c d^e n^f G₀^g a_χ^h s_χ^i n_A^j`. -/
 def mq (c : ℕ) (e : List ℕ) : Poly := [(0 :: e, c)]
 
 def pN : Poly := mq 1 [1]
@@ -30,7 +31,7 @@ def pNXa : Poly := mq 1 [1, 0, 0, 0, 0, 0, 1]
 def p2kNXa : Poly := mq 2 [1, 0, 1, 0, 0, 0, 1]
 def pNXs : Poly := mq 1 [1, 0, 0, 0, 0, 0, 0, 1]
 def p2kNXs : Poly := mq 2 [1, 0, 1, 0, 0, 0, 0, 1]
-def pBj : Poly := mq 80 [2, 1, 3]
+def pBj : Poly := mq 8 [2, 1, 3, 0, 0, 0, 0, 0, 1]
 def vnI : Poly := mq 1 [0, 0, 0, 0, 1]
 def vG0 : Poly := mq 1 [0, 0, 0, 0, 0, 1]
 
@@ -245,12 +246,12 @@ section Chain
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (X : ChiSampler c)
 
 /-- The variables at a configuration. -/
-def ρS (nI G0 : ℕ) : List ℕ := [0, N, K, k, c.d, nI, G0, X.B.a, X.B.s]
+def ρS (nI G0 : ℕ) : List ℕ := [0, N, K, k, c.d, nI, G0, X.B.a, X.B.s, nA]
 
 theorem hN_ρS (nI G0 : ℕ) : HN N K k (ρS c X nI G0) := ⟨rfl, rfl, rfl⟩
 
 theorem pEval_Sp (nI G0 : ℕ) : pEval (ρS c X nI G0) Sp =
-    G0 + c.d * (N * K) + 2 * k * (N * K) + N + 2 * k * N + 80 * (N ^ 2 * K * k ^ 3) + N * K := by
+    G0 + c.d * (N * K) + 2 * k * (N * K) + N + 2 * k * N + 8 * (N ^ 2 * K * k ^ 3 * nA) + N * K := by
   simp [Sp, ρS, pN, pNK, pdNK, p2kNK, p2kN, pBj, vG0, mq, pEval, mEval]; try ring
 
 theorem pEval_S3 (nI G0 : ℕ) : pEval (ρS c X nI G0) S3 =
@@ -263,8 +264,9 @@ theorem pEval_S4 (nI G0 : ℕ) : pEval (ρS c X nI G0) S4 =
 
 theorem nRowD_eq : nRowD N K c.d = c.d * (N * K) := by simp [nRowD, len_fin]
 theorem nRowC_eq : nRowC N K k = 2 * k * (N * K) := by simp [nRowC, len_fin, len_col]
-theorem nBj_eq : nBj (N := N) hk = 80 * (N ^ 2 * K * k ^ 3) := by
-  simp only [nBj, nRowC, Enum.length_prod, len_fin, len_col, len_Attr, len_Index]; ring
+theorem nBj_eq : nBj (N := N) hk = 8 * (N ^ 2 * K * k ^ 3 * nA) := by
+  have hA : (Enum.list (α := (Sdw (N := N) hk).Attr)).length = nA := len_Attr hk
+  simp only [nBj, nRowC, Enum.length_prod, len_fin, len_col, hA, len_Index]; ring
 theorem nCol_eq : (Enum.list (α := RingBTVW.Col k)).length * N = 2 * k * N := by rw [len_col]
 
 /-- The cost of the deterministic part of `Setup` (`ρ` the variables). -/

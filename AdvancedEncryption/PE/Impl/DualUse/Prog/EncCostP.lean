@@ -70,7 +70,7 @@ def parseET (M : ℕ) : ℕ :=
     (ufCT ((Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K))) P1 +
     (ufCT ((Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
       ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K)))) P2 +
-    (ufCT (N * K) P3 + ((2 * (P4 + 1) + 3) + (ufCT 10 P4 + ((2 * (P5 + 1) + 3) + ufCT 1 P5)))))))
+    (ufCT (N * K) P3 + ((2 * (P4 + 1) + 3) + (ufCT nA P4 + ((2 * (P5 + 1) + 3) + ufCT 1 P5)))))))
 
 set_option maxRecDepth 100000 in
 theorem ub_encParseP (M : ℕ)
@@ -79,7 +79,7 @@ theorem ub_encParseP (M : ℕ)
     (h2 : (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)) ≤ M)
     (h3 : (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
       ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) ≤ M)
-    (h4 : N * K ≤ M) (h5 : 10 ≤ M) :
+    (h4 : N * K ≤ M) (h5 : nA ≤ M) :
     UB (encParseP hk c) M (parseET hk c M) (parseEG M) := by
   rw [encParseP]
   refine ((ub_dropChunk _ M h0).seq <| (ub_ufChunk 1 _ _ (by omega)).seq <|
@@ -130,7 +130,7 @@ theorem ub_encP {X : ChiSampler c} (M : ℕ) (hpres : X.P.Preserves 6)
     (h2 : (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)) ≤ M)
     (h3 : (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
       ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) ≤ M)
-    (h4 : N * K ≤ M) (h5 : 10 ≤ M)
+    (h4 : N * K ≤ M) (h5 : nA ≤ M)
     (s1 : (bCoins (N * K)).S₀ ≤ parseEG M)
     (s2 : (X.B.count ((Enum.list (α := Fin c.d)).length * N)).S₀ ≤ parseEG M)
     (s3 : (X.B.count N).S₀ ≤ parseEG M)

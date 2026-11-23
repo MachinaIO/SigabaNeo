@@ -95,15 +95,15 @@ theorem matAddW_matEnc' {r s : Type} [Enum r] [Enum s] {a b : ℕ}
 
 variable (c : Conf N K k)
 
-theorem rmTEnc_eq (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
+theorem rmTEnc_eq (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
     (rmTEnc c).enc Rm =
       (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (RingBTVW.Col k) (Fin c.d))).enc fun i => (Rm i)ᵀ := by
   rw [rmTEnc, funEnc_flatMap, funEnc_flatMap]; rfl
 
 /-- **The `Rᵢ` row-major.** -/
-theorem trW_rm (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
-    trW 10 (2 * k) c.d (N * K) 0 ((rmTEnc c).enc Rm) = (rmEnc c).enc Rm := by
-  rw [rmTEnc_eq, trW_fun_matEnc' (len_fin 10) len_col (len_fin c.d)]
+theorem trW_rm (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
+    trW nA (2 * k) c.d (N * K) 0 ((rmTEnc c).enc Rm) = (rmEnc c).enc Rm := by
+  rw [rmTEnc_eq, trW_fun_matEnc' (len_fin nA) len_col (len_fin c.d)]
   rfl
 
 /-! ### The Ring-GSW ciphertexts -/
@@ -123,42 +123,42 @@ theorem psiA (B₀ c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) :
   simp [takeD]
 
 /-- The stacked transposes: the row `(i, c)` is the column `c` of `Rᵢ`. -/
-def stkR (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
-    Matrix (Fin 10 × RingBTVW.Col k) (Fin c.d) (Rg N K) :=
+def stkR (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
+    Matrix (Fin nA × RingBTVW.Col k) (Fin c.d) (Rg N K) :=
   Matrix.of fun ic a => Rm ic.1 a ic.2
 
-theorem rmTEnc_stk (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
+theorem rmTEnc_stk (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
     (rmTEnc c).enc Rm =
-      (DualUse.matEnc (N := N) (K := K) (Fin 10 × RingBTVW.Col k) (Fin c.d)).enc (stkR c Rm) := by
+      (DualUse.matEnc (N := N) (K := K) (Fin nA × RingBTVW.Col k) (Fin c.d)).enc (stkR c Rm) := by
   rw [rmTEnc_eq, funEnc_flatMap, matEnc_flatMap]
-  show _ = ((Enum.list (α := Fin 10)).product (Enum.list (α := RingBTVW.Col k))).flatMap _
+  show _ = ((Enum.list (α := Fin nA)).product (Enum.list (α := RingBTVW.Col k))).flatMap _
   rw [Algo.flatMap_product]
   simp only [matEnc_flatMap]
   rfl
 
 /-- **One product for all the `A Rᵢ`**: the stacked `Rᵢᵀ` times `Aᵀ`. -/
 theorem psiMM (A : Matrix (Fin 2) (Fin c.d) (Rg N K))
-    (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
-    matMulW N K (10 * (2 * k)) c.d 2 ((rmTEnc c).enc Rm)
+    (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
+    matMulW N K (nA * (2 * k)) c.d 2 ((rmTEnc c).enc Rm)
         (trW 1 2 c.d (N * K) 0 ((DualUse.matEnc (N := N) (K := K) (Fin 2) (Fin c.d)).enc A)) =
-      (DualUse.matEnc (N := N) (K := K) (Fin 10 × RingBTVW.Col k) (Fin 2)).enc (stkR c Rm * Aᵀ) := by
+      (DualUse.matEnc (N := N) (K := K) (Fin nA × RingBTVW.Col k) (Fin 2)).enc (stkR c Rm * Aᵀ) := by
   rw [trW_matEnc' (len_fin 2) (len_fin c.d), rmTEnc_stk,
     matEnc_mul' (by rw [Enum.length_prod, len_fin, len_col]) (len_fin c.d) (len_fin 2)]
 
 /-- **The `A Rᵢ`** from the product, by transposes. -/
 theorem psiPre (A : Matrix (Fin 2) (Fin c.d) (Rg N K))
-    (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
-    trW 10 (2 * k) 2 (N * K) 0
-        ((DualUse.matEnc (N := N) (K := K) (Fin 10 × RingBTVW.Col k) (Fin 2)).enc (stkR c Rm * Aᵀ)) =
+    (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
+    trW nA (2 * k) 2 (N * K) 0
+        ((DualUse.matEnc (N := N) (K := K) (Fin nA × RingBTVW.Col k) (Fin 2)).enc (stkR c Rm * Aᵀ)) =
       (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
         fun i => A * Rm i := by
-  have h := trW_fun_matEnc' (N := N) (K := K) (len_fin 10) len_col (len_fin 2)
+  have h := trW_fun_matEnc' (N := N) (K := K) (len_fin nA) len_col (len_fin 2)
     (fun i => (Matrix.of fun (cc : RingBTVW.Col k) (r : Fin 2) => (stkR c Rm * Aᵀ) (i, cc) r))
-  have hw : (DualUse.matEnc (N := N) (K := K) (Fin 10 × RingBTVW.Col k) (Fin 2)).enc (stkR c Rm * Aᵀ) =
+  have hw : (DualUse.matEnc (N := N) (K := K) (Fin nA × RingBTVW.Col k) (Fin 2)).enc (stkR c Rm * Aᵀ) =
       (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (RingBTVW.Col k) (Fin 2))).enc
         (fun i => (Matrix.of fun (cc : RingBTVW.Col k) (r : Fin 2) => (stkR c Rm * Aᵀ) (i, cc) r)) := by
     rw [matEnc_flatMap, funEnc_flatMap]
-    show ((Enum.list (α := Fin 10)).product (Enum.list (α := RingBTVW.Col k))).flatMap _ = _
+    show ((Enum.list (α := Fin nA)).product (Enum.list (α := RingBTVW.Col k))).flatMap _ = _
     rw [Algo.flatMap_product]
     simp only [matEnc_flatMap]
     rfl
@@ -240,7 +240,7 @@ theorem gswG_word :
   simp only [List.append_assoc]
   rfl
 
-theorem encDate_map (x : Date) : encDate x = (List.finRange 10).map (bitsOf x) := by
+theorem encDate_map (x : Date) : encDate x = (List.finRange nA).map (bitsOf x) := by
   apply List.ext_getElem (by simp [length_encDate])
   intro i h1 h2
   rw [List.getElem_map, List.getElem_finRange]
@@ -259,26 +259,26 @@ theorem bitR_smul_word {r s : Type} [Enum r] [Enum s] {L : ℕ}
 
 /-- **The shifts `xᵢ G`**: blocks selected by the bits of the date. -/
 theorem psiSel (x : Date) :
-    selW 10 (2 * (2 * k) * (N * K)) (encDate x)
+    selW nA (2 * (2 * k) * (N * K)) (encDate x)
         ((DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (Sdw (N := N) hk).Γ.G) [] =
       (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
         fun i => bitR (R := Rg N K) (bitsOf x i) • (Sdw (N := N) hk).Γ.G := by
-  have h := selW_map (List.finRange 10) (bitsOf x) (2 * (2 * k) * (N * K))
+  have h := selW_map (List.finRange nA) (bitsOf x) (2 * (2 * k) * (N * K))
     ((DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (Sdw (N := N) hk).Γ.G) []
   simp only [List.length_finRange] at h
   rw [encDate_map, h, funEnc_flatMap]
-  show _ = (List.finRange 10).flatMap _
+  show _ = (List.finRange nA).flatMap _
   congr 1
   funext i
   exact bitR_smul_word (by rw [len_fin, len_col]; ring) _ _
 
 /-- **The `Ψᵢ`**: the sum of the `A Rᵢ` and the shifts. -/
-theorem psiAdd (F G : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
-    matAddW N K (10 * (2 * (2 * k)))
+theorem psiAdd (F G : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :
+    matAddW N K (nA * (2 * (2 * k)))
         ((FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc F)
         ((FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc G) =
       (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
         fun i => F i + G i := by
-  exact matAddW_fun_matEnc' (len_fin 10) (len_fin 2) len_col F G
+  exact matAddW_fun_matEnc' (len_fin nA) (len_fin 2) len_col F G
 
 end AdvancedEncryption.DualUse.Prog
