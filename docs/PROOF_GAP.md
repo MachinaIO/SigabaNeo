@@ -2290,6 +2290,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     the period cap covers r = 3329.
   * Still open: the deterministic count V_N r^N ≤ 4(3329⁴⁰⁰ + Dⱼ(r)) on the remaining radii. With it and (B) on draws
     54–405, the crossing bound is < 2.4681·10⁻¹¹.
+* **Lean (width-638 success certificate, Part 236/238).** Width638Graph / Geometry / Groups / Arithmetic / Numeric /
+  Averaging / Certificate (axiom-clean; no sorry/admit/native_decide).
+  * `recovery_std`: for a uniform 512×511 design mod 3329, independent CBD(3) secret and errors, and EVERY exact-CVP
+    oracle, the four-group width-638 algorithm returns the planted secret with probability > 0.643162094166.
+  * Components: rank-638 graph oracle; translated-ball first moment (ties charged, zero-residue competitors excluded);
+    factorization over the four groups given the shared secret; validation charge 4(7/3329)⁴; centered lifting; exact
+    CBD shell convolution and the final rational inequality.
+  * The CVP execution cost (< 2^778.825, Part 238) is not formalized.
+* **Lean (early-winner tail completed).** RawBallCount / RawBallRounding / RawCenteredCount / RawDirectionCountBounds /
+  RawDirectionMultiplicity / RawScalarMajorant / RawScalarWeights / LongWinnerDirectionCount (axiom-clean).
+  * V_N r^N ≤ 4·Dⱼ(r) for 1 ≤ j ≤ 52, N = 506 + j, 1690 ≤ r ≤ 3329.
+  * The small-g crossing bound < 2.4681·10⁻¹¹ now has the conditional fourth-moment hypothesis (B) on draws 54–405 as its
+    only hypothesis.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
