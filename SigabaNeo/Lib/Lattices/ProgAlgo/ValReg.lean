@@ -106,20 +106,39 @@ abbrev JD : Fin 120 := 114
 def wBody (sel : Bool) : Code :=
   ofList [if sel then .ifb JB (.mv GX GD TSl) .nop else .ifb JB .nop (.mv GX GD TSl), .tl JB]
 
-/-- The number of slots shifted after `r` rounds. -/
-def wcnt (sel : Bool) (d r : ℕ) : ℕ := if sel then min r d else r - min r d
+/-- The number of slots shifted after `r` rounds, for the bits `u` of `JB`. -/
+def wcnt (sel : Bool) (u : List Bool) (r : ℕ) : ℕ :=
+  if sel then (u.take r).count true else r - (u.take r).count true
 
-theorem wcnt_succ (sel : Bool) {d r : ℕ} :
-    wcnt sel d (r + 1) = wcnt sel d r + if decide (r < d) = sel then 1 else 0 := by
-  cases sel <;> by_cases h : r < d <;> simp [wcnt, h] <;> omega
+theorem count_take_le (u : List Bool) (r : ℕ) : (u.take r).count true ≤ r :=
+  (List.count_le_length).trans (by simp)
 
-theorem wcnt_le (sel : Bool) (d r : ℕ) : wcnt sel d r ≤ wcnt sel d (r + 1) := by
-  rw [wcnt_succ]; omega
+theorem wcnt_succ (sel : Bool) {u : List Bool} {r : ℕ} (hr : r < u.length) :
+    wcnt sel u (r + 1) = wcnt sel u r + if u[r] = sel then 1 else 0 := by
+  have h := count_take_le u r
+  have e : (u.take (r + 1)).count true = (u.take r).count true + if u[r] = true then 1 else 0 := by
+    rw [List.take_add_one, List.getElem?_eq_getElem hr, Option.toList_some, List.count_append]
+    cases u[r] <;> simp
+  cases sel <;> cases hu : u[r] <;> simp only [wcnt, e, hu] <;> simp <;> omega
 
-theorem wcnt_mono (sel : Bool) (d : ℕ) {r r' : ℕ} (h : r ≤ r') : wcnt sel d r ≤ wcnt sel d r' := by
+theorem wcnt_le (sel : Bool) {u : List Bool} {r : ℕ} (hr : r < u.length) :
+    wcnt sel u r ≤ wcnt sel u (r + 1) := by
+  rw [wcnt_succ sel hr]; omega
+
+theorem wcnt_mono (sel : Bool) (u : List Bool) {r r' : ℕ} (h : r ≤ r') (h' : r' ≤ u.length) :
+    wcnt sel u r ≤ wcnt sel u r' := by
   induction h with
   | refl => exact le_rfl
-  | step _ ih => exact ih.trans (wcnt_le sel d _)
+  | step h ih => exact (ih (by omega)).trans (wcnt_le sel (by omega))
+
+theorem wcnt_true (u : List Bool) : wcnt true u u.length = u.count true := by
+  simp [wcnt]
+
+theorem wcnt_false (u : List Bool) : wcnt false u u.length = u.length - u.count true := by
+  simp [wcnt]
+
+theorem hd_drop {u : List Bool} {r : ℕ} (hr : r < u.length) : hd (u.drop r) = u[r] := by
+  rw [List.drop_eq_getElem_cons hr]; rfl
 
 /-- The shift register after shifting `n` slots of `L` into `X`. -/
 theorem shift_take {X L : List (List Bool)} {n : ℕ} (hn : n < L.length) (hX : n ≤ X.length) :
@@ -127,45 +146,45 @@ theorem shift_take {X L : List (List Bool)} {n : ℕ} (hn : n < L.length) (hX : 
   rw [← List.drop_append_of_le_length (by simp; omega), List.drop_drop, List.append_assoc,
     ← List.take_concat_get' L n hn, Nat.add_comm]
 
-theorem wBody_step {S W d : ℕ} (hdW : d ≤ W) (sel : Bool) {X L : List (List Bool)} (hX : UV S X)
-    (hL : UV S L) (hcnt : wcnt sel d W ≤ L.length) (hXl : L.length ≤ X.length) {w₀ : St}
-    (hTS : (w₀ TSl).length = S) {r : ℕ} (hr : r < W) {w : St}
-    (h : w GD = (L.drop (wcnt sel d r)).flatten ∧
-      w GX = ((X ++ L.take (wcnt sel d r)).drop (wcnt sel d r)).flatten ∧
-      w JB = (unaryW W d).drop r ∧ ∀ x, x ≠ GD → x ≠ GX → x ≠ JB → x ≠ CJW → w x = w₀ x) :
+theorem wBody_step {S : ℕ} {u : List Bool} (sel : Bool) {X L : List (List Bool)} (hX : UV S X)
+    (hL : UV S L) (hcnt : wcnt sel u u.length ≤ L.length) (hXl : L.length ≤ X.length) {w₀ : St}
+    (hTS : (w₀ TSl).length = S) {r : ℕ} (hr : r < u.length) {w : St}
+    (h : w GD = (L.drop (wcnt sel u r)).flatten ∧
+      w GX = ((X ++ L.take (wcnt sel u r)).drop (wcnt sel u r)).flatten ∧
+      w JB = u.drop r ∧ ∀ x, x ≠ GD → x ≠ GX → x ≠ JB → x ≠ CJW → w x = w₀ x) :
     let w' := exec V f (wBody sel) (Function.update w CJW (w CJW).tail)
-    w' GD = (L.drop (wcnt sel d (r + 1))).flatten ∧
-      w' GX = ((X ++ L.take (wcnt sel d (r + 1))).drop (wcnt sel d (r + 1))).flatten ∧
-      w' JB = (unaryW W d).drop (r + 1) ∧ ∀ x, x ≠ GD → x ≠ GX → x ≠ JB → x ≠ CJW → w' x = w₀ x := by
+    w' GD = (L.drop (wcnt sel u (r + 1))).flatten ∧
+      w' GX = ((X ++ L.take (wcnt sel u (r + 1))).drop (wcnt sel u (r + 1))).flatten ∧
+      w' JB = u.drop (r + 1) ∧ ∀ x, x ≠ GD → x ≠ GX → x ≠ JB → x ≠ CJW → w' x = w₀ x := by
   obtain ⟨hg, hx, hb, ho⟩ := h
   have hTS' : (w TSl).length = S := by
     rw [ho TSl (by decide) (by decide) (by decide) (by decide), hTS]
-  have hh : hd (Function.update w CJW (w CJW).tail JB) = decide (r < d) := by
-    rw [Function.update_of_ne (by decide), hb, hd_unaryW_drop hdW hr]
-  have hsucc := wcnt_succ sel (d := d) (r := r)
-  have hmono := wcnt_mono sel d (show r + 1 ≤ W by omega)
-  set n := wcnt sel d r with hn
-  set u := Function.update w CJW (w CJW).tail with hu
-  have uo : ∀ x, x ≠ CJW → u x = w x := fun x h => Function.update_of_ne h _ _
-  have hJB : (exec V f (.tl JB) u) JB = (unaryW W d).drop (r + 1) := by
+  have hh : hd (Function.update w CJW (w CJW).tail JB) = u[r] := by
+    rw [Function.update_of_ne (by decide), hb, hd_drop hr]
+  have hsucc := wcnt_succ sel hr
+  have hmono := wcnt_mono sel u (show r + 1 ≤ u.length by omega) le_rfl
+  set n := wcnt sel u r with hn
+  set w1 := Function.update w CJW (w CJW).tail with hw1
+  have uo : ∀ x, x ≠ CJW → w1 x = w x := fun x h => Function.update_of_ne h _ _
+  have hJB : (exec V f (.tl JB) w1) JB = u.drop (r + 1) := by
     simp only [exec_tl', Function.update_self, uo JB (by decide), hb, List.tail_drop]
-  have hbody : exec V f (wBody sel) u = exec V f (.tl JB)
-      (if decide (r < d) = sel then exec V f (.mv GX GD TSl) u else u) := by
-    cases sel <;> by_cases h : r < d <;>
+  have hbody : exec V f (wBody sel) w1 = exec V f (.tl JB)
+      (if u[r] = sel then exec V f (.mv GX GD TSl) w1 else w1) := by
+    cases sel <;> cases h : u[r] <;>
       simp only [wBody, exec_ofList, List.foldl_cons, List.foldl_nil, exec_ifb', hh, h,
-        decide_true, decide_false, if_true, if_false, Bool.false_eq_true, Bool.true_eq_false,
+        if_true, if_false, Bool.false_eq_true, Bool.true_eq_false,
         ite_true, ite_false] <;> rfl
-  by_cases hs : decide (r < d) = sel
+  by_cases hs : u[r] = sel
   · -- a slot is shifted
     rw [if_pos hs] at hsucc
     have hnl : n < L.length := by omega
-    have hGD : u GD = L[n] ++ (L.drop (n + 1)).flatten := by
+    have hGD : w1 GD = L[n] ++ (L.drop (n + 1)).flatten := by
       rw [uo GD (by decide), hg, List.drop_eq_getElem_cons hnl, List.flatten_cons]
-    have SH := exec_mv_shift (V := V) (f := f) (d := GX) (s := GD) (c := TSl) (w := u) (by decide)
+    have SH := exec_mv_shift (V := V) (f := f) (d := GX) (s := GD) (c := TSl) (w := w1) (by decide)
       (by rw [uo TSl (by decide), hTS', hL _ (List.getElem_mem _)]) hGD
-    have hex : exec V f (wBody sel) u = exec V f (.tl JB) (exec V f (.mv GX GD TSl) u) := by
+    have hex : exec V f (wBody sel) w1 = exec V f (.tl JB) (exec V f (.mv GX GD TSl) w1) := by
       rw [hbody, if_pos hs]
-    show (exec V f (wBody sel) u) GD = _ ∧ _
+    show (exec V f (wBody sel) w1) GD = _ ∧ _
     rw [hex, SH, hsucc]
     refine ⟨?_, ?_, ?_, fun x a1 a2 a3 a4 => ?_⟩
     · simp (config := {decide := true}) [exec_tl', Function.update_apply]
@@ -180,9 +199,9 @@ theorem wBody_step {S W d : ℕ} (hdW : d ≤ W) (sel : Bool) {X L : List (List 
       rw [uo x a4, ho x a1 a2 a3 a4]
   · -- no shift
     rw [if_neg hs, Nat.add_zero] at hsucc
-    have hex : exec V f (wBody sel) u = exec V f (.tl JB) u := by
+    have hex : exec V f (wBody sel) w1 = exec V f (.tl JB) w1 := by
       rw [hbody, if_neg hs]
-    show (exec V f (wBody sel) u) GD = _ ∧ _
+    show (exec V f (wBody sel) w1) GD = _ ∧ _
     rw [hex, hsucc, Nat.add_zero]
     refine ⟨?_, ?_, hJB, fun x a1 a2 a3 a4 => ?_⟩
     · simp only [exec_tl', Function.update_apply]
@@ -196,19 +215,19 @@ theorem wBody_step {S W d : ℕ} (hdW : d ≤ W) (sel : Bool) {X L : List (List 
 
 /-- **A shift loop**: `W` rounds of `wBody sel` shift `wcnt sel d W` slots of `L` (on `GD`) into the
 shift register holding `X` (on `GX`). -/
-theorem exec_wloop {S W d : ℕ} (hdW : d ≤ W) (sel : Bool) {X L : List (List Bool)} (hX : UV S X)
-    (hL : UV S L) (hcnt : wcnt sel d W ≤ L.length) (hXl : L.length ≤ X.length) (u : St)
+theorem exec_wloop {S : ℕ} {b : List Bool} (sel : Bool) {X L : List (List Bool)} (hX : UV S X)
+    (hL : UV S L) (hcnt : wcnt sel b b.length ≤ L.length) (hXl : L.length ≤ X.length) (u : St)
     (hTS : (u TSl).length = S) (hg : u GD = L.flatten) (hx : u GX = X.flatten)
-    (hb : u JB = unaryW W d) (hc : (u CJW).length = W) :
-    exec V f (.rep CJW (wBody sel)) u GD = (L.drop (wcnt sel d W)).flatten ∧
+    (hb : u JB = b) (hc : (u CJW).length = b.length) :
+    exec V f (.rep CJW (wBody sel)) u GD = (L.drop (wcnt sel b b.length)).flatten ∧
       exec V f (.rep CJW (wBody sel)) u GX =
-        ((X ++ L.take (wcnt sel d W)).drop (wcnt sel d W)).flatten ∧
+        ((X ++ L.take (wcnt sel b b.length)).drop (wcnt sel b b.length)).flatten ∧
       ∀ x, x ≠ GD → x ≠ GX → x ≠ JB → x ≠ CJW → exec V f (.rep CJW (wBody sel)) u x = u x := by
   have I := exec_rep_inv (V := V) (f := f) (c := CJW) (B := wBody sel)
-    (fun r w' => r ≤ W → w' GD = (L.drop (wcnt sel d r)).flatten ∧
-      w' GX = ((X ++ L.take (wcnt sel d r)).drop (wcnt sel d r)).flatten ∧
-      w' JB = (unaryW W d).drop r ∧ ∀ x, x ≠ GD → x ≠ GX → x ≠ JB → x ≠ CJW → w' x = u x)
-    (fun r w' ih hr => wBody_step hdW sel hX hL hcnt hXl hTS (by omega) (ih (by omega))) u
+    (fun r w' => r ≤ b.length → w' GD = (L.drop (wcnt sel b r)).flatten ∧
+      w' GX = ((X ++ L.take (wcnt sel b r)).drop (wcnt sel b r)).flatten ∧
+      w' JB = b.drop r ∧ ∀ x, x ≠ GD → x ≠ GX → x ≠ JB → x ≠ CJW → w' x = u x)
+    (fun r w' ih hr => wBody_step sel hX hL hcnt hXl hTS (by omega) (ih (by omega))) u
     (fun _ => ⟨by simp [wcnt, hg], by simp [wcnt, hx], by simp [hb], fun _ _ _ _ _ => rfl⟩)
   rw [hc] at I
   obtain ⟨I1, I2, -, I4⟩ := I le_rfl
@@ -224,8 +243,9 @@ def wrC : Code :=
 theorem wr_wrC_mem : ∀ x ∈ wr wrC, x = RES ∨ 100 ≤ x.val := by decide
 
 /-- **Writing a slot**: the store `R` (`W + 1` slots of `S` bits) becomes `R.set d (RES)`. -/
-theorem exec_wrC {S W d : ℕ} (hdW : d ≤ W) {R : List (List Bool)} (hR : UV S R)
-    (hRl : R.length = W + 1) (w : St) (hG : w GST = R.flatten) (hJ : w JD = unaryW W d)
+theorem exec_wrC {S W d : ℕ} {b : List Bool} (hbl : b.length = W) (hbc : b.count true = d)
+    (hdW : d ≤ W) {R : List (List Bool)} (hR : UV S R)
+    (hRl : R.length = W + 1) (w : St) (hG : w GST = R.flatten) (hJ : w JD = b)
     (hTW : (w TW).length = W) (hTS : (w TSl).length = S) (hRES : (w RES).length = S) :
     exec V f wrC w GST = (R.set d (w RES)).flatten ∧
       ∀ x, x ∉ wr wrC → exec V f wrC w x = w x := by
@@ -242,11 +262,11 @@ theorem exec_wrC {S W d : ℕ} (hdW : d ≤ W) {R : List (List Bool)} (hR : UV S
     fun x a1 a2 a3 a4 => exec_not_mem _ _ _ (by simp [wr, ofList, a1, a2, a3, a4])
   have u1g : u1 GD = R.flatten := by simp (config := {decide := true}) [hu1, exec_ofList, exec_cp', Function.update_apply, hG]
   have u1x : u1 GX = R.flatten := by simp (config := {decide := true}) [hu1, exec_ofList, exec_cp', Function.update_apply, hG]
-  have u1b : u1 JB = unaryW W d := by simp (config := {decide := true}) [hu1, exec_ofList, exec_cp', Function.update_apply, hJ]
-  have u1c : (u1 CJW).length = W := by
-    simp (config := {decide := true}) [hu1, exec_ofList, exec_cp', Function.update_apply, hTW]
-  have hd1 : wcnt true d W = d := by simp [wcnt]; omega
-  obtain ⟨L1, L2, L3⟩ := exec_wloop (V := V) (f := f) hdW true hR hR (by rw [hd1]; omega) le_rfl u1
+  have u1b : u1 JB = b := by simp (config := {decide := true}) [hu1, exec_ofList, exec_cp', Function.update_apply, hJ]
+  have u1c : (u1 CJW).length = b.length := by
+    simp (config := {decide := true}) [hu1, exec_ofList, exec_cp', Function.update_apply, hTW, hbl]
+  have hd1 : wcnt true b b.length = d := by rw [wcnt_true, hbc]
+  obtain ⟨L1, L2, L3⟩ := exec_wloop (V := V) (f := f) true hR hR (by rw [hd1]; omega) le_rfl u1
     (by rw [e1 TSl (by decide) (by decide) (by decide) (by decide), hTS]) u1g u1x u1b u1c
   rw [hd1] at L1 L2
   generalize exec V f (.rep CJW (wBody true)) u1 = u2 at L1 L2 L3
@@ -282,7 +302,7 @@ theorem exec_wrC {S W d : ℕ} (hdW : d ≤ W) {R : List (List Bool)} (hR : UV S
     rw [exec_drop' (by decide)]
     try simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
     rw [L1, u2s, ← Nat.one_mul S, drop_flatten_uv hRd, List.drop_drop, Nat.add_comm]
-  have u3b : u3 JB = unaryW W d := by
+  have u3b : u3 JB = b := by
     simp only [hu3, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
     try simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
     rw [exec_mv_push (by decide) (by rw [u2r, u2s])]
@@ -291,7 +311,7 @@ theorem exec_wrC {S W d : ℕ} (hdW : d ≤ W) {R : List (List Bool)} (hR : UV S
     try simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
     rw [L3 JD (by decide) (by decide) (by decide) (by decide), e1 JD (by decide) (by decide)
       (by decide) (by decide), hJ]
-  have u3c : (u3 CJW).length = W := by
+  have u3c : (u3 CJW).length = b.length := by
     simp only [hu3, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
     try simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
     rw [exec_mv_push (by decide) (by rw [u2r, u2s])]
@@ -299,7 +319,7 @@ theorem exec_wrC {S W d : ℕ} (hdW : d ≤ W) {R : List (List Bool)} (hR : UV S
     rw [exec_drop' (by decide)]
     try simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
     rw [L3 TW (by decide) (by decide) (by decide) (by decide), e1 TW (by decide) (by decide)
-      (by decide) (by decide), hTW]
+      (by decide) (by decide), hTW, hbl]
   have u3s : (u3 TSl).length = S := by
     simp only [hu3, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
     try simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
@@ -309,10 +329,10 @@ theorem exec_wrC {S W d : ℕ} (hdW : d ≤ W) {R : List (List Bool)} (hR : UV S
     try simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
     exact u2s
   -- the second loop
-  have hd2 : wcnt false d W = W - d := by simp [wcnt, min_eq_right hdW]
+  have hd2 : wcnt false b b.length = W - d := by rw [wcnt_false, hbc, hbl]
   have hX2l : X2.length = W + 1 := by simp [hX2, hRl]; omega
   have hL2l : (R.drop (d + 1)).length = W - d := by simp [hRl]
-  obtain ⟨-, M2, -⟩ := exec_wloop (V := V) (f := f) hdW false hX2u (hR.drop (d + 1))
+  obtain ⟨-, M2, -⟩ := exec_wloop (V := V) (f := f) false hX2u (hR.drop (d + 1))
     (by rw [hd2, hL2l]) (by rw [hL2l, hX2l]; omega) u3 u3s u3g u3x u3b u3c
   rw [exec_cp', Function.update_self]
   rw [M2, hd2, ← hL2l, List.take_length, hX2, ← List.drop_append_of_le_length (by simp; omega),
@@ -369,24 +389,39 @@ theorem exec_rdOp {dst : Fin 120} (hdst : dst = IA ∨ dst = IB) {S W : ℕ} {R 
 
 /-! ### The instructions -/
 
-/-- One instruction: pop the destination, read the two operands, the block, copy the result to
-`OUTW`, write it. -/
-def rBody (blk : Code) : Code :=
-  ofList [.mv JD GS TW, .mv JW GS TW, rdC IA, .mv JW GS TW, rdC IB, .cp RES TSl, blk, .cp OUTW RES,
-    wrC]
+/-- Words of the destination counter (free during the loop): a word `[true]`, a scratch word. -/
+abbrev ONE1 : Fin 120 := 118
+abbrev ZT : Fin 120 := 119
 
-/-- **The register loop**: `|GCNT|` instructions. -/
-def rloopC (blk : Code) : Code := ofList [.clr PADS, .cp JW TW, .cp JD TW, .rep GCNT (rBody blk)]
+/-- One instruction: the destination word (`dC`, into `JD`), read the two operands, the block,
+copy the result to `OUTW`, write it. -/
+def rBodyX (dC blk : Code) : Code :=
+  ofList [dC, .mv JW GS TW, rdC IA, .mv JW GS TW, rdC IB, .cp RES TSl, blk, .cp OUTW RES, wrC]
+
+/-- The register loop with the destination code `dC` and its initialisation `iC`. -/
+def rloopX (iC dC blk : Code) : Code := ofList [.clr PADS, .cp JW TW, iC, .rep GCNT (rBodyX dC blk)]
+
+/-- **The destination code**: before the instruction `t` the stream `GS` is `G t` and the state of
+the destination words `D t (JD) (ONE1)`; afterwards `GS` holds the two operands then `G (t + 1)`,
+and `JD` a word of `W` bits with as many `true` as the destination slot. -/
+structure DstOk (V : ℕ) (f : List Bool → List Bool → List Bool) (dC : Code) (W : ℕ) (sp : SProg)
+    (G : ℕ → List Bool) (D : ℕ → List Bool → List Bool → Prop) : Prop where
+  run : ∀ t (ht : t < sp.length) (w : St), w GS = G t → D t (w JD) (w ONE1) → (w TW).length = W →
+    exec V f dC w GS = unaryW W sp[t].2.1 ++ (unaryW W sp[t].2.2 ++ G (t + 1)) ∧
+    (exec V f dC w JD).length = W ∧ (exec V f dC w JD).count true = sp[t].1 ∧
+    D (t + 1) (exec V f dC w JD) (exec V f dC w ONE1)
+  wr : ∀ x ∈ wr dC, x = GS ∨ x = JD ∨ x = ONE1 ∨ x = ZT
 
 /-- The invariant of the loop after `t` instructions. -/
 structure RegInv (V S W : ℕ) (Ctx : St → Prop) (F : List Bool → List Bool → List Bool)
-    (C : List Bool) (R₀ : List (List Bool)) (sp : SProg) (w₀ : St) (t : ℕ) (w : St) : Prop where
+    (C : List Bool) (R₀ : List (List Bool)) (sp : SProg) (G : ℕ → List Bool)
+    (D : ℕ → List Bool → List Bool → Prop) (w₀ : St) (t : ℕ) (w : St) : Prop where
   ctx : Ctx w
   gst : w GST = (rl F C R₀ (sp.take t)).flatten
-  gsw : w GS = spW W (sp.drop t)
+  gsw : w GS = G t
   pads : w PADS = []
   jw : (w JW).length = W
-  jd : (w JD).length = W
+  dst : D t (w JD) (w ONE1)
   outw : ∀ g ∈ (sp.take t).getLast?, w OUTW = (rl F C R₀ (sp.take t)).getD g.1 []
   tm : RTm w₀ w
 
@@ -402,18 +437,18 @@ structure RegData (S W : ℕ) (C : List Bool) (R₀ : List (List Bool)) (sp : SP
   td2 : (w₀ TD2).length = 2 * ((W + 1) * S)
   tw : (w₀ TW).length = W
 
-theorem rInv_step {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List Bool}
+theorem rInv_step {dC blk : Code} {S W : ℕ} {F : List Bool → List Bool → List Bool}
     {Ctx : St → Prop} (hB : BlockSpec V f blk S F Ctx) {C : List Bool} {R₀ : List (List Bool)}
-    {sp : SProg} {w₀ : St} (hD : RegData S W C R₀ sp w₀) {t : ℕ} (ht : t < sp.length) {w : St}
-    (h : RegInv V S W Ctx F C R₀ sp w₀ t w) :
-    RegInv V S W Ctx F C R₀ sp w₀ (t + 1)
-      (exec V f (rBody blk) (Function.update w GCNT (w GCNT).tail)) := by
+    {sp : SProg} {G : ℕ → List Bool} {D : ℕ → List Bool → List Bool → Prop}
+    (hdC : DstOk V f dC W sp G D) {w₀ : St} (hD : RegData S W C R₀ sp w₀) {t : ℕ}
+    (ht : t < sp.length) {w : St} (h : RegInv V S W Ctx F C R₀ sp G D w₀ t w) :
+    RegInv V S W Ctx F C R₀ sp G D w₀ (t + 1)
+      (exec V f (rBodyX dC blk) (Function.update w GCNT (w GCNT).tail)) := by
   set R := rl F C R₀ (sp.take t) with hRdef
   obtain ⟨hRu, hRl'⟩ := rl_shape hB.len hD.hC (sp.take t) R₀ hD.hR
   have hRl : R.length = W + 1 := by rw [hRl', hD.hRl]
   set g := sp[t] with hg
   have hgb := hD.bnd g (List.getElem_mem _)
-  have hdrop : sp.drop t = g :: sp.drop (t + 1) := List.drop_eq_getElem_cons ht
   -- the counter
   have c0 : Ctx (Function.update w GCNT (w GCNT).tail) :=
     hB.frame _ _ h.ctx fun j hj _ _ _ => Function.update_of_ne (by rintro rfl; simp at hj) _ _
@@ -422,34 +457,39 @@ theorem rInv_step {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List
   generalize hw0 : Function.update w GCNT (w GCNT).tail = w0 at c0 e0
   have tm0 : RTm w₀ w0 := fun j hj => by
     rw [e0 j (by rcases hj with rfl | rfl | rfl | rfl <;> decide), h.tm j hj]
-  rw [rBody, show [Code.mv JD GS TW, .mv JW GS TW, rdC IA, .mv JW GS TW, rdC IB, .cp RES TSl, blk,
-    .cp OUTW RES, wrC] = [Code.mv JD GS TW] ++ ([.mv JW GS TW, rdC IA] ++ ([.mv JW GS TW, rdC IB] ++
-    [.cp RES TSl, blk, .cp OUTW RES, wrC])) from rfl, exec_ofList_append, exec_ofList_append, exec_ofList_append,
-    exec_ofList_single]
-  have hu1 := length_unaryW hgb.1
+  rw [rBodyX, show [dC, .mv JW GS TW, rdC IA, .mv JW GS TW, rdC IB, .cp RES TSl, blk,
+    .cp OUTW RES, wrC] = [dC] ++ ([.mv JW GS TW, rdC IA] ++ ([.mv JW GS TW, rdC IB] ++
+    [.cp RES TSl, blk, .cp OUTW RES, wrC])) from rfl, exec_ofList_append, exec_ofList_append,
+    exec_ofList_append, exec_ofList_single]
+  -- the destination
+  obtain ⟨d1, d2, d3, d4⟩ := hdC.run t ht w0 (by rw [e0 GS (by decide), h.gsw])
+    (by rw [e0 JD (by decide), e0 ONE1 (by decide)]; exact h.dst)
+    (by rw [tm0 TW (by decide), hD.tw])
+  have e1' : ∀ j, j ≠ GS → j ≠ JD → j ≠ ONE1 → j ≠ ZT → exec V f dC w0 j = w0 j :=
+    fun j a b c d => exec_not_mem _ _ _ (fun hm => by
+      rcases hdC.wr j hm with rfl | rfl | rfl | rfl <;> simp_all)
+  generalize exec V f dC w0 = w1 at d1 d2 d3 d4 e1'
+  generalize hjd : w1 JD = jdw at d2 d3 d4
+  have e1 : ∀ j, j ≠ GS → j ≠ JD → j ≠ ONE1 → j ≠ ZT → w1 j = w0 j := e1'
   have hu2 := length_unaryW hgb.2.1
   have hu3 := length_unaryW hgb.2.2
-  -- the destination
-  have hGS0 : w0 GS = unaryW W g.1 ++ (unaryW W g.2.1 ++ (unaryW W g.2.2 ++ spW W (sp.drop (t + 1)))) := by
-    rw [e0 GS (by decide), h.gsw, hdrop, spW_cons, List.append_assoc, List.append_assoc]
-  rw [exec_mv_pop (by decide) (by rw [e0 JD (by decide), h.jd, tm0 TW (by decide), hD.tw])
-    (by rw [hu1, tm0 TW (by decide), hD.tw]) hGS0]
-  set w1 := Function.update (Function.update w0 GS
-    (unaryW W g.2.1 ++ (unaryW W g.2.2 ++ spW W (sp.drop (t + 1))))) JD (unaryW W g.1) with hw1
-  have e1 : ∀ j, j ≠ GS → j ≠ JD → w1 j = w0 j := fun j a b => by
-    simp [hw1, Function.update_apply, a, b]
   have c1 : Ctx w1 := hB.frame _ _ c0 fun j hj _ _ _ => e1 j (by rintro rfl; simp at hj)
-    (by rintro rfl; simp at hj)
+    (by rintro rfl; simp at hj) (by rintro rfl; simp at hj) (by rintro rfl; simp at hj)
   have tm1 : RTm w₀ w1 := fun j hj => by
     rw [e1 j (by rcases hj with rfl | rfl | rfl | rfl <;> decide)
+      (by rcases hj with rfl | rfl | rfl | rfl <;> decide)
+      (by rcases hj with rfl | rfl | rfl | rfl <;> decide)
       (by rcases hj with rfl | rfl | rfl | rfl <;> decide), tm0 j hj]
-  have hG1 : w1 GST = R.flatten := by rw [e1 GST (by decide) (by decide), e0 GST (by decide), h.gst]
-  have hP1 : w1 PADS = [] := by rw [e1 PADS (by decide) (by decide), e0 PADS (by decide), h.pads]
+  have hG1 : w1 GST = R.flatten := by
+    rw [e1 GST (by decide) (by decide) (by decide) (by decide), e0 GST (by decide), h.gst]
+  have hP1 : w1 PADS = [] := by
+    rw [e1 PADS (by decide) (by decide) (by decide) (by decide), e0 PADS (by decide), h.pads]
+  have h1O : w1 ONE1 = w1 ONE1 := rfl
   -- the operands
   obtain ⟨a1, a2, a3, a4⟩ := exec_rdOp (V := V) (f := f) (dst := IA) (Or.inl rfl) hRu hRl C
-    hD.tsl hD.tst hD.td2 hD.tw w1 g.2.1 (unaryW W g.2.2 ++ spW W (sp.drop (t + 1))) hgb.2.1
-    (by rw [hw1, Function.update_of_ne (by decide), Function.update_self])
-    (by rw [e1 JW (by decide) (by decide), e0 JW (by decide), h.jw]) hG1 hP1 tm1
+    hD.tsl hD.tst hD.td2 hD.tw w1 g.2.1 (unaryW W g.2.2 ++ G (t + 1)) hgb.2.1 d1
+    (by rw [e1 JW (by decide) (by decide) (by decide) (by decide), e0 JW (by decide), h.jw])
+    hG1 hP1 tm1
   generalize exec V f (ofList [.mv JW GS TW, rdC IA]) w1 = w2 at a1 a2 a3 a4
   have o2 : ∀ x, x ≠ GD → x ≠ GX → x ≠ JB → x ≠ CJW → x ≠ IA → x ≠ JW → x ≠ GS → w2 x = w1 x := a4
   have tm2 : RTm w₀ w2 := fun x hx => by
@@ -517,13 +557,16 @@ theorem rInv_step {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List
   clear c5
   generalize Function.update w5 OUTW (w5 RES) = w6 at w5o' c5' hb' hO
   -- the write
-  have w5J : w6 JD = unaryW W g.1 := by
+  have w5J : w6 JD = jdw := by
     rw [w5o' JD (by decide) (by decide), o3 JD (by decide) (by decide) (by decide) (by decide) (by decide)
-      (by decide) (by decide) (by decide)]; simp [hw1]
+      (by decide) (by decide) (by decide), hjd]
+  have w5O : w6 ONE1 = w1 ONE1 := by
+    rw [w5o' ONE1 (by decide) (by decide), o3 ONE1 (by decide) (by decide) (by decide) (by decide)
+      (by decide) (by decide) (by decide) (by decide)]
   have w5G : w6 GST = R.flatten := by
     rw [w5o' GST (by decide) (by decide), o3 GST (by decide) (by decide) (by decide) (by decide) (by decide)
       (by decide) (by decide) (by decide), hG1]
-  obtain ⟨W1, W2⟩ := exec_wrC (V := V) (f := f) hgb.1 hRu hRl w6 w5G w5J
+  obtain ⟨W1, W2⟩ := exec_wrC (V := V) (f := f) d2 d3 hgb.1 hRu hRl w6 w5G w5J
     (by rw [w5o' TW (by decide) (by decide), tm3 TW (by decide), hD.tw])
     (by rw [w5o' TSl (by decide) (by decide), tm3 TSl (by decide), hD.tsl]) (by rw [hb', hrl])
   have o6 : ∀ x, x ∉ wr wrC → exec V f wrC w6 x = w6 x := W2
@@ -540,7 +583,7 @@ theorem rInv_step {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List
   · rw [o6 PADS (by decide), w5o' PADS (by decide) (by decide), o3 PADS (by decide) (by decide) (by decide)
       (by decide) (by decide) (by decide) (by decide) (by decide), hP1]
   · rw [o6 JW (by decide), w5o' JW (by decide) (by decide), b3, hu3]
-  · rw [o6 JD (by decide), w5J, hu1]
+  · rw [o6 JD (by decide), o6 ONE1 (by decide), w5J, w5O]; exact d4
   · have hl : (sp.take (t + 1)).getLast? = some g := by
       rw [List.getLast?_eq_getElem?, List.length_take, min_eq_left (by omega),
         List.getElem?_take, if_pos (by omega), Nat.add_sub_cancel, List.getElem?_eq_getElem ht]
@@ -552,8 +595,82 @@ theorem rInv_step {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List
       rcases hx with rfl | rfl | rfl | rfl <;> exact ⟨by decide, by decide, by decide⟩
     rw [o6 x hx'.1, w5o' x hx'.2.1 hx'.2.2, tm3 x hx]
 
-/-- **A register program on the machine**: from the store `R₀` (`W + 1` slots) and the word
-`spW W sp`, after `|GCNT| = |sp|` instructions the store holds `rl F C R₀ sp`. -/
+/-- **A register program on the machine**: from the store `R₀` (`W + 1` slots), the stream `G 0`
+on `GS` and the destination state `D 0` after `iC`, after `|GCNT| = |sp|` instructions the store
+holds `rl F C R₀ sp` and `OUTW` the last result. -/
+theorem exec_rloopX {iC dC blk : Code} {S W : ℕ} {F : List Bool → List Bool → List Bool}
+    {Ctx : St → Prop} (hB : BlockSpec V f blk S F Ctx) {C : List Bool} {R₀ : List (List Bool)}
+    {sp : SProg} {G : ℕ → List Bool} {D : ℕ → List Bool → List Bool → Prop}
+    (hdC : DstOk V f dC W sp G D) (w : St) (hD : RegData S W C R₀ sp w) (hc : Ctx w)
+    (hG : w GST = R₀.flatten) (hGS : w GS = G 0) (hN : (w GCNT).length = sp.length)
+    (hiW : ∀ x ∈ wr iC, x = JD ∨ x = ONE1 ∨ x = ZT ∨ x = CJW)
+    (hi : ∀ u : St, (∀ x, x ≠ PADS → x ≠ JW → u x = w x) →
+      D 0 (exec V f iC u JD) (exec V f iC u ONE1)) :
+    exec V f (rloopX iC dC blk) w GST = (rl F C R₀ sp).flatten ∧
+      (∀ g ∈ sp.getLast?, exec V f (rloopX iC dC blk) w OUTW = (rl F C R₀ sp).getD g.1 []) ∧
+      Ctx (exec V f (rloopX iC dC blk) w) ∧
+      ∀ j, j ∉ wr (rloopX iC dC blk) → exec V f (rloopX iC dC blk) w j = w j := by
+  refine ⟨?_, ?_, ?_, fun j hj => exec_not_mem _ _ _ hj⟩
+  all_goals
+    simp only [rloopX, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+    set u := Function.update (exec V f (.clr PADS) w) JW (exec V f (.clr PADS) w TW) with hu
+    have eu : ∀ x, x ≠ PADS → x ≠ JW → u x = w x := fun x h1 h2 => by
+      simp [hu, Function.update_apply, h1, h2, exec_clr']
+    have hi0 := hi u eu
+    have ei : ∀ x, x ≠ JD → x ≠ ONE1 → x ≠ ZT → x ≠ CJW → exec V f iC u x = u x :=
+      fun x a b c d => exec_not_mem _ _ _ (fun hm => by
+        rcases hiW x hm with rfl | rfl | rfl | rfl <;> simp_all)
+    generalize exec V f iC u = w1 at hi0 ei
+    have e1 : ∀ j, j ≠ JW → j ≠ PADS → j ≠ JD → j ≠ ONE1 → j ≠ ZT → j ≠ CJW → w1 j = w j :=
+      fun j h1 h2 h3 h4 h5 h6 => by rw [ei j h3 h4 h5 h6, eu j h2 h1]
+    have hD1 : RegData S W C R₀ sp w1 := ⟨hD.hC, hD.hR, hD.hRl, hD.bnd,
+      by rw [e1 TSl (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]; exact hD.tsl,
+      by rw [e1 TST (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]; exact hD.tst,
+      by rw [e1 TD2 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]; exact hD.td2,
+      by rw [e1 TW (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]; exact hD.tw⟩
+    have I := exec_rep_inv (V := V) (f := f) (c := GCNT) (B := rBodyX dC blk)
+      (fun t w' => t ≤ sp.length → RegInv V S W Ctx F C R₀ sp G D w1 t w')
+      (fun t w' ih ht => rInv_step hB hdC hD1 (by omega) (ih (by omega))) w1
+      (fun _ => ⟨hB.frame _ _ hc fun j hj _ _ _ => e1 j (by rintro rfl; simp at hj)
+          (by rintro rfl; simp at hj) (by rintro rfl; simp at hj) (by rintro rfl; simp at hj)
+          (by rintro rfl; simp at hj) (by rintro rfl; simp at hj),
+        by rw [e1 GST (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hG]
+           simp [rl],
+        by rw [e1 GS (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hGS],
+        by rw [ei PADS (by decide) (by decide) (by decide) (by decide)]
+           simp (config := {decide := true}) [hu, Function.update_apply, exec_clr'],
+        by rw [ei JW (by decide) (by decide) (by decide) (by decide)]
+           simp (config := {decide := true}) [hu, Function.update_apply, exec_clr', hD.tw],
+        hi0, fun _ hg => by simp at hg, fun _ _ => rfl⟩)
+    rw [show (w1 GCNT).length = sp.length by
+      rw [e1 GCNT (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), hN]] at I
+    have I' := I le_rfl
+  · rw [I'.gst, List.take_of_length_le le_rfl]
+  · intro g hg
+    rw [← List.take_of_length_le (le_refl sp.length)] at hg ⊢
+    exact I'.outw g hg
+  · exact I'.ctx
+
+/-! ### The stream of a slot program -/
+
+/-- **The register loop on a stream**: the destination is popped from the stream. -/
+def rloopC (blk : Code) : Code := rloopX (.cp JD TW) (.mv JD GS TW) blk
+
+theorem dstOk_stream (W : ℕ) (sp : SProg) (hb : ∀ g ∈ sp, g.1 ≤ W ∧ g.2.1 ≤ W ∧ g.2.2 ≤ W) :
+    DstOk V f (.mv JD GS TW) W sp (fun t => spW W (sp.drop t)) (fun _ a _ => a.length = W) where
+  run t ht w hG hD hTW := by
+    have hg := hb sp[t] (List.getElem_mem _)
+    have hGS : w GS = unaryW W sp[t].1 ++ (unaryW W sp[t].2.1 ++ (unaryW W sp[t].2.2 ++
+        spW W (sp.drop (t + 1)))) := by
+      rw [hG, List.drop_eq_getElem_cons ht, spW_cons, List.append_assoc, List.append_assoc]
+    rw [exec_mv_pop (by decide) (by rw [hD, hTW]) (by rw [length_unaryW hg.1, hTW]) hGS]
+    simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+    simp only [length_unaryW hg.1, count_unaryW, and_self]
+  wr := by decide
+
+/-- **A slot program on the machine**: from the store `R₀` (`W + 1` slots) and the word
+`spW W sp`, after `|GCNT| = |sp|` instructions the store holds `rl F C R₀ sp`, `OUTW` the last
+result. -/
 theorem exec_rloopC {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List Bool}
     {Ctx : St → Prop} (hB : BlockSpec V f blk S F Ctx) {C : List Bool} {R₀ : List (List Bool)}
     {sp : SProg} (w : St) (hD : RegData S W C R₀ sp w) (hc : Ctx w) (hG : w GST = R₀.flatten)
@@ -561,39 +678,11 @@ theorem exec_rloopC {blk : Code} {S W : ℕ} {F : List Bool → List Bool → Li
     exec V f (rloopC blk) w GST = (rl F C R₀ sp).flatten ∧
       (∀ g ∈ sp.getLast?, exec V f (rloopC blk) w OUTW = (rl F C R₀ sp).getD g.1 []) ∧
       Ctx (exec V f (rloopC blk) w) ∧
-      ∀ j, j ∉ wr (rloopC blk) → exec V f (rloopC blk) w j = w j := by
-  refine ⟨?_, ?_, ?_, fun j hj => exec_not_mem _ _ _ hj⟩
-  all_goals
-    simp only [rloopC, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
-    set w1 := Function.update (Function.update (exec V f (.clr PADS) w) JW
-      (exec V f (.clr PADS) w TW)) JD (Function.update (exec V f (.clr PADS) w) JW
-      (exec V f (.clr PADS) w TW) TW) with hw1
-    have e1 : ∀ j, j ≠ JW → j ≠ PADS → j ≠ JD → w1 j = w j := fun j h1 h2 h3 => by
-      simp [hw1, Function.update_apply, h1, h2, h3, exec_clr']
-    have hD1 : RegData S W C R₀ sp w1 := ⟨hD.hC, hD.hR, hD.hRl, hD.bnd,
-      by rw [e1 TSl (by decide) (by decide) (by decide)]; exact hD.tsl,
-      by rw [e1 TST (by decide) (by decide) (by decide)]; exact hD.tst,
-      by rw [e1 TD2 (by decide) (by decide) (by decide)]; exact hD.td2,
-      by rw [e1 TW (by decide) (by decide) (by decide)]; exact hD.tw⟩
-    have I := exec_rep_inv (V := V) (f := f) (c := GCNT) (B := rBody blk)
-      (fun t w' => t ≤ sp.length → RegInv V S W Ctx F C R₀ sp w1 t w')
-      (fun t w' ih ht => rInv_step hB hD1 (by omega) (ih (by omega))) w1
-      (fun _ => ⟨hB.frame _ _ hc fun j hj _ _ _ => e1 j (by rintro rfl; simp at hj)
-          (by rintro rfl; simp at hj) (by rintro rfl; simp at hj),
-        by rw [e1 GST (by decide) (by decide) (by decide), hG]; simp [rl],
-        by rw [e1 GS (by decide) (by decide) (by decide), hGS]; simp,
-        by simp (config := {decide := true}) [hw1, Function.update_apply, exec_clr'],
-        by simp (config := {decide := true}) [hw1, Function.update_apply, exec_clr', hD.tw],
-        by simp (config := {decide := true}) [hw1, Function.update_apply, exec_clr', hD.tw],
-        fun _ hg => by simp at hg, fun _ _ => rfl⟩)
-    rw [show (w1 GCNT).length = sp.length by
-      rw [e1 GCNT (by decide) (by decide) (by decide), hN]] at I
-    have I' := I le_rfl
-  · rw [I'.gst, List.take_of_length_le le_rfl]
-  · intro g hg
-    rw [← List.take_of_length_le (le_refl sp.length)] at hg ⊢
-    exact I'.outw g hg
-  · exact I'.ctx
+      ∀ j, j ∉ wr (rloopC blk) → exec V f (rloopC blk) w j = w j :=
+  exec_rloopX hB (dstOk_stream W sp hD.bnd) w hD hc hG (by simpa using hGS) hN (by decide)
+    (fun u hu => by
+      show (Function.update u JD (u TW) JD).length = W
+      rw [Function.update_self, hu TW (by decide) (by decide), hD.tw])
 
 end ValVM
 
