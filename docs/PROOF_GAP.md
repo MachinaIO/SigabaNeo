@@ -2038,6 +2038,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     < 2.3750·10⁻¹¹; (B) on 54–405 → < 2.4681·10⁻¹¹; (C) on 49–380 → < 2.0204·10⁻¹¹. Each fits 2.72513·10⁻¹¹.
   * Outside one exceptional set of probability < 2.417·10⁻¹¹, (B) holds for every next mark on draws 11–19. This lies
     inside each unconditional prefix, so there is no double charge.
+* **Part 223 (audited, CONFIRMED; partial positive).** [wholly_old_mass](research/wall1_wholly_old_mass.md):
+  low-codimension sections.
+  * The height cutoff fixes the candidate list before any column is revealed, so section counting covers adaptively
+    selected witnesses. Unconditional joint bounds:
+    * any terminal hit (including a replacement plane) with full-lift syndrome codimension ≤ 128: < 10⁻⁵⁰⁵;
+    * wholly old creation on draw 406 with old triple lift codimension ≤ 128: < 10⁻⁶⁸³;
+    * Part 218's residual mixed hit (‖x‖ < 29.2, 32.32 < g < 32.75) with codimension ≤ 129: < 10⁻⁸⁹;
+    * the same for g ≥ 32.68 through codimension 130: < 10⁻³⁶.
+    The codimension cutoff is part of the joint event.
+  * Open: codimensions up to ~405. A codimension-400 wholly old family has membership first moment > 10^10163.41, so the
+    gates and the selection rules must exclude it (W1-R95).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
