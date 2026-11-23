@@ -1,4 +1,4 @@
-import PE.Impl.DualUse.Prog.WfB2Conf
+import PE.Impl.DualUse.Prog.WfB2Time
 import SigabaNeo.Lib.Machines.Prog.NatPSize
 
 /-!
@@ -65,39 +65,5 @@ theorem length_wordsT (N K k d W a b e : ℕ) : (wordsT N K k d W a b e).length 
 theorem length_wordsG (N K k d W a b e : ℕ) : (wordsG N K k d W a b e).length = 23 := rfl
 theorem length_keyT (N K k d : ℕ) : (keyT N K k d).length = 18 := rfl
 
-theorem chk_fixSz : fixSz Wc ≤ 10 * 2 ^ 20 := by decide +kernel
-
-/-- **At most `2^25` states at `confP`.** -/
-theorem size_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (hN : N = Nc)
-    (hK : K = Kc) (hd : c.d = dc) (hth : treeHeight N (K + 1) ≤ 64)
-    (hoB : offB c ≤ Lb) (hoW : offW hk c ≤ Lb) (hoP : offPsi hk c ≤ Lb) (hoR : offR hk c ≤ Lb)
-    (hoX : offPsi hk c + 10 * lenPsi N K (K + 1) ≤ Lb) :
-    (wfB2 hk c Wc).size ≤ 2 ^ 25 := by
-  have hoX' : offPsi hk c + nA * lenPsi N K (K + 1) ≤ Lb := hoX
-  subst hN hK
-  obtain ⟨-, -, -, s31, sT, -, -, -, sG, -, sK, -⟩ := chk_small
-  have hTl : TLe (wordsT Nc Kc (Kc + 1) c.d Wc (offB c) (offW hk c) (offPsi hk c)) wTc := by
-    rw [wordsT_eq, hd]; exact TLe_wordsTx _ _ _ _ _ hth hoB hoW hoP
-  have hGl : TLe (wordsG Nc Kc (Kc + 1) c.d Wc (offPsi hk c) (offR hk c)
-      (offPsi hk c + nA * lenPsi Nc Kc (Kc + 1))) wGc := by
-    rw [hd]; exact TLe_wordsG _ _ _ _ _ hoP hoR hoX'
-  have hM : Mall < 2 ^ (250 + 1) := Nat.pow_lt_pow_right (by norm_num) (by norm_num)
-  have lt : ∀ {l : List (Fin 256 × ℕ)}, (∀ x ∈ l, x.2 ≤ Mall) → ∀ x ∈ l, x.2 < 2 ^ (250 + 1) :=
-    fun h x hx => (h x hx).trans_lt hM
-  have a1 := size_tmplP_leB ValVM.tX0 250 (tmpl31 Nc Kc (Kc + 1) c.d) (lt (by rw [hd]; exact s31))
-  have a2 := size_tmplP_leB ValVM.tX0 250 _
-    (lt (TLe_le (TLe_append (TLe_refl (stepT Nc Kc (Kc + 1) c.d)) hTl) (by rw [hd]; exact sT)))
-  have a4 := size_tmplP_leB ValVM.tX0 250 _
-    (lt (TLe_le (TLe_append (TLe_refl (stepG Nc Kc (Kc + 1) c.d)) hGl) (by rw [hd]; exact sG)))
-  have a5 := size_tmplP_leB ValVM.tX0 250 (keyT Nc Kc (Kc + 1) c.d) (lt (by rw [hd]; exact sK))
-  rw [List.length_append, length_stepT, length_wordsT] at a2
-  rw [List.length_append, length_stepG, length_wordsG] at a4
-  rw [length_tmpl31] at a1
-  rw [length_keyT] at a5
-  rw [size_wfB2]
-  have := chk_fixSz
-  omega
-
 end WB2
-
 end AdvancedEncryption.DualUse.Prog

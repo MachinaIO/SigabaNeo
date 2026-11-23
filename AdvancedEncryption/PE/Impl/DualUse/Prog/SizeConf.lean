@@ -1,8 +1,6 @@
-import PE.Impl.DualUse.Prog.SizeCost
-import PE.Impl.DualUse.Prog.SetupL
 import PE.Impl.DualUse.Prog.SetupEncCost
-import PE.Impl.DualUse.Prog.CompCost
-import PE.Impl.DualUse.ReductionCompsBound
+import PE.Impl.DualUse.Prog.SetupL
+import PE.Impl.DualUse.Prog.CompLib
 
 /-!
 # The state counts of `Setup` and `Enc` at `confP`
@@ -14,7 +12,7 @@ and `Enc` with the sampler `chiSamplerP`, from the state counts of their blocks 
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 section Generic
 
@@ -71,15 +69,6 @@ theorem sz_b1P {N K k M : ℕ} (hB : M < 2 ^ 240) (h1 : K ≤ M) (h2 : N ≤ M) 
     (sz_prim _).seq <| (SZ.frame _ (sz_progP size_joinP)).seq (sz_clearL b1Tapes)).mono
     (by simp [b1Tapes])
 
-theorem setup_counts : nRowD Np Kp confP.d ≤ 2 ^ 181 ∧ nRowC Np Kp kp ≤ 2 ^ 181 ∧
-    Np ≤ 2 ^ 181 ∧ (Enum.list (α := RingBTVW.Col kp)).length * Np ≤ 2 ^ 181 ∧
-    nBj (N := Np) (K := Kp) hkp ≤ 2 ^ 181 ∧ Np * Kp ≤ 2 ^ 181 ∧
-    2 * kp * (Np * Kp) ≤ 2 ^ 181 ∧ 2 * kp * (Np * Kp) + 2 * kp * (Np * Kp) + Np * Kp ≤ 2 ^ 181 ∧
-    2 * kp * Np ≤ 2 ^ 181 := by
-  simp only [nRowD, nRowC, nBj]
-  comp_unfold
-  norm_num
-
 /-- The states of the deterministic part of `Setup`, for sizes below `M < 2^240`. -/
 theorem size_setupDet_le {N K k M : ℕ} (hB : M < 2 ^ 240) (hK : K ≤ M) (hN : N ≤ M) (hk : k ≤ M)
     (h2k : 2 * k ≤ M) (h6 : N * K ≤ M) (h7 : 2 * k * (N * K) ≤ M)
@@ -96,31 +85,6 @@ theorem size_setupDet_le {N K k M : ℕ} (hB : M < 2 ^ 240) (hK : K ≤ M) (hN :
     (sz_prim _).seq <| (sz_prim _).seq <| (sz_appC _ _).seq <| (sz_appC _ _).seq <|
     (sz_appC _ _).seq <| (sz_frameApP _ _ _ _).seq <| (sz_appC _ _).seq <| (sz_appC _ _).seq
     (sz_frameApP _ _ _ _)).mono (by norm_num)
-
-theorem size_setupDet_conf : (setupDet (N := Np) (K := Kp) (k := kp)).size ≤ 2 ^ 21 := by
-  obtain ⟨-, -, -, -, -, h6, h7, h8, h9⟩ := setup_counts
-  have hK : Kp ≤ 2 ^ 181 := by rw [Kp_def]; norm_num
-  have hN : Np ≤ 2 ^ 181 := by rw [Np_def]; norm_num
-  have hk : kp ≤ 2 ^ 181 := by rw [kp, Kp_def]; norm_num
-  exact size_setupDet_le (by norm_num) hK hN hk (by rw [kp, Kp_def]; norm_num) h6 h7 h8 h9
-    (by norm_num)
-
-/-- The states of `Setup`'s program, for counts below `M < 2^240`. -/
-theorem size_setupP_le {M : ℕ} (hB : M < 2 ^ 240) (h1 : nRowD Np Kp confP.d ≤ M)
-    (h2 : nRowC Np Kp kp ≤ M) (h3 : Np ≤ M) (h4 : (Enum.list (α := RingBTVW.Col kp)).length * Np ≤ M)
-    (h5 : nBj (N := Np) (K := Kp) hkp ≤ M) (h6 : Np * Kp ≤ M)
-    (hD : (setupDet (N := Np) (K := Kp) (k := kp)).size ≤ 2 ^ 21) :
-    (setupP hkp confP chiSamplerP).size ≤ 2 ^ 24 := by
-  unfold setupP
-  exact ((SZ.frame _ (sz_coinsF h1 hB)).seq <| (SZ.frame _ (sz_coinsF h2 hB)).seq <|
-    (SZ.frame _ (sz_repF h3 hB sz_chiP)).seq <| (SZ.frame _ (sz_repF h4 hB sz_chiP)).seq <|
-    (SZ.frame _ (sz_coinsF h5 hB)).seq <| (SZ.frame _ (sz_coinsF h6 hB)).seq hD).mono
-    (by norm_num)
-
-/-- **The states of `Setup`'s program at `confP`.** -/
-theorem size_setupP_conf : (setupP hkp confP chiSamplerP).size ≤ 2 ^ 24 := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, -, -, -⟩ := setup_counts
-  exact size_setupP_le (by norm_num) h1 h2 h3 h4 h5 h6 size_setupDet_conf
 
 /-! ### `Enc` -/
 
@@ -140,23 +104,6 @@ theorem tmpl_conf : ∀ p ∈ tmplList hkp confP, p.2 ≤ 2 ^ 200 := by
 
 theorem size_encCoreP : encCoreP.size ≤ 2 ^ 20 := by decide +kernel
 
-theorem enc_counts : Np * Kp ≤ 2 ^ 181 ∧
-    (Enum.list (α := Fin confP.d)).length * Np ≤ 2 ^ 181 ∧ Np ≤ 2 ^ 181 ∧
-    (Enum.list (α := RingBTVW.Col kp)).length * Np ≤ 2 ^ 181 ∧ nR hkp confP ≤ 2 ^ 181 ∧
-    nE (N := Np) hkp ≤ 2 ^ 181 ∧ Kp + confP.w ≤ 2 ^ 181 := by
-  obtain ⟨-, -, h3, h4, h5, h6, h7, h8, h9, -, -, -, -⟩ := counts_le
-  exact ⟨h3, h4, h5, h6, h7, h8, h9⟩
-
-theorem parse_counts : 2 * DualUse.pw.length + 1 ≤ 2 ^ 181 ∧
-    (Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin confP.d)).length * (Np * Kp)) ≤ 2 ^ 181 ∧
-    (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol kp)).length * (Np * Kp)) ≤ 2 ^ 181 ∧
-    (Enum.list (α := (Sdw (N := Np) hkp).Attr × (Sdw (N := Np) hkp).ctBits.Index)).length *
-      ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col kp)).length * (Np * Kp)))
-        ≤ 2 ^ 181 := by
-  simp only [DualUse.pw, length_paramsWord_date]
-  comp_unfold
-  norm_num
-
 /-- The states of the parser of `Enc`, for counts below `M < 2^240`. -/
 theorem size_encParseP_le {M : ℕ} (hB : M < 2 ^ 240) (h0 : 2 * DualUse.pw.length + 1 ≤ M)
     (h1 : (Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin confP.d)).length * (Np * Kp)) ≤ M)
@@ -173,9 +120,18 @@ theorem size_encParseP_le {M : ℕ} (hB : M < 2 ^ 240) (h0 : 2 * DualUse.pw.leng
     (uf 1 _ h1).seq <| (uf 2 _ h2).seq <| (uf 3 _ h3).seq <| (uf 4 _ hNK).seq <| (sz_prim _).seq <|
     (uf 5 nA hA).seq <| (sz_prim _).seq (uf 6 1 (by omega))).mono (by norm_num)
 
-theorem size_encParseP_conf : (encParseP hkp confP).size ≤ 2 ^ 19 := by
-  obtain ⟨h0, h1, h2, h3⟩ := parse_counts
-  exact size_encParseP_le (by norm_num) h0 h1 h2 h3 enc_counts.1 (by norm_num [nA])
+
+/-- The states of `Setup`'s program, for counts below `M < 2^240`. -/
+theorem size_setupP_le {M : ℕ} (hB : M < 2 ^ 240) (h1 : nRowD Np Kp confP.d ≤ M)
+    (h2 : nRowC Np Kp kp ≤ M) (h3 : Np ≤ M) (h4 : (Enum.list (α := RingBTVW.Col kp)).length * Np ≤ M)
+    (h5 : nBj (N := Np) (K := Kp) hkp ≤ M) (h6 : Np * Kp ≤ M)
+    (hD : (setupDet (N := Np) (K := Kp) (k := kp)).size ≤ 2 ^ 21) :
+    (setupP hkp confP chiSamplerP).size ≤ 2 ^ 24 := by
+  unfold setupP
+  exact ((SZ.frame _ (sz_coinsF h1 hB)).seq <| (SZ.frame _ (sz_coinsF h2 hB)).seq <|
+    (SZ.frame _ (sz_repF h3 hB sz_chiP)).seq <| (SZ.frame _ (sz_repF h4 hB sz_chiP)).seq <|
+    (SZ.frame _ (sz_coinsF h5 hB)).seq <| (SZ.frame _ (sz_coinsF h6 hB)).seq hD).mono
+    (by norm_num)
 
 /-- The states of `Enc`'s program, for counts below `M < 2^240` and templates below
 `M' < 2^240`. -/
@@ -195,11 +151,5 @@ theorem size_encP_le {M M' : ℕ} (hB : M < 2 ^ 240) (hB' : M' < 2 ^ 240)
     (SZ.frame _ (sz_repF h4 hB sz_chiP)).seq <| (SZ.frame _ (sz_repF h5 hB (sz_entB h1 hB))).seq <|
     (SZ.frame _ (sz_repF h6 hB (sz_entF h7 hB))).seq <| (SZ.frame _ (sz_repF h3 hB sz_chiP)).seq <|
     hT.seq ((SZ.frame _ (sz_progP size_encCoreP)).seq (sz_frameApP _ _ _ _))).mono (by norm_num)
-
-/-- **The states of `Enc`'s program at `confP`.** -/
-theorem size_encP_conf : (encP hkp confP chiSamplerP).size ≤ 2 ^ 24 := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7⟩ := enc_counts
-  exact size_encP_le (M' := 2 ^ 200) (by norm_num) (by norm_num) size_encParseP_conf h1 h2 h3 h4 h5 h6
-    h7 tmpl_conf
 
 end AdvancedEncryption.DualUse.Prog

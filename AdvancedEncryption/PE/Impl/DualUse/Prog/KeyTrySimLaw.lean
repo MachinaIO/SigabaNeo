@@ -16,8 +16,8 @@ import PE.Impl.DualUse.Prog.KeyTrySim
 namespace AdvancedEncryption.DualUse.ProgKey
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices.Algo
-  AdvancedEncryption.DualUse.Algo Cslib AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
-  AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.DateWindow
+  AdvancedEncryption.DualUse.Algo Cslib AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+  AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 /-- **One try with the simulated trapdoor from fresh coins.** -/
@@ -122,7 +122,7 @@ theorem law_keyTrySimCoinsP_KGsim {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (h0 : 0 < k
     {S : ℕ} {sW : List Bool} (hsl : sW.length = K) (hSv : val sW = S)
     (hSmall : c.Small = DualUse.keyBall (2 ^ K) c.d (DualUse.TrapCol k) N S)
     (hdec : c.dec = decG hk h0) (sd : DualUse.SimData hk c) (C : List Bool) (hL : C.length ≤ c.L)
-    (hC : ∃ w : Window, winWord w = C) {P : ℕ} (s : Store 90)
+    (hC : ValidC C) {P : ℕ} (s : Store 90)
     (hs : ∀ j : Fin 90, 26 ≤ j.val → s j = []) (h3 : s 3 = [])
     (h1 : s 1 = (DualUse.pkEnc hk c).enc sd.mpk) (h2 : s 2 = colsW N K k c.d (DualUse.simW sd C))
     (h4 : s 4 = sW) (hpk : (s 1).length = P)

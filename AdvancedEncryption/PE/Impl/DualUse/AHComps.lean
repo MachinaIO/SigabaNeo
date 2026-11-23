@@ -16,8 +16,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability SigabaNeo.Tape
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow AdvancedEncryption.PE.Generic
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.PE.Generic
 open AdvancedEncryption.DualUse.Prog
 open scoped ENNReal NNReal
 
@@ -60,7 +60,7 @@ variable [NeZero c.d]
 /-- **Attribute hiding from the component programs of the three reductions.** -/
 theorem attributeHiding_of_comps
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u) (hcov : RealCovered hk c)
-    (hL : dateBound ≤ c.L) (hscov : SimCovered hk c)
+    (hL : bpLen ≤ c.L) (hscov : SimCovered hk c)
     {ε : ℝ≥0∞}
     (hflood : ∀ rest ∈ (lawRestC hk c).support, ∀ w : JC (Sdw (N := N) hk) → (Fin c.d → Bool),
       CloseTo ((lawEc hk c).map fun e j => e j + rest.2.1 * wMat w j) (lawEc hk c) ε)
@@ -94,7 +94,7 @@ the parameters of hybrids 3 and 5 (`params3`, `params5`) with `kb` bits: the pre
 `(RingLWE.decision, params3 …, kb)` and `(RingLWE.decision, params5 …, kb)`. -/
 theorem attributeHiding_of_comps_rlwe
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u) (hcov : RealCovered hk c)
-    (hL : dateBound ≤ c.L) (hscov : SimCovered hk c)
+    (hL : bpLen ≤ c.L) (hscov : SimCovered hk c)
     {ε : ℝ≥0∞}
     (hflood : ∀ rest ∈ (lawRestC hk c).support, ∀ w : JC (Sdw (N := N) hk) → (Fin c.d → Bool),
       CloseTo ((lawEc hk c).map fun e j => e j + rest.2.1 * wMat w j) (lawEc hk c) ε)

@@ -5,10 +5,10 @@ import PE.Impl.DualUse.Prog.SetupLaws
 
 `setup5P : XProg 7` (the component layout `XProg (R + 2)` with `R = 5`: inputs on tapes `0`, `1`,
 blank scratch `2 … 6`; output on tape `0`, everything else blank at the end). On the instance word
-`w` (tape `0`) and the date `encDate x` (tape `1`) it appends to `w` the word of a secret
+`w` (tape `0`) and the date `encAttr x` (tape `1`) it appends to `w` the word of a secret
 `σ ← setup5 x` (`sec5Enc`), from fair coins:
 
-1. `encDate x` (`appendTapeP`, tape `1` blanked);
+1. `encAttr x` (`appendTapeP`, tape `1` blanked);
 2. `N · K` fair bits (`u₀`), the fair bits of the columns `w`;
 3. the `Rᵢ`: `10 · 2k · d` binary ring elements (`entB`: a fair bit, then `N · K − 1` zeros);
 4. the errors: `|JC| · N` flooding coefficients (`entF`: `min w K` fair bits, then `K − w`
@@ -26,8 +26,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.XProg Matrix
   AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ}
 
@@ -130,17 +130,17 @@ def setup5P : XProg 7 := seq (appendTapeP 0 1 3 4) (tail5P hk c)
 /-- **The law of the setup of hybrid 5**: on the instance word of `i` and the date `x`, the word
 of the packed secret `(i, σ)`, `σ ← setup5 x`. -/
 theorem law_setup5P [NeZero c.d] (hN : 0 < N) (hK : 0 < K)
-    (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) (x : Date) :
+    (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) (x : PUniv.Attr) :
     (setup5P hk c).law (ioS (R := 5) ((inst5Enc (N := N) (K := K) (k := k) c.d).enc i)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setup5 hk c x).map fun σ =>
         ioS (R := 5) (((inst5Enc (N := N) (K := K) (k := k) c.d).prod (sec5Enc hk c)).enc (i, σ))
           [] [] := by
   set w := (inst5Enc (N := N) (K := K) (k := k) c.d).enc i
   rw [setup5P, law_seq, law_appendTapeP (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) _ rfl rfl, PMF.pure_bind]
-  have hP : P5 (Function.update (Function.update (ioS (R := 5) w (encDate x) []) 0
-      (ioS (R := 5) w (encDate x) [] 0 ++ ioS (R := 5) w (encDate x) [] 1)) 1 []) := by
+  have hP : P5 (Function.update (Function.update (ioS (R := 5) w (encAttr x) []) 0
+      (ioS (R := 5) w (encAttr x) [] 0 ++ ioS (R := 5) w (encAttr x) [] 1)) 1 []) := by
     refine ⟨⟨?_, ?_, ?_⟩, ?_, ?_⟩ <;> rfl
   rw [law_tail5P hk c _ hP]
   have hR : (setup5 hk c x).map (fun σ => ioS (R := 5)

@@ -1,22 +1,25 @@
-import PE.Impl.DualUse.Concrete
+import PE.Impl.DualUse.ImplCorrect
+import PE.Impl.DualUse.ParamSupport
+import PE.Impl.DualUse.KeyBoxes
 import PE.Impl.DualUse.Params.Sizes
 
 /-!
 # A configuration covering real and simulated keys
 
 The configuration `confP` over `R = ℤ_{2^K}[X]/(X^N + 1)` with the sizes of `Params/Sizes.lean`
-(`K = 2^25`, `N = 2^34`, `|Wd| = 2^61`): errors from the centered binomial law of width `16`,
-flooding below `2^512`, big box of `B = 16041444` bits per coefficient, small box of radius
-`S = 2^{B−1} − 1 − τ` and inner box of radius `2^{B−1} − 1 − 2τ`, with `τ = 2^{16041210}`.
+(`K = 2^27`, `N = 2^36`, `|Wd| = 2^65`): errors from the centered binomial law of width `16`,
+flooding below `2^768`, big box of `B = 51056224` bits per coefficient, small box of radius
+`S = 2^{B−1} − 1 − τ` and inner box of radius `2^{B−1} − 1 − 2τ`, with `τ = 2^{51055984}`; the
+predicates are the words of `bpLen` bits (`confP.L = bpLen`).
 
 * **Both trapdoors are covered**: the real trapdoor of every key of `Setup`
   (`goodTrap_real`) and the simulated trapdoor `W_f` of the reductions, for binary `Rᵢ`, `W_j`
-  and every window predicate (`goodTrap_sim`, `goodTrap_sim_of`). So keys with `W_f` have
+  and every program predicate (`goodTrap_sim`, `goodTrap_sim_of`). So keys with `W_f` have
   exactly the law of real keys (`keyLaw_real_eq_sim_conf`), the ideal key law
   (`keyLaw_sim_eq_ideal`).
 * **Correctness** (`correct_conf`): with the larger key box `S` entering the noise, every
-  predicate of depth at most `Dmax` (`depth_predC`; the window predicates have at most `375`
-  gates) stays below `q/4` (`Params.noise_ok`); the abort probability is at most `2^{-128}`.
+  predicate of depth at most `Dmax = 1054` (`depth_predC`, from `depth_bpPred`) stays below `q/4`
+  (`Params.noise_ok`); the abort probability is at most `2^{-128}`.
 * **Expressiveness** (`expressive_conf`).
 -/
 
@@ -25,8 +28,8 @@ namespace AdvancedEncryption.DualUse.Params
 set_option maxRecDepth 100000
 
 open SigabaNeo SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open AdvancedEncryption.DualUse.Concrete (pow_mul_le' pow_le_pow')
 open scoped ENNReal
 
@@ -106,7 +109,7 @@ noncomputable def confP : Conf Np Kp kp where
   emb := keyEmb Bp hBp mBp hmBp
   Small := keyBall (2 ^ Kp) dp (TrapCol kp) Np Sp
   dec := decp
-  L := dateBound
+  L := bpLen
 
 /-- The inner box. -/
 noncomputable def innerP : Finset (KeyShort (Fin dp) (TrapCol kp) (Rg Np Kp)) :=
@@ -137,7 +140,7 @@ theorem shift_shortP (v : PK hkp confP × SKey hkp confP) (hv : v ∈ (setupM hk
   simp [cnorm_zero]
 
 /-- `|Coef| ≤ 2^eCoef`. -/
-def eCoef : ℕ := 96
+def eCoef : ℕ := 102
 
 theorem kp4_le : 1 + 4 * kp ≤ 2 ^ ad := by
   have h1 := kp_le
@@ -158,29 +161,26 @@ theorem abortP : (((confP.Big.card - innerP.card : ℕ) : ℝ≥0∞) / confP.Bi
     four_τ_le.trans (pow_le_pow' (by rw [Eτ_def, Bp_def]; norm_num))
   exact abort_le (d := dp) (Wt := TrapCol kp) (N := Np) Bp τp 128 hBp one_le_Bp mBp hmBp h4 hprod
 
-/-- The window predicates have at most `375` gates. -/
-theorem length_predC (w : Window) : (predC (winWord w)).1.length ≤ 375 := by
-  simp only [predC, winWord, parse_unparse, predOf, fromGates, List.length_map]
-  exact length_winGates w
-
 /-- The predicates have depth at most `Dmax`. -/
-theorem depth_predC (w : Window) : SLP.depth (predC (winWord w)).1 (predC (winWord w)).2 ≤ Dmax :=
-  (SLP.depth_le_length _ _).trans (length_predC w)
+theorem depth_predC (C : List Bool) : SLP.depth (predC C).1 (predC C).2 ≤ Dmax :=
+  depth_bpPred _
 
 variable {ms : Machines hkp confP}
 
+theorem confP_L : confP.L = bpLen := rfl
+
 /-- **The implementation is correct.** -/
-theorem correct_conf : Correct dateUniverse params (impl hkp confP ms) := by
+theorem correct_conf : Correct PUniv params (impl hkp confP ms) := by
   have hb := box_arith _ _ hτM
-  refine DualUse.correct hkp confP (by show 0 < dp; rw [dp_def]; positivity) hdecp (2 ^ wP) Sp
-    innerP ?_ ?_ ?_ abortP ?_ ?_ ?_ ?_
+  refine DualUse.correct hkp confP confP_L.ge (by show 0 < dp; rw [dp_def]; positivity) hdecp
+    (2 ^ wP) Sp innerP ?_ ?_ ?_ abortP ?_ ?_ ?_ ?_
   · -- the inner box lies in the big box
     exact (keyBall_mono hb.1).trans ball_sub_bigP
   · -- coverage
-    intro v hv w y hy u
+    intro v hv C _ y hy u
     exact add_mem_bigP hy (shift_shortP v hv _ u)
   · -- the inner box shifted stays in the small box
-    intro v hv w p hp u
+    intro v hv C _ p hp u
     exact keyBall_mono hb.2.2.1 (sub_mem_keyBall hp (shift_shortP v hv _ u))
   · -- the small box is short
     intro v hv
@@ -194,45 +194,42 @@ theorem correct_conf : Correct dateUniverse params (impl hkp confP ms) := by
       (show (16 : ℕ) = 2 ^ 4 from rfl).le.trans (pow_le_pow' (by norm_num [wP]))
     exact h
   · -- the noise
-    intro w
-    exact noise_ok _ (depth_predC w) Sp Sp_le
-
-attribute [local irreducible] dateBound in
-theorem confP_L : confP.L = dateBound := rfl
+    intro C _
+    exact noise_ok _ (depth_predC C) Sp Sp_le
 
 /-- **The implementation is expressive.** -/
-theorem expressive_conf : Expressive dateUniverse params (impl hkp confP ms) :=
-  DualUse.expressive hkp confP (le_of_eq confP_L.symm)
+theorem expressive_conf : Expressive PUniv params (impl hkp confP ms) :=
+  DualUse.expressive hkp confP
 
 /-! ### Both trapdoors are covered -/
 
-/-- **The real trapdoor is covered** for every key of `Setup` and every window predicate. -/
+/-- **The real trapdoor is covered** for every key of `Setup` and every program predicate. -/
 theorem goodTrap_real (v : PK hkp confP × SKey hkp confP) (hv : v ∈ (setupM hkp confP).support)
-    (w : Window) :
-    GoodTrap confP.Big confP.Small confP.dec v.1 (keyMatrix v.1 (predC (winWord w)))
+    (C : List Bool) :
+    GoodTrap confP.Big confP.Small confP.dec v.1 (keyMatrix v.1 (predC C))
       (realTrap (S := Sdw (N := Np) hkp) (trapMat v.2.2.1 v.2.2.2)
-        (keyMatrix v.1 (predC (winWord w)))) := by
+        (keyMatrix v.1 (predC C))) := by
   obtain ⟨hT, -⟩ := msk_trapdoor _ v hv
   exact ⟨realTrap_spec hkp confP v.1 _ hT _,
     fun y hy u => add_mem_bigP hy (shift_shortP v hv _ u)⟩
 
 /-- **The simulated trapdoor is covered**: for binary `Rᵢ` and `W_j` (as drawn by the
-reductions), any `Ψ`, and a window predicate `f` whose key row is `B₀ W_f + G̲`, the trapdoor
+reductions), any `Ψ`, and a program predicate `f` whose key row is `B₀ W_f + G̲`, the trapdoor
 `W_f = simKeyMat …` is a covered trapdoor of the key row. -/
-theorem goodTrap_sim (mpk : PK hkp confP) (Rm : Fin 10 → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
-    (x : Fin 10 → Bool)
-    (W : Fin 10 × (Sdw (N := Np) hkp).ctBits.Index → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
-    (Ψ : Fin 10 → Matrix (Fin 2) (Col kp) (Rg Np Kp))
-    (hR : ∀ i a c, cnorm (Rm i a c) ≤ 1) (hW : ∀ j a c, cnorm (W j a c) ≤ 1) (w : Window)
-    (hBf : keyMatrix mpk (predC (winWord w)) =
-      mpk.B₀ * simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC (winWord w)) +
+theorem goodTrap_sim (mpk : PK hkp confP) (Rm : Fin nA → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
+    (x : Fin nA → Bool)
+    (W : Fin nA × (Sdw (N := Np) hkp).ctBits.Index → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
+    (Ψ : Fin nA → Matrix (Fin 2) (Col kp) (Rg Np Kp))
+    (hR : ∀ i a c, cnorm (Rm i a c) ≤ 1) (hW : ∀ j a c, cnorm (W j a c) ≤ 1) (C : List Bool)
+    (hBf : keyMatrix mpk (predC C) =
+      mpk.B₀ * simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC C) +
         (Sdw (N := Np) hkp).Γ₁.G) :
-    GoodTrap confP.Big confP.Small confP.dec mpk (keyMatrix mpk (predC (winWord w)))
+    GoodTrap confP.Big confP.Small confP.dec mpk (keyMatrix mpk (predC C))
       (simTrap (Wt := TrapCol kp)
-        (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC (winWord w)))) := by
+        (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC C))) := by
   refine ⟨simTrap_public mpk _ _ hBf, fun y hy u => add_mem_bigP hy ?_⟩
   obtain ⟨h1, h2⟩ := cnorm_simTrap_le_depth (Wt := TrapCol kp) hkp Rm x W Ψ mpk.Bj
-    (predC (winWord w)) hR hW (decp u) (cnorm_decp u) (depth_predC w)
+    (predC C) hR hW (decp u) (cnorm_decp u) (depth_predC C)
   have hb := simTrapBound_le (le_refl Dmax)
   exact zabs_keyEquiv_le (fun i => (h1 i).trans hb) (fun i => (h2 i).trans hb)
 
@@ -248,7 +245,7 @@ theorem keyMatrix_eq_sim_one {R : Type*} [CommRing R] {k : ℕ} {S : Setting R k
   rw [keyMatrix_eq_sim hfhat mpk c₀ Rm x W Ψ hΨ hB f, h1, one_smul]
 
 /-- A predicate true on `x` evaluates to `1` on the bits of `x`. -/
-theorem circ_eval_one (x : Fin 10 → Bool) (f : SLP (Fin 10) × Wire (Fin 10))
+theorem circ_eval_one (x : Fin nA → Bool) (f : SLP (Fin nA) × Wire (Fin nA))
     (hfx : SLP.evalBool x f.1 f.2 = true) :
     ((Sdw (N := Np) hkp).circ f).eval (fun i => bitR (R := Rg Np Kp) (x i)) = 1 := by
   have := Circuit.eval_bits (R := Rg Np Kp) x (f.1.circuit f.2)
@@ -259,50 +256,50 @@ theorem circ_eval_one (x : Fin 10 → Bool) (f : SLP (Fin 10) × Wire (Fin 10))
 /-- **The simulated trapdoor is covered**, from the relations of the reductions
 (`Ψᵢ = A Rᵢ + xᵢ G`, `B_j = B₀ W_j + ψ_j G̲`) and `f(x) = 1`. -/
 theorem goodTrap_sim_of (mpk : PK hkp confP) (c₀ : Matrix (Fin 1) (Fin confP.d) (Rg Np Kp))
-    (Rm : Fin 10 → Matrix (Fin confP.d) (Col kp) (Rg Np Kp)) (x : Fin 10 → Bool)
-    (W : Fin 10 × (Sdw (N := Np) hkp).ctBits.Index → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
-    (Ψ : Fin 10 → Matrix (Fin 2) (Col kp) (Rg Np Kp))
+    (Rm : Fin nA → Matrix (Fin confP.d) (Col kp) (Rg Np Kp)) (x : Fin nA → Bool)
+    (W : Fin nA × (Sdw (N := Np) hkp).ctBits.Index → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
+    (Ψ : Fin nA → Matrix (Fin 2) (Col kp) (Rg Np Kp))
     (hΨ : ∀ i, Ψ i = gswPK mpk.B₀ c₀ * Rm i + bitR (R := Rg Np Kp) (x i) • (Sdw (N := Np) hkp).Γ.G)
     (hB : ∀ j, mpk.Bj j = mpk.B₀ * W j + bitsOf (Sdw (N := Np) hkp) Ψ j • (Sdw (N := Np) hkp).Γ₁.G)
-    (hR : ∀ i a c, cnorm (Rm i a c) ≤ 1) (hW : ∀ j a c, cnorm (W j a c) ≤ 1) (w : Window)
-    (hfx : SLP.evalBool x (predC (winWord w)).1 (predC (winWord w)).2 = true) :
-    GoodTrap confP.Big confP.Small confP.dec mpk (keyMatrix mpk (predC (winWord w)))
+    (hR : ∀ i a c, cnorm (Rm i a c) ≤ 1) (hW : ∀ j a c, cnorm (W j a c) ≤ 1) (C : List Bool)
+    (hfx : SLP.evalBool x (predC C).1 (predC C).2 = true) :
+    GoodTrap confP.Big confP.Small confP.dec mpk (keyMatrix mpk (predC C))
       (simTrap (Wt := TrapCol kp)
-        (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC (winWord w)))) := by
-  exact goodTrap_sim mpk Rm x W Ψ hR hW w (keyMatrix_eq_sim_one
-    (ringSetting_fhatCorrect hkp (Fin 10)) mpk c₀ Rm x W Ψ hΨ hB _ (circ_eval_one x _ hfx))
+        (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC C))) := by
+  exact goodTrap_sim mpk Rm x W Ψ hR hW C (keyMatrix_eq_sim_one
+    (ringSetting_fhatCorrect hkp (Fin nA)) mpk c₀ Rm x W Ψ hΨ hB _ (circ_eval_one x _ hfx))
 
 /-- **Keys with the simulated trapdoor have the ideal key law.** -/
-theorem keyLaw_sim_eq_ideal (mpk : PK hkp confP) (Rm : Fin 10 → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
-    (x : Fin 10 → Bool)
-    (W : Fin 10 × (Sdw (N := Np) hkp).ctBits.Index → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
-    (Ψ : Fin 10 → Matrix (Fin 2) (Col kp) (Rg Np Kp))
-    (hR : ∀ i a c, cnorm (Rm i a c) ≤ 1) (hW : ∀ j a c, cnorm (W j a c) ≤ 1) (w : Window)
-    (hBf : keyMatrix mpk (predC (winWord w)) =
-      mpk.B₀ * simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC (winWord w)) +
+theorem keyLaw_sim_eq_ideal (mpk : PK hkp confP) (Rm : Fin nA → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
+    (x : Fin nA → Bool)
+    (W : Fin nA × (Sdw (N := Np) hkp).ctBits.Index → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
+    (Ψ : Fin nA → Matrix (Fin 2) (Col kp) (Rg Np Kp))
+    (hR : ∀ i a c, cnorm (Rm i a c) ≤ 1) (hW : ∀ j a c, cnorm (W j a c) ≤ 1) (C : List Bool)
+    (hBf : keyMatrix mpk (predC C) =
+      mpk.B₀ * simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC C) +
         (Sdw (N := Np) hkp).Γ₁.G) :
     keyLaw confP.Big confP.Small confP.hBig confP.dec mpk
-        (simTrap (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC (winWord w)))) =
+        (simTrap (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ mpk.Bj (predC C))) =
       idealKeyLaw confP.Big confP.Small confP.hBig confP.dec mpk
-        (keyMatrix mpk (predC (winWord w))) :=
-  keyLaw_eq_ideal (dec := confP.dec) _ _ _ hdecp mpk _ _ (goodTrap_sim mpk Rm x W Ψ hR hW w hBf)
+        (keyMatrix mpk (predC C)) :=
+  keyLaw_eq_ideal (dec := confP.dec) _ _ _ hdecp mpk _ _ (goodTrap_sim mpk Rm x W Ψ hR hW C hBf)
 
 /-- **Real and simulated keys have the same law** for the keys of `Setup`. -/
 theorem keyLaw_real_eq_sim_conf (v : PK hkp confP × SKey hkp confP)
-    (hv : v ∈ (setupM hkp confP).support) (Rm : Fin 10 → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
-    (x : Fin 10 → Bool)
-    (W : Fin 10 × (Sdw (N := Np) hkp).ctBits.Index → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
-    (Ψ : Fin 10 → Matrix (Fin 2) (Col kp) (Rg Np Kp))
-    (hR : ∀ i a c, cnorm (Rm i a c) ≤ 1) (hW : ∀ j a c, cnorm (W j a c) ≤ 1) (w : Window)
-    (hBf : keyMatrix v.1 (predC (winWord w)) =
-      v.1.B₀ * simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ v.1.Bj (predC (winWord w)) +
+    (hv : v ∈ (setupM hkp confP).support) (Rm : Fin nA → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
+    (x : Fin nA → Bool)
+    (W : Fin nA × (Sdw (N := Np) hkp).ctBits.Index → Matrix (Fin confP.d) (Col kp) (Rg Np Kp))
+    (Ψ : Fin nA → Matrix (Fin 2) (Col kp) (Rg Np Kp))
+    (hR : ∀ i a c, cnorm (Rm i a c) ≤ 1) (hW : ∀ j a c, cnorm (W j a c) ≤ 1) (C : List Bool)
+    (hBf : keyMatrix v.1 (predC C) =
+      v.1.B₀ * simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ v.1.Bj (predC C) +
         (Sdw (N := Np) hkp).Γ₁.G) :
     keyLaw confP.Big confP.Small confP.hBig confP.dec v.1
         (realTrap (S := Sdw (N := Np) hkp) (trapMat v.2.2.1 v.2.2.2)
-          (keyMatrix v.1 (predC (winWord w)))) =
+          (keyMatrix v.1 (predC C))) =
       keyLaw confP.Big confP.Small confP.hBig confP.dec v.1
-        (simTrap (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ v.1.Bj (predC (winWord w)))) := by
-  exact (keyLaw_eq_ideal (dec := confP.dec) _ _ _ hdecp v.1 _ _ (goodTrap_real v hv w)).trans
-    (keyLaw_sim_eq_ideal v.1 Rm x W Ψ hR hW w hBf).symm
+        (simTrap (simKeyMat (S := Sdw (N := Np) hkp) Rm x W Ψ v.1.Bj (predC C))) := by
+  exact (keyLaw_eq_ideal (dec := confP.dec) _ _ _ hdecp v.1 _ _ (goodTrap_real v hv C)).trans
+    (keyLaw_sim_eq_ideal v.1 Rm x W Ψ hR hW C hBf).symm
 
 end AdvancedEncryption.DualUse.Params

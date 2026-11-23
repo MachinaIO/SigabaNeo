@@ -20,8 +20,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape Matrix
   AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ}
 
@@ -145,6 +145,8 @@ theorem psiMM (A : Matrix (Fin 2) (Fin c.d) (Rg N K))
   rw [trW_matEnc' (len_fin 2) (len_fin c.d), rmTEnc_stk,
     matEnc_mul' (by rw [Enum.length_prod, len_fin, len_col]) (len_fin c.d) (len_fin 2)]
 
+set_option maxRecDepth 20000 in
+set_option maxHeartbeats 1000000 in
 /-- **The `A Rᵢ`** from the product, by transposes. -/
 theorem psiPre (A : Matrix (Fin 2) (Fin c.d) (Rg N K))
     (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) :
@@ -160,12 +162,10 @@ theorem psiPre (A : Matrix (Fin 2) (Fin c.d) (Rg N K))
     rw [matEnc_flatMap, funEnc_flatMap]
     show ((Enum.list (α := Fin nA)).product (Enum.list (α := RingBTVW.Col k))).flatMap _ = _
     rw [Algo.flatMap_product]
-    simp only [matEnc_flatMap]
-    rfl
-  rw [hw, h]
-  congr 1
-  funext i
-  refine Matrix.ext fun r cc => ?_
+    simp only [matEnc_flatMap, Matrix.of_apply]
+  rw [hw]
+  erw [h]
+  refine congrArg _ (funext fun i => Matrix.ext fun r cc => ?_)
   simp only [Matrix.transpose_apply, Matrix.of_apply, Matrix.mul_apply, stkR]
   exact Finset.sum_congr rfl fun a _ => mul_comm _ _
 
@@ -240,11 +240,11 @@ theorem gswG_word :
   simp only [List.append_assoc]
   rfl
 
-theorem encDate_map (x : Date) : encDate x = (List.finRange nA).map (bitsOf x) := by
-  apply List.ext_getElem (by simp [length_encDate])
+theorem encAttr_map (x : PUniv.Attr) : encAttr x = (List.finRange nA).map (attrBits x) := by
+  apply List.ext_getElem (by rw [List.length_map, List.length_finRange]; exact length_encAttr x)
   intro i h1 h2
   rw [List.getElem_map, List.getElem_finRange]
-  show _ = (encDate x).getD i false
+  show _ = (encAttr x).getD i false
   simp [List.getD_eq_getElem?_getD, h1]
 
 theorem bitR_smul_word {r s : Type} [Enum r] [Enum s] {L : ℕ}
@@ -257,20 +257,19 @@ theorem bitR_smul_word {r s : Type} [Enum r] [Enum s] {L : ℕ}
   · simp [bitR, takeD_nil, matEnc_zero]
   · simp [bitR, takeD_of_length' (length_matEnc M)]
 
-/-- **The shifts `xᵢ G`**: blocks selected by the bits of the date. -/
-theorem psiSel (x : Date) :
-    selW nA (2 * (2 * k) * (N * K)) (encDate x)
+set_option maxRecDepth 20000 in
+/-- **The shifts `xᵢ G`**: blocks selected by the bits of the attribute. -/
+theorem psiSel (x : PUniv.Attr) :
+    selW nA (2 * (2 * k) * (N * K)) (encAttr x)
         ((DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (Sdw (N := N) hk).Γ.G) [] =
       (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc
-        fun i => bitR (R := Rg N K) (bitsOf x i) • (Sdw (N := N) hk).Γ.G := by
-  have h := selW_map (List.finRange nA) (bitsOf x) (2 * (2 * k) * (N * K))
+        fun i => bitR (R := Rg N K) (attrBits x i) • (Sdw (N := N) hk).Γ.G := by
+  have h := selW_map (List.finRange nA) (attrBits x) (2 * (2 * k) * (N * K))
     ((DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k)).enc (Sdw (N := N) hk).Γ.G) []
   simp only [List.length_finRange] at h
-  rw [encDate_map, h, funEnc_flatMap]
-  show _ = (List.finRange nA).flatMap _
-  congr 1
-  funext i
-  exact bitR_smul_word (by rw [len_fin, len_col]; ring) _ _
+  rw [encAttr_map, h, funEnc_flatMap]
+  exact congrArg₂ List.flatMap (funext fun i => bitR_smul_word (by rw [len_fin, len_col]; ring) _ _)
+    rfl
 
 /-- **The `Ψᵢ`**: the sum of the `A Rᵢ` and the shifts. -/
 theorem psiAdd (F G : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K)) :

@@ -1,4 +1,4 @@
-import PE.Impl.DualUse.Prog.CompCost
+import PE.Impl.DualUse.Prog.CompLib
 import PE.Impl.DualUse.Prog.SetupCost
 
 /-!
@@ -20,7 +20,7 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.XProg Matrix
   AdvancedEncryption.RingBTVW Cslib Cslib.Probability AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-- Drop the first bit of tape `0`, run `p`, clear every tape but `0`. -/
 def dropHead (p : XProg 7) : XProg 7 := seq (prog (.prim (.tail 0))) (seq p clrS)
@@ -113,24 +113,24 @@ theorem wf_setup3D : setup3D.WF := wf_dropHead wf_setup3P_conf
 theorem wf_setup5D : setup5D.WF := wf_dropHead (wf_setup5P hkp confP)
 theorem wf_setupID : setupID.WF := wf_dropHead wf_setupIP_conf
 
-theorem law_setup3D (ab : Inst3T Np Kp kp) (x : Date) :
+theorem law_setup3D (ab : Inst3T Np Kp kp) (x : PUniv.Attr) :
     setup3D.law (io2 (R := 254) (true :: (inst3Enc (N := Np) (K := Kp) (k := kp)).enc ab)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setup3 hkp confP x).map fun σ => io2 (R := 254)
         (((inst3Enc (N := Np) (K := Kp) (k := kp)).prod (sec3Enc hkp confP)).enc (ab, σ)) [] [] :=
   law_liftP_map _ (law_dropHead _ _ _ (law_setup3P_conf ab x))
 
-theorem law_setupID (ab : Inst3T Np Kp kp) (x : Date) :
+theorem law_setupID (ab : Inst3T Np Kp kp) (x : PUniv.Attr) :
     setupID.law (io2 (R := 254) (true :: (inst3Enc (N := Np) (K := Kp) (k := kp)).enc ab)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setupI hkp confP x).map fun σ => io2 (R := 254)
         (((inst3Enc (N := Np) (K := Kp) (k := kp)).prod (secIEnc hkp confP)).enc (ab, σ)) [] [] :=
   law_liftP_map _ (law_dropHead _ _ _ (law_setupIP_conf ab x))
 
 theorem law_setup5D (i : Pub (Fin confP.d) (Rg Np Kp) kp × Pub (Fin confP.d) (Rg Np Kp) kp)
-    (x : Date) :
+    (x : PUniv.Attr) :
     setup5D.law (io2 (R := 254) (true :: (inst5Enc (N := Np) (K := Kp) (k := kp) confP.d).enc i)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setup5 hkp confP x).map fun σ => io2 (R := 254)
         (((inst5Enc (N := Np) (K := Kp) (k := kp) confP.d).prod (sec5Enc hkp confP)).enc (i, σ))
           [] [] :=
@@ -142,10 +142,10 @@ end AdvancedEncryption.DualUse.Prog
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 open SigabaNeo.Encode in
-theorem confP_w : confP.w = 512 := rfl
+theorem confP_w : confP.w = 768 := rfl
 
 open SigabaNeo.Encode
 
@@ -211,29 +211,6 @@ theorem lbTailI_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : N 
   subst hN hK hk' hA
   norm_num
 
-theorem kp_eq : kp = 2 ^ 25 + 1 := by rw [kp, Kp_def]
-
-theorem lbTail3_conf : (lbTail3 hkp confP bChi ⟨2 ^ 40, 2 ^ 40⟩).w ≤ 2 ^ 200 ∧
-    (lbTail3 hkp confP bChi ⟨2 ^ 40, 2 ^ 40⟩).E ≤ 2 ^ 200 := by
-  rw [lbTail3_congr hkp confP _ bChi_a bChi_s]
-  exact lbTail3_num hkp confP Np_def Kp_def kp_eq confP_d confP_w Kp_def
-
-theorem lbTailI_conf : (lbTailI hkp confP bChi ⟨2 ^ 40, 2 ^ 40⟩).w ≤ 2 ^ 200 ∧
-    (lbTailI hkp confP bChi ⟨2 ^ 40, 2 ^ 40⟩).E ≤ 2 ^ 200 := by
-  rw [lbTailI_congr hkp confP _ bChi_a bChi_s]
-  exact lbTailI_num hkp confP Np_def Kp_def kp_eq confP_d confP_w Kp_def
-
-theorem tail5_conf : wTail5 hkp confP ≤ 2 ^ 200 ∧ eTail5 hkp confP ≤ 2 ^ 200 ∧
-    s5 hkp confP ≤ 2 ^ 181 := by
-  simp only [wTail5, eTail5, s5, nW_eq, nR_eq, nE_eq, lenFin, len_col]
-  simp only [confP_d, confP_w, kp, Kp_def, Np_def]
-  norm_num
-
-theorem cntSum_conf : 10 + Kp + cntSum hkp confP ≤ 2 ^ 181 := by
-  simp only [cntSum, nW_eq, nR_eq, nE_eq, nPsi_eq, nC0_eq, nC1_eq, nCj_eq, lenFin, len_col]
-  simp only [confP_d, confP_w, kp, Kp_def, Np_def]
-  norm_num
-
 theorem bTail3_as {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (Bχ : Bnd) :
     (bTail3 hk c Bχ).a = (bTail3 hk c (Bnd.prim Bχ.a Bχ.s)).a ∧
       (bTail3 hk c Bχ).s = (bTail3 hk c (Bnd.prim Bχ.a Bχ.s)).s := by
@@ -265,20 +242,6 @@ theorem bTailI_as_num {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (hN : 
   subst hN hK hk' hA
   norm_num
 
-theorem bTail3_as_conf : (bTail3 hkp confP bChi).a ≤ 2 ^ 181 ∧ (bTail3 hkp confP bChi).s ≤ 2 ^ 181 := by
-  rw [(bTail3_as hkp confP bChi).1, (bTail3_as hkp confP bChi).2, bChi_a, bChi_s]
-  exact bTail3_as_num hkp confP Np_def Kp_def kp_eq confP_d confP_w Kp_def
-
-theorem bTailI_as_conf : (bTailI hkp confP bChi).a ≤ 2 ^ 181 ∧ (bTailI hkp confP bChi).s ≤ 2 ^ 181 := by
-  rw [(bTailI_as hkp confP bChi).1, (bTailI_as hkp confP bChi).2, bChi_a, bChi_s]
-  exact bTailI_as_num hkp confP Np_def Kp_def kp_eq confP_d confP_w Kp_def
-
-theorem tail5_as_conf : Np * Kp + (nW hkp confP + (nR hkp confP * (1 + (Np * Kp - 1)) +
-    nE (N := Np) hkp * (min confP.w Kp + (Kp - confP.w)))) ≤ 2 ^ 181 := by
-  simp only [nW_eq, nR_eq, nE_eq]
-  simp only [confP_d, confP_w, kp, Kp_def, Np_def]
-  norm_num
-
 /-- The arithmetic of the setup bounds. -/
 theorem setup_arith {s w E M : ℕ} (hs : s ≤ 2 ^ 181) (hw : w ≤ 2 ^ 200) (hE : E ≤ 2 ^ 200)
     (hM : M ≤ 2 ^ 182) :
@@ -300,112 +263,6 @@ variable {a b : ℕ}
 set_option maxRecDepth 100000
 set_option exponentiation.threshold 1000
 
-theorem bounds_setup3D :
-    timeBoundT (dropHead (setup3P hkp confP chiP)) (io2 (R := 5) (2 ^ 180) 10 0) ≤ 2 ^ 403 ∧
-      lenBoundT (dropHead (setup3P hkp confP chiP)) (io2 (R := 5) (2 ^ 180) 10 0) ≤
-        io2 (2 ^ 182) 0 0 := by
-  have hL := len_appendTail (atbb_tail3P hkp confP bChi atbb_chiP preserves6_chiP) (2 ^ 180) 10
-  have hS := bTail3_S₀ hkp confP bChi
-  have hs : max 10 (bTail3 hkp confP bChi).S₀ ≤ 2 ^ 181 := by
-    have := cntSum_conf; have := bChi_S₀; omega
-  obtain ⟨ha3, hs3⟩ := bTail3_as_conf
-  have hM : ∀ i, lenBoundT (setup3P hkp confP chiP) (io2 (R := 5) (2 ^ 180) 10 0) i ≤ 2 ^ 182 :=
-    fun i => (hL i).trans (by
-      simp only [shp]; split_ifs
-      · have : (2 : ℕ) ^ 182 = 2 ^ 181 + 2 ^ 181 := by norm_num
-        have : (2 : ℕ) ^ 180 + 10 ≤ 2 ^ 181 := by norm_num
-        omega
-      · have : (2 : ℕ) ^ 182 = 2 ^ 181 + 2 ^ 181 := by norm_num
-        omega)
-  refine ⟨(time_dropHead _ _ _ _ hM).trans ?_, len_dropHead _ _ _ _ (hM 0)⟩
-  have h3 := time_setup3P_conf (2 ^ 180) 10
-  unfold time3 at h3
-  have hT := hasLB_tail3 hkp confP bChi ⟨2 ^ 40, 2 ^ 40⟩ lin_bChi (2 ^ 180 + 10)
-    (max 10 (bTail3 hkp confP bChi).S₀)
-  obtain ⟨hw, hE⟩ := lbTail3_conf
-  exact le_trans (Nat.add_le_add_left (Nat.add_le_add_right (h3.trans (Nat.add_le_add_left hT _)) _) _)
-    (setup_arith hs hw hE (le_refl (2 ^ 182)))
-
-theorem bounds_setupID :
-    timeBoundT (dropHead (setupIP hkp confP chiP)) (io2 (R := 5) (2 ^ 180) 10 0) ≤ 2 ^ 403 ∧
-      lenBoundT (dropHead (setupIP hkp confP chiP)) (io2 (R := 5) (2 ^ 180) 10 0) ≤
-        io2 (2 ^ 182) 0 0 := by
-  have hL := len_appendTail (atbb_tailIP hkp confP bChi atbb_chiP preserves6_chiP) (2 ^ 180) 10
-  have hS := bTailI_S₀ hkp confP bChi
-  have hs : max 10 (bTailI hkp confP bChi).S₀ ≤ 2 ^ 181 := by
-    have := cntSum_conf; have := bChi_S₀; omega
-  obtain ⟨ha3, hs3⟩ := bTailI_as_conf
-  have hM : ∀ i, lenBoundT (setupIP hkp confP chiP) (io2 (R := 5) (2 ^ 180) 10 0) i ≤ 2 ^ 182 :=
-    fun i => (hL i).trans (by
-      simp only [shp]; split_ifs
-      · have : (2 : ℕ) ^ 182 = 2 ^ 181 + 2 ^ 181 := by norm_num
-        have : (2 : ℕ) ^ 180 + 10 ≤ 2 ^ 181 := by norm_num
-        omega
-      · have : (2 : ℕ) ^ 182 = 2 ^ 181 + 2 ^ 181 := by norm_num
-        omega)
-  refine ⟨(time_dropHead _ _ _ _ hM).trans ?_, len_dropHead _ _ _ _ (hM 0)⟩
-  have h3 := time_setupIP_conf (2 ^ 180) 10
-  unfold timeI at h3
-  have hT := hasLB_tailI hkp confP bChi ⟨2 ^ 40, 2 ^ 40⟩ lin_bChi (2 ^ 180 + 10)
-    (max 10 (bTailI hkp confP bChi).S₀)
-  obtain ⟨hw, hE⟩ := lbTailI_conf
-  exact le_trans (Nat.add_le_add_left (Nat.add_le_add_right (h3.trans (Nat.add_le_add_left hT _)) _) _)
-    (setup_arith hs hw hE (le_refl (2 ^ 182)))
-
-theorem bounds_setup5D :
-    timeBoundT (dropHead (setup5P hkp confP)) (io2 (R := 5) (2 ^ 180) 10 0) ≤ 2 ^ 403 ∧
-      lenBoundT (dropHead (setup5P hkp confP)) (io2 (R := 5) (2 ^ 180) 10 0) ≤
-        io2 (2 ^ 182) 0 0 := by
-  obtain ⟨hw, hE, hs5⟩ := tail5_conf
-  have hs : max 10 (s5 hkp confP) ≤ 2 ^ 181 := by
-    have : (10 : ℕ) ≤ 2 ^ 181 := by norm_num
-    omega
-  have hℓ : io2 (R := 5) (2 ^ 180) 10 0 ≤ shp (0 : Fin 7) (2 ^ 180) (max 10 (s5 hkp confP)) :=
-    fun i => by simp only [io2, shp]; split_ifs <;> simp_all <;> omega
-  obtain ⟨-, h2⟩ := appendTape_bounds (le_max_left 10 _) hℓ (by simp [io2])
-  have hL : lenBoundT (setup5P hkp confP) (io2 (R := 5) (2 ^ 180) 10 0) ≤ _ :=
-    (lenBoundT_mono _ h2).trans ((atb_tail5P hkp confP) _ _ (le_max_right _ _)).2
-  have ha5 := tail5_as_conf
-  have hM : ∀ i, lenBoundT (setup5P hkp confP) (io2 (R := 5) (2 ^ 180) 10 0) i ≤ 2 ^ 182 :=
-    fun i => (hL i).trans (by
-      simp only [shp]; split_ifs
-      · have : (2 : ℕ) ^ 182 = 2 ^ 181 + 2 ^ 181 := by norm_num
-        have : (2 : ℕ) ^ 180 + 10 ≤ 2 ^ 181 := by norm_num
-        omega
-      · have : (2 : ℕ) ^ 182 = 2 ^ 181 + 2 ^ 181 := by norm_num
-        simp only [Nat.add_zero, Nat.mul_zero]
-        omega)
-  refine ⟨(time_dropHead _ _ _ _ hM).trans ?_, len_dropHead _ _ _ _ (hM 0)⟩
-  have h5 := time_setup5P hkp confP (2 ^ 180) 10
-  unfold time5 at h5
-  have hT := lin_tTail5 hkp confP (2 ^ 180 + 10) (max 10 (s5 hkp confP))
-  exact le_trans (Nat.add_le_add_left (Nat.add_le_add_right (h5.trans (Nat.add_le_add_left hT _)) _) _)
-    (setup_arith hs hw hE (le_refl (2 ^ 182)))
-
-theorem time_setup3D_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 10) :
-    timeBoundT setup3D (io2 a b 0) ≤ 2 ^ 403 :=
-  (timeBoundT_mono _ (io2_mono ha hb)).trans (by rw [setup3D, timeBoundT_liftP]; exact bounds_setup3D.1)
-
-theorem len_setup3D_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 10) :
-    lenBoundT setup3D (io2 a b 0) ≤ io2 (2 ^ 182) 0 0 :=
-  (lenBoundT_mono _ (io2_mono ha hb)).trans (lenBoundT_liftP_le _ _ bounds_setup3D.2)
-
-theorem time_setupID_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 10) :
-    timeBoundT setupID (io2 a b 0) ≤ 2 ^ 403 :=
-  (timeBoundT_mono _ (io2_mono ha hb)).trans (by rw [setupID, timeBoundT_liftP]; exact bounds_setupID.1)
-
-theorem len_setupID_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 10) :
-    lenBoundT setupID (io2 a b 0) ≤ io2 (2 ^ 182) 0 0 :=
-  (lenBoundT_mono _ (io2_mono ha hb)).trans (lenBoundT_liftP_le _ _ bounds_setupID.2)
-
-theorem time_setup5D_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 10) :
-    timeBoundT setup5D (io2 a b 0) ≤ 2 ^ 403 :=
-  (timeBoundT_mono _ (io2_mono ha hb)).trans (by rw [setup5D, timeBoundT_liftP]; exact bounds_setup5D.1)
-
-theorem len_setup5D_conf (ha : a ≤ 2 ^ 180) (hb : b ≤ 10) :
-    lenBoundT setup5D (io2 a b 0) ≤ io2 (2 ^ 182) 0 0 :=
-  (lenBoundT_mono _ (io2_mono ha hb)).trans (lenBoundT_liftP_le _ _ bounds_setup5D.2)
-
 end Time
 
 end AdvancedEncryption.DualUse.Prog
@@ -422,25 +279,6 @@ set_option maxRecDepth 100000
 set_option maxHeartbeats 0
 set_option exponentiation.threshold 1000
 
-theorem nS3_conf :
-    fencLen ((inst3Enc (N := Np) (K := Kp) (k := kp)).prod (sec3Enc hkp confP)) + 14 ≤ 2 ^ 180 := by
-  simp only [fencLen, inst3Enc, sec3Enc, restEnc]
-  comp_unfold
-  norm_num
-
-theorem nSI_conf :
-    fencLen ((inst3Enc (N := Np) (K := Kp) (k := kp)).prod (secIEnc hkp confP)) + 14 ≤ 2 ^ 180 := by
-  simp only [fencLen, inst3Enc, secIEnc, coinsEnc, ctEnc]
-  comp_unfold
-  norm_num
-
-theorem nS5_conf :
-    fencLen ((inst5Enc (N := Np) (K := Kp) (k := kp) confP.d).prod (sec5Enc hkp confP)) + 14 ≤
-      2 ^ 180 := by
-  simp only [fencLen, inst5Enc, pubEnc, sec5Enc]
-  comp_unfold
-  norm_num
-
 end Words
 
 end AdvancedEncryption.DualUse.Prog
@@ -448,7 +286,7 @@ end AdvancedEncryption.DualUse.Prog
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-! ### State counts of the setups -/
 
@@ -515,14 +353,6 @@ theorem sz_upStep : SZ upStep 300 := by
 theorem sz_downStep : SZ downStep 300 := by
   unfold SZ downStep nopX; simp [Prog.size, Prim.pad]
 
-theorem sz_chiP : SZ chiP (2 ^ 21) := by
-  have hK : Kp ≤ 2 ^ 25 := by rw [Kp_def]
-  have hB : (2 : ℕ) ^ 25 < 2 ^ 240 := by norm_num
-  unfold chiP cbdP
-  exact ((sz_repX (sz_coinAp 2 4) (16 + 16)).seq ((sz_repX (sz_bitAp 3 true) 16).seq
-    ((sz_repX sz_upStep 16).seq ((sz_repX sz_downStep 16).seq
-      (sz_chainP (η := 16) (L := 6) hK hB (16 + 16) 0))))).mono (by norm_num)
-
 theorem sz_appendTapeP : SZ (appendTapeP (k := 7) 0 1 3 4) 1000 := by
   unfold SZ appendTapeP XProg.forN; simp [Prog.size, Prim.pad]
 
@@ -537,56 +367,17 @@ theorem sz_entF {K w : ℕ} (h : K + w ≤ M) (hB : M < 2 ^ 240) :
 theorem sz_clrS : SZ clrS 360 := by
   unfold SZ clrS; simp [Prog.size, Prim.pad]
 
-theorem counts_le : (Encode.Enum.list (α := Fin 1)).length *
-      ((Encode.Enum.list (α := Fin confP.d)).length * (Np * Kp)) ≤ 2 ^ 181 ∧
-    nW hkp confP ≤ 2 ^ 181 ∧ Np * Kp ≤ 2 ^ 181 ∧
-    (Encode.Enum.list (α := Fin confP.d)).length * Np ≤ 2 ^ 181 ∧ Np ≤ 2 ^ 181 ∧
-    (Encode.Enum.list (α := RingBTVW.Col kp)).length * Np ≤ 2 ^ 181 ∧ nR hkp confP ≤ 2 ^ 181 ∧
-    nE (N := Np) hkp ≤ 2 ^ 181 ∧ Kp + confP.w ≤ 2 ^ 181 ∧ nPsi (N := Np) hkp ≤ 2 ^ 181 ∧
-    nC0 (N := Np) (K := Kp) confP ≤ 2 ^ 181 ∧ nC1 (N := Np) (K := Kp) (k := kp) ≤ 2 ^ 181 ∧
-    nCj (N := Np) hkp ≤ 2 ^ 181 := by
-  have h := cntSum_conf
-  simp only [cntSum] at h
-  omega
-
-theorem size_setup3D_conf : setup3D.size ≤ 2 ^ 25 := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, -, -, -, -⟩ := counts_le
-  have hB : (2 : ℕ) ^ 181 < 2 ^ 240 := by norm_num
-  have hR : SZ (restP hkp confP chiP) _ :=
-    (sz_coinsF h3 hB).seq ((sz_repF h4 hB sz_chiP).seq
-      (((sz_repF h5 hB sz_chiP).seq ((sz_repF h6 hB sz_chiP).seq (sz_repF h6 hB sz_chiP))).seq
-        ((sz_repF h7 hB (sz_entB h3 hB)).seq (sz_repF h5 hB sz_chiP))))
-  have hT : SZ (tail3P hkp confP chiP) _ :=
-    (sz_coinsF h1 hB).seq ((sz_coinsF h2 hB).seq ((sz_coinsF h3 hB).seq
-      (hR.seq (sz_repF h8 hB (sz_entF h9 hB)))))
-  rw [setup3D, liftP, size_frame]
-  exact ((sz_prim _).seq ((sz_appendTapeP.seq hT).seq sz_clrS)).mono (by norm_num)
-
-theorem size_setupID_conf : setupID.size ≤ 2 ^ 25 := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13⟩ := counts_le
-  have hB : (2 : ℕ) ^ 181 < 2 ^ 240 := by norm_num
-  have hE : SZ (encCoinsP hkp confP chiP) _ :=
-    (sz_coinsF h3 hB).seq ((sz_repF h4 hB sz_chiP).seq
-      (((sz_repF h5 hB sz_chiP).seq ((sz_repF h6 hB sz_chiP).seq (sz_repF h6 hB sz_chiP))).seq
-        ((sz_repF h7 hB (sz_entB h3 hB)).seq ((sz_repF h8 hB (sz_entF h9 hB)).seq
-          (sz_repF h5 hB sz_chiP)))))
-  have hC : SZ (ctP hkp confP) _ :=
-    (sz_coinsF h10 hB).seq ((sz_coinsF h11 hB).seq ((sz_coinsF h12 hB).seq
-      ((sz_coinsF h13 hB).seq (sz_coinsF h3 hB))))
-  have hT : SZ (tailIP hkp confP chiP) _ :=
-    (sz_coinsF h1 hB).seq ((sz_coinsF h2 hB).seq ((sz_coinsF h3 hB).seq (hE.seq hC)))
-  rw [setupID, liftP, size_frame]
-  exact ((sz_prim _).seq ((sz_appendTapeP.seq hT).seq sz_clrS)).mono (by norm_num)
-
-theorem size_setup5D_conf : setup5D.size ≤ 2 ^ 25 := by
-  obtain ⟨-, h2, h3, -, -, -, h7, h8, h9, -, -, -, -⟩ := counts_le
-  have hB : (2 : ℕ) ^ 181 < 2 ^ 240 := by norm_num
-  have hT : SZ (tail5P hkp confP) _ :=
-    (sz_coinsF h3 hB).seq ((sz_coinsF h2 hB).seq
-      ((sz_repF h7 hB (sz_entB h3 hB)).seq (sz_repF h8 hB (sz_entF h9 hB))))
-  rw [setup5D, liftP, size_frame]
-  exact ((sz_prim _).seq ((sz_appendTapeP.seq hT).seq sz_clrS)).mono (by norm_num)
-
 end SetupSizes
+
+
+theorem kp_eq : kp = 2 ^ 27 + 1 := by rw [kp, Kp_def]
+
+theorem sz_chiP : SZ chiP (2 ^ 21) := by
+  have hK : Kp ≤ 2 ^ 27 := by rw [Kp_def]
+  have hB : (2 : ℕ) ^ 27 < 2 ^ 240 := by norm_num
+  unfold chiP cbdP
+  exact ((sz_repX (sz_coinAp 2 4) (16 + 16)).seq ((sz_repX (sz_bitAp 3 true) 16).seq
+    ((sz_repX sz_upStep 16).seq ((sz_repX sz_downStep 16).seq
+      (sz_chainP (η := 16) (L := 6) hK hB (16 + 16) 0))))).mono (by norm_num)
 
 end AdvancedEncryption.DualUse.Prog

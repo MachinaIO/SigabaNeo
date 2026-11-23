@@ -1,5 +1,5 @@
 import PE.Impl.DualUse.ReductionMachine
-import PE.Impl.Game.HandlersDate
+import PE.Impl.Game.HandlersBP
 import SigabaNeo.Lib.Machines.Prog.Pass
 
 /-!
@@ -787,17 +787,17 @@ open SigabaNeo SigabaNeo.Inline AdvancedEncryption.PE AdvancedEncryption.PE.Gene
 
 theorem postW_eq_postG (ob : Ob) : postW ob = postG ob := rfl
 
-/-- **The hypothesis `hPost` of `acceptProb_reduction`** for the handlers of the date universe
-(state encoding `(dateCodes sig).encState`, invariant `InvS IW W Ok`, encoded states of at most `E`
-bits), with `Post A.time E 10 1`. -/
+/-- **The hypothesis `hPost` of `acceptProb_reduction`** for the handlers of the branching-program
+universe (state encoding `(bpCodes sig).encState`, invariant `InvS IW W Ok`, encoded states of at
+most `E` bits), with `Post A.time E 128 1`. -/
 theorem hPost_post {Sig : Type} {nS : ℕ} (sig : Encode.FixedEnc Sig nS) (IW : List Bool → Prop)
     (W : ℕ) (Ok : Sig → Prop) (n E : ℕ)
-    (hE : ∀ st, InvS IW W Ok st → ((dateCodes sig).encState st).length ≤ E) :
-    ∀ (o : List Bool) (st : List Bool × GState PE.DateWindow.dateUniverse Sig), o.length ≤ n →
+    (hE : ∀ st, InvS IW W Ok st → ((bpCodes sig).encState st).length ≤ E) :
+    ∀ (o : List Bool) (st : List Bool × GState AdvancedEncryption.PE.BranchingProgram.bpUniverse Sig), o.length ≤ n →
       InvS IW W Ok st →
-      (Post n E 10 1).run (pairOut o ((dateCodes sig).encState st)) =
+      (Post n E 128 1).run (pairOut o ((bpCodes sig).encState st)) =
         PMF.pure (postW (Generic.obs (o, st.2))) :=
-  fun o st ho hst => run_post (dateCodes sig) n E o st ho (postOK_of_invS _ hst (hE st hst))
+  fun o st ho hst => run_post (bpCodes sig) n E o st ho (postOK_of_invS _ hst (hE st hst))
 
 /-- **The time of the post-processing against the cost of `A`.** -/
 theorem time_post_le_cost {ops : ℕ} (A : Machine ops) (E nA nM : ℕ) :
@@ -810,11 +810,11 @@ variable {m : ℕ}
 (`Post 0 …` has the description length of `Post A.time …`). -/
 theorem cost_reduction_post (P : Machine) (A : Machine 3) (H : Fin 3 → Routine (m + 3))
     (E Q L : ℕ) (D : Machine) :
-    (reduction P (Post A.time E 10 1) A H E Q L D).cost ≤
-      redFactor P (Post 0 E 10 1) H E Q L (postA E 10 1 + postB E 10 1) * A.cost * D.cost := by
-  have h := cost_reduction_le P (Post A.time E 10 1) A H E Q L _ D (time_post_le_cost A E 10 1)
-  have e : redFactor P (Post A.time E 10 1) H E Q L (postA E 10 1 + postB E 10 1) =
-      redFactor P (Post 0 E 10 1) H E Q L (postA E 10 1 + postB E 10 1) := by
+    (reduction P (Post A.time E nA 1) A H E Q L D).cost ≤
+      redFactor P (Post 0 E nA 1) H E Q L (postA E nA 1 + postB E nA 1) * A.cost * D.cost := by
+  have h := cost_reduction_le P (Post A.time E nA 1) A H E Q L _ D (time_post_le_cost A E nA 1)
+  have e : redFactor P (Post A.time E nA 1) H E Q L (postA E nA 1 + postB E nA 1) =
+      redFactor P (Post 0 E nA 1) H E Q L (postA E nA 1 + postB E nA 1) := by
     unfold redFactor; rw [descLen_post A.time 0 E E]
   rw [← e]; exact h
 

@@ -3,8 +3,8 @@ import PE.Impl.DualUse.Prog.Setup3
 /-!
 # The setup of the reduction of the ideal side as a tape program
 
-`setupIP Pχ : XProg 7` (layout of `Setup5`): on the instance word `w` and `encDate x`, appends the
-word of `σ ← setupI x` (`secIEnc`): `encDate x`, fair bits for `B₀`, `w`, `p`, the coins of `Enc`
+`setupIP Pχ : XProg 7` (layout of `Setup5`): on the instance word `w` and `encAttr x`, appends the
+word of `σ ← setupI x` (`secIEnc`): `encAttr x`, fair bits for `B₀`, `w`, `p`, the coins of `Enc`
 (`coinsP'`: as `restP` with the flooding coefficients of the encodings before `e'`), and the
 simulator's uniform ciphertext (fair bits, field by field). χ coefficients as in `Setup3`.
 
@@ -15,8 +15,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.XProg Matrix
   AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (Pχ : XProg 7)
 
@@ -58,17 +58,17 @@ def setupIP : XProg 7 := seq (appendTapeP 0 1 3 4) (tailIP hk c Pχ)
 /-- **The law of the setup of the ideal side**: on the instance word of `ab` and the date `x`,
 the word of the packed secret `(ab, σ)`, `σ ← setupI x`. -/
 theorem law_setupIP (hχ : AppendLaw Pχ 0 P3 (μχ c)) [NeZero c.d] (hN : 0 < N) (hK : 0 < K)
-    (ab : Inst3T N K k) (x : Date) :
+    (ab : Inst3T N K k) (x : PUniv.Attr) :
     (setupIP hk c Pχ).law (ioS (R := 5) ((inst3Enc (N := N) (K := K) (k := k)).enc ab)
-      (encDate x) []) =
+      (encAttr x) []) =
       (setupI hk c x).map fun σ =>
         ioS (R := 5) (((inst3Enc (N := N) (K := K) (k := k)).prod (secIEnc hk c)).enc (ab, σ))
           [] [] := by
   set w := (inst3Enc (N := N) (K := K) (k := k)).enc ab
   rw [setupIP, law_seq, law_appendTapeP (by decide) (by decide) (by decide) (by decide)
     (by decide) (by decide) _ rfl rfl, PMF.pure_bind]
-  have hP : P5 (Function.update (Function.update (ioS (R := 5) w (encDate x) []) 0
-      (ioS (R := 5) w (encDate x) [] 0 ++ ioS (R := 5) w (encDate x) [] 1)) 1 []) := by
+  have hP : P5 (Function.update (Function.update (ioS (R := 5) w (encAttr x) []) 0
+      (ioS (R := 5) w (encAttr x) [] 0 ++ ioS (R := 5) w (encAttr x) [] 1)) 1 []) := by
     refine ⟨⟨?_, ?_, ?_⟩, ?_, ?_⟩ <;> rfl
   have ht : AppendLaw (tailIP hk c Pχ) 0 P5 _ :=
     AppendLaw.seq (law_coinsF5 _) (AppendLaw.seq (law_coinsF5 _) (AppendLaw.seq (law_coinsF5 _)

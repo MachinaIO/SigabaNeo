@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.Prog.EncCostConfT
 import PE.Impl.DualUse.Prog.SetupEncDescA
+import PE.Impl.DualUse.PUCodes
 
 /-!
 # The clock of `Enc` at the parameters of branching programs (Stage II)
@@ -237,4 +238,24 @@ theorem time_encMP_A : (encMP hkp confP chiSamplerP).time ≤ 2 ^ 452 :=
 
 end ConfA
 
+
+open AdvancedEncryption.DualUse.Params in
+theorem pw_len_le : DualUse.pw.length ≤ 2 ^ 20 := by
+  have h := length_paramsWord_pu
+  rw [DualUse.pw, h]; norm_num
+
+open AdvancedEncryption.DualUse.Params in
+/-- **The clock of `Enc` at `confP`** (the sizes of `confA`): at most `2^452` steps. -/
+theorem time_encMP_confT : (encMP hkp confP chiSamplerP).time ≤ 2 ^ 452 :=
+  time_encMP_A Np_def Kp_def dp_def rfl rfl pw_len_le
+
+open AdvancedEncryption.DualUse.Params in
+/-- **The description length of `Setup` at `confP`**: at most `2^300`. -/
+theorem descLen_setupMP_conf : (setupMP hkp confP chiSamplerP).descLen ≤ 2 ^ 300 :=
+  descLen_setupMP_A Np_def Kp_def dp_def rfl
+
+open AdvancedEncryption.DualUse.Params in
+/-- **The description length of `Enc` at `confP`**: at most `2^300`. -/
+theorem descLen_encMP_conf : (encMP hkp confP chiSamplerP).descLen ≤ 2 ^ 300 :=
+  descLen_encMP_A Np_def Kp_def dp_def rfl rfl pw_len_le
 end AdvancedEncryption.DualUse.Prog

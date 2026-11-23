@@ -16,8 +16,8 @@ blocks of *coefficient words*:
 
 Field laws: `wLaw_eq` (binary columns), `rmLaw_eq` (`lawRmBin`, column-major `rmTEnc`),
 `eLaw_eq` (`lawEc`). **`setup5_enc`**: the word of the secret of hybrid 5,
-`(setup5 x).map sec5Enc.enc`, is the concatenation of `encDate x`, `N · K` fair bits (`u₀`),
-`|JC| · d` fair bits (`w`), `10 · 2k · d` independent `μB` (the `Rᵢ`), and `|JC| · N` independent
+`(setup5 x).map sec5Enc.enc`, is the concatenation of `encAttr x`, `N · K` fair bits (`u₀`),
+`|JC| · d` fair bits (`w`), `nA · 2k · d` independent `μB` (the `Rᵢ`), and `|JC| · N` independent
 `μF` (the errors).
 -/
 
@@ -25,8 +25,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ}
 
@@ -157,9 +157,9 @@ theorem rmTEnc_rMat (r : (Sdw (N := N) hk).Attr × Col k → (Fin c.d → Bool))
       ((Enum.list (α := (Sdw (N := N) hk).Attr × Col k)).map r).flatMap
         (fun f => ((List.finRange c.d).map f).flatMap
           (fun b => (ringEnc N K).enc (bitVal (R := Rg N K) b))) := by
-  refine Eq.trans ?_ (flatMap_map_product (List.finRange 10) (Enum.list (α := Col k)) r _).symm
+  refine Eq.trans ?_ (flatMap_map_product (List.finRange nA) (Enum.list (α := Col k)) r _).symm
   refine Eq.trans (List.flatMap_map (f := rMat (R := Rg N K) r)
-    (g := (matTEnc (N := N) (K := K) (Fin c.d) (Col k)).enc) (l := List.finRange 10)) ?_
+    (g := (matTEnc (N := N) (K := K) (Fin c.d) (Col k)).enc) (l := List.finRange nA)) ?_
   refine List.flatMap_congr fun i _ => ?_
   refine (matTEnc_enc _).trans ?_
   simp only [List.flatMap_map]
@@ -225,11 +225,11 @@ theorem bind_pure_eq_map {α β : Type} (μ : PMF α) (f : α → β) :
 
 /-! ### The secret of hybrid 5 -/
 
-/-- **The word of the secret of hybrid 5**: `encDate x`, then `N · K` fair bits (`u₀`), the fair
+/-- **The word of the secret of hybrid 5**: `encAttr x`, then `N · K` fair bits (`u₀`), the fair
 bits of `w`, the binary ring elements of the `Rᵢ` (column-major), the flooding coefficients. -/
-theorem setup5_enc [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (x : Date) :
+theorem setup5_enc [NeZero c.d] (hN : 0 < N) (hK : 0 < K) (x : PUniv.Attr) :
     (setup5 hk c x).map (sec5Enc hk c).enc =
-      cat (PMF.pure (encDate x)) (cat (BitString.uniformList (N * K))
+      cat (PMF.pure (encAttr x)) (cat (BitString.uniformList (N * K))
         (cat (BitString.uniformList ((Enum.list (α := JC (Sdw (N := N) hk))).length *
           ((Enum.list (α := Fin c.d)).length * 1)))
         (cat (catPow (μB N K) ((Enum.list (α := (Sdw (N := N) hk).Attr × Col k)).length *
@@ -350,11 +350,11 @@ theorem unif_row (ι : Type) [Fintype ι] [DecidableEq ι] [Enum ι] :
 
 /-! ### The secret of hybrid 3 -/
 
-/-- **The word of the secret of hybrid 3**: `encDate x`, fair bits for `B₀`, `w`, `p`, the word
+/-- **The word of the secret of hybrid 3**: `encAttr x`, fair bits for `B₀`, `w`, `p`, the word
 of the coins `rest` (`restLaw_enc`), the flooding coefficients. -/
-theorem setup3_enc [NeZero c.d] (x : Date) :
+theorem setup3_enc [NeZero c.d] (x : PUniv.Attr) :
     (setup3 hk c x).map (sec3Enc hk c).enc =
-      cat (PMF.pure (encDate x)) (cat (BitString.uniformList ((Enum.list (α := Fin 1)).length *
+      cat (PMF.pure (encAttr x)) (cat (BitString.uniformList ((Enum.list (α := Fin 1)).length *
         ((Enum.list (α := Fin c.d)).length * (N * K))))
         (cat (BitString.uniformList ((Enum.list (α := JC (Sdw (N := N) hk))).length *
           ((Enum.list (α := Fin c.d)).length * 1)))
@@ -454,11 +454,11 @@ theorem ctLaw_enc : (ctUc hk c).map (ctEnc hk c).enc =
     PMF.map_bind, PMF.pure_map, bind_pure_eq_map, PMF.map_comp, Function.comp_def]
   rfl
 
-/-- **The word of the secret of the ideal side**: `encDate x`, fair bits for `B₀`, `w`, `p`, the
+/-- **The word of the secret of the ideal side**: `encAttr x`, fair bits for `B₀`, `w`, `p`, the
 coins of `Enc` (`coinsLaw_enc`), the uniform ciphertext (`ctLaw_enc`). -/
-theorem setupI_enc [NeZero c.d] (x : Date) :
+theorem setupI_enc [NeZero c.d] (x : PUniv.Attr) :
     (setupI hk c x).map (secIEnc hk c).enc =
-      cat (PMF.pure (encDate x)) (cat (BitString.uniformList ((Enum.list (α := Fin 1)).length *
+      cat (PMF.pure (encAttr x)) (cat (BitString.uniformList ((Enum.list (α := Fin 1)).length *
         ((Enum.list (α := Fin c.d)).length * (N * K))))
         (cat (BitString.uniformList ((Enum.list (α := JC (Sdw (N := N) hk))).length *
           ((Enum.list (α := Fin c.d)).length * 1)))

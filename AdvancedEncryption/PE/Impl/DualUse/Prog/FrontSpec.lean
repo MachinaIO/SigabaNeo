@@ -19,9 +19,8 @@ every other tape blank (`frontG`). **`FrontSpecG fr n V bw FT FL FS`** says this
 and at most `FL T` bits on tape `0` (the other tapes blank), and at most `FS` states.
 
 `FrontSpec fr n W` is the instance at the neutral names `ValidC`, `blockWord W` of `ImplBase`. The
-date-window instance is `frontP` (`R = 6`, `KeyFront.frontSpec_frontP`); the branching-program
-instance is `frontBP` (`R = 70`, `FrontBP`: the length tests and the compiler `bpCompC`, which needs
-`64` tapes of its own).
+branching-program instance is `frontBP` (`R = 70`, `FrontBP`: the length tests, the bit `bit0 C`
+and the compiler `bpCompC`, which needs `64` tapes of its own).
 
 The shells frame the front end on the tapes `1, 83, 84, …, R + 83` by an embedding `e` with
 `FrEmb e` (`eFr` for `R = 6`, `eF` for `R = 70`): tape `0` holds the data word of the shell (`msk`,

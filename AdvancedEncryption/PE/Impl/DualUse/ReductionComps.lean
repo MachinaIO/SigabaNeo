@@ -1,7 +1,7 @@
 import PE.Impl.DualUse.ReductionPerQuery
 import PE.Impl.DualUse.ReductionOracle
 import PE.Impl.Game.HandlersPCost
-import PE.Impl.Game.HandlersDate
+import PE.Impl.Game.HandlersBP
 import PE.Impl.DualUse.PUCodes
 
 /-!
@@ -26,8 +26,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability SigabaNeo.Tape
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow AdvancedEncryption.PE.Generic
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.PE.Generic
 open SigabaNeo.Inline
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
@@ -83,13 +83,13 @@ theorem acceptProb_compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     (instLaw : PMF Inst) (hinst : μ.map (inst ∘ dw) = instLaw)
     (F : PUniv.Attr → Inst → PMF (PK hk c × CT hk c))
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
-    (hL : dateBound ≤ c.L) (hcov : SimCovered hk c)
+    (hL : bpLen ≤ c.L) (hcov : SimCovered hk c)
     (hF : ∀ x i, F x i = (setupI i x).map (viewI i))
     (hmpk : ∀ i σ, (sdI i σ).mpk = (viewI i σ).1)
     (hx : ∀ i x, ∀ σ ∈ (setupI i x).support, (sdI i σ).x = x)
     (hvalid : ∀ i x, ∀ σ ∈ (setupI i x).support, SimValid (sdI i σ)) :
     (compReduction cs cb P L A D).acceptProb μ = accOn A D instLaw F := by
-  have hH := handlesP cs c.L [] (longKeys_spPack st viewI sdI Ok) cb A L hpubL
+  have hH := handlesP cs c.L [] (longKeys_spPack hL st viewI sdI Ok) cb A L hpubL
     hkeyL (by simp) hchalL
   have hE : ∀ s, InvS IW W Ok s → ((puCodes sig).encState s).length ≤
       stateBound (puCodes sig) W := fun s h => length_encState_le h
@@ -142,7 +142,7 @@ theorem reduces_of_comps {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     (hir : μr.map (inst ∘ dw) = Ir) (hiu : μu.map (inst ∘ dw) = Iu)
     (F : PUniv.Attr → Inst → PMF (PK hk c × CT hk c))
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
-    (hL : dateBound ≤ c.L) (hcov : SimCovered hk c)
+    (hL : bpLen ≤ c.L) (hcov : SimCovered hk c)
     (hF : ∀ x i, F x i = (setupI i x).map (viewI i))
     (hmpk : ∀ i σ, (sdI i σ).mpk = (viewI i σ).1)
     (hx : ∀ i x, ∀ σ ∈ (setupI i x).support, (sdI i σ).x = x)

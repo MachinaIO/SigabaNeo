@@ -20,8 +20,8 @@ namespace AdvancedEncryption.DualUse.ProgKeyR
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo AdvancedEncryption.DualUse.Algo AdvancedEncryption.DualUse.ProgKey Matrix
-  Cslib AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-  AdvancedEncryption.PE.Gates.DateWindow
+  Cslib AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+  AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 variable {N K k : ℕ}
@@ -119,7 +119,7 @@ open AdvancedEncryption.DualUse.Prog in
 tape by the word of the key. -/
 theorem law_keyTryRCoinsP_keyM (hk : 2 ^ K < 2 ^ k) {c : DualUse.Conf N K k} (cf : KeyCfg)
     (hcf : cf.Valid hk c) (msk : DualUse.SKey hk c) (C : List Bool)
-    (hC : ∃ w : Window, winWord w = C) (s : Store 101)
+    (hC : ValidC C) (s : Store 101)
     (hs : ∀ j : Fin 101, 26 ≤ j.val → j.val < 90 → s j = [])
     (hw : ∀ j : Fin 101, 94 ≤ j.val → j.val < 100 → s j = []) (h3 : s 3 = [])
     (h1 : s 1 = (DualUse.pkEnc hk c).enc msk.1)
@@ -154,7 +154,7 @@ theorem law_keyTryRCoinsP_keyM (hk : 2 ^ K < 2 ^ k) {c : DualUse.Conf N K k} (cf
   congr 1
   rw [keyTryRW_eq_core _ _ _ _ _ _ (by rw [h91]; exact (ringEnc N K).length _),
     ← keyTryMskW_eq hk hcf.h0 c cf.B hcf.hB cf.m hcf.hm hcf.hsl rfl hcf.hSmall hcf.hdec msk C true
-      (by simp [hC]) _ h2 l]
+      ⟨fun _ => hC, fun _ => rfl⟩ _ h2 l]
   obtain ⟨e1, e2, e3⟩ := AdvancedEncryption.DualUse.Algo.split3 ((DualUse.pkEnc hk c).enc msk.1) (rowW N K k msk.2.1)
     ((ringEnc N K).enc msk.2.2) (Algo.length_rowW _) ((ringEnc N K).length _)
   unfold keyTryMskW

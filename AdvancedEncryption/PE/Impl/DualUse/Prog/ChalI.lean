@@ -25,8 +25,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.XProg Matrix
   AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 
 /-! ### Flipping one bit of a word -/
 
@@ -311,7 +311,7 @@ theorem wf_chalBodyP (D P : ℕ) : (chalBodyP D P).WF := by
 
 /-- The prefix of the packed secret of the ideal side before the challenge. -/
 def preI : ℕ :=
-  fencLen (inst3Enc (N := N) (K := K) (k := k)) + (10 + (fencLen (matEnc (N := N) (K := K) (Fin 1)
+  fencLen (inst3Enc (N := N) (K := K) (k := k)) + (nA + (fencLen (matEnc (N := N) (K := K) (Fin 1)
     (Fin c.d)) + (fencLen (wEnc hk c) + (N * K + fencLen (coinsEnc hk c)))))
 
 /-- **The challenge component of the ideal side.** -/
@@ -323,7 +323,7 @@ theorem law_chalIP (hN : 0 < N) (hK : 1 ≤ K) (ab : Inst3T N K k) (σ : SecI hk
       (((inst3Enc (N := N) (K := K) (k := k)).prod (secIEnc hk c)).enc (ab, σ)) (encMsg μ) []) =
       PMF.pure (ioS (R := 5) ((ctEnc hk c).enc (shiftCT hk c μ (viewI hk c ab σ).2)) [] []) := by
   have hw : ((inst3Enc (N := N) (K := K) (k := k)).prod (secIEnc hk c)).enc (ab, σ) =
-      ((inst3Enc (N := N) (K := K) (k := k)).enc ab ++ (dateEnc.enc σ.1 ++
+      ((inst3Enc (N := N) (K := K) (k := k)).enc ab ++ (attrEnc.enc σ.1 ++
         ((matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++ ((wEnc hk c).enc σ.2.2.1 ++
           ((ringEnc N K).enc σ.2.2.2.1 ++ (coinsEnc hk c).enc σ.2.2.2.2.1))))) ++
         (ctEnc hk c).enc σ.2.2.2.2.2 := by
@@ -334,7 +334,7 @@ theorem law_chalIP (hN : 0 < N) (hK : 1 ≤ K) (ab : Inst3T N K k) (σ : SecI hk
     have : K - 1 < N * K := by
       have := Nat.mul_le_mul_right K (show 1 ≤ N from hN); omega
     omega
-  rw [chalIP, hw, law_chalBodyP _ _ _ _ (by simp [preI, length_enc, (dateEnc).length, (ringEnc N K).length]) hP,
+  rw [chalIP, hw, law_chalBodyP _ _ _ _ (by simp [preI, length_enc, (attrEnc).length, (ringEnc N K).length]) hP,
     ctEnc_shift hk c hN hK]
   rfl
 

@@ -14,8 +14,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape Matrix
   AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 
 /-! ### Skipping fields -/
 
@@ -48,7 +48,7 @@ theorem inst3Enc_enc (ab : Inst3T N K k) : (inst3Enc (N := N) (K := K) (k := k))
       (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2 := rfl
 
 theorem sec3Enc_enc (σ : Sec3 hk c) : (sec3Enc hk c).enc σ =
-    dateEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+    attrEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
       ((wEnc hk c).enc σ.2.2.1 ++ ((ringEnc N K).enc σ.2.2.2.1 ++
         ((restEnc c).enc σ.2.2.2.2.1 ++ (eEnc (N := N) hk).enc σ.2.2.2.2.2)))) := rfl
 
@@ -67,23 +67,23 @@ abbrev fD (N K : ℕ) (d : ℕ) : ℕ := fencLen (DualUse.matEnc (N := N) (K := 
 abbrev fR (N K : ℕ) : ℕ := fencLen (ringEnc N K)
 
 def o3x : ℕ := fC N K k + (fC N K k + 0)
-def o3B : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + 0))
-def o3w : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + 0)))
-def o3p : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) + 0))))
-def o3s : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+def o3B : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + 0))
+def o3w : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + (fD N K c.d + 0)))
+def o3p : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + (fD N K c.d + (fencLen (wEnc hk c) + 0))))
+def o3s : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + (fD N K c.d + (fencLen (wEnc hk c) +
   (fR N K + 0)))))
-def o3e0 : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+def o3e0 : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + (fD N K c.d + (fencLen (wEnc hk c) +
   (fR N K + (fR N K + 0))))))
-def o3R : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+def o3R : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + (fD N K c.d + (fencLen (wEnc hk c) +
   (fR N K + (fR N K + (fD N K c.d + (fencLen (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)) +
     0))))))))
 
-def o3e1 : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+def o3e1 : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + (fD N K c.d + (fencLen (wEnc hk c) +
   (fR N K + (fR N K + (fD N K c.d + 0)))))))
-def o3e' : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+def o3e' : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + (fD N K c.d + (fencLen (wEnc hk c) +
   (fR N K + (fR N K + (fD N K c.d + (fencLen (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)) +
     (fencLen (rmTEnc c) + 0)))))))))
-def o3e : ℕ := fC N K k + (fC N K k + (fencLen dateEnc + (fD N K c.d + (fencLen (wEnc hk c) +
+def o3e : ℕ := fC N K k + (fC N K k + (fencLen attrEnc + (fD N K c.d + (fencLen (wEnc hk c) +
   (fR N K + (fR N K + (fD N K c.d + (fencLen (DualUse.matEnc (N := N) (K := K) (Fin 1) (TrapCol k)) +
     (fencLen (rmTEnc c) + (fR N K + 0))))))))))
 
@@ -98,7 +98,7 @@ variable (ab : Inst3T N K k) (σ : Sec3 hk c)
 theorem W3_eq : W3 hk c ab σ =
     (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1 ++
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2 ++
-    (dateEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+    (attrEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
     ((wEnc hk c).enc σ.2.2.1 ++ ((ringEnc N K).enc σ.2.2.2.1 ++
     ((ringEnc N K).enc σ.2.2.2.2.1.1 ++
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.2.2.2.1.2.1 ++
@@ -107,7 +107,7 @@ theorem W3_eq : W3 hk c ab σ =
     (eEnc (N := N) hk).enc σ.2.2.2.2.2)))))))))) := by
   rw [show W3 hk c ab σ = ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1 ++
     (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2) ++
-    (dateEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+    (attrEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
     ((wEnc hk c).enc σ.2.2.1 ++ ((ringEnc N K).enc σ.2.2.2.1 ++
     (((ringEnc N K).enc σ.2.2.2.2.1.1 ++
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.2.2.2.1.2.1 ++
@@ -122,8 +122,8 @@ theorem f3_a : takeD (fC N K k) ((W3 hk c ab σ).drop 0) =
 theorem f3_b : takeD (fC N K k) ((W3 hk c ab σ).drop (fC N K k + 0)) =
     (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2 := by
   rw [W3_eq]; simp only [drop_enc, takeD_enc_app]
-theorem f3_x : takeD (fencLen dateEnc) ((W3 hk c ab σ).drop (o3x (N := N) (K := K) (k := k))) =
-    encDate σ.1 := by
+theorem f3_x : takeD (fencLen attrEnc) ((W3 hk c ab σ).drop (o3x (N := N) (K := K) (k := k))) =
+    encAttr σ.1 := by
   rw [W3_eq, o3x]; simp only [drop_enc, takeD_enc_app]; rfl
 theorem f3_B : takeD (fD N K c.d) ((W3 hk c ab σ).drop (o3B (N := N) (K := K) (k := k))) =
     (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 := by
@@ -167,7 +167,7 @@ variable (ab : Inst3T N K k) (σ : SecI hk c)
 theorem WI_eq : WI hk c ab σ =
     (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1 ++
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2 ++
-    (dateEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+    (attrEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
     ((wEnc hk c).enc σ.2.2.1 ++ ((ringEnc N K).enc σ.2.2.2.1 ++
     ((ringEnc N K).enc σ.2.2.2.2.1.s ++
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.2.2.2.1.e₀ ++
@@ -176,7 +176,7 @@ theorem WI_eq : WI hk c ab σ =
     ((ringEnc N K).enc σ.2.2.2.2.1.e' ++ (ctEnc hk c).enc σ.2.2.2.2.2))))))))))) := by
   rw [show WI hk c ab σ = ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.1 ++
     (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2) ++
-    (dateEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
+    (attrEnc.enc σ.1 ++ ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 ++
     ((wEnc hk c).enc σ.2.2.1 ++ ((ringEnc N K).enc σ.2.2.2.1 ++
     (((ringEnc N K).enc σ.2.2.2.2.1.s ++
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.2.2.2.1.e₀ ++
@@ -192,8 +192,8 @@ theorem fI_a : takeD (fC N K k) ((WI hk c ab σ).drop 0) =
 theorem fI_b : takeD (fC N K k) ((WI hk c ab σ).drop (fC N K k + 0)) =
     (DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc ab.2 := by
   rw [WI_eq]; simp only [drop_enc, takeD_enc_app]
-theorem fI_x : takeD (fencLen dateEnc) ((WI hk c ab σ).drop (o3x (N := N) (K := K) (k := k))) =
-    encDate σ.1 := by
+theorem fI_x : takeD (fencLen attrEnc) ((WI hk c ab σ).drop (o3x (N := N) (K := K) (k := k))) =
+    encAttr σ.1 := by
   rw [WI_eq, o3x]; simp only [drop_enc, takeD_enc_app]; rfl
 theorem fI_B : takeD (fD N K c.d) ((WI hk c ab σ).drop (o3B (N := N) (K := K) (k := k))) =
     (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc σ.2.1 := by
@@ -226,13 +226,13 @@ def o5vp : ℕ := fD N K c.d + (fC N K k + (fC N K k + (fR N K + (fD N K c.d + (
 def o5x : ℕ := fD N K c.d + (fC N K k + (fC N K k + (fR N K + (fD N K c.d + (fC N K k +
   (fC N K k + (fR N K + 0)))))))
 def o5u : ℕ := fD N K c.d + (fC N K k + (fC N K k + (fR N K + (fD N K c.d + (fC N K k +
-  (fC N K k + (fR N K + (fencLen dateEnc + 0))))))))
+  (fC N K k + (fR N K + (fencLen attrEnc + 0))))))))
 def o5w : ℕ := fD N K c.d + (fC N K k + (fC N K k + (fR N K + (fD N K c.d + (fC N K k +
-  (fC N K k + (fR N K + (fencLen dateEnc + (fR N K + 0)))))))))
+  (fC N K k + (fR N K + (fencLen attrEnc + (fR N K + 0)))))))))
 def o5R : ℕ := fD N K c.d + (fC N K k + (fC N K k + (fR N K + (fD N K c.d + (fC N K k +
-  (fC N K k + (fR N K + (fencLen dateEnc + (fR N K + (fencLen (wEnc hk c) + 0))))))))))
+  (fC N K k + (fR N K + (fencLen attrEnc + (fR N K + (fencLen (wEnc hk c) + 0))))))))))
 def o5e : ℕ := fD N K c.d + (fC N K k + (fC N K k + (fR N K + (fD N K c.d + (fC N K k +
-  (fC N K k + (fR N K + (fencLen dateEnc + (fR N K + (fencLen (wEnc hk c) +
+  (fC N K k + (fR N K + (fencLen attrEnc + (fR N K + (fencLen (wEnc hk c) +
     (fencLen (rmTEnc c) + 0)))))))))))
 
 /-- The packed secret of hybrid 5. -/
@@ -252,7 +252,7 @@ theorem W5_eq : W5 hk c i σ =
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc i.2.2.1 ++
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc i.2.2.2.1 ++
     ((ringEnc N K).enc i.2.2.2.2 ++
-    (dateEnc.enc σ.1 ++ ((ringEnc N K).enc σ.2.1 ++ ((wEnc hk c).enc σ.2.2.1 ++
+    (attrEnc.enc σ.1 ++ ((ringEnc N K).enc σ.2.1 ++ ((wEnc hk c).enc σ.2.2.1 ++
     ((rmTEnc c).enc σ.2.2.2.1 ++ (eEnc (N := N) hk).enc σ.2.2.2.2))))))))))) := by
   rw [show W5 hk c i σ =
     (((DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc i.1.1 ++
@@ -263,7 +263,7 @@ theorem W5_eq : W5 hk c i σ =
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc i.2.2.1 ++
     ((DualUse.matEnc (N := N) (K := K) (Fin 1) (RingBTVW.Col k)).enc i.2.2.2.1 ++
     (ringEnc N K).enc i.2.2.2.2)))) ++
-    (dateEnc.enc σ.1 ++ ((ringEnc N K).enc σ.2.1 ++ ((wEnc hk c).enc σ.2.2.1 ++
+    (attrEnc.enc σ.1 ++ ((ringEnc N K).enc σ.2.1 ++ ((wEnc hk c).enc σ.2.2.1 ++
     ((rmTEnc c).enc σ.2.2.2.1 ++ (eEnc (N := N) hk).enc σ.2.2.2.2)))) from rfl]
   simp only [List.append_assoc]
 
@@ -289,7 +289,7 @@ theorem f5_vz : takeD (fC N K k) ((W5 hk c i σ).drop (o5vz c)) =
   rw [W5_eq, o5vz]; simp only [drop_enc]; exact takeD_enc_app _ _ _
 theorem f5_vp : takeD (fR N K) ((W5 hk c i σ).drop (o5vp c)) = (ringEnc N K).enc i.2.2.2.2 := by
   rw [W5_eq, o5vp]; simp only [drop_enc]; exact takeD_enc_app _ _ _
-theorem f5_x : takeD (fencLen dateEnc) ((W5 hk c i σ).drop (o5x c)) = encDate σ.1 := by
+theorem f5_x : takeD (fencLen attrEnc) ((W5 hk c i σ).drop (o5x c)) = encAttr σ.1 := by
   rw [W5_eq, o5x]; simp only [drop_enc]; exact takeD_enc_app _ _ _
 theorem f5_u : takeD (fR N K) ((W5 hk c i σ).drop (o5u c)) = (ringEnc N K).enc σ.2.1 := by
   rw [W5_eq, o5u]; simp only [drop_enc]; exact takeD_enc_app _ _ _

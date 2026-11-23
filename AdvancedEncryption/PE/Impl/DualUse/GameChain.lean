@@ -12,7 +12,7 @@ challenger's secret the pair `(mpk, ct₀)` of the public key and the challenge 
 the challenge for `μ` the shift of `ct₀` by `μ · ⌊q/2⌋` (`shiftCT`), the hybrids of
 `DualUse.game_close` become changes of the law `V x` of the secret for the selected attribute `x`:
 
-* statistical steps (hybrids 1, 4, 6) move the experiment by at most `|Date| = 1024` times the
+* statistical steps (hybrids 1, 4, 6) move the experiment by at most `|Attr| = 2^128` times the
   step's distance (`Generic.closeTo_runWith_setup`);
 * the Ring-LWE steps (hybrids 3, 5) are averages over one instance (`Generic.runWith_bind_setup`):
   the whole experiment, as a function of the instance, is the distinguisher.
@@ -23,8 +23,8 @@ the challenge for `μ` the shift of `ct₀` by `μ · ⌊q/2⌋` (`shiftCT`), th
 namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped ENNReal
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
@@ -38,14 +38,12 @@ theorem encrypt_shift (mpk : PK hk c) (x : Fin nA → Bool) (μ : Bool)
     encrypt mpk x μ r = shiftCT hk c μ (encrypt mpk x false r) := by
   cases μ <;> simp [encrypt, shiftCT]
 
-instance : Fintype PUniv.Attr := inferInstanceAs (Fintype Date)
-instance : DecidableEq PUniv.Attr := inferInstanceAs (DecidableEq Date)
 
 variable (encMPK : PK hk c → List Bool) (encCT : CT hk c → List Bool)
-  (KGi : PK hk c → List Bool → PMF (List Bool)) (authB : List Bool → Date → Bool)
+  (KGi : PK hk c → List Bool → PMF (List Bool)) (authB : List Bool → PUniv.Attr → Bool)
 
 /-- The challenger with the secret `(mpk, ct₀)` drawn from `V x`. -/
-noncomputable def specV (V : Date → PMF (PK hk c × CT hk c)) :
+noncomputable def specV (V : PUniv.Attr → PMF (PK hk c × CT hk c)) :
     Generic.Spec PUniv (PK hk c × CT hk c) where
   setup := V
   pub σ := encMPK σ.1
@@ -54,7 +52,7 @@ noncomputable def specV (V : Date → PMF (PK hk c × CT hk c)) :
   auth := authB
 
 /-- The observable law of the experiment of the adversary `A` against `specV V`. -/
-noncomputable def gameV (A : Machine 3) (V : Date → PMF (PK hk c × CT hk c)) :=
+noncomputable def gameV (A : Machine 3) (V : PUniv.Attr → PMF (PK hk c × CT hk c)) :=
   (A.runWith (Generic.oracle (specV hk c encMPK encCT KGi authB V)) (paramsWord PUniv params)
     {}).map Generic.obs
 
@@ -82,48 +80,48 @@ noncomputable def lawB₁r : PMF (Matrix (Fin 1) (TrapCol k) (Rg N K)) :=
   (inst3Real (k := k) (χR c)).map (toB₁ (Sdw (N := N) hk))
 
 /-- `H0`: the real `(mpk, ct₀)`. -/
-noncomputable def V0 (x : Date) : PMF (PK hk c × CT hk c) :=
-  realGame (Wd := Fin c.d) (lawEc hk c) (χR c) (bitsOf x) false
+noncomputable def V0 (x : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
+  realGame (Wd := Fin c.d) (lawEc hk c) (χR c) (attrBits x) false
 
 /-- `H1`: `B_j = B₀ W_j + ψ_j G̲`. -/
-noncomputable def V1 (x : Date) : PMF (PK hk c × CT hk c) :=
-  viewW (lawB₁r hk c) (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (bitsOf x) false
-    (realCj (bitsOf x))
+noncomputable def V1 (x : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
+  viewW (lawB₁r hk c) (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (attrBits x) false
+    (realCj (attrBits x))
 
 /-- `H2`: flooded encodings. -/
-noncomputable def V2 (x : Date) : PMF (PK hk c × CT hk c) :=
-  viewW (lawB₁r hk c) (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (bitsOf x) false
+noncomputable def V2 (x : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
+  viewW (lawB₁r hk c) (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (attrBits x) false
     floodCj
 
 /-- The view of hybrid 3 for the Ring-LWE pair `(a, b)`. -/
-noncomputable def F3 (x : Date)
+noncomputable def F3 (x : PUniv.Attr)
     (ab : Matrix (Fin 1) (Col k) (Rg N K) × Matrix (Fin 1) (Col k) (Rg N K)) :
     PMF (PK hk c × CT hk c) :=
   viewW (PMF.pure (toB₁ (Sdw (N := N) hk) ab)) (PMF.uniformOfFintype _) (lawRestC hk c)
-    (lawEc hk c) (bitsOf x) false floodCj
+    (lawEc hk c) (attrBits x) false floodCj
 
 /-- `H3`: `B₁` uniform. -/
-noncomputable def V3 (x : Date) : PMF (PK hk c × CT hk c) :=
-  viewW lawB₁u (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (bitsOf x) false floodCj
+noncomputable def V3 (x : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
+  viewW lawB₁u (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (attrBits x) false floodCj
 
 /-- The view of hybrid 5 for the normal-form instance. -/
-noncomputable def F5 (x : Date) (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) :
+noncomputable def F5 (x : PUniv.Attr) (i : Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) :
     PMF (PK hk c × CT hk c) :=
-  reduction5 (S := Sdw (N := N) hk) lawRmBin (lawEc hk c) (bitsOf x) false i
+  reduction5 (S := Sdw (N := N) hk) lawRmBin (lawEc hk c) (attrBits x) false i
 
 /-- `H5`: the ciphertext's `(c₀, c₁, κ)` uniform. -/
-noncomputable def V5 (x : Date) : PMF (PK hk c × CT hk c) :=
-  h5View (Wd := Fin c.d) lawB₁u (lawEc hk c) (bitsOf x) false
+noncomputable def V5 (x : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
+  h5View (Wd := Fin c.d) lawB₁u (lawEc hk c) (attrBits x) false
 
 /-- `H6`: the final view. -/
-noncomputable def V6 (x : Date) : PMF (PK hk c × CT hk c) :=
-  finalView (Wd := Fin c.d) lawB₁u (lawEc hk c) (bitsOf x) false
+noncomputable def V6 (x : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
+  finalView (Wd := Fin c.d) lawB₁u (lawEc hk c) (attrBits x) false
 
-theorem V0_close (x : Date) : CloseTo (V0 hk c x) (V1 hk c x) (delta1 (Sdw (N := N) hk) (Fin c.d)) := by
+theorem V0_close (x : PUniv.Attr) : CloseTo (V0 hk c x) (V1 hk c x) (delta1 (Sdw (N := N) hk) (Fin c.d)) := by
   have h := (hybrid1 (Wd := Fin c.d) (lawB₁r hk c) (PMF.uniformOfFintype _)
-    (lawCoins (lawRestC hk c) (lawEc hk c)) (bitsOf x) false).symm
+    (lawCoins (lawRestC hk c) (lawEc hk c)) (attrBits x) false).symm
   have h2 := viewW_real_eq (S := Sdw (N := N) hk) (Wd := Fin c.d) (lawB₁r hk c)
-    (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (bitsOf x) false
+    (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (attrBits x) false
   unfold V0 V1 realGame
   convert h using 2
   all_goals first | rfl | exact h2
@@ -131,38 +129,38 @@ theorem V0_close (x : Date) : CloseTo (V0 hk c x) (V1 hk c x) (delta1 (Sdw (N :=
 theorem V1_close {ε : ℝ≥0∞}
     (hflood : ∀ rest ∈ (lawRestC hk c).support, ∀ w : JC (Sdw (N := N) hk) → (Fin c.d → Bool),
       CloseTo ((lawEc hk c).map fun e j => e j + rest.2.1 * wMat w j) (lawEc hk c) ε)
-    (x : Date) : CloseTo (V1 hk c x) (V2 hk c x) ε :=
-  (hybrid4 (lawB₁r hk c) (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (bitsOf x) false
+    (x : PUniv.Attr) : CloseTo (V1 hk c x) (V2 hk c x) ε :=
+  (hybrid4 (lawB₁r hk c) (PMF.uniformOfFintype _) (lawRestC hk c) (lawEc hk c) (attrBits x) false
     hflood).symm
 
-theorem V2_eq (x : Date) : V2 hk c x = (inst3Real (k := k) (χR c)).bind (F3 hk c x) := by
+theorem V2_eq (x : PUniv.Attr) : V2 hk c x = (inst3Real (k := k) (χR c)).bind (F3 hk c x) := by
   unfold V2 lawB₁r
   refine (viewW_bind_B₁ (S := Sdw (N := N) hk) (Wd := Fin c.d) (lawRestC hk c) (lawEc hk c)
-    _ _ (bitsOf x) false floodCj).trans ?_
+    _ _ (attrBits x) false floodCj).trans ?_
   rw [PMF.bind_map]
   rfl
 
-theorem V3_eq (x : Date) : V3 hk c x = inst3Unif.bind (F3 hk c x) := by
+theorem V3_eq (x : PUniv.Attr) : V3 hk c x = inst3Unif.bind (F3 hk c x) := by
   unfold V3
   refine (viewW_bind_B₁ (S := Sdw (N := N) hk) (Wd := Fin c.d) (lawRestC hk c) (lawEc hk c)
-    lawB₁u _ (bitsOf x) false floodCj).trans ?_
+    lawB₁u _ (attrBits x) false floodCj).trans ?_
   rw [← inst3Unif_map (S := Sdw (N := N) hk), PMF.bind_map]
   rfl
 
-theorem V3_eq' (x : Date) : V3 hk c x = (nfReal (χR c)).bind (F5 hk c x) :=
+theorem V3_eq' (x : PUniv.Attr) : V3 hk c x = (nfReal (χR c)).bind (F5 hk c x) :=
   real5_eq _ _ _ _ _
 
-theorem V5_eq (x : Date) : V5 hk c x = nfUnif.bind (F5 hk c x) :=
+theorem V5_eq (x : PUniv.Attr) : V5 hk c x = nfUnif.bind (F5 hk c x) :=
   (unif5_eq _ _ _).symm
 
-theorem V5_close (x : Date) : CloseTo (V5 hk c x) (V6 hk c x) (delta6 (Sdw (N := N) hk) (Fin c.d)) :=
+theorem V5_close (x : PUniv.Attr) : CloseTo (V5 hk c x) (V6 hk c x) (delta6 (Sdw (N := N) hk) (Fin c.d)) :=
   hybrid6 _ _ _ _
 
 /-- A statistical step of the experiment. -/
-theorem gameV_close (A : Machine 3) {V V' : Date → PMF (PK hk c × CT hk c)} {ε : ℝ≥0∞}
+theorem gameV_close (A : Machine 3) {V V' : PUniv.Attr → PMF (PK hk c × CT hk c)} {ε : ℝ≥0∞}
     (h : ∀ x, CloseTo (V x) (V' x) ε) :
     CloseTo (gameV hk c encMPK encCT KGi authB A V) (gameV hk c encMPK encCT KGi authB A V')
-      (Fintype.card Date * ε) := by
+      (Fintype.card PUniv.Attr * ε) := by
   unfold gameV Machine.runWith
   have := Generic.closeTo_runWith_setup (specV hk c encMPK encCT KGi authB V)
     (A.machine.runOracle A.time (paramsWord PUniv params)) V' (fun _ => ε) h
@@ -171,14 +169,14 @@ theorem gameV_close (A : Machine 3) {V V' : Date → PMF (PK hk c × CT hk c)} {
 
 /-- A Ring-LWE step of the experiment: an average over one instance. -/
 theorem gameV_bind (A : Machine 3) {Inst : Type} (inst : PMF Inst)
-    (F : Date → Inst → PMF (PK hk c × CT hk c)) :
+    (F : PUniv.Attr → Inst → PMF (PK hk c × CT hk c)) :
     gameV hk c encMPK encCT KGi authB A (fun x => inst.bind (F x)) =
       inst.bind fun i => gameV hk c encMPK encCT KGi authB A fun x => F x i := by
   unfold gameV Machine.runWith
   exact Generic.runWith_bind_setup (specV hk c encMPK encCT KGi authB fun x => inst.bind (F x))
     inst F _
 
-/-- **The real experiment is close to the final one**, up to `1024` times the statistical terms
+/-- **The real experiment is close to the final one**, up to `|Attr| = 2^128` times the statistical terms
 and the advantages `δ₃`, `δ₅` of the two experiments-as-distinguishers on Ring-LWE instances. -/
 theorem chain_real (A : Machine 3) {β : Type} (Dc : _ → PMF β) {ε δ₃ δ₅ : ℝ≥0∞}
     (hflood : ∀ rest ∈ (lawRestC hk c).support, ∀ w : JC (Sdw (N := N) hk) → (Fin c.d → Bool),
@@ -191,8 +189,8 @@ theorem chain_real (A : Machine 3) {β : Type} (Dc : _ → PMF β) {ε δ₃ δ�
       (nfUnif.bind fun i => (gameV hk c encMPK encCT KGi authB A fun x => F5 hk c x i).bind Dc) δ₅) :
     CloseTo ((gameV hk c encMPK encCT KGi authB A (V0 hk c)).bind Dc)
       ((gameV hk c encMPK encCT KGi authB A (V6 hk c)).bind Dc)
-      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ + δ₅ +
-        Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) := by
+      (Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card PUniv.Attr * ε + δ₃ + δ₅ +
+        Fintype.card PUniv.Attr * delta6 (Sdw (N := N) hk) (Fin c.d)) := by
   have g01 := (gameV_close hk c encMPK encCT KGi authB A (V0_close hk c)).bind_left Dc
   have g12 := (gameV_close hk c encMPK encCT KGi authB A (V1_close hk c hflood)).bind_left Dc
   have g56 := (gameV_close hk c encMPK encCT KGi authB A (V5_close hk c)).bind_left Dc
@@ -229,43 +227,43 @@ noncomputable def lawCoinsC : PMF (EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol
   lawCoins (lawRestC hk c) (lawEc hk c)
 
 /-- `I0`: the ideal view, with the real public key and the simulator's uniform ciphertext. -/
-noncomputable def VI0 (_ : Date) : PMF (PK hk c × CT hk c) :=
+noncomputable def VI0 (_ : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
   idealView (S := Sdw (N := N) hk) (Wd := Fin c.d) (lawB₁r hk c)
 
 /-- `I1`: `B_j = B₀ W_j + ψ_j G̲` for an internal encryption of `x`. -/
-noncomputable def VI1 (x : Date) : PMF (PK hk c × CT hk c) :=
-  hybI1 (lawB₁r hk c) (PMF.uniformOfFintype _) (lawCoinsC hk c) (bitsOf x)
+noncomputable def VI1 (x : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
+  hybI1 (lawB₁r hk c) (PMF.uniformOfFintype _) (lawCoinsC hk c) (attrBits x)
 
 /-- The view of the ideal side's Ring-LWE step for the pair `(a, b)`. -/
-noncomputable def FI (x : Date)
+noncomputable def FI (x : PUniv.Attr)
     (ab : Matrix (Fin 1) (Col k) (Rg N K) × Matrix (Fin 1) (Col k) (Rg N K)) :
     PMF (PK hk c × CT hk c) :=
-  hybI1 (PMF.pure (toB₁ (Sdw (N := N) hk) ab)) (PMF.uniformOfFintype _) (lawCoinsC hk c) (bitsOf x)
+  hybI1 (PMF.pure (toB₁ (Sdw (N := N) hk) ab)) (PMF.uniformOfFintype _) (lawCoinsC hk c) (attrBits x)
 
 /-- `I2`: `B₁` uniform. -/
-noncomputable def VI2 (x : Date) : PMF (PK hk c × CT hk c) :=
-  hybI1 lawB₁u (PMF.uniformOfFintype _) (lawCoinsC hk c) (bitsOf x)
+noncomputable def VI2 (x : PUniv.Attr) : PMF (PK hk c × CT hk c) :=
+  hybI1 lawB₁u (PMF.uniformOfFintype _) (lawCoinsC hk c) (attrBits x)
 
-theorem VI1_close (x : Date) :
+theorem VI1_close (x : PUniv.Attr) :
     CloseTo (VI0 hk c x) (VI1 hk c x) (delta1 (Sdw (N := N) hk) (Fin c.d)) :=
-  (hybridI1 (S := Sdw (N := N) hk) (Wd := Fin c.d) (lawB₁r hk c) (lawCoinsC hk c) (bitsOf x)).symm
+  (hybridI1 (S := Sdw (N := N) hk) (Wd := Fin c.d) (lawB₁r hk c) (lawCoinsC hk c) (attrBits x)).symm
 
-theorem VI1_eq (x : Date) : VI1 hk c x = (inst3Real (k := k) (χR c)).bind (FI hk c x) := by
+theorem VI1_eq (x : PUniv.Attr) : VI1 hk c x = (inst3Real (k := k) (χR c)).bind (FI hk c x) := by
   unfold VI1 lawB₁r
-  refine (hybI1_bind_B₁ (S := Sdw (N := N) hk) (Wd := Fin c.d) _ _ _ (bitsOf x)).trans ?_
+  refine (hybI1_bind_B₁ (S := Sdw (N := N) hk) (Wd := Fin c.d) _ _ _ (attrBits x)).trans ?_
   rw [PMF.bind_map]
   rfl
 
-theorem VI2_eq (x : Date) : VI2 hk c x = inst3Unif.bind (FI hk c x) := by
+theorem VI2_eq (x : PUniv.Attr) : VI2 hk c x = inst3Unif.bind (FI hk c x) := by
   unfold VI2
-  refine (hybI1_bind_B₁ (S := Sdw (N := N) hk) (Wd := Fin c.d) lawB₁u _ _ (bitsOf x)).trans ?_
+  refine (hybI1_bind_B₁ (S := Sdw (N := N) hk) (Wd := Fin c.d) lawB₁u _ _ (attrBits x)).trans ?_
   rw [← inst3Unif_map (S := Sdw (N := N) hk), PMF.bind_map]
   rfl
 
-theorem VI2_close (x : Date) :
+theorem VI2_close (x : PUniv.Attr) :
     CloseTo (VI2 hk c x) (V6 hk c x) (delta1 (Sdw (N := N) hk) (Fin c.d)) := by
-  have h := hybridI1 (S := Sdw (N := N) hk) (Wd := Fin c.d) lawB₁u (lawCoinsC hk c) (bitsOf x)
-  rw [idealView_eq_final lawB₁u (lawEc hk c) (bitsOf x) false] at h
+  have h := hybridI1 (S := Sdw (N := N) hk) (Wd := Fin c.d) lawB₁u (lawCoinsC hk c) (attrBits x)
+  rw [idealView_eq_final lawB₁u (lawEc hk c) (attrBits x) false] at h
   exact h
 
 /-- **The ideal experiment is close to the final one.** -/
@@ -275,8 +273,8 @@ theorem chain_ideal (A : Machine 3) {β : Type} (Dc : _ → PMF β) {δ : ℝ≥
       (inst3Unif.bind fun ab => (gameV hk c encMPK encCT KGi authB A fun x => FI hk c x ab).bind Dc) δ) :
     CloseTo ((gameV hk c encMPK encCT KGi authB A (VI0 hk c)).bind Dc)
       ((gameV hk c encMPK encCT KGi authB A (V6 hk c)).bind Dc)
-      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δ +
-        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d)) := by
+      (Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + δ +
+        Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d)) := by
   have g01 := (gameV_close hk c encMPK encCT KGi authB A (VI1_close hk c)).bind_left Dc
   have g23 := (gameV_close hk c encMPK encCT KGi authB A (VI2_close hk c)).bind_left Dc
   have e1 : gameV hk c encMPK encCT KGi authB A (VI1 hk c) =

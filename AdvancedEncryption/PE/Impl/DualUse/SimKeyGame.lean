@@ -10,7 +10,7 @@ ciphertexts `Ψᵢ = [B₀; c₀] Rᵢ + xᵢ G` and the keys `B_j = B₀ W_j + 
 They answer a key query `C` with one try of box rejection with the trapdoor
 `W_f = simKeyMat …` (`KGsim`). For a query that is not authorized for `x`, this is the ideal key
 law (`KGsim_eq_KGi`) as soon as the boxes cover the simulated trapdoor (`SimCovered`): a window
-predicate of at most `L ≥ dateBound` bits that is not authorized has `f(x) = 1`, so
+predicate of at most `L ≥ bpLen` bits that is not authorized has `f(x) = 1`, so
 `B_f̂ = B₀ W_f + G̲`.
 -/
 
@@ -18,8 +18,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 variable {ms : Machines hk c}
@@ -37,14 +37,14 @@ structure SimData where
   /-- The attribute ciphertexts. -/
   Ψ : Fin nA → Matrix (Fin 2) (Col k) (Rg N K)
   /-- The selected attribute. -/
-  x : Date
+  x : PUniv.Attr
 
 variable {hk c}
 
 /-- The relations between the data, and the matrices `Rᵢ`, `W_j` binary (coefficients within
 `1`, what the boxes need to cover the simulated trapdoor). -/
 def SimValid (d : SimData hk c) : Prop :=
-  (∀ i, d.Ψ i = gswPK d.mpk.B₀ d.c₀ * d.Rm i + bitR (R := Rg N K) (bitsOf d.x i) •
+  (∀ i, d.Ψ i = gswPK d.mpk.B₀ d.c₀ * d.Rm i + bitR (R := Rg N K) (attrBits d.x i) •
       (Sdw (N := N) hk).Γ.G) ∧
     (∀ j, d.mpk.Bj j = d.mpk.B₀ * d.W j + bitsOf (Sdw (N := N) hk) d.Ψ j • (Sdw (N := N) hk).Γ₁.G) ∧
     (∀ i a b, cnorm (d.Rm i a b) ≤ 1) ∧ ∀ j a b, cnorm (d.W j a b) ≤ 1
@@ -75,7 +75,7 @@ theorem cnorm_of_lawRestC {rest : Rest (Sdw (N := N) hk) (Fin c.d) (TrapCol k)}
 
 /-- The simulated trapdoor of a predicate. -/
 noncomputable def simW (d : SimData hk c) (C : List Bool) : Matrix (Fin c.d) (Col k) (Rg N K) :=
-  simKeyMat (S := Sdw (N := N) hk) d.Rm (bitsOf d.x) d.W d.Ψ d.mpk.Bj (predC C)
+  simKeyMat (S := Sdw (N := N) hk) d.Rm (attrBits d.x) d.W d.Ψ d.mpk.Bj (predC C)
 
 open Classical in
 /-- **The simulated key oracle.** -/
@@ -88,59 +88,50 @@ noncomputable def KGsim (d : SimData hk c) (C : List Bool) : PMF (List Bool) :=
   else PMF.pure []
 
 variable (hk c) in
-/-- The boxes cover the simulated trapdoor of every unauthorized window predicate. -/
+/-- The boxes cover the simulated trapdoor of every unauthorized program predicate. -/
 def SimCovered : Prop :=
-  ∀ d : SimData hk c, SimValid d → ∀ w : Window, evalGates (encDate d.x, parse (winWord w)) = true →
-    ∀ y ∈ c.Small, ∀ u, y + simTrap (Wt := TrapCol k) (simW d (winWord w)) (c.dec u) ∈ c.Big
+  ∀ d : SimData hk c, SimValid d → ∀ C : List Bool, ValidC C → output (tablesOf C) d.x = true →
+    ∀ y ∈ c.Small, ∀ u, y + simTrap (Wt := TrapCol k) (simW d C) (c.dec u) ∈ c.Big
 
-/-- A window predicate that is not authorized for `x` is true on `x`. -/
-theorem evalGates_of_not_auth (hL : dateBound ≤ c.L) (w : Window) (x : Date)
-    (h : authI hk c (winWord w) x = false) : evalGates (encDate x, parse (winWord w)) = true := by
+/-- A program word that is not authorized for `x` outputs `1` on `x`. -/
+theorem output_of_not_auth (C : List Bool) (hC : ValidC C) (x : PUniv.Attr)
+    (h : authI hk c C x = false) : output (tablesOf C) x = true := by
   unfold authI at h
   simp only [decide_eq_false_iff_not] at h
-  rw [win_authorized_iff (impl hk c) rfl] at h
-  have hlen := (Finset.le_sup (f := fun wx : Window × Date =>
-      (encodeTuple [paramsWord PUniv params, winWord wx.1, PUniv.encAttr wx.2]).length)
-      (Finset.mem_univ (α := Window × Date) (w, x))).trans hL
   by_contra hne
-  exact h ⟨hlen, ⟨w, rfl⟩, by simpa using hne⟩
+  exact h ((bp_authorized_iff (impl hk c) rfl C x).mpr ⟨hC, by simpa using hne⟩)
 
 /-- The predicate's key matrix with the simulated trapdoor: `B_f̂ = B₀ W_f + G̲` when `f(x) = 1`. -/
-theorem keyMatrix_simW (d : SimData hk c) (hv : SimValid d) (w : Window)
-    (hev : evalGates (encDate d.x, parse (winWord w)) = true) :
-    keyMatrix d.mpk (predC (winWord w)) =
-      d.mpk.B₀ * simW d (winWord w) + (Sdw (N := N) hk).Γ₁.G := by
-  have h := keyMatrix_eq_sim (ringSetting_fhatCorrect hk (Fin nA)) d.mpk d.c₀ d.Rm (bitsOf d.x)
-    d.W d.Ψ hv.1 hv.2.1 (predC (winWord w))
-  have hne : parse (winWord w) ≠ [] := by
-    rw [winWord, parse_unparse, winGates, predGates, toGates]
-    simp
-  have hb : SLP.evalBool (bitsOf d.x) (predC (winWord w)).1 (predC (winWord w)).2 = true := by
-    rw [predC, ← evalGates_predOf (bitsOf d.x) _ hne, ofFn_bitsOf]; exact hev
-  have hcirc : (ringSetting N (2 ^ K) k hk (Fin nA)).circ (predC (winWord w)) =
-      (predC (winWord w)).1.circuit (predC (winWord w)).2 := by simp only [ringSetting]
-  have heval : ((ringSetting N (2 ^ K) k hk (Fin nA)).circ (predC (winWord w))).eval
-      (fun i => bitR (R := Rg N K) (bitsOf d.x i)) = 1 := by
+theorem keyMatrix_simW (d : SimData hk c) (hv : SimValid d) (C : List Bool)
+    (hev : output (tablesOf C) d.x = true) :
+    keyMatrix d.mpk (predC C) = d.mpk.B₀ * simW d C + (Sdw (N := N) hk).Γ₁.G := by
+  have h := keyMatrix_eq_sim (ringSetting_fhatCorrect hk (Fin nA)) d.mpk d.c₀ d.Rm (attrBits d.x)
+    d.W d.Ψ hv.1 hv.2.1 (predC C)
+  have hb : SLP.evalBool (attrBits d.x) (predC C).1 (predC C).2 = true :=
+    (evalBool_predC d.x C).trans hev
+  have hcirc : (ringSetting N (2 ^ K) k hk (Fin nA)).circ (predC C) =
+      (predC C).1.circuit (predC C).2 := by simp only [ringSetting]
+  have heval : ((ringSetting N (2 ^ K) k hk (Fin nA)).circ (predC C)).eval
+      (fun i => bitR (R := Rg N K) (attrBits d.x i)) = 1 := by
     rw [hcirc, SLP.eval_circuit]
-    have := SLP.eval_bits (R := Rg N K) (bitsOf d.x) (predC (winWord w)).1 (predC (winWord w)).2
+    have := SLP.eval_bits (R := Rg N K) (attrBits d.x) (predC C).1 (predC C).2
     simp only [bitR] at this ⊢
     rw [this, hb, if_pos rfl]
-  have e2 := congrArg (fun r : Rg N K => d.mpk.B₀ * simW d (winWord w) + r • (Sdw (N := N) hk).Γ₁.G)
+  have e2 := congrArg (fun r : Rg N K => d.mpk.B₀ * simW d C + r • (Sdw (N := N) hk).Γ₁.G)
     heval
   simp only [one_smul] at e2
   exact h.trans e2
 
 /-- **Simulated keys have the ideal law** on every query that is not authorized for `x`. -/
 theorem KGsim_eq_KGi (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
-    (hL : dateBound ≤ c.L) (hcov : SimCovered hk c) (d : SimData hk c) (hv : SimValid d)
+    (hcov : SimCovered hk c) (d : SimData hk c) (hv : SimValid d)
     (C : List Bool) (hC : authI hk c C d.x = false) : KGsim d C = KGi hk c d.mpk C := by
   unfold KGsim KGi
   split_ifs with hlen hw
-  · obtain ⟨w, rfl⟩ := hw
-    have hev := evalGates_of_not_auth hL w d.x hC
+  · have hev := output_of_not_auth C hw d.x hC
     rw [keyLaw_eq_ideal c.Big c.Small c.hBig c.dec hdec d.mpk _ _
-      ⟨simTrap_public (Wt := TrapCol k) d.mpk _ _ (keyMatrix_simW d hv w hev),
-        hcov d hv w hev⟩]
+      ⟨simTrap_public (Wt := TrapCol k) d.mpk _ _ (keyMatrix_simW d hv C hev),
+        hcov d hv C hw hev⟩]
   · rfl
   · rfl
 

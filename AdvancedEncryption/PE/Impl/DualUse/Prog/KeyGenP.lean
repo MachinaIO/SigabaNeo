@@ -26,8 +26,8 @@ namespace AdvancedEncryption.DualUse.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo Matrix AdvancedEncryption.RingBTVW AdvancedEncryption.DualUse.Algo
   Turing Cslib
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 /-! ### Parsing -/
@@ -364,11 +364,6 @@ noncomputable def keyGenF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) (fr : XProg (R
       (XProg.seq (XProg.prog parseP) <| XProg.seq (XProg.frame e fr) <|
         XProg.seq (branchK hk c bfX W cf) (clearL clrAll)))
 
-variable (hk c) in
-/-- **The program of `KeyGen`** with the date-window front end `frontP c.L W`. -/
-noncomputable def keyGenP (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) : XProg 256 :=
-  keyGenF hk c eFr (frontP c.L W) bfX W cf
-
 theorem run_leAt (n : ℕ) (s : Store 256) :
     run (Prog.map uL (leP n)) s = Function.update (Function.update s 254
       (if (s 255).length ≤ n then [true] else [])) 253 [] := by
@@ -454,22 +449,12 @@ theorem law_keyGenF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr :
     simp only [Prim.apply, Function.update_apply, inputStore, io2]
     split_ifs <;> rfl
 
-/-- **The law of `KeyGen` as a tape program** (date-window front end). -/
-theorem law_keyGenP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W)
-    (cf : KeyCfg) (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) :
-    (keyGenP hk c bfX W cf).law (inputStore 255
-        ((SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C]).take (nKG hk c + 1))) =
-      if C.length ≤ c.L then (DualUse.keyM hk c msk C).map fun sk =>
-        io2 (R := 254) (SigabaNeo.encodeTuple [(skEnc hk c).enc sk]) [] []
-      else PMF.pure (io2 (R := 254) [] [] []) :=
-  law_keyGenF frEmb_eFr (frontSpec_frontP c.L W) hbf cf hcf msk C
-
 end AdvancedEncryption.DualUse.Prog
 
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog Turing
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
 
@@ -491,22 +476,12 @@ theorem wf_keyGenF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) {fr : XProg (R + 2)} 
         wf_putW _ _, wf_putW _ _, wf_tmplP _ _ hk1, ProgKeyR.wf_keyTryRCoinsP,
         WF.map (by decide) wf_frP, wf_clearL _⟩
 
-theorem wf_keyGenP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg) :
-    (keyGenP hk c bfX W cf).WF :=
-  wf_keyGenF eFr (Gates.DateWindow.wf_frontP _ _) hbf cf
-
 variable (hk c) in
 /-- **The machine of `KeyGen`** for a framed front end: input on tape `255` (at most `nKG + 1` bits
 loaded), output on tape `0`. -/
 noncomputable def keyMachineF {R : ℕ} (e : Fin (R + 2) ↪ Fin 256) (fr : XProg (R + 2))
     (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) : Machine :=
   (keyGenF hk c e fr bfX W cf).toMachineB 255 0 (nKG hk c)
-
-variable (hk c) in
-/-- **The machine of `KeyGen`**: input on tape `255` (at most `nKG + 1` bits loaded), output on
-tape `0`. -/
-noncomputable def keyMachineP (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) : Machine :=
-  (keyGenP hk c bfX W cf).toMachineB 255 0 (nKG hk c)
 
 theorem run_keyMachineF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr : XProg (R + 2)}
     {W : ℕ} {FT FL : ℕ → ℕ} {FS : ℕ} (hfr : FrontSpec fr c.L W FT FL FS)
@@ -521,25 +496,5 @@ theorem run_keyMachineF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {
   split_ifs
   · rw [PMF.map_comp]; rfl
   · rw [PMF.pure_map]; rfl
-
-theorem run_keyMachineP {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg)
-    (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) :
-    (keyMachineP hk c bfX W cf).run (SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C]) =
-      if C.length ≤ c.L then (DualUse.keyM hk c msk C).map fun sk =>
-        SigabaNeo.encodeTuple [(skEnc hk c).enc sk]
-      else PMF.pure (SigabaNeo.encodeTuple []) :=
-  run_keyMachineF frEmb_eFr (frontSpec_frontP c.L W) hbf cf hcf msk C
-
-theorem keyMachineP_short {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg)
-    (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) (hC : C.length ≤ c.L) :
-    (keyMachineP hk c bfX W cf).run (SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C]) =
-      (DualUse.keyM hk c msk C).map fun sk => SigabaNeo.encodeTuple [(skEnc hk c).enc sk] := by
-  rw [run_keyMachineP hbf cf hcf, if_pos hC]
-
-theorem keyMachineP_long {bfX : XProg 256} {W : ℕ} (hbf : BfSpec hk c bfX W) (cf : KeyCfg)
-    (hcf : cf.Valid hk c) (msk : SKey hk c) (C : List Bool) (hC : ¬ C.length ≤ c.L) :
-    (keyMachineP hk c bfX W cf).run (SigabaNeo.encodeTuple [pw, (mskEnc hk c).enc msk, C]) =
-      PMF.pure (SigabaNeo.encodeTuple []) := by
-  rw [run_keyMachineP hbf cf hcf, if_neg hC]
 
 end AdvancedEncryption.DualUse.Prog

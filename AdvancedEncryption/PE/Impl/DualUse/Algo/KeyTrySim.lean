@@ -19,17 +19,15 @@ box rejection with the simulated trapdoor `simTrap W_f`, `W_f = simW d C` (`KGsi
 The key matrix `B_f̂` is not read: the simulated trapdoor does not depend on it.
 
 * `keyTrySimW_eq`: `keyTrySimW` is the word (`skEnc`) of `(mpk, keyOfOutput (boxTry … (simTrap W) …))`;
-* `KGsim_words`: on window predicates of at most `c.L` bits, `KGsim d C` is the image of `m` fair
-  coins under `keyTrySimW` with `W_f = simW d C`;
-* `Params.KGsim_words_simKey`: for `confP`, with `W_f` computed on words by `simKeyW` from the words
-  of the `B_j`, `W_j`, `Ψᵢ`, `Rᵢ` and the bits of `x`.
+* `KGsim_words`: on program words of at most `c.L` bits, `KGsim d C` is the image of `m` fair
+  coins under `keyTrySimW` with `W_f = simW d C`.
 -/
 
 namespace AdvancedEncryption.DualUse.Algo
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo Matrix Cslib
   Cslib.Probability AdvancedEncryption.RingBTVW AdvancedEncryption.PE
-  AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.DateWindow
+  AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ}
 
@@ -168,25 +166,6 @@ namespace Params
 set_option maxRecDepth 100000
 
 open AdvancedEncryption.DualUse.Params
-
-/-- **The simulated key oracle of `confP` on words**: the image of `mBp` fair coins under
-`keyTrySimW`, with `W_f` computed on words by `simKeyW` from the words of the `B_j`, `W_j`, `Ψᵢ`,
-`Rᵢ` and the bits of the selected attribute. -/
-theorem KGsim_words_simKey (sd : DualUse.SimData hkp confP) (C : List Bool)
-    (hL : C.length ≤ confP.L) (hC : ValidC C)
-    (bjW wW : Fin nA × BI Np kp → List Bool) (ψW rmW : Fin nA → List Bool)
-    (hbj : bjW = fun j => rowW Np Kp kp (sd.mpk.Bj j)) (hw : wW = fun j => colsW Np Kp kp dp (sd.W j))
-    (hψ : ψW = fun i => colsW Np Kp kp 2 (sd.Ψ i)) (hr : rmW = fun i => colsW Np Kp kp dp (sd.Rm i)) :
-    DualUse.KGsim sd C = (BitString.uniformList mBp).map
-      (keyTrySimW Np Kp kp dp Bp SpW ((DualUse.pkEnc hkp confP).enc sd.mpk)
-        (simKeyW Np Kp kp dp (ordT₀ Np kp) (ordO₀ Np kp) (parse C) bjW wW ψW rmW
-          (DateWindow.bitsOf sd.x))) := by
-  subst hbj hw hψ hr
-  rw [KGsim_words hkp (Nat.succ_pos _) Bp hBp mBp hmE big_eqE length_SpW val_SpW rfl decp_eq sd C
-    hL hC]
-  exact congrArg (fun w => PMF.map (keyTrySimW Np Kp kp dp Bp SpW
-    ((DualUse.pkEnc hkp confP).enc sd.mpk) w) _)
-    (simKeyW_eq hkp sd.Rm (DateWindow.bitsOf sd.x) sd.W sd.Ψ sd.mpk.Bj (parse C)).symm
 
 end Params
 

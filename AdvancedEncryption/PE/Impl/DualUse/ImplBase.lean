@@ -3,35 +3,32 @@ import PE.Impl.DualUse.Correctness
 import PE.Impl.DualUse.BitLaws
 import PE.Impl.DualUse.Encodings
 import PE.Impl.DualUse.Flooding
-import PE.Impl.Gates.DateWindow
+import PE.Impl.Gates.BPWord
 import PE.Impl.Bridge
 import SigabaNeo.Lib.Machines.FiniteAlg
 import SigabaNeo.Lib.Machines.GatesSLP
 import SigabaNeo.Lib.Lattices.ProgAlgo.GateListLayout
 
 /-!
-# The dual-use scheme for date windows: configuration and laws
+# The dual-use scheme for branching programs: configuration and laws
 
-For the universe of `PE.DateWindow` (a date as 10 bits, one-bit messages), over
+For the universe of `PE.BranchingProgram` (an attribute as 128 bits, one-bit messages), over
 `R = ℤ_{2^K}[X]/(X^N + 1)` (`ringSetting`, the attribute bits `Fin nA`), the configuration `Conf`
 fixes the remaining parameters of the scheme. `Setup`, `Enc` and `KeyGen` are machines realizing
 the scheme's laws exactly (`Machine.exists_finiteAlg`, with the coin maps of `DualUse.BitLaws`),
 `Dec` a deterministic machine computing the scheme's decryption
-(`Machine.exists_finiteAlg_det`), and `Eval` the evaluation of window predicates
-(`Gates.DateWindow.winEvalMachine`: it authorizes only the gate lists `winWord w` of windows). A
-predicate is a gate list, read as a straight-line program by `predOf`. Inputs that encode no
-valid value (wrong parameters, predicates longer than `L`) are answered arbitrarily.
-
-`correct_of_scheme`: the implementation is correct as soon as the scheme decrypts correctly with
-probability at least `1 − 2^{-κ}` for every window predicate whose last gate is `false` on `x`.
-The implementation is expressive for `L ≥ dateBound` (`expressive`).
+(`Machine.exists_finiteAlg_det`), and `Eval` the evaluation of branching programs
+(`Gates.BPWord.bpEvalMachine`: it authorizes only the predicate words of `bpLen` bits). A
+predicate is the word of a branching program, read as the mux-tree circuit
+`bpPred (tablesOf C)`. Inputs that encode no valid value (wrong parameters, predicates longer
+than `L`) are answered arbitrarily.
 -/
 
 namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 /-! ### Generic facts -/
 
@@ -107,22 +104,43 @@ the class can be replaced in one place: the universe `PUniv`, the number of attr
 the class test `ValidC` of `KeyGen`, `Dec` and `Eval`, and the word `blockWord W C` the `W_f`
 block reads for a predicate `C`. -/
 
+export AdvancedEncryption.PE.Gates.BPWord (bpLen tablesOf)
+export AdvancedEncryption.PE.BranchingProgram (output)
+
 /-- The universe of the primitive. -/
-abbrev PUniv : Universe := dateUniverse
+abbrev PUniv : Universe := bpUniverse
 
 /-- The number of attribute bits. -/
-abbrev nA : ℕ := 10
+abbrev nA : ℕ := 128
 
-/-- The predicates of the class: the gate lists of windows. -/
-abbrev ValidC (C : List Bool) : Prop := ∃ w : Window, winWord w = C
+theorem pUniv_attr : PUniv.Attr = Attr := rfl
 
-theorem validC_iff (C : List Bool) : ValidC C ↔ ∃ w : Window, winWord w = C := Iff.rfl
+instance : Fintype PUniv.Attr := inferInstanceAs (Fintype Attr)
+instance : DecidableEq PUniv.Attr := inferInstanceAs (DecidableEq Attr)
+instance : Inhabited PUniv.Attr := ⟨fun _ => 0⟩
 
-/-- The word the `W_f` block reads for a predicate `C` (store width `W`). -/
-abbrev blockWord (W : ℕ) (C : List Bool) : List Bool := SigabaNeo.Tape.Prog.gsW W (parse C)
+/-- The predicates of the class: the words of branching programs (`bpLen` bits). -/
+abbrev ValidC (C : List Bool) : Prop := C.length = bpLen
+
+theorem validC_iff (C : List Bool) : ValidC C ↔ C.length = bpLen := Iff.rfl
+
+/-- The bits of an attribute, as the inputs of the circuits. -/
+abbrev attrBits (x : PUniv.Attr) : Fin nA → Bool := bitsOfBP x
+
+/-- The attribute whose bits are all `false` (every symbol `0`): the attribute of the crafted
+simulation data of `KeyGen` and `Dec`. -/
+def attr0 : PUniv.Attr := fun _ => 0
+
+/-- The output of the program of `C` on `attr0`. -/
+def bit0 (C : List Bool) : Bool := output (tablesOf C) attr0
+
+/-- The word the front end hands to the `W_f` machinery for a predicate `C` (store width `W`):
+the bit `bit0 C`, then the instruction stream of the circuit of `C`. -/
+abbrev blockWord (W : ℕ) (C : List Bool) : List Bool :=
+  bit0 C :: RP.rpW W (bpRP (tablesOf C))
 
 theorem blockWord_eq (W : ℕ) (C : List Bool) :
-    blockWord W C = SigabaNeo.Tape.Prog.gsW W (parse C) := rfl
+    blockWord W C = bit0 C :: RP.rpW W (bpRP (tablesOf C)) := rfl
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
@@ -144,10 +162,15 @@ def Conf.Big : Finset (KeyShort (Fin c.d) (TrapCol k) (Rg N K)) := Finset.univ.m
 theorem Conf.hBig : c.Big.Nonempty := Finset.univ_nonempty.map
 
 /-- The parameters' word. -/
-def pw : List Bool := paramsWord dateUniverse params
+def pw : List Bool := paramsWord PUniv params
 
-/-- The predicate of a gate list. -/
-def predC (C : List Bool) : SLP (Fin nA) × Wire (Fin nA) := predOf nA (parse C)
+/-- The predicate of a word: the circuit of its branching program. -/
+def predC (C : List Bool) : SLP (Fin nA) × Wire (Fin nA) := bpPred (tablesOf C)
+
+/-- The circuit of a word computes the output of its program. -/
+theorem evalBool_predC (x : PUniv.Attr) (C : List Bool) :
+    SLP.evalBool (attrBits x) (predC C).1 (predC C).2 = output (tablesOf C) x :=
+  evalBool_bpPred _ x
 
 /-! ### The laws of the scheme -/
 
@@ -161,8 +184,8 @@ noncomputable def coinsM : PMF (EncCoins (Sdw (N := N) hk) (Fin c.d) (TrapCol k)
   lawCoins (lawRestNF lawRmBin (polyOf c.χc)) (floodRows (S := Sdw (N := N) hk) (2 ^ c.w))
 
 /-- The law of `Enc`. -/
-noncomputable def encM (mpk : PK hk c) (x : Date) (b : Bool) : PMF (CT hk c) :=
-  (coinsM hk c).map (encrypt mpk (bitsOf x) b)
+noncomputable def encM (mpk : PK hk c) (x : PUniv.Attr) (b : Bool) : PMF (CT hk c) :=
+  (coinsM hk c).map (encrypt mpk (attrBits x) b)
 
 /-- The key of a predicate outside the class: the zero key (it decrypts nothing). -/
 def dummyKey : SecretKey (Fin c.d) (TrapCol k) (R := Rg N K) (k := k) := ⟨0, 0, 0⟩
@@ -176,7 +199,7 @@ noncomputable def keyTryW (msk : SKey hk c) (C : List Bool) :
       (c.dec (msk.1.p - shortMap msk.1 p)), c.dec (msk.1.p - shortMap msk.1 p)) else none))
 
 open Classical in
-/-- One try of `KeyGen`: a key only for the predicates of the class (window predicates), the
+/-- One try of `KeyGen`: a key only for the predicates of the class (program words), the
 zero key otherwise. Keys of gate lists outside the class would decrypt challenges whose attribute
 `Eval` does not authorize. -/
 noncomputable def keyTry (msk : SKey hk c) (C : List Bool) :
@@ -204,7 +227,7 @@ theorem keyM_of_not (msk : SKey hk c) (C : List Bool) (hC : ¬ ValidC C) :
   exact PMF.map_const _ _
 
 open Classical in
-/-- The output of `Dec`: the decoded bit for the predicates of the class (window predicates), the
+/-- The output of `Dec`: the decoded bit for the predicates of the class (program words), the
 dummy answer `[false]` otherwise (as `KeyGen` gives the zero key outside the class). -/
 noncomputable def decM (sk : SK hk c) (C : List Bool) (ct : CT hk c) : List Bool :=
   if ValidC C then [decodeBit c.hN (decryptRaw sk.1 (predC C) sk.2 ct)]

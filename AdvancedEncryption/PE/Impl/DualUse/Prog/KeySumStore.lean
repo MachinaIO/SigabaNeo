@@ -9,7 +9,7 @@ the final store of an SLP evaluator, at the unary positions of the output wires 
 (`fhatPos`, in the loop order, `posW`):
 
 * `run_keySumP_pk`: on the store of `EvalF` (`run_slpPK`) for `f̂` it writes `keyMatrixW …`, hence
-  `rowW (keyMatrix mpk (predOf 10 gs))` (`run_keySumP_keyMatrix`, by `keyMatrixW_eq`);
+  `rowW (keyMatrix mpk (predOf nA gs))` (`run_keySumP_keyMatrix`, by `keyMatrixW_eq`);
 * `run_simKeyP_store`: `simKeyP` on the stores of the two simulations (`run_slpSim`) writes
   `simKeyStoreW …`, hence `colsW … (simKeyMat …)` (`run_simKeyP_mat`, by `simKeyStoreW_eq_mat`).
 -/
@@ -24,14 +24,14 @@ variable {N K k : ℕ}
 /-- **The positions of the output wires of `f̂`** in the final store of an evaluator, at the bits
 `(c, i, j)` of a row. -/
 def fhatPos (K : ℕ) (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : List (OI N k)) (gs : GateList)
-    (ix : Fin 10 × BI N k → ℕ) (n : ℕ) (c i j : ℕ) : ℕ :=
+    (ix : Fin nA × BI N k → ℕ) (n : ℕ) (c i j : ℕ) : ℕ :=
   if h : c < 2 * k ∧ i < k ∧ j < N then
     wireIx ix n (fhatProg K ordT ordO gs).1.length
       ((fhatProg K ordT ordO gs).2 (0, colE k ⟨c, h.1⟩, ⟨i, h.2.1⟩, ⟨j, h.2.2⟩))
   else 0
 
 theorem fhatPos_le (K : ℕ) (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : List (OI N k))
-    (gs : GateList) {ix : Fin 10 × BI N k → ℕ} {n : ℕ} (hix : ∀ j, ix j < n) (c i j : ℕ) :
+    (gs : GateList) {ix : Fin nA × BI N k → ℕ} {n : ℕ} (hix : ∀ j, ix j < n) (c i j : ℕ) :
     fhatPos K ordT ordO gs ix n c i j ≤ n + (fhatProg K ordT ordO gs).1.length := by
   unfold fhatPos
   split_ifs
@@ -42,7 +42,7 @@ theorem fhatPos_le (K : ℕ) (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : L
 `f̂` (`run_slpPK`) and the positions of its output wires, `keySumP` writes `keyMatrixW`. -/
 theorem run_keySumP_pk (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : List (OI N k))
     (gs : GateList) {ins : List (List Bool)} (hins : ∀ x ∈ ins, x.length = 2 * k * (N * K))
-    {n : ℕ} (hn : ins.length = n) {ix : Fin 10 × BI N k → ℕ} (hix : ∀ j, ix j < n) {W : ℕ}
+    {n : ℕ} (hn : ins.length = n) {ix : Fin nA × BI N k → ℕ} (hix : ∀ j, ix j < n) {W : ℕ}
     (hW : n + (fhatProg K ordT ordO gs).1.length ≤ W) (r : Store 86)
     (ht : KTmpl N K k 1 W (2 * k * (N * K)) 0 r) (hb : ∀ t : Fin 86, 18 ≤ t.val → r t = [])
     (h1 : r 1 = (ins ++ [gadW N K k] ++ SLP.values (fun i => ins.getD (ix i) []) (gadW N K k)
@@ -66,18 +66,18 @@ theorem run_keySumP_pk (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : List (O
   rw [← e]; exact (hL _ (List.getElem_mem hl)).le.trans (by ring_nf; omega)
 
 /-- **The key matrix of a predicate from the store of `EvalF`**: with the words of the `B_j` as
-inputs, `keySumP` writes the word of `keyMatrix mpk (predOf 10 gs)`. -/
+inputs, `keySumP` writes the word of `keyMatrix mpk (predOf nA gs)`. -/
 theorem run_keySumP_keyMatrix (hk : 2 ^ K < 2 ^ k) {Wd Wt : Type*} [Fintype Wd] [Fintype Wt]
     (mpk : MPK (Sdw (N := N) hk) Wd Wt) (gs : GateList) {ins : List (List Bool)}
     (hins : ∀ x ∈ ins, x.length = 2 * k * (N * K)) {n : ℕ} (hn : ins.length = n)
-    {ix : Fin 10 × BI N k → ℕ} (hix : ∀ j, ix j < n)
+    {ix : Fin nA × BI N k → ℕ} (hix : ∀ j, ix j < n)
     (hB : ∀ j, ins.getD (ix j) [] = rowW N K k (mpk.Bj j)) {W : ℕ}
     (hW : n + (fhatProg K (ordT₀ N k) (ordO₀ N k) gs).1.length ≤ W) (r : Store 86)
     (ht : KTmpl N K k 1 W (2 * k * (N * K)) 0 r) (hb : ∀ t : Fin 86, 18 ≤ t.val → r t = [])
     (h1 : r 1 = (ins ++ [gadW N K k] ++ SLP.values (fun i => ins.getD (ix i) []) (gadW N K k)
       (nandPKW N K k) (fhatProg K (ordT₀ N k) (ordO₀ N k) gs).1).flatten)
     (h2 : r 2 = posW W N k (fhatPos K (ordT₀ N k) (ordO₀ N k) gs ix n)) :
-    run keySumP r = Function.update r 0 (rowW N K k (keyMatrix mpk (predOf 10 gs))) := by
+    run keySumP r = Function.update r 0 (rowW N K k (keyMatrix mpk (predOf nA gs))) := by
   rw [run_keySumP_pk _ _ gs hins hn hix hW r ht hb h1 h2, funext hB, keyMatrixW_eq hk mpk gs]
 
 /-- **`W_f` from the stores of the two simulations**: on the final stores of the simulation of `f̂`
@@ -87,17 +87,17 @@ positions of the output wires of `f̂` (`posW`) and of the predicate's output wi
 theorem run_simKeyP_store {d : ℕ} (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : List (OI N k))
     (gs : GateList) {insT : List (List Bool)}
     (hinsT : ∀ x ∈ insT, x.length = lenA N K k 1 + lenA N K k d + N * K) {nT : ℕ}
-    (hnT : insT.length = nT) {ixT : Fin 10 × BI N k → ℕ} (hixT : ∀ j, ixT j < nT)
+    (hnT : insT.length = nT) {ixT : Fin nA × BI N k → ℕ} (hixT : ∀ j, ixT j < nT)
     {insG : List (List Bool)} (hinsG : ∀ x ∈ insG, x.length = lenA N K k 2 + lenA N K k d + N * K)
-    {nG : ℕ} (hnG : insG.length = nG) {ixG : Fin 10 → ℕ} (hixG : ∀ i, ixG i < nG) {W W' : ℕ}
+    {nG : ℕ} (hnG : insG.length = nG) {ixG : Fin nA → ℕ} (hixG : ∀ i, ixG i < nG) {W W' : ℕ}
     (hW : nT + (fhatProg K ordT ordO gs).1.length ≤ W)
-    (hW' : wireIx ixG nG (predOf 10 gs).1.length (predOf 10 gs).2 ≤ W') (r : Store 94)
+    (hW' : wireIx ixG nG (predOf nA gs).1.length (predOf nA gs).2 ≤ W') (r : Store 94)
     (ht : KTmpl N K k d W (lenA N K k 1 + lenA N K k d + N * K) (lenA N K k 1) (r ∘ oKs))
     (hb : ∀ t : Fin 94, 18 ≤ t.val → t.val < 86 → r t = []) (hb' : ∀ t : Fin 94, 91 ≤ t.val → r t = [])
     (h1 : r 1 = (storeT N K k d ordT ordO gs insT ixT).flatten)
     (h2 : r 2 = posW W N k (fhatPos K ordT ordO gs ixT nT))
     (h86 : r 86 = (storeG N K k d gs insG ixG).flatten)
-    (h87 : r 87 = unaryW W' (wireIx ixG nG (predOf 10 gs).1.length (predOf 10 gs).2))
+    (h87 : r 87 = unaryW W' (wireIx ixG nG (predOf nA gs).1.length (predOf nA gs).2))
     (h88 : (r 88).length = W') (h89 : (r 89).length = lenA N K k 2 + lenA N K k d + N * K)
     (h90 : (r 90).length = lenA N K k 2) :
     run simKeyP r = Function.update r 0
@@ -115,7 +115,7 @@ theorem run_simKeyP_store {d : ℕ} (ordT : List ((Fin 2 × Fin k) × Fin N)) (o
     (fhatProg K ordT ordO gs).1
   have hLG := store_len hinsG hnG hixG hoG (simStepJW N K k 2 d (gswGadW N K k) (ginvGswW N K k))
     (fun a b _ _ => length_simStepJW (d := d) hgG _ a b)
-    (predOf 10 gs).1
+    (predOf nA gs).1
   rw [run_simKeyP r ht hb hb' _ (fun c _ i _ j _ => (fhatPos_le K ordT ordO gs hixT c i j).trans hW)
     h2 h88 h89 h90, simKeyStoreW]
   congr 2
@@ -130,7 +130,7 @@ theorem run_simKeyP_store {d : ℕ} (ordT : List ((Fin 2 × Fin k) × Fin N)) (o
     rfl
   · have hl := wireIx_lt_store hnG hixG (fun i => insG.getD (ixG i) [])
       (simOneW N K k d (gswGadW N K k)) (simStepJW N K k 2 d (gswGadW N K k) (ginvGswW N K k))
-      (predOf 10 gs).1 (predOf 10 gs).2
+      (predOf nA gs).1 (predOf nA gs).2
     rw [h86, h87, takeD_of_length' (length_unaryW hW'), storeG,
       readW_flatten _ hLG hl (Nat.le_add_right _ _), List.getD_eq_getElem _ _ hl]
     rfl
@@ -138,31 +138,31 @@ theorem run_simKeyP_store {d : ℕ} (ordT : List ((Fin 2 × Fin k) × Fin N)) (o
 /-- **The word of `W_f = simKeyMat …` from the stores of the two simulations** on tapes, at the
 orders of `fhatSLP` (`simKeyStoreW_eq_mat`). -/
 theorem run_simKeyP_mat (hk : 2 ^ K < 2 ^ k) {d : ℕ}
-    (Rm : Fin 10 → Matrix (Fin d) (RingBTVW.Col k) (DualUse.Rg N K)) (x : Fin 10 → Bool)
-    (Wm : Fin 10 × BI N k → Matrix (Fin d) (RingBTVW.Col k) (DualUse.Rg N K))
-    (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (DualUse.Rg N K))
-    (Bj : Fin 10 × BI N k → Matrix (Fin 1) (RingBTVW.Col k) (DualUse.Rg N K)) (gs : GateList)
+    (Rm : Fin nA → Matrix (Fin d) (RingBTVW.Col k) (DualUse.Rg N K)) (x : Fin nA → Bool)
+    (Wm : Fin nA × BI N k → Matrix (Fin d) (RingBTVW.Col k) (DualUse.Rg N K))
+    (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (DualUse.Rg N K))
+    (Bj : Fin nA × BI N k → Matrix (Fin 1) (RingBTVW.Col k) (DualUse.Rg N K)) (gs : GateList)
     {insT : List (List Bool)}
     (hinsT : ∀ x ∈ insT, x.length = lenA N K k 1 + lenA N K k d + N * K) {nT : ℕ}
-    (hnT : insT.length = nT) {ixT : Fin 10 × BI N k → ℕ} (hixT : ∀ j, ixT j < nT)
+    (hnT : insT.length = nT) {ixT : Fin nA × BI N k → ℕ} (hixT : ∀ j, ixT j < nT)
     (hinsT' : ∀ j, insT.getD (ixT j) [] = jointW (rowW N K k (Bj j), colsW N K k d (Wm j),
       psiBitsW N K k (fun i => colsW N K k 2 (Ψ i)) j))
     {insG : List (List Bool)} (hinsG : ∀ x ∈ insG, x.length = lenA N K k 2 + lenA N K k d + N * K)
-    {nG : ℕ} (hnG : insG.length = nG) {ixG : Fin 10 → ℕ} (hixG : ∀ i, ixG i < nG)
+    {nG : ℕ} (hnG : insG.length = nG) {ixG : Fin nA → ℕ} (hixG : ∀ i, ixG i < nG)
     (hinsG' : ∀ i, insG.getD (ixG i) [] =
       jointW (colsW N K k 2 (Ψ i), colsW N K k d (Rm i), constW N K (bitW K (x i))))
     {W W' : ℕ} (hW : nT + (fhatProg K (ordT₀ N k) (ordO₀ N k) gs).1.length ≤ W)
-    (hW' : wireIx ixG nG (predOf 10 gs).1.length (predOf 10 gs).2 ≤ W') (r : Store 94)
+    (hW' : wireIx ixG nG (predOf nA gs).1.length (predOf nA gs).2 ≤ W') (r : Store 94)
     (ht : KTmpl N K k d W (lenA N K k 1 + lenA N K k d + N * K) (lenA N K k 1) (r ∘ oKs))
     (hb : ∀ t : Fin 94, 18 ≤ t.val → t.val < 86 → r t = []) (hb' : ∀ t : Fin 94, 91 ≤ t.val → r t = [])
     (h1 : r 1 = (storeT N K k d (ordT₀ N k) (ordO₀ N k) gs insT ixT).flatten)
     (h2 : r 2 = posW W N k (fhatPos K (ordT₀ N k) (ordO₀ N k) gs ixT nT))
     (h86 : r 86 = (storeG N K k d gs insG ixG).flatten)
-    (h87 : r 87 = unaryW W' (wireIx ixG nG (predOf 10 gs).1.length (predOf 10 gs).2))
+    (h87 : r 87 = unaryW W' (wireIx ixG nG (predOf nA gs).1.length (predOf nA gs).2))
     (h88 : (r 88).length = W') (h89 : (r 89).length = lenA N K k 2 + lenA N K k d + N * K)
     (h90 : (r 90).length = lenA N K k 2) :
     run simKeyP r = Function.update r 0
-      (colsW N K k d (simKeyMat (S := Sdw (N := N) hk) Rm x Wm Ψ Bj (predOf 10 gs))) := by
+      (colsW N K k d (simKeyMat (S := Sdw (N := N) hk) Rm x Wm Ψ Bj (predOf nA gs))) := by
   rw [run_simKeyP_store _ _ gs hinsT hnT hixT hinsG hnG hixG hW hW' r ht hb hb' h1 h2 h86 h87 h88
     h89 h90, simKeyStoreW_eq_mat hk Rm x Wm Ψ Bj gs hnT hixT hinsT' hnG hixG hinsG']
 

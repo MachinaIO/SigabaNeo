@@ -14,8 +14,8 @@ counting), so the machines may write any data in the free rows. The last row of 
 (resp. `c_j`), the first word of the `W_j` carries a stash `X₀` (the rest of the input).
 
 * **`sdEnc_sdOf`**: the word of `sdOf`, in the order the machines write it;
-* **`keyMatrix_sdB`**: `B_f̂ = row_{d-1} W_f + G̲` for `sdB` (`Rᵢ = 0`, `Ψ = 0`);
-* **`evalCiphertext_sdC`**: `c_f̂ = row_{d-1} W_f + (row 1 of G)` for `sdC` (the last two rows of
+* **`keyMatrix_sdB`**: `B_f̂ = row_{d-1} W_f + f(0) G̲` for `sdB` (`Rᵢ = 0`, `Ψ = 0`);
+* **`evalCiphertext_sdC`**: `c_f̂ = row_{d-1} W_f + f(0) (row 1 of G)` for `sdC` (the last two rows of
   `Rᵢ` are those of `Ψᵢ`);
 * `colsW_last`: the last row of a `colsW` word is its last `2 k N K` bits.
 -/
@@ -23,8 +23,8 @@ counting), so the machines may write any data in the free rows. The last row of 
 namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open AdvancedEncryption.DualUse.Prog
 
 /-! ### Every word of the right length is an encoding -/
@@ -216,7 +216,7 @@ noncomputable def sdOf (mpk : PK hk c) (rmW : Fin nA → List Bool)
   Rm i := wordMat c.d (rmW i)
   W j := wordMat c.d (wWord hk X₀ ((c.d - 1) * rowL N K k) g j)
   Ψ := Ψ
-  x := date0
+  x := attr0
 
 theorem length_wWord {X₀ : List Bool} {Z : ℕ} (hX : X₀.length = Z)
     (g : JIx (N := N) hk → Matrix (Fin 1) (Col k) (Rg N K)) (j : JIx (N := N) hk) :
@@ -224,7 +224,7 @@ theorem length_wWord {X₀ : List Bool} {Z : ℕ} (hX : X₀.length = Z)
   rw [wWord, List.length_append, length_row1]
   split_ifs <;> simp [hX]
 
-theorem dateEnc_date0 : dateEnc.enc date0 = List.replicate nA false := rfl
+theorem attrEnc_attr0 : attrEnc.enc attr0 = List.replicate nA false := encAttr_attr0
 
 /-- **The word of the crafted simulation data.** -/
 theorem sdEnc_sdOf (mpk : PK hk c) {rmW : Fin nA → List Bool}
@@ -281,11 +281,11 @@ theorem rowAt_W_sdOf (hd : 0 < c.d) {X₀ : List Bool} (hX : X₀.length = (c.d 
   refine rowAt_last_of_enc hd _ _ (g j) ?_ (enc_decM hw)
   split_ifs <;> simp [hX]
 
-/-- **`B_f̂` from the crafted data**: the last row of `W_f`, plus `G̲`. -/
+/-- **`B_f̂` from the crafted data**: the last row of `W_f`, plus `f(0) G̲` (`f(0) = bit0 C`). -/
 theorem keyMatrix_sdB (hd : 0 < c.d) (mpk : PK hk c) {X₀ : List Bool}
-    (hX : X₀.length = (c.d - 1) * rowL N K k) (w : Window) :
-    keyMatrix mpk (predC (winWord w)) =
-      rowAt (simW (sdB hk c mpk X₀) (winWord w)) (lastR c hd) + (Sdw (N := N) hk).Γ₁.G := by
+    (hX : X₀.length = (c.d - 1) * rowL N K k) (C : List Bool) :
+    keyMatrix mpk (predC C) =
+      rowAt (simW (sdB hk c mpk X₀) C) (lastR c hd) + bitR (R := Rg N K) (bit0 C) • (Sdw (N := N) hk).Γ₁.G := by
   have hR : ∀ i, rowAt ((sdB hk c mpk X₀).Rm i) (lastR c hd) = 0 := by
     intro i
     refine rowAt_last_of_enc hd _ (List.replicate ((c.d - 1) * rowL N K k) false) 0 (by simp) ?_
@@ -295,8 +295,8 @@ theorem keyMatrix_sdB (hd : 0 < c.d) (mpk : PK hk c) {X₀ : List Bool}
     rw [show c.d = (c.d - 1) + 1 from by omega, Nat.add_mul, Nat.one_mul]; simp
   refine (keyMatrix_eq_rowSim mpk _ (sdB hk c mpk X₀).W (lastR c hd)
     (rowAt_W_sdOf hd hX mpk (fun _ => List.replicate (c.d * rowL N K k) false) (fun _ => 0) mpk.Bj)
-    hR (predC (winWord w))).trans ?_
-  rw [circ_eval_date0, one_smul]
+    hR (predC C)).trans ?_
+  rw [circ_eval_attr0]
   rfl
 
 variable (hk c) in
@@ -306,12 +306,12 @@ noncomputable def sdC (mpk : PK hk c) (ct : CT hk c) (X₀ : List Bool) : SimDat
   sdOf hk c mpk (fun i => List.replicate ((c.d - 2) * rowL N K k) false ++
       (matEnc (N := N) (K := K) (Fin 2) (Col k)).enc (ct.Ψ i)) ct.Ψ X₀ ct.cj
 
-/-- **`c_f̂` from the crafted data**: the last row of `W_f`, plus the second row of `G`. -/
+/-- **`c_f̂` from the crafted data**: the last row of `W_f`, plus `f(0)` times the second row of `G`. -/
 theorem evalCiphertext_sdC (hd : 2 ≤ c.d) (mpk : PK hk c) (ct : CT hk c) {X₀ : List Bool}
-    (hX : X₀.length = (c.d - 1) * rowL N K k) (w : Window) :
-    evalCiphertext mpk (predC (winWord w)) ct =
-      rowAt (simW (sdC hk c mpk ct X₀) (winWord w)) (lastR c (by omega)) +
-        rowAt (Sdw (N := N) hk).Γ.G 1 := by
+    (hX : X₀.length = (c.d - 1) * rowL N K k) (C : List Bool) :
+    evalCiphertext mpk (predC C) ct =
+      rowAt (simW (sdC hk c mpk ct X₀) C) (lastR c (by omega)) +
+        bitR (R := Rg N K) (bit0 C) • rowAt (Sdw (N := N) hk).Γ.G 1 := by
   have hrows : ∀ i, rowAt ((sdC hk c mpk ct X₀).Rm i) ⟨c.d - 2, by omega⟩ = rowAt (ct.Ψ i) 0 ∧
       rowAt ((sdC hk c mpk ct X₀).Rm i) (lastR c (by omega)) = rowAt (ct.Ψ i) 1 := by
     intro i
@@ -323,8 +323,8 @@ theorem evalCiphertext_sdC (hd : 2 ≤ c.d) (mpk : PK hk c) (ct : CT hk c) {X₀
     ⟨c.d - 2, by omega⟩ (rowAt_W_sdOf (by omega) hX mpk (fun i => List.replicate
       ((c.d - 2) * rowL N K k) false ++ (matEnc (N := N) (K := K) (Fin 2) (Col k)).enc (ct.Ψ i))
       ct.Ψ ct.cj) (fun i => (hrows i).1) (fun i => (hrows i).2)
-    (predC (winWord w))).trans ?_
-  rw [circ_eval_date0, one_smul]
+    (predC C)).trans ?_
+  rw [circ_eval_attr0]
   rfl
 
 end AdvancedEncryption.DualUse

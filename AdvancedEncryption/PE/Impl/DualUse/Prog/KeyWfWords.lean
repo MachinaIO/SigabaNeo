@@ -26,8 +26,8 @@ namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   Matrix AdvancedEncryption.RingBTVW AdvancedEncryption.DualUse.Algo
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 
 /-! ### Positions in an enumeration -/
 
@@ -65,7 +65,7 @@ def insTW (sd : SimData hk c) : List (List Bool) :=
 /-- **The inputs of the simulation of the predicate.** -/
 def insGW (sd : SimData hk c) : List (List Bool) :=
   (List.finRange nA).map fun i => jointW (colsW N K k 2 (sd.Ψ i), colsW N K k c.d (sd.Rm i),
-    constW N K (bitW K (DateWindow.bitsOf sd.x i)))
+    constW N K (bitW K (attrBits sd.x i)))
 
 /-- The index of an input of `f̂`. -/
 def ixT (N K k : ℕ) (hk : 2 ^ K < 2 ^ k) (j : Fin nA × BI N k) : ℕ := enumIx (α := JT N K k hk) j
@@ -81,9 +81,9 @@ theorem length_insGW (sd : SimData hk c) : (insGW sd).length = nA := by
 theorem simKeyStoreW_sd (sd : SimData hk c) (C : List Bool) :
     simKeyStoreW N K k c.d (ordT₀ N k) (ordO₀ N k) (parse C) (insTW sd) (ixT N K k hk)
         (Enum.list (α := JT N K k hk)).length (insGW sd) (fun i => i.val) nA =
-      colsW N K k c.d (simW sd C) := by
-  rw [simW_parse]
-  exact simKeyStoreW_eq_mat hk sd.Rm (DateWindow.bitsOf sd.x) sd.W sd.Ψ sd.mpk.Bj (parse C)
+      colsW N K k c.d (simKeyMat (S := Sdw (N := N) hk) sd.Rm (attrBits sd.x) sd.W sd.Ψ sd.mpk.Bj
+        (predOf nA (parse C))) := by
+  exact simKeyStoreW_eq_mat hk sd.Rm (attrBits sd.x) sd.W sd.Ψ sd.mpk.Bj (parse C)
     (length_insTW sd) (fun j => enumIx_lt (α := JT N K k hk) j)
     (fun j => getD_enumIx (α := JT N K k hk) _ _ j) (length_insGW sd) (fun i => i.isLt)
     (fun i => by
@@ -93,7 +93,7 @@ theorem simKeyStoreW_sd (sd : SimData hk c) (C : List Bool) :
 /-- **The simulated trapdoor of a predicate program** `P` (`simW sd C = simWP sd (predC C)`). -/
 noncomputable def simWP (sd : SimData hk c) (P : SLP (Fin nA) × Wire (Fin nA)) :
     Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K) :=
-  simKeyMat (S := Sdw (N := N) hk) sd.Rm (DateWindow.bitsOf sd.x) sd.W sd.Ψ sd.mpk.Bj P
+  simKeyMat (S := Sdw (N := N) hk) sd.Rm (attrBits sd.x) sd.W sd.Ψ sd.mpk.Bj P
 
 theorem simW_eq_P (sd : SimData hk c) (C : List Bool) : simW sd C = simWP sd (predC C) := rfl
 
@@ -102,7 +102,7 @@ theorem simKeyStoreW_sdP (sd : SimData hk c) (P : SLP (Fin nA) × Wire (Fin nA))
     simKeyStoreWP N K k c.d (ordT₀ N k) (ordO₀ N k) P (insTW sd) (ixT N K k hk)
         (Enum.list (α := JT N K k hk)).length (insGW sd) (fun i => i.val) nA =
       colsW N K k c.d (simWP sd P) :=
-  simKeyStoreWP_eq_mat hk sd.Rm (DateWindow.bitsOf sd.x) sd.W sd.Ψ sd.mpk.Bj P
+  simKeyStoreWP_eq_mat hk sd.Rm (attrBits sd.x) sd.W sd.Ψ sd.mpk.Bj P
     (length_insTW sd) (fun j => enumIx_lt (α := JT N K k hk) j)
     (fun j => getD_enumIx (α := JT N K k hk) _ _ j) (length_insGW sd) (fun i => i.isLt)
     (fun i => by
@@ -146,7 +146,9 @@ theorem run_simKeyP_sd (sd : SimData hk c) (C : List Bool) {W W' : ℕ}
       (predOf nA (parse C)).2))
     (h88 : (r 88).length = W') (h89 : (r 89).length = lenA N K k 2 + lenA N K k c.d + N * K)
     (h90 : (r 90).length = lenA N K k 2) :
-    Prog.run Prog.simKeyP r = Function.update r 0 (colsW N K k c.d (simW sd C)) := by
+    Prog.run Prog.simKeyP r = Function.update r 0 (colsW N K k c.d
+      (simKeyMat (S := Sdw (N := N) hk) sd.Rm (attrBits sd.x) sd.W sd.Ψ sd.mpk.Bj
+        (predOf nA (parse C)))) := by
   rw [run_simKeyP_store (ordT₀ N k) (ordO₀ N k) (parse C) (length_mem_insTW sd) (length_insTW sd)
     (fun j => enumIx_lt (α := JT N K k hk) j) (length_mem_insGW sd) (length_insGW sd)
     (fun i => i.isLt) hW hW' r ht hb hb' h1 h2 h86 h87 h88 h89 h90]

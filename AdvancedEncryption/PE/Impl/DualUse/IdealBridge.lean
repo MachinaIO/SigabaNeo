@@ -13,8 +13,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 variable {ms : Machines hk c}
@@ -90,7 +90,7 @@ theorem setupM_fst : (setupM hk c).map Prod.fst =
   simp only [Function.comp_def, PMF.pure_bind, trapRow_eq_toB₁]
 
 /-- The simulator's challenge, through the encodings. -/
-noncomputable def CHideal (_ : PK hk c) (_ : Date) (_ : Bool) : PMF (List Bool) :=
+noncomputable def CHideal (_ : PK hk c) (_ : PUniv.Attr) (_ : Bool) : PMF (List Bool) :=
   (ctUc hk c).map (ctEnc hk c).enc
 
 /-- The ideal challenger as a generic challenger. -/
@@ -99,7 +99,7 @@ noncomputable def idealSpec :=
     (KGreal hk c) (CHideal hk c)
 
 /-- The simulator's challenge, written as a shift of the uniform ciphertext. -/
-noncomputable def gIdeal (_ : Date × PK hk c × SKey hk c) (μ : Bool) (ct : CT hk c) : List Bool :=
+noncomputable def gIdeal (_ : PUniv.Attr × PK hk c × SKey hk c) (μ : Bool) (ct : CT hk c) : List Bool :=
   (ctEnc hk c).enc (shiftCT hk c μ ct)
 
 variable {hk c}
@@ -128,7 +128,7 @@ theorem ideal_eq_gameV (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u)
     Generic.runWith_eagerCoins (idealSpec hk c) (ctUc hk c) (gIdeal hk c) hchal]
   set prog := A.machine.runOracle A.time (paramsWord PUniv params)
   set eag := Generic.eagerCoins (idealSpec hk c) (ctUc hk c) (gIdeal hk c)
-  let toV : (Date × PK hk c × SKey hk c) × CT hk c → PK hk c × CT hk c := fun σ => (σ.1.2.1, σ.2)
+  let toV : (PUniv.Attr × PK hk c × SKey hk c) × CT hk c → PK hk c × CT hk c := fun σ => (σ.1.2.1, σ.2)
   set sp3 := (specV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) (VI0 hk c)).comap
     toV eag.setup
   have hsupp : ∀ x, ∀ σ ∈ (eag.setup x).support, ∃ v ∈ (setupM hk c).support, σ.1 = (x, v) := by

@@ -27,8 +27,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open SigabaNeo.Inline
 open scoped ENNReal
 
@@ -140,7 +140,7 @@ theorem acceptProb_reduction_accOn {Sec Inst : Type} (P Post : Machine) (A : Mac
         (A.runWith (Generic.oracle (specSim (setupI (inst w)) (viewI (inst w)) (sdI (inst w))))
           (paramsWord PUniv params) {}).map Generic.obs)
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
-    (hL : dateBound ≤ c.L) (hcov : SimCovered hk c)
+    (hL : bpLen ≤ c.L) (hcov : SimCovered hk c)
     (hF : ∀ x i, F x i = (setupI i x).map (viewI i))
     (hmpk : ∀ i σ, (sdI i σ).mpk = (viewI i σ).1)
     (hx : ∀ i x, ∀ σ ∈ (setupI i x).support, (sdI i σ).x = x)

@@ -26,8 +26,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow AdvancedEncryption.PE.Generic
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.PE.Generic
 open SigabaNeo.Inline
 open scoped ENNReal
 
@@ -104,7 +104,7 @@ theorem acceptProb_reductionP_accOn {Sec Inst : Type} (P Post : Machine) (A : Ma
         (A.runWith (Generic.oracle (specSim (setupI (inst w)) (viewI (inst w)) (sdI (inst w))))
           (paramsWord PUniv params) {}).map Generic.obs)
     (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
-    (hL : dateBound ≤ c.L) (hcov : SimCovered hk c)
+    (hL : bpLen ≤ c.L) (hcov : SimCovered hk c)
     (hF : ∀ x i, F x i = (setupI i x).map (viewI i))
     (hmpk : ∀ i σ, (sdI i σ).mpk = (viewI i σ).1)
     (hx : ∀ i x, ∀ σ ∈ (setupI i x).support, (sdI i σ).x = x)
@@ -158,7 +158,7 @@ theorem cost_reductionP_post_struct (P : Machine) (A : Machine 3) (H : Fin 3 →
     (reductionP P (Post A.time E nA 1) A H E q₀ q₁ L D).cost ≤
       redConstP P (Post 0 0 nA 1) H E q₀ q₁ L (postA E nA 1 + postB E nA 1) * A.cost * D.cost := by
   have h := cost_reductionP_le_struct P (Post A.time E nA 1) A H E q₀ q₁ L _ D
-    (time_post_le_cost A E 10 1)
+    (time_post_le_cost A E nA 1)
   have e : redConstP P (Post A.time E nA 1) H E q₀ q₁ L (postA E nA 1 + postB E nA 1) =
       redConstP P (Post 0 0 nA 1) H E q₀ q₁ L (postA E nA 1 + postB E nA 1) := by
     unfold redConstP chainConst chainStates chainTapes

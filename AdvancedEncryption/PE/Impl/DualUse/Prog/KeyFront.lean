@@ -1,69 +1,36 @@
 import PE.Impl.DualUse.SimKeyGame
-import PE.Impl.Gates.ProgWindow
 import PE.Impl.DualUse.Prog.FrontSpec
 
 /-!
-# The front end of the simulated key query and the authorization test
+# The front end of the simulated key query and the authorization flag
 
 * **`authI_eq`**: the authorization flag of the experiment, classically `decide (Authorized …)`,
-  is the explicit test `authN (nAuth c.L) C x` (`PE.Gates.DateWindow.authN`: `|C| ≤ nAuth c.L`,
-  `C` in the window class, and the gate list of `C` false on the date bits). Here
-  `nAuth L = (L - (2 |pw| + 23)) / 2`, the longest query whose input word `(pw, C, x)` of `Eval`
-  has at most `L` bits.
-* **`law_authPI`**: the component `authP (nAuth c.L)` computes `[authI hk c C x]` from `C` and
-  `encDate x` (the form of `Comps.law_auth`), in `20 |C|` steps plus a constant
-  (`PE.Gates.DateWindow.timeBoundT_authP`).
+  is the explicit test `decide (|C| = bpLen) && !output (tablesOf C) x` (`bp_authorized_iff`),
+  the bit the authorization program `authBPC` computes (`Prog/AuthBPX.lean`).
 * **`KGsim_eq_front`**: the simulated key oracle depends on the query only through the output
-  `frontV c.L W C` of the front-end component `frontP c.L W` (`law_frontP`) and, for a window
-  predicate, through its gate list `parse C` (`predC C = predOf 10 (parse C)`), which that output
-  carries in the layout `gsW W` of the `f̂` generator.
+  `frontW c.L W C` of a front end (`frontG c.L ValidC (blockWord W)`, `Prog/FrontSpec.lean`) and,
+  for a program word, through the predicate `predC C` the `W_f` block reads from the stream of
+  `blockWord W C`.
 -/
 
 namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability SigabaNeo.Tape SigabaNeo.Tape.Prog
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
 variable {ms : Machines hk c}
 
-/-- The longest query authorized under the input bound `L` of `Eval`. -/
-def nAuth (L : ℕ) : ℕ := (L - (2 * (paramsWord dateUniverse params).length + 23)) / 2
-
-theorem length_encodeTuple3 (a C x : List Bool) :
-    (encodeTuple [a, C, x]).length = 2 * a.length + 2 * C.length + 2 * x.length + 3 := by
-  rw [encodeTuple, Turing.MultiTapeTM.length_encList]
-  simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
-  show 2 * a.length + 1 + (2 * C.length + 1 + (2 * x.length + 1 + 0)) = _
-  omega
-
 variable (hk c) in
 /-- **The authorization flag is the explicit test.** -/
-theorem authI_eq (C : List Bool) (x : Date) : authI hk c C x = authN (nAuth c.L) C x := by
+theorem authI_eq (C : List Bool) (x : PUniv.Attr) :
+    authI hk c C x = (decide (C.length = bpLen) && !output (tablesOf C) x) := by
   classical
-  unfold authI authN
-  rw [Bool.eq_iff_iff, decide_eq_true_iff, win_authorized_iff (impl hk c) rfl,
-    length_encodeTuple3, length_encDate]
-  simp only [Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true']
-  rw [← inClassW_iff]
-  constructor
-  · rintro ⟨hl, hc, he⟩
-    exact ⟨⟨by unfold nAuth; omega, hc⟩, he⟩
-  · rintro ⟨⟨hl, hc⟩, he⟩
-    have hne : C ≠ [] := by rintro rfl; rw [not_inClassW_nil] at hc; cases hc
-    have h1 : 1 ≤ C.length := List.length_pos_iff.mpr hne
-    unfold nAuth at hl
-    exact ⟨by omega, hc, he⟩
-
-variable (hk c) in
-/-- **The authorization component** computes the flag of the experiment. -/
-theorem law_authPI (C : List Bool) (x : Date) :
-    (authP (nAuth c.L)).law (io2 (R := 6) C (dateUniverse.encAttr x) []) =
-      PMF.pure (io2 (R := 6) [authI hk c C x] [] []) := by
-  rw [authI_eq hk c]
-  exact law_authP _ C x
+  unfold authI
+  rw [Bool.eq_iff_iff, decide_eq_true_iff]
+  exact (bp_authorized_iff (impl hk c) rfl C x).trans (by simp)
 
 open Classical in
 /-- The simulated key oracle from the output of the front end. -/
@@ -75,57 +42,12 @@ noncomputable def kgOfFront (d : SimData hk c) (C : List Bool) : List Bool → P
 
 /-- **`KGsim` through the front end.** -/
 theorem KGsim_eq_front (W : ℕ) (d : SimData hk c) (C : List Bool) :
-    KGsim d C = kgOfFront d C (frontV c.L W C) := by
+    KGsim d C = kgOfFront d C (Prog.frontW c.L W C) := by
   unfold KGsim
   by_cases hl : C.length ≤ c.L
-  · by_cases hw : ∃ w : Window, winWord w = C
-    · rw [frontV_win hl hw, if_pos hl, if_pos hw]; rfl
-    · rw [frontV_short_not hl hw, if_pos hl, if_neg hw]; rfl
-  · rw [frontV_long hl, if_neg hl]; rfl
-
-/-- The simulated trapdoor reads the query through its gate list. -/
-theorem simW_parse (d : SimData hk c) (C : List Bool) :
-    simW d C = simKeyMat (S := Sdw (N := N) hk) d.Rm (bitsOf d.x) d.W d.Ψ d.mpk.Bj
-      (predOf 10 (parse C)) := rfl
+  · by_cases hw : ValidC C
+    · rw [Prog.frontW, Prog.frontG_valid hl hw, if_pos hl, if_pos hw]; rfl
+    · rw [Prog.frontW, Prog.frontG_short_not hl hw, if_pos hl, if_neg hw]; rfl
+  · rw [Prog.frontW, Prog.frontG_long hl, if_neg hl]; rfl
 
 end AdvancedEncryption.DualUse
-
-/-! ### The date-window front end as an instance of `FrontSpec` -/
-
-namespace AdvancedEncryption.DualUse.Prog
-
-open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
-
-theorem cfX_frontP (n W : ℕ) : (frontP n W).CoinFree :=
-  XProg.coinFree_seq (XProg.coinFree_seq (SigabaNeo.Tape.Prog.coinFree_putW 0 _) rfl)
-    (SigabaNeo.Tape.Prog.coinFree_lookTail _ _ _ _)
-
-/-- The time of the front end on queries of at most `T` bits (`timeBoundT_frontP`). -/
-def frontT (n W T : ℕ) : ℕ :=
-  20 * T + ((n + 2) * (2 * (n + 2) + 5) + 10 * (2 * (n + 11) + 5) +
-    (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12) *
-      (2 * (n + 1 + (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12)) + 5))
-
-/-- The length bound of the front end's output (`lenBoundT_frontP`). -/
-def frontL (n W : ℕ) : ℕ := n + 1 + (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12)
-
-theorem frontV_eq (n W : ℕ) (C : List Bool) : frontV n W C = frontW n W C := by
-  by_cases hl : C.length ≤ n
-  · by_cases hw : ∃ w : Window, winWord w = C
-    · rw [frontV_win hl hw, frontW, frontG_valid hl hw]
-    · rw [frontV_short_not hl hw, frontW, frontG_short_not hl hw]
-  · rw [frontV_long hl, frontW, frontG_long hl]
-
-/-- **The date-window front end meets the interface.** -/
-theorem frontSpec_frontP (n W : ℕ) :
-    FrontSpec (frontP n W) n W (frontT n W) (fun _ => frontL n W) (frontP n W).size where
-  wf := wf_frontP n W
-  coinFree := cfX_frontP n W
-  law C := by rw [law_frontP, frontV_eq]
-  ph T ℓ hℓ := ⟨(timeBoundT_mono _ hℓ).trans (timeBoundT_frontP n W T),
-    (lenBoundT_mono _ hℓ).trans (lenBoundT_frontP n W T)⟩
-  size := le_rfl
-
-end AdvancedEncryption.DualUse.Prog

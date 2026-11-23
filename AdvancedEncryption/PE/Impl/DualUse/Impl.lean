@@ -1,21 +1,21 @@
 import PE.Impl.DualUse.Codec
 
 /-!
-# The machines of the dual-use scheme for date windows
+# The machines of the dual-use scheme for branching programs
 
 `Setup`, `Enc` and `KeyGen` are machines realizing the scheme's laws exactly
 (`Machine.exists_finiteAlg'`), `Dec` a deterministic machine computing the scheme's decryption,
-and `Eval` the evaluation of window predicates. Keys and ciphertexts are written with the explicit
+and `Eval` the evaluation of branching programs. Keys and ciphertexts are written with the explicit
 encodings of `DualUse.Codec`. Inputs that encode no valid value are answered by the empty tuple.
 `correct_of_scheme`: the implementation is correct as soon as the scheme decrypts correctly with
-probability at least `1 − 2^{-κ}` for every window predicate whose last gate is `false` on `x`.
+probability at least `1 − 2^{-κ}` for every program word whose program outputs `0` on `x`.
 -/
 
 namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
@@ -33,16 +33,16 @@ theorem exists_setupMachine : ∃ M : Machine, M.run (encodeTuple [pw]) =
 /-- The machine of `Setup`. -/
 noncomputable def setupMachine : Machine := Classical.choose (exists_setupMachine hk c)
 
-theorem exists_encMachine : ∃ M : Machine, ∀ (mpk : PK hk c) (x : Date) (b : Bool),
-    M.run (encodeTuple [pw, (pkEnc hk c).enc mpk, encDate x, [b]]) =
+theorem exists_encMachine : ∃ M : Machine, ∀ (mpk : PK hk c) (x : PUniv.Attr) (b : Bool),
+    M.run (encodeTuple [pw, (pkEnc hk c).enc mpk, encAttr x, [b]]) =
       (encM hk c mpk x b).map fun ct => encodeTuple [(ctEnc hk c).enc ct] := by
   obtain ⟨m, g, hg⟩ := bitLaw_coins (S := Sdw (N := N) hk) (Wd := Fin c.d) c.hχ c.w
-  obtain ⟨M, hM⟩ := Machine.exists_finiteAlg (A := PK hk c × Date × Bool)
-    (fun a => [pw, (pkEnc hk c).enc a.1, encDate a.2.1, [a.2.2]]) (fun a a' h => by
+  obtain ⟨M, hM⟩ := Machine.exists_finiteAlg (A := PK hk c × PUniv.Attr × Bool)
+    (fun a => [pw, (pkEnc hk c).enc a.1, encAttr a.2.1, [a.2.2]]) (fun a a' h => by
       simp only [List.cons.injEq, and_true, true_and] at h
-      exact Prod.ext ((pkEnc hk c).inj h.1) (Prod.ext (encDate.injective h.2.1)
+      exact Prod.ext ((pkEnc hk c).inj h.1) (Prod.ext (encAttr.injective h.2.1)
         h.2.2)) m
-    (fun a w => [(ctEnc hk c).enc (encrypt a.1 (bitsOf a.2.1) a.2.2 (g w))])
+    (fun a w => [(ctEnc hk c).enc (encrypt a.1 (attrBits a.2.1) a.2.2 (g w))])
   refine ⟨M, fun mpk x b => ?_⟩
   rw [hM (mpk, x, b), encM, PMF.map_comp, coinsM, hg, PMF.map_comp]
   rfl
@@ -102,8 +102,8 @@ structure Machines where
     exact Classical.choose_spec (exists_setupMachine hk c)
   /-- The machine of `Enc`. -/
   enc : Machine := encMachine hk c
-  enc_law : ∀ (mpk : PK hk c) (x : Date) (b : Bool),
-    enc.run (encodeTuple [pw, (pkEnc hk c).enc mpk, encDate x, [b]]) =
+  enc_law : ∀ (mpk : PK hk c) (x : PUniv.Attr) (b : Bool),
+    enc.run (encodeTuple [pw, (pkEnc hk c).enc mpk, encAttr x, [b]]) =
       (encM hk c mpk x b).map fun ct => encodeTuple [(ctEnc hk c).enc ct] := by
     exact Classical.choose_spec (exists_encMachine hk c)
   /-- The machine of `KeyGen`. -/
@@ -136,13 +136,13 @@ noncomputable def impl (ms : Machines hk c := Machines.lookup hk c) : Impl PE.si
     | .enc => ms.enc
     | .keyGen => ms.key
     | .dec => ms.dec
-    | .eval => winEvalMachine c.L
+    | .eval => bpEvalMachine
   deterministic a h := by
     cases a
     all_goals first
       | exact absurd h (by decide)
       | exact ms.dec_det
-      | exact winEvalMachine_deterministic _
+      | exact bpEvalMachine_deterministic
 
 variable {ms : Machines hk c}
 
@@ -190,7 +190,7 @@ theorem impl_keyGen (msk : SKey hk c) (C : List Bool) :
     rfl
 
 /-- `Enc` outputs the encoding of the ciphertext. -/
-theorem impl_enc (mpk : PK hk c) (x : Date) (b : Bool) :
+theorem impl_enc (mpk : PK hk c) (x : PUniv.Attr) (b : Bool) :
     enc (U := PUniv) params (impl hk c ms) ((pkEnc hk c).enc mpk) x b =
       (encM hk c mpk x b).map (ctEnc hk c).enc := by
   unfold enc
@@ -203,20 +203,20 @@ theorem impl_enc (mpk : PK hk c) (x : Date) (b : Bool) :
 /-! ### Correctness -/
 
 /-- **Correctness from the scheme**: the implementation is correct if the scheme decrypts
-correctly with probability at least `1 − 2^{-κ}` for every window predicate whose last gate is
-`false` on `x`. -/
-theorem correct_of_scheme
-    (hscheme : ∀ (x : Date) (w : Window), (winWord w).length ≤ c.L →
-      evalGates (encDate x, parse (winWord w)) = false → ∀ b : Bool,
+correctly with probability at least `1 − 2^{-κ}` for every program word (of at most `c.L` bits)
+whose program outputs `0` on `x`. -/
+theorem correct_of_scheme (hL : bpLen ≤ c.L)
+    (hscheme : ∀ (x : PUniv.Attr) (C : List Bool), ValidC C → C.length ≤ c.L →
+      output (tablesOf C) x = false → ∀ b : Bool,
         1 - ((2 : ℝ) ^ params.corrBits)⁻¹ ≤
-          (((setupM hk c).bind fun v => (keyM hk c v.2 (winWord w)).bind fun sk =>
-            (encM hk c v.1 x b).map fun ct => decM hk c sk (winWord w) ct) [b]).toReal) :
+          (((setupM hk c).bind fun v => (keyM hk c v.2 C).bind fun sk =>
+            (encM hk c v.1 x b).map fun ct => decM hk c sk C ct) [b]).toReal) :
     Correct PUniv params (impl hk c ms) := by
-  have hauth : ∀ C (x : Date), Authorized (U := PUniv) params (impl hk c ms) C x →
-      C.length ≤ c.L ∧ (ValidC C) ∧ evalGates (encDate x, parse C) = false := by
+  have hauth : ∀ C (x : PUniv.Attr), Authorized (U := PUniv) params (impl hk c ms) C x →
+      C.length ≤ c.L ∧ ValidC C ∧ output (tablesOf C) x = false := by
     intro C x h
-    obtain ⟨h1, h2, h3⟩ := (win_authorized_iff (impl hk c ms) rfl C x).mp h
-    exact ⟨(length_le_encodeTuple (by simp)).trans h1, h2, h3⟩
+    obtain ⟨h1, h2⟩ := (bp_authorized_iff (impl hk c ms) rfl C x).mp h
+    exact ⟨h1 ▸ hL, h1, h2⟩
   refine correct_of_laws (U := PUniv) params (impl hk c ms) (pkEnc hk c).enc (mskEnc hk c).enc
     (skEnc hk c).enc (ctEnc hk c).enc (setupM hk c) (keyM hk c) (encM hk c) (decM hk c) ?_ ?_ ?_ ?_ ?_
   · unfold PE.setup
@@ -246,11 +246,11 @@ theorem correct_of_scheme
       PMF.pure_map, PMF.pure_map]
     simp only [List.getD_cons_zero]
   · intro x C hC b
-    obtain ⟨h1, ⟨w, rfl⟩, h3⟩ := hauth C x hC
-    exact hscheme x w h1 h3 b
+    obtain ⟨h1, h2, h3⟩ := hauth C x hC
+    exact hscheme x C h2 h1 h3 b
 
 /-- **Expressiveness.** -/
-theorem expressive (hL : dateBound ≤ c.L) : Expressive PUniv params (impl hk c ms) :=
-  expressive_win (impl hk c ms) rfl hL
+theorem expressive : Expressive PUniv params (impl hk c ms) :=
+  expressive_bp (impl hk c ms) rfl
 
 end AdvancedEncryption.DualUse

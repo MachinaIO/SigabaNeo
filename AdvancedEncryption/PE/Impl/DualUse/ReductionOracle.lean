@@ -16,7 +16,7 @@ the instance (`spPack`, `setupPack`). Started from `(w, {})`, this oracle has th
 namespace AdvancedEncryption.DualUse
 
 open SigabaNeo Cslib
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
 variable {Sec Inst : Type}
@@ -87,13 +87,13 @@ theorem hgame_oracleW (st : PUniv.Attr → PMF (Inst × Sec)) (inst : List Bool 
 
 /-- **The packed challenger answers long predicates with a fixed word and never authorizes
 them**: the hypothesis of the per-query handlers, with `K₀ = L` and the empty answer. -/
-theorem longKeys_spPack (st : PUniv.Attr → PMF (Inst × Sec))
+theorem longKeys_spPack (hL : bpLen ≤ c.L) (st : PUniv.Attr → PMF (Inst × Sec))
     (viewI : Inst → Sec → PK hk c × CT hk c) (sdI : Inst → Sec → SimData hk c)
     (Ok : Inst × Sec → Prop) : Generic.LongKeys (spPack st viewI sdI) Ok c.L [] where
   key p C _ hC := by
     show KGsim (sdI p.1 p.2) C = PMF.pure []
     unfold KGsim
     rw [if_neg (by omega)]
-  auth C x hC := authI_long hk c C x hC
+  auth C x hC := authI_long hk c hL C x hC
 
 end AdvancedEncryption.DualUse

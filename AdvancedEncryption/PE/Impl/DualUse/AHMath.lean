@@ -14,8 +14,8 @@ namespace AdvancedEncryption.DualUse
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib
   Cslib.Probability
-open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.DateWindow
+open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
 open scoped ENNReal
 
 /-- Closeness bounds the difference of the probabilities of an outcome. -/
@@ -43,7 +43,7 @@ variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
 variable {ms : Machines hk c}
 
 /-- The experiment of `A` against the challenger of the view law `V`. -/
-noncomputable abbrev G (A : Machine 3) (V : Date → PMF (PK hk c × CT hk c)) :=
+noncomputable abbrev G (A : Machine 3) (V : PUniv.Attr → PMF (PK hk c × CT hk c)) :=
   gameV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A V
 
 /-- The distinguisher on observable runs. -/
@@ -85,16 +85,16 @@ theorem advantage_le (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) =
     (hI : CloseTo ((inst3Real (k := k) (χR c)).bind fun ab =>
         (G A fun x => FI hk c x ab).bind (Dc D))
       (inst3Unif.bind fun ab => (G A fun x => FI hk c x ab).bind (Dc D)) δI)
-    (hfin : (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ +
-        δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
-      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
-        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d)) ≠ ⊤) :
+    (hfin : (Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card PUniv.Attr * ε + δ₃ +
+        δ₅ + Fintype.card PUniv.Attr * delta6 (Sdw (N := N) hk) (Fin c.d)) +
+      (Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
+        Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d)) ≠ ⊤) :
     |D.acceptProb ((PE.real PUniv params (impl hk c ms) A).map view) -
         D.acceptProb ((PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).map view)| ≤
-      ((Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ +
-        δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
-      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
-        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d))).toReal := by
+      ((Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card PUniv.Attr * ε + δ₃ +
+        δ₅ + Fintype.card PUniv.Attr * delta6 (Sdw (N := N) hk) (Fin c.d)) +
+      (Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
+        Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d))).toReal := by
   have cr := chain_real hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A (Dc D)
     hflood h₃ h₅
   have ci := chain_ideal hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A (Dc D) hI
@@ -154,16 +154,16 @@ theorem advantage_le_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec
     (hI : CloseTo ((inst3Real (k := k) (χR c)).bind fun ab =>
         (G A fun x => FI hk c x ab).bind (DcStar D))
       (inst3Unif.bind fun ab => (G A fun x => FI hk c x ab).bind (DcStar D)) δI)
-    (hfin : (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ +
-        δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
-      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
-        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d)) ≠ ⊤) :
+    (hfin : (Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card PUniv.Attr * ε + δ₃ +
+        δ₅ + Fintype.card PUniv.Attr * delta6 (Sdw (N := N) hk) (Fin c.d)) +
+      (Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
+        Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d)) ≠ ⊤) :
     |D.acceptProb ((PE.real PUniv params (impl hk c ms) A).map view) -
         D.acceptProb ((PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).map view)| ≤
-      ((Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ +
-        δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
-      (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
-        Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d))).toReal := by
+      ((Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card PUniv.Attr * ε + δ₃ +
+        δ₅ + Fintype.card PUniv.Attr * delta6 (Sdw (N := N) hk) (Fin c.d)) +
+      (Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
+        Fintype.card PUniv.Attr * delta1 (Sdw (N := N) hk) (Fin c.d))).toReal := by
   have cr := chain_real hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A
     (DcStar D) hflood h₃ h₅
   have ci := chain_ideal hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A

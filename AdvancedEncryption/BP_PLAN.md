@@ -766,3 +766,86 @@ WS1 (M0) ─┬─ WS1 (M3) ─┼─ switch ─ M6 ─┬─ WS4 ─┐   │
 
 * **The cost claim**: prove `≈ 2^952` (the formulas' exponents) or keep the statement `2^1002`
   with today's rounding. The plan aims at the first and accepts the second.
+
+## 12. Switch and Stage II status (lead, branch `t3/bp-switch`)
+
+### Done (commits `b1940271`, `aed92e0a`, tree not green yet)
+
+* `ImplBase`: `PUniv := bpUniverse`, `nA := 128`, `ValidC C := C.length = bpLen`,
+  `predC C := bpPred (tablesOf C)`, `attrBits x := bitsOfBP x` (the old `bitsOf` of dates; the name
+  `bitsOf` stays `RingBTVW.bitsOf`), `attr0`, `bit0 C := output (tablesOf C) attr0`,
+  **`blockWord W C := bit0 C :: RP.rpW W (bpRP (tablesOf C))`** (see below), `evalBool_predC`,
+  `export BPWord (bpLen tablesOf)`, `export BranchingProgram (output)` (beware: the project has
+  `autoImplicit` on — an unknown name such as `bpLen` silently becomes a variable).
+* Deleted: `PE/DateWindow`, `Gates/{DateWindow, ProgWindow, WindowBound, WindowTest, AuthGen,
+  AuthProg}`, `Prog/{Auth, AuthL, WfPred}`, `Concrete`, `Game/HandlersDate` (`head_paramsWord`
+  moved to `HandlersBP`). `Prog/KeyFront` rewritten (generic `KGsim_eq_front`, `authI_eq` for
+  programs). The date-front instances `keyGenP`, `keyMachineP`, `decGenP`, `decMachineP` (and their
+  laws) are removed from `KeyGenP`/`DecGenP`; `keyP` removed from `KeyP` (`law_keyPF`,
+  `law_keyP_spPack` take any front end with `FrontSpec`).
+* Math layer: `Impl` (`bpEvalMachine`, `correct_of_scheme (hL : bpLen ≤ c.L)`, `expressive`),
+  `ImplCorrect`, `GameChain`, `RealBridge`, `SimKeyGame`, `SimGame*`, `AHAssembly`, `IdealBridge`,
+  `AHMath`, `Algo/*`. `Params/Sizes` at confA values (WS2 table), `Params/Conf`
+  (**`correct_conf`, `expressive_conf` for `bpUniverse`**, `confP.L = bpLen`, `eCoef = 102`),
+  `Params/Stat` (`flood_conf ≤ 2^-499`, `delta1_le`, `delta6_le ≤ 2^-370`), `Params/Advantage`
+  (`≤ δ₃ + δ₅ + δ_I + 2^-239`).
+* Hidden literal `10`s (= `nA`) fixed in `SetupLaws`, `ChalI`, `C0`, `Sd3`, `Chal3`, `BfX`, `CfX`,
+  `BlockCost`, and `Fin 10 →` everywhere.
+
+### The `f(0)` term (found at the switch, not in §5)
+
+Real `KeyGen`/`Dec` compute `B_f̂` and `c_f̂` from crafted simulation data at the attribute `0`
+(`Algo/RowSim`): `B_f̂ = row(W_f) + f(0) G̲`, `c_f̂ = row(W_f) + f(0) · (row 1 of G)`. The date
+windows all reject `(0,0)`, so `f(0) = 1` was hard-wired (the post blocks add `G̲`). A branching
+program may output `0` on `attr0`. Now `keyMatrix_sdB`, `evalCiphertext_sdC` (`Algo/RowSimData`)
+state `… + bitR (bit0 C) • …`. Machines:
+
+* the front end emits `true :: bit0 C :: stream` (that is `blockWord`); `frontBP` must compute
+  `bit0 C` = `!authA C 0^128` with `authBPC` (WS7) on a copy of `C` and `128` zeros;
+* `bfX`/`cfX`: first move the head bit of tape `1` to the end of tape `0`
+  (`snocHead 0 1 ⨾ tail 1`); the pre block stashes it with the trapdoor (`LT := lenT + 1`), the
+  `W_f` block sees the stream only (spec `WfSpecS`: law on `(blockWord W C).tail`), the post block
+  reads the bit back and adds the gadget only if it is set (`ifBit`);
+* the reductions' key component (`keyPF`, simulated keys, `f(x*) = 1`) does not need the bit: its
+  block is `tail 1` then the stream block (`WfSpec` on `blockWord`, from `WfSpecR`).
+
+### Progress after the switch (lead, `t3/bp-switch`)
+
+| Milestone | State | Where |
+| --- | --- | --- |
+| M6 `correct_conf`, `expressive_conf` (`bpUniverse`) | **done** | `Params/Conf.lean` |
+| statistics at confA (`flood_conf` 2^-499, `delta1/6_le` 2^-370, advantage + 2^-239) | **done** | `Params/Stat.lean`, `Params/Advantage.lean` |
+| f(0) machine fix: `frontBP` emits `bit0 C` (authBPC at `attr0`), `bfX`/`cfX` carry it, `postCoreB`/`postCoreC` add the gadget under `ifBit` | **done** (laws) | `Prog/FrontBP.lean`, `Prog/BfX.lean`, `Prog/CfX.lean` |
+| front-end cost with the bit: `frontBTn ≤ 2^8 X²`, `frontBA m = m + allG + S0 + 3` | **done** | `Prog/FrontBPCost.lean` |
+| `WfSpecS` (block on the stream), `wfSpecS_of_wfSpecR`, `wfSpec_tailB` (key component), `bpRP_getLast` | **done** | `Prog/KeyP.lean`, `Prog/WfSpecBridge.lean` |
+| M7 shells with `frontBP` (`keyMachineP hk c bfX cf`, `decMachineP hk c cfX`), `machinesP`, **`implC`, `correct_implC`, `expressive_implC`** | **done** | `Prog/ShellsBP.lean`, `ImplP.lean`, `ImplBP.lean` |
+| Setup/Enc at confA: `time_setupMP_conf' ≤ 2^387`, `time_encMP_confT ≤ 2^452`, `descLen_setupMP_conf`, `descLen_encMP_conf ≤ 2^300` | **done** | `Prog/SetupConfA.lean`, `Prog/EncConfA.lean` |
+| W_f stream block at confA (`time_wfB2S_conf ≤ 2^628`, `size_wfB2S_conf ≤ 2^25`, `wfSpecR_wfB2S`) | builds (WS6, hypotheses `nA = nAn` etc. now true by `rfl`) | `Prog/WfB2S*.lean`, `Prog/WfRCert.lean` |
+| KeyGen/Dec clocks and descLen at confA (KeyTight*, DecTight*, KeyCost*, DecCostConf, DescConf, BlockCost, PostCost, BfXCost, SizeCost, KeyGenCost, DecGenCost) | **open** (helpers `t3/bp-r-key`, `t3/bp-r-dec`) | `Attic/` |
+| authorization component: `AuthSpec`, **`authSpec_authBPX : AuthSpec hk c authBPX (2^49) 109 18`** (WS7's `authBPC` + output normalization, lifted to 256 tapes) | **done** | `Prog/AuthBPX.lean` |
+| reductions' components and kb at confA (CompCost, DecodeCost, ReductionCompsBound*, AHConcrete*, AHFinal) | **open** | `Attic/` |
+| `Submission` for `BranchingProgram.primitive` | **open** | `Attic/PE/Impl/DualUse/Submission*.lean` |
+
+Facts kept from the workstream status files (removed):
+
+* WS1: never `unfold bpPred`/`bpRP`/`RP.toSLP` of a concrete program (go through `RP.pred`,
+  `RP.valueOf_pred`, `RP.run_eq_valueOf` with a variable program); a kernel-cheap route for the
+  predicate of the stream block is `predC_eq_pred`, `predR_eq_pred` (both `rfl` on variables).
+* WS2: `Params/SizesA.lean` (generic confA chain) is now redundant with `Params/Sizes.lean`;
+  flooding is `2^-499` (`|JC| = 2^127 (1 + 2^-27)^3`).
+* WS5: KeyGen, Dec and the key component keep `256` tapes (`3^256` in `descLen`); the front end
+  costs `≤ 2^8 X²` (`frontBTn_le`), its output `≤ frontBA bpLen ≤ 2^63`, its states
+  `≤ 36 n + 2^56`; WS9's per-tape key clock for any front end is `KeyPTimeV.time_keyPFV`.
+* WS6: `time_wfB2S_conf ≤ 2^628` (every tape `≤ 2^262`), `size_wfB2S_conf ≤ 2^25`, for SimData
+  `≤ 2^260` and streams `≤ 2^64` bits of `≤ 2^50` instructions (`WfRCert`: f̂ run `≤ 2^627`).
+* WS7: compiler `≤ 2^126` steps, tapes `≤ 2^62`, `≤ 2^27` states; `authBPC` `≤ 2^108` steps,
+  `≤ 2^17` states.
+* WS8: the generic `kb` formula (`ReductionCompsBoundG`, now in `Attic/`) gives
+  `kb = 495 + ⌈1.585 (298 + tc)⌉` (`tc` = tapes the compiler adds to the key component; with the
+  front end framed inside the `256` tapes `tc = 0`, `kb ≈ 968`); `AHConcreteBP.statTerm_bp`
+  (`statTerm ≤ 2^-239`), `compBoundBP_le`, `attributeHiding_of_constBound`.
+
+`AdvancedEncryption/Attic/` holds the files not yet repaired (not built). A file is restored by
+`git mv` back under `PE/`, its import added to `AdvancedEncryption.lean`, then fixed or pruned of
+its date-window numerals (the pruning helper used: delete the declarations whose build fails and
+re-prove them at confA).
