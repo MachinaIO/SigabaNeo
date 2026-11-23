@@ -1741,6 +1741,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
 * **Part 191 (audited, SOUND).** [plane_comparison](research/wall1_plane_comparison.md): the chain-to-Haar comparison
   reduces to a single rank-2 Rankin lower-tail event, namely a saturated plane of area ≤ 1352/√3 in the penultimate lattice.
   Its Haar count loss is < 3329^{1.39}. The chain-side bound remains open.
+* **Lean (Part 183 transfers).** ComplexGaussianLattice / ProjectedDualCoordinates / RadialCountingBins / ProjectedBallCount /
+  TerminalCountObstruction / HermiteWitness506 (axiom-clean) formalize:
+  * `projected_candidates_count`, for a projected-grid realization, proved via complex-Gaussian Poisson summation, the
+    dual-coordinate bound and a 4096-bin radial sum;
+  * an obstruction showing a fixed-floor count needs history hypotheses;
+  * the Hermite witness checks: Blichfeldt gives s² < 61.45238·D^{2/506} unconditionally, and the sharper 56.2142 cap still
+    needs the spherical-addition / lens second-moment estimate.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
