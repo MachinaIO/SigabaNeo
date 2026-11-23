@@ -1931,6 +1931,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Watson index bounds ≤ 4 in rank 6 and ≤ 10 in rank 7.
   Still open: the general rank-5 index-1 determinant bound and the reduction to full shortest families, the non-integral
   rank-6/7 upper bounds, and γ₂₄.
+* **Lean (γ₅, nearly closed).** WatsonWellRounded / WatsonFiniteGram / WatsonGramVertices (axiom-clean) formalize:
+  * the well-rounded reduction in every rank;
+  * the exact finite Gram criterion for rank 5 (201 tests);
+  * det ≥ 1/8 at all 24 vertex representatives.
+  The only remaining obligation for γ₅⁵ = 8 is VertexCoverage: every extreme point of the normalized Gram polytope is a signed
+  permutation of the 24 representatives. An exact edge walk (docs/research/scripts/watson_gram_vertex_audit.py) finds 15,040
+  vertices in 24 orbits.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
