@@ -78,7 +78,7 @@ theorem statTerm_conf : statTerm confP hkp ((2 : ℝ≥0∞) ^ 148)⁻¹ ≤ ((2
   have h6 := date_mul_le delta6_le
   have hε : (Fintype.card Date : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ 148)⁻¹ ≤ x := by
     rw [card_date]; exact le_of_eq (two_pow_mul_inv 10 138)
-  unfold statTerm
+  rw [statTerm_eq_date]
   calc _ ≤ x + x + x + x + x := by gcongr
     _ = 5 * x := by ring
     _ ≤ 2 ^ 3 * x := by gcongr; norm_num
@@ -129,7 +129,7 @@ theorem length_KGsim_le (d : SimData hkp confP) (C : List Bool) :
 section Step
 
 variable {Inst Sec : Type} [Nonempty Inst] {nI nσ : ℕ} (ienc : FixedEnc Inst nI)
-  (senc : FixedEnc Sec nσ) (setupI : Date → PMF Sec)
+  (senc : FixedEnc Sec nσ) (setupI : PUniv.Attr → PMF Sec)
   (viewI : Inst → Sec → PK hkp confP × CT hkp confP) (sdI : Inst → Sec → SimData hkp confP)
 
 /-- The instance words of a step: `true` and the encoding of an instance. -/
@@ -142,7 +142,7 @@ theorem instOf_cons (i : Inst) : instOf ienc (true :: ienc.enc i) = i :=
   Function.leftInverse_invFun (fun a b h => ienc.inj (List.cons_injective h)) i
 
 /-- The setup of the packed challenger (unused by the oracle, which draws from `setupPack`). -/
-noncomputable def stOf : dateUniverse.Attr → PMF (Inst × Sec) :=
+noncomputable def stOf : PUniv.Attr → PMF (Inst × Sec) :=
   setupPack (instOf ienc) (fun _ => setupI) []
 
 /-- **The components of a step other than the key component at `confP`**, with their laws and
@@ -156,11 +156,11 @@ structure StepComps where
   wf_pub : pubP.WF
   wf_chal : chalP.WF
   sd : SdSpec hkp confP sdP (ienc.prod senc).enc (fun p => sdI p.1 p.2) (fun _ => True)
-  law_setup : ∀ i x, setupP.law (io2 (R := 254) (true :: ienc.enc i) (dateUniverse.encAttr x) []) =
+  law_setup : ∀ i x, setupP.law (io2 (R := 254) (true :: ienc.enc i) (PUniv.encAttr x) []) =
     (setupI x).map fun σ => io2 (R := 254) ((ienc.prod senc).enc (i, σ)) [] []
   law_pub : ∀ p, pubP.law (io2 (R := 254) ((ienc.prod senc).enc p) [] []) =
     PMF.pure (io2 (R := 254) ((spPack (stOf ienc setupI) viewI sdI).pub p) [] [])
-  law_chal : ∀ p μ, chalP.law (io2 (R := 254) ((ienc.prod senc).enc p) (dateUniverse.encMsg μ) []) =
+  law_chal : ∀ p μ, chalP.law (io2 (R := 254) ((ienc.prod senc).enc p) (PUniv.encMsg μ) []) =
     ((spPack (stOf ienc setupI) viewI sdI).chal p μ).map fun ct => io2 (R := 254) ct [] []
   time_setup : ∀ {a b : ℕ}, a ≤ 2 ^ 180 → b ≤ 10 → timeBoundT setupP (io2 (R := 254) a b 0) ≤ 2 ^ 403
   len_setup : ∀ {a b : ℕ}, a ≤ 2 ^ 180 → b ≤ 10 →
@@ -188,19 +188,25 @@ variable (S : StepComps ienc senc setupI viewI sdI) (wfB : XProg 256) (Wg : ℕ)
 
 theorem hL_conf : dateBound ≤ confP.L := by rw [confP_L]
 
+/-- **The authorization component of the reductions** and its interface (`AuthSpec`): the
+reductions use only `authC_spec`. -/
+abbrev authC : XProg 256 := authL
+
+theorem authC_spec : AuthSpec hkp confP authC (2 ^ 240) 275 19 := authSpec_authL hkp confP hL_conf
+
 /-- **The component programs of a step**, the key component `keyP … sdP wfB Wg cfP`. -/
 noncomputable def StepComps.comps :
-    Comps 254 (dateCodes (ienc.prod senc)) (spPack (stOf ienc setupI) viewI sdI)
+    Comps 254 (puCodes (ienc.prod senc)) (spPack (stOf ienc setupI) viewI sdI)
       (setupPack (instOf ienc) fun _ => setupI) (IWof ienc) (fun _ => True) where
   setupP := S.setupP
   pubP := S.pubP
   keyP := keyP hkp confP S.sdP wfB Wg cfP
-  authP := authL
+  authP := authC
   chalP := S.chalP
   wf_setup := S.wf_setup
   wf_pub := S.wf_pub
   wf_key := wf_keyP S.sd.wf hwf.wf Wg cfP
-  wf_auth := wf_authL
+  wf_auth := authC_spec.wf
   wf_chal := S.wf_chal
   law_setup w x hw := by
     obtain ⟨i, rfl⟩ := hw
@@ -209,19 +215,19 @@ noncomputable def StepComps.comps :
   ok_setup _ _ _ _ _ := trivial
   law_pub σ _ := S.law_pub σ
   law_key σ C _ := law_keyP_spPack (stOf ienc setupI) viewI sdI S.sd hwf cfP cfP_valid σ trivial C
-  law_auth C x := law_authL hkp confP hL_conf C x
+  law_auth C x := authC_spec.law C x
   law_chal σ μ _ := S.law_chal σ μ
 
 include S in
 theorem stateBound_le :
-    stateBound (dateCodes (ienc.prod senc)) (2 ^ 180) ≤ 2 ^ 180 := by
+    stateBound (puCodes (ienc.prod senc)) (2 ^ 180) ≤ 2 ^ 180 := by
   have h := S.nS_le
   show max (2 ^ 180) (1 + 10 + (nI + nσ) + 3) ≤ 2 ^ 180
   generalize (2 : ℕ) ^ 180 = Z at *
   omega
 
 include S in
-theorem sigBound_le : sigBound (dateCodes (ienc.prod senc)) (2 ^ 180) ≤ 2 ^ 180 := by
+theorem sigBound_le : sigBound (puCodes (ienc.prod senc)) (2 ^ 180) ≤ 2 ^ 180 := by
   have := stateBound_le S
   unfold sigBound
   omega
@@ -232,10 +238,10 @@ include hcost hW1 hW2
 
 theorem key_bounds :
     timeBoundT (keyP hkp confP S.sdP wfB Wg cfP)
-        (io2 (R := 254) (sigBound (dateCodes (ienc.prod senc)) (2 ^ 180)) confP.L 0) ≤
+        (io2 (R := 254) (sigBound (puCodes (ienc.prod senc)) (2 ^ 180)) confP.L 0) ≤
         2 ^ T + 2 ^ 2045 ∧
       lenBoundT (keyP hkp confP S.sdP wfB Wg cfP)
-        (io2 (R := 254) (sigBound (dateCodes (ienc.prod senc)) (2 ^ 180)) confP.L 0) ≤
+        (io2 (R := 254) (sigBound (puCodes (ienc.prod senc)) (2 ^ 180)) confP.L 0) ≤
         io2 (2 ^ 252) 0 0 :=
   time_keyP_conf (S.time_sd (sigBound_le S) (by positivity)) (S.len_sd (sigBound_le S) (by positivity))
     hW1 hW2 hcost.time hcost.len
@@ -250,7 +256,7 @@ noncomputable def StepComps.bounds : CompBoundsP (S.comps wfB Wg hwf) confP.L (2
   len_setup := S.len_setup (stateBound_le S) le_rfl
   len_pub := S.len_pub le_rfl (by positivity)
   len_key := (key_bounds S hcost hW1 hW2).2
-  len_auth := len_authL (confP_L_le.trans (by norm_num)) le_rfl
+  len_auth := authC_spec.len (confP_L_le.trans (by norm_num)) (le_refl nA)
   len_chal := S.len_chal (sigBound_le S) (by show (1 : ℕ) ≤ 2 ^ 180; norm_num)
 
 omit hcost hW1 hW2 in
@@ -291,8 +297,8 @@ theorem compTime_le (hT : T ≤ 2370) : compTimeP (S.bounds hwf hcost hW1 hW2) �
   have h1 := S.time_setup (stateBound_le S) le_rfl
   have h2 := S.time_pub (a := 2 ^ 182) (b := 0) le_rfl (by positivity)
   have h3 := (key_bounds S hcost hW1 hW2).1
-  have h4 := time_authL (a := confP.L) (b := 10) (confP_L_le.trans (by norm_num)) le_rfl
-  have h5 := S.time_chal (a := sigBound (dateCodes (ienc.prod senc)) (2 ^ 180)) (b := 1)
+  have h4 := authC_spec.time (a := confP.L) (b := nA) (confP_L_le.trans (by norm_num)) le_rfl
+  have h5 := S.time_chal (a := sigBound (puCodes (ienc.prod senc)) (2 ^ 180)) (b := 1)
     (sigBound_le S) (by show (1 : ℕ) ≤ 2 ^ 180; norm_num)
   have hT' : (2 : ℕ) ^ T ≤ 2 ^ 2370 := Nat.pow_le_pow_right (by norm_num) hT
   have hk' := h3.trans (Nat.add_le_add_right hT' (2 ^ 2045))
@@ -318,7 +324,7 @@ theorem const_le (hT : T ≤ 2370) (P : Machine) (hsP : P.states ≤ 2 ^ 16) (ht
     (htP.trans (Nat.pow_le_pow_right (by norm_num) (by norm_num))) hpP
     (S.size_setup.trans (Nat.pow_le_pow_right (by norm_num) (by norm_num)))
     (S.size_pub.trans (Nat.pow_le_pow_right (by norm_num) (by norm_num))) hkey
-    (size_authL.trans (Nat.pow_le_pow_right (by norm_num) (by norm_num)))
+    (authC_spec.size.trans (Nat.pow_le_pow_right (by norm_num) (by norm_num)))
     (S.size_chal.trans (Nat.pow_le_pow_right (by norm_num) (by norm_num)))
     (compTime_le S hwf hcost hW1 hW2 hT)
     (show (2 : ℕ) ^ 182 ≤ 2 ^ 252 by norm_num) (show (2 : ℕ) ^ 183 ≤ 2 ^ 252 by norm_num)
@@ -435,9 +441,9 @@ theorem attributeHiding_conf {wfB : XProg 256} {Wg T : ℕ} (hwf : WfSpec hkp co
     (kb : ℕ) (hkb : 2645 ≤ kb)
     (hard3 : RingLWE.decision.HardAt (params3 Np (2 ^ Kp) kp (.cbd 16)) kb)
     (hard5 : RingLWE.decision.HardAt (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16)) kb) :
-    AttributeHiding dateUniverse params (impl hkp confP ms) := by
+    AttributeHiding PUniv params (impl hkp confP ms) := by
   have hC : ∀ {Inst Sec : Type} [Nonempty Inst] {nI nσ : ℕ} {ienc : FixedEnc Inst nI}
-      {senc : FixedEnc Sec nσ} {setupI : Date → PMF Sec}
+      {senc : FixedEnc Sec nσ} {setupI : PUniv.Attr → PMF Sec}
       {viewI : Inst → Sec → PK hkp confP × CT hkp confP} {sdI : Inst → Sec → SimData hkp confP}
       (S : StepComps ienc senc setupI viewI sdI) (P : Machine), P.states ≤ 2 ^ 16 →
       P.time ≤ 2 ^ 350 → P.tapes ≤ 14 →
@@ -470,7 +476,7 @@ assumption `RingLWE.decision.Holds` gives `HardAt` at `RingLWE.H ≥ 2650` bits
 theorem attributeHiding_conf_registry (hR : RingLWE.decision.Holds) {wfB : XProg 256} {Wg T : ℕ}
     (hwf : WfSpec hkp confP wfB Wg) (hcost : WfCost wfB Wg T) (hT : T ≤ 2370) (hW1 : 384 ≤ Wg)
     (hW2 : Wg ≤ 2 ^ 200) :
-    AttributeHiding dateUniverse params (impl hkp confP ms) := by
+    AttributeHiding PUniv params (impl hkp confP ms) := by
   have h3 : 2650 ≤ RingLWE.H (params3 Np (2 ^ Kp) kp (.cbd 16)) := by
     rw [params3_conf]; exact Strength.ringLWE_H_registry3
   have h5 : 2650 ≤ RingLWE.H (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16)) := by
@@ -486,7 +492,7 @@ theorem attributeHiding_implP_registry (hR : RingLWE.decision.Holds) (X : ChiSam
     (hK2 : 2 ≤ Kp) {wfB : XProg 256} {Wg T : ℕ}
     (hwf : WfSpec hkp confP wfB Wg) (hcost : WfCost wfB Wg T) (hT : T ≤ 2370) (hW1 : 384 ≤ Wg)
     (hW2 : Wg ≤ 2 ^ 200) :
-    AttributeHiding dateUniverse params (implP hkp confP X hbf hcfX cfP cfP_valid hK2) :=
+    AttributeHiding PUniv params (implP hkp confP X hbf hcfX cfP cfP_valid hK2) :=
   attributeHiding_conf_registry hR hwf hcost hT hW1 hW2
 
 end AdvancedEncryption.DualUse

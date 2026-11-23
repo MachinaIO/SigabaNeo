@@ -36,8 +36,8 @@ theorem abs_sub_le_of_closeTo {α : Type} {μ ν : PMF α} {ε : ℝ≥0∞} (h 
     linarith
 
 /-- The input of the distinguisher from the observable part of a run. -/
-def viewObs (o : List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool) : List Bool :=
-  encodeTuple [encOpt dateUniverse.encAttr o.2.1, encOpt dateUniverse.encMsg o.2.2.1, o.1]
+def viewObs (o : List Bool × Option PUniv.Attr × Option PUniv.Msg × Bool) : List Bool :=
+  encodeTuple [encOpt PUniv.encAttr o.2.1, encOpt PUniv.encMsg o.2.2.1, o.1]
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
 variable {ms : Machines hk c}
@@ -47,26 +47,26 @@ noncomputable abbrev G (A : Machine 3) (V : Date → PMF (PK hk c × CT hk c)) :
   gameV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c) A V
 
 /-- The distinguisher on observable runs. -/
-noncomputable def Dc (D : Machine) (o : List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool) :
+noncomputable def Dc (D : Machine) (o : List Bool × Option PUniv.Attr × Option PUniv.Msg × Bool) :
     PMF (List Bool) := D.run (viewObs o)
 
 theorem real_view_bind (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) (A : Machine 3) (D : Machine) :
-    ((PE.real dateUniverse params (impl hk c ms) A).map view).bind D.run = (G A (V0 hk c)).bind (Dc D) := by
+    ((PE.real PUniv params (impl hk c ms) A).map view).bind D.run = (G A (V0 hk c)).bind (Dc D) := by
   have e := real_eq_gameV (ms := ms) hdec hcov A
-  calc ((PE.real dateUniverse params (impl hk c ms) A).map view).bind D.run
-      = ((PE.real dateUniverse params (impl hk c ms) A).map
+  calc ((PE.real PUniv params (impl hk c ms) A).map view).bind D.run
+      = ((PE.real PUniv params (impl hk c ms) A).map
           (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad))).bind (Dc D) := by
         rw [PMF.bind_map, PMF.bind_map]; rfl
     _ = (G A (V0 hk c)).bind (Dc D) := congrArg (fun μ => PMF.bind μ (Dc D)) e
 
 theorem ideal_view_bind (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) (A : Machine 3) (D : Machine) :
-    ((PE.ideal dateUniverse params (impl hk c ms) (simMachine hk c) A).map view).bind D.run =
+    ((PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).map view).bind D.run =
       (G A (VI0 hk c)).bind (Dc D) := by
   have e := ideal_eq_gameV (ms := ms) hdec hcov A
-  calc ((PE.ideal dateUniverse params (impl hk c ms) (simMachine hk c) A).map view).bind D.run
-      = ((PE.ideal dateUniverse params (impl hk c ms) (simMachine hk c) A).map
+  calc ((PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).map view).bind D.run
+      = ((PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).map
           (fun r => (r.1, r.2.attr, r.2.msg, r.2.bad))).bind (Dc D) := by
         rw [PMF.bind_map, PMF.bind_map]; rfl
     _ = (G A (VI0 hk c)).bind (Dc D) := congrArg (fun μ => PMF.bind μ (Dc D)) e
@@ -89,8 +89,8 @@ theorem advantage_le (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) =
         δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
       (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
         Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d)) ≠ ⊤) :
-    |D.acceptProb ((PE.real dateUniverse params (impl hk c ms) A).map view) -
-        D.acceptProb ((PE.ideal dateUniverse params (impl hk c ms) (simMachine hk c) A).map view)| ≤
+    |D.acceptProb ((PE.real PUniv params (impl hk c ms) A).map view) -
+        D.acceptProb ((PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).map view)| ≤
       ((Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ +
         δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
       (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
@@ -104,18 +104,18 @@ theorem advantage_le (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) =
   exact abs_sub_le_of_closeTo h hfin [true]
 
 /-- The distinguisher that rejects runs whose flag is up. -/
-noncomputable def DcStar (D : Machine) (o : List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool) :
+noncomputable def DcStar (D : Machine) (o : List Bool × Option PUniv.Attr × Option PUniv.Msg × Bool) :
     PMF (List Bool) := if o.2.2.2 then PMF.pure [false] else Dc D o
 
 /-- With an admissible adversary, rejecting the runs with the flag up changes nothing. -/
-theorem bind_star {μ : PMF (List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool)} (D : Machine)
+theorem bind_star {μ : PMF (List Bool × Option PUniv.Attr × Option PUniv.Msg × Bool)} (D : Machine)
     (h : ∀ o ∈ μ.support, o.2.2.2 = false) : μ.bind (DcStar D) = μ.bind (Dc D) :=
   PMF.bind_congr_on_support _ _ _ fun o ho => by simp [DcStar, h o ho]
 
 theorem real_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) (A : Machine 3) (D : Machine)
-    (hadm : ∀ r ∈ (PE.real dateUniverse params (impl hk c ms) A).support, r.2.bad = false) :
-    ((PE.real dateUniverse params (impl hk c ms) A).map view).bind D.run =
+    (hadm : ∀ r ∈ (PE.real PUniv params (impl hk c ms) A).support, r.2.bad = false) :
+    ((PE.real PUniv params (impl hk c ms) A).map view).bind D.run =
       (G A (V0 hk c)).bind (DcStar D) := by
   rw [real_view_bind hdec hcov A D]
   refine (bind_star D ?_).symm
@@ -127,9 +127,9 @@ theorem real_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
 
 theorem ideal_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) (A : Machine 3) (D : Machine)
-    (hadm : ∀ r ∈ (PE.ideal dateUniverse params (impl hk c ms) (simMachine hk c) A).support,
+    (hadm : ∀ r ∈ (PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).support,
       r.2.bad = false) :
-    ((PE.ideal dateUniverse params (impl hk c ms) (simMachine hk c) A).map view).bind D.run =
+    ((PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).map view).bind D.run =
       (G A (VI0 hk c)).bind (DcStar D) := by
   rw [ideal_view_bind hdec hcov A D]
   refine (bind_star D ?_).symm
@@ -143,7 +143,7 @@ theorem ideal_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u
 experiments-as-distinguishers rejecting the runs with the flag up. -/
 theorem advantage_le_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u)
     (hcov : RealCovered hk c) (A : Machine 3) (D : Machine)
-    (hadm : Admissible dateUniverse params (impl hk c ms) (simMachine hk c) A) {ε δ₃ δ₅ δI : ℝ≥0∞}
+    (hadm : Admissible PUniv params (impl hk c ms) (simMachine hk c) A) {ε δ₃ δ₅ δI : ℝ≥0∞}
     (hflood : ∀ rest ∈ (lawRestC hk c).support, ∀ w : JC (Sdw (N := N) hk) → (Fin c.d → Bool),
       CloseTo ((lawEc hk c).map fun e j => e j + rest.2.1 * wMat w j) (lawEc hk c) ε)
     (h₃ : CloseTo ((inst3Real (k := k) (χR c)).bind fun ab =>
@@ -158,8 +158,8 @@ theorem advantage_le_star (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec
         δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
       (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +
         Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d)) ≠ ⊤) :
-    |D.acceptProb ((PE.real dateUniverse params (impl hk c ms) A).map view) -
-        D.acceptProb ((PE.ideal dateUniverse params (impl hk c ms) (simMachine hk c) A).map view)| ≤
+    |D.acceptProb ((PE.real PUniv params (impl hk c ms) A).map view) -
+        D.acceptProb ((PE.ideal PUniv params (impl hk c ms) (simMachine hk c) A).map view)| ≤
       ((Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + Fintype.card Date * ε + δ₃ +
         δ₅ + Fintype.card Date * delta6 (Sdw (N := N) hk) (Fin c.d)) +
       (Fintype.card Date * delta1 (Sdw (N := N) hk) (Fin c.d) + δI +

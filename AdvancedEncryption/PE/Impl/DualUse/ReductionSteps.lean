@@ -34,9 +34,9 @@ set_option linter.unusedSectionVars false
 
 /-- **The reduction of hybrid 3 from its components.** -/
 theorem reduces3_of_comps {R : ℕ} {sig : FixedEnc (Inst3T N K k × Sec3 hk c) nS}
-    {st : dateUniverse.Attr → PMF (Inst3T N K k × Sec3 hk c)} {inst : List Bool → Inst3T N K k}
+    {st : PUniv.Attr → PMF (Inst3T N K k × Sec3 hk c)} {inst : List Bool → Inst3T N K k}
     {IW : List Bool → Prop} {Ok : Inst3T N K k × Sec3 hk c → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st (view3 hk c) (sd3 hk c))
+    (cs : Comps R (puCodes sig) (spPack st (view3 hk c) (sd3 hk c))
       (setupPack inst fun _ => setup3 hk c) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (L : ℕ)
     (hpubL : ∀ σ, Ok σ → ((spPack st (view3 hk c) (sd3 hk c)).pub σ).length ≤ L)
@@ -67,12 +67,12 @@ theorem reduces3_of_comps {R : ℕ} {sig : FixedEnc (Inst3T N K k × Sec3 hk c) 
 /-- **The reduction of hybrid 5 from its components.** -/
 theorem reduces5_of_comps {R : ℕ}
     {sig : FixedEnc ((Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) × Sec5 hk c) nS}
-    {st : dateUniverse.Attr → PMF ((Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) ×
+    {st : PUniv.Attr → PMF ((Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) ×
       Sec5 hk c)}
     {inst : List Bool → Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k}
     {IW : List Bool → Prop}
     {Ok : (Pub (Fin c.d) (Rg N K) k × Pub (Fin c.d) (Rg N K) k) × Sec5 hk c → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st (view5 hk c) (sd5 hk c))
+    (cs : Comps R (puCodes sig) (spPack st (view5 hk c) (sd5 hk c))
       (setupPack inst fun _ => setup5 hk c) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (L : ℕ)
     (hpubL : ∀ σ, Ok σ → ((spPack st (view5 hk c) (sd5 hk c)).pub σ).length ≤ L)
@@ -103,9 +103,9 @@ theorem reduces5_of_comps {R : ℕ}
 
 /-- **The reduction of the ideal side from its components.** -/
 theorem reducesI_of_comps {R : ℕ} {sig : FixedEnc (Inst3T N K k × SecI hk c) nS}
-    {st : dateUniverse.Attr → PMF (Inst3T N K k × SecI hk c)} {inst : List Bool → Inst3T N K k}
+    {st : PUniv.Attr → PMF (Inst3T N K k × SecI hk c)} {inst : List Bool → Inst3T N K k}
     {IW : List Bool → Prop} {Ok : Inst3T N K k × SecI hk c → Prop}
-    (cs : Comps R (dateCodes sig) (spPack st (viewI hk c) (sdI hk c))
+    (cs : Comps R (puCodes sig) (spPack st (viewI hk c) (sdI hk c))
       (setupPack inst fun _ => setupI hk c) IW Ok) {W : ℕ}
     (cb : CompBoundsP cs c.L W) (L : ℕ)
     (hpubL : ∀ σ, Ok σ → ((spPack st (viewI hk c) (sdI hk c)).pub σ).length ≤ L)
