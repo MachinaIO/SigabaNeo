@@ -2111,6 +2111,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     frozen directions.
   * A 0.18 void ceiling on draws 129–405 plus one 10⁻¹² exit gives Z_rem < 5.338·10⁻¹¹ (direct recomputation: 9.287·10⁻¹²
     before the exit charge). The ceiling is open (W1-R101).
+* **Part 231 (audited, CONFIRMED; negative).** [drift_recursion](research/wall1_drift_recursion.md): a radial
+  void-profile recursion fails.
+  * Initialization at draw 129: corridor radius 641.6028, raw height-one hit probability ≤ 1.629·10⁻¹³⁰ on every
+    incoming prefix. Outside < 10^-16.19, lifts lose > 56.248% of their squared norm to 128 frozen directions.
+  * First transition: even the optimal mean-projector eigenvalue 1/505 credits no gain above 553.6765, against reference
+    radius 560.3305, so a shell of width 6.654 is uncontrolled.
+  * Two rank-505 examples share incoming distances mark by mark and the winner line, yet their voids are ≥ 602/3329 and
+    ≤ 594/3329. They lie at scale 1.2815, below the reachable floor 32.428. A successful potential must track direction
+    information (W1-R103).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
