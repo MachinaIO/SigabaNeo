@@ -69,6 +69,7 @@ import SigabaNeo.Lib.Lattices.Automorphism.Norm
 import SigabaNeo.Lib.Lattices.Automorphism.Sieve
 import SigabaNeo.Lib.Lattices.Automorphism.Instance
 import SigabaNeo.Lib.Lattices.Automorphism.Basis
+import SigabaNeo.Lib.Lattices.Automorphism.LUT
 
 /-!
 # Lattice library
@@ -133,5 +134,6 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   coefficients), `Ring` (`σ_k` is a ring endomorphism for odd `k`; monomials), `Norm` (`σ_k` is a signed
   permutation of the coefficients and preserves `cnorm`, `ℓ₁`, `rnorm`), `Sieve` (Lemma 7), `Instance` (`Negacyclic R n` as an
   `ExpRing`: `expRingOf`, `expRing` for odd `q`, `expRingMersenne` for `q = 2^K − 1`), `Basis` (`H = ⟨g⟩`, `g = 1 + 2n/W`, and its
-  binary basis `g^(2^j)`).
+  binary basis `g^(2^j)`), `LUT` (Lemma 8 over an abstract `ExpRing`: `α_{k,L}`, `v_{k,L}`, the
+  sums over `H` and over the binary basis, the rounds).
 -/
