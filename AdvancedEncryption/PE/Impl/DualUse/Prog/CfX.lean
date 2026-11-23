@@ -270,7 +270,8 @@ def postC : XProg 256 :=
 
 variable (hk c) in
 /-- **The `c_f̂` block of `Dec`** around a `W_f` block `wfB`. -/
-def cfX (wfB : XProg 256) : XProg 256 := XProg.seq (preC hk c) (XProg.seq wfB (postC hk c))
+def cfX (wfB : XProg 256) : XProg 256 :=
+  XProg.seq (clearL clr01) (XProg.seq (preC hk c) (XProg.seq wfB (postC hk c)))
 
 /-! ### The words -/
 
@@ -547,13 +548,15 @@ theorem wf_postCoreC (L A NK oW LW Zr N K k Z R nJ : ℕ) :
 /-- **The `c_f̂` block meets its specification**, for a coin-free `W_f` block meeting `WfSpec`. -/
 theorem cfSpec_cfX (hd : 3 ≤ c.d) (hS : lenKA hk c + N * K ≤ lenZ c) {wfB : XProg 256} {W : ℕ}
     (hwf : WfSpec hk c wfB W) (hcf : wfB.CoinFree) : CfSpec hk c (cfX hk c wfB) W where
-  wf := ⟨wf_preCoreC _ _ _ _ _ _ _ _ _ _ _ _ _ _ _, hwf.wf, wf_postCoreC _ _ _ _ _ _ _ _ _ _ _ _⟩
-  coinFree := XProg.coinFree_seq (cf_preCoreC _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)
-    (XProg.coinFree_seq hcf (cf_postCoreC _ _ _ _ _ _ _ _ _ _ _ _))
+  wf := ⟨wf_clearL _, wf_preCoreC _ _ _ _ _ _ _ _ _ _ _ _ _ _ _, hwf.wf,
+    wf_postCoreC _ _ _ _ _ _ _ _ _ _ _ _⟩
+  coinFree := XProg.coinFree_seq (cfX_clearL _) (XProg.coinFree_seq
+    (cf_preCoreC _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)
+    (XProg.coinFree_seq hcf (cf_postCoreC _ _ _ _ _ _ _ _ _ _ _ _)))
   law sk C ct hL hC := by
     have hd0 : 0 < c.d := by omega
     have hcl := colsW_last hd0 (simW (sdC hk c sk.1 ct (stashC hk c sk ct)) C)
-    rw [cfX, XProg.law_seq_pure (law_preC hd hS sk ct _), XProg.law_seq_pure (hwf.law _ C hL hC),
+    rw [cfX, XProg.law_seq_pure (law_clr01 _ _), XProg.law_seq_pure (law_preC hd hS sk ct _), XProg.law_seq_pure (hwf.law _ C hL hC),
       law_postC hd hS sk ct _ (by rw [hcl, Algo.length_rowW]; ring)]
     congr 2
     obtain ⟨w, rfl⟩ := hC

@@ -214,9 +214,30 @@ variable (hk c) in
 def postB : XProg 256 :=
   XProg.frame (eLo 54 eLo54) (postCoreB (lenPK hk c) (lenT N K k) (offWk hk c) (lenZ c) N K k)
 
+/-- Every tape but `0` and `1`. -/
+def clr01 : List (Fin 256) := (List.finRange 256).filter fun t => t ≠ 0 ∧ t ≠ 1
+
+theorem mem_clr01 (t : Fin 256) : t ∈ clr01 ↔ t ≠ 0 ∧ t ≠ 1 := by simp [clr01]
+
+/-- Clearing the scratch tapes of a store with words on `0` and `1` only. -/
+theorem law_clr01 (a g : List Bool) :
+    (clearL clr01).law (io2 (R := 254) a g []) = PMF.pure (io2 (R := 254) a g []) := by
+  rw [law_clearL]
+  congr 1
+  funext t
+  by_cases h0 : t = 0
+  · subst h0; simp [mem_clr01]
+  · by_cases h1 : t = 1
+    · subst h1; simp [mem_clr01]
+    · have h0' : t.val ≠ 0 := fun e => h0 (Fin.ext e)
+      have h1' : t.val ≠ 1 := fun e => h1 (Fin.ext e)
+      simp [mem_clr01, h0, h1, io2, h0', h1']
+
 variable (hk c) in
-/-- **The key-row block of `KeyGen`** around a `W_f` block `wfB`. -/
-def bfX (wfB : XProg 256) : XProg 256 := XProg.seq (preB hk c) (XProg.seq wfB (postB hk c))
+/-- **The key-row block of `KeyGen`** around a `W_f` block `wfB`: the scratch tapes cleared (for
+the per-tape bounds), the crafted data, the `W_f` block, the key row. -/
+def bfX (wfB : XProg 256) : XProg 256 :=
+  XProg.seq (clearL clr01) (XProg.seq (preB hk c) (XProg.seq wfB (postB hk c)))
 
 /-! ### The words -/
 
@@ -384,11 +405,11 @@ theorem matAdd_rowW (A B : Matrix (Fin 1) (RingBTVW.Col k) (Rg N K)) :
 /-- **The key-row block meets its specification**, for any `W_f` block meeting `WfSpec`. -/
 theorem bfSpec_bfX (hd : 3 ≤ c.d) {wfB : XProg 256} {W : ℕ} (hwf : WfSpec hk c wfB W) :
     BfSpec hk c (bfX hk c wfB) W where
-  wf := ⟨wf_preCoreB _ _ _ _ _ _ _ _ _ _ _, hwf.wf, wf_postCoreB _ _ _ _ _ _ _⟩
+  wf := ⟨wf_clearL _, wf_preCoreB _ _ _ _ _ _ _ _ _ _ _, hwf.wf, wf_postCoreB _ _ _ _ _ _ _⟩
   law msk C hL hC := by
     have hd0 : 0 < c.d := by omega
     have hcl := colsW_last hd0 (simW (sdB hk c msk.1 (stashB hk c msk)) C)
-    rw [bfX, XProg.law_seq_pure (law_preB hd msk _), XProg.law_seq_pure (hwf.law _ C hL hC),
+    rw [bfX, XProg.law_seq_pure (law_clr01 _ _), XProg.law_seq_pure (law_preB hd msk _), XProg.law_seq_pure (hwf.law _ C hL hC),
       law_postB hd msk _ (by rw [hcl, Algo.length_rowW]; ring)]
     congr 2
     obtain ⟨w, rfl⟩ := hC
