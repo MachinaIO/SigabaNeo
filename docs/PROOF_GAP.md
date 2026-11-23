@@ -1959,6 +1959,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     selection, because its height is invertible mod 3329. Remaining Z_rem budget for g < 35.15: ≈ 5.83·10⁻¹¹.
   * Negative: the direct Gaussian majorant exceeds 10³⁰ at every eligible endpoint outside the exception (this concerns
     the majorant only).
+* **Part 213 (audited, CONFIRMED).** [hecke_randomization](research/wall1_hecke_randomization.md): Hecke randomization
+  of the reducer.
+  * For each fixed finite prime sequence there is a starting lattice (chosen after the sequence) for which every endpoint
+    hits both the area and spacing events. Deep examples violate the inherited dual floor.
+  * The mean-zero L² contraction 2√p/(p+1) per step is valid in rank 505 (Clozel–Oh–Ullmo). The pointwise conversion has
+    local exponent (505²−1)/2 = 127512. Many unconditional Hecke steps from a fixed compact set give near-Haar
+    probabilities uniformly there; no numerical step count is established yet (W1-R84). Conditioning later steps on the
+    gates changes the kernel.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
