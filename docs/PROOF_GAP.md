@@ -1924,6 +1924,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     unreachable (restart probability 0). Whether collapse-and-replace happens on reachable doubly gated histories is open.
   * Haar benchmark × 3329¹⁵ for internal spacing ≤ 26 exceeds the allowance by 9.5613. For the terminal-area event the
     conservative factor is 3329^13.49584. A comparison factor ≤ 3329^14.72 would close this route.
+* **Part 209 (audited, CONFIRMED with correction).** [zrem_flag_moment](research/wall1_zrem_flag_moment.md):
+  line-conditioned first moment for Z_rem.
+  * Conditioning on a primitive line removes the divergent second moment of Part 207. Counting a shortest line of each
+    witness plane is an exact hit test, with eleven-draw Haar mean 1.908267663·10⁻⁵⁸.
+  * Tests in the rank-504 quotient by the globally shortest line have eleven-draw Haar sums 3.0955·10⁻¹⁴ (single ball;
+    permitted distortion 2094.97) and 9.3340·10⁻¹⁸ (line plus plane; permitted 6,947,681).
+  * Part 193's abstract example (which needs a factor > 3.3022·10¹⁰) is unreachable: every reachable prefix has
+    qM* ⊆ ℤᴺ, which the example violates. Open: an upper bound on the test means over reachable doubly gated prefixes.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
