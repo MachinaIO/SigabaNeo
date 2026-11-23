@@ -2173,6 +2173,20 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
       > 67.22% in < 2^1226, against a secret entropy of ≈ 1192.35 bits.
     * Randomized exact CVP (ADS, Cor. 5.7) costs 2^640 time and 2^638 space for four rank-638 calls, up to lower-order
       factors that still need finite bounds.
+* **Part 237 (audited; negative + DEPENDENCY CORRECTION).** [detect_repair](research/wall1_detect_repair.md):
+  detect-and-repair, and what Pr(E) actually suffices for.
+  * Repair cannot be deterministic on E. The all-zero design reaches E with spacing 1, and any decoder there succeeds with
+    probability ≤ (5/16)^512; that design fails the raw-good gate. Failure happens before lifting: on every F block the
+    score exceeds 1.4984 > 0.00012938, so the block always rejects. No cheap complete detector is known.
+  * **Correction:** Pr(E) ≤ 4·10⁻⁷ settles only the Part 184 spacing target. The proposed mean-score estimate forces
+    Pr(F) < 4.317204·10⁻⁷; meeting both residual allowances would give Pr(E) < 1.84652·10⁻¹⁰.
+  * The width-506 success proof also needs:
+    * **score rejection frequency (Parts 181–182) — open.** Signed multiplicities, height-zero radii up to √960.5, and
+      shifted counts at heights 1–30 are uncontrolled;
+    * **joint acceptance with the prefix lift on the same returned basis (Parts 47, 181) — open.** `plantProb_liftFail_le`
+      gives only the conditional lift.
+  * Already proved: `failure_lt_score506` (terminal failure < 0.000607731 on acceptance), `restartScore_lwe`
+    (composition), `terminal_bound_unconditional`.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
