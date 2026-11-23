@@ -54,7 +54,7 @@ theorem rowL_le : DualUse.rowL Np Kp kp ≤ 2 ^ 92 := by rw [rowL_conf]; norm_nu
 theorem lenCj_le : lenCj (N := Np) (K := Kp) hkp ≤ 2 ^ 193 := by
   simp only [lenCj]; rw [nJ_conf, rowL_conf]; norm_num
 
-theorem nJR_le : nJ (N := Np) (K := Kp) hkp * DualUse.rowL Np Kp kp ≤ 2 ^ 193 := lenCj_le
+theorem nJR_leD : nJ (N := Np) (K := Kp) hkp * DualUse.rowL Np Kp kp ≤ 2 ^ 193 := lenCj_le
 
 theorem LW_le : nJ (N := Np) (K := Kp) hkp * (lenZ confP + DualUse.rowL Np Kp kp) ≤ 2 ^ 258 := by
   rw [nJ_conf, lenZ_conf, rowL_conf]; norm_num

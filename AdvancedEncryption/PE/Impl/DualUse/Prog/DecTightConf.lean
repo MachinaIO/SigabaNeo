@@ -34,7 +34,7 @@ theorem F2_le' : (1 * (2 * kp) * Np) * Kp ≤ 2 * kp * (Np * Kp) := le_of_eq (by
 
 theorem F0_le : lenPK hkp confP + lenKA hkp confP + nJ (N := Np) (K := Kp) hkp * DualUse.rowL Np Kp kp +
     Np * Kp ≤ 2 ^ 194 := by
-  have := lenPK_le; have := lenKA_le; have := nJR_le; have := NK_le; omega
+  have := lenPK_le; have := lenKA_le; have := nJR_leD; have := NK_le; omega
 
 theorem aD_le : 16 * (nDec hkp confP + 2) ≤ 2 ^ 200 := by have := nDec_le; omega
 
