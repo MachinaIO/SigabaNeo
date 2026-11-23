@@ -221,4 +221,284 @@ theorem time_setupMP_conf : (setupMP hkp confP chiSamplerP).time ≤ 2 ^ 3200 :=
         · exact hL.trans hL'
     _ ≤ 2 ^ 3200 := by norm_num
 
+/-! ### `Enc` -/
+
+/-- `encST` with linear bounds of the samplers (`a, s`: the shape of the χ sampler). -/
+def encSTL {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (a s w E wB EB wF EF M : ℕ) : ℕ :=
+  let S1 := M + N * K * 1 + N * K * 0
+  let S2 := S1 + (Enum.list (α := Fin c.d)).length * N * a + (Enum.list (α := Fin c.d)).length * N * s
+  let S3 := S2 + N * a + N * s
+  let S4 := S3 + (Enum.list (α := RingBTVW.Col k)).length * N * a +
+    (Enum.list (α := RingBTVW.Col k)).length * N * s
+  let S5 := S4 + (Enum.list (α := RingBTVW.Col k)).length * N * a +
+    (Enum.list (α := RingBTVW.Col k)).length * N * s
+  let S6 := S5 + nR hk c * (bEntB N K).a + nR hk c * (bEntB N K).s
+  let S7 := S6 + nE (N := N) hk * (bEntF K c.w).a + nE (N := N) hk * (bEntF K c.w).s
+  linC (N * K) M + (linX a s w E ((Enum.list (α := Fin c.d)).length * N) S1 +
+    (linX a s w E N S2 + (linX a s w E ((Enum.list (α := RingBTVW.Col k)).length * N) S3 +
+    (linX a s w E ((Enum.list (α := RingBTVW.Col k)).length * N) S4 +
+    (linX (bEntB N K).a (bEntB N K).s wB EB (nR hk c) S5 +
+    (linX (bEntF K c.w).a (bEntF K c.w).s wF EF (nE (N := N) hk) S6 + linX a s w E N S7))))))
+
+theorem encST_le {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) {Bχ : Bnd} {w E wB EB wF EF : ℕ}
+    (hB : Lin Bχ.T w E) (hEB : Lin (bEntB N K).T wB EB) (hEF : Lin (bEntF K c.w).T wF EF) (M : ℕ) :
+    encST hk c Bχ M ≤ encSTL hk c Bχ.a Bχ.s w E wB EB wF EF M := by
+  unfold encST encSTL
+  exact Nat.add_le_add (lin_bCoins _ _ _) (Nat.add_le_add (lin_Bcount hB _ _ _)
+    (Nat.add_le_add (lin_Bcount hB _ _ _) (Nat.add_le_add (lin_Bcount hB _ _ _)
+      (Nat.add_le_add (lin_Bcount hB _ _ _) (Nat.add_le_add (lin_Bcount hEB _ _ _)
+        (Nat.add_le_add (lin_Bcount hEF _ _ _) (lin_Bcount hB _ _ _)))))))
+
+/-- `encS` with the shape of the χ sampler as numbers. -/
+def encSN {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (a s M : ℕ) : ℕ :=
+  let S1 := M + N * K * 1 + N * K * 0
+  let S2 := S1 + (Enum.list (α := Fin c.d)).length * N * a + (Enum.list (α := Fin c.d)).length * N * s
+  let S3 := S2 + N * a + N * s
+  let S4 := S3 + (Enum.list (α := RingBTVW.Col k)).length * N * a +
+    (Enum.list (α := RingBTVW.Col k)).length * N * s
+  let S5 := S4 + (Enum.list (α := RingBTVW.Col k)).length * N * a +
+    (Enum.list (α := RingBTVW.Col k)).length * N * s
+  let S6 := S5 + nR hk c * (bEntB N K).a + nR hk c * (bEntB N K).s
+  let S7 := S6 + nE (N := N) hk * (bEntF K c.w).a + nE (N := N) hk * (bEntF K c.w).s
+  S7 + N * a + N * s
+
+theorem encS_eq {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (Bχ : Bnd) (M : ℕ) :
+    encS hk c Bχ M = encSN hk c Bχ.a Bχ.s M := rfl
+
+theorem natLT_le : ∀ (l : List (Fin 124 × ℕ)) (M X : ℕ), (∀ p ∈ l, p.2 ≤ X) →
+    natLT l M ≤ l.length * ((2 * X + 1) * (4 * M + 12)) + (2 * (M + 1) + 3)
+  | [], M, X, _ => by simp [natLT]
+  | p :: l, M, X, h => by
+    have h1 : (2 * p.2 + 1) * (4 * M + 12) ≤ (2 * X + 1) * (4 * M + 12) :=
+      Nat.mul_le_mul_right _ (by have := h p (by simp); omega)
+    have h2 := natLT_le l M X (fun q hq => h q (by simp [hq]))
+    simp only [natLT, List.length_cons]
+    nlinarith
+
+theorem lin_bEntB (N K : ℕ) : Lin (bEntB N K).T (6 + (8 * (N * K - 1) + 8 + (N * K - 1) * (2 + 3)))
+    (3 + ((N * K - 1) * 1 + (N * K - 1) * 0 + 3 + 3) + 1 + 0) :=
+  lin_Bseq lin_bCoin (lin_bZeros _)
+
+theorem lin_bEntF (K w : ℕ) : Lin (bEntF K w).T ((8 * min w K + 8 + min w K * (6 + 3)) +
+    (8 * (K - w) + 8 + (K - w) * (2 + 3)))
+    ((min w K * 1 + min w K * 0 + 3 + 3) + ((K - w) * 1 + (K - w) * 0 + 3 + 3) + min w K * 1 +
+      min w K * 0) :=
+  lin_Bseq (lin_bCoins _) (lin_bZeros _)
+
+theorem nR_conf : nR hkp confP = 10 * (2 * (2 ^ 25 + 1)) * 2 ^ 61 := by
+  rw [nR_eq, confP_d, kp_eq]
+theorem nE_conf : nE (N := Np) hkp =
+    10 * (2 * (2 * (2 ^ 25 + 1) * ((2 ^ 25 + 1) * 2 ^ 34))) * (2 * (2 ^ 25 + 1)) * 2 ^ 34 := by
+  rw [nE_eq, kp_eq, Np_def]
+
+theorem bEntB_as (N K : ℕ) : (bEntB N K).a = 1 + (N * K - 1) * 1 ∧
+    (bEntB N K).s = 0 + (N * K - 1) * 0 := ⟨rfl, rfl⟩
+theorem bEntF_as (K w : ℕ) : (bEntF K w).a = min w K * 1 + (K - w) * 1 ∧
+    (bEntF K w).s = min w K * 0 + (K - w) * 0 := ⟨rfl, rfl⟩
+theorem linX_le {a s w E n x A W E' C X : ℕ} (ha : a ≤ A) (hs : s ≤ A) (hw : w ≤ W) (hE : E ≤ E')
+    (hn : n ≤ C) (hx : x ≤ X) : linX a s w E n x ≤ linX A A W E' C X := by
+  unfold linX; gcongr
+
+theorem linC_le {n x A W E' C X : ℕ} (hn : n ≤ C) (hx : x ≤ X) (h1 : 1 ≤ A) (h6 : 6 ≤ W)
+    (h3 : 3 ≤ E') : linC n x ≤ linX A A W E' C X := by
+  unfold linC linX
+  have : n * 0 ≤ C * A := by simp
+  gcongr
+
+section EncGen
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+
+/-- The counts of `Enc`'s samplers are below `C`, their shapes below `A`. -/
+structure EncCounts (a s C A : ℕ) : Prop where
+  nk : N * K ≤ C
+  nd : (Enum.list (α := Fin c.d)).length * N ≤ C
+  n : N ≤ C
+  ncol : (Enum.list (α := RingBTVW.Col k)).length * N ≤ C
+  nr : nR hk c ≤ C
+  ne : nE (N := N) hk ≤ C
+  a : a ≤ A
+  s : s ≤ A
+  one : 1 ≤ A
+  ba : (bEntB N K).a ≤ A
+  bs : (bEntB N K).s ≤ A
+  fa : (bEntF K c.w).a ≤ A
+  fs : (bEntF K c.w).s ≤ A
+
+theorem encSN_le {a s C A : ℕ} (h : EncCounts hk c a s C A) (M : ℕ) :
+    encSN hk c a s M ≤ M + 20 * (C * A) := by
+  have m := fun {x y : ℕ} (hx : x ≤ C) (hy : y ≤ A) => Nat.mul_le_mul hx hy
+  have := m h.nk h.one; have := m h.nk (Nat.zero_le A)
+  have := m h.nd h.a; have := m h.nd h.s; have := m h.n h.a; have := m h.n h.s
+  have := m h.ncol h.a; have := m h.ncol h.s; have := m h.nr h.ba; have := m h.nr h.bs
+  have := m h.ne h.fa; have := m h.ne h.fs
+  dsimp only [encSN]
+  omega
+
+theorem encSTL_le {a s w E wB EB wF EF C A W E' : ℕ} (h : EncCounts hk c a s C A)
+    (hw : w ≤ W) (hwB : wB ≤ W) (hwF : wF ≤ W) (h6 : 6 ≤ W) (hE : E ≤ E') (hEB : EB ≤ E')
+    (hEF : EF ≤ E') (h3 : 3 ≤ E') (M : ℕ) :
+    encSTL hk c a s w E wB EB wF EF M ≤ 8 * linX A A W E' C (M + 20 * (C * A)) := by
+  have m := fun {x y : ℕ} (hx : x ≤ C) (hy : y ≤ A) => Nat.mul_le_mul hx hy
+  have := m h.nk h.one; have := m h.nk (Nat.zero_le A)
+  have := m h.nd h.a; have := m h.nd h.s; have := m h.n h.a; have := m h.n h.s
+  have := m h.ncol h.a; have := m h.ncol h.s; have := m h.nr h.ba; have := m h.nr h.bs
+  have := m h.ne h.fa; have := m h.ne h.fs
+  dsimp only [encSTL]
+  have e := fun {x : ℕ} (hx : x ≤ M + 20 * (C * A)) => hx
+  refine le_trans (Nat.add_le_add (linC_le h.nk (e (by omega)) h.one h6 h3)
+    (Nat.add_le_add (linX_le h.a h.s hw hE h.nd (e (by omega)))
+    (Nat.add_le_add (linX_le h.a h.s hw hE h.n (e (by omega)))
+    (Nat.add_le_add (linX_le h.a h.s hw hE h.ncol (e (by omega)))
+    (Nat.add_le_add (linX_le h.a h.s hw hE h.ncol (e (by omega)))
+    (Nat.add_le_add (linX_le h.ba h.bs hwB hEB h.nr (e (by omega)))
+    (Nat.add_le_add (linX_le h.fa h.fs hwF hEF h.ne (e (by omega)))
+      (linX_le h.a h.s hw hE h.n (e (by omega)))))))))) (le_of_eq (by ring))
+
+end EncGen
+
+theorem ufCT_le (n M : ℕ) : ufCT n M ≤ (2 * n + 1) * (4 * M + 12) + 100 * (M + 1) ^ 2 := by
+  unfold ufCT forT loopT
+  nlinarith
+
+theorem dropCT_le (n M : ℕ) : dropCT n M ≤ (2 * n + 1) * (4 * M + 12) + 100 * (M + 1) ^ 2 := by
+  unfold dropCT forT loopT
+  nlinarith
+
+theorem appT_le (M : ℕ) : appT M ≤ 200 * (M + 1) ^ 2 := by
+  unfold appT forT loopT stepT
+  nlinarith
+
+theorem parseEG_eq (M : ℕ) : parseEG M = 64 * M := by
+  simp only [parseEG]; ring
+
+section EncGen2
+
+variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
+
+theorem parseET_le (C M : ℕ) (h0 : 2 * DualUse.pw.length + 1 ≤ C)
+    (h1 : (Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin c.d)).length * (N * K)) ≤ C)
+    (h2 : (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)) ≤ C)
+    (h3 : (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
+      ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) ≤ C)
+    (h4 : N * K ≤ C) (h5 : 10 ≤ C) :
+    parseET hk c M ≤ 7 * ((2 * C + 1) * (4 * (64 * M) + 12) + 100 * (64 * M + 1) ^ 2) +
+      2 * (2 * (64 * M + 1) + 3) := by
+  have b := fun (n P : ℕ) (hn : n ≤ C) (hP : P ≤ 64 * M) =>
+    (ufCT_le n P).trans (Nat.add_le_add (Nat.mul_le_mul (show 2 * n + 1 ≤ 2 * C + 1 by omega)
+      (show 4 * P + 12 ≤ 4 * (64 * M) + 12 by omega))
+      (Nat.mul_le_mul_left 100 (Nat.pow_le_pow_left (show P + 1 ≤ 64 * M + 1 by omega) 2)))
+  have d := (dropCT_le (2 * DualUse.pw.length + 1) M).trans (Nat.add_le_add
+    (Nat.mul_le_mul (show 2 * (2 * DualUse.pw.length + 1) + 1 ≤ 2 * C + 1 by omega)
+      (show 4 * M + 12 ≤ 4 * (64 * M) + 12 by omega))
+    (Nat.mul_le_mul_left 100 (Nat.pow_le_pow_left (show M + 1 ≤ 64 * M + 1 by omega) 2)))
+  dsimp only [parseET]
+  have := b _ (M + M * 0) h1 (by omega)
+  have := b _ (M + M * 0 + (M + M * 0) * 1) h2 (by omega)
+  have := b _ (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) h3 (by omega)
+  have := b _ (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1) h4 (by omega)
+  have := b 10 (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1) * 1) h5 (by omega)
+  have := b 1 (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
+    (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1) * 1) * 1) (by omega)
+    (by omega)
+  omega
+
+end EncGen2
+
+theorem natLT_conf (E : ℕ) : natLT (tmplList hkp confP) E ≤
+    27 * ((2 * 2 ^ 200 + 1) * (4 * E + 12)) + (2 * (E + 1) + 3) := by
+  have h := natLT_le (tmplList hkp confP) E (2 ^ 200) tmpl_conf
+  have hl : (tmplList hkp confP).length = 27 := rfl
+  rwa [hl] at h
+
+theorem encCounts_conf : EncCounts hkp confP Kp 64 (2 ^ 181) (2 ^ 60) := by
+  obtain ⟨h1, h2, h3, h4, h5, h6, -⟩ := enc_counts
+  have hNK : Np * Kp = 2 ^ 59 := by rw [Np_def, Kp_def]; norm_num
+  have hK : Kp = 2 ^ 25 := Kp_def
+  have hw : confP.w = 512 := confP_w
+  refine ⟨h1, h2, h3, h4, h5, h6, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [hK]; norm_num
+  · norm_num
+  · norm_num
+  · rw [(bEntB_as _ _).1, hNK]; norm_num
+  · rw [(bEntB_as _ _).2]; norm_num
+  · rw [(bEntF_as _ _).1, hw, hK]; norm_num
+  · rw [(bEntF_as _ _).2]; norm_num
+
+theorem nInE_le : nInE hkp confP ≤ 2 ^ 195 := by
+  obtain ⟨h0, h1, h2, h3⟩ := parse_counts
+  have h4 : Np * Kp ≤ 2 ^ 181 := enc_counts.1
+  unfold nInE
+  omega
+
+set_option maxRecDepth 100000 in
+set_option exponentiation.threshold 9000 in
+/-- **The clock of `Enc` at `confP`.** -/
+theorem time_encMP_conf : (encMP hkp confP chiSamplerP).time ≤ 2 ^ 8000 := by
+  obtain ⟨h0, h1, h2, h3⟩ := parse_counts
+  obtain ⟨e1, e2, e3, e4, e5, e6, e7⟩ := enc_counts
+  have hn := nInE_le
+  have hC : (2 : ℕ) ^ 181 ≤ 2 ^ 195 := by norm_num
+  have hK : bChi.S₀ ≤ 2 ^ 181 := bChi_S₀.trans (by rw [Kp_def]; norm_num)
+  have hPG := parseEG_eq (2 ^ 195)
+  have hSE : parseEG (2 ^ 195) ≤ encS hkp confP chiSamplerP.B (parseEG (2 ^ 195)) := by
+    rw [encS_eq]; dsimp only [encSN]; omega
+  have h200 : (2 : ℕ) ^ 200 ≤ 64 * 2 ^ 195 := by norm_num
+  have u := ub_encP hkp confP (X := chiSamplerP) (2 ^ 195) preserves6_chiP (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by norm_num)
+    (by show max 1 _ ≤ _; rw [hPG]; omega) (by show max bChi.S₀ _ ≤ _; rw [hPG]; omega)
+    (by show max bChi.S₀ _ ≤ _; rw [hPG]; omega) (by show max bChi.S₀ _ ≤ _; rw [hPG]; omega)
+    (by simp only [Bnd.count, bEntB, Bnd.seq, bZeros, bCoin, Bnd.prim]; rw [hPG]; omega)
+    (by simp only [Bnd.count, bEntF, Bnd.seq, bZeros, bCoins, bCoin, Bnd.prim]; rw [hPG]; omega)
+    (fun p hp => (tmpl_conf p hp).trans (le_trans (by rw [hPG]; exact h200) hSE))
+    (Prog.inputBound 120 (nInE hkp confP)) (fun i => by
+      simp only [Prog.inputBound, Function.update_apply]; split_ifs <;> omega)
+  rw [time_encMP]
+  have hT := u.1
+  have hL := u.2 122
+  have hE : encS hkp confP chiSamplerP.B (parseEG (2 ^ 195)) ≤ 2 ^ 246 := by
+    rw [encS_eq, chiB, bChi_a, bChi_s]
+    refine (encSN_le hkp confP encCounts_conf _).trans ?_
+    rw [hPG]; norm_num
+  have hST : encST hkp confP chiSamplerP.B (parseEG (2 ^ 195)) ≤ 2 ^ 700 := by
+    refine (encST_le hkp confP (Bχ := chiSamplerP.B) lin_bChi (lin_bEntB _ _) (lin_bEntF _ _) _).trans ?_
+    rw [chiB, bChi_a, bChi_s]
+    have hNK : Np * Kp = 2 ^ 59 := by rw [Np_def, Kp_def]; norm_num
+    have hK : Kp = 2 ^ 25 := Kp_def
+    have hw : confP.w = 512 := confP_w
+    refine (encSTL_le hkp confP encCounts_conf (W := 2 ^ 64) (E' := 2 ^ 64) (by norm_num)
+      (by rw [hNK]; norm_num) (by rw [hw, hK]; norm_num) (by norm_num) (by norm_num)
+      (by rw [hNK]; norm_num) (by rw [hw, hK]; norm_num) (by norm_num) _).trans ?_
+    rw [hPG]; simp only [linX]; norm_num
+  have hPT : parseET hkp confP (2 ^ 195) ≤ 2 ^ 500 :=
+    (parseET_le hkp confP (2 ^ 181) _ h0 h1 h2 h3 e1 (by norm_num)).trans (by norm_num)
+  have hTT : encTT hkp confP (encS hkp confP chiSamplerP.B (parseEG (2 ^ 195))) ≤ 2 ^ 7950 := by
+    unfold encTT
+    refine le_trans (Nat.add_le_add (natLT_conf _) (Nat.add_le_add (tb_encCoreP _) (appT_le _))) ?_
+    generalize encS hkp confP chiSamplerP.B (parseEG (2 ^ 195)) = X at hE ⊢
+    calc 27 * ((2 * 2 ^ 200 + 1) * (4 * X + 12)) + (2 * (X + 1) + 3) +
+          (2 ^ 40 * (X + 1) ^ 32 + 200 * (X + 1) ^ 2)
+        ≤ 27 * ((2 * 2 ^ 200 + 1) * (4 * 2 ^ 246 + 12)) + (2 * (2 ^ 246 + 1) + 3) +
+          (2 ^ 40 * (2 ^ 246 + 1) ^ 32 + 200 * (2 ^ 246 + 1) ^ 2) := by gcongr
+      _ ≤ 2 ^ 7950 := by norm_num
+  have hL' : lenBoundT (encP hkp confP chiSamplerP) (Prog.inputBound 120 (nInE hkp confP)) 122 ≤
+      4 * 2 ^ 246 + 1 := hL.trans (by omega)
+  calc 2 * nInE hkp confP + 2 + timeBoundT (encP hkp confP chiSamplerP)
+        (Prog.inputBound 120 (nInE hkp confP)) +
+        (2 * lenBoundT (encP hkp confP chiSamplerP) (Prog.inputBound 120 (nInE hkp confP)) 122 + 2)
+      ≤ 2 * 2 ^ 195 + 2 + (2 ^ 500 + (2 ^ 700 + 2 ^ 7950)) + (2 * (4 * 2 ^ 246 + 1) + 2) := by
+        gcongr
+        exact hT.trans (Nat.add_le_add hPT (Nat.add_le_add hST hTT))
+    _ ≤ 2 ^ 8000 := by norm_num
+
 end AdvancedEncryption.DualUse.Prog
