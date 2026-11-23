@@ -2056,6 +2056,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     proved. Still open is `Seven.Coverage`, which says every chart extreme point is a congruence image of a
     representative. It implies γ₇⁷ = 64 (`Seven.intrinsic_of_coverage`). The external walk did not finish at E₇, whose cone
     has 79,900,912 facets in 157 orbits.
+* **Lean (Hermite budget for Part 192).** HermiteSevenTwentyFour (axiom-clean) proves the unconditional caps
+  g₇ = (64/3)^{1/5} ≈ 1.84422 (Mordell, from γ₆), g₈ = (64/3)^{7/30}, and g₂₄ = (2/π)(13!)^{1/12} ≈ 4.16937 (Blichfeldt).
+  Script: docs/research/scripts/wall1_hermite_budget.py.
+  * These are too weak: with both substitutions the prefix flag sum is 3.78·10⁻¹⁴, against an allowance of
+    6.54·10⁻¹⁵.
+  * Thresholds (one cap varied, the other sharp), after reevaluating the three late sums: g₇ < 1.816489 and
+    g₂₄ < 4.086149. With Lean's current rounded late bounds: 1.816034 and 4.078315. Sharp values are 1.811447 and 4.
+  * Rogers' center-density bound gives g₂₄ ≈ 4.0811. That fits the reevaluated budget but is not formalized.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
