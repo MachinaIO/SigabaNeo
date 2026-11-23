@@ -123,3 +123,4 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   the abstract interpreter, in `KeySumT`).
 -/
 import SigabaNeo.Lib.Lattices.Automorphism.Interface
+import SigabaNeo.Lib.Lattices.Automorphism.Coeffs
