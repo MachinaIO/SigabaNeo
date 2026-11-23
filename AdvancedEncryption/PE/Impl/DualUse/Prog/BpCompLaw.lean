@@ -408,6 +408,8 @@ structure SV where
   jc : List Bool
   sc : List Bool
   ia : List Bool
+  t31 : List Bool
+  t120 : List Bool
 
 /-- Its store: every other tape blank. -/
 def SV.enc (v : SV) : Store 64 := fun t =>
@@ -424,7 +426,9 @@ def SV.enc (v : SV) : Store 64 := fun t =>
   if t = tJZ then v.jz else
   if t = tJC then v.jc else
   if t = tSC then v.sc else
-  if t = tIN then v.ia else []
+  if t = tIN then v.ia else
+  if t = tT31 then v.t31 else
+  if t = tT120 then v.t120 else []
 
 theorem SV.enc_o (v : SV) : v.enc tO = v.o := by unfold SV.enc; rfl
 theorem SV.enc_cur (v : SV) : v.enc tCUR = v.cur := by unfold SV.enc; rfl
@@ -440,6 +444,8 @@ theorem SV.enc_jz (v : SV) : v.enc tJZ = v.jz := by unfold SV.enc; rfl
 theorem SV.enc_jc (v : SV) : v.enc tJC = v.jc := by unfold SV.enc; rfl
 theorem SV.enc_sc (v : SV) : v.enc tSC = v.sc := by unfold SV.enc; rfl
 theorem SV.enc_ia (v : SV) : v.enc tIN = v.ia := by unfold SV.enc; rfl
+theorem SV.enc_t31 (v : SV) : v.enc tT31 = v.t31 := by unfold SV.enc; rfl
+theorem SV.enc_t120 (v : SV) : v.enc tT120 = v.t120 := by unfold SV.enc; rfl
 theorem SV.upd_o (v : SV) (x : List Bool) :
     Function.update v.enc tO x = { v with o := x }.enc := by
   funext t; by_cases h : t = tO
@@ -510,6 +516,16 @@ theorem SV.upd_ia (v : SV) (x : List Bool) :
   funext t; by_cases h : t = tIN
   · subst h; rw [Function.update_self]; rfl
   · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_t31 (v : SV) (x : List Bool) :
+    Function.update v.enc tT31 x = { v with t31 := x }.enc := by
+  funext t; by_cases h : t = tT31
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_t120 (v : SV) (x : List Bool) :
+    Function.update v.enc tT120 x = { v with t120 := x }.enc := by
+  funext t; by_cases h : t = tT120
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
 
 theorem tc_eq_false {j : ℕ} {t : Fin 64} (h : t.val < 22) : (tc j = t) ↔ False :=
   ⟨tc_ne h, False.elim⟩
@@ -543,7 +559,7 @@ theorem TW_ne {m : ℕ} {t u : Fin 64} (h : TW m t) (hu1 : 9 ≤ u.val) (hu2 : u
   fun e => by subst e; have := TW_val h; omega
 
 /-- Normalize updates of a step store. -/
-macro "encs" : tactic => `(tactic| simp only [SV.upd_o, SV.upd_cur, SV.upd_tt, SV.upd_ib, SV.upd_iz, SV.upd_pb, SV.upd_pz, SV.upd_qb, SV.upd_qz, SV.upd_jb, SV.upd_jz, SV.upd_jc, SV.upd_sc, SV.upd_ia, SV.enc_o, SV.enc_cur, SV.enc_tt, SV.enc_ib, SV.enc_iz, SV.enc_pb, SV.enc_pz, SV.enc_qb, SV.enc_qz, SV.enc_jb, SV.enc_jz, SV.enc_jc, SV.enc_sc, SV.enc_ia])
+macro "encs" : tactic => `(tactic| simp only [SV.upd_o, SV.upd_cur, SV.upd_tt, SV.upd_ib, SV.upd_iz, SV.upd_pb, SV.upd_pz, SV.upd_qb, SV.upd_qz, SV.upd_jb, SV.upd_jz, SV.upd_jc, SV.upd_sc, SV.upd_ia, SV.upd_t31, SV.upd_t120, SV.enc_o, SV.enc_cur, SV.enc_tt, SV.enc_ib, SV.enc_iz, SV.enc_pb, SV.enc_pz, SV.enc_qb, SV.enc_qz, SV.enc_jb, SV.enc_jz, SV.enc_jc, SV.enc_sc, SV.enc_ia, SV.enc_t31, SV.enc_t120])
 
 /-- The step tapes are those of step `i`. -/
 def SV.Ok (v : SV) (i : ℕ) : Prop :=
@@ -554,10 +570,11 @@ def SV.Ok (v : SV) (i : ℕ) : Prop :=
 /-- **One round of the loop over the state bits.** -/
 theorem run_jBody (R : RL) (hR : R.Ok) (i j : ℕ) (hi : i ≤ 15) (hj : j < 32) (v : SV) (hv : v.Ok i)
     (hjb : v.jb = List.replicate j true) (hjz : v.jz = List.replicate (31 - j) false)
-    (w : List Bool) :
+    (h31 : v.t31 = List.replicate 31 true) (w : List Bool) :
     run (jBody R) (Function.update v.enc tJC w) = Function.update
       { v with o := v.o ++ treeW (SY R i) (lfT (31 - j) 32 v.cur) 38 0 (zS R ((i + 1) % 2) j),
-               tt := v.cur.drop tblW, jb := v.jb ++ [true], jz := v.jz.tail }.enc tJC w := by
+               tt := v.cur.drop tblW, jb := List.replicate (31 - (31 - (j + 1))) true,
+               jz := v.jz.tail }.enc tJC w := by
   obtain ⟨hib, hiz, hpb, hpz, hqb, hqz⟩ := hv
   let Q : Store 64 → Prop := fun s => FS i s ∧ FJ j s
   have hw : 31 - j + 1 + j = 32 := by omega
@@ -580,11 +597,16 @@ theorem run_jBody (R : RL) (hR : R.Ok) (i j : ℕ) (hi : i ≤ 15) (hj : j < 32)
   case hZ => simp +decide [SV.enc, hjz]
   case hJ => simp +decide [SV.enc, hjb]
   case hT => simp +decide [SV.enc]
-  rw [run_seq, run_snocN, run_tail, hw, show 0 + 2 ^ (38 + 2) = 2 ^ 40 by norm_num,
-    show 2 ^ 40 * 32 = tblW from rfl]
+  rw [hw, show 0 + 2 ^ (38 + 2) = 2 ^ 40 by norm_num, show 2 ^ 40 * 32 = tblW from rfl]
   generalize treeW (SY R i) (lfT (31 - j) 32 v.cur) 38 0 (zS R ((i + 1) % 2) j) = X
-  encs
-  rfl
+  rw [run_seq, run_tail]; encs
+  rw [run_seq, run_copy]; encs
+  rw [run_dropT_blank (by decide) _ (by unfold SV.enc; rfl)]; encs
+  congr 1
+  simp only [SV.mk.injEq, h31, hjz, List.length_tail, List.length_replicate, List.drop_replicate]
+  refine ⟨trivial, trivial, trivial, trivial, trivial, trivial, trivial, trivial, trivial, ?_,
+    trivial, trivial, trivial, trivial, trivial, trivial⟩
+  rw [show 31 - j - 1 = 31 - (j + 1) by omega]
 
 /-- The trees of step `i` on the table at `cur`, for the state bits `j < n`. -/
 def treesW (R : RL) (i : ℕ) (cur : List Bool) (n : ℕ) : List Bool :=
@@ -602,10 +624,11 @@ theorem pq_enc (v : SV) (i : ℕ) (hv : v.Ok i) : Pq (FS i) v.enc := by
 /-- The state of the loop over the state bits before round `j`. -/
 def jSt (v : SV) (R : RL) (i : ℕ) (o0 : List Bool) (j : ℕ) : SV :=
   { v with o := o0 ++ treesW R i v.cur j, tt := if j = 0 then [] else v.cur.drop tblW,
-           jb := List.replicate j true, jz := List.replicate (31 - j) false, jc := [] }
+           jb := List.replicate (31 - (31 - j)) true, jz := List.replicate (31 - j) false, jc := [] }
 
 /-- **The loop over the state bits.** -/
-theorem run_jLoop (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (v : SV) (hv : v.Ok i) (o0 : List Bool) :
+theorem run_jLoop (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (v : SV) (hv : v.Ok i)
+    (ht31 : v.t31 = List.replicate 31 true) (o0 : List Bool) :
     run (loop tJC (jBody R)) { jSt v R i o0 0 with jc := List.replicate 32 true }.enc =
       (jSt v R i o0 32).enc := by
   have h := run_loop_count tJC (jBody R) (fun j => (jSt v R i o0 j).enc) 32 ?_
@@ -614,19 +637,19 @@ theorem run_jLoop (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (v : SV) (hv : 
     rw [h]
     congr 1
   · intro j hj w
-    rw [run_jBody R hR i j hi hj (jSt v R i o0 j) hv rfl rfl w]
+    rw [run_jBody R hR i j hi hj (jSt v R i o0 j) hv (by simp only [jSt]; congr 1; omega) rfl ht31 w]
     congr 1
-    simp only [jSt, treesW_succ, List.append_assoc, List.replicate_succ', Nat.add_one_ne_zero,
+    simp only [jSt, treesW_succ, List.append_assoc, Nat.add_one_ne_zero,
       ite_false]
     rw [List.tail_replicate, show 31 - j - 1 = 31 - (j + 1) by omega]
 
 theorem run_jLoop' (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (u : SV) (hu : u.Ok i)
     (htt : u.tt = []) (hjb : u.jb = []) (hjz : u.jz = List.replicate 31 false)
-    (hjc : u.jc = List.replicate 32 true) :
+    (hjc : u.jc = List.replicate 32 true) (ht31 : u.t31 = List.replicate 31 true) :
     run (loop tJC (jBody R)) u.enc = SV.enc
       { u with o := u.o ++ treesW R i u.cur 32, tt := u.cur.drop tblW,
-               jb := List.replicate 32 true, jz := [], jc := [] } := by
-  have h := run_jLoop R hR i hi u hu u.o
+               jb := List.replicate 31 true, jz := [], jc := [] } := by
+  have h := run_jLoop R hR i hi u hu ht31 u.o
   have e : { jSt u R i u.o 0 with jc := List.replicate 32 true } = u := by
     cases u; simp_all [jSt, treesW]
   rw [e] at h
@@ -638,7 +661,8 @@ def iSt (C o0 : List Bool) (i : ℕ) (w : List Bool) : SV :=
   { o := o0, cur := C.drop (i * tblW), tt := [], ib := List.replicate (8 * i) true,
     iz := List.replicate (120 - 8 * i) false, pb := List.replicate (32 * (i % 2)) true,
     pz := List.replicate (32 - 32 * (i % 2)) false, qb := List.replicate (32 - 32 * (i % 2)) true,
-    qz := List.replicate (32 * (i % 2)) false, jb := [], jz := [], jc := [], sc := w, ia := [] }
+    qz := List.replicate (32 * (i % 2)) false, jb := [], jz := [], jc := [], sc := w, ia := [],
+    t31 := List.replicate 31 true, t120 := List.replicate 120 true }
 
 theorem iSt_ok (C o0 : List Bool) (i : ℕ) (w : List Bool) : (iSt C o0 i w).Ok i :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
@@ -650,29 +674,33 @@ theorem run_stepP (R : RL) (hR : R.Ok) (C o0 : List Bool) (i : ℕ) (hi : i < 15
   rw [em_proP R hR i (by omega) _ (pq_enc _ i (iSt_ok C o0 i w))]
   simp only [run_clear, run_snocN]
   encs
-  rw [run_jLoop' R hR i (by omega) _ ?ok ?tt ?jb ?jz ?jc]
+  rw [run_jLoop' R hR i (by omega) _ ?ok ?tt ?jb ?jz ?jc ?t31]
   case ok => exact iSt_ok C o0 i w
   case tt => rfl
   case jb => rfl
   case jz => simp
   case jc => simp
+  case t31 => rfl
   simp only [swapP, run_seq, run_copy, run_clear, run_tlN]
+  encs
+  rw [run_dropT_blank (t := tIB) (x := tIZ) (by decide) _ (by unfold SV.enc; rfl)]
   encs
   congr 1
   simp only [iSt, SV.mk.injEq]
   have h2 : i % 2 = 0 ∨ i % 2 = 1 := Nat.mod_two_eq_zero_or_one i
   have h3 : (i + 1) % 2 = 1 - i % 2 := by omega
-  refine ⟨by simp [stepW, treesW, List.append_assoc], ?_, trivial, ?_, ?_, ?_⟩
+  refine ⟨by simp [stepW, treesW, List.append_assoc], ?_, trivial, ?_, ?_, ?_, ?_, ?_, ?_,
+    trivial, trivial, trivial, trivial, trivial, trivial, trivial⟩
   · rw [List.drop_drop, Nat.add_mul, Nat.one_mul, Nat.add_comm]
-  · rw [List.replicate_append_replicate, Nat.mul_succ]
+  · rw [List.drop_replicate]; simp only [List.length_drop, List.length_replicate]; congr 1; omega
   · rw [List.drop_replicate]; congr 1
-  · rw [h3]; rcases h2 with h | h <;> rw [h] <;> simp
+  all_goals rw [h3]; rcases h2 with h | h <;> rw [h]
 
 /-- A store with the word `x` on tape `0`, every other tape blank. -/
 def inp (x : List Bool) : Store 64 := Function.update (fun _ => []) tIN x
 
 /-- The blank step store. -/
-def SV.blank : SV := ⟨[], [], [], [], [], [], [], [], [], [], [], [], [], []⟩
+def SV.blank : SV := ⟨[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []⟩
 
 theorem inp_eq (x : List Bool) : inp x = { SV.blank with ia := x }.enc := by
   have : (fun _ : Fin 64 => ([] : List Bool)) = SV.blank.enc := by
@@ -699,7 +727,8 @@ theorem run_steps' (R : RL) (hR : R.Ok) (C o0 : List Bool) (u : SV) (h1 : u.o = 
     (h2 : u.cur = C) (h3 : u.tt = []) (h4 : u.ib = []) (h5 : u.iz = List.replicate 120 false)
     (h6 : u.pb = []) (h7 : u.pz = List.replicate 32 false) (h8 : u.qb = List.replicate 32 true)
     (h9 : u.qz = []) (h10 : u.jb = []) (h11 : u.jz = []) (h12 : u.jc = [])
-    (h13 : u.sc = List.replicate 15 true) (h14 : u.ia = []) :
+    (h13 : u.sc = List.replicate 15 true) (h14 : u.ia = [])
+    (h15 : u.t31 = List.replicate 31 true) (h16 : u.t120 = List.replicate 120 true) :
     run (loop tSC (stepP R)) u.enc =
       (iSt C (o0 ++ (List.range 15).flatMap (stepW R C)) 15 []).enc := by
   have e : u = iSt C o0 0 (List.replicate 15 true) := by cases u; simp_all [iSt]
@@ -711,7 +740,9 @@ theorem SV.eq_iSt (C o0 : List Bool) (i : ℕ) (w : List Bool) (u : SV) (h1 : u.
     (h7 : u.pz = List.replicate (32 - 32 * (i % 2)) false)
     (h8 : u.qb = List.replicate (32 - 32 * (i % 2)) true)
     (h9 : u.qz = List.replicate (32 * (i % 2)) false) (h10 : u.jb = []) (h11 : u.jz = [])
-    (h12 : u.jc = []) (h13 : u.sc = w) (h14 : u.ia = []) : u = iSt C o0 i w := by
+    (h12 : u.jc = []) (h13 : u.sc = w) (h14 : u.ia = [])
+    (h15 : u.t31 = List.replicate 31 true) (h16 : u.t120 = List.replicate 120 true) :
+    u = iSt C o0 i w := by
   cases u; simp_all [iSt]
 
 /-- **The last step.** -/
@@ -751,7 +782,7 @@ theorem run_bpCompP (R : RL) (hR : R.Ok) (C : List Bool) :
   simp only [run_copy, run_clear, run_snocN]
   encs
   rw [run_steps' R hR C (gProW R) _ (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl)
-    (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl)]
+    (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl)]
   rw [run_lastP R hR]
   encs
   rw [inp_eq]
@@ -893,7 +924,8 @@ theorem goodS_stepP (R : RL) : GoodS SS (stepP R) := by
   have hJ : GoodS (fun t => SS t ∧ t ≠ tJC) (jBody R) :=
     (GoodS.prim _ (by simp +decide)).seq <|
       (GoodS.mono hT fun t ht => TW38_SS ht).seq <|
-      (goodS_snocN (by decide) _ _).seq (GoodS.prim _ (by simp +decide))
+      (GoodS.prim _ (by simp +decide)).seq <| (GoodS.prim _ (by simp +decide)).seq
+        ⟨coinFree_dropT _ _ _, wf_dropT (by decide), writesIn_dropT (by decide) (by decide)⟩
   have hP := (goodE_proP R)
   refine (GoodS.mono ⟨hP.1, hP.2.1, hP.2.2⟩ fun t ht => by
     rcases ht with h | h | h <;> subst h <;> decide).seq ?_
@@ -906,7 +938,8 @@ theorem goodS_stepP (R : RL) : GoodS SS (stepP R) := by
     (GoodS.prim _ (by simp +decide)).seq <|
     (GoodS.prim _ (by simp +decide)).seq <|
     (GoodS.prim _ (by simp +decide)).seq <|
-    (goodS_snocN (by decide) _ _).seq <| (goodS_tlN (by decide) _).seq ?_
+    (goodS_tlN (by decide) _).seq <| (GoodS.prim _ (by simp +decide)).seq <|
+    GoodS.seq ⟨coinFree_dropT _ _ _, wf_dropT (by decide), writesIn_dropT (by decide) (by decide)⟩ ?_
   unfold swapP
   repeat (first | exact GoodS.prim _ (by simp +decide) |
     refine (GoodS.prim _ (by simp +decide)).seq ?_)
@@ -922,6 +955,7 @@ theorem good_bpCompP (R : RL) : (bpCompP R).CoinFree ∧ (bpCompP R).WF := by
   have h : GoodS (fun _ => True) (bpCompP R) := by
     refine (GoodS.mono ⟨hG.1, hG.2.1, hG.2.2⟩ fun _ _ => trivial).seq ?_
     refine (GoodS.prim _ (by simp)).seq <| (GoodS.prim _ (by simp)).seq <|
+      (goodS_snocN trivial _ _).seq <| (goodS_snocN trivial _ _).seq <|
       (goodS_snocN trivial _ _).seq <| (goodS_snocN trivial _ _).seq <|
       (goodS_snocN trivial _ _).seq <| (GoodS.prim _ (by simp)).seq <|
       (goodS_snocN trivial _ _).seq <|

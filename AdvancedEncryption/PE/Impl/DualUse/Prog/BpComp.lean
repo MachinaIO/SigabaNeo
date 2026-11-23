@@ -86,6 +86,10 @@ abbrev tQB : Fin 64 := 16
 abbrev tQZ : Fin 64 := 17
 abbrev tJC : Fin 64 := 18
 abbrev tSC : Fin 64 := 19
+/-- The template `1^31`. -/
+abbrev tT31 : Fin 64 := 20
+/-- The template `1^120`. -/
+abbrev tT120 : Fin 64 := 21
 
 /-- The loop counter of the tree of `m + 3` levels. -/
 def tc (m : ℕ) : Fin 64 := ⟨22 + m % 38, by omega⟩
@@ -272,7 +276,8 @@ def treeS (dE : Prog 64) : Prog 64 := treeP (sEd R) (nsEd R) (SY R 0) 38 dE
 
 /-- One round of the loop over the state bits: a tree from the start of the table, then the next
 bit. -/
-def jBody : Prog 64 := cp tTT tCUR ⨾ treeS R (rootE R) ⨾ snocN tJB true 1 ⨾ tl tJZ
+def jBody : Prog 64 :=
+  cp tTT tCUR ⨾ treeS R (rootE R) ⨾ tl tJZ ⨾ cp tJB tT31 ⨾ dropT tJB tJZ tA
 
 /-- Exchange the banks (through the blank cursor tape). -/
 def swapP : Prog 64 :=
@@ -282,7 +287,7 @@ def swapP : Prog 64 :=
 def stepP : Prog 64 :=
   proP R ⨾ clr tJB ⨾ clr tJZ ⨾ snocN tJZ false 31 ⨾ clr tJC ⨾ snocN tJC true 32 ⨾
     loop tJC (jBody R) ⨾ cp tCUR tTT ⨾ clr tTT ⨾ clr tJB ⨾ clr tJZ ⨾
-    snocN tIB true 8 ⨾ tlN tIZ 8 ⨾ swapP
+    tlN tIZ 8 ⨾ cp tIB tT120 ⨾ dropT tIB tIZ tA ⨾ swapP
 
 /-- The last step. -/
 def lastP : Prog 64 :=
@@ -291,7 +296,9 @@ def lastP : Prog 64 :=
 /-- **The compiler**: input `C` on tape `0`, output `compW R C` on tape `0`. -/
 def bpCompP : Prog 64 :=
   gProP R ⨾ cp tCUR tIN ⨾ clr tIN ⨾ snocN tIZ false 120 ⨾ snocN tPZ false 32 ⨾
-    snocN tQB true 32 ⨾ clr tSC ⨾ snocN tSC true 15 ⨾ loop tSC (stepP R) ⨾ lastP R ⨾
-    cp tIN tO ⨾ clr tO ⨾ clr tCUR ⨾ clr tIB ⨾ clr tIZ ⨾ clr tPB ⨾ clr tPZ ⨾ clr tQB ⨾ clr tQZ
+    snocN tQB true 32 ⨾ snocN tT31 true 31 ⨾ snocN tT120 true 120 ⨾ clr tSC ⨾ snocN tSC true 15 ⨾
+    loop tSC (stepP R) ⨾ lastP R ⨾
+    cp tIN tO ⨾ clr tO ⨾ clr tCUR ⨾ clr tIB ⨾ clr tIZ ⨾ clr tPB ⨾ clr tPZ ⨾ clr tQB ⨾ clr tQZ ⨾
+    clr tT31 ⨾ clr tT120
 
 end AdvancedEncryption.DualUse.BpComp
