@@ -164,5 +164,8 @@ import PE.Impl.DualUse.Prog.SizeConf
 import PE.Impl.DualUse.Prog.CostConf
 import PE.Impl.DualUse.Prog.KeyCostConf
 import PE.Impl.DualUse.Prog.DecCostConf
+import PE.Impl.DualUse.Prog.EncCoreCert
+import PE.Impl.DualUse.Prog.EncCostT
+import PE.Impl.DualUse.Prog.EncCostConfT
 import PE.Impl.DualUse.Prog.DescConf
 import PE.Impl.DualUse.Submission
