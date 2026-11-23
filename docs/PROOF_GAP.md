@@ -1916,6 +1916,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     b = 30.5·√3/2, intersecting pairs give 2.4297·10⁻⁷⁷, which is 4.16·10³⁷ times the disjoint-pair term.
   * Matching the full determinant profile does not transfer the least-area law: the chain law is finitely supported and
     the Haar law is atomless, so their total variation distance is exactly 1. Z_rem ≤ 6.485·10⁻¹¹ remains open.
+* **Part 208 (audited, CONFIRMED with correction).** [z1_terminal_law](research/wall1_z1_terminal_law.md): terminal-law
+  attack on Z₁.
+  * Exact split: Z₁ includes a separate term Pr(B ∩ Sᶜ ∩ A₄₀₆) for terminal hits after the first hit plane is lost, so
+    following the first plane alone is insufficient. A padded example has a plane of area 777 that collapses for ≥ 3328/3329
+    of second marks, replaced by a plane of area 28√19346/5 with internal spacing 28. Audit correction: the example is
+    unreachable (restart probability 0). Whether collapse-and-replace happens on reachable doubly gated histories is open.
+  * Haar benchmark × 3329¹⁵ for internal spacing ≤ 26 exceeds the allowance by 9.5613. For the terminal-area event the
+    conservative factor is 3329^13.49584. A comparison factor ≤ 3329^14.72 would close this route.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
