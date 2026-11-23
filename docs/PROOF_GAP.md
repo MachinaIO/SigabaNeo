@@ -1941,6 +1941,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     have spacing > 26, so a spacing bound does not cover the residuals.
   * Sufficient exponents (zero additive error): spacing 14.72162705 (horizontal) / 14.70997924 (vertical); terminal area
     13.49584267 / 13.48419485.
+* **Part 211 (audited, CONFIRMED; negative).** [history_free_compression](research/wall1_history_free_compression.md):
+  union over candidate prefixes × exact q-ary membership.
+  * One family has > 10^589062 distinct final subspace pairs, all consistent with the reveal order and the width-506 GS
+    caps, each with terminal area ≤ 729 and membership probability exactly 3329⁻¹⁶³²⁰⁰. The membership sum before clipping
+    exceeds 10^14220.396.
+  * Keeping the last j selections and only the earlier determinant allows terminal-hit probability 1 for every
+    0 ≤ j ≤ 406 (≈ 1.5·10¹⁰ × the allowances). Membership counting alone cannot give rarity; the gates, the SVP comparisons
+    and the first-hit exclusions must enter.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
