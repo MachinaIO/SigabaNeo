@@ -2221,6 +2221,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Ceiling 0.126 on all 405 draws gives crossing < 2.5881467826·10⁻¹¹ (exact integer tail certificate).
   * Fourth-moment (B) on draws 11–405 gives < 2.69977·10⁻¹¹. (B) on 54–405 plus Part 222's raw-graph tail premise
     (draws 1–53, not yet in Lean) gives < 2.4681·10⁻¹¹.
+* **Lean (raw-graph winner tail).** RawGraphVoid / RawGraphWitness / LongWinnerRawDirections (axiom-clean).
+  * Unconditional matrix void bound under the uniform matrix law: Pr[sⱼ > r] ≤ 3329⁴⁰⁰/(3329⁴⁰⁰ + Dⱼ(r)). Here Dⱼ(r) is the
+    number of projective integer directions in the ball whose newest input coordinate is nonzero mod 3329. The proof uses
+    pair incidences plus survival of raw witnesses through the earlier projections.
+  * Draw 1 is fully proved. Draws 2–53 are proved through certified radii (r ≤ 3307 on draw 2, ... , r ≤ 1932 on draw 53);
+    the period cap covers r = 3329.
+  * Still open: the deterministic count V_N r^N ≤ 4(3329⁴⁰⁰ + Dⱼ(r)) on the remaining radii. With it and (B) on draws
+    54–405, the crossing bound is < 2.4681·10⁻¹¹.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
