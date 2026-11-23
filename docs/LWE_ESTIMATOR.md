@@ -82,16 +82,16 @@ closed numeric facts plus one check per block size `b < maxBeta + 2`, evaluated 
 per file, about 11 minutes of kernel time for both instances; the closed facts take about 1 s).
 All the bounds are about the attack models, like `H` itself.
 
-**Ring degree `2^34`, `q = 2^(2^25)`, `CBD(16)`** (the registry's instances of the dual-use PE,
-`AdvancedEncryption/PE/Impl/DualUse/Params/Strength.lean`): `2650 ≤ RingLWE.H` at `2^26 + 2` and
+**Ring degree `2^34`, `q = 2^(2^25)`, `CBD(16)`** (the instances of the former date-window PE; their
+scan files were removed with it): `2650 ≤ RingLWE.H` at `2^26 + 2` and
 at `2^61 + 2^27 + 5` samples. The mirror gives `usvp` 2691.95, `bdd` 2691.95 (`β ≈ 9400`), `dual`
 2691.96 and the hybrids at small `z` 2691.96, so `H ≈ 2691`; the certified bound loses about 40 bits
 because the Babai-failure argument needs `β` a little below the optimum.
 
 **Ring degree `2^36`, `q = 2^(2^27)`, `CBD(16)`** (the instances at `confA` of
 `AdvancedEncryption/BP_PLAN.md`, `k = 2^27 + 1`, `d = 2^65`;
-`AdvancedEncryption/PE/Impl/DualUse/Params/StrengthA.lean`, `ringLWE_H_registry3'`,
-`ringLWE_H_registry5'`): `2650 ≤ RingLWE.H` at `2^28 + 2` and at `2^65 + 2^29 + 5` samples, through
+`AdvancedEncryption/PE/Impl/DualUse/Params/Strength.lean`, `ringLWE_H_registry3`,
+`ringLWE_H_registry5`): `2650 ≤ RingLWE.H` at `2^28 + 2` and at `2^65 + 2^29 + 5` samples, through
 the generic lemmas `registry3_ge`, `registry5_ge` (`Params/Strength/Generic.lean`, in `N`, `e`,
 `k`, `d`, `M`, `kb`). The mirror gives `usvp` 2693.95, `bdd` 2693.95 and `dual` 2693.96 at both
 sample counts, so `H ≈ 2693`. The checks (`cbdCheck`) hold up to `kb = 2656` at both instances and
