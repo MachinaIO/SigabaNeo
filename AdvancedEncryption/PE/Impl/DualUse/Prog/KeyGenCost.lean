@@ -84,13 +84,6 @@ theorem ph_parse (M : ℕ) {β : Fin 256 → ℕ} (hβ : ∀ i, β i ≤ M) :
       ((ubp_unfrP_map _ _).seq ((ubp_prim0 (.clear 253) rfl _).seq (ubp_prim0 (.clear 255) rfl _))))))
       ℓ hℓ
 
-/-! ### The front end -/
-
-theorem ph_front (n W T : ℕ) {β : Fin 256 → ℕ} (hβ : (fun j => β (eFr j)) ≤ io2 (R := 6) T 0 0) :
-    Ph (frame eFr (frontP n W)) β (frontT n W T) (embedF eFr β (io2 (R := 6) (frontL n W) 0 0)) :=
-  ph_frame eFr (fun ℓ hℓ => ⟨(timeBoundT_mono _ (hℓ.trans hβ)).trans (timeBoundT_frontP n W T),
-    (lenBoundT_mono _ (hℓ.trans hβ)).trans (lenBoundT_frontP n W T)⟩)
-
 /-! ### The tail of the window branch -/
 
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k}
@@ -160,26 +153,6 @@ theorem ub_winTail (cf : KeyCfg) {M : ℕ} (hM : tmplMax (keyTmplR hk c cf) ≤ 
   · simp only [winG]
 
 /-! ### The program -/
-
-variable (hk c) in
-/-- The time of the branches of `KeyGen` from the front end's bounds. -/
-def keyBT (W : ℕ) (cf : KeyCfg) (Tb Gb : ℕ) : ℕ :=
-  let Mβ := max (8 * (nKG hk c + 2)) (frontL c.L W)
-  max ((2 * (Mβ + 1) + 3) + (Tb + winT2 hk c cf Gb))
-    (max (longT Mβ) (dumT hk c Mβ + frT (dumD hk c Mβ + 1)) + 1) + 1
-
-variable (hk c) in
-/-- The bound of tape `0` after the branches of `KeyGen`. -/
-def keyBL (W : ℕ) (cf : KeyCfg) (Gb : ℕ) : ℕ :=
-  let Mβ := max (8 * (nKG hk c + 2)) (frontL c.L W)
-  max (winG hk c cf Gb) (max Mβ (3 * (dumD hk c Mβ + 1) + 1))
-
-variable (hk c) in
-/-- **The time of `KeyGen`'s program** from its input bound. -/
-def keyGT (W : ℕ) (cf : KeyCfg) (Tb Gb : ℕ) : ℕ :=
-  leT (nKG hk c) (nKG hk c + 1) + (max (2 * (nKG hk c + 2 + 1) + 3)
-    (parseT (nKG hk c + 2) + (frontT c.L W (8 * (nKG hk c + 2)) + (keyBT hk c W cf Tb Gb +
-      (256 * (2 * (keyBL hk c W cf Gb + 1) + 3) + (2 * (keyBL hk c W cf Gb + 1) + 3))))) + 1)
 
 variable (hk c) in
 /-- The time of the branches of `KeyGen` from the front end's bounds. -/
@@ -300,15 +273,6 @@ theorem ph_keyGenF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) (hR : 
     gcongr
     exact Nat.le_of_eq rfl
   · simp [mem_clrAll, Prim.lenT, hβ1, Prog.inputBound]
-
-/-- **The time and the output bound of `KeyGen`'s program** (date-window front end). -/
-theorem ph_keyGenP (bfX : XProg 256) (W : ℕ) (cf : KeyCfg) {Tb Gb : ℕ}
-    (hbf : ∀ β : Fin 256 → ℕ, β 0 ≤ 8 * (nKG hk c + 2) → β 1 ≤ frontL c.L W →
-      (∀ i, β i ≤ max (8 * (nKG hk c + 2)) (frontL c.L W)) → Ph bfX β Tb (fun _ => Gb))
-    (hT : tmplMax (keyTmplR hk c cf) ≤ Gb) :
-    timeBoundT (keyGenP hk c bfX W cf) (Prog.inputBound (255 : Fin 256) (nKG hk c + 1)) ≤ keyGT hk c W cf Tb Gb ∧
-      lenBoundT (keyGenP hk c bfX W cf) (Prog.inputBound (255 : Fin 256) (nKG hk c + 1)) 0 ≤ keyBL hk c W cf Gb :=
-  ph_keyGenF frEmb_eFr (by norm_num) (frontSpec_frontP c.L W).ph bfX W cf hbf hT
 
 theorem eFr_ne_zero (j : Fin 8) : eFr j ≠ 0 := frEmb_eFr.ne_zero j
 
