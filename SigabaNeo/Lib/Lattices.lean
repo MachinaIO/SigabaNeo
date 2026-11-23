@@ -122,3 +122,4 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   from the final store of an SLP evaluator, and `W_f`: the sum plus one block; bounds, per tape by
   the abstract interpreter, in `KeySumT`).
 -/
+import SigabaNeo.Lib.Lattices.Automorphism.Interface
