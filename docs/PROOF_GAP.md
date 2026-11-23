@@ -1967,6 +1967,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     local exponent (505²−1)/2 = 127512. Many unconditional Hecke steps from a fixed compact set give near-Haar
     probabilities uniformly there; no numerical step count is established yet (W1-R84). Conditioning later steps on the
     gates changes the kernel.
+* **Part 214 (audited, CONFIRMED).** [hecke_gated_mixing](research/wall1_hecke_gated_mixing.md): explicit Hecke mixing
+  from gated starts.
+  * 46,595,465 independent index-two Hecke steps give discrepancy ≤ 9.89321·10⁻⁶¹ on the smoothed plane-area test,
+    uniformly over gated draw-406 starts. The endpoint area probability is < 2.19843·10⁻⁵⁸.
+  * Blocked: a fixed primitive vector survives with probability < 2^-46,595,465. Conditioning on survival eventually
+    forces a small plane on every path. Superlattice steps keep the vector but can change primitivity and the selected
+    winner. A shorter walk with an event-specific distortion bound is not established for the marked histories.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
