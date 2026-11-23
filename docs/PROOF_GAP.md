@@ -2240,6 +2240,20 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * With chronological supports and all 407 caps, the height-zero incidence sum still exceeds 10^355.83 before the
     shortestness and raw-lift tests.
   * Only the residual at the actually selected prefix can fit the allowance; rejection and lifting remain open too.
+* **Part 243 (audited, CONFIRMED; partial positive — coordinate deletion).** [fresh_review](research/wall1_fresh_review.md):
+  * Coordinate deletion: if some input coordinates are untouched by every frozen vector, fixing the remaining columns
+    determines the forced prefix, which agrees with the actual prefix on selection. The anchor tests on the untouched
+    coordinates then use independent uniform marks.
+    * The prescribed codimension-400 family (Parts 226/242) is selected with its three anchors with probability
+      < 10^-1111.57.
+    * Terminal small-area planes with rank 2 mod 3329 on untouched inputs (incl. replacement planes): < 2.377830·10⁻⁴¹.
+    * Rank-3 wholly old first hits over draws 155–406: < 1.097258·10⁻²⁰.
+  * Reformulated width-506 targets on the same returned basis: residual mean score ≤ 5.2408·10⁻⁷, and extra prefix
+    rejection on score-accepted designs ≤ 0.003546229.
+  * Conditional routes (open): an entropy bound (the sum of 405 conditional long-winner probabilities exceeds 48.6 with
+    probability ≤ 7.6·10⁻¹²); three deferred probes (void ≤ 0.3914 at the smaller radius). The latter cannot hold
+    uniformly: the all-zero start has void > 0.6427, though its draw-3 long-winner probability is 0.
+  * Open: geometries touching all input coordinates.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
