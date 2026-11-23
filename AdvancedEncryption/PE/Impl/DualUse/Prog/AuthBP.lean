@@ -94,7 +94,8 @@ theorem uL_inj : Function.Injective uL := by decide
 
 /-- The tables and the start: `TB := 1^(2^45)`, `E := 1^32`, `CUR := C`, `z := 0`, 15 steps. -/
 def initA : Prog 16 :=
-  natU tTB tA2 tB2 tblW ⨾ natU tE tA2 tB2 32 ⨾ cp tCU tC ⨾ snocN tZB false 32 ⨾ natU tS2 tA2 tB2 15
+  natU tTB tA2 tB2 tblW ⨾ natU tE tA2 tB2 32 ⨾ cp tCU tC ⨾ clr tZB ⨾ snocN tZB false 32 ⨾
+    natU tS2 tA2 tB2 15
 
 /-- The last step: the bit of the output table into `Bit`. -/
 def lastA : Prog 16 :=
@@ -400,6 +401,7 @@ theorem run_initA (C xs : List Bool) (fl : Bool) :
   rw [run_natU (o := tTB) (by decide) (by decide) (by decide) _ _ rfl rfl]; encA
   rw [run_natU (o := tE) (by decide) (by decide) (by decide) _ _ rfl rfl]; encA
   rw [run_copy (i := tCU)]; encA
+  rw [run_clear (i := tZB)]; encA
   rw [run_snocN (o := tZB)]; encA
   rw [run_natU (o := tS2) (by decide) (by decide) (by decide) _ _ rfl rfl]; encA
   simp only [aSt, zA, List.nil_append, Nat.mul_zero, List.drop_zero, Nat.zero_mul]
@@ -524,7 +526,8 @@ theorem good_authBP : authBP.CoinFree ∧ authBP.WF := by
   have hI : GoodA T initA :=
     (goodA_natU trivial trivial trivial (by decide) (by decide) _).seq <|
       (goodA_natU trivial trivial trivial (by decide) (by decide) _).seq <|
-      (GoodA.prim _ (by simp [T])).seq <| GoodA.seq (⟨coinFree_snocN _ _ _, wf_snocN _ _ _,
+      (GoodA.prim _ (by simp [T])).seq <| (GoodA.prim _ (by simp [T])).seq <|
+        GoodA.seq (⟨coinFree_snocN _ _ _, wf_snocN _ _ _,
         writesIn_snocN trivial _ _⟩ : GoodA T (snocN tZB false 32))
         (goodA_natU trivial trivial trivial (by decide) (by decide) _)
   have hS : GoodA T (loop tS2 stepA) :=

@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.Prog.BpCompLaw
 import PE.Impl.DualUse.Prog.AuthBP
+import SigabaNeo.Lib.Machines.Prog.AppendWCost
 
 /-!
 # The compiler of branching programs: cost
@@ -808,5 +809,207 @@ theorem size_bpCompC : size bpCompC ≤ 2 ^ 27 := by
   have : size (clr tPB) ≤ 60 := size_prim_le _; have : size (clr tQZ) ≤ 60 := size_prim_le _
   have : SE = 33000 := rfl
   omega
+
+/-! ### The cost of the authorization program -/
+
+/-- The bounds of its tapes: the small ones exactly, `U` at `2^45`, the rest at `S`. -/
+def βA (S : ℕ) : Fin 16 → ℕ := fun t =>
+  if t = tZB ∨ t = tE then 32 else if t = tK ∨ t = tKC then 40 else if t = tS2 then 15 else
+    if t = tU then 2 ^ 45 else S
+
+/-- A cost triple of the authorization program: from `βA S` to `βA S` in `n` sweeps. -/
+def TA (S : ℕ) (p : Prog 16) (n : ℕ) : Prop :=
+  ∀ ℓ, ℓ ≤ βA S → timeBoundT p ℓ ≤ n * (2 * S + 5) ∧ lenBoundT p ℓ ≤ βA S
+
+variable {S : ℕ}
+
+theorem βA_le (hS : 2 ^ 49 ≤ S) (t : Fin 16) : βA S t ≤ S := by
+  simp only [βA]; split_ifs <;> omega
+
+theorem supB_βA (hS : 2 ^ 49 ≤ S) {ℓ : Fin 16 → ℕ} (h : ℓ ≤ βA S) : supB ℓ ≤ S :=
+  supB_le_of fun t => (h t).trans (βA_le hS t)
+
+theorem TA.seq {p q : Prog 16} {n m : ℕ} (hp : TA S p n) (hq : TA S q m) : TA S (p ⨾ q) (n + m) :=
+  fun ℓ hℓ => by
+    have h1 := hp ℓ hℓ; have h2 := hq _ h1.2
+    exact ⟨by rw [timeBoundT_seq, Nat.add_mul]; omega, h2.2⟩
+
+theorem TA.mono {p : Prog 16} {n m : ℕ} (hp : TA S p n) (h : n ≤ m) : TA S p m := fun ℓ hℓ =>
+  ⟨(hp ℓ hℓ).1.trans (Nat.mul_le_mul_right _ h), (hp ℓ hℓ).2⟩
+
+theorem TA.ifBit {i : Fin 16} {p q : Prog 16} {n : ℕ} (hp : TA S p n) (hq : TA S q n) :
+    TA S (ifBit i p q) (n + 1) := fun ℓ hℓ => by
+  have h1 := hp ℓ hℓ; have h2 := hq ℓ hℓ
+  refine ⟨?_, fun t => max_le (h1.2 t) (h2.2 t)⟩
+  show max _ _ + 1 ≤ _; rw [Nat.add_mul, Nat.one_mul]; have := max_le h1.1 h2.1; omega
+
+theorem TA.ifBlank {i : Fin 16} {p q : Prog 16} {n : ℕ} (hp : TA S p n) (hq : TA S q n) :
+    TA S (ifBlank i p q) (n + 1) := fun ℓ hℓ => by
+  have h1 := hp ℓ hℓ; have h2 := hq ℓ hℓ
+  refine ⟨?_, fun t => max_le (h1.2 t) (h2.2 t)⟩
+  show max _ _ + 1 ≤ _; rw [Nat.add_mul, Nat.one_mul]; have := max_le h1.1 h2.1; omega
+
+theorem ta_prim (hS : 2 ^ 49 ≤ S) (q : Prim 16) (h : q.lenT (βA S) ≤ βA S) : TA S (prim q) 1 :=
+  fun ℓ hℓ => by
+    refine ⟨?_, (Prim.lenT_mono q hℓ).trans h⟩
+    show 2 * (supB ℓ + q.pad) + 3 ≤ _
+    have := supB_βA hS hℓ; have : q.pad ≤ 1 := by cases q <;> simp [Prim.pad]
+    omega
+
+/-- Check a primitive keeps the bounds. -/
+macro "βA_tac" : tactic =>
+  `(tactic| (intro t; simp +decide only [Prim.lenT, βA, Function.update_apply]; split_ifs <;> omega))
+
+theorem ta_loop (hS : 2 ^ 49 ≤ S) (c : Fin 16) {body : Prog 16} {n : ℕ} (hb : TA S body n) :
+    TA S (loop c body) (βA S c * (n + 2) + 1) := fun ℓ hℓ => by
+  have hl := loop_family c body (fun _ => βA S) (βA S c) (n * (2 * S + 5) + (2 * S + 3)) ℓ hℓ
+    (hℓ c) (fun j _ => (hb _ ((tailB_le c _).trans le_rfl)).2)
+    (fun j _ => by
+      have := supB_βA hS (le_refl (βA S))
+      have := (hb _ ((tailB_le c _).trans le_rfl)).1
+      omega) (fun _ _ => le_rfl)
+  refine ⟨hl.1.trans ?_, hl.2⟩
+  have := Nat.zero_le (βA S c)
+  nlinarith
+
+theorem ta_dropT (hS : 2 ^ 49 ≤ S) {t x : Fin 16} (hta : t ≠ tA2) (hxa : x ≠ tA2) :
+    TA S (dropT t x tA2) (3 * βA S x + 3) := fun ℓ hℓ => by
+  have h := dropT_bounds hta hxa ℓ (S := S) fun u => (hℓ u).trans (βA_le hS u)
+  have hx : ℓ x ≤ βA S x := hℓ x
+  refine ⟨h.1.trans (Nat.mul_le_mul_right (2 * S + 5)
+    (show 3 * ℓ x + 3 ≤ 3 * βA S x + 3 by omega)), h.2.trans fun u => ?_⟩
+  simp only [Function.update_apply]; split_ifs with hu
+  · subst hu; have := βA_le hS x; simp +decide only [βA, ↓reduceIte]; omega
+  · exact hℓ u
+
+theorem le_βA_iff {ℓ : Fin 16 → ℕ} : ℓ ≤ βA S ↔ ∀ t, ℓ t ≤ βA S t := Iff.rfl
+
+theorem ta_natU (hS : 2 ^ 49 ≤ S) {o : Fin 16} (hoa : o ≠ tA2) (hob : o ≠ tB2) {n : ℕ}
+    (hn : n ≤ βA S o) : TA S (natU o tA2 tB2 n) (12 * n + 100) := fun ℓ hℓ => by
+  have h := natU_bounds hoa hob (by decide) n ℓ (S := S) (fun u => (hℓ u).trans (βA_le hS u))
+    (hn.trans (βA_le hS o))
+  refine ⟨h.1, fun u => (h.2 u).trans ?_⟩
+  have hu : ℓ u ≤ βA S u := hℓ u
+  split_ifs with h1 h2
+  · subst h1; exact hn
+  · have e : βA S u = S := by rcases h2 with rfl | rfl <;> simp +decide only [βA, ↓reduceIte]
+    have := hn.trans (βA_le hS o); rw [e]; exact max_le (hu.trans (βA_le hS u)) (by omega)
+  · exact hu
+
+/-- Moving `n` bits into a small tape `dst` whose bound is `c`, from `c − n`. -/
+theorem ta_mv (hS : 2 ^ 49 ≤ S) {src dst t z : Fin 16} (hsd : src ≠ dst) (hst : src ≠ t)
+    (hdt : dst ≠ t) (n : ℕ) (ht : βA S t = S) {rest : Prog 16} {m : ℕ} (hr : TA S rest m)
+    (ℓ : Fin 16 → ℕ) (hℓ : ℓ ≤ βA S) (hd : ℓ dst + n ≤ βA S dst) :
+    timeBoundT (iter z (pp src t ⨾ prim (.snocHead dst t) ⨾ clr t) n ⨾ rest) ℓ ≤
+        (3 * n + 1 + m) * (2 * S + 5) ∧
+      lenBoundT (iter z (pp src t ⨾ prim (.snocHead dst t) ⨾ clr t) n ⨾ rest) ℓ ≤ βA S := by
+  have h := iter_mv_bounds z hsd hst hdt n ℓ (S := S) (fun u => (hℓ u).trans (βA_le hS u))
+    (hd.trans (βA_le hS dst)) (by omega)
+  have hle : lenBoundT (iter z (pp src t ⨾ prim (.snocHead dst t) ⨾ clr t) n) ℓ ≤ βA S := fun u => by
+    refine (h.2 u).trans ?_
+    have hu : ℓ u ≤ βA S u := hℓ u
+    split_ifs with h1 h2
+    · subst h1; exact hd
+    · subst h2; rw [ht]; exact max_le (hu.trans (βA_le hS u)) (by omega)
+    · exact hu
+  have h2 := hr _ hle
+  exact ⟨by rw [timeBoundT_seq]; nlinarith [h.1, h2.1], h2.2⟩
+
+/-- The bounds in round `j` of the doubling: `U` at `32 (2^j − 1)`. -/
+def γU (S j : ℕ) : Fin 16 → ℕ := Function.update (βA S) tU (32 * 2 ^ j - 32)
+
+theorem γU_le {j : ℕ} (hj : j ≤ 40) (t : Fin 16) : γU S j t ≤ βA S t := by
+  have : 2 ^ j ≤ 2 ^ 40 := Nat.pow_le_pow_right (by norm_num) hj
+  simp only [γU, Function.update_apply]; split_ifs with h
+  · subst h; simp +decide only [βA, ↓reduceIte]; omega
+  · exact le_rfl
+
+/-- One round of the doubling. -/
+theorem offBody_bounds (hS : 2 ^ 49 ≤ S) (j : ℕ) (hj : j < 40) (ℓ0 : Fin 16 → ℕ) (h0 : ℓ0 ≤ γU S j) :
+    timeBoundT (pp tK tBit ⨾ appT tU tU tA2 tB2 ⨾ ifBit tBit (appT tU tE tA2 tB2) (nop tU) ⨾
+        clr tBit) ℓ0 ≤ (4 * 2 ^ 45 + 150) * (2 * S + 5) ∧
+      lenBoundT (pp tK tBit ⨾ appT tU tU tA2 tB2 ⨾ ifBit tBit (appT tU tE tA2 tB2) (nop tU) ⨾
+        clr tBit) ℓ0 ≤ γU S (j + 1) := by
+  have hP1 : 1 ≤ 2 ^ j := Nat.one_le_two_pow
+  have hP : 2 ^ j ≤ 2 ^ 40 := Nat.pow_le_pow_right (by norm_num) hj.le
+  have hP2 : 2 ^ (j + 1) = 2 * 2 ^ j := by rw [pow_succ]; ring
+  have hγ : ∀ t, γU S j t ≤ S := fun t => (γU_le hj.le t).trans (βA_le hS t)
+  have hγU : γU S j tU = 32 * 2 ^ j - 32 := by simp [γU]
+  have hγE : γU S j tE = 32 := by simp +decide [γU, βA]
+  let ℓa : Fin 16 → ℕ := Prim.lenT (.pop tK tBit) ℓ0
+  have hℓa : ∀ t, ℓa t ≤ γU S j t := fun t => by
+    have h1 : ℓ0 t ≤ γU S j t := h0 t
+    have h2 : ℓ0 tK ≤ γU S j tK := h0 tK
+    have hK : γU S j tK = 40 := by simp +decide [γU, βA]
+    have hB : γU S j tBit = S := by simp +decide [γU, βA]
+    simp only [ℓa, Prim.lenT, Function.update_apply]
+    split_ifs with h3 h4 <;> subst_vars <;> omega
+  have hS0 : ∀ t, ℓa t ≤ S := fun t => (hℓa t).trans (hγ t)
+  have hUa : ℓa tU ≤ 32 * 2 ^ j - 32 := hγU ▸ hℓa tU
+  have hEa : ℓa tE ≤ 32 := hγE ▸ hℓa tE
+  have ap1 := appT_bounds (o := tU) (x := tU) (a := tA2) (b := tB2) (by decide) (by decide)
+    (by decide) (by decide) (by decide) ℓa (S := S) hS0 (by omega)
+  let B1 : Fin 16 → ℕ := fun u =>
+    if u = tU then ℓa tU + ℓa tU else if u = tA2 then ℓa tU else if u = tB2 then 0 else ℓa u
+  have hB1 : ∀ u, B1 u ≤ S := fun u => by
+    simp only [B1]; split_ifs <;> first | omega | exact hS0 u
+  have ap2 := appT_bounds (o := tU) (x := tE) (a := tA2) (b := tB2) (by decide) (by decide)
+    (by decide) (by decide) (by decide) B1 (S := S) hB1 (by simp +decide [B1]; omega)
+  have hB1E : B1 tE = ℓa tE := by simp +decide [B1]
+  have hB1U : B1 tU = ℓa tU + ℓa tU := by simp [B1]
+  -- the bounds after the first append, the branch, the last clear
+  let ℓb := lenBoundT (appT tU tU tA2 tB2) ℓa
+  have hb : ℓb ≤ B1 := fun u => ap1.2 u
+  have hnop : lenBoundT (nop tU) ℓb = ℓb := by
+    show Prim.lenT (.copy tU tU) ℓb = ℓb; simp [Prim.lenT]
+  let B2 : Fin 16 → ℕ := fun u =>
+    if u = tU then B1 tU + B1 tE else if u = tA2 then B1 tE else if u = tB2 then 0 else B1 u
+  have hc : lenBoundT (ifBit tBit (appT tU tE tA2 tB2) (nop tU)) ℓb ≤ fun u => max (B2 u) (B1 u) :=
+    fun u => max_le_max ((lenBoundT_mono _ hb u).trans (ap2.2 u)) (by rw [hnop]; exact hb u)
+  have hcS : ∀ u, max (B2 u) (B1 u) ≤ S := fun u => max_le (by
+    simp only [B2]; split_ifs <;> first | omega | exact hB1 u) (hB1 u)
+  have hSB : ∀ {ℓ : Fin 16 → ℕ}, (∀ u, ℓ u ≤ S) → 2 * (supB ℓ + 0) + 3 ≤ 2 * S + 5 := fun h => by
+    have := supB_le_of h; omega
+  refine ⟨?_, fun t => ?_⟩
+  · show timeBoundT (prim (.pop tK tBit)) ℓ0 + (timeBoundT (appT tU tU tA2 tB2) ℓa +
+      (timeBoundT (ifBit tBit (appT tU tE tA2 tB2) (nop tU)) ℓb +
+        timeBoundT (prim (.clear tBit)) (lenBoundT (ifBit tBit (appT tU tE tA2 tB2) (nop tU)) ℓb))) ≤ _
+    have t1 : timeBoundT (prim (.pop tK tBit)) ℓ0 ≤ 2 * S + 5 :=
+      hSB fun u => (h0 u).trans (hγ u)
+    have t2 : timeBoundT (appT tU tU tA2 tB2) ℓa ≤ (4 * 2 ^ 45 + 6) * (2 * S + 5) :=
+      ap1.1.trans (Nat.mul_le_mul_right _ (by omega))
+    have t3 : timeBoundT (ifBit tBit (appT tU tE tA2 tB2) (nop tU)) ℓb ≤ 135 * (2 * S + 5) := by
+      show max _ _ + 1 ≤ _
+      have a1 := (timeBoundT_mono _ hb).trans ap2.1
+      rw [hB1E] at a1
+      have a2 : timeBoundT (nop tU) ℓb ≤ 2 * S + 5 := hSB fun u => (hb u).trans (hB1 u)
+      have : (4 * ℓa tE + 6) * (2 * S + 5) ≤ 134 * (2 * S + 5) :=
+        Nat.mul_le_mul_right _ (by omega)
+      omega
+    have t4 : timeBoundT (prim (.clear tBit))
+        (lenBoundT (ifBit tBit (appT tU tE tA2 tB2) (nop tU)) ℓb) ≤ 2 * S + 5 :=
+      hSB fun u => (hc u).trans (hcS u)
+    nlinarith
+  · show Prim.lenT (.clear tBit) (lenBoundT (ifBit tBit (appT tU tE tA2 tB2) (nop tU)) ℓb) t ≤ _
+    have h := hc t
+    simp only [Prim.lenT, Function.update_apply]
+    split_ifs with ht
+    · exact Nat.zero_le _
+    · refine h.trans (max_le ?_ ?_)
+      · simp only [B2]
+        split_ifs with h1 h2 h3
+        · subst h1; simp only [γU, Function.update_self]; rw [hB1U, hB1E, hP2]; omega
+        · subst h2; simp +decide only [γU, βA, Function.update_apply, ↓reduceIte]; omega
+        · exact Nat.zero_le _
+        · simp only [B1, h1, h2, h3, ↓reduceIte]
+          have := hℓa t
+          simp only [γU, Function.update_apply, h1, ↓reduceIte] at this ⊢; exact this
+      · simp only [B1]
+        split_ifs with h1 h2 h3
+        · subst h1; simp only [γU, Function.update_self]; rw [hP2]; omega
+        · subst h2; simp +decide only [γU, βA, Function.update_apply, ↓reduceIte]; omega
+        · exact Nat.zero_le _
+        · have := hℓa t
+          simp only [γU, Function.update_apply, h1, ↓reduceIte] at this ⊢; exact this
 
 end AdvancedEncryption.DualUse.BpComp
