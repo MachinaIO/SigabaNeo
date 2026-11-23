@@ -242,6 +242,25 @@ theorem run_rotBP {K N : ℕ} (s : Store 30) (hs : ∀ i : Fin 30, 5 ≤ i.val �
     (fun _ _ => trivial) 0 trivial _ (by funext t; fin_cases t <;> simp [h0])]
   funext t; fin_cases t <;> simp [hit, hs]
 
+theorem run_rotBP_map {u : Fin 30 → Fin k} (hu : Function.Injective u) {K N : ℕ} (s : Store k)
+    (hs : ∀ i : Fin 30, 5 ≤ i.val → s (u i) = []) (hK : (s (u 3)).length = K)
+    (hN : (s (u 4)).length = N) (hx : (s (u 1)).length = N * K) :
+    run (map u rotBP) s = Function.update s (u 0) (rotBW N K (s (u 2)).length (s (u 1))) :=
+  run_map_eq_update hu _ s 0 _ (run_rotBP (s ∘ u) hs hK hN hx)
+
+theorem noGrow_addRMP : addRMP.NoGrow := rfl
+theorem noGrow_subRMP : subRMP.NoGrow := rfl
+theorem noGrow_rnbK : rnbK.NoGrow := rfl
+theorem noGrow_rhoJP : rhoJP.NoGrow := rfl
+theorem noGrow_scRMP : scRMP.NoGrow := rfl
+theorem noGrow_rotBP : rotBP.NoGrow := rfl
+theorem wf_addRMP : addRMP.WF := wf_of_wfB (by decide)
+theorem wf_subRMP : subRMP.WF := wf_of_wfB (by decide)
+theorem wf_rnbK : rnbK.WF := wf_of_wfB (by decide)
+theorem wf_rhoJP : rhoJP.WF := wf_of_wfB (by decide)
+theorem wf_scRMP : scRMP.WF := wf_of_wfB (by decide)
+theorem wf_rotBP : rotBP.WF := wf_of_wfB (by decide)
+
 end Prog
 
 end SigabaNeo.Tape
