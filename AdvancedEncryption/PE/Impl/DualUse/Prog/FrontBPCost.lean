@@ -180,23 +180,23 @@ theorem ph_bit0P {a B0 B : ℕ} (hB : B0 + 2 ^ 49 ≤ B) :
     (fun t => if t ∈ clr63 then 0 else γ a B0 t)
   simp only [List.length_replicate] at h1
   have hin : (fun j => Function.update (fun t => if t ∈ clr63 then 0 else γ a B0 t) 71
-      ((if (71 : Fin 72) ∈ clr63 then 0 else γ a B0 71) + 128) (eA j)) ≤ BpComp.βA B := by
+      ((if (71 : Fin 72) ∈ clr63 then 0 else γ a B0 71) + 128) (eAu j)) ≤ BpComp.βA B := by
     intro j
-    fin_cases j <;> simp (config := { decide := true }) [eA, γ, mem_clr63, BpComp.βA] <;> omega
+    fin_cases j <;> simp (config := { decide := true }) [eAu, γ, mem_clr63, BpComp.βA] <;> omega
   have h2 : Ph (prog BpComp.authBPC) (fun j => Function.update (fun t => if t ∈ clr63 then 0 else
-      γ a B0 t) 71 ((if (71 : Fin 72) ∈ clr63 then 0 else γ a B0 71) + 128) (eA j))
+      γ a B0 t) 71 ((if (71 : Fin 72) ∈ clr63 then 0 else γ a B0 71) + 128) (eAu j))
       (authBT B) (BpComp.βA B) := fun ℓ hℓ => by
     have := BpComp.ta_authBP (S := B) (by omega) ℓ (hℓ.trans hin)
     exact ⟨by rw [timeBoundT_prog]; exact this.1, this.2⟩
   refine (h1.mono le_rfl (Nat.mul_le_mul_left _ (by omega)) le_rfl).seq
-    ((ph_frame eA h2).mono le_rfl le_rfl ?_)
+    ((ph_frame eAu h2).mono le_rfl le_rfl ?_)
   intro t
-  rcases embedF_cases eA _ (BpComp.βA B) t with ⟨hn, h⟩ | ⟨j, rfl, h⟩
+  rcases embedF_cases eAu _ (BpComp.βA B) t with ⟨hn, h⟩ | ⟨j, rfl, h⟩
   · rw [h]
     simp only [Function.update_apply, γ]
     split_ifs <;> omega
   · rw [h]
-    have h0 : eA j ≠ 0 := by fin_cases j <;> decide
+    have h0 : eAu j ≠ 0 := by fin_cases j <;> decide
     simp only [γ, h0, if_false]
     exact (BpComp.βA_le (by omega) j).trans le_rfl
 

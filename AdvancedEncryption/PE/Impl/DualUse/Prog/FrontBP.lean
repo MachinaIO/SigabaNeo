@@ -81,12 +81,12 @@ def cutPn (m : ℕ) : Prog 72 :=
 
 /-- The tapes of the authorization program: the word on `70`, the attribute on `71`, its work
 tapes on `1 … 14`. -/
-def eA : Fin 16 ↪ Fin 72 := ⟨![70, 71, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], by decide⟩
+def eAu : Fin 16 ↪ Fin 72 := ⟨![70, 71, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], by decide⟩
 
 /-- The authorization bit at `attr0` (`128` zeros on tape `71`) of the word on tape `70`, on
 tape `70`. -/
 def bit0P : XProg 72 :=
-  seq (putW 71 (List.replicate 128 false)) (frame eA (prog authBPC))
+  seq (putW 71 (List.replicate 128 false)) (frame eAu (prog authBPC))
 
 /-- The cut, the compiler, the consed `true` (as before the bit `f(0)` was added). -/
 def compBlk (m : ℕ) : XProg 72 :=
@@ -260,7 +260,7 @@ theorem wf_putW72 (t : Fin 72) : ∀ w : List Bool, (putW t w).WF
   | _ :: w => ⟨trivial, wf_putW72 t w⟩
 
 theorem coinFree_bit0P : bit0P.CoinFree :=
-  XProg.coinFree_seq (coinFree_putW72 _ _) (XProg.coinFree_frame eA BpComp.good_authBP.1)
+  XProg.coinFree_seq (coinFree_putW72 _ _) (XProg.coinFree_frame eAu BpComp.good_authBP.1)
 
 /-- The word `X` on tape `0`, `a` on tape `70`, every other tape blank. -/
 def o70 (X a : List Bool) : Store 72 := Function.update (o0 X) 70 a
@@ -269,7 +269,7 @@ theorem law_bit0P (X C : List Bool) :
     bit0P.law (o70 X C) = PMF.pure (o70 X [auth0 C]) := by
   rw [bit0P, XProg.law_seq_pure (law_putW _ _ _), XProg.law_frame, XProg.law_prog]
   have hv : (fun j => Function.update (o70 X C) 71 (o70 X C 71 ++ List.replicate 128 false)
-      (eA j)) = inA C (List.replicate 128 false) := by
+      (eAu j)) = inA C (List.replicate 128 false) := by
     funext j
     fin_cases j <;> rfl
   have ha : authBPC.law (inA C (List.replicate 128 false)) = PMF.pure (outA (auth0 C)) := by
