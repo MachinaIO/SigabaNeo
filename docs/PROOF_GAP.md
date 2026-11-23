@@ -2008,6 +2008,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Uncovered: (a) mixed hits at draw 406 with 32.32 < g < 32.8, height 1–4, inherited plane minimum in (28.22, 29.2);
     (b) gated masses of surviving old planes and terminal replacements. A reachable prefix whose first area hit is at draw
     406 (spacing 28.0220) fails the raw gate at draw 0.
+* **Part 219 (audited, CONFIRMED; negative).** [covering_ceiling](research/wall1_covering_ceiling.md): covering / dual
+  Poisson attack on the long-winner ceiling.
+  * The exact finite-group second moment sums Fourier coefficients within each class of M*/K* before squaring. A long
+    winner occurs exactly when every admissible height misses its ball under the same mark.
+  * Gaussian smoothing certifies a covered fraction < 4.18·10⁻²⁸ on every unresolved entry. Dual counting from the dual
+    floor and integrality alone admits shell energy > 10^109.46 on every corridor. Both ceilings (Part 217) remain open.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
