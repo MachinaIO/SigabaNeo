@@ -155,6 +155,8 @@ import PE.Impl.DualUse.Prog.KeyTightBfX
 import PE.Impl.DualUse.Prog.KeyTightWin
 import PE.Impl.DualUse.Prog.KeyTightGen
 import PE.Impl.DualUse.Prog.WfCConf
+import PE.Impl.DualUse.Prog.DecCostConf
+import PE.Impl.DualUse.Prog.DecTightConf
 import PE.Impl.DualUse.Prog.CfX
 import PE.Impl.DualUse.Prog.WfB2CoinFree
 import PE.Impl.DualUse.Prog.CostTools
