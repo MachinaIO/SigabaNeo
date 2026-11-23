@@ -166,6 +166,9 @@ import PE.Impl.DualUse.Prog.DecTightConf
 import PE.Impl.DualUse.Prog.KeyTightConf
 import PE.Impl.DualUse.Prog.SizeCost
 import PE.Impl.DualUse.Prog.KeySize
+import PE.Impl.DualUse.Prog.KeyPTimeV
+import PE.Impl.DualUse.Prog.KeyTrySimConf
+import PE.Impl.DualUse.Prog.KeyCostV
 import PE.Impl.DualUse.Prog.DecSize
 import PE.Impl.DualUse.Prog.DecodeCost
 import PE.Impl.DualUse.Prog.CfX
