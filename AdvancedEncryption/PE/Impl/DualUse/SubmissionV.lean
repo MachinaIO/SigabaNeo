@@ -2,15 +2,15 @@ import PE.Impl.DualUse.Submission
 import PE.Impl.DualUse.AHConcreteV
 
 /-!
-# A variant of the submission with `952`-bit premises
+# A variant of the submission with `949`-bit premises
 
 `Submission` asks decision Ring-LWE at `2645` bits at the parameters of hybrids 3 and 5. With the
 reductions' components bounded per tape (`AHConcreteV`: every reduction's constant at most
-`2^690`), `952` bits suffice. `submissionV` is the same implementation `implC`, cost `2^1002`, with
-the premises `prem3V`, `prem5V` at `952` bits.
+`2^687`), `949` bits suffice. `submissionV` is the same implementation `implC`, cost `2^1002`, with
+the premises `prem3V`, `prem5V` at `949` bits.
 
 * `spec_submissionV`: the final statement `Spec`;
-* `valid_submissionV`: valid at the initial strengths of the registry (`952 ≤ 2650 ≤ RingLWE.H`).
+* `valid_submissionV`: valid at the initial strengths of the registry (`949 ≤ 2650 ≤ RingLWE.H`).
 -/
 
 namespace AdvancedEncryption.DualUse.Sub
@@ -19,13 +19,13 @@ open SigabaNeo SigabaNeo.Lattices SigabaNeo.Tape AdvancedEncryption.PE AdvancedE
 open AdvancedEncryption.DualUse.Prog AdvancedEncryption.DualUse.Params
 open AdvancedEncryption.DualUse.Params.Strength
 
-/-- The premise of decision Ring-LWE at the parameters of hybrid 3, at `952` bits. -/
+/-- The premise of decision Ring-LWE at the parameters of hybrid 3, at `949` bits. -/
 noncomputable def prem3V : Premise registry :=
-  ⟨AName.ringLWE, (params3 Np (2 ^ Kp) kp (.cbd 16) : RingLWE.Params), 952⟩
+  ⟨AName.ringLWE, (params3 Np (2 ^ Kp) kp (.cbd 16) : RingLWE.Params), 949⟩
 
-/-- The premise of decision Ring-LWE at the parameters of hybrid 5, at `952` bits. -/
+/-- The premise of decision Ring-LWE at the parameters of hybrid 5, at `949` bits. -/
 noncomputable def prem5V : Premise registry :=
-  ⟨AName.ringLWE, (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16) : RingLWE.Params), 952⟩
+  ⟨AName.ringLWE, (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16) : RingLWE.Params), 949⟩
 
 /-- The premises of each proposition. -/
 noncomputable def depsV : PropIndex → List (Premise registry)
@@ -33,7 +33,7 @@ noncomputable def depsV : PropIndex → List (Premise registry)
   | .attributeHiding => [prem3V, prem5V]
   | .expressiveness => []
 
-/-- **The submission with `952`-bit premises.** -/
+/-- **The submission with `949`-bit premises.** -/
 noncomputable def submissionV : Submission DateWindow.primitive registry where
   impl := implC
   deps := depsV
@@ -41,11 +41,11 @@ noncomputable def submissionV : Submission DateWindow.primitive registry where
 
 theorem attributeHiding_implCV (h3 : prem3V.Holds) (h5 : prem5V.Holds) :
     AttributeHiding dateUniverse params implC := by
-  rw [implC_eq]; exact attributeHiding_conf_rlwe' 952 le_rfl h3 h5
+  rw [implC_eq]; exact attributeHiding_conf_rlwe' 949 le_rfl h3 h5
 
 theorem submissionV_deps : submissionV.deps .attributeHiding = [prem3V, prem5V] := rfl
 
-/-- **The final statement of the submission with `952`-bit premises.** -/
+/-- **The final statement of the submission with `949`-bit premises.** -/
 theorem spec_submissionV : Spec DateWindow.primitive registry submissionV := by
   refine spec_of ?_ ?_ ?_ ?_
   · exact correct_implC
@@ -56,7 +56,7 @@ theorem spec_submissionV : Spec DateWindow.primitive registry submissionV := by
   · exact expressive_implC
   · exact cost_implC
 
-/-- **The submission with `952`-bit premises is valid** at the initial strengths of the
+/-- **The submission with `949`-bit premises is valid** at the initial strengths of the
 registry. -/
 theorem valid_submissionV : submissionV.Valid (Registry.initial assumptions) := by
   intro i d hd
@@ -67,9 +67,9 @@ theorem valid_submissionV : submissionV.Valid (Registry.initial assumptions) := 
     rw [submissionV_deps] at hd
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hd
     rcases hd with rfl | rfl
-    · show 952 ≤ RingLWE.H (params3 Np (2 ^ Kp) kp (.cbd 16))
+    · show 949 ≤ RingLWE.H (params3 Np (2 ^ Kp) kp (.cbd 16))
       exact registry_covers_kb.1
-    · show 952 ≤ RingLWE.H (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16))
+    · show 949 ≤ RingLWE.H (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16))
       exact registry_covers_kb.2
 
 end AdvancedEncryption.DualUse.Sub
