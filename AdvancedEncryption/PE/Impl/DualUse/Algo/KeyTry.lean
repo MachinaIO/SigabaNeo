@@ -251,7 +251,7 @@ theorem keyTryMskW_eq (hk : 2 ^ K < 2 ^ k) (h0 : 0 < k) (c : DualUse.Conf N K k)
     {sW : List Bool} (hs : sW.length = K) (hS : val sW = S)
     (hSmall : c.Small = DualUse.keyBall (2 ^ K) c.d (DualUse.TrapCol k) N S)
     (hdec : c.dec = decG hk h0) (msk : DualUse.SKey hk c) (C : List Bool) (inC : Bool)
-    (hC : inC = true ↔ ∃ w : Window, winWord w = C) (bfW : List Bool)
+    (hC : inC = true ↔ ValidC C) (bfW : List Bool)
     (hbf : bfW = rowW N K k (DualUse.keyMatrix msk.1 (DualUse.predC C))) (l : List Bool) :
     keyTryMskW N K k c.d B sW inC ((DualUse.mskEnc hk c).enc msk) bfW l =
       (DualUse.skEnc hk c).enc (DualUse.keyTry hk c msk C
@@ -280,7 +280,7 @@ theorem keyTryMskW_eq (hk : 2 ^ K < 2 ^ k) (h0 : 0 < k) (c : DualUse.Conf N K k)
     (DualUse.trapMat msk.2.1 msk.2.2) (DualUse.keyMatrix msk.1 (DualUse.predC C)) z
   show _ = (DualUse.pkEnc hk c).enc (DualUse.keyTry hk c msk C p).1 ++
     (DualUse.keyEnc (N := N) (K := K) c).enc (DualUse.keyTry hk c msk C p).2
-  by_cases hcl : ∃ w : Window, winWord w = C
+  by_cases hcl : ValidC C
   · have hinC : inC = true := hC.mpr hcl
     have hT : DualUse.keyTry hk c msk C p = DualUse.keyTryW hk c msk C p := by
       simp [DualUse.keyTry, hcl]
@@ -352,7 +352,7 @@ theorem val_SpW : val SpW = Sp := by
 /-- **The words of the keys of `KeyGen` for `confP`**: the image of `mBp` fair coins under one try
 on words, for the key row `B_f̂` given by its word. -/
 theorem keyM_words (msk : DualUse.SKey hkp confP) (C : List Bool) (inC : Bool)
-    (hC : inC = true ↔ ∃ w : Window, winWord w = C) (bfW : List Bool)
+    (hC : inC = true ↔ ValidC C) (bfW : List Bool)
     (hbf : bfW = rowW Np Kp kp (DualUse.keyMatrix msk.1 (DualUse.predC C))) :
     (DualUse.keyM hkp confP msk C).map (DualUse.skEnc hkp confP).enc =
       (BitString.uniformList mBp).map
@@ -365,8 +365,8 @@ theorem keyM_words (msk : DualUse.SKey hkp confP) (C : List Bool) (inC : Bool)
 
 /-- **The same, with `B_f̂` computed on words** by `keyMatrixW` from the words of the `B_j`. -/
 theorem keyM_words_keyMatrix (msk : DualUse.SKey hkp confP) (C : List Bool) (inC : Bool)
-    (hC : inC = true ↔ ∃ w : Window, winWord w = C)
-    (bjW : Fin 10 × BI Np kp → List Bool) (hbj : bjW = fun j => rowW Np Kp kp (msk.1.Bj j)) :
+    (hC : inC = true ↔ ValidC C)
+    (bjW : Fin nA × BI Np kp → List Bool) (hbj : bjW = fun j => rowW Np Kp kp (msk.1.Bj j)) :
     (DualUse.keyM hkp confP msk C).map (DualUse.skEnc hkp confP).enc =
       (BitString.uniformList mBp).map
         (keyTryMskW Np Kp kp dp Bp SpW inC ((DualUse.mskEnc hkp confP).enc msk)

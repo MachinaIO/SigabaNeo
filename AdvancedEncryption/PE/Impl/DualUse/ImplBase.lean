@@ -13,7 +13,7 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.GateListLayout
 # The dual-use scheme for date windows: configuration and laws
 
 For the universe of `PE.DateWindow` (a date as 10 bits, one-bit messages), over
-`R = ℤ_{2^K}[X]/(X^N + 1)` (`ringSetting`, the attribute bits `Fin 10`), the configuration `Conf`
+`R = ℤ_{2^K}[X]/(X^N + 1)` (`ringSetting`, the attribute bits `Fin nA`), the configuration `Conf`
 fixes the remaining parameters of the scheme. `Setup`, `Enc` and `KeyGen` are machines realizing
 the scheme's laws exactly (`Machine.exists_finiteAlg`, with the coin maps of `DualUse.BitLaws`),
 `Dec` a deterministic machine computing the scheme's decryption
@@ -181,13 +181,13 @@ zero key otherwise. Keys of gate lists outside the class would decrypt challenge
 `Eval` does not authorize. -/
 noncomputable def keyTry (msk : SKey hk c) (C : List Bool) :
     KeyShort (Fin c.d) (TrapCol k) (Rg N K) → SK hk c := fun p =>
-  if ∃ w : Window, winWord w = C then keyTryW hk c msk C p else (msk.1, dummyKey c)
+  if ValidC C then keyTryW hk c msk C p else (msk.1, dummyKey c)
 
 /-- The law of `KeyGen`: the public key and a key from `keyLaw` with the trapdoor of `msk`. -/
 noncomputable def keyM (msk : SKey hk c) (C : List Bool) : PMF (SK hk c) :=
   (PMF.uniformOfFinset c.Big c.hBig).map (keyTry hk c msk C)
 
-theorem keyM_eq (msk : SKey hk c) (C : List Bool) (hC : ∃ w : Window, winWord w = C) :
+theorem keyM_eq (msk : SKey hk c) (C : List Bool) (hC : ValidC C) :
     keyM hk c msk C = (keyLaw c.Big c.Small c.hBig c.dec msk.1
       (realTrap (S := Sdw (N := N) hk) (trapMat msk.2.1 msk.2.2) (keyMatrix msk.1 (predC C)))).map
         fun o => (msk.1, keyOfOutput o) := by
@@ -196,7 +196,7 @@ theorem keyM_eq (msk : SKey hk c) (C : List Bool) (hC : ∃ w : Window, winWord 
   rw [this, PMF.map_comp]
   rfl
 
-theorem keyM_of_not (msk : SKey hk c) (C : List Bool) (hC : ¬ ∃ w : Window, winWord w = C) :
+theorem keyM_of_not (msk : SKey hk c) (C : List Bool) (hC : ¬ ValidC C) :
     keyM hk c msk C = PMF.pure (msk.1, dummyKey c) := by
   have : keyTry hk c msk C = fun _ => (msk.1, dummyKey c) := funext fun p => by simp [keyTry, hC]
   unfold keyM
@@ -207,10 +207,10 @@ open Classical in
 /-- The output of `Dec`: the decoded bit for the predicates of the class (window predicates), the
 dummy answer `[false]` otherwise (as `KeyGen` gives the zero key outside the class). -/
 noncomputable def decM (sk : SK hk c) (C : List Bool) (ct : CT hk c) : List Bool :=
-  if ∃ w : Window, winWord w = C then [decodeBit c.hN (decryptRaw sk.1 (predC C) sk.2 ct)]
+  if ValidC C then [decodeBit c.hN (decryptRaw sk.1 (predC C) sk.2 ct)]
   else [false]
 
-theorem decM_win (sk : SK hk c) (C : List Bool) (ct : CT hk c) (hC : ∃ w : Window, winWord w = C) :
+theorem decM_win (sk : SK hk c) (C : List Bool) (ct : CT hk c) (hC : ValidC C) :
     decM hk c sk C ct = [decodeBit c.hN (decryptRaw sk.1 (predC C) sk.2 ct)] := by
   classical
   unfold decM; rw [if_pos hC]

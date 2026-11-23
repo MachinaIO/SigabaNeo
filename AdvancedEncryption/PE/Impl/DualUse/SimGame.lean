@@ -21,9 +21,9 @@ open AdvancedEncryption.PE.Gates.DateWindow
 variable {N K k : ℕ} {hk : 2 ^ K < 2 ^ k} {c : Conf N K k} [NeZero c.d]
 
 /-- Acceptance at `true` only depends on the outcomes with the flag down. -/
-theorem bind_true_eq {μ ν : PMF (List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool)}
+theorem bind_true_eq {μ ν : PMF (List Bool × Option PUniv.Attr × Option PUniv.Msg × Bool)}
     (h : ∀ o, o.2.2.2 = false → μ o = ν o)
-    (f : List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool → PMF Bool)
+    (f : List Bool × Option PUniv.Attr × Option PUniv.Msg × Bool → PMF Bool)
     (hf : ∀ o, o.2.2.2 = true → f o true = 0) : (μ.bind f) true = (ν.bind f) true := by
   rw [PMF.bind_apply, PMF.bind_apply]
   refine tsum_congr fun o => ?_
@@ -31,7 +31,7 @@ theorem bind_true_eq {μ ν : PMF (List Bool × Option dateUniverse.Attr × Opti
   · rw [hf o hb, mul_zero, mul_zero]
   · rw [h o (by simpa using hb)]
 
-theorem DcB_bad (D : Machine) (o : List Bool × Option dateUniverse.Attr × Option dateUniverse.Msg × Bool)
+theorem DcB_bad (D : Machine) (o : List Bool × Option PUniv.Attr × Option PUniv.Msg × Bool)
     (hb : o.2.2.2 = true) : DcB D o true = 0 := by
   simp [DcB, DcStar, hb]
 
@@ -39,7 +39,7 @@ variable {Sec : Type} (setupS : Date → PMF Sec) (view : Sec → PK hk c × CT 
   (sd : Sec → SimData hk c)
 
 /-- **The reduction's challenger.** -/
-noncomputable def specSim : Generic.Spec dateUniverse Sec where
+noncomputable def specSim : Generic.Spec PUniv Sec where
   setup := setupS
   pub σ := (pkEnc hk c).enc (view σ).1
   key σ := KGsim (sd σ)
@@ -54,9 +54,9 @@ theorem accept_sim (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) (c.dec u) = u
     (hx : ∀ x, ∀ σ ∈ (setupS x).support, (sd σ).x = x)
     (hvalid : ∀ x, ∀ σ ∈ (setupS x).support, SimValid (sd σ)) (A : Machine 3) (D : Machine) :
     ((G A (fun x => (setupS x).map view)).bind (DcB D)) true =
-      (((A.runWith (Generic.oracle (specSim setupS view sd)) (paramsWord dateUniverse params)
+      (((A.runWith (Generic.oracle (specSim setupS view sd)) (paramsWord PUniv params)
         {}).map Generic.obs).bind (DcB D)) true := by
-  set prog := A.machine.runOracle A.time (paramsWord dateUniverse params)
+  set prog := A.machine.runOracle A.time (paramsWord PUniv params)
   set spV := specV hk c (pkEnc hk c).enc (ctEnc hk c).enc (KGi hk c) (authI hk c)
     (fun x => (setupS x).map view)
   have hcomap := Generic.runWith_comap spV view prog setupS (fun _ => rfl)
@@ -87,7 +87,7 @@ theorem accOn_sim {Inst : Type} (hdec : ∀ u, gadgetMap (S := Sdw (N := N) hk) 
     (hvalid : ∀ i x, ∀ σ ∈ (setupI i x).support, SimValid (sdI i σ)) :
     accOn A D inst F = ((inst.bind fun i =>
       ((A.runWith (Generic.oracle (specSim (setupI i) (viewI i) (sdI i)))
-        (paramsWord dateUniverse params) {}).map Generic.obs).bind (DcB D)) true).toReal := by
+        (paramsWord PUniv params) {}).map Generic.obs).bind (DcB D)) true).toReal := by
   unfold accOn
   congr 1
   rw [PMF.bind_apply, PMF.bind_apply]

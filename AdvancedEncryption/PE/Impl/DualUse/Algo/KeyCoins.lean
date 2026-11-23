@@ -47,7 +47,7 @@ theorem keyM_coins (msk : SKey hk c) (C : List Bool) :
   rw [uniformOfFinset_map_eq, PMF.map_comp, Function.comp_def]
 
 /-- For the predicates of the class, one try is `boxTry` with the real trapdoor of `msk`. -/
-theorem keyM_coins_window (msk : SKey hk c) (C : List Bool) (hC : ∃ w : Window, winWord w = C) :
+theorem keyM_coins_window (msk : SKey hk c) (C : List Bool) (hC : ValidC C) :
     keyM hk c msk C =
       (BitString.uniformList c.mB).map (fun l => (msk.1, keyOfOutput
         (boxTry c.Small (shortMap msk.1) c.dec

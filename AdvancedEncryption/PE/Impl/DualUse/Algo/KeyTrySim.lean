@@ -149,7 +149,7 @@ theorem KGsim_words (hk : 2 ^ K < 2 ^ k) (h0 : 0 < k) {c : DualUse.Conf N K k} (
     {S : ℕ} {sW : List Bool} (hs : sW.length = K) (hS : val sW = S)
     (hSmall : c.Small = DualUse.keyBall (2 ^ K) c.d (DualUse.TrapCol k) N S)
     (hdec : c.dec = decG hk h0) (sd : DualUse.SimData hk c) (C : List Bool) (hL : C.length ≤ c.L)
-    (hC : ∃ w : Window, winWord w = C) :
+    (hC : ValidC C) :
     DualUse.KGsim sd C = (BitString.uniformList m).map
       (keyTrySimW N K k c.d B sW ((DualUse.pkEnc hk c).enc sd.mpk)
         (colsW N K k c.d (DualUse.simW sd C))) := by
@@ -173,8 +173,8 @@ open AdvancedEncryption.DualUse.Params
 `keyTrySimW`, with `W_f` computed on words by `simKeyW` from the words of the `B_j`, `W_j`, `Ψᵢ`,
 `Rᵢ` and the bits of the selected attribute. -/
 theorem KGsim_words_simKey (sd : DualUse.SimData hkp confP) (C : List Bool)
-    (hL : C.length ≤ confP.L) (hC : ∃ w : Window, winWord w = C)
-    (bjW wW : Fin 10 × BI Np kp → List Bool) (ψW rmW : Fin 10 → List Bool)
+    (hL : C.length ≤ confP.L) (hC : ValidC C)
+    (bjW wW : Fin nA × BI Np kp → List Bool) (ψW rmW : Fin nA → List Bool)
     (hbj : bjW = fun j => rowW Np Kp kp (sd.mpk.Bj j)) (hw : wW = fun j => colsW Np Kp kp dp (sd.W j))
     (hψ : ψW = fun i => colsW Np Kp kp 2 (sd.Ψ i)) (hr : rmW = fun i => colsW Np Kp kp dp (sd.Rm i)) :
     DualUse.KGsim sd C = (BitString.uniformList mBp).map

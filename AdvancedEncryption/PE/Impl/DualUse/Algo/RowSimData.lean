@@ -208,8 +208,8 @@ noncomputable def wWord (X₀ : List Bool) (Z : ℕ) (g : JIx (N := N) hk → Ma
 variable (hk c) in
 /-- **The crafted simulation data**: `mpk`, `c₀ = 0`, the `Rᵢ` of the words `rmW i`, the `W_j` of
 `wWord X₀ g`, `Ψ`, the date `(0, 0)`. -/
-noncomputable def sdOf (mpk : PK hk c) (rmW : Fin 10 → List Bool)
-    (Ψ : Fin 10 → Matrix (Fin 2) (Col k) (Rg N K)) (X₀ : List Bool)
+noncomputable def sdOf (mpk : PK hk c) (rmW : Fin nA → List Bool)
+    (Ψ : Fin nA → Matrix (Fin 2) (Col k) (Rg N K)) (X₀ : List Bool)
     (g : JIx (N := N) hk → Matrix (Fin 1) (Col k) (Rg N K)) : SimData hk c where
   mpk := mpk
   c₀ := 0
@@ -224,28 +224,28 @@ theorem length_wWord {X₀ : List Bool} {Z : ℕ} (hX : X₀.length = Z)
   rw [wWord, List.length_append, length_row1]
   split_ifs <;> simp [hX]
 
-theorem dateEnc_date0 : dateEnc.enc date0 = List.replicate 10 false := rfl
+theorem dateEnc_date0 : dateEnc.enc date0 = List.replicate nA false := rfl
 
 /-- **The word of the crafted simulation data.** -/
-theorem sdEnc_sdOf (mpk : PK hk c) {rmW : Fin 10 → List Bool}
-    (hrm : ∀ i, (rmW i).length = c.d * rowL N K k) (Ψ : Fin 10 → Matrix (Fin 2) (Col k) (Rg N K))
+theorem sdEnc_sdOf (mpk : PK hk c) {rmW : Fin nA → List Bool}
+    (hrm : ∀ i, (rmW i).length = c.d * rowL N K k) (Ψ : Fin nA → Matrix (Fin 2) (Col k) (Rg N K))
     {X₀ : List Bool} (hX : X₀.length = (c.d - 1) * rowL N K k) (hd : 0 < c.d)
     (g : JIx (N := N) hk → Matrix (Fin 1) (Col k) (Rg N K)) :
     (sdEnc hk c).enc (sdOf hk c mpk rmW Ψ X₀ g) =
       (pkEnc hk c).enc mpk ++ (List.replicate (c.d * (N * K)) false ++
-        ((List.finRange 10).flatMap rmW ++
+        ((List.finRange nA).flatMap rmW ++
           (wPart X₀ (List.replicate ((c.d - 1) * rowL N K k) false)
               ((Enum.list (α := JIx (N := N) hk)).map
                 fun j => (matEnc (N := N) (K := K) (Fin 1) (Col k)).enc (g j)) ++
-            ((FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin 2) (Col k))).enc Ψ ++
-              List.replicate 10 false)))) := by
+            ((FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin 2) (Col k))).enc Ψ ++
+              List.replicate nA false)))) := by
   rw [sdEnc_enc]
   simp only [sdOf]
   congr 1
   congr 1
   · rw [matEnc_zero, Algo.len_fin, Algo.len_fin, Nat.one_mul]
   congr 1
-  · show (FixedEnc.fun (α := Fin 10) (matEnc (N := N) (K := K) (Fin c.d) (Col k))).enc
+  · show (FixedEnc.fun (α := Fin nA) (matEnc (N := N) (K := K) (Fin c.d) (Col k))).enc
       (fun i => wordMat c.d (rmW i)) = _
     rw [fun_enc_eq]
     simp only [enc_decM (hrm _)]
@@ -271,7 +271,7 @@ noncomputable def sdB (mpk : PK hk c) (X₀ : List Bool) : SimData hk c :=
   sdOf hk c mpk (fun _ => List.replicate (c.d * rowL N K k) false) (fun _ => 0) X₀ mpk.Bj
 
 theorem rowAt_W_sdOf (hd : 0 < c.d) {X₀ : List Bool} (hX : X₀.length = (c.d - 1) * rowL N K k)
-    (mpk : PK hk c) (rmW : Fin 10 → List Bool) (Ψ : Fin 10 → Matrix (Fin 2) (Col k) (Rg N K))
+    (mpk : PK hk c) (rmW : Fin nA → List Bool) (Ψ : Fin nA → Matrix (Fin 2) (Col k) (Rg N K))
     (g : JIx (N := N) hk → Matrix (Fin 1) (Col k) (Rg N K)) (j : JIx (N := N) hk) :
     rowAt ((sdOf hk c mpk rmW Ψ X₀ g).W j) (lastR c hd) = g j := by
   have hw : (wWord hk X₀ ((c.d - 1) * rowL N K k) g j).length = c.d * rowL N K k := by

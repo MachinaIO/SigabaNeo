@@ -5,8 +5,8 @@ import SigabaNeo.Lib.Lattices.Algo.FhatLoop
 /-!
 # The key matrix of a predicate, on words
 
-For a gate list `gs` (`predOf 10 gs`, the predicates of `KeyGen`) and the words of the public keys
-`B_j`, `keyMatrixW` computes the word of `B_f̂ = keyMatrix mpk (predOf 10 gs)` by explicit
+For a gate list `gs` (`predOf nA gs`, the predicates of `KeyGen`) and the words of the public keys
+`B_j`, `keyMatrixW` computes the word of `B_f̂ = keyMatrix mpk (predOf nA gs)` by explicit
 first-order loops:
 
 1. generate the program `f̂` with `fhatSLPL` (the compiler of `fhatSLP` restated with the orders of
@@ -15,7 +15,7 @@ first-order loops:
 3. sum `PK_b · G̲⁻¹(V_b)` over the bits `b` of a row (`keySumW`).
 
 `keyMatrixW_eq`: at the orders `ordT₀`, `ordO₀` of `fhatSLP` this is the word `rowW` of
-`keyMatrix mpk (predOf 10 gs)`; `matEnc_row` identifies `rowW` with the codec's encoding of rows
+`keyMatrix mpk (predOf nA gs)`; `matEnc_row` identifies `rowW` with the codec's encoding of rows
 (`matEnc (Fin 1) (Col k)`), so the word of each `B_j` is the block of the public key's word.
 
 Step count: `keyMatrixSteps` with `g` the number of gates of `f̂`.
@@ -90,13 +90,13 @@ theorem matEnc_row (B : Matrix (Fin 1) (Col k) (DualUse.Rg N K)) :
 
 /-- The program `f̂` of a gate list, with the orders `ordT`, `ordO`. -/
 def fhatProg (K : ℕ) (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : List (OI N k))
-    (gs : GateList) : SLP (Fin 10 × BI N k) × (BI N k → Wire (Fin 10 × BI N k)) :=
-  fhatSLPL ordT ordO (gvExp (2 ^ K)) (2 ^ K) (predOf 10 gs).1 (predOf 10 gs).2
+    (gs : GateList) : SLP (Fin nA × BI N k) × (BI N k → Wire (Fin nA × BI N k)) :=
+  fhatSLPL ordT ordO (gvExp (2 ^ K)) (2 ^ K) (predOf nA gs).1 (predOf nA gs).2
 
 /-- **The key matrix on words**: generate `f̂`, evaluate the public keys of its output wires, sum
 `PK_b · G̲⁻¹(V_b)`. -/
 def keyMatrixW (N K k : ℕ) (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : List (OI N k))
-    (gs : GateList) (bjW : Fin 10 × BI N k → List Bool) : List Bool :=
+    (gs : GateList) (bjW : Fin nA × BI N k → List Bool) : List Bool :=
   keySumW N K k fun c i j =>
     if h : c < 2 * k ∧ i < k ∧ j < N then
       slpPKW N K k bjW (fhatProg K ordT ordO gs).1
@@ -107,11 +107,11 @@ def keyMatrixW (N K k : ℕ) (ordT : List ((Fin 2 × Fin k) × Fin N)) (ordO : L
 theorem keyMatrixW_eq (hk : 2 ^ K < 2 ^ k) {Wd Wt : Type*} [Fintype Wd] [Fintype Wt]
     (mpk : MPK (Sdw (N := N) hk) Wd Wt) (gs : GateList) :
     keyMatrixW N K k (ordT₀ N k) (ordO₀ N k) gs (fun j => rowW N K k (mpk.Bj j)) =
-      rowW N K k (keyMatrix mpk (predOf 10 gs)) := by
+      rowW N K k (keyMatrix mpk (predOf nA gs)) := by
   unfold DualUse.keyMatrix
   refine keySumW_enc hk.le
-    (fun b => slpPK (topBin N K k hk.le) mpk.Bj ((Sdw (N := N) hk).fhat (predOf 10 gs)).1
-      (((Sdw (N := N) hk).fhat (predOf 10 gs)).2 b)) _ ?_
+    (fun b => slpPK (topBin N K k hk.le) mpk.Bj ((Sdw (N := N) hk).fhat (predOf nA gs)).1
+      (((Sdw (N := N) hk).fhat (predOf nA gs)).2 b)) _ ?_
   intro c i j
   rw [dite_eq_left_of_eq_true (eq_true ⟨c.isLt, i.isLt, j.isLt⟩), fhatProg, ← fhatSLP_eq_L hk]
   exact slpPKW_enc hk.le mpk.Bj _ _
