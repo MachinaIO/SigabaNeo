@@ -1691,6 +1691,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     while every nonzero raw vector has length > 250. So shortestness and the cutoffs cannot force a short integer relation.
   * **Remaining.** The membership-weighted sum of conditional selection probabilities for E ∩ G, with budget
     3.9999566953·10⁻⁷.
+* **Part 186 (audited, SOUND).** [quotient_slack](research/wall1_quotient_slack.md): how much slack the 0.47-ratio quotient
+  event leaves.
+  * **Haar benchmark.** The penultimate quotient has rank 504. At 0.47×its own GH the Haar hit probability is ≈ 2.7308·10⁻¹⁶⁶.
+    At physical radius 26 with the audited determinant floor, the Haar parent gives 3.33666·10⁻⁶⁰. So the certified
+    comparison budget is e^{122.218} ≈ 3329^{15.069}, not e^{365}.
+  * **Coin comparison.** A fair coin choosing horizontal/vertical, then the shortest vector of that type, reproduces every
+    path on matching strings, so Pr(E) ≤ 2^406·R_406(E). That loses e^{281.4}, which exceeds the budget by e^{159.2}.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1700,7 +1707,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–185 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–186 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
