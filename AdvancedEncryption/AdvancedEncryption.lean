@@ -157,6 +157,9 @@ import PE.Impl.DualUse.Prog.WfCConf
 import PE.Impl.DualUse.Prog.KeyTightConf
 import PE.Impl.DualUse.Prog.SizeCost
 import PE.Impl.DualUse.Prog.KeySize
+import PE.Impl.DualUse.Prog.KeyPTimeV
+import PE.Impl.DualUse.Prog.KeyTrySimConf
+import PE.Impl.DualUse.Prog.KeyCostV
 import PE.Impl.DualUse.Prog.CfX
 import PE.Impl.DualUse.Prog.WfB2CoinFree
 import PE.Impl.DualUse.Prog.CostTools
