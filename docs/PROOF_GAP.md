@@ -2346,6 +2346,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * the event inclusion for randomized outputs (ties: two exact outputs may differ, and validation checks the chosen
       one);
     * an execution-level work bound.
+* **Lean (closest-point selection, integer coordinates).** UniqueClosestSelection / IntegerGridGeometry (axiom-clean).
+  * `selected_of_not_bad`: on a good block, any selector returning a feasible minimizer returns the planted point.
+  * `exists_disagreeing_first_closest`: a counterexample on 2ℤ. On an earlier tied block, two exact selectors can disagree,
+    which changes the first accepted candidate. So `recovery_std` (fixed oracle) does NOT transfer to arbitrary selectors
+    as stated. The four-group statement must be reproved for selector families (e.g. charge ties on every queried block,
+    or fix the order of validation).
+  * Integer-submodule realization with the squared-residual identity, a basis, and parity labels.
+  * Remaining: the concrete rank-638 instance, and `samplerTV` (Σ(P−Q)₊ ≤ 2⁻⁹²³) as an explicit hypothesis.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
