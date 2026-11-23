@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.AHConcrete
 import PE.Impl.DualUse.ImplBP
+import PE.Impl.DualUse.Relaxed
 import PE.Impl.DualUse.Prog.SetupConfA
 import PE.Impl.DualUse.Prog.EncConfA
 import PE.Impl.DualUse.Prog.KeyTightConf
@@ -12,6 +13,10 @@ import SigabaNeo.Trusted.Submission
 
 /-!
 # The submission for predicate encryption for branching programs
+
+The width chosen is `w8` (16 symbols of 8 bits); the implementation's predicates are the programs on
+32-bit states of `PE/Impl/Gates/BP32.lean`, into which the required 14-bit programs embed
+(`Relaxed`).
 
 `submission`: the compiled implementation `implC` (`ImplBP`) of the Ring-LWE scheme at `confP`
 (the sizes of `confA`: `N = 2^36`, `K = 2^27`, `k = K + 1`, `d = 2^65`), with the χ sampler
@@ -69,7 +74,7 @@ noncomputable def deps : PropIndex → List (Premise registry)
 def Ncost : ℕ := 2 ^ 818
 
 /-- **The submission.** -/
-noncomputable def submission : Submission BranchingProgram.primitive registry where
+noncomputable def submission : Submission (BranchingProgram.primitive BranchingProgram.w8) registry where
   impl := implC
   deps := deps
   N := Ncost
@@ -113,18 +118,18 @@ theorem cost_implC : PE.cost BranchingProgram.params implC ≤ 2 ^ 818 := by
 /-! ### The final statement -/
 
 /-- `Spec` from its four parts, for any submission. -/
-theorem spec_of {u : Submission BranchingProgram.primitive registry}
+theorem spec_of {u : Submission (BranchingProgram.primitive BranchingProgram.w8) registry}
     (hc : Correct PUniv BranchingProgram.params u.impl)
     (ha : (∀ d ∈ u.deps .attributeHiding, d.Holds) →
       AttributeHiding PUniv BranchingProgram.params u.impl)
     (he : Expressive PUniv BranchingProgram.params u.impl)
     (hcost : PE.cost BranchingProgram.params u.impl ≤ u.N) :
-    Spec BranchingProgram.primitive registry u := by
+    Spec (BranchingProgram.primitive BranchingProgram.w8) registry u := by
   refine ⟨fun i hi => ?_, hcost⟩
   cases i with
-  | correctness => exact hc
-  | attributeHiding => exact ha hi
-  | expressiveness => exact he
+  | correctness => exact (Relaxed.correct_iff _).mpr hc
+  | attributeHiding => exact (Relaxed.attributeHiding_iff _).mpr (ha hi)
+  | expressiveness => exact Relaxed.expressive_of he
 
 /-- **Attribute hiding of `implC`** from the two premises (decision Ring-LWE at `965` bits), given
 the cost of the reductions' key component (`KeyRConfA`). -/
@@ -138,7 +143,7 @@ theorem submission_deps : submission.deps .attributeHiding = [prem3, prem5] := r
 
 /-- **The final statement of the submission.** -/
 theorem spec_submission :
-    Spec BranchingProgram.primitive registry submission := by
+    Spec (BranchingProgram.primitive BranchingProgram.w8) registry submission := by
   refine spec_of ?_ ?_ ?_ ?_
   · rw [submission_impl]; exact correct_implC
   · intro h

@@ -1,4 +1,4 @@
-import PE.BranchingProgram
+import PE.Impl.Gates.BP32
 import SigabaNeo.Lib.Lattices.Homomorphic.MuxTree
 import SigabaNeo.Lib.Lattices.Homomorphic.Depth
 
