@@ -161,6 +161,7 @@ import PE.Impl.DualUse.Prog.KeyTightConf
 import PE.Impl.DualUse.Prog.SizeCost
 import PE.Impl.DualUse.Prog.KeySize
 import PE.Impl.DualUse.Prog.DecSize
+import PE.Impl.DualUse.Prog.DecodeCost
 import PE.Impl.DualUse.Prog.CfX
 import PE.Impl.DualUse.Prog.WfB2CoinFree
 import PE.Impl.DualUse.Prog.CostTools
