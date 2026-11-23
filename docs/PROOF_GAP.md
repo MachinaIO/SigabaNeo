@@ -2101,6 +2101,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Reaching the target needs a stabilizer of rank ≥ 37 (40 at t = 1.05, 34 at t = 1.15), and group structure alone gives
     no short dual representative. Diagnosis: r = t·GH lies beyond the smoothing regime, so only typicality inherited from
     earlier randomness can give coverage (W1-R100).
+* **Part 230 (audited, CONFIRMED; partial positive).** [inductive_typicality](research/wall1_inductive_typicality.md):
+  two-mark drift.
+  * One-step drift: E[next height-one void | history] ≤ p(b₀)·p(b₁), where p is the current void profile at two smaller
+    radii. This holds even though the first mark selects the projection: the inequality holds per first mark, and the
+    map (U,V) ↦ (V, V+U) is a bijection on H². Contraction at the moving threshold still needs a shell-mass bound. At
+    g = 35, t = 1.10, the smaller ball has 1.7660% of the volume.
+  * From draw 129, outside < 10^-13.64, every qualifying draw-405 lift loses > 89.998% of its squared norm to the 276
+    frozen directions.
+  * A 0.18 void ceiling on draws 129–405 plus one 10⁻¹² exit gives Z_rem < 5.338·10⁻¹¹ (direct recomputation: 9.287·10⁻¹²
+    before the exit charge). The ceiling is open (W1-R101).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
