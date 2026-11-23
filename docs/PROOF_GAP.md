@@ -1705,6 +1705,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     comparison budget is e^{122.218} ≈ 3329^{15.069}, not e^{365}.
   * **Coin comparison.** A fair coin choosing horizontal/vertical, then the shortest vector of that type, reproduces every
     path on matching strings, so Pr(E) ≤ 2^406·R_406(E). That loses e^{281.4}, which exceeds the budget by e^{159.2}.
+* **Part 187 (audited, SOUND).** [local_comparison](research/wall1_local_comparison.md): local comparison of the quotient
+  event E within the 3329^15 budget.
+  * A reachable width-506 state forces E on every 103-draw continuation. A twin state with the same determinant, maximal
+    mark order and a unique signed shortest vector misses E on the all-zero continuation (quotient minima √5 and √1601).
+    Both are removed by Part 184's radius-250 exit, so worst-case states are not the issue.
+  * At a 3329^15 comparison, the additive room is 1.71956·10⁻⁷.
+  * Coarsening one inverse branch to the plane indicator costs exactly |H(S)|/k_S. The parent weights and k_S are
+    unevaluated, and Pr(E) ≤ 4·10⁻⁷ is open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1714,7 +1722,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–186 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–187 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
