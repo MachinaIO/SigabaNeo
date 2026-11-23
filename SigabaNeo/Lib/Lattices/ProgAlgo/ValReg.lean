@@ -684,6 +684,171 @@ theorem exec_rloopC {blk : Code} {S W : ℕ} {F : List Bool → List Bool → Li
       show (Function.update u JD (u TW) JD).length = W
       rw [Function.update_self, hu TW (by decide) (by decide), hD.tw])
 
+/-! ### A gate list as a register program (each gate its own register) -/
+
+/-- The trivial slot program of a gate list on `n` inputs: gate `t` writes the slot `n + 1 + t`,
+its operands are the slots of `gsW`. -/
+def gsSP (n : ℕ) (gs : GateList) : SProg := (List.range gs.length).map fun t =>
+  (n + 1 + t, (gs.getD t (0, 0)).1, (gs.getD t (0, 0)).2)
+
+theorem length_gsSP (n : ℕ) (gs : GateList) : (gsSP n gs).length = gs.length := by simp [gsSP]
+
+theorem getElem_gsSP (n : ℕ) (gs : GateList) {t : ℕ} (ht : t < (gsSP n gs).length) :
+    (gsSP n gs)[t] = (n + 1 + t, (gs[t]'(by simpa [length_gsSP] using ht)).1,
+      (gs[t]'(by simpa [length_gsSP] using ht)).2) := by
+  have ht' : t < gs.length := by simpa [length_gsSP] using ht
+  simp [gsSP, List.getElem?_eq_getElem ht']
+
+/-- `j` ones at the end of `W` bits. -/
+def revU (W j : ℕ) : List Bool := List.replicate (W - j) false ++ List.replicate j true
+
+theorem revU_succ {W j : ℕ} (hj : j < W) : (revU W j ++ [true]).drop 1 = revU W (j + 1) := by
+  obtain ⟨m, hm⟩ : ∃ m, W - j = m + 1 := ⟨W - j - 1, by omega⟩
+  rw [revU, revU, hm, show W - (j + 1) = m by omega, List.replicate_succ, List.cons_append,
+    List.cons_append, List.drop_one, List.tail_cons, List.append_assoc, ← List.replicate_succ']
+
+theorem length_revU {W j : ℕ} (hj : j ≤ W) : (revU W j).length = W := by simp [revU]; omega
+
+theorem count_revU (W j : ℕ) : (revU W j).count true = j := by
+  simp [revU, List.count_replicate]
+
+/-- One more `true` at the end of `JD`. -/
+def dCtr : Code := ofList [.cp ZT ONE1, .mv JD ZT ONE1]
+
+theorem exec_dCtr (w : St) (h1 : w ONE1 = [true]) :
+    exec V f dCtr w = Function.update (Function.update (Function.update w ZT (w ONE1)) ZT [])
+      JD ((w JD ++ [true]).drop 1) := by
+  simp only [dCtr, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+  rw [exec_mv_shift (x := [true]) (L := []) (by decide)
+    (by simp (config := {decide := true}) [Function.update_apply, h1])
+    (by simp (config := {decide := true}) [Function.update_apply, h1])]
+  rfl
+
+/-- The counter's start: `ONE1 := OB`, `JD := revU W |T|`. -/
+def iCtr (T : Fin 120) : Code := ofList [.cp ONE1 OB, .cp JD TW, .cp CJW T, .rep CJW dCtr]
+
+theorem dstOk_ctr (W n : ℕ) (gs : GateList) (hW : n + gs.length ≤ W) :
+    DstOk V f dCtr W (gsSP n gs) (fun t => gsW W (gs.drop t))
+      (fun t a b => a = revU W (n + t) ∧ b = [true]) where
+  run t ht w hG hD hTW := by
+    have ht' : t < gs.length := by simpa [length_gsSP] using ht
+    rw [exec_dCtr w hD.2]
+    simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+    rw [hD.1, hD.2, revU_succ (by omega), getElem_gsSP, hG, List.drop_eq_getElem_cons ht', gsW_cons,
+      List.append_assoc]
+    exact ⟨rfl, length_revU (by omega), by rw [count_revU]; omega, by rw [Nat.add_assoc], rfl⟩
+  wr := by decide
+
+/-- **The register loop of a gate list** (stage I): gate `t` writes the slot `|T| + 1 + t`. -/
+def rloopG (T : Fin 120) (blk : Code) : Code := rloopX (iCtr T) dCtr blk
+
+theorem getD_append_rep {C : List Bool} {L : List (List Bool)} (m j : ℕ) :
+    (L ++ List.replicate m C).getD j C = L.getD j C := by
+  rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD]
+  by_cases h : j < L.length
+  · rw [List.getElem?_append_left h]
+  · have e1 : L[j]? = none := List.getElem?_eq_none (by omega)
+    rw [e1, List.getElem?_append_right (by omega), List.getElem?_replicate]
+    split_ifs <;> rfl
+
+/-- **The trivial program computes the gate loop's results** `gl`, after the inputs, before the
+padding. -/
+theorem rl_gsSP (F : List Bool → List Bool → List Bool) (C : List Bool) (ins : List (List Bool))
+    (gs : GateList) {W : ℕ} (hW : ins.length + gs.length ≤ W) :
+    ∀ t, t ≤ gs.length → rl F C (C :: ins ++ List.replicate (W - ins.length) C)
+      ((gsSP ins.length gs).take t) =
+        C :: ins ++ gl F C ins (gs.take t) ++ List.replicate (W - ins.length - t) C := by
+  intro t
+  induction t with
+  | zero => intro _; simp [rl, gl]
+  | succ t ih =>
+    intro ht
+    have ht' : t < (gsSP ins.length gs).length := by rw [length_gsSP]; omega
+    have hgl : (gl F C ins (gs.take t)).length = t := by
+      have : ∀ (g : GateList) (rs : List (List Bool)), (g.foldl (glStep F C ins) rs).length =
+          rs.length + g.length := by
+        intro g; induction g with
+        | nil => intro rs; simp
+        | cons a g ihg => intro rs; rw [List.foldl_cons, ihg]; simp [glStep]; omega
+      rw [gl, this]; simp; omega
+    rw [rl_take_succ F C _ _ ht', ih (by omega), getElem_gsSP, rlStep,
+      gl_take_succ F C ins gs (by omega), glStep]
+    simp only
+    rw [getD_append_rep, getD_append_rep]
+    obtain ⟨m, hm⟩ : ∃ m, W - ins.length - t = m + 1 := ⟨W - ins.length - t - 1, by omega⟩
+    rw [hm, show W - ins.length - (t + 1) = m by omega, List.replicate_succ]
+    rw [List.set_append_right _ _ (by simp [hgl])]
+    simp [hgl, slotOf, show ins.length + 1 + t - (ins.length + t + 1) = 0 by omega]
+
+/-- **A gate list on the machine** (stage I): from the store `C :: ins ++ C^(W − |ins|)` and the
+gate word `gsW W gs`, after `|GCNT| = |gs|` gates the store holds the results `gl F C ins gs`
+after the inputs, `OUTW` the last one. -/
+theorem exec_rloopG {T : Fin 120} {blk : Code} {S W : ℕ} {F : List Bool → List Bool → List Bool}
+    {Ctx : St → Prop} (hB : BlockSpec V f blk S F Ctx) {C : List Bool} {ins : List (List Bool)}
+    {gs : GateList} (w : St) (hW : ins.length + gs.length ≤ W)
+    (hD : RegData S W C (C :: ins ++ List.replicate (W - ins.length) C) (gsSP ins.length gs) w)
+    (hc : Ctx w) (hG : w GST = (C :: ins ++ List.replicate (W - ins.length) C).flatten)
+    (hGS : w GS = gsW W gs) (hN : (w GCNT).length = gs.length) (hT : (w T).length = ins.length)
+    (hTW : w TW = List.replicate W false) (hOB : w OB = [true])
+    (hTn : T ≠ PADS ∧ T ≠ JW ∧ T ≠ ONE1 ∧ T ≠ JD ∧ T ≠ CJW) :
+    exec V f (rloopG T blk) w GST =
+        (C :: ins ++ gl F C ins gs ++ List.replicate (W - ins.length - gs.length) C).flatten ∧
+      (gs ≠ [] → exec V f (rloopG T blk) w OUTW = (gl F C ins gs).getLastD []) ∧
+      Ctx (exec V f (rloopG T blk) w) ∧
+      ∀ j, j ∉ wr (rloopG T blk) → exec V f (rloopG T blk) w j = w j := by
+  have hrl := rl_gsSP F C ins gs hW gs.length le_rfl
+  rw [List.take_of_length_le (by rw [length_gsSP])] at hrl
+  rw [List.take_of_length_le le_rfl] at hrl
+  obtain ⟨E1, E2, E3, E4⟩ := exec_rloopX (iC := iCtr T) hB (dstOk_ctr W ins.length gs hW) w hD hc hG
+    (by simpa using hGS) (by rw [hN, length_gsSP])
+    (fun x hx => by simp [iCtr, dCtr, wr, ofList] at hx; tauto) (fun u hu => by
+      simp only [iCtr, exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
+      set u1 := Function.update (Function.update (Function.update u ONE1 (u OB)) JD
+        (Function.update u ONE1 (u OB) TW)) CJW (Function.update (Function.update u ONE1 (u OB)) JD
+        (Function.update u ONE1 (u OB) TW) T) with hu1
+      have I := exec_rep_inv (V := V) (f := f) (c := CJW) (B := dCtr)
+        (fun r w' => r ≤ ins.length → w' JD = revU W r ∧ w' ONE1 = [true])
+        (fun r w' ih hr => by
+          obtain ⟨i1, i2⟩ := ih (by omega)
+          rw [exec_dCtr _ (by rw [Function.update_of_ne (by decide), i2])]
+          simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+          exact ⟨by rw [i1, revU_succ (by omega)], i2⟩) u1
+        (fun _ => ⟨by
+            simp (config := {decide := true}) [hu1, Function.update_apply, hu TW (by decide)
+              (by decide), hTW, revU],
+          by simp (config := {decide := true}) [hu1, Function.update_apply, hu OB (by decide)
+              (by decide), hOB]⟩)
+      have hc : (u1 CJW).length = ins.length := by
+        rw [hu1, Function.update_self, Function.update_of_ne hTn.2.2.2.1,
+          Function.update_of_ne hTn.2.2.1, hu T hTn.1 hTn.2.1, hT]
+      rw [hc] at I
+      exact ⟨by rw [(I le_rfl).1, Nat.add_zero], (I le_rfl).2⟩)
+  refine ⟨by rw [rloopG, E1, hrl], fun hne => ?_, E3, E4⟩
+  have h1 : gs.length - 1 < (gsSP ins.length gs).length := by
+    rw [length_gsSP]; exact Nat.sub_lt (List.length_pos_iff.mpr hne) one_pos
+  have hl : (gsSP ins.length gs).getLast? = some ((gsSP ins.length gs)[gs.length - 1]'h1) := by
+    rw [List.getLast?_eq_getElem?, length_gsSP]
+    exact List.getElem?_eq_getElem _
+  rw [rloopG, E2 _ (by rw [hl]; rfl), hrl, getElem_gsSP]
+  have hgl : (gl F C ins gs).length = gs.length := by
+    have : ∀ (g : GateList) (rs : List (List Bool)), (g.foldl (glStep F C ins) rs).length =
+        rs.length + g.length := by
+      intro g; induction g with
+      | nil => intro rs; simp
+      | cons a g ihg => intro rs; rw [List.foldl_cons, ihg]; simp [glStep]; omega
+    rw [gl, this]; simp
+  have hpos : 0 < gs.length := List.length_pos_iff.mpr hne
+  simp only
+  rw [List.getLastD_eq_getLast?, List.getLast?_eq_getElem?, hgl,
+    List.getElem?_eq_getElem (by omega), Option.getD_some, List.getD_eq_getElem _ _ (by simp; omega)]
+  simp only [List.cons_append, List.append_assoc, show ins.length + 1 + (gs.length - 1) =
+    (C :: ins).length + (gs.length - 1) by simp]
+  have key : ∀ (A B : List (List Bool)) (k : ℕ) (h1 : A.length + k < (A ++ B).length)
+      (h2 : k < B.length), (A ++ B)[A.length + k] = B[k] := by
+    intro A B k h1 h2; simp [List.getElem_append_right]
+  exact (key (C :: ins) _ _ _ (by simp [hgl]; omega)).trans
+    (List.getElem_append_left (by rw [hgl]; omega))
+
 end ValVM
 
 end SigabaNeo.Tape
