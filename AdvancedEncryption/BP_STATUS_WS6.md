@@ -11,7 +11,7 @@ Branch `t3/bp-ws6` (base `db15ea12`, `t3/bp-ws1` merged at M0/M3 `e58a15c7`).
 | `ValReg.lean`: stage-I counter loop `rloopG`, `exec_rloopG` (results `gl` of the gate loop) | `436cd4b5` |
 | Stage I: `fhatC`, `gswC` on `rloopG`, store `C :: ins ++ C^(W−10)`; `L1c`, `L1Gc` recomputed | `37030f8a` |
 | `WfRCert.lean`: stage-II runs at the numbers of `confA` (kernel-checked) | `e7147f6d` |
-| M4: `ValRegRP.lean` (`RP` link), merge of `t3/bp-ws1` | (next commit) |
+| M4: `ValRegRP.lean` (`RP` link), merge of `t3/bp-ws1` | `efe42733` |
 
 ## M4 (done)
 
