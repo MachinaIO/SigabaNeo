@@ -2254,6 +2254,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     probability ≤ 7.6·10⁻¹²); three deferred probes (void ≤ 0.3914 at the smaller radius). The latter cannot hold
     uniformly: the all-zero start has void > 0.6427, though its draw-3 long-winner probability is 0.
   * Open: geometries touching all input coordinates.
+* **Part 244 (audited, CONFIRMED; partial).** [generalized_deletion](research/wall1_generalized_deletion.md): generalized
+  coordinate deletion. Rank-increase-detected contributions are negligible: Z₁ < 4.66·10⁻²⁰ and < 3.45·10⁻¹⁹; residual
+  mean score at heights 9–30 < 1.31·10⁻⁸; length-cutoff violations < 4.95·10⁻⁶. Undetected configurations remain open.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
