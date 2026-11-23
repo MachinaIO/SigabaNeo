@@ -23,8 +23,7 @@ namespace AdvancedEncryption.ExpLUT
 
 open SigabaNeo.Lattices Matrix
 
-variable {R : Type*} [CommRing R] {S : Setting R} {Wb J Pos : Type*} [Fintype Wb] [Fintype J]
-  (N : NormSpec S)
+variable {R : Type*} [CommRing R] {S : Setting R} {Wb J Pos : Type*} (N : NormSpec S)
 
 /-- A matrix with entries of norm at most `B`. -/
 def MatBnd {ι κ : Type*} (X : Matrix ι κ R) (B : ℕ) : Prop := ∀ i j, N.nrm (X i j) ≤ B
@@ -47,7 +46,6 @@ theorem matBnd_sum {ι κ ι' : Type*} (T : Finset ι') {X : ι' → Matrix ι �
   rw [Matrix.sum_apply]
   exact N.nrm_sum_le _ _ _ fun t ht => h t ht i j
 
-omit [Fintype Wb] [Fintype J] in
 theorem matBnd_simS (A : Matrix (Fin 2) (Col S.τ) R) {Rd : Dig S.τ → SimMat Wb J S} {β : ℕ}
     (hd : ∀ t, MatBnd N (Rd t) β) : MatBnd N (simS A Rd) (2 * S.τ * S.gfac * β) := fun ℓ j => by
   rw [simS_apply]
@@ -55,7 +53,6 @@ theorem matBnd_simS (A : Matrix (Fin 2) (Col S.τ) R) {Rd : Dig S.τ → SimMat 
     (le_of_eq ?_)
   rw [Finset.card_univ, card_col]; ring
 
-omit [Fintype Wb] [Fintype J] in
 /-- **Mul** (Lemma 10.3): `D E + 2τ D β + Z` for a payload `μ` whose multiplication does not
 increase norms. -/
 theorem matBnd_simMul (A C : Matrix (Fin 2) (Col S.τ) R) {μ : R} (hμ : ∀ a, N.nrm (μ * a) ≤ N.nrm a)
@@ -66,11 +63,9 @@ theorem matBnd_simMul (A C : Matrix (Fin 2) (Col S.τ) R) {μ : R} (hμ : ∀ a,
     (show MatBnd N (μ • Z) Zb from fun i j => (hμ _).trans (hZ i j))
   exact matBnd_mono h (by omega)
 
-omit [Fintype Wb] [Fintype J] in
 theorem matBnd_simPerm (e : ℕ) {Rh : SimMat Wb J S} {E : ℕ} (h : MatBnd N Rh E) :
     MatBnd N (simPerm e Rh) E := fun _ j => (N.nrm_σ _ _ (S.idx_odd e)).trans (h _ j)
 
-omit [Fintype Wb] [Fintype J] in
 /-- **Aut_k** (Lemma 10.4): `autBound S β Bχ E = D Bχ + (D E + 2τ D β + Bχ)` for helper matrices
 of norm at most `Bχ`, digit matrices `β` and a payload `μ` with `σ_k(μ)` norm-preserving. -/
 theorem matBnd_simAut (e : ℕ) (Hk' : Matrix (Fin 2) (Col S.τ) R)
@@ -87,7 +82,6 @@ structure SimAutBnd (Q : SimAut Wb J S) (Bχ β : ℕ) : Prop where
   RC : ∀ t, MatBnd N (Q.RC t) Bχ
   Raut : ∀ t d, MatBnd N (Q.Raut t d) β
 
-omit [Fintype Wb] [Fintype J] in
 /-- **The rounds**: after `t` rounds, `aut^[t] E`, for the monomial payload `X^u`. -/
 theorem matBnd_simRounds (P : AutPub S) (A : Matrix (Fin 2) (Col S.τ) R) (h : AutData S)
     (Q : SimAut Wb J S) (u : ℕ) {Rc : SimMat Wb J S} {E β Bχ : ℕ} (hD : 1 ≤ S.gfac)
@@ -144,7 +138,7 @@ theorem matBnd_simEval (F : BP Pos) (pp : EvalPub S Pos) (ct : EvalCTData S Pos)
 
 variable [DecidableEq J]
 
-omit [Fintype Wb] [Fintype J] [DecidableEq J] in
+omit [DecidableEq J] in
 theorem matBnd_finExt {ι κ : Type*} {f : Fin S.b → Matrix ι κ R} {B : ℕ} (h : ∀ t, MatBnd N (f t) B)
     (t : ℕ) : MatBnd N (finExt f t) B := by
   unfold finExt
@@ -152,7 +146,6 @@ theorem matBnd_finExt {ι κ : Type*} {f : Fin S.b → Matrix ι κ R} {B : ℕ}
   · exact h _
   · intro i j; simp [N.nrm_zero]
 
-omit [Fintype Wb] [Fintype J] in
 theorem matBnd_jη (h1 : N.nrm 1 ≤ 1) (i : Fin S.E.W) (k : J) : MatBnd N (jη (Wb := Wb) i k) 1 := by
   intro c j
   rcases c with ⟨i', w⟩ | ⟨i', k', c'⟩
@@ -162,7 +155,7 @@ theorem matBnd_jη (h1 : N.nrm 1 ≤ 1) (i : Fin S.E.W) (k : J) : MatBnd N (jη 
     · exact h1
     · simp [N.nrm_zero]
 
-omit [Fintype Wb] [Fintype J] [DecidableEq J] in
+omit [DecidableEq J] in
 theorem matBnd_jβ (i : Fin S.E.W) {Z : Matrix Wb (Col S.τ) R} {B : ℕ} (hZ : MatBnd N Z B) :
     MatBnd N (jβ (J := J) i Z) B := by
   intro c j
@@ -180,7 +173,6 @@ structure ProgBnd (P : Prog S Wb J Pos) (Rs Zs : ℕ) : Prop where
   Rin : ∀ t d, MatBnd N (P.Rin t d) Rs
   Raut : ∀ t d, MatBnd N (P.Raut t d) Rs
 
-omit [Fintype Wb] [Fintype J] in
 theorem simFreshBnd_of (M : HelperMap S J) (h1 : N.nrm 1 ≤ 1) {P : Prog S Wb J Pos} {Rs Zs : ℕ}
     (hP : ProgBnd (N := N) P Rs Zs) : SimFreshBnd (N := N) (simFreshOf M P) Rs Zs 1 where
   R0 := matBnd_jβ _ hP.R0
