@@ -1,4 +1,4 @@
-import PE.Impl.DualUse.Prog.DecTightPost
+import PE.Impl.DualUse.Prog.DecTightLib
 import PE.Impl.DualUse.Prog.DecGenCost
 import SigabaNeo.Lib.Lattices.ProgAlgo.SimStepT
 /-!
@@ -344,41 +344,41 @@ theorem ph_decFinB' (B U0 T F0 F2 : ℕ) (hB : ∀ x ∈ decOffs hk c, x ≤ B) 
   have p1 := (ph_getAt' (fixLen (skEnc hk c) + lPsi (N := N) (K := K) hk) (c.d * (N * K))
     (src := 0) (dst := 30) (tmp := 102) (a := 103) (b := 104) (by decide) (by decide) (by decide)
     (by decide) (by decide) (dgV U0 F2 0 0 0 0 0 0)).mono le_rfl
-    (getT_mono b1 b2 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
+    (getT_mono' b1 b2 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
     (g30 (S := U0) (U' := U0 + (1 + B)) (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega)
       (by omega) (by omega)) (by omega) (by omega))
   have p2 := (ph_getAt' (lenPK hk c) (c.d * (N * K))
     (src := 0) (dst := 31) (tmp := 102) (a := 103) (b := 104) (by decide) (by decide) (by decide)
     (by decide) (by decide) (dgV (U0 + (1 + B)) F2 (0 + c.d * (N * K)) 0 0 0 0 0)).mono le_rfl
-    (getT_mono b3 b2 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
+    (getT_mono' b3 b2 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
     (g31 (S := U0 + (1 + B)) (U' := U0 + 2 * (1 + B)) (dgV_le (by omega) (by omega) (by omega)
       (by omega) (by omega) (by omega) (by omega)) (by omega) (by omega))
   have p3 := (ph_getAt' (fixLen (skEnc hk c) + lPsi (N := N) (K := K) hk + c.d * (N * K))
     (Algo.nT k * (N * K))
     (src := 0) (dst := 32) (tmp := 102) (a := 103) (b := 104) (by decide) (by decide) (by decide)
     (by decide) (by decide) (dgV (U0 + 2 * (1 + B)) F2 (0 + c.d * (N * K)) (0 + c.d * (N * K)) 0 0 0 0)).mono le_rfl
-    (getT_mono b4 b5 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
+    (getT_mono' b4 b5 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
     (g32 (S := U0 + 2 * (1 + B)) (U' := U0 + 3 * (1 + B)) (dgV_le (by omega) (by omega) (by omega)
       (by omega) (by omega) (by omega) (by omega)) (by omega) (by omega))
   have p4 := (ph_getAt' (lenPK hk c + c.d * (N * K)) (Algo.nT k * (N * K))
     (src := 0) (dst := 33) (tmp := 102) (a := 103) (b := 104) (by decide) (by decide) (by decide)
     (by decide) (by decide) (dgV (U0 + 3 * (1 + B)) F2 (0 + c.d * (N * K)) (0 + c.d * (N * K))
       (0 + Algo.nT k * (N * K)) 0 0 0)).mono le_rfl
-    (getT_mono b6 b5 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
+    (getT_mono' b6 b5 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
     (g33 (S := U0 + 3 * (1 + B)) (U' := U0 + 4 * (1 + B)) (dgV_le (by omega) (by omega) (by omega)
       (by omega) (by omega) (by omega) (by omega)) (by omega) (by omega))
   have p5 := (ph_getAt' (lenPK hk c + c.d * (N * K) + Algo.nT k * (N * K)) (2 * k * (N * K))
     (src := 0) (dst := 34) (tmp := 102) (a := 103) (b := 104) (by decide) (by decide) (by decide)
     (by decide) (by decide) (dgV (U0 + 4 * (1 + B)) F2 (0 + c.d * (N * K)) (0 + c.d * (N * K))
       (0 + Algo.nT k * (N * K)) (0 + Algo.nT k * (N * K)) 0 0)).mono le_rfl
-    (getT_mono b7 b8 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
+    (getT_mono' b7 b8 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
     (g34 (S := U0 + 4 * (1 + B)) (U' := U0 + 5 * (1 + B)) (dgV_le (by omega) (by omega) (by omega)
       (by omega) (by omega) (by omega) (by omega)) (by omega) (by omega))
   have p6 := (ph_getAt' (fixLen (skEnc hk c) + fixLen (ctEnc hk c) - N * K) (N * K)
     (src := 0) (dst := 35) (tmp := 102) (a := 103) (b := 104) (by decide) (by decide) (by decide)
     (by decide) (by decide) (dgV (U0 + 5 * (1 + B)) F2 (0 + c.d * (N * K)) (0 + c.d * (N * K))
       (0 + Algo.nT k * (N * K)) (0 + Algo.nT k * (N * K)) (0 + 2 * k * (N * K)) 0)).mono le_rfl
-    (getT_mono b9 b10 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
+    (getT_mono' b9 b10 (dgV_le (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)))
     (g35 (S := U0 + 5 * (1 + B)) (U' := U0 + 6 * (1 + B)) (dgV_le (by omega) (by omega) (by omega)
       (by omega) (by omega) (by omega) (by omega)) (by omega) (by omega))
   set U6 := U0 + 6 * (1 + B) with hU6
