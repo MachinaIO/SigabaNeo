@@ -2270,6 +2270,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     3.955368·10⁻¹²).
   * Deletion independence (Parts 243–244) alone cannot give this. A finite-group model satisfying both lemmas has tail
     > 1.0664·10⁻⁸; its reachability as a lattice history is unproved. Open: the small-radius void exit bound.
+* **Part 247 (unaudited; negative).** [void_exit](research/wall1_void_exit.md): a reachable family of draw-2 histories
+  has b₂ > 0.2974 (probability < 10⁻⁶⁶⁸⁹), so the Part 246 exit bound must allow exceptions even at draw 2. The exit
+  probability on the remaining histories is uncontrolled.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
