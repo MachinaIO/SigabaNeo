@@ -2,6 +2,10 @@ import PE.Impl.DualUse.AHConcrete
 import PE.Impl.DualUse.ImplBP
 import PE.Impl.DualUse.Prog.SetupConfA
 import PE.Impl.DualUse.Prog.EncConfA
+import PE.Impl.DualUse.Prog.KeyTightConf
+import PE.Impl.DualUse.Prog.KeySize
+import PE.Impl.DualUse.Prog.DecTightConf
+import PE.Impl.DualUse.Prog.DecSize
 import PE.Impl.DualUse.Params.Strength
 import SigabaNeo.Trusted.Submission
 
@@ -12,21 +16,14 @@ import SigabaNeo.Trusted.Submission
 (the sizes of `confA`: `N = 2^36`, `K = 2^27`, `k = K + 1`, `d = 2^65`), with the χ sampler
 `chiSamplerP`, the key-row block `bfX … wfC` and the `c_f̂` block `cfX … wfC` around the stream
 block `wfC`; attribute hiding rests on decision Ring-LWE at the parameters of hybrids 3 and 5 with
-**`965` bits** each, correctness and expressiveness on nothing. The claimed cost is `N = 2^1002`.
+**`965` bits** each, correctness and expressiveness on nothing. The claimed cost is `N = 2^818`.
 
 * `spec_submission`: the final statement `Spec` (`correct_implC`, `expressive_implC`,
-  `attributeHiding_conf`, and the cost from the clocks and description lengths: `Setup`
-  `≤ 2^387`, `Enc` `≤ 2^452` steps, both `≤ 2^300` description bits, proved; `KeyGen` and `Dec`
-  from the hypothesis `KeyDecCost`);
+  `attributeHiding_conf_rlwe`, and `cost_implC`: clocks `Setup ≤ 2^387`, `KeyGen ≤ 2^629`,
+  `Enc ≤ 2^452`, `Dec ≤ 2^629` steps, description lengths `≤ 2^300`, `≤ 2^817`, `≤ 2^300`,
+  `≤ 2^689` bits);
 * `valid_submission`: every premise is valid at the initial strengths of the registry
   (`965 ≤ 2650 ≤ RingLWE.H`, `ringLWE_H_registry3/5`).
-
-**The remaining hypotheses** (the cost workstreams of `KeyGen` and `Dec`, not yet merged):
-
-* `KeyDecCost`: `KeyGen` and `Dec` of `implC` take at most `2^700` steps and have description
-  lengths at most `2^1000` (expected `≤ 2^629` and `≤ 2^951`, `BP_PLAN.md` §6);
-* `KeyRConfA` (`AHConcrete`): the cost of the reductions' key component (`KeyRCost`), the same
-  shell around the same block as `KeyGen`.
 -/
 
 namespace AdvancedEncryption.DualUse.Sub
@@ -68,7 +65,7 @@ noncomputable def deps : PropIndex → List (Premise registry)
   | .expressiveness => []
 
 /-- The claimed cost. -/
-def Ncost : ℕ := 2 ^ 1002
+def Ncost : ℕ := 2 ^ 818
 
 /-- **The submission.** -/
 noncomputable def submission : Submission BranchingProgram.primitive registry where
@@ -83,22 +80,14 @@ theorem e_key : implC.machine .keyGen = keyMachineP hkp confP bfC cfP := rfl
 theorem e_enc : implC.machine .enc = encMP hkp confP chiSamplerP := rfl
 theorem e_dec : implC.machine .dec = decMachineP hkp confP cfC := rfl
 
-/-- **The clocks and description lengths of `KeyGen` and `Dec` of `implC`** (the hypothesis of the
-cost; expected `≤ 2^629` steps and `≤ 2^951` description bits). -/
-structure KeyDecCost : Prop where
-  keyTime : (keyMachineP hkp confP bfC cfP).time ≤ 2 ^ 700
-  decTime : (decMachineP hkp confP cfC).time ≤ 2 ^ 700
-  keyDesc : (keyMachineP hkp confP bfC cfP).descLen ≤ 2 ^ 1000
-  decDesc : (decMachineP hkp confP cfC).descLen ≤ 2 ^ 1000
-
 set_option exponentiation.threshold 2000 in
-theorem cost_arith {a b c d e f g h : ℕ} (ha : a ≤ 2 ^ 387) (hb : b ≤ 2 ^ 700) (hc : c ≤ 2 ^ 452)
-    (hd : d ≤ 2 ^ 700) (he : e ≤ 2 ^ 300) (hf : f ≤ 2 ^ 1000) (hg : g ≤ 2 ^ 300)
-    (hh : h ≤ 2 ^ 1000) : a + 1 * b + 1 * (c + d) + (e + f + g + h) ≤ 2 ^ 1002 :=
+theorem cost_arith {a b c d e f g h : ℕ} (ha : a ≤ 2 ^ 387) (hb : b ≤ 2 ^ 629) (hc : c ≤ 2 ^ 452)
+    (hd : d ≤ 2 ^ 629) (he : e ≤ 2 ^ 300) (hf : f ≤ 2 ^ 817) (hg : g ≤ 2 ^ 300)
+    (hh : h ≤ 2 ^ 689) : a + 1 * b + 1 * (c + d) + (e + f + g + h) ≤ 2 ^ 818 :=
   calc a + 1 * b + 1 * (c + d) + (e + f + g + h)
-      ≤ 2 ^ 387 + 1 * 2 ^ 700 + 1 * (2 ^ 452 + 2 ^ 700) + (2 ^ 300 + 2 ^ 1000 + 2 ^ 300 + 2 ^ 1000) := by
+      ≤ 2 ^ 387 + 1 * 2 ^ 629 + 1 * (2 ^ 452 + 2 ^ 629) + (2 ^ 300 + 2 ^ 817 + 2 ^ 300 + 2 ^ 689) := by
         gcongr
-    _ ≤ 2 ^ 1002 := by norm_num
+    _ ≤ 2 ^ 818 := by norm_num
 
 /-- The cost at `params` (one run of each algorithm). -/
 theorem cost_le_of {impl : Impl PE.sig} {T : ℕ}
@@ -108,14 +97,17 @@ theorem cost_le_of {impl : Impl PE.sig} {T : ℕ}
         (impl.machine .enc).descLen + (impl.machine .dec).descLen) ≤ T) :
     PE.cost BranchingProgram.params impl ≤ T := h
 
-/-- **The cost of the implementation** at `confP` is at most `2^1002`, from the clocks and
-description lengths of `KeyGen` and `Dec` (`KeyDecCost`); those of `Setup` and `Enc` are proved
-(`time_setupMP_conf'`, `time_encMP_confT`, `descLen_setupMP_conf`, `descLen_encMP_conf`). -/
-theorem cost_implC (hKD : KeyDecCost) : PE.cost BranchingProgram.params implC ≤ 2 ^ 1002 := by
+/-- **The cost of the implementation** at `confP` is at most `2^818`: the clocks `Setup ≤ 2^387`
+(`time_setupMP_conf'`), `KeyGen ≤ 2^629` (`time_keyMachineP_conf'`), `Enc ≤ 2^452`
+(`time_encMP_confT`), `Dec ≤ 2^629` (`time_decMachineP_conf'`), and the description lengths
+`≤ 2^300`, `≤ 2^817` (`descLen_keyMachineP_conf`), `≤ 2^300`, `≤ 2^689`
+(`descLen_decMachineP_conf`). -/
+theorem cost_implC : PE.cost BranchingProgram.params implC ≤ 2 ^ 818 := by
   refine cost_le_of ?_
   rw [e_setup, e_key, e_enc, e_dec]
-  exact cost_arith time_setupMP_conf' hKD.keyTime time_encMP_confT hKD.decTime
-    descLen_setupMP_conf hKD.keyDesc descLen_encMP_conf hKD.decDesc
+  exact cost_arith time_setupMP_conf' time_keyMachineP_conf' time_encMP_confT
+    time_decMachineP_conf' descLen_setupMP_conf descLen_keyMachineP_conf descLen_encMP_conf
+    descLen_decMachineP_conf
 
 /-! ### The final statement -/
 
@@ -144,8 +136,8 @@ theorem submission_N : submission.N = Ncost := rfl
 theorem submission_deps : submission.deps .attributeHiding = [prem3, prem5] := rfl
 
 /-- **The final statement of the submission**, given the cost of `KeyGen` and `Dec`
-(`KeyDecCost`) and of the reductions' key component (`KeyRConfA`). -/
-theorem spec_submission (hkey : KeyRConfA) (hKD : KeyDecCost) :
+given the cost of the reductions' key component (`KeyRConfA`). -/
+theorem spec_submission (hkey : KeyRConfA) :
     Spec BranchingProgram.primitive registry submission := by
   refine spec_of ?_ ?_ ?_ ?_
   · rw [submission_impl]; exact correct_implC
@@ -155,7 +147,7 @@ theorem spec_submission (hkey : KeyRConfA) (hKD : KeyDecCost) :
     exact attributeHiding_implC hkey (h prem3 (List.mem_cons_self ..))
       (h prem5 (List.mem_cons_of_mem _ (List.mem_cons_self ..)))
   · rw [submission_impl]; exact expressive_implC
-  · rw [submission_impl, submission_N]; exact cost_implC hKD
+  · rw [submission_impl, submission_N]; exact cost_implC
 
 /-- **The submission is valid** at the initial strengths of the registry: `965 ≤ 2650 ≤ RingLWE.H`
 at both instances. -/
