@@ -2000,6 +2000,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Weaker sufficient ceilings: 0.126 on draws 11–380 only (all of 381–405 may be long) gives crossing < 2.456·10⁻¹¹;
     0.1795 on draws 11–405 gives < 2.478·10⁻¹¹. Both fit the 2.72513·10⁻¹¹ allowance. Open (W1-R89: covering / dual
     Poisson route).
+* **Part 218 (audited, CONFIRMED; partial positive).** [z1_remainder](research/wall1_z1_remainder.md): Z₁ remainder under
+  the actual chain law.
+  * Mixed first-hit bounds: draw 403 ≤ 2.723·10⁻¹⁴, 404 ≤ 1.233·10⁻¹², 405 ≤ 5.536·10⁻¹¹, 406 unrestricted ≤ 2.468·10⁻⁹.
+    Together with the covered parts of draw 406 and seven wholly old lookback bounds, the joint charge is
+    6.4261010·10⁻¹¹ (replacing Part 215's draw-403 charge). This leaves 7.01399·10⁻¹² of the 7.1275·10⁻¹¹ Z₁ budget.
+  * Uncovered: (a) mixed hits at draw 406 with 32.32 < g < 32.8, height 1–4, inherited plane minimum in (28.22, 29.2);
+    (b) gated masses of surviving old planes and terminal replacements. A reachable prefix whose first area hit is at draw
+    406 (spacing 28.0220) fails the raw gate at draw 0.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
