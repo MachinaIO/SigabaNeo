@@ -14,7 +14,7 @@ import PE.Impl.DualUse.Params.Strength.Scan5e
 import PE.Impl.DualUse.Params.Strength.Scan5f
 import PE.Impl.DualUse.Params.Strength.Scan5g
 import PE.Impl.DualUse.Params.Strength.Scan5h
-import PE.Impl.DualUse.Registry
+import PE.Impl.DualUse.Params.Strength.Generic
 
 /-!
 # The Ring-LWE strength of the registry's instances at `N = 2^34`
@@ -34,7 +34,8 @@ facts and to a check of each block size `b < maxBeta + 2` (`Estimator.cbdCheck`)
 the kernel in chunks (`Params/Strength/Scan*.lean`).
 
 The statements are given at explicit parameters (`ringParams3`, `ringParams5`), independently of
-the configuration `confP`, and for `params3`, `params5` of the registry.
+the configuration `confP`, and for `params3`, `params5` of the registry, through the generic
+lemmas of `Params/Strength/Generic.lean`.
 -/
 
 namespace AdvancedEncryption.DualUse.Params.Strength
@@ -64,52 +65,22 @@ def ringParams3 : RingLWE.Params := ⟨2 ^ 34, 2 ^ 26 + 2, 2 ^ (2 ^ 25), .cbd 16
 def ringParams5 : RingLWE.Params :=
   ⟨2 ^ 34, 2 ^ 61 + 2 ^ 27 + 5, 2 ^ (2 ^ 25), .cbd 16, .cbd 16, by positivity⟩
 
-theorem inDomain_of {q m : ℕ} (hq0 : 0 < q) (hq : 2 ≤ q) (hm : 1 ≤ m) :
-    (RingLWE.Params.toModule ⟨2 ^ 34, m, q, .cbd 16, .cbd 16, hq0⟩).inDomain = true := by
-  simp only [ModuleLWE.Params.inDomain, RingLWE.Params.toModule, Bool.and_eq_true]
-  exact ⟨⟨⟨⟨⟨rfl, rfl⟩, decide_eq_true hm⟩, decide_eq_true hq⟩, rfl⟩, rfl⟩
-
-theorem two_le_q : 2 ≤ 2 ^ (2 ^ 25) :=
-  calc 2 = 2 ^ 1 := (pow_one 2).symm
-    _ ≤ 2 ^ (2 ^ 25) := pow_le_pow_right₀ (by norm_num) (by norm_num)
-
-/-- The bound on `RingLWE.H` from the bound on the estimator at the LWE view (any modulus `q`;
-the kernel never computes it). -/
-theorem H_ge_of_bits {q m : ℕ} (hq0 : 0 < q) (hq : 2 ≤ q) (hm : 1 ≤ m)
-    (h : 2650 ≤ estimatorBits (LWEParams.mk' (2 ^ 34 * 1) q (ND.cbd 16) (ND.cbd 16)
-      (some (2 ^ 34 * m)))) :
-    2650 ≤ RingLWE.H ⟨2 ^ 34, m, q, .cbd 16, .cbd 16, hq0⟩ :=
-  RingLWE.H_ge_of (inDomain_of hq0 hq hm) h
-
 /-- **Hybrid 3: `2650 ≤ RingLWE.H`.** -/
 theorem ringLWE_H_params3 : 2650 ≤ RingLWE.H ringParams3 :=
-  H_ge_of_bits _ two_le_q (by norm_num) (cbd16_estimatorBits_ge (by decide +kernel) checks3)
+  H_ge_of_cbd (m := 2 ^ 26 + 2) rfl (by norm_num) (by norm_num) (by decide +kernel) checks3
 
 /-- **Hybrid 5: `2650 ≤ RingLWE.H`.** -/
 theorem ringLWE_H_params5 : 2650 ≤ RingLWE.H ringParams5 :=
-  H_ge_of_bits _ two_le_q (by norm_num) (cbd16_estimatorBits_ge (by decide +kernel) checks5)
-
-instance : NeZero (2 ^ (2 ^ 25) : ℕ) := ⟨by positivity⟩
-
-theorem params3_eq : params3 (2 ^ 34) (2 ^ (2 ^ 25)) (2 ^ 25 + 1) (.cbd 16) = ringParams3 := by
-  unfold params3 ringParams3
-  simp only [RingLWE.Params.mk.injEq, and_true, true_and]
-  simp [RingBTVW.Col]
-
-theorem params5_eq :
-    params5 (2 ^ 34) (2 ^ (2 ^ 25)) (2 ^ 25 + 1) (Fin (2 ^ 61)) (.cbd 16) = ringParams5 := by
-  unfold params5 ringParams5
-  simp only [RingLWE.Params.mk.injEq, and_true, true_and]
-  simp [Idx5, RingBTVW.Col]
+  H_ge_of_cbd (m := 2 ^ 61 + 2 ^ 27 + 5) rfl (by norm_num) (by norm_num) (by decide +kernel) checks5
 
 /-- **The registry's hybrid 3 instance at `N = 2^34`: `2650 ≤ RingLWE.H`.** -/
 theorem ringLWE_H_registry3 :
-    2650 ≤ RingLWE.H (params3 (2 ^ 34) (2 ^ (2 ^ 25)) (2 ^ 25 + 1) (.cbd 16)) := by
-  rw [params3_eq]; exact ringLWE_H_params3
+    2650 ≤ RingLWE.H (params3 (2 ^ 34) (2 ^ (2 ^ 25)) (2 ^ 25 + 1) (.cbd 16)) :=
+  registry3_ge (M := M3) rfl (by norm_num) (by norm_num) (by norm_num) (by decide +kernel) checks3
 
 /-- **The registry's hybrid 5 instance at `N = 2^34`: `2650 ≤ RingLWE.H`.** -/
 theorem ringLWE_H_registry5 :
-    2650 ≤ RingLWE.H (params5 (2 ^ 34) (2 ^ (2 ^ 25)) (2 ^ 25 + 1) (Fin (2 ^ 61)) (.cbd 16)) := by
-  rw [params5_eq]; exact ringLWE_H_params5
+    2650 ≤ RingLWE.H (params5 (2 ^ 34) (2 ^ (2 ^ 25)) (2 ^ 25 + 1) (Fin (2 ^ 61)) (.cbd 16)) :=
+  registry5_ge (M := M5) rfl (by norm_num) (by norm_num) (by decide +kernel) checks5
 
 end AdvancedEncryption.DualUse.Params.Strength

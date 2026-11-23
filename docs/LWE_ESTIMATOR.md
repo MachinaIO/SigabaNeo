@@ -88,6 +88,16 @@ at `2^61 + 2^27 + 5` samples. The mirror gives `usvp` 2691.95, `bdd` 2691.95 (`�
 2691.96 and the hybrids at small `z` 2691.96, so `H ≈ 2691`; the certified bound loses about 40 bits
 because the Babai-failure argument needs `β` a little below the optimum.
 
+**Ring degree `2^36`, `q = 2^(2^27)`, `CBD(16)`** (the instances at `confA` of
+`AdvancedEncryption/BP_PLAN.md`, `k = 2^27 + 1`, `d = 2^65`;
+`AdvancedEncryption/PE/Impl/DualUse/Params/StrengthA.lean`, `ringLWE_H_registry3'`,
+`ringLWE_H_registry5'`): `2650 ≤ RingLWE.H` at `2^28 + 2` and at `2^65 + 2^29 + 5` samples, through
+the generic lemmas `registry3_ge`, `registry5_ge` (`Params/Strength/Generic.lean`, in `N`, `e`,
+`k`, `d`, `M`, `kb`). The mirror gives `usvp` 2693.95, `bdd` 2693.95 and `dual` 2693.96 at both
+sample counts, so `H ≈ 2693`. The checks (`cbdCheck`) hold up to `kb = 2656` at both instances and
+first fail at `2657`, at `β = 9312`; the closed facts hold far beyond. The 16 scan files
+(`Params/Strength/ScanA*.lean`, same ranges as at `2^34`) take 12–200 s each (about 20 minutes in sequence), 4.3–5.7 GB peak.
+
 **The mirror at these sizes.** `python/lwemodel` evaluates `usvp` (≈ 1 min, `log₂ q` computed once),
 `bdd` (0.3 s), `dual`, `mitm`, `exhaustive_search` and `bkw` at `N = 2^34`: `profile` skips the
 blocks above its cut-off and sums the underflowed tail at once (equal to the block-by-block
