@@ -37,13 +37,13 @@ variable {N K k : ℕ}
 def psiCore (N K k d : ℕ) : XProg 82 :=
   seq (frame ⟨vJoin 10 2 3 19, by decide⟩ (joinB (d * (N * K)) (d * (N * K)) 0)) <|
   seq (frame ⟨vTr 11 10, by decide⟩ (trB 1 2 d (N * K) 0)) <|
-  seq (frame ⟨vMm 12 4 11, by decide⟩ (mmB (10 * (2 * k)) d 2 N K)) <|
-  seq (frame ⟨vTr 13 12, by decide⟩ (trB 10 (2 * k) 2 (N * K) 0)) <|
+  seq (frame ⟨vMm 12 4 11, by decide⟩ (mmB (nA * (2 * k)) d 2 N K)) <|
+  seq (frame ⟨vTr 13 12, by decide⟩ (trB nA (2 * k) 2 (N * K) 0)) <|
   seq (frame ⟨vGad 10, by decide⟩ (gadB N K k)) <|
   seq (prog (.prim (.copy 12 10))) <|
   seq (frame ⟨vJoin 11 10 19 12, by decide⟩ (joinB (2 * k * (N * K)) (k * (N * K)) (k * (N * K)))) <|
-  seq (frame ⟨vSel 12 5 11 19, by decide⟩ (selB 10 (2 * (2 * k) * (N * K)))) <|
-  seq (frame ⟨vAdd 8 13 12, by decide⟩ (addB (10 * (2 * (2 * k))) N K)) <|
+  seq (frame ⟨vSel 12 5 11 19, by decide⟩ (selB nA (2 * (2 * k) * (N * K)))) <|
+  seq (frame ⟨vAdd 8 13 12, by decide⟩ (addB (nA * (2 * (2 * k))) N K)) <|
   seq (clr82 10) <| seq (clr82 11) <| seq (clr82 12) <| clr82 13
 
 theorem wf_psiCore (N K k d : ℕ) : (psiCore N K k d).WF :=
@@ -53,14 +53,14 @@ theorem wf_psiCore (N K k d : ℕ) : (psiCore N K k d).WF :=
 variable (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-- The Ring-GSW ciphertexts of `(B₀, c₀, R, x)`. -/
-noncomputable def psiOf (B₀ c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K))
-    (x : Date) : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K) :=
+noncomputable def psiOf (B₀ c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K)) (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K))
+    (x : Date) : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K) :=
   fun i => gswPK B₀ c₀ * Rm i + bitR (R := Rg N K) (bitsOf x i) • (Sdw (N := N) hk).Γ.G
 
 set_option maxHeartbeats 4000000 in
 /-- **The law of `psiCore`.** -/
 theorem law_psiCore (s : Store 82) (hS : Blank20 s) (B₀ c₀ : Matrix (Fin 1) (Fin c.d) (Rg N K))
-    (Rm : Fin 10 → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : Date)
+    (Rm : Fin nA → Matrix (Fin c.d) (RingBTVW.Col k) (Rg N K)) (x : Date)
     (h2 : s 2 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀)
     (h3 : s 3 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc c₀)
     (h4 : s 4 = (rmTEnc c).enc Rm) (h5 : s 5 = encDate x)
@@ -70,16 +70,16 @@ theorem law_psiCore (s : Store 82) (hS : Blank20 s) (B₀ c₀ : Matrix (Fin 1) 
         (psiOf hk c B₀ c₀ Rm x))) := by
   have hlA : ((DualUse.matEnc (N := N) (K := K) (Fin c.d) (Fin 2)).enc (gswPK B₀ c₀)ᵀ).length =
       c.d * 2 * (N * K) := by rw [length_matEnc, len_fin, len_fin]; ring
-  have hlR : ((rmTEnc c).enc Rm).length = 10 * (2 * k) * c.d * (N * K) := by
+  have hlR : ((rmTEnc c).enc Rm).length = nA * (2 * k) * c.d * (N * K) := by
     rw [rmTEnc_stk, length_matEnc, Enum.length_prod, len_fin, len_col, len_fin]; ring
-  have hMM : matMulW N K (10 * (2 * k)) c.d 2 ((rmTEnc c).enc Rm)
+  have hMM : matMulW N K (nA * (2 * k)) c.d 2 ((rmTEnc c).enc Rm)
       ((DualUse.matEnc (N := N) (K := K) (Fin c.d) (Fin 2)).enc (gswPK B₀ c₀)ᵀ) =
-      (DualUse.matEnc (N := N) (K := K) (Fin 10 × RingBTVW.Col k) (Fin 2)).enc
+      (DualUse.matEnc (N := N) (K := K) (Fin nA × RingBTVW.Col k) (Fin 2)).enc
         (stkR c Rm * (gswPK B₀ c₀)ᵀ) := by
     rw [← trW_matEnc' (len_fin 2) (len_fin c.d)]; exact psiMM c (gswPK B₀ c₀) Rm
-  have hlF : ∀ F : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K),
+  have hlF : ∀ F : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K),
       ((FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc F).length =
-        10 * (2 * (2 * k)) * N * K := fun F => by
+        nA * (2 * (2 * k)) * N * K := fun F => by
     rw [(FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).length, len_fin,
       len_fin, len_col]; ring
   unfold psiCore
@@ -111,10 +111,10 @@ theorem law_psiCore (s : Store 82) (hS : Blank20 s) (B₀ c₀ : Matrix (Fin 1) 
 
 /-- **The public keys of the encodings** `B_j = B₀ W_j + ψ_j G̲` (tape `9`). -/
 def bjCore (N K k d : ℕ) : XProg 82 :=
-  seq (frame ⟨vTr 10 8, by decide⟩ (trB (10 * (2 * (2 * k))) N K 1 ((k - K) * N))) <|
+  seq (frame ⟨vTr 10 8, by decide⟩ (trB (nA * (2 * (2 * k))) N K 1 ((k - K) * N))) <|
   seq (frame ⟨vGad 11, by decide⟩ (gadB N K k)) <|
-  seq (frame ⟨vSel 12 10 11 19, by decide⟩ (selB (10 * (2 * (2 * k * (k * N)))) (2 * k * (N * K)))) <|
-  seq (frame ⟨vHash 9 6 2 12, by decide⟩ (hashB (10 * (2 * (2 * k * (k * N))) * (2 * k)) d N K)) <|
+  seq (frame ⟨vSel 12 10 11 19, by decide⟩ (selB (nA * (2 * (2 * k * (k * N)))) (2 * k * (N * K)))) <|
+  seq (frame ⟨vHash 9 6 2 12, by decide⟩ (hashB (nA * (2 * (2 * k * (k * N))) * (2 * k)) d N K)) <|
   seq (clr82 10) <| seq (clr82 11) <| clr82 12
 
 theorem wf_bjCore (N K k d : ℕ) : (bjCore N K k d).WF :=
@@ -124,7 +124,7 @@ set_option maxHeartbeats 4000000 in
 /-- **The law of `bjCore`.** -/
 theorem law_bjCore (s : Store 82) (hS : Blank20 s) (B₀ : Matrix (Fin 1) (Fin c.d) (Rg N K))
     (w : DualUse.JC (Sdw (N := N) hk) → (Fin c.d → Bool))
-    (Ψ : Fin 10 → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
+    (Ψ : Fin nA → Matrix (Fin 2) (RingBTVW.Col k) (Rg N K))
     (h2 : s 2 = (DualUse.matEnc (N := N) (K := K) (Fin 1) (Fin c.d)).enc B₀)
     (h6 : s 6 = (wEnc hk c).enc w)
     (h8 : s 8 = (FixedEnc.fun (DualUse.matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc Ψ)
@@ -171,16 +171,16 @@ theorem ubz_clear (j : Fin 82) (M : ℕ) : UBZ 20 (clr82 j) M (2 * (M + 1) + 3) 
 
 /-- The sizes of the templates of `psiCore`. -/
 def sizePsiCore (N K k d : ℕ) : ℕ :=
-  (d * (N * K) + d * (N * K) + 0) + sizeTrB 1 2 d (N * K) 0 + sizeMmB (10 * (2 * k)) d 2 N K +
-    sizeTrB 10 (2 * k) 2 (N * K) 0 + sizeGadB N K k + (2 * k * (N * K) + k * (N * K) + k * (N * K)) +
-    sizeSelB 10 (2 * (2 * k) * (N * K)) + sizeAddB (10 * (2 * (2 * k))) N K
+  (d * (N * K) + d * (N * K) + 0) + sizeTrB 1 2 d (N * K) 0 + sizeMmB (nA * (2 * k)) d 2 N K +
+    sizeTrB nA (2 * k) 2 (N * K) 0 + sizeGadB N K k + (2 * k * (N * K) + k * (N * K) + k * (N * K)) +
+    sizeSelB nA (2 * (2 * k) * (N * K)) + sizeAddB (nA * (2 * (2 * k))) N K
 
 /-- **The time of `psiCore`** from tapes below `M`. -/
 def timePsiCore (N K k d M : ℕ) : ℕ :=
   timeJoinB (d * (N * K)) (d * (N * K)) 0 M + (timeTrB 1 2 d (N * K) 0 M +
-    (timeMmB (10 * (2 * k)) d 2 N K M + (timeTrB 10 (2 * k) 2 (N * K) 0 M + (timeGadB N K k M +
+    (timeMmB (nA * (2 * k)) d 2 N K M + (timeTrB nA (2 * k) 2 (N * K) 0 M + (timeGadB N K k M +
     ((2 * (M + 1) + 3) + (timeJoinB (2 * k * (N * K)) (k * (N * K)) (k * (N * K)) M +
-    (timeSelB 10 (2 * (2 * k) * (N * K)) M + (timeAddB (10 * (2 * (2 * k))) N K M +
+    (timeSelB nA (2 * (2 * k) * (N * K)) M + (timeAddB (nA * (2 * (2 * k))) N K M +
     ((2 * (M + 1) + 3) + ((2 * (M + 1) + 3) + ((2 * (M + 1) + 3) + (2 * (M + 1) + 3))))))))))))
 
 theorem ub_psiCore (N K k d M : ℕ) (hM : sizePsiCore N K k d ≤ M) :
@@ -213,15 +213,15 @@ theorem sz_psiCore (N K k d M : ℕ) (hM : sizePsiCore N K k d ≤ M) (hB : M < 
 
 /-- The sizes of the templates of `bjCore`. -/
 def sizeBjCore (N K k d : ℕ) : ℕ :=
-  sizeTrB (10 * (2 * (2 * k))) N K 1 ((k - K) * N) + sizeGadB N K k +
-    sizeSelB (10 * (2 * (2 * k * (k * N)))) (2 * k * (N * K)) +
-    sizeHashB (10 * (2 * (2 * k * (k * N))) * (2 * k)) d N K
+  sizeTrB (nA * (2 * (2 * k))) N K 1 ((k - K) * N) + sizeGadB N K k +
+    sizeSelB (nA * (2 * (2 * k * (k * N)))) (2 * k * (N * K)) +
+    sizeHashB (nA * (2 * (2 * k * (k * N))) * (2 * k)) d N K
 
 /-- **The time of `bjCore`** from tapes below `M`. -/
 def timeBjCore (N K k d M : ℕ) : ℕ :=
-  timeTrB (10 * (2 * (2 * k))) N K 1 ((k - K) * N) M + (timeGadB N K k M +
-    (timeSelB (10 * (2 * (2 * k * (k * N)))) (2 * k * (N * K)) M +
-    (timeHashB (10 * (2 * (2 * k * (k * N))) * (2 * k)) d N K M +
+  timeTrB (nA * (2 * (2 * k))) N K 1 ((k - K) * N) M + (timeGadB N K k M +
+    (timeSelB (nA * (2 * (2 * k * (k * N)))) (2 * k * (N * K)) M +
+    (timeHashB (nA * (2 * (2 * k * (k * N))) * (2 * k)) d N K M +
     ((2 * (M + 1) + 3) + ((2 * (M + 1) + 3) + (2 * (M + 1) + 3))))))
 
 theorem ub_bjCore (N K k d M : ℕ) (hM : sizeBjCore N K k d ≤ M) :

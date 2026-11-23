@@ -57,8 +57,8 @@ theorem natL_tmpl : ∀ (l : List (Fin 124 × ℕ)) (G : ℕ) (ℓ : Fin 124 →
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
 /-- The values of the variables of `σE`: the top size `G`, then `N`, `K`, `k`, `d`, the number of
-trapdoor columns, the number of encodings, (unused), `k − K`, `N K − K`. -/
-def ρE (G : ℕ) : List ℕ := [G, N, K, k, c.d, nTrap k, nJenc (N := N) hk, 0, k - K, N * K - K]
+trapdoor columns, the number of encodings, the number of attribute bits, `k − K`, `N K − K`. -/
+def ρE (G : ℕ) : List ℕ := [G, N, K, k, c.d, nTrap k, nJenc (N := N) hk, nA, k - K, N * K - K]
 
 theorem tmplList_nodup : ((tmplList hk c).map Prod.fst).Nodup := by
   simp only [tmplList, List.map_cons, List.map_nil]
@@ -180,11 +180,11 @@ theorem ub_ufChunkT (D : Fin 124) (n M : ℕ) (hn : n ≤ M) :
 def parseETv (p n1 n2 n3 n4 M : ℕ) : ℕ :=
   dropCT p M + (ufCTT n1 M + (ufCTT n2 (M + n1) + (ufCTT n3 (M + n1 + n2) +
     (ufCTT n4 (M + n1 + n2 + n3) + ((2 * (M + n1 + n2 + n3 + n4 + 1) + 3) +
-    (ufCTT 10 (M + n1 + n2 + n3 + n4) + ((2 * (M + n1 + n2 + n3 + n4 + 10 + 1) + 3) +
-      ufCTT 1 (M + n1 + n2 + n3 + n4 + 10))))))))
+    (ufCTT nA (M + n1 + n2 + n3 + n4) + ((2 * (M + n1 + n2 + n3 + n4 + nA + 1) + 3) +
+      ufCTT 1 (M + n1 + n2 + n3 + n4 + nA))))))))
 
 /-- The bound after the parser of `Enc` (counts as variables). -/
-def parseEGv (n1 n2 n3 n4 M : ℕ) : ℕ := M + n1 + n2 + n3 + n4 + 10 + 1
+def parseEGv (n1 n2 n3 n4 M : ℕ) : ℕ := M + n1 + n2 + n3 + n4 + nA + 1
 
 set_option maxRecDepth 100000 in
 /-- **The parser of `Enc`, additively.** -/
@@ -194,7 +194,7 @@ theorem ub_encParsePT (M : ℕ)
     (h2 : (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)) ≤ M)
     (h3 : (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
       ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) ≤ M)
-    (h4 : N * K ≤ M) (h5 : 10 ≤ M) :
+    (h4 : N * K ≤ M) (h5 : nA ≤ M) :
     UB (encParseP hk c) M
       (parseETv (2 * DualUse.pw.length + 1)
         ((Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin c.d)).length * (N * K)))
@@ -223,7 +223,7 @@ theorem ub_encPT {X : ChiSampler c} (M : ℕ) (hpres : X.P.Preserves 6)
     (h2 : (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)) ≤ M)
     (h3 : (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
       ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) ≤ M)
-    (h4 : N * K ≤ M) (h5 : 10 ≤ M) {P T : ℕ}
+    (h4 : N * K ≤ M) (h5 : nA ≤ M) {P T : ℕ}
     (hP : parseEGv
         ((Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin c.d)).length * (N * K)))
         ((Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)))

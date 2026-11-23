@@ -73,12 +73,12 @@ theorem pEval_head (G : ℕ) (r : List ℕ) : pEval (G :: r) wE = pEval (0 :: r)
 
 theorem wE_num : pEval [0, 2 ^ 34, 2 ^ 25, 2 ^ 25 + 1, 2 ^ 61,
     1 + (2 * (2 ^ 25 + 1) + 2 * (2 ^ 25 + 1)), 10 * (2 * (2 * (2 ^ 25 + 1) * ((2 ^ 25 + 1) * 2 ^ 34))),
-    0, 2 ^ 25 + 1 - 2 ^ 25, 2 ^ 34 * 2 ^ 25 - 2 ^ 25] wE ≤ 7 * 2 ^ 235 := by decide +kernel
+    10, 2 ^ 25 + 1 - 2 ^ 25, 2 ^ 34 * 2 ^ 25 - 2 ^ 25] wE ≤ 7 * 2 ^ 235 := by decide +kernel
 
 /-- The values of the variables of the core at `confP`. -/
 theorem ρE_conf (G : ℕ) : ρE hkp confP G = [G, 2 ^ 34, 2 ^ 25, 2 ^ 25 + 1, 2 ^ 61,
     1 + (2 * (2 ^ 25 + 1) + 2 * (2 ^ 25 + 1)), 10 * (2 * (2 * (2 ^ 25 + 1) * ((2 ^ 25 + 1) * 2 ^ 34))),
-    0, 2 ^ 25 + 1 - 2 ^ 25, 2 ^ 34 * 2 ^ 25 - 2 ^ 25] := by
+    10, 2 ^ 25 + 1 - 2 ^ 25, 2 ^ 34 * 2 ^ 25 - 2 ^ 25] := by
   simp only [ρE, nTrap, nJenc, Enum.length_prod, len_Attr, len_Index, len_trap, confP_d, kp_eq,
     Np_def, Kp_def]
 

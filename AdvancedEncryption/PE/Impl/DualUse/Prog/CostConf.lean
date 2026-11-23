@@ -381,7 +381,7 @@ theorem parseET_le (C M : ℕ) (h0 : 2 * DualUse.pw.length + 1 ≤ C)
     (h2 : (Enum.list (α := Fin 1)).length * ((Enum.list (α := TrapCol k)).length * (N * K)) ≤ C)
     (h3 : (Enum.list (α := (Sdw (N := N) hk).Attr × (Sdw (N := N) hk).ctBits.Index)).length *
       ((Enum.list (α := Fin 1)).length * ((Enum.list (α := RingBTVW.Col k)).length * (N * K))) ≤ C)
-    (h4 : N * K ≤ C) (h5 : 10 ≤ C) :
+    (h4 : N * K ≤ C) (h5 : nA ≤ C) :
     parseET hk c M ≤ 7 * ((2 * C + 1) * (4 * (64 * M) + 12) + 100 * (64 * M + 1) ^ 2) +
       2 * (2 * (64 * M + 1) + 3) := by
   have b := fun (n P : ℕ) (hn : n ≤ C) (hP : P ≤ 64 * M) =>
@@ -398,7 +398,7 @@ theorem parseET_le (C M : ℕ) (h0 : 2 * DualUse.pw.length + 1 ≤ C)
   have := b _ (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) h3 (by omega)
   have := b _ (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
     (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1) h4 (by omega)
-  have := b 10 (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
+  have := b nA (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
     (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1 +
     (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1 +
     (M + M * 0 + (M + M * 0) * 1 + (M + M * 0 + (M + M * 0) * 1) * 1) * 1) * 1) h5 (by omega)
@@ -438,6 +438,7 @@ theorem encCounts_conf : EncCounts hkp confP Kp 64 (2 ^ 181) (2 ^ 60) := by
 theorem nInE_le : nInE hkp confP ≤ 2 ^ 195 := by
   obtain ⟨h0, h1, h2, h3⟩ := parse_counts
   have h4 : Np * Kp ≤ 2 ^ 181 := enc_counts.1
+  have hA : nA ≤ 2 ^ 10 := by norm_num [nA]
   unfold nInE
   omega
 
@@ -481,7 +482,7 @@ theorem time_encMP_conf : (encMP hkp confP chiSamplerP).time ≤ 2 ^ 8000 := by
       (by rw [hNK]; norm_num) (by rw [hw, hK]; norm_num) (by norm_num) _).trans ?_
     rw [hPG]; simp only [linX]; norm_num
   have hPT : parseET hkp confP (2 ^ 195) ≤ 2 ^ 500 :=
-    (parseET_le hkp confP (2 ^ 181) _ h0 h1 h2 h3 e1 (by norm_num)).trans (by norm_num)
+    (parseET_le hkp confP (2 ^ 181) _ h0 h1 h2 h3 e1 (by norm_num [nA])).trans (by norm_num)
   have hTT : encTT hkp confP (encS hkp confP chiSamplerP.B (parseEG (2 ^ 195))) ≤ 2 ^ 7950 := by
     unfold encTT
     refine le_trans (Nat.add_le_add (natLT_conf _) (Nat.add_le_add (tb_encCoreP _) (appT_le _))) ?_
