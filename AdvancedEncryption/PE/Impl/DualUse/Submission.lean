@@ -5,6 +5,10 @@ import PE.Impl.DualUse.Prog.WfB2CoinFree
 import PE.Impl.DualUse.Prog.CompCost
 import PE.Impl.DualUse.Prog.CostConf
 import PE.Impl.DualUse.Prog.DescConf
+import PE.Impl.DualUse.Prog.EncCostConfT
+import PE.Impl.DualUse.Prog.DecTightConf
+import PE.Impl.DualUse.Prog.TightConf
+import PE.Impl.DualUse.Prog.KeyTightConf
 import PE.Impl.DualUse.Params.Strength
 import SigabaNeo.Trusted.Submission
 
@@ -15,13 +19,13 @@ import SigabaNeo.Trusted.Submission
 (`N = 2^34`, `K = 2^25`, `k = K + 1`, `d = 2^61`), with the χ sampler `chiSamplerP`, the key-row
 block `bfX … (wfB2 …)` and the `c_f̂` block `cfX … (wfB2 …)`; attribute hiding rests on decision
 Ring-LWE at the parameters of hybrids 3 and 5 with `2645` bits each, correctness and
-expressiveness on nothing. The claimed cost is `N = 2^8001`.
+expressiveness on nothing. The claimed cost is `N = 2^1002`.
 
 * `spec_submission`: the final statement `Spec` (`correct_conf`, `attributeHiding_conf_rlwe`,
   `expressive_conf`, and the cost from the closed bounds of the four clocks and description
-  lengths: `time_setupMP_conf` `≤ 2^3200`, `time_keyMachineP_conf` `≤ 2^4200`,
-  `time_encMP_conf` `≤ 2^8000`, `time_decMachineP_conf` `≤ 2^4200`, the description lengths
-  `≤ 2^1000`);
+  lengths, each loop charged its own tape: `time_setupMP_conf'` `≤ 2^355`,
+  `time_keyMachineP_conf'` `≤ 2^557`, `time_encMP_confT` `≤ 2^416`, `time_decMachineP_conf'`
+  `≤ 2^556`, the description lengths `≤ 2^1000`);
 * `valid_submission`: every premise is valid at the initial strengths of the registry
   (`2645 ≤ 2650 ≤ RingLWE.H`, `ringLWE_H_registry3/5`).
 -/
@@ -73,7 +77,7 @@ noncomputable def deps : PropIndex → List (Premise registry)
   | .expressiveness => []
 
 /-- The claimed cost. -/
-def Ncost : ℕ := 2 ^ 8001
+def Ncost : ℕ := 2 ^ 1002
 
 /-- **The submission.** -/
 noncomputable def submission : Submission DateWindow.primitive registry where
@@ -83,14 +87,14 @@ noncomputable def submission : Submission DateWindow.primitive registry where
 
 /-! ### The final statement -/
 
-set_option exponentiation.threshold 9000 in
-theorem cost_arith {a b c d e f g h : ℕ} (ha : a ≤ 2 ^ 3200) (hb : b ≤ 2 ^ 4200) (hc : c ≤ 2 ^ 8000)
-    (hd : d ≤ 2 ^ 4200) (he : e ≤ 2 ^ 300) (hf : f ≤ 2 ^ 1000) (hg : g ≤ 2 ^ 300)
-    (hh : h ≤ 2 ^ 1000) : a + 1 * b + 1 * (c + d) + (e + f + g + h) ≤ 2 ^ 8001 :=
+set_option exponentiation.threshold 2000 in
+theorem cost_arith {a b c d e f g h : ℕ} (ha : a ≤ 2 ^ 355) (hb : b ≤ 2 ^ 557) (hc : c ≤ 2 ^ 416)
+    (hd : d ≤ 2 ^ 556) (he : e ≤ 2 ^ 300) (hf : f ≤ 2 ^ 1000) (hg : g ≤ 2 ^ 300)
+    (hh : h ≤ 2 ^ 1000) : a + 1 * b + 1 * (c + d) + (e + f + g + h) ≤ 2 ^ 1002 :=
   calc a + 1 * b + 1 * (c + d) + (e + f + g + h)
-      ≤ 2 ^ 3200 + 1 * 2 ^ 4200 + 1 * (2 ^ 8000 + 2 ^ 4200) + (2 ^ 300 + 2 ^ 1000 + 2 ^ 300 + 2 ^ 1000) := by
+      ≤ 2 ^ 355 + 1 * 2 ^ 557 + 1 * (2 ^ 416 + 2 ^ 556) + (2 ^ 300 + 2 ^ 1000 + 2 ^ 300 + 2 ^ 1000) := by
         gcongr
-    _ ≤ 2 ^ 8001 := by norm_num
+    _ ≤ 2 ^ 1002 := by norm_num
 
 theorem e_setup : implC.machine .setup = setupMP hkp confP chiSamplerP := rfl
 theorem e_key : implC.machine .keyGen =
@@ -107,11 +111,11 @@ theorem cost_le_of {impl : Impl PE.sig} {T : ℕ}
         (impl.machine .enc).descLen + (impl.machine .dec).descLen) ≤ T) :
     PE.cost params impl ≤ T := h
 
-/-- **The cost of the implementation** at `confP` is at most `2^8001`. -/
-theorem cost_implC : PE.cost params implC ≤ 2 ^ 8001 := by
+/-- **The cost of the implementation** at `confP` is at most `2^1002`. -/
+theorem cost_implC : PE.cost params implC ≤ 2 ^ 1002 := by
   refine cost_le_of ?_
   rw [e_setup, e_key, e_enc, e_dec]
-  exact cost_arith time_setupMP_conf time_keyMachineP_conf time_encMP_conf time_decMachineP_conf
+  exact cost_arith time_setupMP_conf' time_keyMachineP_conf' time_encMP_confT time_decMachineP_conf'
     descLen_setupMP_conf descLen_keyMachineP_conf descLen_encMP_conf descLen_decMachineP_conf
 
 /-- `Spec` from its four parts, for any submission. -/
