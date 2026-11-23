@@ -225,6 +225,47 @@ theorem unary_split (a b c d : ℕ) :
   simp only [List.append_assoc]
 
 
+/-! ### Dropping a constant number of bits -/
+
+/-- Drop `n` bits of `i`. -/
+def tlN (i : Fin k) : ℕ → Prog k
+  | 0 => nop i
+  | n + 1 => tlN i n ⨾ tl i
+
+theorem run_tlN (i : Fin k) : ∀ (n : ℕ) (s : Store k),
+    run (tlN i n) s = Function.update s i ((s i).drop n)
+  | 0, s => by simp [tlN]
+  | n + 1, s => by
+    rw [tlN, run_seq, run_tlN i n s, run_tail]
+    simp [List.tail_drop]
+
+theorem coinFree_tlN (i : Fin k) : ∀ n, (tlN i n).CoinFree
+  | 0 => rfl
+  | n + 1 => by simpa [CoinFree, tlN, coinFreeB] using coinFree_tlN i n
+
+theorem wf_tlN (i : Fin k) : ∀ n, (tlN i n).WF
+  | 0 => trivial
+  | n + 1 => ⟨wf_tlN i n, trivial⟩
+
+/-! ### Counted loops on an indexed state -/
+
+/-- **A loop of at most `N` rounds** on states indexed by the round: the body need only be known
+on the rounds `j < N`. -/
+theorem run_loop_count (i : Fin k) (body : Prog k) (G : ℕ → Store k) (N : ℕ)
+    (hstep : ∀ j < N, ∀ w, run body (Function.update (G j) i w) = Function.update (G (j + 1)) i w) :
+    ∀ (w : List Bool) (j : ℕ), j + w.length ≤ N →
+      run (loop i body) (Function.update (G j) i w) = Function.update (G (j + w.length)) i []
+  | [], j, _ => by rw [run_loop, Function.update_self]; rfl
+  | x :: w, j, h => by
+    rw [run_loop, Function.update_self, List.length_cons, Function.iterate_succ_apply]
+    have h1 : run body (tailAt i (Function.update (G j) i (x :: w))) =
+        Function.update (G (j + 1)) i w := by
+      rw [tailAt, Function.update_self, Function.update_idem]
+      exact hstep j (by simp at h; omega) w
+    have h2 := run_loop_count i body G N hstep w (j + 1) (by simp at h; omega)
+    rw [run_loop, Function.update_self] at h2
+    rw [h1, h2, show j + 1 + w.length = j + (w.length + 1) by omega]
+
 end Prog
 
 end SigabaNeo.Tape

@@ -13,8 +13,6 @@ namespace AdvancedEncryption.DualUse.BpComp
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog
 open scoped Prog
 
-/-- The leaf `u` of a table `T` of entries of `w` bits: the bit after `d1` bits of entry `u`. -/
-def lfT (d1 w : ℕ) (T : List Bool) (u : ℕ) : Bool := hd (T.drop (u * w + d1))
 
 /-- The tapes the tree code of `m + 2` levels writes. -/
 def TW (m : ℕ) (t : Fin 64) : Prop :=
@@ -137,10 +135,12 @@ theorem run_read4 (s : Store 64) (hA : s tA = []) {d1 d2 : ℕ} (hZ : (s tJZ).le
   simp only [lb]
   upd
 
+set_option maxHeartbeats 1000000 in
 /-- **The law of the tree code.** -/
 theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List Bool) :
-    ∀ (m : ℕ), m < 38 → ∀ (Q : Store 64 → Prop), (∀ s t w, TW m t → Q s → Q (Function.update s t w)) →
-    (∀ ℓ, Em (sE ℓ) (Pq Q) (blk (Y.s ℓ))) → (∀ ℓ, Em (nsE ℓ) (Pq Q) (blk (Y.ns ℓ))) →
+    ∀ (m : ℕ), m ≤ 38 → ∀ (Q : Store 64 → Prop), (∀ s t w, TW m t → Q s → Q (Function.update s t w)) →
+    (∀ ℓ, 1 ≤ ℓ → ℓ ≤ m + 2 → Em (sE ℓ) (Pq Q) (blk (Y.s ℓ))) →
+    (∀ ℓ, 1 ≤ ℓ → ℓ ≤ m + 2 → Em (nsE ℓ) (Pq Q) (blk (Y.ns ℓ))) →
     ∀ (dE : Prog 64) (d : ℕ), Em dE (Pq Q) (blk d) →
     ∀ (base : ℕ) (s : Store 64), Q s → s tA = [] → s tB = [] → s tb0 = [] → s tb1 = [] →
       s tb2 = [] → s tb3 = [] → (∀ j < m, s (tc j) = []) → (s tJZ).length = d1 →
@@ -161,12 +161,14 @@ theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List
       refine ⟨Pq_ostable hQO t v h, ?_, ?_, ?_, ?_⟩ <;>
         rw [Function.update_of_ne (by decide)] <;> assumption
     have hlo : Em (srcP sE nsE Y tb0 tb1) P4 (blk (src1W Y lf base)) :=
-      (em_srcP Y sE nsE (P := Pq Q) tb0 tb1 (lf base) (lf (base + 1)) (hs 1) (hns 1)).mono
+      (em_srcP Y sE nsE (P := Pq Q) tb0 tb1 (lf base) (lf (base + 1)) (hs 1 (by omega) (by omega))
+        (hns 1 (by omega) (by omega))).mono
         (fun t ht => ⟨ht.1, ht.2.1, ht.2.2.1⟩)
     have hhi : Em (srcP sE nsE Y tb2 tb3) P4 (blk (src1W Y lf (base + 2))) :=
-      (em_srcP Y sE nsE (P := Pq Q) tb2 tb3 (lf (base + 2)) (lf (base + 2 + 1)) (hs 1)
-        (hns 1)).mono (fun t ht => ⟨ht.1, ht.2.2.2.1, ht.2.2.2.2⟩)
-    rw [em_nodeP Y sE nsE hP4 2 ((hs 2).mono fun t ht => ht.1) ((hns 2).mono fun t ht => ht.1)
+      (em_srcP Y sE nsE (P := Pq Q) tb2 tb3 (lf (base + 2)) (lf (base + 2 + 1))
+        (hs 1 (by omega) (by omega)) (hns 1 (by omega) (by omega))).mono (fun t ht => ⟨ht.1, ht.2.2.2.1, ht.2.2.2.2⟩)
+    rw [em_nodeP Y sE nsE hP4 2 ((hs 2 (by omega) (by omega)).mono fun t ht => ht.1)
+      ((hns 2 (by omega) (by omega)).mono fun t ht => ht.1)
       hlo hhi (hdE.mono fun t ht => ht.1) _ ?h4]
     case h4 =>
       refine ⟨⟨?_, by upd, by upd⟩, ?_, ?_, ?_, ?_⟩
@@ -202,9 +204,9 @@ theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List
           (s' tO ++ treeW Y (lfT d1 (d1 + 1 + d2) T0) m b' lohi)) tTT
           (T0.drop ((b' + 2 ^ (m + 2)) * (d1 + 1 + d2))) := by
       intro v lohi b' s' hlh hQ' hv hA' hB' h0' h1' h2' h3' hc' hZ' hJ' hT'
-      refine run_treeP Y sE nsE d1 d2 T0 m hm' (fun t => Q t ∧ t c = v) ?_
-        (fun ℓ => (hs ℓ).mono fun t ht => ⟨ht.1.1, ht.2⟩)
-        (fun ℓ => (hns ℓ).mono fun t ht => ⟨ht.1.1, ht.2⟩) _ lohi ?_ b' s' ⟨hQ', hv⟩
+      refine run_treeP Y sE nsE d1 d2 T0 m (by omega) (fun t => Q t ∧ t c = v) ?_
+        (fun ℓ h1 h2 => (hs ℓ h1 (by omega)).mono fun t ht => ⟨ht.1.1, ht.2⟩)
+        (fun ℓ h1 h2 => (hns ℓ h1 (by omega)).mono fun t ht => ⟨ht.1.1, ht.2⟩) _ lohi ?_ b' s' ⟨hQ', hv⟩
         hA' hB' h0' h1' h2' h3' hc' hZ' hJ' hT'
       · intro t u w hu ⟨h1, h2⟩
         exact ⟨hQ t u w (TW_mono (by omega) hu) h1, by rw [Function.update_of_ne (hcTW u hu).symm]; exact h2⟩
@@ -228,9 +230,8 @@ theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List
       ⟨m, by omega, rfl⟩)))))))
     simp only [treeP, run_seq]
     rw [← hcdef]
-    have e0 : run (prim (.cons c true)) (run (prim (.cons c true)) s) =
-        Function.update s c [true, true] := by
-      simp only [run_prim, Prim.apply, Function.update_self, Function.update_idem, hc0]
+    have e0 : run (snocN c true 2) (run (clr c) s) = Function.update s c [true, true] := by
+      rw [run_snocN, run_clear, Function.update_self, Function.update_idem]; rfl
     rw [e0, run_loop, Function.update_self]
     simp only [List.length_cons, List.length_nil, Nat.zero_add, Function.iterate_succ_apply,
       Function.iterate_zero_apply, tailAt, Function.update_self, Function.update_idem,
@@ -256,7 +257,7 @@ theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List
         have : tc j ≠ tTT := tc_ne (by decide)
         simp only [Function.update_apply]; split_ifs <;> simp_all)
       (by upd) (by upd) (by upd)]
-    rw [em_nodeP Y sE nsE (Pq_ostable fun t v ht => hQ t tO v (TW_O _) ht) (m + 3) (hs _) (hns _)
+    rw [em_nodeP Y sE nsE (Pq_ostable fun t v ht => hQ t tO v (TW_O _) ht) (m + 3) (hs (m + 3) (by omega) (by omega)) (hns (m + 3) (by omega) (by omega))
       (em_emitU _ _) (em_emitU _ _) hdE _ ?hP]
     case hP =>
       refine ⟨?_, by upd, by upd⟩
@@ -273,5 +274,114 @@ theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List
     clear sub hQ hQs hs hns hdE
     funext t
     upd
+
+/-! ### Emitters of the steps -/
+
+/-- The tapes of the selector and root emitters in step `i` (parity `i mod 2`). -/
+def FS (i : ℕ) (s : Store 64) : Prop :=
+  s tIB = List.replicate (8 * i) true ∧ s tIZ = List.replicate (120 - 8 * i) false ∧
+    s tPB = List.replicate (32 * (i % 2)) true ∧ s tPZ = List.replicate (32 - 32 * (i % 2)) false ∧
+    s tQB = List.replicate (32 - 32 * (i % 2)) true ∧ s tQZ = List.replicate (32 * (i % 2)) false
+
+/-- The layout fits: every register slot below `512`. -/
+structure RL.Ok (R : RL) : Prop where
+  z : rs R.z0 + 64 ≤ 512
+
+theorem rep_app_rep_app (n m : ℕ) (a : Bool) (l : List Bool) :
+    List.replicate n a ++ (List.replicate m a ++ l) = List.replicate (n + m) a ++ l := by
+  rw [← List.append_assoc, List.replicate_append_replicate]
+
+theorem blk_of {x y j : ℕ} (hx : x = j) (hy : y = 512 - j) :
+    List.replicate x true ++ List.replicate y false = blk j := by
+  rw [hx, hy]; rfl
+
+/-- Normalize a concatenation of runs into `x` ones then `y` zeros. -/
+macro "runs" : tactic => `(tactic| simp only [List.append_nil, List.append_assoc, rep_app_rep_app,
+  List.replicate_append_replicate])
+
+theorem em_inE {P : Store 64 → Prop} (i m : ℕ) (hi : i ≤ 15) (hm : m ≤ 8)
+    (hP : ∀ s, P s → Pq (FS i) s) : Em (inE m) P (blk (1 + 8 * i + m)) := by
+  intro s hs
+  obtain ⟨⟨hIB, hIZ, -⟩, hA, hB⟩ := hP s hs
+  rw [inE, run_dynE (by decide) (by decide) (by decide) _ _ _ s hA hB (by decide)]
+  simp only [List.map_cons, List.map_nil, List.flatten_cons, List.flatten_nil, hIB, hIZ]
+  runs
+  rw [blk_of (j := 1 + 8 * i + m) (by omega) (by omega)]
+
+theorem em_zE (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i j : ℕ) (hj : j < 32)
+    (hP : ∀ s, P s → Pq (FS i) s) : Em (zE R j) P (blk (zS R (i % 2) j)) := by
+  intro s hs
+  obtain ⟨⟨-, -, hPB, hPZ, -⟩, hA, hB⟩ := hP s hs
+  have hz := hR.z
+  have h2 : i % 2 < 2 := Nat.mod_lt _ (by omega)
+  rw [zE, run_dynE (by decide) (by decide) (by decide) _ _ _ s hA hB (by decide)]
+  simp only [List.map_cons, List.map_nil, List.flatten_cons, List.flatten_nil, hPB, hPZ]
+  runs
+  rw [blk_of (j := zS R (i % 2) j) (by simp only [zS, rs]; omega)
+    (by simp only [zS, rs] at hz ⊢; omega)]
+
+/-- The tapes of the root emitter: bit `j` of the other bank. -/
+def FJ (j : ℕ) (s : Store 64) : Prop :=
+  s tJB = List.replicate j true ∧ s tJZ = List.replicate (31 - j) false
+
+theorem em_rootE (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i j : ℕ) (hj : j < 32)
+    (hP : ∀ s, P s → Pq (FS i) s ∧ FJ j s) : Em (rootE R) P (blk (zS R ((i + 1) % 2) j)) := by
+  intro s hs
+  obtain ⟨⟨⟨-, -, -, -, hQB, hQZ⟩, hA, hB⟩, hJB, hJZ⟩ := hP s hs
+  have hz := hR.z
+  have h2 : i % 2 < 2 := Nat.mod_lt _ (by omega)
+  have hp : (i + 1) % 2 = 1 - i % 2 := by omega
+  rw [rootE, run_dynE (by decide) (by decide) (by decide) _ _ _ s hA hB (by decide)]
+  simp only [List.map_cons, List.map_nil, List.flatten_cons, List.flatten_nil, hQB, hQZ, hJB, hJZ]
+  runs
+  rw [blk_of (j := zS R ((i + 1) % 2) j) (by simp only [zS, rs]; omega)
+    (by simp only [zS, rs] at hz ⊢; omega)]
+
+/-! ### Lists of instructions -/
+
+theorem em_insP {P : Store 64 → Prop} (hP : OStable P) {d a b : Prog 64} {vd va vb : List Bool}
+    (hd : Em d P vd) (ha : Em a P va) (hb : Em b P vb) : Em (insP d a b) P (vd ++ va ++ vb) :=
+  (hd.seq hP (ha.seq hP hb)).congr (by simp [List.append_assoc])
+
+theorem em_insL_nil (P : Store 64 → Prop) : Em (insL []) P [] := by
+  intro s _; simp [insL]
+
+theorem em_insL_map {P : Store 64 → Prop} (hP : OStable P) (f : ℕ → Prog 64) (g : ℕ → List Bool)
+    (rest : List (Prog 64)) (vr : List Bool) (hr : Em (insL rest) P vr) :
+    ∀ l : List ℕ, (∀ j ∈ l, Em (f j) P (g j)) → Em (insL (l.map f ++ rest)) P (l.flatMap g ++ vr)
+  | [], _ => by simpa using hr
+  | j :: l, h => by
+    rw [List.map_cons, List.cons_append, insL, List.flatMap_cons, List.append_assoc]
+    exact (h j (by simp)).seq hP (em_insL_map hP f g rest vr hr l fun j' hj' => h j' (by simp [hj']))
+
+theorem FS_ostable (i : ℕ) : OStable (FS i) := by
+  intro s w h
+  simp only [FS] at h ⊢
+  rw [Function.update_of_ne (by decide), Function.update_of_ne (by decide),
+    Function.update_of_ne (by decide), Function.update_of_ne (by decide),
+    Function.update_of_ne (by decide), Function.update_of_ne (by decide)]
+  exact h
+
+/-- **The prologue of a step.** -/
+theorem em_proP (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) : Em (proP R) (Pq (FS i)) (proW R i) := by
+  have hP := Pq_ostable (FS_ostable i)
+  have h32 := em_insL_map hP (fun j => insP (emitU tO 512 (rs (R.nz + j))) (zE R j) (zE R j))
+    (fun j => insW (rs (R.nz + j)) (zS R (i % 2) j) (zS R (i % 2) j)) [] [] (em_insL_nil _)
+    (List.range 32)
+    (fun j hj => em_insP hP (em_emitU _ _) (em_zE R hR i j (List.mem_range.mp hj) fun _ h => h)
+      (em_zE R hR i j (List.mem_range.mp hj) fun _ h => h))
+  have h8 := em_insL_map hP (fun m => insP (emitU tO 512 (rs (R.na + m))) (inE m) (inE m))
+    (fun m => insW (rs (R.na + m)) (1 + 8 * i + m) (1 + 8 * i + m)) _ _ h32 (List.range 8)
+    (fun m hm => em_insP hP (em_emitU _ _) (em_inE i m hi (by have := List.mem_range.mp hm; omega) fun _ h => h)
+      (em_inE i m hi (by have := List.mem_range.mp hm; omega) fun _ h => h))
+  simpa [proP, proW] using h8
+
+/-- **The global prologue.** -/
+theorem em_gProP (R : RL) (P : Store 64 → Prop) (hP : OStable P) : Em (gProP R) P (gProW R) := by
+  have h := em_insL_map hP (fun j => insP (emitU tO 512 (zS R 0 j)) (emitU tO 512 0)
+    (emitU tO 512 0)) (fun j => insW (zS R 0 j) 0 0) [] [] (em_insL_nil _) (List.range 32)
+    (fun j _ => em_insP hP (em_emitU _ _) (em_emitU _ _) (em_emitU _ _))
+  have h2 := (em_insP hP (em_emitU P (rs R.zero)) (em_emitU P 0) (em_emitU P 0)).seq hP h
+  simpa [gProP, gProW, insL, insW] using h2
 
 end AdvancedEncryption.DualUse.BpComp

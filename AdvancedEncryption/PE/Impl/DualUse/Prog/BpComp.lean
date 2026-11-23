@@ -161,9 +161,137 @@ def treeP (Y : SLay) : ℕ → Prog 64 → Prog 64
   | 0, dE => readL tb0 ⨾ readL tb1 ⨾ readL tb2 ⨾ readL tb3 ⨾
       nodeP sE nsE Y 2 (srcP sE nsE Y tb0 tb1) (srcP sE nsE Y tb2 tb3) dE ⨾
       clr tb0 ⨾ clr tb1 ⨾ clr tb2 ⨾ clr tb3
-  | m + 1, dE => prim (.cons (tc m) true) ⨾ prim (.cons (tc m) true) ⨾
+  | m + 1, dE => clr (tc m) ⨾ snocN (tc m) true 2 ⨾
       loop (tc m) (treeP Y m (ifBlank (tc m) (emitU tO 512 (Y.hi (m + 2)))
         (emitU tO 512 (Y.lo (m + 2))))) ⨾
       nodeP sE nsE Y (m + 3) (emitU tO 512 (Y.lo (m + 2))) (emitU tO 512 (Y.hi (m + 2))) dE
+
+/-- The leaf `u` of a table `T` of entries of `w` bits: the bit after `d1` bits of entry `u`. -/
+def lfT (d1 w : ℕ) (T : List Bool) (u : ℕ) : Bool := hd (T.drop (u * w + d1))
+
+/-! ### The register layout and the word of the whole circuit -/
+
+/-- The register layout of the circuit (register indices; register `r` has slot `129 + r`):
+`zero`, the temporaries, the output register, bank `0` of the state at `z0 … z0 + 31` and bank `1`
+right after it, the negated state at `nz …`, the negated symbol bits at `na …`, the children
+registers by level. -/
+structure RL where
+  zero : ℕ
+  x1 : ℕ
+  x2 : ℕ
+  out : ℕ
+  z0 : ℕ
+  nz : ℕ
+  na : ℕ
+  lo : ℕ → ℕ
+  hi : ℕ → ℕ
+
+/-- The slot of register `r` (after the constant and the `128` inputs). -/
+def rs (r : ℕ) : ℕ := 129 + r
+
+variable (R : RL)
+
+/-- The slot of bit `j` of the state bank `p`. -/
+def zS (p j : ℕ) : ℕ := rs (R.z0 + 32 * p + j)
+
+/-- The selector of level `ℓ` in step `i`: symbol bits (least significant first) for `ℓ ≤ 8`,
+then state bits of the bank `i mod 2`. -/
+def selS (i ℓ : ℕ) : ℕ := if ℓ ≤ 8 then 1 + 8 * i + (8 - ℓ) else zS R (i % 2) (ℓ - 9)
+
+/-- Its negation. -/
+def nselS (ℓ : ℕ) : ℕ := if ℓ ≤ 8 then rs (R.na + (8 - ℓ)) else rs (R.nz + (ℓ - 9))
+
+/-- The slots of the trees of step `i`. -/
+def SY (i : ℕ) : SLay :=
+  ⟨selS R i, nselS R, rs R.zero, rs R.x1, rs R.x2, fun ℓ => rs (R.lo ℓ), fun ℓ => rs (R.hi ℓ)⟩
+
+/-- The global prologue: `ZERO := NAND(1,1)`, `Z₀[j] := NAND(1,1)`. -/
+def gProW : List Bool :=
+  insW (rs R.zero) 0 0 ++ (List.range 32).flatMap fun j => insW (zS R 0 j) 0 0
+
+/-- The prologue of step `i`: the negated symbol bits, then the negated state. -/
+def proW (i : ℕ) : List Bool :=
+  (List.range 8).flatMap (fun m => insW (rs (R.na + m)) (1 + 8 * i + m) (1 + 8 * i + m)) ++
+    (List.range 32).flatMap fun j => insW (rs (R.nz + j)) (zS R (i % 2) j) (zS R (i % 2) j)
+
+/-- Bits of a transition table: `2^40` entries of `32` bits. -/
+def tblW : ℕ := 2 ^ 40 * 32
+
+/-- Step `i < 15`: the prologue, then the tree of each state bit `j` (the bit `31 − j` of the
+entries, most significant first) into bank `(i + 1) mod 2`. -/
+def stepW (C : List Bool) (i : ℕ) : List Bool :=
+  proW R i ++ (List.range 32).flatMap fun j =>
+    treeW (SY R i) (lfT (31 - j) 32 (C.drop (i * tblW))) 38 0 (zS R ((i + 1) % 2) j)
+
+/-- The last step: the output table (`1` bit per entry) into the output register. -/
+def lastW (C : List Bool) : List Bool :=
+  proW R 15 ++ treeW (SY R 15) (lfT 0 1 (C.drop (15 * tblW))) 38 0 (rs R.out)
+
+/-- **The word the compiler writes.** -/
+def compW (C : List Bool) : List Bool :=
+  gProW R ++ (List.range 15).flatMap (stepW R C) ++ lastW R C
+
+/-! ### The program -/
+
+/-- The input slot `1 + 8 i + m` of symbol `i`, bit `m` (`IB = 1^(8i)`, `IZ = 0^(120 − 8i)`). -/
+def inE (m : ℕ) : Prog 64 := dynE tO tA tB (1 + m) [tIB, tIZ] (512 - (1 + m) - 120)
+
+/-- The slot of bit `j` of the bank `p` (`PB = 1^(32p)`, `PZ = 0^(32(1−p))`). -/
+def zE (j : ℕ) : Prog 64 := dynE tO tA tB (rs (R.z0 + j)) [tPB, tPZ] (512 - rs (R.z0 + j) - 32)
+
+/-- The selector emitters of the steps. -/
+def sEd (ℓ : ℕ) : Prog 64 := if ℓ ≤ 8 then inE (8 - ℓ) else zE R (ℓ - 9)
+
+/-- The negated selectors (static). -/
+def nsEd (ℓ : ℕ) : Prog 64 := emitU tO 512 (nselS R ℓ)
+
+/-- The root of tree `j`: bit `j` of the other bank (`QB = 1^(32(1−p))`, `QZ = 0^(32p)`,
+`JB = 1^j`, `JZ = 0^(31−j)`). -/
+def rootE : Prog 64 := dynE tO tA tB (rs R.z0) [tQB, tJB, tJZ, tQZ] (512 - rs R.z0 - 63)
+
+/-- Emit one instruction from three emitters. -/
+def insP (d a b : Prog 64) : Prog 64 := d ⨾ a ⨾ b
+
+/-- Emit a list of instructions. -/
+def insL : List (Prog 64) → Prog 64
+  | [] => nop tO
+  | p :: ps => p ⨾ insL ps
+
+/-- The global prologue. -/
+def gProP : Prog 64 :=
+  insL (insP (emitU tO 512 (rs R.zero)) (emitU tO 512 0) (emitU tO 512 0) ::
+    (List.range 32).map fun j => insP (emitU tO 512 (zS R 0 j)) (emitU tO 512 0) (emitU tO 512 0))
+
+/-- The prologue of a step. -/
+def proP : Prog 64 :=
+  insL ((List.range 8).map (fun m => insP (emitU tO 512 (rs (R.na + m))) (inE m) (inE m)) ++
+    (List.range 32).map fun j => insP (emitU tO 512 (rs (R.nz + j))) (zE R j) (zE R j))
+
+/-- The tree code of the steps (the selectors from the step's tapes). -/
+def treeS (dE : Prog 64) : Prog 64 := treeP (sEd R) (nsEd R) (SY R 0) 38 dE
+
+/-- One round of the loop over the state bits: a tree from the start of the table, then the next
+bit. -/
+def jBody : Prog 64 := cp tTT tCUR ⨾ treeS R (rootE R) ⨾ snocN tJB true 1 ⨾ tl tJZ
+
+/-- Exchange the banks. -/
+def swapP : Prog 64 :=
+  cp tA tPB ⨾ cp tPB tQB ⨾ cp tQB tA ⨾ cp tA tPZ ⨾ cp tPZ tQZ ⨾ cp tQZ tA ⨾ clr tA
+
+/-- **One step** `i < 15`. -/
+def stepP : Prog 64 :=
+  proP R ⨾ clr tJB ⨾ clr tJZ ⨾ snocN tJZ false 31 ⨾ clr tJC ⨾ snocN tJC true 32 ⨾
+    loop tJC (jBody R) ⨾ cp tCUR tTT ⨾ clr tTT ⨾ clr tJB ⨾ clr tJZ ⨾
+    snocN tIB true 8 ⨾ tlN tIZ 8 ⨾ swapP
+
+/-- The last step. -/
+def lastP : Prog 64 :=
+  proP R ⨾ cp tTT tCUR ⨾ treeS R (emitU tO 512 (rs R.out)) ⨾ clr tTT
+
+/-- **The compiler**: input `C` on tape `0`, output `compW R C` on tape `0`. -/
+def bpCompP : Prog 64 :=
+  gProP R ⨾ cp tCUR tIN ⨾ clr tIN ⨾ snocN tIZ false 120 ⨾ snocN tPZ false 32 ⨾
+    snocN tQB true 32 ⨾ clr tSC ⨾ snocN tSC true 15 ⨾ loop tSC (stepP R) ⨾ lastP R ⨾
+    cp tIN tO ⨾ clr tO ⨾ clr tCUR ⨾ clr tIB ⨾ clr tIZ ⨾ clr tPB ⨾ clr tPZ ⨾ clr tQB ⨾ clr tQZ
 
 end AdvancedEncryption.DualUse.BpComp
