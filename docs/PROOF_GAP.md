@@ -1974,6 +1974,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Blocked: a fixed primitive vector survives with probability < 2^-46,595,465. Conditioning on survival eventually
     forces a small plane on every path. Superlattice steps keep the vector but can change primitivity and the selected
     winner. A shorter walk with an event-specific distortion bound is not established for the marked histories.
+* **Part 215 (audited, CONFIRMED; partial positive).** [fresh_mark_extension](research/wall1_fresh_mark_extension.md):
+  fresh-mark bounds under the actual width-506 chain law.
+  * Vertical residual hits on draws 396–406 with incoming g ≥ 34.807: ≤ 6.44697363·10⁻¹¹. This uses per-height counting,
+    plus determinant separation between eligible draws, which turns the factor 11 into a geometric sum. The certified
+    draw-406 floor is g ≥ 32.18553678. Remaining Z_rem budget for g ∈ [32.1855, 34.807): ≈ 3.8·10⁻¹³.
+  * Two qualifying vertical wins, both with g ≥ 34: ≤ 2.78189202·10⁻¹². Horizontal mixed hits on draw 403 (all scales):
+    ≤ 2.87954220·10⁻¹¹. This leaves ≈ 4.2475·10⁻¹¹ of Z₁ for wholly old hits and for mixed hits on draws 404–406.
+  * Obstruction for small g: when g ≤ 32.5 the conditional mean number of height-one shell candidates exceeds 118.27,
+    so per-prefix first moments fail. The missing quantity is the frequency of small-g prefixes (W1-R86).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
