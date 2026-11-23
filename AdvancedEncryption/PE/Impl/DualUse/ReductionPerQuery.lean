@@ -158,7 +158,7 @@ theorem cost_reductionP_post_struct (P : Machine) (A : Machine 3) (H : Fin 3 →
     (reductionP P (Post A.time E nA 1) A H E q₀ q₁ L D).cost ≤
       redConstP P (Post 0 0 nA 1) H E q₀ q₁ L (postA E nA 1 + postB E nA 1) * A.cost * D.cost := by
   have h := cost_reductionP_le_struct P (Post A.time E nA 1) A H E q₀ q₁ L _ D
-    (time_post_le_cost A E 10 1)
+    (time_post_le_cost A E nA 1)
   have e : redConstP P (Post A.time E nA 1) H E q₀ q₁ L (postA E nA 1 + postB E nA 1) =
       redConstP P (Post 0 0 nA 1) H E q₀ q₁ L (postA E nA 1 + postB E nA 1) := by
     unfold redConstP chainConst chainStates chainTapes

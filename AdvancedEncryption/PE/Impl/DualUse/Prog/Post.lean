@@ -810,11 +810,11 @@ variable {m : ℕ}
 (`Post 0 …` has the description length of `Post A.time …`). -/
 theorem cost_reduction_post (P : Machine) (A : Machine 3) (H : Fin 3 → Routine (m + 3))
     (E Q L : ℕ) (D : Machine) :
-    (reduction P (Post A.time E 10 1) A H E Q L D).cost ≤
-      redFactor P (Post 0 E 10 1) H E Q L (postA E 10 1 + postB E 10 1) * A.cost * D.cost := by
-  have h := cost_reduction_le P (Post A.time E 10 1) A H E Q L _ D (time_post_le_cost A E 10 1)
-  have e : redFactor P (Post A.time E 10 1) H E Q L (postA E 10 1 + postB E 10 1) =
-      redFactor P (Post 0 E 10 1) H E Q L (postA E 10 1 + postB E 10 1) := by
+    (reduction P (Post A.time E nA 1) A H E Q L D).cost ≤
+      redFactor P (Post 0 E nA 1) H E Q L (postA E nA 1 + postB E nA 1) * A.cost * D.cost := by
+  have h := cost_reduction_le P (Post A.time E nA 1) A H E Q L _ D (time_post_le_cost A E nA 1)
+  have e : redFactor P (Post A.time E nA 1) H E Q L (postA E nA 1 + postB E nA 1) =
+      redFactor P (Post 0 E nA 1) H E Q L (postA E nA 1 + postB E nA 1) := by
     unfold redFactor; rw [descLen_post A.time 0 E E]
   rw [← e]; exact h
 

@@ -121,7 +121,6 @@ import PE.Impl.DualUse.Prog.WfLib
 import PE.Impl.DualUse.Prog.WfIns
 import PE.Impl.DualUse.Prog.WfB
 import PE.Impl.DualUse.Prog.WfTime
-import PE.Impl.DualUse.Prog.FhatGen
 import PE.Impl.DualUse.Prog.C0
 import PE.Impl.DualUse.Prog.Blocks
 import PE.Impl.DualUse.Prog.WordLemmas

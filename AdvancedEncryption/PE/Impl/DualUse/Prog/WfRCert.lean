@@ -1,4 +1,5 @@
-import PE.Impl.DualUse.Prog.WfB2Conf
+import PE.Impl.DualUse.Prog.WfB2Time
+import PE.Impl.DualUse.Prog.KeyPTime2
 import PE.Impl.DualUse.Prog.WfB2S
 
 /-!
@@ -28,6 +29,20 @@ checked here by `decide +kernel`.
 namespace AdvancedEncryption.DualUse.Prog
 
 namespace WB2
+
+/-- The result of a run is `L` with at most `B` steps. -/
+def chkR (r : Option (List ℕ × ℕ)) (L : List ℕ) (B : ℕ) : Bool :=
+  match r with
+  | some (L', T) => L' == L && decide (T ≤ B)
+  | none => false
+
+theorem of_chkR {r : Option (List ℕ × ℕ)} {L : List ℕ} {B : ℕ} (h : chkR r L B = true) :
+    ∃ T, r = some (L, T) ∧ T ≤ B := by
+  rcases r with _ | ⟨L', T⟩
+  · simp [chkR] at h
+  · simp only [chkR, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
+    exact ⟨T, by rw [h.1], h.2⟩
+
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.ValVM SigabaNeo.Tape.Prog SigabaNeo.Tape.Prog.KST
   SigabaNeo.Tape.Prog.StepT SigabaNeo.Lattices.Algo SigabaNeo.Lattices SigabaNeo.Tape.XProg
