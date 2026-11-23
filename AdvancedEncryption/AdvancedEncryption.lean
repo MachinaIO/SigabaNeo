@@ -167,5 +167,6 @@ import PE.Impl.DualUse.Prog.DecCostConf
 import PE.Impl.DualUse.Prog.DecTightWf
 import PE.Impl.DualUse.Prog.DecTightLib
 import PE.Impl.DualUse.Prog.DecTightPost
+import PE.Impl.DualUse.Prog.DecTightFin
 import PE.Impl.DualUse.Prog.DescConf
 import PE.Impl.DualUse.Submission
