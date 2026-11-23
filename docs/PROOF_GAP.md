@@ -1777,6 +1777,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Remaining.** Z = Z₁ + Z₂:
     * Z₁: first hits at horizontal wins on draws 155–406 where every shortest vector of the hit plane is inherited;
     * Z₂: first hits at positive-height wins on draws 395–406 with winner length in (30, 33.22505).
+* **Lean (Part 192 controlled cases).** Controlled* modules (8 files, axiom-clean) formalize:
+  * the exact pair-membership law q^{−mr} and a first moment with an inward-cube count of the reduced Gram shell;
+  * the binary Hermite bound on the retained winner;
+  * the adaptive draw law;
+  * raw and dual exit certificates, and the three later Gaussian sums;
+  * the first-hit decomposition Pr(A₄₀₆) < Z₁ + Z₂ + 6.515·10⁻¹², with Z₁ and Z₂ disjoint.
+  This is conditional on: last-used-coordinate coverage; the forced-state candidate estimates; the flag-charge enclosure
+  ≤ 5.28399·10⁻¹⁵; the ternary winner cap; and the per-draw comparisons of event probabilities with their Gaussian charges.
 * **Part 193 (audited, SOUND).** [z2_vertical](research/wall1_z2_vertical.md): the vertical-win residual Z₂.
   * Draw 395, heights k ≥ 13, and winner lengths s ≤ max(30.5, 0.945g) together contribute < 2.515·10⁻¹¹.
   * The conditional plane count is exact. A candidate fixes the fresh mark, and the fixed-radius void controls short
