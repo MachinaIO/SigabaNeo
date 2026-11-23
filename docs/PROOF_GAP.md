@@ -1748,6 +1748,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * an obstruction showing a fixed-floor count needs history hypotheses;
   * the Hermite witness checks: Blichfeldt gives s² < 61.45238·D^{2/506} unconditionally, and the sharper 56.2142 cap still
     needs the spherical-addition / lens second-moment estimate.
+* **Lean (Part 183 discrepancy, unconditional in the Hermite cap).** BlichfeldtTerminal506.lean (axiom-clean, kernel-checked)
+  proves the bound using only Blichfeldt's coefficient 61.45238:
+  * L_406 ≥ 879.78234064;
+  * terminal scale > 31.19677083 on every realized window path;
+  * the majorant < 5.244·10⁻⁹;
+  * Pr(F △ J) < 5.244·10⁻⁹ for every finite law of realized projected-grid histories with a uniform fresh mark.
+  This uses 1.3% of the 4·10⁻⁷ budget. Applying it to the concrete generator still needs its TerminalDraw data (embedding,
+  determinant normalization, tie agreement).
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
