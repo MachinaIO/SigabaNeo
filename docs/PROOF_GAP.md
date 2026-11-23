@@ -2109,6 +2109,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Rogers' simplex bound gives g₂₄ < 4.0811164, which fits. Lean proves `IntrinsicHermite 24 4.08114` conditional on
     Rogers' packing comparison and the simplex moment identities (wall1_rogers24.py). Still open: an unconditional
     rank-24 cap, a near-sharp rank-7 cap, and the terminal theorem parameterized by both caps.
+* **Lean (prefix-explicit terminal theorem).** ControlledTerminalCaps (axiom-clean).
+  * Unconditional: Pr(A₄₀₆) < Pr(Z₁) + Pr(Z₂) + Pr(Prefix) + 6.508320465762·10⁻¹². So Pr(Prefix) ≤ 6.679534238·10⁻¹⁵
+    suffices for the 6.515·10⁻¹² remainder.
+  * `terminal_bound_of_numeric_caps` takes any certified caps with g₇⁷ ≤ 64 and g₂₄ ≤ 4.
+  * With the unconditional Mordell/Blichfeldt caps the flag majorant is 3.7817·10⁻¹⁴, and the raw term is only
+    6.29·10⁻³⁴. Open: a different suffix split, or a transfer of ≈ 3.1·10⁻¹⁴ from elsewhere in the ledger.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
