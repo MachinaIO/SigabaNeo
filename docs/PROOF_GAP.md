@@ -1874,6 +1874,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * A positive-height, maximal-mark example has survival > 1 − 10⁻⁵⁶¹, with a terminal old plane below both cutoffs. It
     already had a plane hit by draw 170–172.
   * The weighted first-hit estimate at draw 406 remains open.
+* **Part 203 (audited, SOUND).** [delayed_plane_survival](research/wall1_delayed_plane_survival.md): delayed planes with
+  survival.
+  * There are reachable prefixes whose first sub-cutoff plane appears at draw 273 or 275, yet old-flag survival with a
+    qualifying draw-406 plane has conditional probability > 1 − 10⁻²⁹⁸ (or > 1 − 10⁻³⁰¹). So "survival forces an early hit"
+    is false in general.
+  * Both prefixes fail Part 192's raw-good condition at draw 0 (raw squared norm 4773 < 250²), so they contribute zero to
+    Z₁ and Z₂. The gated residual estimate remains open.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1883,7 +1890,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–202 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–203 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
