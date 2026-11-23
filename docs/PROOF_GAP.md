@@ -1798,6 +1798,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * At the enlarged cutoff, one summand of Part 192's draw-154 bound already exceeds 1.0039·10⁷.
   * The incoming state fixes the horizontal candidate, so the fresh mark gives only the conditional win probability.
   * **Remaining.** The win-weighted incidence on surviving prefixes plus p_late must total ≤ 7.6330·10⁻¹¹.
+* **Lean (Part 183, concrete chain).** ConcreteTerminal506 / TerminalChainState / TerminalColumnLaw / TerminalGridFrame /
+  TerminalRestartPath / TerminalWindowVolume (axiom-clean) prove `matrix_discrepancy_lt`. For a uniform 400×512 matrix over
+  Z/3329 under Part 108's append-and-project rule, Pr(F △ J) < 5.244·10⁻⁹, with all geometric and probabilistic hypotheses
+  discharged:
+  * the projected-grid isometry;
+  * the determinant path with D₄₀₆ normalization;
+  * lexicographic tie agreement;
+  * surjectivity of the fresh mark.
+  The bound also holds conditionally on every 511-column history. Only the frequency of J itself remains (Parts 185–196).
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
