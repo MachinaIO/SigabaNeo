@@ -699,6 +699,15 @@ theorem getElem_gsSP (n : ℕ) (gs : GateList) {t : ℕ} (ht : t < (gsSP n gs).l
   have ht' : t < gs.length := by simpa [length_gsSP] using ht
   simp [gsSP, List.getElem?_eq_getElem ht']
 
+theorem bnd_gsSP {n W : ℕ} {gs : GateList} (hW : n + gs.length ≤ W)
+    (hb : ∀ g ∈ gs, g.1 ≤ W ∧ g.2 ≤ W) : ∀ g ∈ gsSP n gs, g.1 ≤ W ∧ g.2.1 ≤ W ∧ g.2.2 ≤ W := by
+  intro g hg
+  obtain ⟨t, ht, rfl⟩ := List.getElem_of_mem hg
+  rw [getElem_gsSP]
+  have ht' : t < gs.length := by simpa [length_gsSP] using ht
+  have := hb gs[t] (List.getElem_mem _)
+  exact ⟨by omega, this.1, this.2⟩
+
 /-- `j` ones at the end of `W` bits. -/
 def revU (W j : ℕ) : List Bool := List.replicate (W - j) false ++ List.replicate j true
 

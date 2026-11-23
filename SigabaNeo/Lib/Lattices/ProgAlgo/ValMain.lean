@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValGsw
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValReg
 import SigabaNeo.Lib.Lattices.Algo.RingWords
 
 /-!
@@ -95,47 +96,82 @@ def zkvC : Code := fillC ZKV 11 10 14 12
 def ttkC : Code := fillC TTk OB 29 12 12
 /-- `TT2 := [true, true]`. -/
 def tt2C : Code := fillC TT2 OB 29 27 27
-/-- The store `C^(W − 9) ++ ins`. -/
-def stC : Code := ofList [.cp GST TST, .cp CQ TW9, .rep CQ (shiftOne GST CBW rX TSl), .mv GST INSW TINS]
+/-- The store `C :: ins ++ C^(W − 10)`. -/
+def stC : Code := ofList [.cp GST TST, shiftOne GST CBW rX TSl, .mv GST INSW TINS, .cp CQ TW9, .tl CQ,
+  .rep CQ (shiftOne GST CBW rX TSl)]
 
 /-- **The run of `f̂`.** -/
 def fhatC : Code :=
-  ofList [.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC, gloopC nandC]
+  ofList [.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC,
+    rloopG T10 nandC]
 
 theorem exec_stC {S W : ℕ} (hW : 10 ≤ W) (w : St) {C : List Bool} (hC : w CBW = C)
     (hCl : C.length = S) (hts : (w TSl).length = S) (htst : (w TST).length = (W + 1) * S)
     (htw9 : (w TW9).length = W - 9) {ins : List (List Bool)} (hins : UV S ins)
     (hinsl : ins.length = 10) (hI : w INSW = ins.flatten) (htins : (w TINS).length = 10 * S) :
-    exec V f stC w GST = (List.replicate (W - 10) C ++ (C :: ins)).flatten ∧
+    exec V f stC w GST = (C :: ins ++ List.replicate (W - 10) C).flatten ∧
       ∀ j, j ≠ GST → j ≠ CQ → j ≠ rX → j ≠ INSW → exec V f stC w j = w j := by
-  rw [show stC = ofList ([.cp GST TST, .cp CQ TW9] ++ [.rep CQ (shiftOne GST CBW rX TSl),
-    .mv GST INSW TINS]) from rfl, exec_ofList_append]
-  simp only [exec_ofList, List.foldl_cons, List.foldl_nil, exec_cp']
-  set w1 := Function.update (Function.update w GST (w TST)) CQ
-    (Function.update w GST (w TST) TW9) with hw1
-  have e1 : ∀ j, j ≠ GST → j ≠ CQ → w1 j = w j := fun j a1 a2 => by
-    simp [hw1, Function.update_apply, a1, a2]
+  rw [show stC = ofList ([.cp GST TST] ++ ([shiftOne GST CBW rX TSl, .mv GST INSW TINS] ++
+    ([.cp CQ TW9, .tl CQ] ++ [.rep CQ (shiftOne GST CBW rX TSl)]))) from rfl, exec_ofList_append,
+    exec_ofList_append, exec_ofList_append, exec_ofList_single]
+  have hInsF : ins.flatten.length = 10 * S := by rw [length_flatten_of hins, hinsl]
+  -- `C`, then the inputs
+  set w1 := exec V f (ofList [.cp GST TST]) w with hw1
+  have e1 : ∀ j, j ≠ GST → w1 j = w j := fun j a => by
+    simp [hw1, exec_ofList, exec_cp', Function.update_apply, a]
+  have g1 : w1 GST = w TST := by simp [hw1, exec_ofList, exec_cp']
+  set w2 := exec V f (ofList [shiftOne GST CBW rX TSl, .mv GST INSW TINS]) w1 with hw2
+  have hrx : (Function.update w1 rX (w1 CBW)) rX = C := by
+    rw [Function.update_self, e1 CBW (by decide), hC]
+  have g2 : w2 GST = ((w TST ++ C).drop S ++ ins.flatten).drop (10 * S) ∧
+      ∀ j, j ≠ GST → j ≠ rX → j ≠ INSW → w2 j = w j := by
+    simp only [hw2, exec_ofList, List.foldl_cons, List.foldl_nil, shiftOne, exec_cp']
+    rw [exec_mv_shift (d := GST) (s := rX) (c := TSl) (x := C) (L := []) (by decide)
+      (by rw [Function.update_of_ne (by decide), e1 TSl (by decide), hts, hCl])
+      (by rw [hrx, List.append_nil])]
+    rw [exec_mv_shift (d := GST) (s := INSW) (c := TINS) (x := ins.flatten) (L := []) (by decide)
+      (by simp (config := {decide := true}) only [Function.update_apply, if_false]
+          rw [e1 TINS (by decide), htins, hInsF])
+      (by simp (config := {decide := true}) only [Function.update_apply, if_false]
+          rw [e1 INSW (by decide), hI, List.append_nil])]
+    refine ⟨?_, fun j a1 a2 a3 => ?_⟩
+    · simp (config := {decide := true}) only [Function.update_apply, if_true, if_false]
+      rw [g1, hCl, hInsF]
+    · simp only [Function.update_apply, if_neg a1, if_neg a2, if_neg a3]; exact e1 j a1
+  obtain ⟨g2a, g2b⟩ := g2
+  generalize w2 = v2 at g2a g2b
+  -- `C^(W − 10)`
+  set v3 := exec V f (ofList [.cp CQ TW9, .tl CQ]) v2 with hv3
+  have e3 : ∀ j, j ≠ CQ → v3 j = v2 j := fun j a => by
+    simp [hv3, exec_ofList, exec_cp', exec_tl', Function.update_apply, a]
+  have hCQ : (v3 CQ).length = W - 10 := by
+    simp (config := {decide := true}) [hv3, exec_ofList, exec_cp', exec_tl', Function.update_apply,
+      g2b TW9 (by decide) (by decide) (by decide), htw9]
+    omega
   obtain ⟨R1, R2⟩ := exec_shiftRep (V := V) (f := f) (dst := GST) (src := CBW) (sc := rX) (cl := TSl)
-    (ctr := CQ) (by decide) (by decide) (by decide) w1
-    (by rw [e1 CBW (by decide) (by decide), e1 TSl (by decide) (by decide), hC, hCl, hts])
-  have hCQ : (w1 CQ).length = W - 9 := by simp (config := {decide := true}) [hw1, Function.update_apply, htw9]
-  rw [hCQ, e1 CBW (by decide) (by decide), e1 TSl (by decide) (by decide), hC, hts,
-    show w1 GST = w TST by simp (config := {decide := true}) [hw1, Function.update_apply]] at R1
-  generalize exec V f (.rep CQ (shiftOne GST CBW rX TSl)) w1 = v at R1 R2
-  have hrep : UV S (List.replicate (W - 9) C) := fun x hx => by rw [List.eq_of_mem_replicate hx, hCl]
-  rw [exec_mv_shift (d := GST) (s := INSW) (c := TINS) (x := ins.flatten) (L := []) (by decide)
-    (by rw [R2 TINS (by decide) (by decide) (by decide), e1 TINS (by decide) (by decide), htins,
-      length_flatten_of hins, hinsl]) (by rw [R2 INSW (by decide) (by decide) (by decide),
-      e1 INSW (by decide) (by decide), hI, List.append_nil])]
+    (ctr := CQ) (by decide) (by decide) (by decide) v3
+    (by rw [e3 CBW (by decide), e3 TSl (by decide), g2b CBW (by decide) (by decide) (by decide),
+      g2b TSl (by decide) (by decide) (by decide), hC, hCl, hts])
+  rw [hCQ, e3 CBW (by decide), e3 TSl (by decide), e3 GST (by decide), g2a,
+    g2b CBW (by decide) (by decide) (by decide), g2b TSl (by decide) (by decide) (by decide), hC,
+    hts] at R1
   refine ⟨?_, fun j a1 a2 a3 a4 => ?_⟩
-  · have hCf : (List.replicate (W - 9) C).flatten.length = (W - 9) * S := by
+  · rw [R1]
+    have hrep : UV S (List.replicate (W - 10) C) := fun x hx => by
+      rw [List.eq_of_mem_replicate hx, hCl]
+    have hCf : (List.replicate (W - 10) C).flatten.length = (W - 10) * S := by
       rw [length_flatten_of hrep]; simp
-    rw [Function.update_self, R1, drop_append_drop' (by simp only [List.length_append, hCf]; omega),
-      List.append_assoc, List.drop_left' (by
-        rw [htst, length_flatten_of hins, hinsl, ← Nat.add_mul]; congr 1; omega)]
-    rw [← List.flatten_append, show W - 9 = (W - 10) + 1 by omega, List.replicate_succ',
-      List.append_assoc, List.singleton_append]
-  · rw [Function.update_of_ne a1, Function.update_of_ne a4, R2 j a1 a3 a2, e1 j a1 a2]
+    have hT1 : S ≤ (w TST ++ C).length := by simp [htst, hCl] <;> nlinarith
+    rw [drop_append_drop' hT1]
+    have hT2 : S + 10 * S ≤ (w TST ++ C ++ ins.flatten).length := by
+      simp [htst, hCl, hInsF] <;> nlinarith
+    rw [drop_append_drop' hT2, List.flatten_append, List.flatten_cons, List.append_assoc,
+      List.append_assoc, List.append_assoc]
+    rw [List.drop_left' (by
+      simp only [htst]
+      have : (W - 10) * S + 10 * S = W * S := by rw [← Nat.add_mul]; congr 1; omega
+      nlinarith)]
+  · rw [R2 j a1 a3 a2, e3 j a2, g2b j a1 a3 a4]
 
 /-- The bundle of the input `i` of `f̂`. -/
 def inBW {N K : ℕ} (bW wW : Fin 10 × BI N (K + 1) → List Bool)
@@ -193,8 +229,7 @@ structure FInit (V K N W A1 Ad : ℕ) (one : List Bool) (gs : GateList)
   tsl : (w TSl).length = (Enum.list (α := BI N (K + 1))).length * V
   tst : (w TST).length = (W + 1) * ((Enum.list (α := BI N (K + 1))).length * V)
   td2 : (w TD2).length = 2 * ((W + 1) * ((Enum.list (α := BI N (K + 1))).length * V))
-  tw : (w TW).length = W
-  tpad : (w TPAD).length = (W - 10) * ((Enum.list (α := BI N (K + 1))).length * V)
+  tw : w TW = List.replicate W false
   tw9 : (w TW9).length = W - 9
   tins : (w TINS).length = 10 * ((Enum.list (α := BI N (K + 1))).length * V)
   gsw : w GS = gsW W gs
@@ -225,8 +260,8 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
   have hin : ∀ i b, (inBW bW wW ent i b).length = V := fun i b => by
     simp [inBW, jw, hb, hx, h.hV]; have := h.hNK; omega
   rw [fhatC, show [Code.gate 11 10 10, zkvC, ttkC, tt2C, insC, .cp RES TSl, cbC, .cp CBW RES, stC,
-    gloopC nandC] = [Code.gate 11 10 10, zkvC, ttkC, tt2C] ++ ([insC] ++ ([.cp RES TSl, cbC,
-    .cp CBW RES] ++ ([stC] ++ [gloopC nandC]))) from rfl, exec_ofList_append, exec_ofList_append,
+    rloopG T10 nandC] = [Code.gate 11 10 10, zkvC, ttkC, tt2C] ++ ([insC] ++ ([.cp RES TSl, cbC,
+    .cp CBW RES] ++ ([stC] ++ [rloopG T10 nandC]))) from rfl, exec_ofList_append, exec_ofList_append,
     exec_ofList_append, exec_ofList_append]
   -- `zv`, `zv^k`, `true^k`, `[true, true]`
   have P1 : NCtx V K N one zv (exec V f (ofList [Code.gate 11 10 10, zkvC, ttkC, tt2C]) w) ∧
@@ -375,29 +410,40 @@ theorem exec_fhatC (hf : ∀ a b, a.length = V → b.length = V → (f a b).leng
   have c4 : NCtx V K N one zv w4 := c3.of_eq fun j hj => S2 j (by revert j hj; decide)
     (by revert j hj; decide) (by revert j hj; decide) (by revert j hj; decide)
   -- the gates
-  have hD : GData S W (bw cst) ins gs w4 := ⟨hcl, hinsu, hinsl, hgs, hbnd,
+  have hTW4 : w4 TW = List.replicate W false := by
+    rw [E4 TW (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tw]
+  have hD : RegData S W (bw cst) (bw cst :: ins ++ List.replicate (W - ins.length) (bw cst))
+      (gsSP ins.length gs) w4 := ⟨hcl, by
+      intro x hx
+      simp only [List.cons_append, List.mem_cons, List.mem_append] at hx
+      rcases hx with rfl | hx | hx
+      · exact hcl
+      · exact hinsu x hx
+      · rw [List.eq_of_mem_replicate hx, hcl], by simp [hinsl]; omega,
+    bnd_gsSP (by rw [hinsl]; omega) hbnd,
     by rw [E4 TSl (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
       (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tsl],
     by rw [E4 TST (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
       (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tst],
     by rw [E4 TD2 (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
       (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.td2],
-    by rw [E4 TW (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tw]⟩
-  obtain ⟨-, G2, -, -⟩ := exec_gloopC (V := V) (f := f) (blockSpec_nandC hf hN one zv h1 hz) w4 hD
-    c4 S1
+    by rw [hTW4, List.length_replicate]⟩
+  obtain ⟨-, G2, -, -⟩ := exec_rloopG (T := T10) (V := V) (f := f)
+    (blockSpec_nandC hf hN one zv h1 hz) w4 (by rw [hinsl]; omega) hD c4 (by rw [S1, hinsl])
     (by rw [E4 GS (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
       (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.gsw])
     (by rw [E4 GCNT (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
       (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.gcnt])
-    (by rw [E4 TPAD (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
-      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.tpad])
+    (by rw [E4 T10 (by decide) (by decide) (by decide) (by decide) (by decide +kernel)
+      (by decide +kernel) (by decide) (by decide) (by decide) (by decide) (by decide), h.t10, hinsl])
+    hTW4 c4.ob (by decide)
   rw [G2 hne, hcst, getLast_gl_nandW one zv (inBW bW wW ent) hf h1 rfl hin gs hne]
 
 /-! ### The run of the predicate -/
 
 /-- **The run of the predicate.** -/
-def gswC : Code := ofList [insGC, .cp CBW 10, stC, gloopC (.gate RES IA IB)]
+def gswC : Code := ofList [insGC, .cp CBW 10, stC, rloopG T10 (.gate RES IA IB)]
 
 /-- **The initial words of the run of the predicate** (`M = N K`). -/
 structure GInit (V W A2 Ad M : ℕ) (one : List Bool) (gs : GateList) (pW rW : Fin 10 → List Bool)
@@ -412,8 +458,8 @@ structure GInit (V W A2 Ad M : ℕ) (one : List Bool) (gs : GateList) (pW rW : F
   tsl : (w TSl).length = V
   tst : (w TST).length = (W + 1) * V
   td2 : (w TD2).length = 2 * ((W + 1) * V)
-  tw : (w TW).length = W
-  tpad : (w TPAD).length = (W - 10) * V
+  tw : w TW = List.replicate W false
+  ob : w OB = [true]
   tw9 : (w TW9).length = W - 9
   tins : (w TINS).length = 10 * V
   gsw : w GS = gsW W gs
@@ -451,15 +497,29 @@ theorem exec_gswC (hf : ∀ a b, a.length = V → b.length = V → (f a b).lengt
   generalize exec V f stC (Function.update w1 CBW (w1 10)) = w2 at S1 S2
   have E2 : ∀ j, j ≠ GST → j ≠ CQ → j ≠ rX → j ≠ INSW → j ≠ CBW → j ∉ wr insGC → w2 j = w j :=
     fun j a1 a2 a3 a4 a5 a6 => by rw [S2 j a1 a2 a3 a4, Function.update_of_ne a5, I2 j a6]
-  have hD : GData V W one ins gs w2 := ⟨h1, hinsu, hinsl, hgs, hbnd,
+  have hTW2 : w2 TW = List.replicate W false := by
+    rw [E2 TW (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tw]
+  have hD : RegData V W one (one :: ins ++ List.replicate (W - ins.length) one)
+      (gsSP ins.length gs) w2 := ⟨h1, by
+      intro x hx
+      simp only [List.cons_append, List.mem_cons, List.mem_append] at hx
+      rcases hx with rfl | hx | hx
+      · exact h1
+      · exact hinsu x hx
+      · rw [List.eq_of_mem_replicate hx, h1], by simp [hinsl]; omega,
+    bnd_gsSP (by rw [hinsl]; omega) hbnd,
     by rw [E2 TSl (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tsl],
     by rw [E2 TST (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tst],
     by rw [E2 TD2 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.td2],
-    by rw [E2 TW (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tw]⟩
-  obtain ⟨-, G2, -, -⟩ := exec_gloopC (V := V) (f := f) (blockSpec_gate hf) w2 hD trivial S1
+    by rw [hTW2, List.length_replicate]⟩
+  obtain ⟨-, G2, -, -⟩ := exec_rloopG (T := T10) (V := V) (f := f) (blockSpec_gate hf) w2
+    (by rw [hinsl]; omega) hD trivial (by rw [S1, hinsl])
     (by rw [E2 GS (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.gsw])
     (by rw [E2 GCNT (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.gcnt])
-    (by rw [E2 TPAD (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.tpad])
+    (by rw [E2 T10 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.t10,
+      hinsl])
+    hTW2 (by rw [E2 OB (by decide) (by decide) (by decide) (by decide) (by decide) (by decide), h.ob])
+    (by decide)
   rw [G2 hne, getLast_gl_values (fV V f) one ins hinsl gs hne]
 
 /-! ### The unary positions -/

@@ -981,8 +981,7 @@ theorem fInit_w2 (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
     tsl := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     tst := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     td2 := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
-    tw := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
-    tpad := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
+    tw := Z _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     tw9 := L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     tins := by rw [length_enum_BI]; exact L _ _ (by simp [wordsT]) (by decide) (by decide) (by decide)
     gsw := by rw [o2 _ (by decide)]; exact g1
@@ -1486,7 +1485,8 @@ theorem w5_spec (hW : 0 < W) (hb : BndG W gs) (hT : T (mw GSC) = gsW W gs) :
 /-- **The words before `gswC` meet `GInit`.** -/
 theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W gs)
     (hgs : gs.length + 10 ≤ W)
-    (hT : T (mw GSC) = gsW W gs) (hA : T (mw SDW) = (sdEnc hk c).enc sd) :
+    (hT : T (mw GSC) = gsW W gs) (hA : T (mw SDW) = (sdEnc hk c).enc sd)
+    (hOB : T (mw OB) = [true]) :
     GInit (VG N K k c.d) W (lenA N K k 2) (lenA N K k c.d) (N * K) (oneG N K k c.d) gs
       (fun i => colsW N K k 2 (sd.Ψ i)) (fun i => colsW N K k c.d (sd.Rm i))
       ((T (mw SDW)).drop (oXG hk c))
@@ -1523,8 +1523,8 @@ theorem gInit_w5 (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb 
     tsl := L _ _ (by simp [wordsG]) (by decide)
     tst := L _ _ (by simp [wordsG]) (by decide)
     td2 := L _ _ (by simp [wordsG]) (by decide)
-    tw := L _ _ (by simp [wordsG]) (by decide)
-    tpad := L _ _ (by simp [wordsG]) (by decide)
+    tw := by rw [o2 _ (by decide), w4_key hk c W T (n := W) (by simp [wordsG])]
+    ob := by rw [o2 _ (by decide), w4, S3_eq_T hk c W T (by decide) (by decide) (by decide), hOB]
     tw9 := L _ _ (by simp [wordsG]) (by decide)
     tins := L _ _ (by simp [wordsG]) (by decide)
     gsw := oG
@@ -1564,7 +1564,7 @@ theorem w6_spec (sd : SimData hk c) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb :
       (oneG N K k c.d) (fV (VG N K k c.d) (fG N K k c.d)) (predOf 10 gs).1 (predOf 10 gs).2 ∧
     w6 hk c W T 61 = concatN (nPos N k) (unaryW (nPos N k)) := by
   have hG := exec_gswC (vstepG N K k c.d).len hgs hb hne (fun i => length_colsW' _ _)
-    (fun i => length_colsW' _ _) _ (gInit_w5 hk c W gs T sd hN hK hW hb hgs hT hA)
+    (fun i => length_colsW' _ _) _ (gInit_w5 hk c W gs T sd hN hK hW hb hgs hT hA hOB)
   have fr : ∀ x : Fin 120, x ∈ [OB, 29, 73, 74, 75] →
       exec (VG N K k c.d) (fG N K k c.d) gswC (w5 hk c W T) x = w4 hk c W T x := by
     intro x hx
