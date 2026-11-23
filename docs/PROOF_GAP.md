@@ -2316,6 +2316,18 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * V_N r^N ≤ 4·Dⱼ(r) for 1 ≤ j ≤ 52, N = 506 + j, 1690 ≤ r ≤ 3329.
   * The small-g crossing bound < 2.4681·10⁻¹¹ now has the conditional fourth-moment hypothesis (B) on draws 54–405 as its
     only hypothesis.
+* **Lean (Part 238 cost and solver).** Width638Cost / ShiftedGaussianPair / ShiftedGaussianHistory / ShiftedGaussianPeak /
+  ShiftedGaussianSchedule / ShiftedGaussianError / PoissonOverflow / IntegralMidpointCount / IntegralMidpointMass /
+  IntegralShiftedGaussianCVP (axiom-clean; 37 public theorems).
+  * Word budget: < 2^776.825 per call, < 2^778.825 total including validation, peak space < 2^766 words (768-bit
+    word-RAM charges).
+  * Shifted combiner pair law, with Part 140's joint coupling reused (stable pairing).
+  * Single-call exact CVP: after 36 pairing levels, the first minimum-energy member is a closest point except with
+    probability < 2⁻¹⁶⁸. Empty lists count as failure; ties accept any minimizer. Remaining hypothesis: `initial_sampler`,
+    a one-draw coupling with an exact shifted Gaussian at mismatch ≤ 2⁻⁹²³.
+  * `four_event_transfer`: credit > 0.643162094166 survives four dependent 2⁻¹⁶⁸ errors (> 0.6431620941).
+  * Still uninstantiated: the concrete graph-coordinate instance, the table sampler's coupling, and the
+    credited-event-implies-success link for the randomized calls plus validation.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
