@@ -1852,6 +1852,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * A fixed coordinate prefix leaving 7 draws yields Z^505, with minimum and least plane area exactly 1.
   * The adaptive tail removes Part 130's fixed-projector premise. Part 40 still applies when the total frozen plane ranges
     over a small predetermined family.
+* **Part 201 (audited, SOUND).** [multistep_branch](research/wall1_multistep_branch.md): multi-step inverse branches.
+  * Grouping k inverse branches preserves exact mass: conditional probability h^{−k} per coprime positive-height record.
+  * In the dominant draw-406 radial terms, the final 117–118 winners lie in the earlier window, so they impose no equations
+    on later marks (only competitor tests).
+  * Joint competitor tests can help: an exhaustive toy leaves 24/121 mark tuples instead of 64/121.
+  * Meeting the budget would still need a discount of > 10^620.27 on a single radial term.
+* **Lean (Part 192 hypotheses, partly discharged).** Nine further Controlled* modules (axiom-clean) prove:
+  * the forced-state candidate estimates;
+  * the kernel-checked flag sum ≤ 5.28399·10⁻¹⁵ over 12,089 indices;
+  * the ternary winner cap ‖v‖⁶ ≤ 2·det Gram;
+  * the per-draw Gaussian comparisons for t ≤ 20, and for later t given a covolume floor.
+  The terminal theorem now has exactly two hypotheses:
+  * LastCoordinateCoverage for 1 ≤ t ≤ 154;
+  * LaterDeterminantFloor for 21 ≤ t ≤ 405, which the 56.2142 Hermite cap would give. The proved Blichfeldt 61.45238 is
+    weaker.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1861,7 +1876,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–200 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–201 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
