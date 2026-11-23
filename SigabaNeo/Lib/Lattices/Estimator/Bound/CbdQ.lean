@@ -14,14 +14,14 @@ modulus is any `q ≥ 2^1024` given by its fixed-point logarithm `lq` (`log2Nat 
   depend on the sample count, `Usvp.solveForD_isNone_m`), the dual by the reduction bound or at
   the candidate whose optimal sample count `Dual.optOf` is at most `M₀` (then equal at all
   `M ≥ M₀`, `Dual.candidate_eq_of_opt`).
-* `cbdFactsQ n kb W ZA`: the closed facts; MITM is evaluated without a sample bound
+* `cbdFactsQ n kb W ZA K₀ R`: the closed facts; MITM is evaluated without a sample bound
   (`Guess.mitmCostW_of_some`: a bound on the unbounded instance bounds every instance).
 * **`cbd16q_estimatorBits_ge`**: `kb ≤ estimatorBits (cbdPq n q M)` for `M₀ ≤ M` with
-  `maxBeta + 1 + W + kb + 22 ≤ M + n` and `56 M ≤ (n − ZA) · 2^120`.
+  `maxBeta + 1 + W + kb + 22 ≤ M + n` and `56 M ≤ (n − ZA) · R^6`.
 
-`W` (the primal attacks' margin, `90` in `Bound/Cbd.lean`) and `ZA` (the Arora–Ge guessing depth,
-`600` there) are parameters, which lifts the caps `kb ≤ 2669` and `kb ≤ 3026` of the fixed
-choices.
+`W` (the primal attacks' margin, `90` in `Bound/Cbd.lean`), and the Arora–Ge constants `ZA` (the
+guessing depth, `600` there), `K₀` (`50`) and `R` (`2^20`, which needs `n ≥ 102 (R + 1) + ZA`) are
+parameters (`cbd_single_geR`).
 -/
 
 namespace SigabaNeo.Lattices.Estimator
@@ -225,6 +225,41 @@ theorem Guess.mitmCostW_of_some {n q q' M : ℕ} {Xs Xe Xe' : ND} (hk : Xe.kind 
     at hx ⊢
   exact Guess.guard_bind_pure hx
 
+/-! ### Arora–Ge with free constants -/
+
+/-- `single` at a `CBD(16)` instance of dimension `n'` with `M` samples costs at least the bound of
+`gb_ge` at `K₀` and `R` (`cbd_single_ge` fixes `K₀ = 50`, `R = 2^20`). -/
+theorem cbd_single_geR {n' q M K₀ R : ℕ} {X Y : ND} (hX : X.kind = .cbd 16) (hY : Y.kind = .cbd 16)
+    {K : Fx} (hR : 2 ≤ R) (hR1 : 2 * (K₀ + 1) * (R + 1) ≤ n') (hR2 : 56 * M ≤ n' * R ^ 6)
+    (hR3 : 8 * 33 ≤ R ^ (33 - 1))
+    (hK : K ≤ 2 * log2Nat ((n' + (K₀ + 1)).choose (K₀ + 1))) :
+    CostGe K (AroraGB.single (LWEParams.mk' n' q X Y (some M))) := by
+  have hN := mk'_cbd_normalize n' q (some M) X Y hX hY
+  have hσs : (LWEParams.mk' n' q X Y (some M)).Xs.stddev = cbdSigma := by
+    simp [LWEParams.mk', ND.resize, ND.stddev, hX, cbdSigma, ND.cbd]
+  have hσe : (LWEParams.mk' n' q X Y (some M)).Xe.stddev = cbdSigma := by
+    simp [LWEParams.mk', ND.resize, ND.stddev, hY, cbdSigma, ND.cbd]
+  have hs33 : AroraGB.sOf (LWEParams.mk' n' q X Y (some M)) = 33 := by
+    unfold AroraGB.sOf
+    rw [hσs, hσe]; simp only [lt_irrefl, ↓reduceIte]
+    simp [LWEParams.mk', ND.resize, hX, NumMisc.width, ND.bounds]
+    decide
+  have hw : (floor (NumMisc.width (LWEParams.mk' n' q X Y (some M)).Xe)).toNat = 33 := by
+    simp [LWEParams.mk', ND.resize, hY, NumMisc.width, ND.bounds]; decide
+  have hc3 : (ceil (LWEParams.mk' n' q X Y (some M)).Xe.stddev).toNat = 3 := by
+    rw [hσe]; decide +kernel
+  apply AroraGB.single_ge
+  · intro d m' s' hd hm hs'
+    rw [hN] at hm hs' ⊢
+    rw [hs33] at hs'
+    subst hs'
+    have hm' : m' ≤ M := hm M rfl
+    have hg := AroraGB.gb_ge (n := n') (d := d) (m := m') (s := 33) (K₀ := K₀) (R := R)
+      (by omega) (by omega) hR hR1 (AroraGB.hmd_of hR hm' hR2 d hd) (fun _ => hR3)
+    exact hg.mono hK
+  · rw [hN, hw]; norm_num
+  · rw [hN, hc3]
+
 /-! ### The instance, the checks and the facts -/
 
 /-- The instance: dimension `n`, modulus `q`, `CBD(16)` secret and error, `M` samples. -/
@@ -256,7 +291,7 @@ def cbdCheckQ (n : ℕ) (lq : Fx) (M₀ kb W b : ℕ) : Bool :=
         DualHybrid.check ((kb : ℤ) * ONE) n lq (log2 cbdSigma) kb b))
 
 /-- The closed numeric facts (no modulus, no sample count). -/
-def cbdFactsQ (n kb W ZA : ℕ) : Bool :=
+def cbdFactsQ (n kb W ZA K₀ R : ℕ) : Bool :=
   decide (kb ≤ 4673) &&
     (decide (10050 ≤ n) &&
     (costGeB ((kb : ℤ) * ONE) (Guess.mitmCostW (cbdPn n) true 0) &&
@@ -273,12 +308,13 @@ def cbdFactsQ (n kb W ZA : ℕ) : Bool :=
     (decide (NumPrimal.c0 * W ≤ -((kb : ℤ) * ONE + 21 * ONE)) &&
     (decide (maxBeta + 1 + W ≤ n - (kb + 22)) &&
     (decide ((kb : ℤ) * ONE ≤ ZA * log2Nat 33) &&
-    (decide (2 * (50 + 1) * (2 ^ 20 + 1) ≤ n - ZA) &&
-    (decide (0 < 33 → 8 * 33 ≤ (2 ^ 20) ^ (33 - 1)) &&
-    (decide ((kb : ℤ) * ONE ≤ 2 * log2Nat (PrimalHybrid.choose (n - ZA + (50 + 1)) (50 + 1))) &&
+    (decide (2 ≤ R) &&
+    (decide (2 * (K₀ + 1) * (R + 1) ≤ n - ZA) &&
+    (decide (8 * 33 ≤ R ^ (33 - 1)) &&
+    (decide ((kb : ℤ) * ONE ≤ 2 * log2Nat (PrimalHybrid.choose (n - ZA + (K₀ + 1)) (K₀ + 1))) &&
     (decide (ZA ≤ n) &&
     (decide ((cbdPn n).Xs.isSparse = false) &&
-    decide ((floor (NumMisc.width (cbdPn n).Xs)).toNat = 33)))))))))))))))))))))
+    decide ((floor (NumMisc.width (cbdPn n).Xs)).toNat = 33))))))))))))))))))))))
 
 theorem cbdPq_normalize (n q M : ℕ) : (cbdPq n q M).normalize = cbdPq n q M :=
   mk'_cbd_normalize n q (some M) _ _ rfl rfl
@@ -290,17 +326,17 @@ theorem cbdPq_log2Xi (n q M : ℕ) : Usvp.log2Xi (cbdPq n q M) = 0 := by
   unfold Usvp.log2Xi; rw [cbdPq_Xs, cbdPq_Xe]; simp
 
 /-- **`kb ≤ estimatorBits (cbdPq n q M)`** for a modulus `q ≥ 2^1024` with `log₂ q = lq` and every
-sample count `M ≥ M₀` with `maxBeta + 1 + W + kb + 22 ≤ M + n` and `56 M ≤ (n − ZA) · 2^120`, from
+sample count `M ≥ M₀` with `maxBeta + 1 + W + kb + 22 ≤ M + n` and `56 M ≤ (n − ZA) · R^6`, from
 the closed facts and the per-block-size checks. -/
-theorem cbd16q_estimatorBits_ge {n q e M M₀ kb W ZA : ℕ} {lq : Fx} (hq : 2 ^ e ≤ q)
+theorem cbd16q_estimatorBits_ge {n q e M M₀ kb W ZA K₀ R : ℕ} {lq : Fx} (hq : 2 ^ e ≤ q)
     (he : 1024 ≤ e) (hlq : log2Nat q = lq) (hl2q : log2 (ofInt (q : ℤ)) = lq) (hM₀ : M₀ ≤ M)
-    (hMlo : maxBeta + 1 + W + (kb + 22) ≤ M + n) (hMhi : 56 * M ≤ (n - ZA) * (2 ^ 20) ^ 6)
-    (hf : cbdFactsQ n kb W ZA = true)
+    (hMlo : maxBeta + 1 + W + (kb + 22) ≤ M + n) (hMhi : 56 * M ≤ (n - ZA) * R ^ 6)
+    (hf : cbdFactsQ n kb W ZA K₀ R = true)
     (hc : ∀ b < maxBeta + 2, cbdCheckQ n lq M₀ kb W b = true) :
     kb ≤ estimatorBits (cbdPq n q M) := by
   simp only [cbdFactsQ, Bool.and_eq_true, decide_eq_true_eq] at hf
   obtain ⟨hkb, hn, hmitm, herf, hz, hcoeff, henum, hh, halpha, hkbn, hhn, h4, hK2, hW, hDu,
-    hpen, hR1, hR3, hbound, hZA, hsparse, hw33⟩ := hf
+    hpen, hR, hR1, hR3, hbound, hZA, hsparse, hw33⟩ := hf
   set P := cbdPq n q M with hP
   have hN := cbdPq_normalize n q M
   set K : Fx := (kb : ℤ) * ONE
@@ -312,31 +348,31 @@ theorem cbd16q_estimatorBits_ge {n q e M M₀ kb W ZA : ℕ} {lq : Fx} (hq : 2 ^
   · -- arora
     have hkindXs : (cbdPq n q M).Xs.kind = .cbd 16 := rfl
     have hkindXe : (cbdPq n q M).Xe.kind = .cbd 16 := rfl
-    have hch : ∀ n', (n' + (50 + 1)).choose (50 + 1) =
-        PrimalHybrid.choose (n' + (50 + 1)) (50 + 1) :=
+    have hch : ∀ n', (n' + (K₀ + 1)).choose (K₀ + 1) =
+        PrimalHybrid.choose (n' + (K₀ + 1)) (K₀ + 1) :=
       fun n' => (PrimalHybrid.choose_eq _ _).symm
-    have hK' : ∀ n', n - ZA ≤ n' → K ≤ 2 * log2Nat ((n' + (50 + 1)).choose (50 + 1)) := by
+    have hK' : ∀ n', n - ZA ≤ n' → K ≤ 2 * log2Nat ((n' + (K₀ + 1)).choose (K₀ + 1)) := by
       intro n' hn'
       refine hbound.trans ?_
       rw [← hch]
-      have := log2Nat_mono (Nat.choose_le_choose (50 + 1)
-        (show n - ZA + (50 + 1) ≤ n' + (50 + 1) by omega))
+      have := log2Nat_mono (Nat.choose_le_choose (K₀ + 1)
+        (show n - ZA + (K₀ + 1) ≤ n' + (K₀ + 1) by omega))
       linarith
     apply AroraGB.cost_ge ZA (by rw [hN]; exact hsparse) (by rw [hN]; intro s hs; cases hs)
       (by rw [hN, show (floor (NumMisc.width (cbdPq n q M).Xs)).toNat = 33 from hw33]; exact hpen)
     · rw [hN]
       show CostGe K (AroraGB.single (LWEParams.mk' n q (ND.cbd 16) (ND.cbd 16) (some M)))
-      exact cbd_single_ge (n' := n) (q := q) (M := M) (X := ND.cbd 16) (Y := ND.cbd 16) rfl rfl
-        (le_trans hR1 (Nat.sub_le n ZA))
-        (le_trans hMhi (Nat.mul_le_mul_right _ (Nat.sub_le n ZA))) (hK' n (Nat.sub_le n ZA))
+      exact cbd_single_geR (n' := n) (q := q) (M := M) (K₀ := K₀) (R := R) (X := ND.cbd 16)
+        (Y := ND.cbd 16) rfl rfl hR (le_trans hR1 (Nat.sub_le n ZA))
+        (le_trans hMhi (Nat.mul_le_mul_right _ (Nat.sub_le n ZA))) hR3 (hK' n (Nat.sub_le n ZA))
     · intro z hz
       have hzle : n - ZA ≤ n - z := Nat.sub_le_sub_left (le_of_lt hz) n
       rw [hN]
       show CostGe K (AroraGB.single (LWEParams.mk' (n - z) q (cbdPq n q M).Xs (cbdPq n q M).Xe
         (some M)))
-      exact cbd_single_ge (n' := n - z) (q := q) (M := M) (X := (cbdPq n q M).Xs)
-        (Y := (cbdPq n q M).Xe) hkindXs hkindXe (le_trans hR1 hzle)
-        (le_trans hMhi (Nat.mul_le_mul_right _ hzle)) (hK' _ hzle)
+      exact cbd_single_geR (n' := n - z) (q := q) (M := M) (K₀ := K₀) (R := R) (X := (cbdPq n q M).Xs)
+        (Y := (cbdPq n q M).Xe) hkindXs hkindXe hR (le_trans hR1 hzle)
+        (le_trans hMhi (Nat.mul_le_mul_right _ hzle)) hR3 (hK' _ hzle)
     · intro z
       rw [hN]
       show CostGe 0 (AroraGB.single (LWEParams.mk' (n - z) q (cbdPq n q M).Xs (cbdPq n q M).Xe
