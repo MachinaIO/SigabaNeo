@@ -1671,6 +1671,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Outside probability < 4.249·10⁻¹², every raw lift of such a witness has length > 250 and loses > 98.9184% of its
     squared length.
   * **Remaining.** The probability of that penultimate-projection event. It is still a property of the reduction chain.
+  * **Lean.** TerminalProjection / TerminalProjectionCount (axiom-clean) formalize:
+    * F △ J ⊆ {N₊(2r/√3) > 0}, ties included;
+    * E[N₊(R)] = |B₊(R)|/|K/M|;
+    * Pr(F) ≤ Pr(J) + ε;
+    * the kernel-checked numeric bound Pr(F △ J) < 3.210·10⁻¹⁴, conditional on two analytic inputs (C ≤ 1.4227…,
+      g ≥ 31.9457…) stated as hypotheses.
+
 * **Part 184 (audited, SOUND).** [penultimate_projection](research/wall1_penultimate_projection.md): first moments for Part
   183's penultimate-projection event E.
   * **Conditioning obstruction.** For a fixed raw candidate, membership plus the preceding columns fix the mark at its pivot.
