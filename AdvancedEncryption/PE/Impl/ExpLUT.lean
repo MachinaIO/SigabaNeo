@@ -1,0 +1,31 @@
+import PE.Impl.ExpLUT.Basic
+import PE.Impl.ExpLUT.Ops
+import PE.Impl.ExpLUT.LUT
+import PE.Impl.ExpLUT.Eval
+import PE.Impl.ExpLUT.Noise
+import PE.Impl.ExpLUT.Canonical
+import PE.Impl.ExpLUT.NegacyclicNorm
+import PE.Impl.ExpLUT.Scheme
+import PE.Impl.ExpLUT.Correctness
+import PE.Impl.ExpLUT.KeyGen
+import PE.Impl.ExpLUT.CorrectBound
+import PE.Impl.ExpLUT.Laws
+
+/-!
+# Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
+
+The algebra of §4 and the scheme and correctness of §5, over an abstract ring with automorphisms
+(`SigabaNeo.Lattices.ExpRing`); see `PE/Impl/ExpLUT/PLAN.md`.
+
+* `Basic`: the setting (`Setting`), encodings (`Encodes`), gadget ciphertexts (`IsGC`).
+* `Ops`: Add, SMul, Mul (eq. (1)), Aut_k (eq. (2)) with exact output equations.
+* `LUT`: the rounds along the binary basis and the lookup tables (Lemma 8).
+* `Eval`: branching programs over encodings (Lemma 9, exact).
+* `Noise`: norm-level bounds (Lemma 9's `γ`, `Δ`).
+* `Canonical`, `NegacyclicNorm`: the canonical setting `idx j = g^j` (Lemma 8 discharged) and the
+  coefficient norm of `ℤ_q[X]/(X^{2^e} + 1)`.
+* `Scheme`: Setup, Enc, KeyGen matrices (eq. (3)), Dec (§5.1).
+* `Correctness`: eq. (4) and Theorem 1 exactly; `CorrectBound`: at the norm level.
+* `KeyGen`: keys by box rejection, with a trapdoor-independent law.
+* `Laws`: the laws of the coins; Theorem 1 in probability.
+-/
