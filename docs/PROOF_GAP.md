@@ -2149,6 +2149,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Mean capture 1/505 per step gives only 42.136% squared-norm loss over 276 steps, against the > 89.999% a qualifying
     final witness needs. Potentials that follow individual witnesses cannot reach the 0.18 ceiling; selection among
     many witnesses must enter.
+* **Part 235 (audited, CONFIRMED; negative).** [random_prefix](research/wall1_random_prefix.md): uniformly random
+  primitive prefixes.
+  * The quotient hit probability needs a first moment over nested flags (P, E). The unweighted sublattice-count ratio can
+    underestimate it (example: 3/4 vs 1/240).
+  * Rank-406 prefixes in the rank-911 raw lattice: for C ≤ 2^2090 the list is empty on every raw-gated input; for
+    C ≥ 3329⁴⁰⁰ there are ≥ C(911,406) > 2^897 coordinate sections.
+  * For a fixed horizontal lattice, a unique (or tied) shortest height-one terminal pair has probability O(C^{-n}) (Kim),
+    so large cutoffs destroy recovery. No intermediate cutoff is certified.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
