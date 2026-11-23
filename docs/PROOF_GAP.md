@@ -1910,6 +1910,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Every draw-406 raw graph has a saturated plane of area < 266,710 < 1893a, so a raw first moment at that cutoff cannot
     give rarity.
   * The horizontal budget after charging draws 155–171 is 7.1275·10⁻¹¹. The vertical ceiling 6.485·10⁻¹¹ is open.
+* **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
+  * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
+    lattice or from the window of the last used coordinate;
+  * the suffix-family covolume identity;
+  * the Mordell steps (rank 4 from 3, rank 8 from 7);
+  * the Blichfeldt constants at ranks 9–155 except 24.
+  The Part 192 terminal theorem now depends only on four classical Hermite constants: γ₅ = 8^{1/5}, γ₆ = (64/3)^{1/6},
+  γ₇ = 64^{1/7} (Blichfeldt / Vetčinkin) and γ₂₄ = 4 (Cohn–Kumar). These are published theorems, not yet in Lean.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
