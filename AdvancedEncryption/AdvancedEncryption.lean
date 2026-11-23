@@ -51,8 +51,11 @@ import PE.Impl.DualUse.Prog.EncP
 import PE.Impl.DualUse.Prog.SetupEncCost
 import PE.Impl.DualUse.ReductionPerQuery
 import PE.Impl.DualUse.ReductionComps
+import PE.Impl.DualUse.ReductionCompsBound
 import PE.Impl.DualUse.ReductionSteps
 import PE.Impl.DualUse.AHComps
+import PE.Impl.DualUse.AHConcrete
+import PE.Impl.DualUse.Submission
 import PE.Impl.DualUse.GameChain
 import PE.Impl.DualUse.Params.SimTrapNorm
 import PE.Impl.DualUse.Params.Sizes
@@ -98,6 +101,7 @@ import PE.Impl.DualUse.Prog.Setup3
 import PE.Impl.DualUse.Prog.SetupI
 import PE.Impl.DualUse.Prog.DecodeWord
 import PE.Impl.DualUse.Prog.Decode
+import PE.Impl.DualUse.Prog.RedDecodeA
 import PE.Impl.DualUse.Prog.DecodeLaw
 import PE.Impl.DualUse.Prog.Chi
 import PE.Impl.DualUse.Prog.ChalI
@@ -132,6 +136,8 @@ import PE.Impl.DualUse.Prog.Chal3
 import PE.Impl.DualUse.Prog.Pub5
 import PE.Impl.DualUse.Prog.Chal5
 import PE.Impl.DualUse.Prog.Comps
+import PE.Impl.DualUse.Prog.CompCost
+import PE.Impl.DualUse.Prog.SzWide
 import PE.Impl.DualUse.Algo.RowSim
 import PE.Impl.DualUse.Algo.RowSimData
 import PE.Impl.DualUse.Prog.RowSimP
@@ -211,6 +217,7 @@ import PE.Impl.DualUse.Prog.EncCostConfT
 import PE.Impl.DualUse.Prog.SetupConfA
 import PE.Impl.DualUse.Prog.SetupEncDescA
 import PE.Impl.DualUse.Prog.SetupL
+import PE.Impl.DualUse.Prog.SetupLA
 import PE.Impl.DualUse.Prog.SizeConf
 import PE.Impl.DualUse.Prog.TightChain
 import PE.Impl.DualUse.Prog.TightConf
