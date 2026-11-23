@@ -2222,6 +2222,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     probability in [10⁻²⁰⁰⁵⁰, 10⁻²⁰⁰⁴³].
   * So the gates and shortestness cannot deterministically exclude high-deficiency contributors. The width-506 pieces
     (score mean 5.2408·10⁻⁷, score-accepted lift, unpaid Z₁) need a genuine probability bound on this region.
+* **Part 241 (audited, CONFIRMED; partial).** [height_split](research/wall1_height_split.md): splitting the width-506
+  score by plant height.
+  * The full Part 47 prefix history preserves the product CBD(3) law of (e, s). This gives exact conditional score
+    formulas at every height and a conditional bound S(D) on correct projection followed by failed lifting.
+  * Bounded classes contribute < 5.283493·10⁻⁸ (height 0) and < 6.998082·10⁻⁸ (positive heights) to the mean score. The
+    raw-lift class must be assigned before averaging over the plant.
+  * Obstructions: a reachable design with C₀ > 0.5256662 while E, Z₁, Z₂ are all false; the all-zero design with averaged
+    C₁ > 72.137. Error averaging is justified, but the selection frequency of such geometries is uncontrolled.
+  * Open: the two rejection probabilities, the shared residual mean 5.2408·10⁻⁷, and the extra prefix rejection (the
+    511-row transfer charges 111 axes).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
