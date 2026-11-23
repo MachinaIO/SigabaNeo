@@ -2129,6 +2129,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Certifying a width needs a (1−δ) fraction of designs with conditional success ≥ 1−ε for both terminal decoding and
     lifting, with (1−δ)(1−ε) ≥ 1/2; the minimal β is open (W1-R105). Part 141's 2^794.98 covers its structured rank-647
     call on the 511-sample / 512-secret design only.
+* **Part 233 (audited, CONFIRMED with qualifications).** [randomized_reducer_addendum](research/wall1_randomized_reducer_addendum.md):
+  randomized reducers that keep the lattice.
+  * A uniform primitive prefix up to a covolume cutoff preserves the lattice and gives the exact finite law of the
+    projected quotient. In the Z³ example, 7,092 of 7,117 primitive lines hit. Shape equidistribution (Horesh–Karasik)
+    alone cannot certify separation, because the prefix covolume sets the quotient scale. Developed in W1-R106.
+  * Randomized near-shortest winners can only increase long returns on the current block. Without lookahead, the next
+    displacement stays uniform on Q_*H.
+  * Independent retries amplify as 1−(1−p(X))^R, but symmetries give no per-input lower bound on p(X).
+  * Protected-span membership is equivalent to guaranteed retention; otherwise survival is < 1/p per step. An equal-index
+    up/down pair that retains every original vector returns the original lattice.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
