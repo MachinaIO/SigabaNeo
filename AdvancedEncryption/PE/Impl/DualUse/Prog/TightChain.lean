@@ -1,5 +1,5 @@
 import PE.Impl.DualUse.Prog.TightSetup
-import PE.Impl.DualUse.Prog.CompCost
+import PE.Impl.DualUse.Prog.CompLib
 
 /-!
 # The per-tape bounds of `Setup`, step by step

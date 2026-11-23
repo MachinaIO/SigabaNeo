@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Prog.TightConf
+import PE.Impl.DualUse.PUCodes
 
 /-!
 # The clock of `Setup` at the parameters of branching programs (Stage II)
@@ -54,5 +55,18 @@ theorem time_setupMP_A {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) (X : 
   have h := time_setupMP_le_setupF hk c X (2 ^ 16) (2 ^ 27) hnI (Nat.one_le_two_pow) hGS hLin
   refine h.trans (le_of_lt (lt_of_eq_of_lt ?_ setupF_confA.2))
   rw [hd, ha, hs, hA, hN, hK, hkk]
+
+open AdvancedEncryption.DualUse.Params in
+theorem nInS_le_2_16 : nInS ≤ 2 ^ 16 := by
+  have h515 := length_paramsWord_pu
+  simp only [nInS, DualUse.pw, encodeTuple, Turing.MultiTapeTM.length_encList] at h515 ⊢
+  norm_num at h515 ⊢
+  omega
+
+open AdvancedEncryption.DualUse.Params in
+/-- **The clock of `Setup` at `confP`** (the sizes of `confA`): at most `2^387` steps. -/
+theorem time_setupMP_conf' : (setupMP hkp confP chiSamplerP).time ≤ 2 ^ 387 :=
+  time_setupMP_A hkp confP chiSamplerP Np_def Kp_def (by rw [kp, Kp_def]) dp_def rfl
+    nInS_le_2_16 (bChi_S₀.trans (by rw [Kp_def])) (bChi_a.trans Kp_def) bChi_s lin_bChi
 
 end AdvancedEncryption.DualUse.Prog

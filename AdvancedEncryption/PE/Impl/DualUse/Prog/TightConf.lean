@@ -1,6 +1,6 @@
 import PE.Impl.DualUse.Prog.TightChain
-import PE.Impl.DualUse.Prog.CostConf
-import PE.Impl.DualUse.Prog.SetupL
+import PE.Impl.DualUse.Prog.SetupEncCost
+import PE.Impl.DualUse.Prog.SetupCost
 
 /-!
 # The clock of `Setup` at `confP` by per-tape counting
@@ -113,35 +113,5 @@ theorem time_setupMP_tight (nI G0 : ℕ) (hnI : nInS ≤ nI) (hG1 : 1 ≤ G0) (h
   omega
 
 end Generic
-
-theorem nInS_le_1031 : nInS ≤ 1031 := by
-  have h515 := length_paramsWord_date
-  simp only [nInS, DualUse.pw, encodeTuple, Turing.MultiTapeTM.length_encList] at h515 ⊢
-  norm_num at h515 ⊢
-  omega
-
-set_option maxRecDepth 100000 in
-/-- The closed bound at `confP`, between `2^354` and `2^355`. -/
-theorem setupF_conf : 2 ^ 354 < setupF (2 ^ 34) (2 ^ 25) (2 ^ 25 + 1) (2 ^ 61) 1031 (2 ^ 25) (2 ^ 25) 64
-      (2 ^ 40) (2 ^ 40) 10 ∧
-    setupF (2 ^ 34) (2 ^ 25) (2 ^ 25 + 1) (2 ^ 61) 1031 (2 ^ 25) (2 ^ 25) 64 (2 ^ 40) (2 ^ 40) 10 <
-      2 ^ 355 := by
-  decide +kernel
-
-/-- **The clock of `Setup` at `confP`, by per-tape counting.** -/
-theorem time_setupMP_conf' : (setupMP hkp confP chiSamplerP).time ≤ 2 ^ 355 := by
-  have hK : 1 ≤ Kp := by rw [Kp_def]; norm_num
-  have h := time_setupMP_tight hkp confP chiSamplerP 1031 Kp nInS_le_1031 hK bChi_S₀
-  have h2 := setupCostT_le hkp confP chiSamplerP 1031 Kp lin_bChi
-  have eρ : ρS confP chiSamplerP 1031 Kp = [0, Np, Kp, kp, confP.d, 1031, Kp, bChi.a, bChi.s, nA] :=
-    rfl
-  rw [eρ] at h h2
-  have h3 := h.trans (Nat.add_le_add (Nat.add_le_add_left h2 _) le_rfl)
-  rw [chiB] at h3
-  have hF : setupF Np Kp kp confP.d 1031 Kp bChi.a bChi.s (2 ^ 40) (2 ^ 40) nA < 2 ^ 355 := by
-    rw [confP_d, bChi_a, bChi_s, kp_eq, Np_def, Kp_def]
-    exact setupF_conf.2
-  rw [setupF_eq] at hF
-  exact (lt_of_le_of_lt h3 hF).le
 
 end AdvancedEncryption.DualUse.Prog
