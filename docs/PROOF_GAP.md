@@ -1887,6 +1887,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     probability is < 5.436·10⁻¹²⁷.
   * The family fails the dual floor at draw 156, so it contributes zero to Z₁ and Z₂. The weighted estimate under both
     gates (raw-good and dual floor) is open.
+* **Lean (Hermite cap 56.2142 and Part 192 coverage).** The HermiteSphere* / HermiteLens* / ControlledPrefix* /
+  ControlledCertifiedBounds / ControlledSuffixProfile modules (12 files, axiom-clean) formalize:
+  * **‖z‖² ≤ 56.2142·covol(L)^{2/506} for every full rank-506 lattice**, via the spherical pair-sum inequality and the signed
+    lens integral;
+  * `LaterDeterminantFloor` for all 406 states;
+  * LastCoordinateCoverage through draw 31.
+  * Blichfeldt's 61.45 alone would not suffice: the charges total 2.74·10⁻⁷.
+  * The sole remaining hypothesis of the Part 192 terminal theorem is InheritedPrefixCoverage for draws 32–154 (a
+    horizontal winner with a short line already in the old projection). It is equivalent to LastCoordinateCoverage, and
+    InheritedSuffixLift would suffice.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
