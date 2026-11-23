@@ -2023,6 +2023,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Sufficient (open): ceilings 0.60 above 1.05g and 0.15 above 1.15g on draws 11–405 give crossing ≤ 4.21342·10⁻¹⁴; a
     conditional fourth moment E[(sᵢ/gᵢ)⁴ | history] ≤ 1.7860 gives ≤ 2.69977·10⁻¹¹. Both are valid for dependent draws
     (predictable stopping).
+* **Part 221 (audited, CONFIRMED; partial positive).** [z1_last_pieces](research/wall1_z1_last_pieces.md): last pieces of
+  Z₁.
+  * Reaching g₄₀₆ < 32.8 needs ≥ 305 long winners. A conditional ceiling 0.5 would give < 9.85·10⁻²⁸, and 0.75 on draws
+    11–405 would give < 2.215·10⁻¹² for the mixed piece (both open). Unconditionally, the paid mixed range now covers
+    g₄₀₆ ≥ 32.75.
+  * A gated wholly old hit on draw 406 forces ≥ 36 independent earlier column constraints for each fixed lift, with last
+    used draw ≥ 57. Four terminal rank tests cost < 6.227·10⁻¹⁶ across surviving and replacement planes.
+  * Balance: > 4.02079·10⁻¹² remains for mixed hits with 32.32 < g < 32.75 and the remaining wholly old mass.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
