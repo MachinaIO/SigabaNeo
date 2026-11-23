@@ -1756,6 +1756,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Pr(F △ J) < 5.244·10⁻⁹ for every finite law of realized projected-grid histories with a uniform fresh mark.
   This uses 1.3% of the 4·10⁻⁷ budget. Applying it to the concrete generator still needs its TerminalDraw data (embedding,
   determinant normalization, tie agreement).
+* **Part 192 (audited, SOUND).** [rank2_tail](research/wall1_rank2_tail.md): the rank-2 Rankin lower tail for the chain.
+  * **Haar.** A saturated plane of area ≤ 1352/√3 occurs with probability in (2.00059·10⁻⁵⁸, 2.07179·10⁻⁵⁸). The comparison
+    budget is < 1.84782·10⁻¹⁰.
+  * **Chain.** A hit through draw 154 has probability < 5.284·10⁻¹⁵. Adding the controlled cases and exits gives
+    Pr(A_406) ≤ Z + 6.515·10⁻¹².
+  * **Remaining.** Z = Z₁ + Z₂:
+    * Z₁: first hits at horizontal wins on draws 155–406 where every shortest vector of the hit plane is inherited;
+    * Z₂: first hits at positive-height wins on draws 395–406 with winner length in (30, 33.22505).
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1765,7 +1773,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–191 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–192 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
