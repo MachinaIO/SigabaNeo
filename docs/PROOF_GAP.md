@@ -2185,6 +2185,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     charges ≤ 3.781668308231·10⁻¹⁴; prefix_bound_mordell_blichfeldt (< 3.782·10⁻¹⁴).
   * Hermite inputs: sharp γ₅ and γ₆, Mordell at ranks 7–8, Blichfeldt at rank 24. γ₇ and γ₂₄ are no longer needed.
   * The terminal probability is now reduced in Lean to exactly the two research residuals Z₁ and Z₂.
+* **Lean (Z_rem conditional chain).** LongWinnerCrossing / AdaptedBinomialTail / LongWinnerProbability /
+  LongWinnerFourthMoment / LongWinnerRawMoments / LongWinnerRawTail (axiom-clean).
+  * Deterministic crossing (Part 216): if at most 99 of the first 405 winners exceed 1.10gᵢ, then gᵢ > 34.807 on draws
+    8–406.
+  * Adapted binomial domination for finite weighted laws, allowing dependent draws.
+  * Ceiling 0.126 on all 405 draws gives crossing < 2.5881467826·10⁻¹¹ (exact integer tail certificate).
+  * Fourth-moment (B) on draws 11–405 gives < 2.69977·10⁻¹¹. (B) on 54–405 plus Part 222's raw-graph tail premise
+    (draws 1–53, not yet in Lean) gives < 2.4681·10⁻¹¹.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
