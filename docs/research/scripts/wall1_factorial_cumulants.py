@@ -209,7 +209,7 @@ def draw14_probe():
         if cap == 16:
             assert charge < I('3.459e-13')
         if cap == 17:
-            assert charge < I('1.077e-12')
+            assert charge < I('8.048e-13')
         print('Full-incidence cumulant transfer through', cap, ':', charge, flush=True)
     n, radius = s['N'], s['radius']
     mu_upper = 2*s['geometry']['volume'][n]*(radius**2+I(n)/4)**(I(n)/2)/s['q']**s['m']

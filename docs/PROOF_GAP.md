@@ -3984,6 +3984,42 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   limited to that specific counting method, not a lower bound on failure.
   [Checkpoint scope](research/wall1_checkpoint_2026_11_24.md) separates these
   paper/computational results from the existing Lean lemmas and open BKZ goal.
+* **Part 400 (weighted completion and its full-anchor limitation).**
+  [Weighted completion](research/wall1_weighted_completion.md) expresses
+  the actual span-law chi-square as a weighted same-span rank-collision
+  energy and bounds arbitrary completion moments by reference moments plus
+  their variance/chi-square penalty. It includes fixed-anchor quotient-rank
+  formulas up to the required higher orders; a first-moment bound cannot
+  simply be raised to a power. The leading H=r+2 branches have no extra
+  basis: conditioning on their full anchor makes the reference a singleton,
+  so this version gives an identity, not an improvement. Averaging over
+  the actual weighted anchors remains open.
+  [Pinned distinct completions](research/wall1_pinned_distinct_completion.md)
+  proves the falling-factorial refinement and explains why it alone is
+  negligible at the current large caps. Its2172 exact checks pass.
+* **Part 401 (a conditional stopped-potential route).**
+  [Selected histories](research/wall1_selected_history_alternative.md)
+  proves a finite stopped-drift bound without enumerating all flags.
+  A graph-lattice collision counterexample shows that fixed-time mean
+  bounds alone do not justify a martingale maximum bound. Exact checks
+  cover204 collision identities and12 stopped-tree cases. The actual
+  selected-cylinder high-order potential and conditional drift remain
+  unproved; no new selected-history probability follows.
+* **Part 402 (7000-witness H11 cover; improved through17 bound).**
+  [Norm-eight pair cover](research/wall1_five_eleven_eight_pairs.md)
+  exhausts the girth-five H11 two-short-row family by20 inside times350
+  outside lines. Unit minors certify saturation; the complete complement
+  retains the original cutoff14 tails and periodic terms. Independent review
+  and all7000 pair checks pass. Production and the standalone complete
+  kernel agree within relative1e-60. The local bound improves15.65 decimal
+  orders and rank9/girth5 totals at sizes17/18 improve1.9655 orders.
+  The integrated through17 cumulant correction is now below8.048e-13
+  (evaluated8.047489906106801e-13). All2106 exact regressions pass.
+  With the reference/error cap9.131e-13, a conservative remaining
+  allocation2.204e-12 for sizes18..24 plus later histories would keep the
+  total below3.922e-12; that remaining estimate is still unproved.
+  Through24 stays about3.818709584e223: this is an ineffective upper
+  envelope, not an actual probability. Full BKZ remains open.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

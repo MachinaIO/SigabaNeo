@@ -877,6 +877,18 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             +six_plane(8,8,iv.exp(-98*alpha)*half_sum)**n
                             +six_plane(10,I(15)/2,iv.exp(-98*alpha)*half_sum)**n)
                         none_term=min((none_term,refined_eight),key=lambda v:v.b)
+                    if c==5 and union==11:
+                        # Every eligible independent norm-eight pair has one
+                        # support-five row (20 lines) and one unit row using
+                        # all six new and two old coordinates (350 lines).
+                        # Keep the complete cutoff-14 tails in every class.
+                        from wall1_five_eleven_eight_pairs import PAIR_BOUND
+                        tail8=iv.exp(-98*alpha)*half_sum
+                        refined_eleven=(I(min(coefficient_count,PAIR_BOUND))/coefficient_count
+                            *six_plane(8,I(55)/8,tail8)**n
+                            +six_plane(8,8,tail8)**n
+                            +six_plane(10,I(15)/2,tail8)**n)
+                        none_term=min((none_term,refined_eleven),key=lambda v:v.b)
                     if c==5 and union==12:
                         # Eligible (8,8)/(8,10) pairs have Gram >=60/64;
                         # no reduced (10,10) pair has prescribed girth five.
