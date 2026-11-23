@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.SimKeyGame
 import PE.Impl.Gates.ProgWindow
+import PE.Impl.DualUse.Prog.FrontSpec
 
 /-!
 # The front end of the simulated key query and the authorization test
@@ -88,3 +89,43 @@ theorem simW_parse (d : SimData hk c) (C : List Bool) :
       (predOf 10 (parse C)) := rfl
 
 end AdvancedEncryption.DualUse
+
+/-! ### The date-window front end as an instance of `FrontSpec` -/
+
+namespace AdvancedEncryption.DualUse.Prog
+
+open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg
+open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
+open AdvancedEncryption.PE.Gates.DateWindow
+
+theorem cfX_frontP (n W : ℕ) : (frontP n W).CoinFree :=
+  XProg.coinFree_seq (XProg.coinFree_seq (SigabaNeo.Tape.Prog.coinFree_putW 0 _) rfl)
+    (SigabaNeo.Tape.Prog.coinFree_lookTail _ _ _ _)
+
+/-- The time of the front end on queries of at most `T` bits (`timeBoundT_frontP`). -/
+def frontT (n W T : ℕ) : ℕ :=
+  20 * T + ((n + 2) * (2 * (n + 2) + 5) + 10 * (2 * (n + 11) + 5) +
+    (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12) *
+      (2 * (n + 1 + (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12)) + 5))
+
+/-- The length bound of the front end's output (`lenBoundT_frontP`). -/
+def frontL (n W : ℕ) : ℕ := n + 1 + (SigabaNeo.Tape.Prog.lookCount (frontTbl n W) [false] + 12)
+
+theorem frontV_eq (n W : ℕ) (C : List Bool) : frontV n W C = frontW n W C := by
+  by_cases hl : C.length ≤ n
+  · by_cases hw : ∃ w : Window, winWord w = C
+    · rw [frontV_win hl hw, frontW, frontG_valid hl hw]
+    · rw [frontV_short_not hl hw, frontW, frontG_short_not hl hw]
+  · rw [frontV_long hl, frontW, frontG_long hl]
+
+/-- **The date-window front end meets the interface.** -/
+theorem frontSpec_frontP (n W : ℕ) :
+    FrontSpec (frontP n W) n W (frontT n W) (fun _ => frontL n W) (frontP n W).size where
+  wf := wf_frontP n W
+  coinFree := cfX_frontP n W
+  law C := by rw [law_frontP, frontV_eq]
+  ph T ℓ hℓ := ⟨(timeBoundT_mono _ hℓ).trans (timeBoundT_frontP n W T),
+    (lenBoundT_mono _ hℓ).trans (lenBoundT_frontP n W T)⟩
+  size := le_rfl
+
+end AdvancedEncryption.DualUse.Prog

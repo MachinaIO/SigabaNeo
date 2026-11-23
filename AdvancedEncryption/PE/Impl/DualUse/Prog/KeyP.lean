@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.Prog.KeyTrySimLaw
 import PE.Impl.DualUse.Prog.KeyFront
+import PE.Impl.DualUse.Prog.FrontSpec
 import PE.Impl.DualUse.Prog.UBound
 import PE.Impl.DualUse.Prog.PsiBits
 import PE.Impl.DualUse.ReductionOracle
@@ -45,18 +46,6 @@ open AdvancedEncryption.PE.Gates.DateWindow
 section Helpers
 
 variable {n m : ℕ}
-
-/-- An embedded store, from its values on and off the frame. -/
-theorem embedF_eq_of {α : Type} (e : Fin m ↪ Fin n) (s s' : Fin n → α) (g : Fin m → α)
-    (h1 : ∀ j, s' (e j) = g j) (h2 : ∀ t, (∀ j, e j ≠ t) → s' t = s t) : embedF e s g = s' := by
-  funext t
-  rcases embedF_cases e s g t with ⟨hn, h⟩ | ⟨j, rfl, h⟩
-  · rw [h, h2 t]
-    intro j hj
-    subst hj
-    rw [partialInv_self] at hn
-    exact Option.some_ne_none _ hn
-  · rw [h, h1]
 
 /-- Append a constant word to a tape. -/
 def putW (t : Fin n) : List Bool → XProg n
@@ -155,6 +144,8 @@ theorem eSd_val (j : Fin 82) : (eSd j).val = if j.val = 0 then 0 else j.val + 1 
 theorem eFr_val (j : Fin 8) : (eFr j).val = if j.val = 0 then 1 else j.val + 82 := rfl
 theorem eKT_val (j : Fin 90) : (eKT j).val = j.val := rfl
 
+theorem frEmb_eFr : FrEmb eFr := fun _ => rfl
+
 theorem io2_eSd {α : Type} (a b d : α) :
     (fun j => io2 (R := 254) a b d (eSd j)) = io2 (R := 80) a d d := by
   funext j
@@ -195,13 +186,13 @@ structure SdSpec {Sig : Type} (sdP : XProg 82) (encS : Sig → List Bool)
     PMF.pure (io2 (R := 80) ((sdEnc hk c).enc (sdOf p)) [] [])
 
 variable (hk c) in
-/-- **The `W_f` block**: from `sdEnc sd` (tape `0`) and the gate list `gsW W (parse C)` of a window
-predicate of at most `c.L` bits (tape `1`), the word of `W_f = simW sd C` on tape `2`, `sdEnc sd`
-kept on tape `0`, every other tape blank. -/
+/-- **The `W_f` block**: from `sdEnc sd` (tape `0`) and the block word `blockWord W C` of a predicate
+`C` of the class (`ValidC`) of at most `c.L` bits (tape `1`), the word of `W_f = simW sd C` on
+tape `2`, `sdEnc sd` kept on tape `0`, every other tape blank. -/
 structure WfSpec (wfB : XProg 256) (W : ℕ) : Prop where
   wf : wfB.WF
-  law : ∀ (sd : SimData hk c) (C : List Bool), C.length ≤ c.L → (∃ w : Window, winWord w = C) →
-    wfB.law (io2 (R := 254) ((sdEnc hk c).enc sd) (SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
+  law : ∀ (sd : SimData hk c) (C : List Bool), C.length ≤ c.L → ValidC C →
+    wfB.law (io2 (R := 254) ((sdEnc hk c).enc sd) (blockWord W C) []) =
       PMF.pure (Function.update (io2 (R := 254) ((sdEnc hk c).enc sd) [] []) 2
         (colsW N K k c.d (simW sd C)))
 
@@ -280,10 +271,16 @@ theorem length_clrAll_le : clrAll.length ≤ 256 := by
   rw [clrAll]; exact (List.length_filter_le _ _).trans (by rw [List.length_finRange])
 
 variable (hk c) in
-/-- **The key component**: the SimData block, the front end, the branches, then every tape but `0`
-cleared (for the per-tape length bound). -/
+/-- **The key component** for a front end `fr` (`FrontSpec`): the SimData block, the front end, the
+branches, then every tape but `0` cleared (for the per-tape length bound). -/
+noncomputable def keyPF {R : ℕ} (sdP : XProg 82) (e : Fin (R + 2) ↪ Fin 256) (fr : XProg (R + 2))
+    (wfB : XProg 256) (cf : KeyCfg) : XProg 256 :=
+  seq (frame eSd sdP) <| seq (frame e fr) <| seq (branchB hk c wfB cf) (clearL clrAll)
+
+variable (hk c) in
+/-- **The key component** with the date-window front end `frontP c.L W` (framed by `eFr`). -/
 noncomputable def keyP (sdP : XProg 82) (wfB : XProg 256) (W : ℕ) (cf : KeyCfg) : XProg 256 :=
-  seq (frame eSd sdP) <| seq (frame eFr (frontP c.L W)) <| seq (branchB hk c wfB cf) (clearL clrAll)
+  keyPF hk c sdP eFr (frontP c.L W) wfB cf
 
 /-! ### The laws of the branches -/
 
@@ -400,13 +397,13 @@ theorem clear_final (s : Store 256) (w : List Bool) (hs : ∀ t : Fin 256, 26 �
 variable (hk c) in
 theorem law_winB (wfB : XProg 256) {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg)
     (hcf : cf.Valid hk c) (sd : SimData hk c) (C : List Bool) (hL : C.length ≤ c.L)
-    (hC : ∃ w : Window, winWord w = C) :
+    (hC : ValidC C) :
     (winB hk c wfB cf).law
-        (io2 (R := 254) ((sdEnc hk c).enc sd) (true :: SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
+        (io2 (R := 254) ((sdEnc hk c).enc sd) (true :: blockWord W C) []) =
       (KGsim sd C).map fun w => io2 (R := 254) w [] [] := by
   have e1 : (Prim.tail 1).apply
-      (io2 (R := 254) ((sdEnc hk c).enc sd) (true :: SigabaNeo.Tape.Prog.gsW W (parse C)) []) =
-      io2 (R := 254) ((sdEnc hk c).enc sd) (SigabaNeo.Tape.Prog.gsW W (parse C)) [] := by
+      (io2 (R := 254) ((sdEnc hk c).enc sd) (true :: blockWord W C) []) =
+      io2 (R := 254) ((sdEnc hk c).enc sd) (blockWord W C) [] := by
     funext t
     simp only [Prim.apply, Function.update_apply, io2]
     split_ifs <;> first | rfl | (exfalso; simp_all [Fin.ext_iff])
@@ -446,18 +443,18 @@ variable (hk c) in
 /-- The branches on the output of the front end. -/
 theorem law_branchB {wfB : XProg 256} {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg)
     (hcf : cf.Valid hk c) (sd : SimData hk c) (C : List Bool) :
-    (branchB hk c wfB cf).law (io2 (R := 254) ((sdEnc hk c).enc sd) (frontV c.L W C) []) =
+    (branchB hk c wfB cf).law (io2 (R := 254) ((sdEnc hk c).enc sd) (frontW c.L W C) []) =
       (KGsim sd C).map fun w => io2 (R := 254) w [] [] := by
   rw [branchB, law_ifBit]
   by_cases hl : C.length ≤ c.L
-  · by_cases hw : ∃ w : Window, winWord w = C
-    · rw [frontV_win hl hw, if_pos (by simp [io2])]
+  · by_cases hw : ValidC C
+    · rw [frontW, frontG_valid hl hw, if_pos (by simp [io2])]
       exact law_winB hk c wfB hwf cf hcf sd C hl hw
     · unfold KGsim
-      rw [if_pos hl, frontV_short_not hl hw, if_neg hw, if_neg (by simp [io2]), law_ifBlank,
+      rw [if_pos hl, frontW, frontG_short_not hl hw, if_neg hw, if_neg (by simp [io2]), law_ifBlank,
         if_neg (by simp [io2]), law_dumB, PMF.pure_map]
   · unfold KGsim
-    rw [frontV_long hl, if_neg hl, if_neg (by simp [io2]), law_ifBlank, if_pos (by simp [io2]),
+    rw [frontW, frontG_long hl, if_neg hl, if_neg (by simp [io2]), law_ifBlank, if_pos (by simp [io2]),
       law_longB, PMF.pure_map]
 
 theorem law_clrAll (w : List Bool) : (clearL clrAll).law (io2 (R := 254) w [] []) =
@@ -472,6 +469,24 @@ theorem law_clrAll (w : List Bool) : (clearL clrAll).law (io2 (R := 254) w [] []
     simp [h, io2, this]
 
 variable (hk c) in
+/-- **The law of the key component** for any front end meeting `FrontSpec`: for every query `C`,
+the image of the simulated key oracle `KGsim (sdOf p) C` of the simulation data of the packed
+secret. -/
+theorem law_keyPF {Sig : Type} {sdP : XProg 82} {encS : Sig → List Bool}
+    {sdOf : Sig → SimData hk c} {Ok : Sig → Prop} (hsd : SdSpec hk c sdP encS sdOf Ok)
+    {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr : XProg (R + 2)} {W : ℕ}
+    {FT FL : ℕ → ℕ} {FS : ℕ} (hfr : FrontSpec fr c.L W FT FL FS)
+    {wfB : XProg 256} (hwf : WfSpec hk c wfB W) (cf : KeyCfg) (hcf : cf.Valid hk c)
+    (p : Sig) (hp : Ok p) (C : List Bool) :
+    (keyPF hk c sdP e fr wfB cf).law (io2 (R := 254) (encS p) C []) =
+      (KGsim (sdOf p) C).map fun w => io2 (R := 254) w [] [] := by
+  rw [keyPF, law_seq_pure (by rw [law_frame, io2_eSd, hsd.law p hp, PMF.pure_map, embedF_eSd]),
+    law_seq_pure (law_frame_frEmb he hfr _ C), law_seq, law_branchB hk c hwf cf hcf, PMF.bind_map]
+  have e : (clearL clrAll).law ∘ (fun w => io2 (R := 254) w [] []) =
+      PMF.pure ∘ (fun w => io2 (R := 254) w [] []) := funext law_clrAll
+  rw [e, PMF.bind_pure_comp]
+
+variable (hk c) in
 /-- **The law of the key component**: for every query `C`, the image of the simulated key oracle
 `KGsim (sdOf p) C` of the simulation data of the packed secret. -/
 theorem law_keyP {Sig : Type} {sdP : XProg 82} {encS : Sig → List Bool}
@@ -479,13 +494,16 @@ theorem law_keyP {Sig : Type} {sdP : XProg 82} {encS : Sig → List Bool}
     {wfB : XProg 256} {W : ℕ} (hwf : WfSpec hk c wfB W) (cf : KeyCfg) (hcf : cf.Valid hk c)
     (p : Sig) (hp : Ok p) (C : List Bool) :
     (keyP hk c sdP wfB W cf).law (io2 (R := 254) (encS p) C []) =
-      (KGsim (sdOf p) C).map fun w => io2 (R := 254) w [] [] := by
-  rw [keyP, law_seq_pure (by rw [law_frame, io2_eSd, hsd.law p hp, PMF.pure_map, embedF_eSd]),
-    law_seq_pure (by rw [law_frame, io2_eFr, law_frontP, PMF.pure_map, embedF_eFr]), law_seq,
-    law_branchB hk c hwf cf hcf, PMF.bind_map]
-  have e : (clearL clrAll).law ∘ (fun w => io2 (R := 254) w [] []) =
-      PMF.pure ∘ (fun w => io2 (R := 254) w [] []) := funext law_clrAll
-  rw [e, PMF.bind_pure_comp]
+      (KGsim (sdOf p) C).map fun w => io2 (R := 254) w [] [] :=
+  law_keyPF hk c hsd frEmb_eFr (frontSpec_frontP c.L W) hwf cf hcf p hp C
+
+theorem wf_keyPF {sdP : XProg 82} (hsd : sdP.WF) {R : ℕ} (e : Fin (R + 2) ↪ Fin 256)
+    {fr : XProg (R + 2)} (hfr : fr.WF) {wfB : XProg 256}
+    (hwf : wfB.WF) (cf : KeyCfg) : (keyPF hk c sdP e fr wfB cf).WF :=
+  ⟨hsd, hfr,
+    ⟨⟨trivial, hwf, wf_prefP _ _ _ _ _, wf_putW _ _, wf_putW _ _,
+      wf_tmplP _ _ (keyTmpl_ne (Or.inr (Or.inr rfl))), ProgKey.wf_keyTrySimCoinsP, wf_clearL _⟩,
+    wf_clearL _, trivial, wf_prefP _ _ _ _ _, wf_putW _ _, trivial, trivial⟩, wf_clearL _⟩
 
 theorem wf_keyP {sdP : XProg 82} (hsd : sdP.WF) {wfB : XProg 256} (hwf : wfB.WF) (W : ℕ)
     (cf : KeyCfg) : (keyP hk c sdP wfB W cf).WF :=

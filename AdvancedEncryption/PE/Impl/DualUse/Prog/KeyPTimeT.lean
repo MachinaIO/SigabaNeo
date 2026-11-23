@@ -305,7 +305,7 @@ theorem size_keyP_le (sdP : XProg 82) (wfB : XProg 256) (W : ℕ) (cf : KeyCfg) 
   have hA := length_clrAll_le
   rw [hl] at h6
   rw [hc] at h8
-  simp only [keyP, branchB, winB, dumB, longB, size_seq, size_frame, size_ifBit, size_ifBlank,
+  simp only [keyP, keyPF, branchB, winB, dumB, longB, size_seq, size_frame, size_ifBit, size_ifBlank,
     size_prog, Prog.size_prim, Prim.pad] at *
   simp only [List.length_singleton] at h10
   omega
