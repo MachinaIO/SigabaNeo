@@ -281,7 +281,7 @@ steps, every tape below `2^250` afterwards. -/
 theorem time_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (hN : N = Nc)
     (hK : K = Kc) (hd : c.d = dc) (hth : treeHeight N (K + 1) ≤ 64)
     (hoB : offB c ≤ Lb) (hoW : offW hk c ≤ Lb) (hoP : offPsi hk c ≤ Lb) (hoR : offR hk c ≤ Lb)
-    (hoX : offPsi hk c + 10 * lenPsi N K (K + 1) ≤ Lb) (Lsd Lg : ℕ) (hLsd : Lsd ≤ Lb)
+    (hoX : offPsi hk c + nA * lenPsi N K (K + 1) ≤ Lb) (Lsd Lg : ℕ) (hLsd : Lsd ≤ Lb)
     (hLg : Lg ≤ Lgc) :
     XProg.timeBoundT (wfB2 hk c Wc) (io2 (R := 254) Lsd Lg 0) ≤ 2 ^ 556 ∧
       ∀ t, XProg.lenBoundT (wfB2 hk c Wc) (io2 (R := 254) Lsd Lg 0) t ≤ Mall := by
@@ -300,7 +300,7 @@ theorem time_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K +
   -- the preparation of the predicate
   have p3 := ph_prepG hk c Wc β1c M31c (by rw [hd]; exact chk_hinG) (by rw [hd]; exact chk_htopG)
   have hGl : TLe (wordsG Nc Kc (Kc + 1) c.d Wc (offPsi hk c) (offR hk c)
-      (offPsi hk c + 10 * lenPsi Nc Kc (Kc + 1))) wGc := by
+      (offPsi hk c + nA * lenPsi Nc Kc (Kc + 1))) wGc := by
     rw [hd]; exact TLe_wordsG _ _ _ _ _ hoP hoR hoX
   have g3 : vG hk c Wc β1c M31c ≤ encB (bsG Nc Kc kc dc) (VG Nc Kc kc dc) (gB L0Gc) :=
     (vG_le hk c Wc β1c M31c wGc hGl).trans (by rw [hd]; exact chk_g3)
@@ -354,7 +354,7 @@ theorem time_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K +
 theorem time_keyP_wfB2 {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (hN : N = Nc)
     (hK : K = Kc) (hd : c.d = dc) (hth : treeHeight N (K + 1) ≤ 64)
     (hoB : offB c ≤ Lb) (hoW : offW hk c ≤ Lb) (hoP : offPsi hk c ≤ Lb) (hoR : offR hk c ≤ Lb)
-    (hoX : offPsi hk c + 10 * lenPsi N K (K + 1) ≤ Lb)
+    (hoX : offPsi hk c + nA * lenPsi N K (K + 1) ≤ Lb)
     {sdP : XProg 82} {Ls Ts Lsd : ℕ} (hsT : XProg.timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
     (hsL : XProg.lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0) (hLsd : Lsd ≤ Lb)
     (hF : frontL c.L Wc ≤ Lgc) (cf : KeyCfg) (K₀ : ℕ) :

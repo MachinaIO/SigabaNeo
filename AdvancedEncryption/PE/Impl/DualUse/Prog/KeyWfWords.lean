@@ -27,7 +27,7 @@ namespace AdvancedEncryption.DualUse.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   Matrix AdvancedEncryption.RingBTVW AdvancedEncryption.DualUse.Algo
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
+open AdvancedEncryption.PE.Gates.BPWord
 
 /-! ### Positions in an enumeration -/
 
@@ -81,8 +81,8 @@ theorem length_insGW (sd : SimData hk c) : (insGW sd).length = nA := by
 theorem simKeyStoreW_sd (sd : SimData hk c) (C : List Bool) :
     simKeyStoreW N K k c.d (ordT₀ N k) (ordO₀ N k) (parse C) (insTW sd) (ixT N K k hk)
         (Enum.list (α := JT N K k hk)).length (insGW sd) (fun i => i.val) nA =
-      colsW N K k c.d (simW sd C) := by
-  rw [simW_parse]
+      colsW N K k c.d (simKeyMat (S := Sdw (N := N) hk) sd.Rm (attrBits sd.x) sd.W sd.Ψ sd.mpk.Bj
+        (predOf nA (parse C))) := by
   exact simKeyStoreW_eq_mat hk sd.Rm (attrBits sd.x) sd.W sd.Ψ sd.mpk.Bj (parse C)
     (length_insTW sd) (fun j => enumIx_lt (α := JT N K k hk) j)
     (fun j => getD_enumIx (α := JT N K k hk) _ _ j) (length_insGW sd) (fun i => i.isLt)
@@ -146,7 +146,9 @@ theorem run_simKeyP_sd (sd : SimData hk c) (C : List Bool) {W W' : ℕ}
       (predOf nA (parse C)).2))
     (h88 : (r 88).length = W') (h89 : (r 89).length = lenA N K k 2 + lenA N K k c.d + N * K)
     (h90 : (r 90).length = lenA N K k 2) :
-    Prog.run Prog.simKeyP r = Function.update r 0 (colsW N K k c.d (simW sd C)) := by
+    Prog.run Prog.simKeyP r = Function.update r 0 (colsW N K k c.d
+      (simKeyMat (S := Sdw (N := N) hk) sd.Rm (attrBits sd.x) sd.W sd.Ψ sd.mpk.Bj
+        (predOf nA (parse C)))) := by
   rw [run_simKeyP_store (ordT₀ N k) (ordO₀ N k) (parse C) (length_mem_insTW sd) (length_insTW sd)
     (fun j => enumIx_lt (α := JT N K k hk) j) (length_mem_insGW sd) (length_insGW sd)
     (fun i => i.isLt) hW hW' r ht hb hb' h1 h2 h86 h87 h88 h89 h90]

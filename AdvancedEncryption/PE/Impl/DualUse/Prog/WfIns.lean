@@ -17,7 +17,7 @@ counter, `3` … `8` scratch) appends the padding `replicate (|s 2| · V) false`
   items `Enum.list` of `Fin nA × BI N k`: **`run_insTP`** writes
   `replicate (|s 2| · VT) false ++ (insTW sd ++ [simOneW … gadW]).flatten`;
 * `insGP`: the streams of the `Ψᵢ` and of the `Rᵢ`, the bits `xᵢ` (`xBitP`), the items
-  `List.finRange 10`: **`run_insGP`** writes `… ++ (insGW sd ++ [simOneW … gswGadW]).flatten`.
+  `List.finRange nA`: **`run_insGP`** writes `… ++ (insGW sd ++ [simOneW … gswGadW]).flatten`.
 -/
 
 namespace AdvancedEncryption.DualUse.Prog
@@ -25,7 +25,7 @@ namespace AdvancedEncryption.DualUse.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.Prog Matrix AdvancedEncryption.RingBTVW AdvancedEncryption.DualUse.Algo
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
+open AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 set_option linter.unusedSimpArgs false
@@ -242,7 +242,7 @@ theorem sd_dropW (sd : SimData hk c) :
 
 theorem sd_dropR (sd : SimData hk c) :
     ((sdEnc hk c).enc sd).drop (offR hk c) =
-      (List.finRange 10).flatMap (fun i => colsW N K k c.d (sd.Rm i)) ++
+      (List.finRange nA).flatMap (fun i => colsW N K k c.d (sd.Rm i)) ++
         ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin c.d) (RingBTVW.Col k))).enc sd.W ++
         ((FixedEnc.fun (matEnc (N := N) (K := K) (Fin 2) (RingBTVW.Col k))).enc sd.Ψ ++ attrEnc.enc sd.x)) := by
   rw [sdEnc_enc, offR, drop_app2 (length_enc_fixLen _ _) (length_enc_fixLen _ _), rmEnc,
@@ -253,7 +253,7 @@ theorem sd_dropR (sd : SimData hk c) :
 
 theorem sd_dropPsi (sd : SimData hk c) :
     ((sdEnc hk c).enc sd).drop (offPsi hk c) =
-      (List.finRange 10).flatMap (fun i => colsW N K k 2 (sd.Ψ i)) ++ attrEnc.enc sd.x := by
+      (List.finRange nA).flatMap (fun i => colsW N K k 2 (sd.Ψ i)) ++ attrEnc.enc sd.x := by
   rw [sdEnc_enc, offPsi, drop_app4 (length_enc_fixLen _ _) (length_enc_fixLen _ _)
     (length_enc_fixLen _ _) (length_enc_fixLen _ _), fun_enc_flatMap]
   congr 1
@@ -270,7 +270,7 @@ noncomputable def insTP : Prog 9 :=
 /-- **The input store of the simulation of the predicate.** -/
 noncomputable def insGP : Prog 9 :=
   bldP (offPsi hk c) (offR hk c) (lenA N K k 2) (lenA N K k c.d) (N * K) (VG N K k c.d)
-    (xBitP N K (posX hk c)) (List.finRange 10) (simOneW N K k c.d (gswGadW N K k))
+    (xBitP N K (posX hk c)) (List.finRange nA) (simOneW N K k c.d (gswGadW N K k))
 
 theorem length_gswGadW' : (gswGadW N K k).length = lenA N K k 2 := by
   rw [gswGadW_eq, List.length_append, List.length_append, length_gadW, length_zeroW,

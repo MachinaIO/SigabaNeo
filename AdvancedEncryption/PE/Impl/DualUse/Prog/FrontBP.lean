@@ -32,7 +32,7 @@ on `1, 83, …, 153` (`eF`): **KeyGen, Dec and the key component keep their `256
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Lattices
-open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
+open AdvancedEncryption.PE.Gates.BPWord
 open AdvancedEncryption.DualUse.BpComp (bpCompC inp law_bpCompC coinFree_bpCompC wf_bpCompC)
 open scoped SigabaNeo.Tape.Prog
 

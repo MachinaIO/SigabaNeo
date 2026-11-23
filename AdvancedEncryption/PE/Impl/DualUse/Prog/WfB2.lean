@@ -35,7 +35,7 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo Sigab
   SigabaNeo.Tape.Prog Matrix AdvancedEncryption.RingBTVW AdvancedEncryption.DualUse.Algo
   Cslib Cslib.Probability
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
+open AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 set_option linter.unusedSimpArgs false
@@ -2109,36 +2109,6 @@ theorem final_eq (v : List Bool) (hwr : GSC ∉ wr cT ∧ SDW ∉ wr cT ∧ OB �
 theorem wr_full : (GSC ∉ wr fhatFullC ∧ SDW ∉ wr fhatFullC ∧ OB ∉ wr fhatFullC) ∧
     FOUT ∉ wr gswFullC ∧ SDW ∉ wr gswFullC := by decide +kernel
 
-/-- **The law of the body** on the gate list of a window predicate. -/
-theorem law_wfBody (C : List Bool) (hN : 0 < N) (hK : 0 < K) (hW : 0 < W) (hb : BndG W (parse C))
-    (hgs : (parse C).length + nA ≤ W) (hne : parse C ≠ []) :
-    (wfBody hk c W).law (S0 W ((sdEnc hk c).enc sd) (parse C)) =
-      PMF.pure (fun t => if t ∈ finClr then [] else
-        S6 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC gswFullC
-          (colsW N K (K + 1) c.d (simW sd C)) t) := by
-  have hm : min (parse C).length W = (parse C).length := by omega
-  obtain ⟨hwr, hF, -⟩ := wr_full
-  obtain ⟨tG, tA, tO, tS, tX0', tX1', tX2'⟩ :=
-    T3_facts hk c W (gsW W (parse C)) (parse C).length sd fhatFullC hwr
-  obtain ⟨o86, o61⟩ := w6_spec hk c W (parse C) _ sd hN hK hb hgs hne tG tA tO
-  have hFO := w3_FOUT hk c W sd (parse C) hN hK hb hgs hne
-  rw [tA] at o86
-  rw [wfBody, XProg.law_seq, law_prepT hk c W _ _ hW hb, hm, PMF.pure_bind, XProg.law_seq,
-    law_runT, PMF.pure_bind,
-    show ValVM.enc (s1 hk c W ((sdEnc hk c).enc sd) (gsW W (parse C)) (parse C).length)
-      (VT N K (K + 1) c.d) (w3 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC) =
-      T3 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC from rfl,
-    XProg.law_seq, law_prepG hk c W (parse C) _ hW hb tG tX0' (tS 92 (by decide)), hm,
-    PMF.pure_bind, XProg.law_seq, law_runG hk c W _ _ tS tX0' tX1' tX2', PMF.pure_bind,
-    show ValVM.enc (s3 hk c W (T3 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC)
-      (parse C).length) (VG N K (K + 1) c.d)
-      (w6 hk c W (T3 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC) (parse C).length
-        gswFullC) = S4 hk c W (gsW W (parse C)) (parse C).length sd fhatFullC gswFullC from rfl,
-    XProg.law_seq, law_keyPrep _ _ _ _ _ (by simp [S4]), PMF.pure_bind, XProg.law_seq,
-    law_keyF _ _ (key_run hk c W _ _ sd fhatFullC gswFullC _ hN hK hwr hF hFO o86 o61),
-    PMF.pure_bind, law_clrsP]
-  rfl
-
 end Final
 
 end WB2
@@ -2175,43 +2145,5 @@ theorem swp_swp (t : Fin 256) : swp (swp t) = t := by
   revert t; decide
 
 end WB2
-
-open WB2 in
-/-- **The block-structured `W_f` block meets `WfSpec`**, for every window predicate whose gate
-list is nonempty, fits `W` with its `10` inputs and has its operands below `W`. -/
-theorem wfSpec_wfB2 {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (W : ℕ)
-    (hN : 0 < N) (hK : 0 < K)
-    (hP : ∀ C : List Bool, C.length ≤ c.L → (∃ w : Window, winWord w = C) →
-      parse C ≠ [] ∧ (parse C).length + nA ≤ W ∧ BndG W (parse C)) :
-    WfSpec hk c (wfB2 hk c W) W where
-  wf := wf_wfBody hk c W
-  law := by
-    intro sd C hL hC
-    obtain ⟨hne, hgs, hb⟩ := hP C hL hC
-    have hW : 0 < W := by have := List.length_pos_iff.mpr hne; omega
-    have hin : (fun j => io2 (R := 254) ((sdEnc hk c).enc sd) (gsW W (parse C)) [] (eW j)) =
-        S0 W ((sdEnc hk c).enc sd) (parse C) := by
-      funext t
-      obtain ⟨e0, e1, -, -⟩ := swp_eq t
-      show io2 (R := 254) ((sdEnc hk c).enc sd) (gsW W (parse C)) [] (swp t) = _
-      simp only [io2, e0, e1]; rfl
-    rw [wfB2, XProg.law_frame, hin, law_wfBody hk c W sd C hN hK hW hb hgs hne,
-      final_eq hk c W _ _ sd _ _ _ wr_full.1 wr_full.2.2, PMF.pure_map]
-    congr 1
-    funext t
-    have ht : t = eW (swp t) := by simp [eW, swp_swp]
-    rw [ht, embedF_apply_self]
-    obtain ⟨-, -, e2, e3⟩ := swp_eq t
-    show (if swp t = mw SDW then _ else if swp t = 255 then _ else []) =
-      Function.update (io2 (R := 254) ((sdEnc hk c).enc sd) [] []) 2 _ (eW (swp t))
-    rw [show eW (swp t) = t from swp_swp t]
-    simp only [e2, e3, io2, Function.update_apply]
-    by_cases h0 : t.val = 0
-    · have : t ≠ 2 := fun e => by rw [e] at h0; exact absurd h0 (by decide)
-      simp [h0, this]
-    · by_cases h2 : t.val = 2
-      · simp [h0, h2, Fin.ext_iff]
-      · have : t ≠ 2 := fun e => h2 (by rw [e]; rfl)
-        simp [h0, h2, this]
 
 end AdvancedEncryption.DualUse.Prog

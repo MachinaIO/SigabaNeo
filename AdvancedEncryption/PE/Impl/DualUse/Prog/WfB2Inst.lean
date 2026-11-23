@@ -24,7 +24,7 @@ namespace WB2
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.ValVM SigabaNeo.Tape.Prog
   SigabaNeo.Lattices SigabaNeo.Lattices.SLP AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-  AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.DualUse.Params
+  AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.DualUse.Params
 
 set_option maxRecDepth 100000
 
@@ -82,7 +82,7 @@ theorem lenAI {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) :
 theorem offs_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (hN : N = Nc)
     (hK : K = Kc) (hd : c.d = dc) :
     offB c ≤ Lb ∧ offW hk c ≤ Lb ∧ offPsi hk c ≤ Lb ∧ offR hk c ≤ Lb ∧
-      offPsi hk c + 10 * lenPsi N K (K + 1) ≤ Lb ∧ fixLen (sdEnc hk c) ≤ Lb := by
+      offPsi hk c + nA * lenPsi N K (K + 1) ≤ Lb ∧ fixLen (sdEnc hk c) ≤ Lb := by
   simp only [offB, offW, offR, offPsi, lenPsi, fixLen, Algo.len_fin, Algo.len_col,
     Algo.len_trapCol, lenAI, hd]
   subst hN hK

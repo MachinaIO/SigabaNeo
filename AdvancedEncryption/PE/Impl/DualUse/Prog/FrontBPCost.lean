@@ -20,7 +20,7 @@ compiler's certificate, `BpCompCost`):
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Lattices
-open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
+open AdvancedEncryption.PE.Gates.BPWord
 open AdvancedEncryption.DualUse.BpComp (bpCompC allN allG S0 Uc inB)
 
 theorem bpLen_le : bpLen ≤ 2 ^ 49 := by unfold bpLen; norm_num

@@ -39,7 +39,7 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo Sigab
   SigabaNeo.Tape.XProg Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
   AdvancedEncryption.DualUse.Algo
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
+open AdvancedEncryption.PE.Gates.BPWord
 
 /-! ### Generic helpers -/
 
@@ -193,6 +193,16 @@ structure WfSpec (wfB : XProg 256) (W : ℕ) : Prop where
   wf : wfB.WF
   law : ∀ (sd : SimData hk c) (C : List Bool), C.length ≤ c.L → ValidC C →
     wfB.law (io2 (R := 254) ((sdEnc hk c).enc sd) (blockWord W C) []) =
+      PMF.pure (Function.update (io2 (R := 254) ((sdEnc hk c).enc sd) [] []) 2
+        (colsW N K k c.d (simW sd C)))
+
+variable (hk c) in
+/-- **The spec of a `W_f` block on the stream**: the block reads the instruction stream, the tail
+`(blockWord W C).tail` of the block word (the head is the bit `f(0)`, kept by `bfX`, `cfX`). -/
+structure WfSpecS (wfB : XProg 256) (W : ℕ) : Prop where
+  wf : wfB.WF
+  law : ∀ (sd : SimData hk c) (C : List Bool), C.length ≤ c.L → ValidC C →
+    wfB.law (io2 (R := 254) ((sdEnc hk c).enc sd) (blockWord W C).tail []) =
       PMF.pure (Function.update (io2 (R := 254) ((sdEnc hk c).enc sd) [] []) 2
         (colsW N K k c.d (simW sd C)))
 

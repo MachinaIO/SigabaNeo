@@ -14,7 +14,7 @@ the state counts of the crafted-data blocks `size_bfX_le`, `size_cfX_le`).
 namespace AdvancedEncryption.DualUse.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.DualUse.Params
-open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
+open AdvancedEncryption.PE.Gates.BPWord
 open SigabaNeo.Lattices.Algo
 
 /-! ### Arithmetic -/

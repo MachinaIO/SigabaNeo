@@ -315,7 +315,7 @@ def vG (β0 : Fin 256 → ℕ) (M31 : ℕ) : Fin 256 → ℕ :=
   let v6 := tmOut c M31 v5
   let v7 := Prog.lenBoundT (copiesP 1) v6
   let v8 := tmplB tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-    (offPsi hk c + 10 * lenPsi N K k)) v7
+    (offPsi hk c + nA * lenPsi N K k)) v7
   Prog.lenBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8)
 
 /-- The steps of `prepG`. -/
@@ -328,12 +328,12 @@ def tG (β0 : Fin 256 → ℕ) (M31 : ℕ) : ℕ :=
   let v6 := tmOut c M31 v5
   let v7 := Prog.lenBoundT (copiesP 1) v6
   let v8 := tmplB tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-    (offPsi hk c + 10 * lenPsi N K k)) v7
+    (offPsi hk c + nA * lenPsi N K k)) v7
   Prog.timeBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0 + (cntT W v1 + (capT2 W (embedF (ValVM.mkE cntE cntE_inj) v1 (cntOut W v1)) +
     (Prog.timeBoundT (clr (mw 12)) v2 + (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 +
     (tmplTT tX0 (tmpl31 N K k c.d) v4 + ((2 * M31 + 3) * simTmplSweeps N K k +
     (Prog.timeBoundT (copiesP 1) v6 + (tmplTT tX0 (stepG N K k c.d ++ wordsG N K k c.d W
-      (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) v7 +
+      (offPsi hk c) (offR hk c) (offPsi hk c + nA * lenPsi N K k)) v7 +
     (Prog.timeBoundT (clr tX0) v8 + Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8))))))))))
 
 /-- **The phase of `prepG`.** -/
@@ -346,7 +346,7 @@ theorem ph_prepG (β0 : Fin 256 → ℕ) (M31 : ℕ)
     Ph (prepG hk c W) β0 (tG hk c W β0 M31) (vG hk c W β0 M31) := by
   have k31 : ∀ x ∈ tmpl31 N K k c.d, x.1 ≠ tX0 := ne_of_keys (keys_tmpl31 N K k c.d) (by decide)
   have kG : ∀ x ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-      (offPsi hk c + 10 * lenPsi N K k), x.1 ≠ tX0 :=
+      (offPsi hk c + nA * lenPsi N K k), x.1 ≠ tX0 :=
     ne_of_keys (keys_G N K k c.d W _ _ _) (by decide)
   exact (ph_prog _ β0).seq <| (ph_cnt W _).seq <| (ph_cap W _).seq <| (ph_prog _ _).seq <| (ph_prog _ _).seq <|
     (ph_tmplP tX0 _ _ k31).seq <| (ph_tm c M31 _ hin htop).seq <| (ph_prog _ _).seq <|
@@ -506,7 +506,7 @@ theorem vT_le (β0 : Fin 256 → ℕ) (M31 : ℕ) (lw : List (Fin 256 × ℕ))
 
 /-- `vG` below its version at upper bounds of the offsets. -/
 theorem vG_le (β0 : Fin 256 → ℕ) (M31 : ℕ) (lw : List (Fin 256 × ℕ))
-    (hl : TLe (wordsG N K k c.d W (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) lw) :
+    (hl : TLe (wordsG N K k c.d W (offPsi hk c) (offR hk c) (offPsi hk c + nA * lenPsi N K k)) lw) :
     vG hk c W β0 M31 ≤ vGn N K k c.d W lw β0 M31 := by
   simp only [vG, vGn]
   exact Prog.lenBoundT_mono _ (Prog.lenBoundT_mono _
@@ -658,7 +658,7 @@ theorem tG_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
       (Prog.lenBoundT (clr (mw 12)) (ccV W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0))))) t ≤ M)
     (h31 : ∀ x ∈ tmpl31 N K k c.d, x.2 ≤ M)
     (hl : ∀ x ∈ stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-      (offPsi hk c + 10 * lenPsi N K k), x.2 ≤ M) :
+      (offPsi hk c + nA * lenPsi N K k), x.2 ≤ M) :
     tG hk c W β0 M31 ≤ cntT W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0) +
       capT2 W (embedF (ValVM.mkE cntE cntE_inj) (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0) (cntOut W (Prog.lenBoundT (clrsP lowW ⨾ cp (mw GS) (mw GSC)) β0))) +
       (2 * M31 + 3) * simTmplSweeps N K k + 120 * uT (M + 40) := by
@@ -670,7 +670,7 @@ theorem tG_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
   set v6 := tmOut c M31 v5
   set v7 := Prog.lenBoundT (copiesP 1) v6
   set v8 := tmplB tX0 (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-    (offPsi hk c + 10 * lenPsi N K k)) v7
+    (offPsi hk c + nA * lenPsi N K k)) v7
   have h3 : ∀ t, v3 t ≤ M := Sym.lenBoundT_le_const (clr (mw 12)) rfl h2
   have h4 : ∀ t, v4 t ≤ M := Sym.lenBoundT_le_const (cp (mw GS) (mw GSC)) rfl h3
   have h7 : ∀ t, v7 t ≤ M := Sym.lenBoundT_le_const (copiesP 1) rfl h6
@@ -680,7 +680,7 @@ theorem tG_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
     (Prog.timeBoundT (clr (mw 12)) v2 + (Prog.timeBoundT (cp (mw GS) (mw GSC)) v3 +
     (tmplTT tX0 (tmpl31 N K k c.d) v4 + ((2 * M31 + 3) * simTmplSweeps N K k +
     (Prog.timeBoundT (copiesP 1) v6 + (tmplTT tX0 (stepG N K k c.d ++ wordsG N K k c.d W
-      (offPsi hk c) (offR hk c) (offPsi hk c + 10 * lenPsi N K k)) v7 +
+      (offPsi hk c) (offR hk c) (offPsi hk c + nA * lenPsi N K k)) v7 +
     (Prog.timeBoundT (clr tX0) v8 + Prog.timeBoundT (clr (ms 92)) (Prog.lenBoundT (clr tX0) v8)))))))))) ≤ _
   have a := timeBoundT_le_pcount (clrsP lowW ⨾ cp (mw GS) (mw GSC)) ⟨loopFree_clrsP _, trivial⟩ β0 h0
   have pa : pcount (clrsP lowW ⨾ cp (mw GS) (mw GSC)) = 34 := by
@@ -697,7 +697,7 @@ theorem tG_le (β0 : Fin 256 → ℕ) (M31 M : ℕ) (h0 : ∀ t, β0 t ≤ M)
     tb_prim _ _ M h9
   have l31 : (tmpl31 N K k c.d).length = 8 := rfl
   have lG : (stepG N K k c.d ++ wordsG N K k c.d W (offPsi hk c) (offR hk c)
-    (offPsi hk c + 10 * lenPsi N K k)).length = 46 := rfl
+    (offPsi hk c + nA * lenPsi N K k)).length = 46 := rfl
   have pc : pcount (copiesP 1) = 6 := rfl
   rw [l31] at d
   rw [lG] at f

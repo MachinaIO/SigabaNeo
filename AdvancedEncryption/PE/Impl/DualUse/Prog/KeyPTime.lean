@@ -20,7 +20,7 @@ open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo Sigab
   SigabaNeo.Tape.XProg Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
   AdvancedEncryption.DualUse.Algo
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates
-open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates.BPWord
+open AdvancedEncryption.PE.Gates.BPWord
 open scoped SigabaNeo.Tape.Prog
 
 /-! ### Uniform bounds of the helpers -/
@@ -222,76 +222,13 @@ theorem ub_branchB {wfB : XProg 256} {Twf Gwf : ℕ → ℕ} (hU : ∀ M, UB wfB
 
 /-! ### The key component -/
 
-variable (hk c) in
-/-- The uniform bound at the branches: the SimData word, the front end's output, the templates. -/
-def keyM (Lsd W : ℕ) (cf : KeyCfg) : ℕ := max (max Lsd (frontL c.L W)) (tmplMax (keyTmpl hk c cf))
-
 /-- The time of the final clearing. -/
 def clrT (M : ℕ) : ℕ := 256 * (2 * (M + 1) + 3) + (2 * (M + 1) + 3)
 
 variable (hk c) in
-/-- **The time and length bounds of the key component**: with the SimData block bounded by
-`Ts`, `io2 Lsd 0 0` on secrets of at most `Ls` bits and the `W_f` block by uniform bounds, on
-queries of at most `K₀` bits the key component takes at most
-`Ts + frontT c.L W K₀ + branchT … M + clrT (branchL … M)` steps (`M = keyM …`) and leaves at most
-`branchL … M` bits on tape `0`, the other tapes blank. -/
-theorem time_keyP {sdP : XProg 82} {Ls Ts Lsd : ℕ}
-    (hsT : timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
-    (hsL : lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0)
-    {wfB : XProg 256} {Twf Gwf : ℕ → ℕ} (hU : ∀ M, UB wfB M (Twf M) (Gwf M)) (W : ℕ)
-    (cf : KeyCfg) (K₀ : ℕ) :
-    timeBoundT (keyP hk c sdP wfB W cf) (io2 (R := 254) Ls K₀ 0) ≤
-        Ts + frontT c.L W K₀ + branchT hk c Twf Gwf cf (keyM hk c Lsd W cf) +
-          clrT (branchL hk c Gwf cf (keyM hk c Lsd W cf)) ∧
-      lenBoundT (keyP hk c sdP wfB W cf) (io2 (R := 254) Ls K₀ 0) ≤
-        io2 (branchL hk c Gwf cf (keyM hk c Lsd W cf)) 0 0 := by
-  set M := keyM hk c Lsd W cf with hMdef
-  -- the SimData block
-  have e1 : (fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) = io2 (R := 80) Ls 0 0 := io2_eSd Ls K₀ 0
-  have l1 : lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ io2 (R := 254) Lsd K₀ 0 := by
-    show embedF eSd _ (lenBoundT sdP fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) ≤ _
-    rw [e1, ← embedF_eSd Ls K₀ Lsd 0]
-    exact embedF_mono _ le_rfl hsL
-  have t1 : timeBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ Ts := by
-    rw [timeBoundT_frame, e1]; exact hsT
-  -- the front end
-  set ℓ1 := lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) with hℓ1
-  have v1 : (fun j => ℓ1 (eFr j)) ≤ io2 (R := 6) K₀ 0 0 := by
-    rw [← io2_eFr Lsd K₀ 0]; exact fun j => l1 (eFr j)
-  have t2 : timeBoundT (frame eFr (frontP c.L W)) ℓ1 ≤ frontT c.L W K₀ := by
-    rw [timeBoundT_frame]
-    exact (timeBoundT_mono _ v1).trans (timeBoundT_frontP c.L W K₀)
-  have l2 : lenBoundT (frame eFr (frontP c.L W)) ℓ1 ≤ io2 (R := 254) Lsd (frontL c.L W) 0 := by
-    show embedF eFr ℓ1 (lenBoundT (frontP c.L W) fun j => ℓ1 (eFr j)) ≤ _
-    rw [← embedF_eFr Lsd K₀ (frontL c.L W) 0]
-    exact embedF_mono _ l1 ((lenBoundT_mono _ v1).trans (lenBoundT_frontP c.L W K₀))
-  -- the branches, from the uniform bound `M`
-  set ℓ2 := lenBoundT (frame eFr (frontP c.L W)) ℓ1 with hℓ2
-  have hℓ2M : ∀ t, ℓ2 t ≤ M := fun t => (l2 t).trans (by
-    simp only [io2, hMdef, keyM]; split_ifs <;> omega)
-  have ub := ub_branchB hk c hU cf (M := M) (le_max_right _ _) ℓ2 hℓ2M
-  have hc := ub_clearL (branchL hk c Gwf cf M) clrAll _ ub.2
-  have hlen : clrAll.length * (2 * (branchL hk c Gwf cf M + 1) + 3) ≤
-      256 * (2 * (branchL hk c Gwf cf M + 1) + 3) := Nat.mul_le_mul_right _ length_clrAll_le
-  refine ⟨?_, fun t => ?_⟩
-  · show timeBoundT (frame eSd sdP) _ + (timeBoundT (frame eFr (frontP c.L W)) ℓ1 +
-      (timeBoundT (branchB hk c wfB cf) ℓ2 +
-        timeBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2))) ≤ _
-    have := ub.1
-    have := hc.1
-    simp only [clrT]
-    omega
-  · show lenBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2) t ≤ _
-    refine (lenBoundT_clearL_le clrAll _ t).trans ?_
-    simp only [mem_clrAll]
-    by_cases h : t = 0
-    · subst h; simp [io2, ub.2 0]
-    · have : t.val ≠ 0 := fun e => h (Fin.ext e)
-      simp [h, io2, this]
-
-variable (hk c) in
 /-- The uniform bound at the branches for a front end with output bound `LF`. -/
 def keyMF (Lsd LF : ℕ) (cf : KeyCfg) : ℕ := max (max Lsd LF) (tmplMax (keyTmpl hk c cf))
+
 
 variable (hk c) in
 /-- **The time and length bounds of the key component for any front end** (`keyPF`), from the

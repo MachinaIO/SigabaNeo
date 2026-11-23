@@ -71,7 +71,7 @@ theorem chk_fixSz : fixSz Wc ≤ 10 * 2 ^ 20 := by decide +kernel
 theorem size_wfB2_conf {N K : ℕ} (hk : 2 ^ K < 2 ^ (K + 1)) (c : Conf N K (K + 1)) (hN : N = Nc)
     (hK : K = Kc) (hd : c.d = dc) (hth : treeHeight N (K + 1) ≤ 64)
     (hoB : offB c ≤ Lb) (hoW : offW hk c ≤ Lb) (hoP : offPsi hk c ≤ Lb) (hoR : offR hk c ≤ Lb)
-    (hoX : offPsi hk c + 10 * lenPsi N K (K + 1) ≤ Lb) :
+    (hoX : offPsi hk c + nA * lenPsi N K (K + 1) ≤ Lb) :
     (wfB2 hk c Wc).size ≤ 2 ^ 25 := by
   have hoX' : offPsi hk c + nA * lenPsi N K (K + 1) ≤ Lb := hoX
   subst hN hK
