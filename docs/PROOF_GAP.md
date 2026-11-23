@@ -1910,6 +1910,12 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Every draw-406 raw graph has a saturated plane of area < 266,710 < 1893a, so a raw first moment at that cutoff cannot
     give rarity.
   * The horizontal budget after charging draws 155–171 is 7.1275·10⁻¹¹. The vertical ceiling 6.485·10⁻¹¹ is open.
+* **Part 207 (audited, CONFIRMED; negative).** [z2_terminal_law](research/wall1_z2_terminal_law.md): terminal-law attack
+  on Z_rem.
+  * The rank-505 Haar second moment of the primitive-plane count is infinite. With the common line cut off at
+    b = 30.5·√3/2, intersecting pairs give 2.4297·10⁻⁷⁷, which is 4.16·10³⁷ times the disjoint-pair term.
+  * Matching the full determinant profile does not transfer the least-area law: the chain law is finitely supported and
+    the Haar law is atomless, so their total variation distance is exactly 1. Z_rem ≤ 6.485·10⁻¹¹ remains open.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
