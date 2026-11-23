@@ -1,5 +1,6 @@
 import SigabaNeo.Lib.Machines.Prog.LenEq
 import SigabaNeo.Lib.Machines.Prog.UBP
+import SigabaNeo.Lib.Machines.Prog.Compile
 
 /-!
 # Per-tape bounds of the append macros
@@ -264,6 +265,153 @@ theorem iter_mv_bounds {src dst t : Fin k} (z : Fin k) (hsd : src ≠ dst) (hst 
       refine (lenBoundT_mono _ hb u).trans ((ih.2 u).trans ?_)
       simp only [ℓ', Function.update_apply]
       split_ifs <;> subst_vars <;> first | omega | simp_all
+
+/-- **The bounds of `snocN`.** -/
+theorem snocN_bounds (c : Fin k) (b : Bool) {S : ℕ} : ∀ (n : ℕ) (ℓ : Fin k → ℕ), (∀ t, ℓ t ≤ S) →
+    ℓ c + n ≤ S → timeBoundT (snocN c b n) ℓ ≤ (n + 1) * (2 * S + 5) ∧
+      lenBoundT (snocN c b n) ℓ = Function.update ℓ c (ℓ c + n)
+  | 0, ℓ, hS, _ => by
+    refine ⟨?_, ?_⟩
+    · show 2 * (supB ℓ + 0) + 3 ≤ _; have := supB_le_of hS; omega
+    · show Prim.lenT (.copy c c) ℓ = _; simp [Prim.lenT]
+  | n + 1, ℓ, hS, hn => by
+    have ih := snocN_bounds c b n ℓ hS (by omega)
+    refine ⟨?_, ?_⟩
+    · show timeBoundT (snocN c b n) ℓ + (2 * (supB (lenBoundT (snocN c b n) ℓ) + 1) + 3) ≤ _
+      rw [ih.2]
+      have : supB (Function.update ℓ c (ℓ c + n)) ≤ S := supB_le_of fun t => by
+        simp only [Function.update_apply]; split_ifs <;> first | omega | exact hS t
+      have := ih.1
+      rw [show (n + 1 + 1) * (2 * S + 5) = (n + 1) * (2 * S + 5) + (2 * S + 5) by ring]; omega
+    · show Prim.lenT (.snoc c b) (lenBoundT (snocN c b n) ℓ) = _
+      rw [ih.2]; simp only [Prim.lenT, Function.update_self, Function.update_idem]; congr 1
+
+/-! ### Sizes -/
+
+theorem size_prim_le' (q : Prim k) : size (prim q) ≤ 60 := by
+  cases q <;> simp [size, Prim.pad]
+
+theorem size_appT_le (o x a b : Fin k) : size (appT o x a b) ≤ 400 := by
+  have := size_prim_le' (.copy b x); have := size_prim_le' (.copy a x)
+  have := size_prim_le' (.snocHead o b); have := size_prim_le' (.tail b)
+  have := size_prim_le' (.clear b)
+  show size (prim _) + ((size (prim _) + ((size (prim _) + size (prim _)) + 39)) + size (prim _)) ≤ _
+  omega
+
+theorem log2_two_mul {m : ℕ} (hm : 1 ≤ m) : Nat.log2 (2 * m) = Nat.log2 m + 1 := by
+  rw [Nat.log2_def]; rw [if_pos (by omega)]; congr 2; omega
+
+theorem log2_two_mul_add_one {m : ℕ} (hm : 1 ≤ m) : Nat.log2 (2 * m + 1) = Nat.log2 m + 1 := by
+  rw [Nat.log2_def]; rw [if_pos (by omega)]; congr 2; omega
+
+/-- **The size of `natU`**: logarithmic. -/
+theorem size_natU (o a b : Fin k) : ∀ n, size (natU o a b n) ≤ 500 * Nat.log2 n + 500
+  | 0 => by rw [natU]; have : size (clr o) ≤ 60 := size_prim_le' _; omega
+  | n + 1 => by
+    rw [natU]
+    split_ifs with h
+    · have ih := size_natU o a b ((n + 1) / 2)
+      have := size_appT_le o o a b
+      have e : n + 1 = 2 * ((n + 1) / 2) := by omega
+      have h2 : Nat.log2 (n + 1) = Nat.log2 ((n + 1) / 2) + 1 := by
+        rw [e, log2_two_mul (by omega)]; congr 2; omega
+      show size (natU o a b ((n + 1) / 2)) + size (appT o o a b) ≤ _
+      omega
+    · have := size_prim_le' (.snoc o true)
+      show size (natU o a b n) + size (prim _) ≤ _
+      rcases Nat.eq_zero_or_pos n with hn | hn
+      · subst hn; rw [natU]; have : size (clr o) ≤ 60 := size_prim_le' _; simp; omega
+      · obtain ⟨n', rfl⟩ : ∃ n', n = n' + 1 := ⟨n - 1, by omega⟩
+        have h2 : (n' + 1) % 2 = 0 := by omega
+        rw [natU, if_pos h2]
+        have ih := size_natU o a b ((n' + 1) / 2)
+        have := size_appT_le o o a b
+        have e : n' + 1 + 1 = 2 * ((n' + 1) / 2) + 1 := by omega
+        have h3 : Nat.log2 (n' + 1 + 1) = Nat.log2 ((n' + 1) / 2) + 1 := by
+          rw [e, log2_two_mul_add_one (by omega)]
+        show size (natU o a b ((n' + 1) / 2)) + size (appT o o a b) + size (prim _) ≤ _
+        omega
+  decreasing_by all_goals omega
+
+/-! ### The length test -/
+
+/-- **The bounds of the length test**, from per-tape bounds at most `S` (`n ≤ S`). -/
+theorem lenEqP_bounds {S : ℕ} (n : ℕ) (hn : n ≤ S) (h1 : 1 ≤ S) (ℓ : Fin 6 → ℕ)
+    (hS : ∀ t, ℓ t ≤ S) :
+    timeBoundT (lenEqP n) ℓ ≤ (12 * n + 6 * S + 120) * (2 * S + 5) ∧
+      ∀ t, lenBoundT (lenEqP n) ℓ t ≤ S := by
+  -- uniform bounds: every piece maps bounds at most `S` to bounds at most `S`
+  let U : Prog 6 → ℕ → Prop := fun p m =>
+    ∀ ℓ : Fin 6 → ℕ, (∀ t, ℓ t ≤ S) → timeBoundT p ℓ ≤ m * (2 * S + 5) ∧ ∀ t, lenBoundT p ℓ t ≤ S
+  have seqU : ∀ {p q m m'}, U p m → U q m' → U (p ⨾ q) (m + m') := fun hp hq ℓ hℓ => by
+    have a := hp ℓ hℓ; have b := hq _ a.2
+    exact ⟨by rw [timeBoundT_seq, Nat.add_mul]; omega, b.2⟩
+  have primU : ∀ q : Prim 6, q.grow = 0 → U (prim q) 1 := fun q hq ℓ hℓ => by
+    refine ⟨?_, fun t => ?_⟩
+    · show 2 * (supB ℓ + q.pad) + 3 ≤ _
+      have := supB_le_of hℓ; have : q.pad ≤ 1 := by cases q <;> simp [Prim.pad]
+      omega
+    · exact ((Prim.lenT_mono q (fun u => hℓ u)) t).trans
+        ((Prim.lenT_const_le q S t).trans (show S + q.grow ≤ S by omega))
+  have setU : ∀ (f : Fin 6) (b : Bool), U (setB f b) 2 := fun f b ℓ hℓ => by
+    refine ⟨?_, fun t => ?_⟩
+    · show 2 * (supB ℓ + 0) + 3 + (2 * (supB (Prim.lenT (.clear f) ℓ) + 1) + 3) ≤ _
+      have := supB_le_of hℓ
+      have : supB (Prim.lenT (.clear f) ℓ) ≤ S := supB_le_of fun u => by
+        simp only [Prim.lenT, Function.update_apply]; split_ifs
+        · exact Nat.zero_le _
+        · exact hℓ u
+      omega
+    · show Prim.lenT (.snoc f b) (Prim.lenT (.clear f) ℓ) t ≤ _
+      simp only [Prim.lenT, Function.update_apply]; split_ifs <;> first | omega | exact hℓ t
+  have dropU : ∀ t x a : Fin 6, t ≠ a → x ≠ a → U (dropT t x a) (3 * S + 3) := fun t x a hta hxa ℓ hℓ => by
+    have h := dropT_bounds hta hxa ℓ hℓ
+    refine ⟨h.1.trans (Nat.mul_le_mul_right (2 * S + 5)
+      (show 3 * ℓ x + 3 ≤ 3 * S + 3 by have := hℓ x; omega)), fun u => (h.2 u).trans ?_⟩
+    simp only [Function.update_apply]; split_ifs
+    · exact hℓ x
+    · exact hℓ u
+  have natUU : U (natU 2 4 5 n) (12 * n + 100) := fun ℓ hℓ => by
+    have h := natU_bounds (o := (2 : Fin 6)) (a := 4) (b := 5) (by decide) (by decide) (by decide)
+      n ℓ hℓ hn
+    refine ⟨h.1, fun u => (h.2 u).trans ?_⟩
+    split_ifs
+    · exact hn
+    · exact max_le (hℓ u) hn
+    · exact hℓ u
+  have ifU : ∀ (i : Fin 6) {p q m}, U p m → U q m → U (ifBlank i p q) (m + 1) := fun i p q m hp hq ℓ hℓ => by
+    have a := hp ℓ hℓ; have b := hq ℓ hℓ
+    refine ⟨?_, fun t => max_le (a.2 t) (b.2 t)⟩
+    show max _ _ + 1 ≤ _; rw [Nat.add_mul, Nat.one_mul]; have := max_le a.1 b.1; omega
+  have monoU : ∀ {p m m'}, U p m → m ≤ m' → U p m' := fun hp hm ℓ hℓ =>
+    ⟨(hp ℓ hℓ).1.trans (Nat.mul_le_mul_right _ hm), (hp ℓ hℓ).2⟩
+  have hB : U (dropT 2 0 4 ⨾ ifBlank 2 (setB 1 true) (setB 1 false)) (3 * S + 3 + 3) :=
+    seqU (dropU 2 0 4 (by decide) (by decide)) (ifU 2 (setU 1 true) (setU 1 false))
+  have h := seqU natUU (seqU (primU (.copy 3 0) rfl) (seqU (dropU 3 2 4 (by decide) (by decide))
+    (seqU (ifU 3 hB (monoU (setU 1 false) (by omega)))
+      (seqU (primU (.clear 2) rfl) (primU (.clear 3) rfl)))))
+  exact monoU h (by omega) ℓ hS
+
+/-- **The size of the length test**: logarithmic in `n`. -/
+theorem size_lenEqP (n : ℕ) : size (lenEqP n) ≤ 500 * Nat.log2 n + 2000 := by
+  have h1 := size_natU (2 : Fin 6) 4 5 n
+  have hd : ∀ t x a : Fin 6, size (dropT t x a) ≤ 200 := fun t x a => by
+    have := size_prim_le' (.copy a x); have := size_prim_le' (.tail t)
+    show size (prim _) + (size (prim _) + 39) ≤ _; omega
+  have hs : ∀ (f : Fin 6) (b : Bool), size (setB f b) ≤ 120 := fun f b => by
+    have := size_prim_le' (.clear f); have := size_prim_le' (.snoc f b)
+    show size (prim _) + size (prim _) ≤ _; omega
+  have := hd 3 2 4; have := hd 2 0 4; have := hs 1 true; have := hs 1 false
+  have : size (cp (3 : Fin 6) 0) ≤ 60 := size_prim_le' _
+  have : size (clr (2 : Fin 6)) ≤ 60 := size_prim_le' _
+  have : size (clr (3 : Fin 6)) ≤ 60 := size_prim_le' _
+  have e2 : size (ifBlank (3 : Fin 6) (dropT 2 0 4 ⨾ ifBlank 2 (setB 1 true) (setB 1 false))
+      (setB 1 false)) = size (dropT (2 : Fin 6) 0 4) + (size (setB (1 : Fin 6) true) +
+        size (setB (1 : Fin 6) false) + 1) + size (setB (1 : Fin 6) false) + 1 := rfl
+  show size (natU 2 4 5 n) + (size (cp 3 0) + (size (dropT 3 2 4) + (size (ifBlank 3
+    (dropT 2 0 4 ⨾ ifBlank 2 (setB 1 true) (setB 1 false)) (setB 1 false)) +
+      (size (clr 2) + size (clr 3))))) ≤ _
+  omega
 
 end Prog
 

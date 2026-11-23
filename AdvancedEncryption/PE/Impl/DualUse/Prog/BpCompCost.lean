@@ -8,9 +8,17 @@ import SigabaNeo.Lib.Machines.Prog.AppendWCost
 Per-tape bounds of `bpCompP` (`Prog.timeBoundT`, `Prog.lenBoundT`). Every tape but the output stays
 small (`S0 = 128` bits) or below the input bound `L` (`IN`, `CUR`, `TT`); the output grows. A piece
 of code satisfies `TB M L p n g` when, from bounds at most `bnd L a` (output `a`), it takes at most
-`n` units `Uc M L = 2 (M + L + S0) + 5` (a sweep of every tape) and ends below `bnd L (a + g)`, as
-long as `a + g ≤ M`. These compose (`TB.seq`), loops multiply (`tb_loop`), and the tree code gets
-`nT m` units and growth `gT m` by induction (`tb_treeP`).
+`n` units `Uc M L` (a sweep of every tape) and ends below `bnd L (a + g)`, as long as `a + g ≤ M`.
+These compose (`TB.seq`), loops multiply (`tb_loop_core`), and the tree code gets `nT m` units and
+growth `gT m` by induction (`tb_treeP`).
+
+* **`bounds_bpCompC`**: on inputs of at most `481 · 2^40` bits, at most `2^126` steps and every tape
+  at most `2^62` bits (`allN_Uc_le`, `allG_le` by `decide +kernel` on numerals); generic in the input
+  bound: `bounds_bpCompP`. **`size_bpCompC`**: at most `2^27` states.
+* The authorization program: bounds `βA S` (small tapes exactly, `U`, `TB` at `2^45`, the rest at
+  `S`), cost triples `TA`, the doubling of the offset along a family of bounds (`offBody_bounds`,
+  `ta_dbl`); **`bounds_authBPC`**: on predicate words of at most `2^49` bits, at most `2^108` steps,
+  every tape at most `2^49` bits (generic: `bounds_authBP`); **`size_authBPC`**: at most `2^17`.
 -/
 
 namespace AdvancedEncryption.DualUse.BpComp
@@ -815,7 +823,7 @@ theorem size_bpCompC : size bpCompC ≤ 2 ^ 27 := by
 /-- The bounds of its tapes: the small ones exactly, `U` at `2^45`, the rest at `S`. -/
 def βA (S : ℕ) : Fin 16 → ℕ := fun t =>
   if t = tZB ∨ t = tE then 32 else if t = tK ∨ t = tKC then 40 else if t = tS2 then 15 else
-    if t = tU then 2 ^ 45 else S
+    if t = tU ∨ t = tTB then 2 ^ 45 else S
 
 /-- A cost triple of the authorization program: from `βA S` to `βA S` in `n` sweeps. -/
 def TA (S : ℕ) (p : Prog 16) (n : ℕ) : Prop :=
@@ -858,7 +866,8 @@ theorem ta_prim (hS : 2 ^ 49 ≤ S) (q : Prim 16) (h : q.lenT (βA S) ≤ βA S)
 
 /-- Check a primitive keeps the bounds. -/
 macro "βA_tac" : tactic =>
-  `(tactic| (intro t; simp +decide only [Prim.lenT, βA, Function.update_apply]; split_ifs <;> omega))
+  `(tactic| (intro t; simp only [Prim.lenT, Function.update_apply]; split_ifs <;> subst_vars <;>
+    first | exact le_rfl | exact Nat.zero_le _ | (simp +decide [βA]; omega) | simp +decide [βA]))
 
 theorem ta_loop (hS : 2 ^ 49 ≤ S) (c : Fin 16) {body : Prog 16} {n : ℕ} (hb : TA S body n) :
     TA S (loop c body) (βA S c * (n + 2) + 1) := fun ℓ hℓ => by
@@ -1011,5 +1020,338 @@ theorem offBody_bounds (hS : 2 ^ 49 ≤ S) (j : ℕ) (hj : j < 40) (ℓ0 : Fin 1
         · exact Nat.zero_le _
         · have := hℓa t
           simp only [γU, Function.update_apply, h1, ↓reduceIte] at this ⊢; exact this
+
+/-- **The doubling loop** of `offP`. -/
+theorem ta_dbl (hS : 2 ^ 49 ≤ S) :
+    TA S (clr tU ⨾ forN tKC tK (pp tK tBit ⨾ appT tU tU tA2 tB2 ⨾
+      ifBit tBit (appT tU tE tA2 tB2) (nop tU) ⨾ clr tBit)) (40 * (4 * 2 ^ 45 + 152) + 45) :=
+  fun ℓ hℓ => by
+  let ℓ1 : Fin 16 → ℕ := Function.update ℓ tU 0
+  let ℓ2 : Fin 16 → ℕ := Function.update ℓ1 tKC (ℓ1 tK)
+  have hK : ℓ tK ≤ 40 := by have := hℓ tK; simpa +decide [βA] using this
+  have h2 : ℓ2 ≤ γU S 0 := fun t => by
+    have := hℓ t
+    simp only [ℓ2, ℓ1, γU, Function.update_apply]
+    split_ifs with h1 h2 <;> subst_vars <;> simp_all +decide [βA]
+  have hl := loop_family tKC _ (γU S) 40 ((4 * 2 ^ 45 + 150) * (2 * S + 5) + (2 * S + 3)) ℓ2 h2
+    (by simp only [ℓ2, ℓ1, Function.update_self]; simp +decide; omega)
+    (fun j hj => (offBody_bounds hS j hj _ (tailB_le _ _)).2)
+    (fun j hj => by
+      have := (offBody_bounds hS j hj _ (tailB_le tKC (γU S j))).1
+      have := supB_le_of fun t => (γU_le (S := S) (j := j) (by omega) t).trans (βA_le hS t)
+      omega)
+    (fun j hj t => by
+      have h1 : 2 ^ j ≤ 2 ^ 40 := Nat.pow_le_pow_right (by norm_num) hj
+      simp only [γU, Function.update_apply]; split_ifs <;> omega)
+  have hS0 : ∀ {ℓ' : Fin 16 → ℕ}, ℓ' ≤ βA S → 2 * (supB ℓ' + 0) + 3 ≤ 2 * S + 5 := fun h => by
+    have := supB_βA hS h; omega
+  have h1le : ℓ1 ≤ βA S := fun t => by
+    have := hℓ t; simp only [ℓ1, Function.update_apply]; split_ifs <;> omega
+  refine ⟨?_, ?_⟩
+  · show timeBoundT (prim (.clear tU)) ℓ + (timeBoundT (prim (.copy tKC tK)) ℓ1 +
+      timeBoundT (loop tKC _) ℓ2) ≤ _
+    have t1 : timeBoundT (prim (.clear tU)) ℓ ≤ 2 * S + 5 := hS0 hℓ
+    have t2 : timeBoundT (prim (.copy tKC tK)) ℓ1 ≤ 2 * S + 5 := hS0 h1le
+    have t3 := hl.1
+    have e : (40 * (4 * 2 ^ 45 + 152) + 45) * (2 * S + 5) =
+      40 * ((4 * 2 ^ 45 + 150) * (2 * S + 5)) + 125 * (2 * S + 5) := by ring
+    omega
+  · show lenBoundT (loop tKC _) ℓ2 ≤ _
+    exact hl.2.trans fun t => γU_le le_rfl t
+
+theorem ta_offP (hS : 2 ^ 49 ≤ S) : TA S offP (1 + (3 * 8 + 1 + (40 * (4 * 2 ^ 45 + 152) + 45))) :=
+  fun ℓ hℓ => by
+  let ℓ1 : Fin 16 → ℕ := Function.update ℓ tK (ℓ tZB)
+  have hZ : ℓ tZB ≤ 32 := by have := hℓ tZB; simpa +decide [βA] using this
+  have h1 : ℓ1 ≤ βA S := fun t => by
+    have := hℓ t; simp only [ℓ1, Function.update_apply]; split_ifs with h
+    · subst h; simp +decide [βA]; omega
+    · exact this
+  have hm := ta_mv hS (src := tX) (dst := tK) (t := tBit) (z := tK) (by decide) (by decide)
+    (by decide) 8 (by simp +decide [βA]) (ta_dbl hS) ℓ1 h1
+    (by simp only [ℓ1, Function.update_self]; simp +decide [βA]; omega)
+  have t0 : timeBoundT (prim (.copy tK tZB)) ℓ ≤ 2 * S + 5 := by
+    show 2 * (supB ℓ + 0) + 3 ≤ _; have := supB_βA hS hℓ; omega
+  refine ⟨?_, hm.2⟩
+  show timeBoundT (prim (.copy tK tZB)) ℓ + timeBoundT _ ℓ1 ≤ _
+  nlinarith [hm.1]
+
+/-- A constant word on a tape after clearing it. -/
+theorem ta_setN (hS : 2 ^ 49 ≤ S) {c : Fin 16} (b : Bool) {n : ℕ} (hn : n ≤ βA S c)
+    {rest : Prog 16} {m : ℕ} (hr : TA S rest m) : TA S (clr c ⨾ snocN c b n ⨾ rest) (1 + (n + 1 + m)) :=
+  fun ℓ hℓ => by
+  let ℓ1 : Fin 16 → ℕ := Function.update ℓ c 0
+  have hS1 : ∀ t, ℓ1 t ≤ S := fun t => by
+    simp only [ℓ1, Function.update_apply]; split_ifs
+    · exact Nat.zero_le _
+    · exact (hℓ t).trans (βA_le hS t)
+  have hsn := snocN_bounds c b n ℓ1 hS1 (by simp [ℓ1]; exact hn.trans (βA_le hS c))
+  have hle : Function.update ℓ1 c (ℓ1 c + n) ≤ βA S := fun t => by
+    simp only [ℓ1, Function.update_apply]; split_ifs with h
+    · subst h; simp; exact hn
+    · exact hℓ t
+  have hr' := hr _ hle
+  refine ⟨?_, ?_⟩
+  · show timeBoundT (prim (.clear c)) ℓ + (timeBoundT (snocN c b n) ℓ1 +
+      timeBoundT rest (lenBoundT (snocN c b n) ℓ1)) ≤ _
+    rw [hsn.2]
+    have : timeBoundT (prim (.clear c)) ℓ ≤ 2 * S + 5 := by
+      show 2 * (supB ℓ + 0) + 3 ≤ _; have := supB_βA hS hℓ; omega
+    nlinarith [hsn.1, hr'.1]
+  · show lenBoundT rest (lenBoundT (snocN c b n) ℓ1) ≤ _
+    rw [hsn.2]; exact hr'.2
+
+/-- Writing one bit on a tape. -/
+theorem ta_setB (hS : 2 ^ 49 ≤ S) {c : Fin 16} (b : Bool) (hc : 1 ≤ βA S c) : TA S (setB c b) 2 :=
+  fun ℓ hℓ => by
+  let ℓ1 : Fin 16 → ℕ := Function.update ℓ c 0
+  have h1 : ℓ1 ≤ βA S := fun t => by
+    simp only [ℓ1, Function.update_apply]; split_ifs
+    · exact Nat.zero_le _
+    · exact hℓ t
+  have h2 : Prim.lenT (.snoc c b) ℓ1 ≤ βA S := fun t => by
+    simp only [ℓ1, Prim.lenT, Function.update_apply]; split_ifs with h
+    · subst h; simp; exact hc
+    · exact hℓ t
+  refine ⟨?_, h2⟩
+  show 2 * (supB ℓ + 0) + 3 + (2 * (supB ℓ1 + 1) + 3) ≤ _
+  have := supB_βA hS hℓ; have := supB_βA hS h1; omega
+
+/-- Clear a tape and write one bit, then the rest. -/
+theorem ta_clrSnoc (hS : 2 ^ 49 ≤ S) {c : Fin 16} (b : Bool) (hc : 1 ≤ βA S c) {rest : Prog 16}
+    {m : ℕ} (hr : TA S rest m) : TA S (clr c ⨾ prim (.snoc c b) ⨾ rest) (2 + m) := fun ℓ hℓ => by
+  have h := (ta_setB hS b hc) ℓ hℓ
+  have h2 := hr _ h.2
+  refine ⟨?_, h2.2⟩
+  show timeBoundT (prim (.clear c)) ℓ + (timeBoundT (prim (.snoc c b)) (lenBoundT (prim (.clear c)) ℓ) +
+    timeBoundT rest (lenBoundT (prim (.snoc c b)) (lenBoundT (prim (.clear c)) ℓ))) ≤ _
+  have h1 : timeBoundT (prim (.clear c)) ℓ + timeBoundT (prim (.snoc c b))
+      (lenBoundT (prim (.clear c)) ℓ) ≤ 2 * (2 * S + 5) := h.1
+  have h3 : timeBoundT rest (lenBoundT (prim (.snoc c b)) (lenBoundT (prim (.clear c)) ℓ)) ≤
+      m * (2 * S + 5) := h2.1
+  nlinarith
+
+theorem ta_mv32 (hS : 2 ^ 49 ≤ S) {rest : Prog 16} {m : ℕ} (hr : TA S rest m) :
+    TA S (clr tZB ⨾ iter tT2 (pp tT2 tBit ⨾ prim (.snocHead tZB tBit) ⨾ clr tBit) 32 ⨾ rest)
+      (1 + (3 * 32 + 1 + m)) := fun ℓ hℓ => by
+  let ℓ1 : Fin 16 → ℕ := Function.update ℓ tZB 0
+  have h1 : ℓ1 ≤ βA S := fun t => by
+    simp only [ℓ1, Function.update_apply]; split_ifs
+    · exact Nat.zero_le _
+    · exact hℓ t
+  have hm := ta_mv hS (src := tT2) (dst := tZB) (t := tBit) (z := tT2) (by decide) (by decide)
+    (by decide) 32 (by simp +decide [βA]) hr ℓ1 h1 (by simp +decide [ℓ1, βA])
+  refine ⟨?_, hm.2⟩
+  show timeBoundT (prim (.clear tZB)) ℓ + timeBoundT _ ℓ1 ≤ _
+  have : timeBoundT (prim (.clear tZB)) ℓ ≤ 2 * S + 5 := by
+    show 2 * (supB ℓ + 0) + 3 ≤ _; have := supB_βA hS hℓ; omega
+  nlinarith [hm.1]
+
+/-- Units of the offset computation. -/
+abbrev offN : ℕ := 1 + (3 * 8 + 1 + (40 * (4 * 2 ^ 45 + 152) + 45))
+
+/-- Units of a step of the authorization program. -/
+abbrev stepAN : ℕ := offN + (1 + ((3 * 2 ^ 45 + 3) + (1 + (3 * 32 + 1 + (1 + ((3 * 2 ^ 45 + 3) + 1))))))
+
+theorem ta_stepA (hS : 2 ^ 49 ≤ S) : TA S stepA stepAN := by
+  have hU : βA S tU = 2 ^ 45 := by simp +decide [βA]
+  have hTB : βA S tTB = 2 ^ 45 := by simp +decide [βA]
+  have := (ta_offP hS).seq <| (ta_prim hS (.copy tT2 tCU) (by βA_tac)).seq <|
+    ((ta_dropT hS (t := tT2) (x := tU) (by decide) (by decide)).seq <| ta_mv32 hS <|
+      (ta_prim hS (.clear tT2) (by βA_tac)).seq <|
+      (ta_dropT hS (t := tCU) (x := tTB) (by decide) (by decide)).seq
+        (ta_prim hS (.clear tU) (by βA_tac)))
+  rw [hU, hTB] at this
+  exact this
+
+theorem ta_initA (hS : 2 ^ 49 ≤ S) :
+    TA S initA ((12 * tblW + 100) + ((12 * 32 + 100) + (1 + (1 + (32 + 1 + (12 * 15 + 100)))))) :=
+  (ta_natU hS (o := tTB) (by decide) (by decide) (n := tblW) (by simp +decide [βA, tblW])).seq <|
+    (ta_natU hS (o := tE) (by decide) (by decide) (n := 32) (by simp +decide [βA])).seq <|
+    (ta_prim hS (.copy tCU tC) (by βA_tac)).seq <|
+    ta_setN hS false (c := tZB) (n := 32) (by simp +decide [βA])
+      (ta_natU hS (o := tS2) (by decide) (by decide) (n := 15) (by simp +decide [βA]))
+
+theorem ta_lenA (hS : 2 ^ 49 ≤ S) :
+    TA S (Prog.map uL (lenEqP bpLenA)) ((12 * bpLenA + 100) + (1 + ((3 * S + 3) +
+      (((3 * S + 3) + (2 + 1) + 1) + (1 + 1))))) := by
+  have hLT : βA S tLT = S := by simp +decide [βA]
+  have hbp : bpLenA ≤ βA S tLT := by rw [hLT]; simp only [bpLenA]; omega
+  have hC : βA S tC = S := by simp +decide [βA]
+  have h1 : 1 ≤ βA S tF := by simp +decide [βA]; omega
+  have hB : TA S (dropT tLT tC tA2 ⨾ ifBlank tLT (setB tF true) (setB tF false)) ((3 * S + 3) + (2 + 1)) := by
+    have := (ta_dropT hS (t := tLT) (x := tC) (by decide) (by decide)).seq
+      (TA.ifBlank (i := tLT) (ta_setB hS true h1) (ta_setB hS false h1))
+    rwa [hC] at this
+  have h := (ta_natU hS (o := tLT) (by decide) (by decide) hbp).seq <|
+    (ta_prim hS (.copy tT2 tC) (by βA_tac)).seq <|
+    ((ta_dropT hS (t := tT2) (x := tLT) (by decide) (by decide)).seq <|
+      (TA.ifBlank (i := tT2) hB ((ta_setB hS false h1).mono (by omega))).seq <|
+      (ta_prim hS (.clear tLT) (by βA_tac)).seq (ta_prim hS (.clear tT2) (by βA_tac)))
+  rw [hLT] at h
+  rw [map_lenEqP]
+  exact h
+
+theorem ta_lastA (hS : 2 ^ 49 ≤ S) :
+    TA S lastA (2 + (offN + (1 + ((3 * 2 ^ 45 + 3) + 1)))) := by
+  have hU : βA S tU = 2 ^ 45 := by simp +decide [βA]
+  have := ta_clrSnoc hS true (c := tE) (by simp +decide [βA]) <|
+    (ta_offP hS).seq <| (ta_prim hS (.copy tT2 tCU) (by βA_tac)).seq <|
+      (ta_dropT hS (t := tT2) (x := tU) (by decide) (by decide)).seq
+        (ta_prim hS (.pop tT2 tBit) (by βA_tac))
+  rw [hU] at this
+  exact this
+
+theorem ta_outA (hS : 2 ^ 49 ≤ S) : TA S outA' (1 + (2 + 1 + 1)) := by
+  have h1 : 1 ≤ βA S tC := by simp +decide [βA]; omega
+  exact (ta_prim hS (.clear tC) (by βA_tac)).seq
+    (TA.ifBit (TA.ifBit (ta_setB hS false h1) (ta_setB hS true h1)) ((ta_setB hS false h1).mono (by omega)))
+
+theorem ta_clrA (hS : 2 ^ 49 ≤ S) : TA S clrA 10 := by
+  have := (ta_prim hS (.clear tX) (by βA_tac)).seq <| (ta_prim hS (.clear tCU) (by βA_tac)).seq <|
+    (ta_prim hS (.clear tZB) (by βA_tac)).seq <| (ta_prim hS (.clear tK) (by βA_tac)).seq <|
+    (ta_prim hS (.clear tU) (by βA_tac)).seq <| (ta_prim hS (.clear tE) (by βA_tac)).seq <|
+    (ta_prim hS (.clear tT2) (by βA_tac)).seq <| (ta_prim hS (.clear tTB) (by βA_tac)).seq <|
+    (ta_prim hS (.clear tBit) (by βA_tac)).seq (ta_prim hS (.clear tF) (by βA_tac))
+  exact this
+
+/-- Units of the authorization program for tapes of at most `S` bits. -/
+def authN (S : ℕ) : ℕ :=
+  ((12 * bpLenA + 100) + (1 + ((3 * S + 3) + (((3 * S + 3) + (2 + 1) + 1) + (1 + 1))))) +
+    (((12 * tblW + 100) + ((12 * 32 + 100) + (1 + (1 + (32 + 1 + (12 * 15 + 100)))))) +
+      ((15 * (stepAN + 2) + 1) + ((2 + (offN + (1 + ((3 * 2 ^ 45 + 3) + 1)))) +
+        ((1 + (2 + 1 + 1)) + 10))))
+
+theorem ta_authBP (hS : 2 ^ 49 ≤ S) : TA S authBP (authN S) := by
+  have hS2 : βA S tS2 = 15 := by simp +decide [βA]
+  have hl := ta_loop hS tS2 (ta_stepA hS)
+  rw [hS2] at hl
+  exact (ta_lenA hS).seq <| (ta_initA hS).seq <| hl.seq <| (ta_lastA hS).seq <|
+    (ta_outA hS).seq (ta_clrA hS)
+
+/-- The bounds of the input store: `L` bits on tape `0`, `128` on tape `1`. -/
+def inBA (L : ℕ) : Fin 16 → ℕ := Function.update (Function.update (fun _ => 0) tC L) tX 128
+
+/-- **The bounds of the authorization program** for predicate words of at most `L ≤ S` bits. -/
+theorem bounds_authBP (hS : 2 ^ 49 ≤ S) {L : ℕ} (hL : L ≤ S) :
+    timeBoundT authBP (inBA L) ≤ authN S * (2 * S + 5) ∧ ∀ t, lenBoundT authBP (inBA L) t ≤ S := by
+  have h := ta_authBP hS (inBA L) fun t => by
+    simp only [inBA, Function.update_apply]
+    split_ifs with h1 h2
+    · subst h1; simp +decide [βA]; omega
+    · subst h2; simp +decide [βA]; omega
+    · exact Nat.zero_le _
+  exact ⟨h.1, fun t => (h.2 t).trans (βA_le hS t)⟩
+
+theorem authN_le : authN (2 ^ 49) * (2 * 2 ^ 49 + 5) ≤ 2 ^ 108 := by decide +kernel
+
+/-- **The authorization program** `authBPC` on predicate words of at most `2^49` bits (the class
+has `481 · 2^40`): at most `2^108` steps, every tape at most `2^49` bits. -/
+theorem bounds_authBPC {L : ℕ} (hL : L ≤ 2 ^ 49) :
+    timeBoundT authBPC (inBA L) ≤ 2 ^ 108 ∧ ∀ t, lenBoundT authBPC (inBA L) t ≤ 2 ^ 49 := by
+  obtain ⟨h1, h2⟩ := bounds_authBP (S := 2 ^ 49) le_rfl hL
+  exact ⟨h1.trans authN_le, h2⟩
+
+/-! ### The size of the authorization program -/
+
+theorem size_prim16 (q : Prim 16) : size (prim q) ≤ 60 := size_prim_le' q
+
+theorem size_iter16 (z : Fin 16) (p : Prog 16) : ∀ n, size (iter z p n) ≤ n * size p + 60
+  | 0 => by show size (prim (.copy z z)) ≤ _; have := size_prim16 (.copy z z); omega
+  | n + 1 => by
+    have := size_iter16 z p n
+    show size p + size (iter z p n) ≤ _; rw [Nat.succ_mul]; omega
+
+theorem size_snocN16 (o : Fin 16) (b : Bool) : ∀ n, size (snocN o b n) ≤ 60 * n + 60
+  | 0 => size_prim16 _
+  | n + 1 => by
+    have := size_snocN16 o b n; have := size_prim16 (.snoc o b)
+    show size (snocN o b n) + size (prim (.snoc o b)) ≤ _; omega
+
+theorem log2_lt_of {n k : ℕ} (h : n < 2 ^ k) : Nat.log2 n ≤ k := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  · exact ((Nat.log2_lt (by omega)).mpr h).le
+
+theorem size_offP : size offP ≤ 3000 := by
+  have hmv : size (pp tX tBit ⨾ prim (.snocHead tK tBit) ⨾ clr tBit) ≤ 180 := by
+    have : size (pp tX tBit) ≤ 60 := size_prim16 _
+    have : size (prim (.snocHead tK tBit)) ≤ 60 := size_prim16 _
+    have : size (clr tBit) ≤ 60 := size_prim16 _
+    show size _ + (size _ + size _) ≤ _; omega
+  have hi := size_iter16 tK (pp tX tBit ⨾ prim (.snocHead tK tBit) ⨾ clr tBit) 8
+  have a1 := size_appT_le tU tU tA2 tB2; have a2 := size_appT_le tU tE tA2 tB2
+  have : size (cp tK tZB) ≤ 60 := size_prim16 _
+  have : size (clr tU) ≤ 60 := size_prim16 _
+  have : size (cp tKC tK) ≤ 60 := size_prim16 _
+  have : size (pp tK tBit) ≤ 60 := size_prim16 _
+  have : size (nop tU) ≤ 60 := size_prim16 _
+  have : size (clr tBit) ≤ 60 := size_prim16 _
+  show size (cp tK tZB) + (size (iter tK (pp tX tBit ⨾ prim (.snocHead tK tBit) ⨾ clr tBit) 8) +
+    (size (clr tU) + (size (cp tKC tK) + (size (pp tK tBit) + (size (appT tU tU tA2 tB2) +
+      ((size (appT tU tE tA2 tB2) + size (nop tU) + 1) + size (clr tBit))) + 39)))) ≤ _
+  omega
+
+theorem size_dropT16 (t x a : Fin 16) : size (dropT t x a) ≤ 200 := by
+  have := size_prim16 (.copy a x); have := size_prim16 (.tail t)
+  show size (prim _) + (size (prim _) + 39) ≤ _; omega
+
+theorem size_stepA : size stepA ≤ 10000 := by
+  have := size_offP
+  have hmv : size (pp tT2 tBit ⨾ prim (.snocHead tZB tBit) ⨾ clr tBit) ≤ 180 := by
+    have : size (pp tT2 tBit) ≤ 60 := size_prim16 _
+    have : size (prim (.snocHead tZB tBit)) ≤ 60 := size_prim16 _
+    have : size (clr tBit) ≤ 60 := size_prim16 _
+    show size _ + (size _ + size _) ≤ _; omega
+  have hi := size_iter16 tT2 (pp tT2 tBit ⨾ prim (.snocHead tZB tBit) ⨾ clr tBit) 32
+  have := size_dropT16 tT2 tU tA2; have := size_dropT16 tCU tTB tA2
+  have : size (cp tT2 tCU) ≤ 60 := size_prim16 _
+  have : size (clr tZB) ≤ 60 := size_prim16 _
+  have : size (clr tT2) ≤ 60 := size_prim16 _
+  have : size (clr tU) ≤ 60 := size_prim16 _
+  show size offP + (size (cp tT2 tCU) + (size (dropT tT2 tU tA2) + (size (clr tZB) +
+    (size (iter tT2 (pp tT2 tBit ⨾ prim (.snocHead tZB tBit) ⨾ clr tBit) 32) + (size (clr tT2) +
+      (size (dropT tCU tTB tA2) + size (clr tU))))))) ≤ _
+  omega
+
+/-- **The size of the authorization program**: at most `2^17` states. -/
+theorem size_authBPC : size authBPC ≤ 2 ^ 17 := by
+  have hl : size (Prog.map uL (lenEqP bpLenA)) ≤ 500 * 49 + 2000 := by
+    rw [size_map]
+    have := size_lenEqP bpLenA
+    have : Nat.log2 bpLenA ≤ 49 := log2_lt_of (by simp only [bpLenA]; norm_num)
+    omega
+  have hTB : Nat.log2 tblW ≤ 46 := log2_lt_of (by simp only [tblW]; norm_num)
+  have h1 := size_natU tTB tA2 tB2 tblW; have h2 := size_natU tE tA2 tB2 32
+  have h3 := size_natU tS2 tA2 tB2 15
+  have h32 : Nat.log2 32 ≤ 6 := log2_lt_of (by norm_num)
+  have h15 : Nat.log2 15 ≤ 4 := log2_lt_of (by norm_num)
+  have hz := size_snocN16 tZB false 32
+  have hs := size_stepA; have ho := size_offP
+  have hd := size_dropT16 tT2 tU tA2
+  have hsB : ∀ b, size (setB tC b) ≤ 120 := fun b => by
+    have := size_prim16 (.clear tC); have := size_prim16 (.snoc tC b)
+    show size (prim _) + size (prim _) ≤ _; omega
+  have := hsB true; have := hsB false
+  have : size (cp tCU tC) ≤ 60 := size_prim16 _
+  have : size (clr tZB) ≤ 60 := size_prim16 _
+  have : size (clr tE) ≤ 60 := size_prim16 _
+  have : size (prim (.snoc tE true)) ≤ 60 := size_prim16 _
+  have : size (cp tT2 tCU) ≤ 60 := size_prim16 _
+  have : size (pp tT2 tBit) ≤ 60 := size_prim16 _
+  have : size (clr tC) ≤ 60 := size_prim16 _
+  have hc : size clrA ≤ 600 := by
+    have hcl : ∀ t : Fin 16, size (clr t) ≤ 60 := fun t => size_prim16 _
+    have := hcl tX; have := hcl tCU; have := hcl tZB; have := hcl tK; have := hcl tU
+    have := hcl tE; have := hcl tT2; have := hcl tTB; have := hcl tBit; have := hcl tF
+    show size (clr tX) + (size (clr tCU) + (size (clr tZB) + (size (clr tK) + (size (clr tU) +
+      (size (clr tE) + (size (clr tT2) + (size (clr tTB) + (size (clr tBit) + size (clr tF))))))))) ≤ _
+    omega
+  have g1 : ∀ p q : Prog 16, size (p ⨾ q) = size p + size q := fun _ _ => rfl
+  have g2 : ∀ (c : Fin 16) (p : Prog 16), size (loop c p) = size p + 39 := fun _ _ => rfl
+  have g3 : ∀ (c : Fin 16) (p q : Prog 16), size (ifBit c p q) = size p + size q + 1 :=
+    fun _ _ _ => rfl
+  simp only [authBPC, authBP, initA, lastA, outA', g1, g2, g3]
+  omega
 
 end AdvancedEncryption.DualUse.BpComp
