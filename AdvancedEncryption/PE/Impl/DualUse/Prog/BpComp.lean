@@ -295,8 +295,9 @@ def lastP : Prog 64 :=
 
 /-- **The compiler**: input `C` on tape `0`, output `compW R C` on tape `0`. -/
 def bpCompP : Prog 64 :=
-  gProP R ⨾ cp tCUR tIN ⨾ clr tIN ⨾ snocN tIZ false 120 ⨾ snocN tPZ false 32 ⨾
-    snocN tQB true 32 ⨾ snocN tT31 true 31 ⨾ snocN tT120 true 120 ⨾ clr tSC ⨾ snocN tSC true 15 ⨾
+  gProP R ⨾ cp tCUR tIN ⨾ clr tIN ⨾ clr tIZ ⨾ snocN tIZ false 120 ⨾ clr tPZ ⨾ snocN tPZ false 32 ⨾
+    clr tQB ⨾ snocN tQB true 32 ⨾ clr tT31 ⨾ snocN tT31 true 31 ⨾ clr tT120 ⨾
+    snocN tT120 true 120 ⨾ clr tSC ⨾ snocN tSC true 15 ⨾
     loop tSC (stepP R) ⨾ lastP R ⨾
     cp tIN tO ⨾ clr tO ⨾ clr tCUR ⨾ clr tIB ⨾ clr tIZ ⨾ clr tPB ⨾ clr tPZ ⨾ clr tQB ⨾ clr tQZ ⨾
     clr tT31 ⨾ clr tT120

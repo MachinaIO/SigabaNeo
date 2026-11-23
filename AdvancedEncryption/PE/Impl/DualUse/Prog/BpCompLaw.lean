@@ -955,9 +955,12 @@ theorem good_bpCompP (R : RL) : (bpCompP R).CoinFree ∧ (bpCompP R).WF := by
   have h : GoodS (fun _ => True) (bpCompP R) := by
     refine (GoodS.mono ⟨hG.1, hG.2.1, hG.2.2⟩ fun _ _ => trivial).seq ?_
     refine (GoodS.prim _ (by simp)).seq <| (GoodS.prim _ (by simp)).seq <|
-      (goodS_snocN trivial _ _).seq <| (goodS_snocN trivial _ _).seq <|
-      (goodS_snocN trivial _ _).seq <| (goodS_snocN trivial _ _).seq <|
-      (goodS_snocN trivial _ _).seq <| (GoodS.prim _ (by simp)).seq <|
+      (GoodS.prim _ (by simp)).seq <| (goodS_snocN trivial _ _).seq <|
+      (GoodS.prim _ (by simp)).seq <| (goodS_snocN trivial _ _).seq <|
+      (GoodS.prim _ (by simp)).seq <| (goodS_snocN trivial _ _).seq <|
+      (GoodS.prim _ (by simp)).seq <| (goodS_snocN trivial _ _).seq <|
+      (GoodS.prim _ (by simp)).seq <| (goodS_snocN trivial _ _).seq <|
+      (GoodS.prim _ (by simp)).seq <|
       (goodS_snocN trivial _ _).seq <|
       ((goodS_stepP R).loop (by simp [SS]) _ (fun _ _ => trivial) trivial).seq <| hL.seq ?_
     repeat (first | exact GoodS.prim _ (by simp) | refine (GoodS.prim _ (by simp)).seq ?_)
