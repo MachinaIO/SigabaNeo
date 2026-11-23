@@ -2139,6 +2139,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Independent retries amplify as 1−(1−p(X))^R, but symmetries give no per-input lower bound on p(X).
   * Protected-span membership is equivalent to guaranteed retention; otherwise survival is < 1/p per step. An equal-index
     up/down pair that retains every original vector returns the original lattice.
+* **Part 234 (audited, CONFIRMED; negative).** [directional_potential](research/wall1_directional_potential.md):
+  directional (tensor) potentials for the void.
+  * Two rank-505 marked lattices have identical nearest vectors for every label and the same winner, yet voids of
+    exactly 600/3329 and 598/3329. Only labels ±1365 change, through projection of non-nearest representatives. Both lie
+    below the reachable scale floor.
+  * The two-mark bijection gives branch expectation h_uᵀT_S h_u. A reachable all-zero draw-129 prefix (probability
+    3329⁻⁹³²⁰⁰) captures nothing, so no history-uniform lower bound exists.
+  * Mean capture 1/505 per step gives only 42.136% squared-norm loss over 276 steps, against the > 89.999% a qualifying
+    final witness needs. Potentials that follow individual witnesses cannot reach the 0.18 ceiling; selection among
+    many witnesses must enter.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
