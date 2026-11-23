@@ -2200,6 +2200,19 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Comparison: more than 447 bits below CBD-aware exhaustive search (< 2^1226 for 67.22%).
   * Unconditional, with no heuristics and no reduction-output law. The heuristic width-506 BKZ attack remains open
     (Part 237).
+* **Part 239 (audited, CONFIRMED; partial).** [score_rejection](research/wall1_score_rejection.md): score-rejection
+  frequency and joint acceptance with the lift at width 506.
+  * Two reachable designs:
+    * one where the score test rejects (C > 0.52566) although both radius-26 spacing events are false;
+    * one with C = 0 and a uniquely shortest terminal line, while 407 discarded secret coordinates stay independent of
+      the observation. So terminal success does not make the lift deterministic.
+  * Bounds under the actual marginal restart law:
+    * fresh-coordinate competitors on horizontal wins: mean score < 1.173483·10⁻⁷;
+    * all signed multiples through deficiency 131: < 9.408·10⁻⁹²¹;
+    * translated raw lifts ≤ 250: < 5.467503·10⁻⁹;
+    * a winner of length ≤ 13 in the first 210 draws: < 4.929920·10⁻¹⁸.
+  * Open: a remaining mean-score bound of 5.2408·10⁻⁷ (long raw lifts, higher deficiency); a score-accepted design with a
+    late winner of length ≤ 13 and deficiency ≥ 133; the 0.005 rejection target; 99% recovery.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
