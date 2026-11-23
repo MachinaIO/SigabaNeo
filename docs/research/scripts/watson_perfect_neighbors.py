@@ -40,7 +40,7 @@ def form_value(form, z):
     return int(z.Vec() * form * z)
 
 
-def neighbor(form, minimum, direction):
+def first_contact_step(form, minimum, direction):
     """Find the first new contact on a ray; every vector crossing is short at trial."""
     low, high = Fraction(0), None
     step = Fraction(1)
@@ -56,13 +56,18 @@ def neighbor(form, minimum, direction):
             if crossings:
                 first = min(crossings)
                 assert 0 < first <= step
-                end = first.denominator * form + first.numerator * direction
-                change = pari.qflllgram(end)
-                return primitive(change.mattranspose() * end * change)
+                return first
             low = step
         else:
             high = step
         step = 2 * step if high is None else (low + high) / 2
+
+
+def neighbor(form, minimum, direction):
+    first = first_contact_step(form, minimum, direction)
+    end = first.denominator * form + first.numerator * direction
+    change = pari.qflllgram(end)
+    return primitive(change.mattranspose() * end * change)
 
 
 def ray_orbits(form, short):

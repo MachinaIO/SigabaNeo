@@ -96,14 +96,14 @@ def named_table(name, typ, values, public=False):
     return lines
 
 
-def emit(k, directory, output):
+def emit(k, directory, output, rank_name="Six"):
     data=json.loads((directory/f'support{k}.json').read_text())
     initial, bank, steps=expand(data['clauses'], (directory/f'support{k}.lrat').read_text())
     print(f'form {k}: {len(initial)} input clauses; {len(steps)} resolution steps')
     if output is None:
         return
     def struct(xs): return '⟨'+','.join(map(str,xs))+'⟩'
-    namespace=f'SigabaNeo.Wall1.Watson.HigherGram.Six.Certificate{k}'
+    namespace=f'SigabaNeo.Wall1.Watson.HigherGram.{rank_name}.Certificate{k}'
     length=len(steps)
     inputs=len(initial)
     lines=['import SigabaNeo.Lib.Lattices.Research.Wall1.WatsonMaskResolution','',
@@ -140,7 +140,7 @@ def emit(k, directory, output):
     lines += ['',f'theorem unsat {{m : ℕ}} (b : Fin m → Bool) : ¬ ∀ i : Fin {inputs}, (bank i.val).Sat b := by',
               f'  exact refute b bank {inputs} proof {length} (by simpa using {root}) (by rfl) (by decide)',
               f'end {namespace}','',f'#print axioms {namespace}.unsat','']
-    (output/f'WatsonSixResolution{k}.lean').write_text('\n'.join(lines))
+    (output/f'Watson{rank_name}Resolution{k}.lean').write_text('\n'.join(lines))
 
 
 if __name__=='__main__':

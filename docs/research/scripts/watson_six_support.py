@@ -79,6 +79,12 @@ def group_paths(generators):
 def cone(k):
     minimum, entries = lean_forms()[k]
     form = pari.matrix(6, 6, entries)
+    return cone_of_form(form, minimum)
+
+
+def cone_of_form(form, minimum):
+    n = form.nrows()
+    dim = n*(n+1)//2
     _, check_min, zmat = form.qfminim()
     assert check_min == minimum
     z = [tuple(map(int, v)) for v in zmat]
@@ -88,17 +94,17 @@ def cone(k):
     for g in generators:
         assert g.mattranspose()*form*g == form and abs(int(g.matdet())) == 1
     autos, word = group_paths(permutations)
-    pairs = list(combinations_with_replacement(range(6), 2))
+    pairs = list(combinations_with_replacement(range(n), 2))
     normals = np.array([[v[i]*v[j]*(1 if i == j else 2) for i, j in pairs] for v in z],
                        dtype=np.int64)
-    variables = [ppl.Variable(i) for i in range(21)]
+    variables = [ppl.Variable(i) for i in range(dim)]
     cs = ppl.Constraint_System()
     for v in normals:
         cs.insert(sum(int(a)*x for a,x in zip(v, variables, strict=True)) >= 0)
     rays = sorted(tuple(int(g.coefficient(x)) for x in variables)
                   for g in ppl.C_Polyhedron(cs).minimized_generators() if g.is_ray())
     supports = np.array(rays, dtype=np.int64) @ normals.T > 0
-    assert np.linalg.matrix_rank(normals) == 21
+    assert np.linalg.matrix_rank(normals) == dim
     bits = 1 << np.arange(len(z))
     masks = supports @ bits
     images = {}
@@ -114,9 +120,9 @@ def cone(k):
     assert set(map(int,masks)) == set(images)
     # The first independent contact rows give an exact left inverse.
     m = len(z)
-    N = pari.matrix(m, 21, list(map(int,normals.ravel())))
+    N = pari.matrix(m, dim, list(map(int,normals.ravel())))
     ids = [int(i)-1 for i in N.matindexrank()[0]]
-    basis = pari.matrix(21,21,[int(normals[i,j]) for i in ids for j in range(21)])
+    basis = pari.matrix(dim,dim,[int(normals[i,j]) for i in ids for j in range(dim)])
     inv = basis**-1
     scale = int(inv.denominator())
     tomography = (scale*inv).python()
@@ -126,8 +132,8 @@ def cone(k):
             normals, autos, word, supports, masks, images)
 
 
-def certify(k, cadical, directory):
-    data, normals, autos, word, supports, masks, images = cone(k)
+def certify(k, cadical, directory, cone_data=None):
+    data, normals, autos, word, supports, masks, images = cone(k) if cone_data is None else cone_data
     m = len(normals)
     bits = 1 << np.arange(m)
     clauses = [list(range(1,m+1))]
@@ -194,7 +200,7 @@ def certify(k, cadical, directory):
         bounds = [(0,None)]*m + [(0,0) if b else (0,None) for b in sel]
         cost = np.tile(np.where(sel,1.0,1.001),2)
         ans = linprog(cost, A_eq=np.vstack((both,np.r_[sel.astype(float),np.zeros(m)])),
-                      b_eq=np.r_[np.zeros(21),1],bounds=bounds,method='highs')
+                      b_eq=np.r_[np.zeros(normals.shape[1]),1],bounds=bounds,method='highs')
         assert ans.success
         a = integral_row(ans.x[:m]-ans.x[m:])
         assert all(c>=0 for c,b in zip(a,sel) if b) and any(c>0 and b for c,b in zip(a,sel))

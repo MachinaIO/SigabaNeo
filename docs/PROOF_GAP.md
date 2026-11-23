@@ -2278,10 +2278,20 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   `rank_six` (λ₁¹² ≤ (64/3)·covol² for every rank-6 lattice), `intrinsic_rank_six` and `sharp_six` (γ₆⁶ = 64/3). The
   proof is a symmetry-reduced pivot and tangent-cone certificate over seven representative forms. The Part 192 terminal
   theorem `terminal_bound_of_seven_twentyfour` now depends only on γ₇ and γ₂₄.
-  * Rank 7, partial: the finite residue-code test (d ≤ 10, max|zᵢ| ≤ 11d) and det G ≥ 1/64 for 33 representatives are
-    proved. Still open is `Seven.Coverage`, which says every chart extreme point is a congruence image of a
-    representative. It implies γ₇⁷ = 64 (`Seven.intrinsic_of_coverage`). The external walk did not finish at E₇, whose cone
-    has 79,900,912 facets in 157 orbits.
+* **Lean (γ₇ closed).** `Seven.intrinsic_rank_seven`, `Seven.sharp_seven` and `rank_seven` prove
+  γ₇⁷ = 64 and λ₁¹⁴ ≤ 64·covol² for every rank-seven lattice. The proof bounds the determinant
+  throughout each residue-code chart by comparing a normalized form with the integral orbits of
+  33 representatives. The stronger marked-vertex classification `Seven.Coverage` remains open.
+  * Lean checks 657 positive-step pivot congruences. Contact-coordinate identities certify 17
+    simplicial cones, and proofs about positive contact supports certify the other 16.
+  * At E₇ the certificate uses 63 contact lines and 157 pivot directions. For a nonzero feasible
+    displacement, a symmetry image of one of these directions has positive support contained
+    in the displacement's positive support. Lean checks the geometric reasons for 21,690 clauses
+    and an 81,153-step reverse-unit-propagation refutation to prove this assertion.
+  * The generator uses the published total of 79,900,912 facets to stop its orbit search.
+    Lean checks the resulting witnesses independently. [Jaquet-Chiffelle (1992), §4, p. 278](https://www.numdam.org/article/JTNB_1992__4_2_273_0.pdf).
+    The targeted build is
+    `lake build SigabaNeo.Lib.Lattices.Research.Wall1.WatsonHigherChartBounds`.
 * **Lean (Hermite budget for Part 192).** HermiteSevenTwentyFour (axiom-clean) proves the unconditional caps
   g₇ = (64/3)^{1/5} ≈ 1.84422 (Mordell, from γ₆), g₈ = (64/3)^{7/30}, and g₂₄ = (2/π)(13!)^{1/12} ≈ 4.16937 (Blichfeldt).
   Script: docs/research/scripts/wall1_hermite_budget.py.

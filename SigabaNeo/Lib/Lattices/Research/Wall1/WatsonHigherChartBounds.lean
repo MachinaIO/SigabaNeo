@@ -1,9 +1,8 @@
 import SigabaNeo.Lib.Lattices.Research.Wall1.WatsonCodeBasis
 import SigabaNeo.Lib.Lattices.Research.Wall1.WatsonRankSix
-import SigabaNeo.Lib.Lattices.Research.Wall1.WatsonSevenRepresentatives
+import SigabaNeo.Lib.Lattices.Research.Wall1.WatsonSevenRayCoverage
 
-/-! The rank-six determinant bound in every residue-code polytope, and the remaining
-rank-seven coverage condition with the determinants of its representatives verified. -/
+/-! Sharp rank-six and rank-seven determinant bounds in every residue-code chart. -/
 noncomputable section
 namespace SigabaNeo.Wall1.Watson.HigherGram
 open Matrix ControlledPlane TerminalProjection TerminalProjection.Restart506 DualExit
@@ -53,18 +52,32 @@ theorem chart_bound_of_coverage (h : Coverage) : Bound 7 10 (11 * ·) 64 := by
 theorem intrinsic_of_coverage (h : Coverage) : IntrinsicHermite 7 (flagGamma 7) :=
   intrinsic_seven (chart_bound_of_coverage h)
 
-theorem sharp_seven_of_coverage (h : Coverage) :
+private theorem sharp_seven_of_intrinsic (h : IntrinsicHermite 7 (flagGamma 7)) :
     IsLeast {t : ℝ | ∃ g, IntrinsicHermite 7 g ∧ t = g^7} 64 := by
   have eg : flagGamma 7 ^ 7 = 64 := by
     change Real.exp (Real.log 64 / 7) ^ 7 = (64 : ℝ)
     rw [← Real.exp_nat_mul]
     convert Real.exp_log (by norm_num : (0:ℝ) < 64) using 2
     ring
-  refine ⟨⟨_,intrinsic_of_coverage h,eg.symm⟩,?_⟩
+  refine ⟨⟨_,h,eg.symm⟩,?_⟩
   rintro _ ⟨g,hg,rfl⟩
   have := necessary_hermite 7 (by decide) (by decide) hg
   norm_num at this
   linarith
+
+theorem sharp_seven_of_coverage (h : Coverage) :
+    IsLeast {t : ℝ | ∃ g, IntrinsicHermite 7 g ∧ t = g^7} 64 :=
+  sharp_seven_of_intrinsic (intrinsic_of_coverage h)
+
+/-- The determinant bound holds on every marked rank-seven chart. -/
+theorem chart_bound : Bound 7 10 (11 * ·) 64 := chart_bound_of_rays rayCoverage
+
+theorem intrinsic_rank_seven : IntrinsicHermite 7 (flagGamma 7) :=
+  intrinsic_seven chart_bound
+
+/-- The least seventh power of an intrinsic Hermite bound in dimension seven is 64. -/
+theorem sharp_seven : IsLeast {t : ℝ | ∃ g, IntrinsicHermite 7 g ∧ t = g^7} 64 :=
+  sharp_seven_of_intrinsic intrinsic_rank_seven
 
 end Seven
 end SigabaNeo.Wall1.Watson.HigherGram
@@ -78,6 +91,13 @@ theorem rank_six {L : Submodule ℤ (CoordSpace 6)} [DiscreteTopology L] [IsZLat
     ‖v‖^12 ≤ (64/3) * ZLattice.covolume L^2 := by
   simpa only [← pow_mul] using HigherGram.power_of_bound (by norm_num)
     rank_six_minimal_index HigherGram.six_chart_bound L hv
+
+/-- The squared covolume bounds the fourteenth power of every shortest-vector length. -/
+theorem rank_seven {L : Submodule ℤ (CoordSpace 7)} [DiscreteTopology L] [IsZLattice ℝ L]
+    {v : CoordSpace 7} (hv : DecoupledDecoder.IsShortest L v) :
+    ‖v‖^14 ≤ 64 * ZLattice.covolume L^2 := by
+  simpa only [← pow_mul] using HigherGram.power_of_bound (by norm_num)
+    rank_seven_minimal_index HigherGram.Seven.chart_bound L hv
 
 local instance : Fact (Nat.Prime 3329) := ⟨by norm_num⟩
 
@@ -95,3 +115,7 @@ end SigabaNeo.Wall1.Watson
 #print axioms SigabaNeo.Wall1.Watson.HigherGram.Seven.sharp_seven_of_coverage
 #print axioms SigabaNeo.Wall1.Watson.rank_six
 #print axioms SigabaNeo.Wall1.Watson.terminal_bound_of_seven_coverage_twentyfour
+
+#print axioms SigabaNeo.Wall1.Watson.rank_seven
+#print axioms SigabaNeo.Wall1.Watson.HigherGram.Seven.intrinsic_rank_seven
+#print axioms SigabaNeo.Wall1.Watson.HigherGram.Seven.sharp_seven
