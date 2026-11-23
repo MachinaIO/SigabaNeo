@@ -591,4 +591,222 @@ theorem bounds_bpCompP_conf (R : RL) (hR : R.Ok) (hF : R.Fits) :
   obtain ⟨h1, h2⟩ := bounds_bpCompP R hR hF bpLenA
   exact ⟨h1.trans allN_Uc_le, fun t => (h2 t).trans allG_le⟩
 
+theorem Rbp_fits : Rbp.Fits :=
+  ⟨by decide, by decide, by decide, by decide, by decide, by decide,
+    fun ℓ => ⟨by simp only [rs, Rbp]; omega, by simp only [rs, Rbp]; omega⟩⟩
+
+/-- **The bounds of the compiler** `bpCompC` on inputs of at most `481 · 2^40` bits: at most `2^126`
+steps, every tape at most `2^62` bits. -/
+theorem bounds_bpCompC :
+    timeBoundT bpCompC (inB bpLenA) ≤ 2 ^ 126 ∧ ∀ t, lenBoundT bpCompC (inB bpLenA) t ≤ 2 ^ 62 :=
+  bounds_bpCompP_conf Rbp Rbp_ok Rbp_fits
+
+/-! ### The size (states of the compiled machine) -/
+
+theorem size_prim_le (q : Prim 64) : size (prim q) ≤ 60 := by
+  cases q <;> simp [size, Prim.pad]
+
+theorem size_seq (p q : Prog 64) : size (p ⨾ q) = size p + size q := rfl
+
+theorem size_loop (c : Fin 64) (p : Prog 64) : size (loop c p) = size p + 39 := rfl
+
+theorem size_snocN (o : Fin 64) (b : Bool) : ∀ n, size (snocN o b n) ≤ 60 * n + 60
+  | 0 => size_prim_le _
+  | n + 1 => by
+    have := size_snocN o b n; have := size_prim_le (.snoc o b)
+    show size (snocN o b n) + size (prim (.snoc o b)) ≤ _; omega
+
+/-- A bound on the size of every emitter. -/
+abbrev SE : ℕ := 33000
+
+theorem size_emitU {j : ℕ} (hj : j ≤ 512) : size (emitU tO 512 j) ≤ SE := by
+  have h1 := size_snocN tO true j; have h2 := size_snocN tO false (512 - j)
+  show size (snocN tO true j) + size (snocN tO false (512 - j)) ≤ _
+  have : SE = 33000 := rfl; omega
+
+theorem size_appT (o x a b : Fin 64) : size (appT o x a b) ≤ 400 := by
+  have := size_prim_le (.copy b x); have := size_prim_le (.copy a x)
+  have := size_prim_le (.snocHead o b); have := size_prim_le (.tail b); have := size_prim_le (.clear b)
+  show size (prim _) + ((size (prim _) + (size (prim _ ⨾ prim _) + 39)) + size (prim _)) ≤ _
+  rw [size_seq]; omega
+
+theorem size_appL (o a b : Fin 64) : ∀ xs : List (Fin 64), size (appL o a b xs) ≤ 400 * xs.length + 60
+  | [] => size_prim_le _
+  | x :: xs => by
+    have := size_appT o x a b; have := size_appL o a b xs
+    show size (appT o x a b) + size (appL o a b xs) ≤ _; simp; omega
+
+theorem size_dynE {a b : ℕ} {xs : List (Fin 64)} (hl : xs.length ≤ 4) (hab : a + b ≤ 512) :
+    size (dynE tO tA tB a xs b) ≤ SE := by
+  have h1 := size_snocN tO true a; have h2 := size_snocN tO false b
+  have h3 := size_appL tO tA tB xs
+  show size (snocN tO true a) + (size (appL tO tA tB xs) + size (snocN tO false b)) ≤ _
+  have : SE = 33000 := rfl; omega
+
+/-- A bound on the size of a part of a node. -/
+abbrev SP : ℕ := 4 * SE + 3
+
+theorem size_dropT (t x a : Fin 64) : size (dropT t x a) ≤ 200 := by
+  have := size_prim_le (.copy a x); have := size_prim_le (.tail t)
+  show size (prim _) + (size (prim _) + 39) ≤ _; omega
+
+theorem size_readL (b : Fin 64) : size (readL b) ≤ 500 := by
+  have := size_dropT tTT tJZ tA; have := size_dropT tTT tJB tA; have := size_prim_le (.pop tTT b)
+  show size (dropT tTT tJZ tA) + (size (prim _) + size (dropT tTT tJB tA)) ≤ _; omega
+
+theorem size_nodeP (sE nsE : ℕ → Prog 64) (Y : SLay) (hY : Y.Fits) (ℓ : ℕ) {loE hiE dE : Prog 64}
+    (hs : size (sE ℓ) ≤ SP) (hns : size (nsE ℓ) ≤ SP) (hlo : size loE ≤ SP) (hhi : size hiE ≤ SP)
+    (hd : size dE ≤ SP) : size (nodeP sE nsE Y ℓ loE hiE dE) ≤ 9 * SP := by
+  have e1 := size_emitU hY.2.1; have e2 := size_emitU hY.2.2.1
+  simp only [nodeP, size_seq]
+  have : SP = 4 * SE + 3 := rfl
+  omega
+
+theorem SE_le_SP : SE ≤ SP := by decide
+
+/-- A bound on the size of the tree code of `m + 2` levels. -/
+def szT : ℕ → ℕ
+  | 0 => 4 * 500 + 9 * SP + 4 * 60
+  | m + 1 => 60 + 180 + (szT m + 39) + 9 * SP
+
+theorem size_treeP (sE nsE : ℕ → Prog 64) (Y : SLay) (hY : Y.Fits)
+    (hs : ∀ ℓ, ℓ ≤ 40 → size (sE ℓ) ≤ SE) (hns : ∀ ℓ, ℓ ≤ 40 → size (nsE ℓ) ≤ SE) :
+    ∀ m, m ≤ 38 → ∀ dE, size dE ≤ SP → size (treeP sE nsE Y m dE) ≤ szT m
+  | 0, _, dE, hd => by
+    have hsrc : ∀ b b', size (srcP sE nsE Y b b') ≤ SP := fun b b' => by
+      have := size_emitU (j := 0) (by omega); have := size_emitU hY.1
+      have := hs 1 (by omega); have := hns 1 (by omega)
+      simp only [srcP, size]; have : SP = 4 * SE + 3 := rfl; omega
+    have hn := size_nodeP sE nsE Y hY 2 ((hs 2 (by omega)).trans SE_le_SP)
+      ((hns 2 (by omega)).trans SE_le_SP)
+      (hsrc tb0 tb1) (hsrc tb2 tb3) hd
+    have := size_readL tb0; have := size_readL tb1; have := size_readL tb2; have := size_readL tb3
+    have : size (clr tb0) ≤ 60 := size_prim_le _; have : size (clr tb1) ≤ 60 := size_prim_le _
+    have : size (clr tb2) ≤ 60 := size_prim_le _; have : size (clr tb3) ≤ 60 := size_prim_le _
+    simp only [treeP, size_seq, szT]
+    have : SP = 4 * SE + 3 := rfl
+    omega
+  | m + 1, hm, dE, hd => by
+    have hsub := size_treeP sE nsE Y hY hs hns m (by omega)
+      (ifBlank (tc m) (emitU tO 512 (Y.hi (m + 2))) (emitU tO 512 (Y.lo (m + 2)))) (by
+        have := size_emitU (hY.2.2.2 (m + 2)).1
+        have := size_emitU (hY.2.2.2 (m + 2)).2
+        simp only [size]; have : SP = 4 * SE + 3 := rfl; omega)
+    have hn := size_nodeP sE nsE Y hY (m + 3) ((hs _ (by omega)).trans SE_le_SP)
+      ((hns _ (by omega)).trans SE_le_SP)
+      ((size_emitU (hY.2.2.2 (m + 2)).1).trans SE_le_SP)
+      ((size_emitU (hY.2.2.2 (m + 2)).2).trans SE_le_SP) hd
+    have : size (clr (tc m)) ≤ 60 := size_prim_le _; have := size_snocN (tc m) true 2
+    simp only [treeP, size_seq, szT, size_loop]
+    have : SP = 4 * SE + 3 := rfl
+    omega
+
+theorem size_insL {n : ℕ} : ∀ l : List (Prog 64), (∀ p ∈ l, size p ≤ n) →
+    size (insL l) ≤ l.length * n + 60
+  | [], _ => by show size (prim (.copy tO tO)) ≤ _; simp [size, Prim.pad]
+  | p :: l, h => by
+    have := h p (by simp); have := size_insL l fun q hq => h q (by simp [hq])
+    show size p + size (insL l) ≤ _; simp [Nat.succ_mul]; omega
+
+theorem size_insP {d a b : Prog 64} {n : ℕ} (hd : size d ≤ n) (ha : size a ≤ n) (hb : size b ≤ n) :
+    size (insP d a b) ≤ 3 * n := by
+  show size d + (size a + size b) ≤ _; omega
+
+theorem size_proP (R : RL) (hR : R.Ok) (hF : R.Fits) : size (proP R) ≤ 40 * (3 * SE) + 60 := by
+  obtain ⟨-, -, -, -, h5, h6, -⟩ := hF
+  have hz := hR.z
+  unfold proP
+  refine (size_insL (n := 3 * SE) _ fun p hp => ?_).trans (by simp)
+  · simp only [List.mem_append, List.mem_map, List.mem_range] at hp
+    rcases hp with ⟨m, hm, rfl⟩ | ⟨j, hj, rfl⟩
+    · exact size_insP (size_emitU (by simp only [rs] at *; omega)) (size_dynE (by simp) (by omega))
+        (size_dynE (by simp) (by omega))
+    · exact size_insP (size_emitU (by simp only [rs] at *; omega))
+        (size_dynE (by simp) (by simp only [rs] at *; omega))
+        (size_dynE (by simp) (by simp only [rs] at *; omega))
+
+theorem size_gProP (R : RL) (hR : R.Ok) (hF : R.Fits) : size (gProP R) ≤ 33 * (3 * SE) + 60 := by
+  have hz := hR.z; have h0 := hF.1
+  unfold gProP
+  refine (size_insL (n := 3 * SE) _ fun p hp => ?_).trans (by simp)
+  · simp only [List.mem_cons, List.mem_map, List.mem_range] at hp
+    rcases hp with rfl | ⟨j, hj, rfl⟩
+    · exact size_insP (size_emitU h0) (size_emitU (by omega)) (size_emitU (by omega))
+    · exact size_insP (size_emitU (by simp only [zS, rs] at *; omega)) (size_emitU (by omega))
+        (size_emitU (by omega))
+
+theorem size_treeS (R : RL) (hR : R.Ok) (hF : R.Fits) {dE : Prog 64} (hd : size dE ≤ SE) :
+    size (treeS R dE) ≤ szT 38 := by
+  have hz := hR.z
+  have h5 := hF.2.2.2.2.1; have h6 := hF.2.2.2.2.2.1
+  refine size_treeP _ _ _ (SY_fits R hF 0) (fun ℓ hℓ => ?_) (fun ℓ hℓ => ?_) 38 le_rfl dE
+    (hd.trans SE_le_SP)
+  · unfold sEd inE zE; split_ifs
+    · exact size_dynE (by simp) (by omega)
+    · exact size_dynE (by simp) (by simp only [rs] at *; omega)
+  · unfold nsEd nselS; split_ifs
+    · exact size_emitU (by simp only [rs] at *; omega)
+    · exact size_emitU (by simp only [rs] at *; omega)
+
+theorem size_tlN (t : Fin 64) : ∀ n, size (tlN t n) ≤ 60 * n + 60
+  | 0 => size_prim_le _
+  | n + 1 => by
+    have := size_tlN t n; have := size_prim_le (.tail t)
+    show size (tlN t n) + size (prim _) ≤ _; omega
+
+theorem size_jBody (R : RL) (hR : R.Ok) (hF : R.Fits) : size (jBody R) ≤ szT 38 + 400 := by
+  have h1 := size_treeS R hR hF (dE := rootE R) (by
+    unfold rootE; exact size_dynE (by simp) (by have := hR.z; omega))
+  have h2 := size_dropT tJB tJZ tA
+  rw [jBody, size_seq, size_seq, size_seq, size_seq]
+  have : size (cp tTT tCUR) ≤ 60 := size_prim_le _; have : size (tl tJZ) ≤ 60 := size_prim_le _
+  have : size (cp tJB tT31) ≤ 60 := size_prim_le _
+  omega
+
+theorem size_stepP (R : RL) (hR : R.Ok) (hF : R.Fits) :
+    size (stepP R) ≤ 40 * (3 * SE) + szT 38 + 8000 := by
+  have h1 := size_proP R hR hF; have h2 := size_jBody R hR hF
+  have h3 := size_snocN tJZ false 31; have h4 := size_snocN tJC true 32
+  have h5 := size_tlN tIZ 8; have h6 := size_dropT tIB tIZ tA
+  rw [stepP]
+  repeat rw [size_seq]
+  rw [size_loop, swapP]
+  repeat rw [size_seq]
+  have : size (clr tJB) ≤ 60 := size_prim_le _; have : size (clr tJZ) ≤ 60 := size_prim_le _
+  have : size (clr tJC) ≤ 60 := size_prim_le _; have : size (cp tCUR tTT) ≤ 60 := size_prim_le _
+  have : size (clr tTT) ≤ 60 := size_prim_le _; have : size (cp tIB tT120) ≤ 60 := size_prim_le _
+  have : size (cp tJB tPB) ≤ 60 := size_prim_le _; have : size (cp tPB tQB) ≤ 60 := size_prim_le _
+  have : size (cp tQB tJB) ≤ 60 := size_prim_le _; have : size (cp tJB tPZ) ≤ 60 := size_prim_le _
+  have : size (cp tPZ tQZ) ≤ 60 := size_prim_le _; have : size (cp tQZ tJB) ≤ 60 := size_prim_le _
+  omega
+
+theorem size_lastP (R : RL) (hR : R.Ok) (hF : R.Fits) :
+    size (lastP R) ≤ 40 * (3 * SE) + szT 38 + 200 := by
+  have h1 := size_proP R hR hF
+  have h2 := size_treeS R hR hF (size_emitU (j := rs R.out) hF.2.2.2.1)
+  rw [lastP, size_seq, size_seq, size_seq]
+  have : size (cp tTT tCUR) ≤ 60 := size_prim_le _; have : size (clr tTT) ≤ 60 := size_prim_le _
+  omega
+
+/-- **The size of the compiler** (states of its machine): at most `2^27`. -/
+theorem size_bpCompC : size bpCompC ≤ 2 ^ 27 := by
+  have h1 := size_gProP Rbp Rbp_ok Rbp_fits; have h2 := size_stepP Rbp Rbp_ok Rbp_fits
+  have h3 := size_lastP Rbp Rbp_ok Rbp_fits
+  have h4 := size_snocN tIZ false 120; have h5 := size_snocN tPZ false 32
+  have h6 := size_snocN tQB true 32; have h7 := size_snocN tT31 true 31
+  have h8 := size_snocN tT120 true 120; have h9 := size_snocN tSC true 15
+  have hT : szT 38 ≤ 50000000 := by decide +kernel
+  rw [bpCompC, bpCompP]
+  repeat rw [size_seq]
+  rw [size_loop]
+  have : size (cp tCUR tIN) ≤ 60 := size_prim_le _; have : size (clr tIN) ≤ 60 := size_prim_le _
+  have : size (clr tIZ) ≤ 60 := size_prim_le _; have : size (clr tPZ) ≤ 60 := size_prim_le _
+  have : size (clr tQB) ≤ 60 := size_prim_le _; have : size (clr tT31) ≤ 60 := size_prim_le _
+  have : size (clr tT120) ≤ 60 := size_prim_le _; have : size (clr tSC) ≤ 60 := size_prim_le _
+  have : size (cp tIN tO) ≤ 60 := size_prim_le _; have : size (clr tO) ≤ 60 := size_prim_le _
+  have : size (clr tCUR) ≤ 60 := size_prim_le _; have : size (clr tIB) ≤ 60 := size_prim_le _
+  have : size (clr tPB) ≤ 60 := size_prim_le _; have : size (clr tQZ) ≤ 60 := size_prim_le _
+  have : SE = 33000 := rfl
+  omega
+
 end AdvancedEncryption.DualUse.BpComp
