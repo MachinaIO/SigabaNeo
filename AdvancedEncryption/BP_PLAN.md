@@ -808,3 +808,24 @@ state `… + bitR (bit0 C) • …`. Machines:
   reads the bit back and adds the gadget only if it is set (`ifBit`);
 * the reductions' key component (`keyPF`, simulated keys, `f(x*) = 1`) does not need the bit: its
   block is `tail 1` then the stream block (`WfSpec` on `blockWord`, from `WfSpecR`).
+
+### Progress after the switch (lead, `t3/bp-switch`)
+
+| Milestone | State | Where |
+| --- | --- | --- |
+| M6 `correct_conf`, `expressive_conf` (`bpUniverse`) | **done** | `Params/Conf.lean` |
+| statistics at confA (`flood_conf` 2^-499, `delta1/6_le` 2^-370, advantage + 2^-239) | **done** | `Params/Stat.lean`, `Params/Advantage.lean` |
+| f(0) machine fix: `frontBP` emits `bit0 C` (authBPC at `attr0`), `bfX`/`cfX` carry it, `postCoreB`/`postCoreC` add the gadget under `ifBit` | **done** (laws) | `Prog/FrontBP.lean`, `Prog/BfX.lean`, `Prog/CfX.lean` |
+| front-end cost with the bit: `frontBTn ≤ 2^8 X²`, `frontBA m = m + allG + S0 + 3` | **done** | `Prog/FrontBPCost.lean` |
+| `WfSpecS` (block on the stream), `wfSpecS_of_wfSpecR`, `wfSpec_tailB` (key component), `bpRP_getLast` | **done** | `Prog/KeyP.lean`, `Prog/WfSpecBridge.lean` |
+| M7 shells with `frontBP` (`keyMachineP hk c bfX cf`, `decMachineP hk c cfX`), `machinesP`, **`implC`, `correct_implC`, `expressive_implC`** | **done** | `Prog/ShellsBP.lean`, `ImplP.lean`, `ImplBP.lean` |
+| Setup/Enc at confA: `time_setupMP_conf' ≤ 2^387`, `time_encMP_confT ≤ 2^452`, `descLen_setupMP_conf`, `descLen_encMP_conf ≤ 2^300` | **done** | `Prog/SetupConfA.lean`, `Prog/EncConfA.lean` |
+| W_f stream block at confA (`time_wfB2S_conf ≤ 2^628`, `size_wfB2S_conf ≤ 2^25`, `wfSpecR_wfB2S`) | builds (WS6, hypotheses `nA = nAn` etc. now true by `rfl`) | `Prog/WfB2S*.lean`, `Prog/WfRCert.lean` |
+| KeyGen/Dec clocks and descLen at confA (KeyTight*, DecTight*, KeyCost*, DecCostConf, DescConf, BlockCost, PostCost, BfXCost, SizeCost, KeyGenCost, DecGenCost) | **open** (helpers `t3/bp-r-key`, `t3/bp-r-dec`) | `Attic/` |
+| reductions' components and kb at confA (CompCost, DecodeCost, ReductionCompsBound*, AHConcrete*, AHFinal), authorization interface `AuthSpec` for `authBPC` (old `AuthL` deleted) | **open** | `Attic/` |
+| `Submission` for `BranchingProgram.primitive` | **open** | `Attic/PE/Impl/DualUse/Submission*.lean` |
+
+`AdvancedEncryption/Attic/` holds the files not yet repaired (not built). A file is restored by
+`git mv` back under `PE/`, its import added to `AdvancedEncryption.lean`, then fixed or pruned of
+its date-window numerals (the pruning helper used: delete the declarations whose build fails and
+re-prove them at confA).
