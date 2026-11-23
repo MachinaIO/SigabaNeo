@@ -1827,9 +1827,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     < 5.412·10⁻³⁶ through draw 154 and < 2.041·10⁻¹² through draw 161. The majorant crosses 10⁻¹¹ at draw 162, or draw 168 at
     the original cutoff.
   * The old 10⁷ summand came from dropping 117 flag constraints at draw 38.
-  * Small raw planes are impossible through draw 406 (< 10⁻⁶⁰⁴), so small planes can arise only through projection.
+  * A small raw plane through draw 406 has probability < 10⁻⁶⁰⁴, so small planes effectively arise only through projection.
   * The Haar floor means at draw 406 sum to < 2.221·10⁻¹³.
   * **Remaining.** The selected-chain probability on draws 162–406.
+* **Part 198 (audited, SOUND).** [flag_horizon](research/wall1_flag_horizon.md): extending the first-moment horizon.
+  * Pr[any saturated-plane hit] < 8.335·10⁻¹³ through draw 164 at 676√2, and < 5.054·10⁻¹² through draw 171 at 1352/√3.
+  * The previous crossing was dominated by j = 0 terms, which dropped subsequent winner tests. The new bound keeps the
+    overlapping shortest-vector constraints and the realized determinant recursion.
+  * **Scaling.** Near the crossing, each extra draw multiplies the majorant by ≈ 2000. At draw 406 a single radial term
+    exceeds 10⁶³¹, so this technique cannot reach 406 without a stronger joint-selection estimate.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1839,7 +1845,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–197 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–198 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
