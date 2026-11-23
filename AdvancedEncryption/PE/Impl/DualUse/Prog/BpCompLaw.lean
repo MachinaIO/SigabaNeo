@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Prog.BpComp
+import PE.Impl.Gates.BPWord
 
 /-!
 # The compiler of branching programs: laws
@@ -11,12 +12,18 @@ import PE.Impl.DualUse.Prog.BpComp
   `run_lastP`: the output table;
 * **`run_bpCompP`**, **`law_bpCompP`**: from `C` on tape `0` (`inp C`), the compiler ends in
   `inp (compW R C)`, for every word `C` (no length condition);
-* `good_bpCompP`: coin-free and well formed.
+* `good_bpCompP`: coin-free and well formed;
+* **`rpW_bpRP`**: `rpW 512 (bpRP (tablesOf C)) = compW Rbp C` for every word `C` (`Rbp` the register
+  layout of `BPCircuit`), through `rpW_tree` (a `MuxTree.tree` as words is `treeW`) and the leaves
+  `leafStep_tablesOf`, `leafOut_tablesOf`;
+* **`law_bpCompC`**: the compiler `bpCompC = bpCompP Rbp` writes `rpW 512 (bpRP (tablesOf C))`.
 -/
 
 namespace AdvancedEncryption.DualUse.BpComp
 
-open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog
+open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices
+open AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates.BPCircuit
+  AdvancedEncryption.PE.Gates.BPWord
 open scoped Prog
 
 
@@ -970,5 +977,201 @@ theorem good_bpCompP (R : RL) : (bpCompP R).CoinFree ∧ (bpCompP R).WF := by
 theorem law_bpCompP (R : RL) (hR : R.Ok) (C : List Bool) :
     (bpCompP R).law (inp C) = PMF.pure (inp (compW R C)) := by
   rw [law_eq_run_of_coinFree _ (good_bpCompP R).1, run_bpCompP R hR C]
+
+/-! ### The words of the circuit: `rpW` of `MuxTree.tree` is `treeW` -/
+
+theorem unary_eq_blk (j : ℕ) : RP.unary 512 j = blk j := rfl
+
+theorem rpW_single (ins : Instr (Fin 128) 183) :
+    RP.rpW 512 [ins] = insW (RP.regSlot 128 ins.dst) (Src.slot ins.a) (Src.slot ins.b) := by
+  simp [RP.rpW, insW, unary_eq_blk]
+
+theorem slot_reg (r : Fin 183) : Src.slot (Src.reg (ι := Fin 128) r) = RP.regSlot 128 r := rfl
+
+/-- **A mux tree as words.** -/
+theorem rpW_tree (L : MuxTree.Layout (Fin 128) 183) (Y : SLay) (leaf : ℕ → Bool)
+    (hs : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 40 → Src.slot (L.s ℓ) = Y.s ℓ)
+    (hns : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 40 → Src.slot (L.ns ℓ) = Y.ns ℓ)
+    (hz : RP.regSlot 128 L.zero = Y.zero) (h1 : RP.regSlot 128 L.x1 = Y.x1)
+    (h2 : RP.regSlot 128 L.x2 = Y.x2) (hlo : ∀ ℓ, RP.regSlot 128 (L.lo ℓ) = Y.lo ℓ)
+    (hhi : ∀ ℓ, RP.regSlot 128 (L.hi ℓ) = Y.hi ℓ) :
+    ∀ m, m ≤ 38 → ∀ base dst,
+      RP.rpW 512 (MuxTree.tree L leaf m base dst) = treeW Y leaf m base (RP.regSlot 128 dst) := by
+  have hsrc : ∀ base, Src.slot (MuxTree.src1 L leaf base) = src1W Y leaf base := by
+    intro base
+    simp only [MuxTree.src1, src1W]
+    split_ifs
+    · rfl
+    · exact hns 1 le_rfl (by omega)
+    · exact hs 1 le_rfl (by omega)
+    · exact hz
+  have hnode : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 40 → ∀ (a b : Src (Fin 128) 183) (d : Fin 183),
+      RP.rpW 512 (MuxTree.node L ℓ a b d) =
+        nodeW Y ℓ (Src.slot a) (Src.slot b) (RP.regSlot 128 d) := by
+    intro ℓ hl1 hl2 a b d
+    simp only [MuxTree.node, RP.rpW_cons, RP.rpW_nil, nodeW, insW, unary_eq_blk, List.append_nil,
+      List.append_assoc]
+    rw [h1, hs ℓ hl1 hl2, h2, hns ℓ hl1 hl2]
+    have e1 : Src.slot (Src.reg (ι := Fin 128) L.x1) = Y.x1 := h1
+    have e2 : Src.slot (Src.reg (ι := Fin 128) L.x2) = Y.x2 := h2
+    rw [e1, e2]
+  intro m
+  induction m with
+  | zero =>
+    intro _ base dst
+    rw [MuxTree.tree, treeW, hnode 2 (by omega) (by omega), hsrc, hsrc]
+  | succ m ih =>
+    intro hm base dst
+    rw [MuxTree.tree, treeW, RP.rpW_append, RP.rpW_append, ih (by omega), ih (by omega),
+      hnode (m + 3) (by omega) (by omega), slot_reg, slot_reg, hlo, hhi]
+
+/-- `treeW` reads its leaves only in its range. -/
+theorem treeW_congr (Y : SLay) {leaf leaf' : ℕ → Bool} :
+    ∀ m base d, (∀ u < 2 ^ (m + 2), leaf (base + u) = leaf' (base + u)) →
+      treeW Y leaf m base d = treeW Y leaf' m base d
+  | 0, base, d, h => by
+    have h0 := h 0 (by norm_num); have h1 := h 1 (by norm_num)
+    have h2 := h 2 (by norm_num); have h3 := h 3 (by norm_num)
+    simp only [Nat.add_zero] at h0
+    simp only [treeW, src1W, h0, h1, h2, show base + 2 + 1 = base + 3 by omega, h3]
+  | m + 1, base, d, h => by
+    have hp : 2 ^ (m + 1 + 2) = 2 ^ (m + 2) + 2 ^ (m + 2) := by rw [pow_succ]; omega
+    simp only [treeW]
+    rw [treeW_congr Y m base (Y.lo (m + 2)) (leaf' := leaf') (fun u hu => h u (by omega)),
+      treeW_congr Y m (base + 2 ^ (m + 2)) (Y.hi (m + 2)) (leaf' := leaf') (fun u hu => by
+        have := h (2 ^ (m + 2) + u) (by omega); rwa [← Nat.add_assoc] at this)]
+
+theorem hd_drop : ∀ (l : List Bool) (k : ℕ), hd (l.drop k) = l.getD k false
+  | [], k => by simp [hd]
+  | a :: l, 0 => rfl
+  | a :: l, k + 1 => by simp [hd_drop l k]
+
+/-! ### The layout of `bpRP` -/
+
+/-- The register layout of `BPCircuit`. -/
+def Rbp : RL where
+  zero := 0
+  x1 := 181
+  x2 := 182
+  out := 1
+  z0 := 1
+  nz := 65
+  na := 97
+  lo ℓ := 105 + (ℓ - 2) % 38
+  hi ℓ := 143 + (ℓ - 2) % 38
+
+theorem Rbp_ok : Rbp.Ok := ⟨by decide⟩
+
+theorem rpW_map (f : ℕ → Instr (Fin 128) 183) :
+    ∀ l : List ℕ, RP.rpW 512 (l.map f) = l.flatMap fun j => RP.rpW 512 [f j]
+  | [] => rfl
+  | j :: l => by
+    rw [List.map_cons, List.flatMap_cons, ← rpW_map f l]
+    simp [RP.rpW]
+
+theorem rpW_initRP : RP.rpW 512 initRP = gProW Rbp := by
+  rw [initRP, RP.rpW_cons, rpW_map, gProW]
+  simp only [unary_eq_blk, rpW_single]
+  refine congrArg (insW (rs Rbp.zero) 0 0 ++ ·) (List.flatMap_congr fun j hj => ?_)
+  have := List.mem_range.mp hj
+  exact congrArg (fun x => insW x 0 0) (by simp only [rZ, RP.regSlot, zS, rs, Rbp]; omega)
+
+theorem rpW_negs (i : ℕ) (hi : i ≤ 15) : RP.rpW 512 (negs i) = proW Rbp i := by
+  rw [negs, RP.rpW_append, rpW_map, rpW_map, proW]
+  refine congrArg₂ (· ++ ·) (List.flatMap_congr fun m hm => ?_) (List.flatMap_congr fun j hj => ?_)
+  · have := List.mem_range.mp hm
+    rw [rpW_single]
+    have e1 : RP.regSlot 128 (rNA m) = rs (Rbp.na + m) := by
+      simp only [rNA, RP.regSlot, rs, Rbp]; omega
+    have e2 : Src.slot (inX i m) = 1 + 8 * i + m := by
+      simp only [inX, inIdx, Src.slot]; omega
+    rw [e1, e2]
+  · have := List.mem_range.mp hj
+    rw [rpW_single]
+    have e1 : RP.regSlot 128 (rNZ j) = rs (Rbp.nz + j) := by
+      simp only [rNZ, RP.regSlot, rs, Rbp]; omega
+    have e2 : Src.slot (Src.reg (ι := Fin 128) (rZ i j)) = zS Rbp (i % 2) j := by
+      simp only [rZ, Src.slot, zS, rs, Rbp]; omega
+    rw [e1, e2]
+
+/-- The slots of the trees of step `i`. -/
+theorem rpW_tree_lay (i : ℕ) (hi : i ≤ 15) (leaf : ℕ → Bool) (dst : Fin 183) :
+    RP.rpW 512 (MuxTree.tree (lay i) leaf 38 0 dst) = treeW (SY Rbp i) leaf 38 0 (RP.regSlot 128 dst) :=
+  rpW_tree (lay i) (SY Rbp i) leaf
+    (fun ℓ h1 h2 => by
+      simp only [lay, SY, selS]
+      split_ifs <;> simp only [inX, inIdx, rZ, Src.slot, zS, rs, Rbp] <;> omega)
+    (fun ℓ h1 h2 => by
+      simp only [lay, SY, nselS]
+      split_ifs <;> simp only [rNA, rNZ, Src.slot, rs, Rbp] <;> omega)
+    rfl rfl rfl (fun ℓ => rfl) (fun ℓ => rfl) 38 le_rfl 0 dst
+
+theorem leafStep_tablesOf (C : List Bool) {i j u : ℕ} (hi : i < 15) (hj : j < 32) (hu : u < 2 ^ 40) :
+    leafStep (tablesOf C) i j u = lfT (31 - j) 32 (C.drop (i * tblW)) u := by
+  simp only [leafStep, tblLeaf, hu, hi, ↓reduceDIte, tablesOf, readNum, MuxTree.testBit_idx,
+    decide_eq_true hj, Bool.true_and, lfT, List.drop_drop, hd_drop]
+  congr 1
+  simp only [entryIdx, tblW]
+  omega
+
+theorem leafOut_tablesOf (C : List Bool) {u : ℕ} (hu : u < 2 ^ 40) :
+    leafOut (tablesOf C) u = lfT 0 1 (C.drop (15 * tblW)) u := by
+  simp only [leafOut, tblLeaf, hu, ↓reduceDIte, tablesOf, lfT, List.drop_drop, hd_drop]
+  congr 1
+  simp only [outOff, tblW]
+  omega
+
+theorem rpW_flatMap (f : ℕ → RP (Fin 128) 183) :
+    ∀ l : List ℕ, RP.rpW 512 (l.flatMap f) = l.flatMap fun j => RP.rpW 512 (f j)
+  | [] => rfl
+  | j :: l => by rw [List.flatMap_cons, List.flatMap_cons, RP.rpW_append, rpW_flatMap f l]
+
+theorem rpW_treesRP (C : List Bool) (i : ℕ) (hi : i < 15) :
+    RP.rpW 512 (treesRP (tablesOf C) i 32) = treesW Rbp i (C.drop (i * tblW)) 32 := by
+  rw [treesRP, treesW, rpW_flatMap]
+  refine List.flatMap_congr fun j hj => ?_
+  have hj := List.mem_range.mp hj
+  rw [rpW_tree_lay i (by omega)]
+  have e : RP.regSlot 128 (rZ (i + 1) j) = zS Rbp ((i + 1) % 2) j := by
+    simp only [rZ, RP.regSlot, zS, rs, Rbp]; omega
+  rw [e]
+  exact treeW_congr _ 38 0 _ fun u hu => by
+    rw [Nat.zero_add]; exact leafStep_tablesOf C hi hj (by simpa using hu)
+
+theorem rpW_stepsRP (C : List Bool) : ∀ n, n ≤ 15 →
+    RP.rpW 512 (stepsRP (tablesOf C) n) = (List.range n).flatMap (stepW Rbp C)
+  | 0, _ => rfl
+  | n + 1, hn => by
+    rw [stepsRP, RP.rpW_append, rpW_stepsRP C n (by omega), List.range_succ, List.flatMap_append,
+      List.flatMap_singleton, stepRP, RP.rpW_append, rpW_negs n (by omega),
+      rpW_treesRP C n (by omega)]
+    rfl
+
+theorem rpW_lastRP (C : List Bool) : RP.rpW 512 (lastRP (tablesOf C)) = lastW Rbp C := by
+  rw [lastRP, RP.rpW_append, rpW_negs 15 le_rfl, rpW_tree_lay 15 le_rfl, lastW,
+    show RP.regSlot 128 rOUT = rs Rbp.out from rfl]
+  refine congrArg (proW Rbp 15 ++ ·) (treeW_congr _ 38 0 _ fun u hu => ?_)
+  exact (by
+    rw [Nat.zero_add]; exact leafOut_tablesOf C (by simpa using hu))
+
+/-- **The word of the circuit of a predicate word is the compiler's word.** -/
+theorem rpW_bpRP (C : List Bool) : RP.rpW 512 (bpRP (tablesOf C)) = compW Rbp C := by
+  rw [bpRP, RP.rpW_append, RP.rpW_append, rpW_initRP, rpW_stepsRP C 15 le_rfl, rpW_lastRP]
+  rfl
+
+/-! ### The compiler of `KeyGen` and `Dec` -/
+
+/-- **The compiler** of the predicate circuit, at the register layout of `BPCircuit`. -/
+def bpCompC : Prog 64 := bpCompP Rbp
+
+/-- **The law of the compiler**: from a predicate word `C` on tape `0` (any length), the instruction
+stream `rpW 512 (bpRP (tablesOf C))` of its circuit on tape `0`, every other tape blank. -/
+theorem law_bpCompC (C : List Bool) :
+    bpCompC.law (inp C) = PMF.pure (inp (RP.rpW 512 (bpRP (tablesOf C)))) := by
+  rw [bpCompC, law_bpCompP Rbp Rbp_ok C, rpW_bpRP]
+
+theorem coinFree_bpCompC : bpCompC.CoinFree := (good_bpCompP Rbp).1
+
+theorem wf_bpCompC : bpCompC.WF := (good_bpCompP Rbp).2
 
 end AdvancedEncryption.DualUse.BpComp
