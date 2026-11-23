@@ -65,6 +65,23 @@ Mirror the structure and reuse the infrastructure of `PE/Impl/DualUse` (read its
 ≈ 85 000), `m̄ ≈ 3nK + 2·(stat. budget)`, flooding and key boxes as needed. Estimated cost: KeyGen
 and Dec ≈ `W · b · T` automorphisms of `8τ³` ring multiplications — far below `2^818`.
 
+### Worst-case budget (binary `R`, `Z`, so `R* = Z* = 1`; `B_χ = 16`)
+
+All logs base 2, `τ = K = 2^17`, `D = 2τn = 2^59`, `mB ≈ 3nK = 2^59.6`, `N_key ≈ W·mB = 2^99.6`.
+
+| Quantity | Formula | log₂ |
+|---|---|---|
+| flooding width `σ_fl` | `2^200 · mB n B_χ` | ≈ 305 |
+| `γ` | `W D^{b+2}` | 2518 |
+| `B_F` (Lemma 9) | `γ^T (σ_fl + Δ)` | ≈ 43 129 |
+| `B_R̂` (Cor. 1) | `γ^T (1 + Δ_sim)` | ≈ 42 824 |
+| `‖X‖∞` (Lemma 11) | `D^b (B_R̂ + 2)` | ≈ 45 184 |
+| `‖T_sim z‖∞` | `Wτ n ‖X‖∞` | ≈ 45 282 |
+| small key box | `2^{130} · N_key n · ‖T_sim z‖∞` (abort ≤ 2^-128) | ≈ 45 553 |
+| decryption noise | `N_key n · key · B_F` | ≈ 88 824 < K − 2 |
+
+So `K = 2^17` suffices with margin; `m̄ = 3nK + 2·(stat. bits + log #programmed columns) ≈ 3·2^58 + 400`.
+
 ## Work packages
 
 | Id | Package | Depends on |
