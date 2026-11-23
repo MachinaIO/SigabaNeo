@@ -2389,6 +2389,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * This supersedes the E|C| route; no count of tied minimizers is needed.
   * Remaining for the concrete solver: instantiate the per-input error δ = 2⁻¹⁶⁸ from IntegralShiftedGaussianCVP (the
     rank-638 coordinate contract plus the samplerTV hypothesis).
+* **Lean (PMF seeds, Euclidean realization).** PMFSeedAveraging / IntegerGridCoordinates (axiom-clean).
+  * `lweProb_pmf_seed_average_le` (with 0 ≤ δ): the seed-averaging bound for an arbitrary PMF seed law.
+  * Block joining preserves normSq. The Euclidean image of an integer submodule is discrete, and a Euclidean closest
+    point pulls back to an integer-residual minimizer. `IntegralCoordinates` exists for any integer submodule in
+    dimension 638 and any integral target.
+  * Remaining: the PMF form of `recovery_randomized`, and the graph-specific `Correct` link to the shifted-Gaussian
+    solver output.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
