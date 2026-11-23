@@ -50,7 +50,8 @@ namespace AdvancedEncryption.DualUse.Params
 open SigabaNeo SigabaNeo.Lattices Matrix AdvancedEncryption.RingBTVW Cslib Cslib.Probability
 open AdvancedEncryption.PE AdvancedEncryption.PE.DateWindow AdvancedEncryption.PE.Gates
 open AdvancedEncryption.PE.Gates.DateWindow
-open AdvancedEncryption.DualUse.Concrete (pow_mul_le' pow_le_pow')
+open AdvancedEncryption.DualUse.Concrete (pow_mul_le' pow_mul_le pow_le_pow')
+open AdvancedEncryption.DualUse.Params.Gen (card_col)
 open scoped ENNReal
 
 instance : NeZero confP.d := ⟨by show dp ≠ 0; rw [dp_def]; positivity⟩
@@ -58,35 +59,38 @@ instance : NeZero confP.d := ⟨by show dp ≠ 0; rw [dp_def]; positivity⟩
 /-- **Real keys are covered.** -/
 theorem realCovered_conf : RealCovered hkp confP := fun v hv w => goodTrap_real v hv w
 
-theorem card_ctBits : Fintype.card (Sdw (N := Np) hkp).ctBits.Index ≤ 2 ^ 88 := by
-  show Fintype.card (Fin 2 × Col kp × Fin kp × Fin Np) ≤ 2 ^ 88
+/-! ### Generic bounds
+
+The cardinalities and the statistical bounds for variable sizes, through exponents. -/
+
+theorem card_ctBits_eq {N q k n : ℕ} [NeZero q] (hk : q < 2 ^ k) :
+    Fintype.card (ringSetting N q k hk (Fin n)).ctBits.Index = 2 * (2 * k * (k * N)) := by
+  show Fintype.card (Fin 2 × Col k × Fin k × Fin N) = _
   simp only [Fintype.card_prod, Fintype.card_fin]
-  have := kp_le
-  have hN := Np_le
-  calc 2 * (2 * kp * (kp * Np)) ≤ 2 * (2 * 2 ^ 26 * (2 ^ 26 * 2 ^ 34)) := by gcongr
-    _ = 2 ^ 88 := by norm_num
 
-theorem card_JC : Fintype.card (JC (Sdw (N := Np) hkp)) ≤ 2 ^ 119 := by
-  show Fintype.card ((Fin 10 × (Sdw (N := Np) hkp).ctBits.Index) × Col kp) ≤ 2 ^ 119
-  rw [Fintype.card_prod, Fintype.card_prod, Fintype.card_fin, card_colP]
-  have h1 := card_ctBits
-  have h2 := kp_le
-  calc 10 * Fintype.card (Sdw (N := Np) hkp).ctBits.Index * (2 * kp)
-      ≤ 2 ^ 4 * 2 ^ 88 * (2 * 2 ^ 26) := by gcongr; norm_num
-    _ = 2 ^ 119 := by norm_num
+theorem card_JC_eq {N q k n : ℕ} [NeZero q] (hk : q < 2 ^ k) :
+    Fintype.card (JC (ringSetting N q k hk (Fin n))) = n * (8 * k ^ 3) * N := by
+  show Fintype.card ((Fin n × (ringSetting N q k hk (Fin n)).ctBits.Index) × Col k) = _
+  rw [Fintype.card_prod, Fintype.card_prod, Fintype.card_fin, card_ctBits_eq,
+    Fintype.card_prod, Fintype.card_fin, Fintype.card_fin]
+  ring
 
-theorem card_HC : Fintype.card (HC (Sdw (N := Np) hkp)) ≤ 2 ^ 120 := by
-  show Fintype.card ((Fin 10 × Col kp) ⊕ ((Fin 10 × (Sdw (N := Np) hkp).ctBits.Index) × Col kp))
-    ≤ 2 ^ 120
-  rw [Fintype.card_sum]
-  have h1 := card_JC
-  have h2 : Fintype.card (Fin 10 × Col kp) ≤ 2 ^ 119 := by
-    rw [Fintype.card_prod, Fintype.card_fin, card_colP]
-    have := kp_le
-    calc 10 * (2 * kp) ≤ 10 * (2 * 2 ^ 26) := by gcongr
-      _ ≤ 2 ^ 119 := by norm_num
-  have h3 : Fintype.card ((Fin 10 × (Sdw (N := Np) hkp).ctBits.Index) × Col kp) ≤ 2 ^ 119 := h1
-  have : (2 : ℕ) ^ 120 = 2 ^ 119 + 2 ^ 119 := by norm_num
+/-- `|JC| = 8 n k³ N ≤ 2^e`. -/
+theorem card_JC_le {N q k n en c3 eN e : ℕ} [NeZero q] (hk : q < 2 ^ k) (hn : n ≤ 2 ^ en)
+    (hk3 : 8 * k ^ 3 ≤ 2 ^ c3) (hN : N ≤ 2 ^ eN) (he : en + c3 + eN ≤ e) :
+    Fintype.card (JC (ringSetting N q k hk (Fin n))) ≤ 2 ^ e := by
+  rw [card_JC_eq]
+  exact (pow_mul_le (pow_mul_le hn hk3) hN).trans (pow_le_pow' he)
+
+/-- `|HC| = 2 n k + |JC| ≤ 2^(c + 1)`. -/
+theorem card_HC_le {N q k n c : ℕ} [NeZero q] (hk : q < 2 ^ k)
+    (hJC : Fintype.card (JC (ringSetting N q k hk (Fin n))) ≤ 2 ^ c) (hn : n * (2 * k) ≤ 2 ^ c) :
+    Fintype.card (HC (ringSetting N q k hk (Fin n))) ≤ 2 ^ (c + 1) := by
+  show Fintype.card ((Fin n × Col k) ⊕ ((Fin n × (ringSetting N q k hk (Fin n)).ctBits.Index) ×
+    Col k)) ≤ _
+  rw [Fintype.card_sum, Fintype.card_prod, Fintype.card_fin, card_col, pow_succ]
+  have h3 : Fintype.card ((Fin n × (ringSetting N q k hk (Fin n)).ctBits.Index) × Col k) ≤ 2 ^ c :=
+    hJC
   omega
 
 /-- The inverse power of two in `ℝ≥0∞`. -/
@@ -94,16 +98,65 @@ theorem ofReal_inv_two_pow (n : ℕ) : ENNReal.ofReal (((2 : ℝ) ^ n)⁻¹) = (
   rw [ENNReal.ofReal_inv_of_pos (by positivity), ENNReal.ofReal_pow (by norm_num),
     ENNReal.ofReal_ofNat]
 
-theorem rpow_div_le {A a b : ℕ} (hA : A ≤ 2 ^ a) (h : a + b ≤ 512) :
-    (A : ℝ) / ((2 ^ 512 : ℕ) : ℝ) ≤ ((2 : ℝ) ^ b)⁻¹ := by
+/-- `A / 2^w ≤ 2^{-b}` when `A ≤ 2^a` and `a + b ≤ w`. -/
+theorem rpow_div_le {A a b w : ℕ} (hA : A ≤ 2 ^ a) (h : a + b ≤ w) :
+    (A : ℝ) / ((2 ^ w : ℕ) : ℝ) ≤ ((2 : ℝ) ^ b)⁻¹ := by
   rw [div_le_iff₀ (by positivity), Nat.cast_pow, Nat.cast_ofNat]
   have h1 : (A : ℝ) ≤ 2 ^ a := by exact_mod_cast hA
-  have e : (2 : ℝ) ^ 512 = 2 ^ (512 - b) * 2 ^ b := by rw [← pow_add]; congr 1; omega
+  have e : (2 : ℝ) ^ w = 2 ^ (w - b) * 2 ^ b := by rw [← pow_add]; congr 1; omega
   calc (A : ℝ) ≤ 2 ^ a := h1
-    _ ≤ 2 ^ (512 - b) := pow_le_pow_right₀ (by norm_num) (by omega)
-    _ = ((2 : ℝ) ^ b)⁻¹ * 2 ^ 512 := by
-        rw [e, mul_comm ((2 : ℝ) ^ (512 - b)), ← mul_assoc, inv_mul_cancel₀ (by positivity),
+    _ ≤ 2 ^ (w - b) := pow_le_pow_right₀ (by norm_num) (by omega)
+    _ = ((2 : ℝ) ^ b)⁻¹ * 2 ^ w := by
+        rw [e, mul_comm ((2 : ℝ) ^ (w - b)), ← mul_assoc, inv_mul_cancel₀ (by positivity),
           one_mul]
+
+/-- **The leftover hash bound** with a slack `s`: `C · √(2^a / 2^d) / 2 ≤ 2^{-t}` when
+`C ≤ 2^c`, `a + 2 s ≤ d` and `c + t ≤ s + 1`. -/
+theorem lhl_le_gen {C a d c s t : ℕ} (hC : C ≤ 2 ^ c) (had : a + 2 * s ≤ d) (hcst : c + t ≤ s + 1) :
+    (C : ℝ) * (Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) / 2) ≤ ((2 : ℝ) ^ t)⁻¹ := by
+  have h1 : (2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹ ≤ (((2 : ℝ) ^ s) ^ 2)⁻¹ := by
+    have e : (2 : ℝ) ^ d = 2 ^ a * 2 ^ (d - a) := by rw [← pow_add]; congr 1; omega
+    rw [e, mul_inv, ← mul_assoc, mul_inv_cancel₀ (by positivity), one_mul, ← pow_mul]
+    exact inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (by omega))
+  have h2 : Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) ≤ ((2 : ℝ) ^ s)⁻¹ := by
+    calc Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) ≤ Real.sqrt ((((2 : ℝ) ^ s) ^ 2)⁻¹) :=
+          Real.sqrt_le_sqrt h1
+      _ = ((2 : ℝ) ^ s)⁻¹ := by
+          rw [Real.sqrt_inv, Real.sqrt_sq (by positivity)]
+  have hC' : (C : ℝ) ≤ 2 ^ c := by exact_mod_cast hC
+  calc (C : ℝ) * (Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) / 2)
+      ≤ 2 ^ c * (((2 : ℝ) ^ s)⁻¹ / 2) := by gcongr
+    _ = ((2 : ℝ) ^ (s + 1 - c))⁻¹ := by
+        have e : (2 : ℝ) ^ s * 2 = 2 ^ c * 2 ^ (s + 1 - c) := by
+          rw [← pow_succ, ← pow_add]; congr 1; omega
+        rw [div_eq_mul_inv, ← mul_inv, e, mul_inv, ← mul_assoc, mul_inv_cancel₀ (by positivity),
+          one_mul]
+    _ ≤ ((2 : ℝ) ^ t)⁻¹ := inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (by omega))
+
+/-- **The leftover hash bound for sets of at most `2^130` columns**: `≤ 2^{-(s - 129)}` with a
+slack `s ≥ 129` (`a + 2 s ≤ d`). -/
+theorem lhl_le {C a d s : ℕ} (hC : C ≤ 2 ^ 130) (had : a + 2 * s ≤ d) (hs : 129 ≤ s) :
+    (C : ℝ) * (Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) / 2) ≤ ((2 : ℝ) ^ (s - 129))⁻¹ :=
+  lhl_le_gen hC had (by omega)
+
+/-! ### At `confP` -/
+
+/-- `n ≤ 2^4` attributes (`n = 10`). -/
+def eAttrBits : ℕ := 4
+/-- The slack of the leftover hash lemma: `|Wd| ≥ 2 K N + 2 sP`. -/
+def sP : ℕ := 300
+
+theorem card_JC : Fintype.card (JC (Sdw (N := Np) hkp)) ≤ 2 ^ 119 :=
+  card_JC_le hkp (by norm_num [eAttrBits] : 10 ≤ 2 ^ eAttrBits)
+    (by have := kp_le; calc 8 * kp ^ 3 ≤ 8 * (2 ^ ak) ^ 3 := by gcongr
+                            _ = 2 ^ (3 + 3 * ak) := by rw [← pow_mul, pow_add]; ring_nf
+    ) Np_le (by norm_num [eAttrBits, ak, an])
+
+theorem card_HC : Fintype.card (HC (Sdw (N := Np) hkp)) ≤ 2 ^ 120 :=
+  card_HC_le hkp card_JC (by
+    have := kp_le
+    calc 10 * (2 * kp) ≤ 10 * (2 * 2 ^ ak) := by gcongr
+      _ ≤ 2 ^ 119 := by norm_num [ak])
 
 set_option exponentiation.threshold 600 in
 /-- **The flooding hypothesis** with `ε = 2^{-148}`. -/
@@ -117,19 +170,19 @@ theorem flood_conf : ∀ rest ∈ (lawRestC hkp confP).support,
       PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hrest
     obtain ⟨σ, -, u₀, -, e₀, he₀, ea, -, ez, -, Rm, -, e', -, rfl⟩ := hrest
     exact rowLaw_short (fun a ha => polyOf_short χp_short ha) he₀
-  have : NeZero (2 ^ 512) := ⟨by positivity⟩
-  have h := flood_hyp (S := Sdw (N := Np) hkp) (2 ^ 512) 16 rest.2.1 he₀ w
+  have : NeZero (2 ^ confP.w) := ⟨by positivity⟩
+  have h := flood_hyp (S := Sdw (N := Np) hkp) (2 ^ confP.w) 16 rest.2.1 he₀ w
   refine CloseTo.mono h ?_
   rw [← ofReal_inv_two_pow]
   refine ENNReal.ofReal_le_ofReal ?_
   have hA : Fintype.card (JC (Sdw (N := Np) hkp)) * Np * (Fintype.card (Fin confP.d) * Np * 16)
-      ≤ 2 ^ 252 := by
-    have hd : Fintype.card (Fin confP.d) * Np * 16 ≤ 2 ^ 99 := by
+      ≤ 2 ^ (119 + an + (ad + an + 4)) := by
+    have hd : Fintype.card (Fin confP.d) * Np * 16 ≤ 2 ^ (ad + an + 4) := by
       rw [Fintype.card_fin]
-      show dp * Np * 16 ≤ 2 ^ 99
-      rw [dp_def, Np_def]; norm_num
-    exact pow_mul_le' (pow_mul_le' card_JC Np_le rfl) hd rfl
-  have := rpow_div_le hA (show 252 + 148 ≤ 512 by norm_num)
+      exact pow_mul_le (pow_mul_le dp_le Np_le) (le_refl (2 ^ 4))
+    exact pow_mul_le (pow_mul_le card_JC Np_le) hd
+  have := rpow_div_le hA (show 119 + an + (ad + an + 4) + 148 ≤ confP.w by
+    show _ ≤ wP; norm_num [an, ad, wP])
   push_cast at this ⊢
   exact this
 
@@ -138,30 +191,9 @@ theorem card_Rg : Fintype.card (Rg Np Kp) = 2 ^ (Kp * Np) := by
   rw [Fintype.card_congr Negacyclic.coeffsEquiv, Fintype.card_fun, Fintype.card_fin, ZMod.card,
     ← pow_mul]
 
-/-- The leftover hash bound: `|JC| · √(2^{a} / 2^{d}) / 2 ≤ 2^{-180}` when `a + 600 ≤ d`. -/
-theorem lhl_le {C a d : ℕ} (hC : C ≤ 2 ^ 120) (had : a + 600 ≤ d) :
-    (C : ℝ) * (Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) / 2) ≤ ((2 : ℝ) ^ 180)⁻¹ := by
-  have h1 : (2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹ ≤ (((2 : ℝ) ^ 300) ^ 2)⁻¹ := by
-    have e : (2 : ℝ) ^ d = 2 ^ a * 2 ^ (d - a) := by rw [← pow_add]; congr 1; omega
-    rw [e, mul_inv, ← mul_assoc, mul_inv_cancel₀ (by positivity), one_mul, ← pow_mul]
-    exact inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (by omega))
-  have h2 : Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) ≤ ((2 : ℝ) ^ 300)⁻¹ := by
-    calc Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) ≤ Real.sqrt ((((2 : ℝ) ^ 300) ^ 2)⁻¹) :=
-          Real.sqrt_le_sqrt h1
-      _ = ((2 : ℝ) ^ 300)⁻¹ := by
-          rw [Real.sqrt_inv, Real.sqrt_sq (by positivity)]
-  have hC' : (C : ℝ) ≤ 2 ^ 120 := by exact_mod_cast hC
-  calc (C : ℝ) * (Real.sqrt ((2 : ℝ) ^ a * ((2 : ℝ) ^ d)⁻¹) / 2)
-      ≤ 2 ^ 120 * (((2 : ℝ) ^ 300)⁻¹ / 2) := by gcongr
-    _ = ((2 : ℝ) ^ 181)⁻¹ := by
-        have e : (2 : ℝ) ^ 300 * 2 = 2 ^ 120 * 2 ^ 181 := by rw [← pow_succ, ← pow_add]
-        rw [div_eq_mul_inv, ← mul_inv, e, mul_inv, ← mul_assoc, mul_inv_cancel₀ (by positivity),
-          one_mul]
-    _ ≤ ((2 : ℝ) ^ 180)⁻¹ := inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (by norm_num))
+theorem KN_le : Kp * Np + 2 * sP ≤ dp := by rw [Kp_def, Np_def, dp_def]; norm_num [sP]
 
-theorem KN_le : Kp * Np + 600 ≤ dp := by rw [Kp_def, Np_def, dp_def]; norm_num
-
-theorem KN2_le : 2 * (Kp * Np) + 600 ≤ dp := by rw [Kp_def, Np_def, dp_def]; norm_num
+theorem KN2_le : 2 * (Kp * Np) + 2 * sP ≤ dp := by rw [Kp_def, Np_def, dp_def]; norm_num [sP]
 
 /-- **The statistical term of hybrid 1** is at most `2^{-180}`. -/
 theorem delta1_le : delta1 (Sdw (N := Np) hkp) (Fin confP.d) ≤ ((2 : ℝ≥0∞) ^ 180)⁻¹ := by
@@ -170,7 +202,7 @@ theorem delta1_le : delta1 (Sdw (N := Np) hkp) (Fin confP.d) ≤ ((2 : ℝ≥0�
   have hc : (Fintype.card (Fin 1 → Rg Np Kp) : ℝ) = (2 : ℝ) ^ (Kp * Np) := by
     rw [Fintype.card_fun, card_Rg, Fintype.card_fin, pow_one]; push_cast; rfl
   rw [hc, Fintype.card_fin]
-  exact lhl_le (card_JC.trans (pow_le_pow' (by norm_num))) KN_le
+  exact lhl_le_gen card_JC KN_le (by norm_num [sP])
 
 /-- **The statistical term of hybrid 6** is at most `2^{-180}`. -/
 theorem delta6_le : delta6 (Sdw (N := Np) hkp) (Fin confP.d) ≤ ((2 : ℝ≥0∞) ^ 180)⁻¹ := by
@@ -180,6 +212,6 @@ theorem delta6_le : delta6 (Sdw (N := Np) hkp) (Fin confP.d) ≤ ((2 : ℝ≥0�
     rw [Fintype.card_fun, card_Rg, Fintype.card_fin, ← pow_mul, mul_comm (Kp * Np) 2]
     push_cast; rfl
   rw [hc, Fintype.card_fin]
-  exact lhl_le card_HC KN2_le
+  exact lhl_le_gen card_HC KN2_le (by norm_num [sP])
 
 end AdvancedEncryption.DualUse.Params
