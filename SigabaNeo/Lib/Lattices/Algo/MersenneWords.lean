@@ -197,6 +197,11 @@ theorem decM_encM {K : ℕ} (hK : 0 < K) (x : ZMod (2 ^ K - 1)) : decM K (encM K
   have hlt : x.val < 2 ^ K := (ZMod.val_lt x).trans_le (Nat.sub_le _ _)
   rw [encM, decM, val_toBits, Nat.mod_eq_of_lt hlt, ZMod.natCast_zmod_val]
 
+/-- Every residue has a `K`-bit word (`0 < K`). -/
+theorem decM_surjective {K : ℕ} (hK : 0 < K) (x : ZMod (2 ^ K - 1)) :
+    ∃ w : List Bool, w.length = K ∧ decM K w = x :=
+  ⟨encM K x, length_encM K x, decM_encM hK x⟩
+
 /-! ### Ring words -/
 
 /-- The element of `ℤ_{2^K − 1}[X]/(X^N + 1)` read from a word: the residues of its blocks. -/
