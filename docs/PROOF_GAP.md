@@ -1727,6 +1727,17 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * If the pair's last two input rows are independent mod q, each 509-column prefix has exactly one completion with pair
     membership. Both shortest-line tests are then deterministic functions of a uniform prefix.
   * Toys: of 15,625 designs, 25 prefixes are compatible and 9 give quotient hits; the pair realizes both lines on only 2.
+* **Part 190 (audited, SOUND).** [rank2_transverse](research/wall1_rank2_transverse.md): a rank-two transverse law (paper proof;
+  the Lean files cover the rank-one precedents).
+  * **Rank-2 Haar incidence law.** A marked primitive plane is distributed as an explicit shape density times Haar on
+    X_{n−2}. This gives a bounded-plane count and a formula for the conditional shortest-vector void (plane, quotient and
+    lift shear).
+  * **Which event matters.** Part 183's J (= E of Parts 184–186) is the INTERNAL spacing ≤ 26 of a primitive plane modulo
+    the designated shortest line. The unrestricted outer-quotient event holds for every lattice in ranks 505/506.
+  * At the rank-505 determinant floor, the Haar probability of E is 9.971193576034·10⁻⁶³ (enclosure). Part 186's 3.34·10⁻⁶⁰
+    was a valid upper bound for the same event.
+  * Times 3329^15 this gives < 6.815·10⁻¹⁰. **Equation (5), the event-specific chain-to-Haar comparison, remains open.** It
+    needs the history-weighted probability that the canonical pair wins both shortest-vector selections.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1736,7 +1747,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–189 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–190 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
