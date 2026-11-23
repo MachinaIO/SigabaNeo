@@ -1678,6 +1678,13 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     * the kernel-checked numeric bound Pr(F △ J) < 3.210·10⁻¹⁴, conditional on two analytic inputs (C ≤ 1.4227…,
       g ≥ 31.9457…) stated as hypotheses.
 
+  * **Lean (analytic inputs).** TerminalMajorant506 / TerminalScale506 (axiom-clean, kernel-checked) prove:
+    * C(z) ≤ 1.422743743939 over the full 4096-bin sum;
+    * g_floor > 31.9457118986 from the audited recurrence;
+    * the numeric majorant < 3.209079·10⁻¹⁴;
+    * `discrepancy_506_of_terminal_count`.
+    Two geometric transfer obligations remain: the rank-506 Hermite cap s_i² ≤ 56.2142·D_i^{2/506}, and Part 161's
+    complex-Gaussian Poisson/dual-coordinate count for the marked preimage.
 * **Part 184 (audited, SOUND).** [penultimate_projection](research/wall1_penultimate_projection.md): first moments for Part
   183's penultimate-projection event E.
   * **Conditioning obstruction.** For a fixed raw candidate, membership plus the preceding columns fix the mark at its pivot.
