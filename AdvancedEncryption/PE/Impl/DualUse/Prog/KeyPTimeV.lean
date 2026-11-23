@@ -75,118 +75,6 @@ theorem tt_branchB_ph {wfB : XProg 256} {Tw TR GR : ℕ} (cf : KeyCfg) {ℓ ι �
   · show max _ _ ≤ _
     exact max_le_max (w.2 t) (u.2 t)
 
-/-- **The time and length bounds of the key component with a phase bound of `winRest`**: as
-`time_keyPT`, the window branch after the `W_f` block charged `TR` (from the per-tape bound `βw`
-of the block's output) instead of the uniform `winRT`. -/
-theorem time_keyPV {sdP : XProg 82} {Ls Ts Lsd : ℕ}
-    (hsT : timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
-    (hsL : lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0)
-    {wfB : XProg 256} {Tw TR GR : ℕ} {βw : Fin 256 → ℕ} (W : ℕ) (cf : KeyCfg) (K₀ : ℕ)
-    (hwT : timeBoundT wfB (wfIn Lsd (frontL c.L W)) ≤ Tw)
-    (hwL : lenBoundT wfB (wfIn Lsd (frontL c.L W)) ≤ βw)
-    (hR : Ph (winRest hk c cf) βw TR (fun _ => GR)) :
-    timeBoundT (keyP hk c sdP wfB W cf) (io2 (R := 254) Ls K₀ 0) ≤
-        Ts + frontT c.L W K₀ + branchTV hk c Tw TR (keyM hk c Lsd W cf) +
-          clrT (branchLV hk c GR (keyM hk c Lsd W cf)) ∧
-      lenBoundT (keyP hk c sdP wfB W cf) (io2 (R := 254) Ls K₀ 0) ≤
-        io2 (branchLV hk c GR (keyM hk c Lsd W cf)) 0 0 := by
-  set M := keyM hk c Lsd W cf with hMdef
-  have e1 : (fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) = io2 (R := 80) Ls 0 0 := io2_eSd Ls K₀ 0
-  have l1 : lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ io2 (R := 254) Lsd K₀ 0 := by
-    show embedF eSd _ (lenBoundT sdP fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) ≤ _
-    rw [e1, ← embedF_eSd Ls K₀ Lsd 0]
-    exact embedF_mono _ le_rfl hsL
-  have t1 : timeBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ Ts := by
-    rw [timeBoundT_frame, e1]; exact hsT
-  set ℓ1 := lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) with hℓ1
-  have v1 : (fun j => ℓ1 (eFr j)) ≤ io2 (R := 6) K₀ 0 0 := by
-    rw [← io2_eFr Lsd K₀ 0]; exact fun j => l1 (eFr j)
-  have t2 : timeBoundT (frame eFr (frontP c.L W)) ℓ1 ≤ frontT c.L W K₀ := by
-    rw [timeBoundT_frame]
-    exact (timeBoundT_mono _ v1).trans (timeBoundT_frontP c.L W K₀)
-  have l2 : lenBoundT (frame eFr (frontP c.L W)) ℓ1 ≤ io2 (R := 254) Lsd (frontL c.L W) 0 := by
-    show embedF eFr ℓ1 (lenBoundT (frontP c.L W) fun j => ℓ1 (eFr j)) ≤ _
-    rw [← embedF_eFr Lsd K₀ (frontL c.L W) 0]
-    exact embedF_mono _ l1 ((lenBoundT_mono _ v1).trans (lenBoundT_frontP c.L W K₀))
-  set ℓ2 := lenBoundT (frame eFr (frontP c.L W)) ℓ1 with hℓ2
-  have hℓ2M : ∀ t, ℓ2 t ≤ M := fun t => (l2 t).trans (by
-    simp only [io2, hMdef, keyM]; split_ifs <;> omega)
-  have ub := tt_branchB_ph hk c cf l2 hℓ2M hwT hwL hR
-  have hc := ub_clearL (branchLV hk c GR M) clrAll _ ub.2
-  have hlen : clrAll.length * (2 * (branchLV hk c GR M + 1) + 3) ≤
-      256 * (2 * (branchLV hk c GR M + 1) + 3) := Nat.mul_le_mul_right _ length_clrAll_le
-  refine ⟨?_, fun t => ?_⟩
-  · show timeBoundT (frame eSd sdP) _ + (timeBoundT (frame eFr (frontP c.L W)) ℓ1 +
-      (timeBoundT (branchB hk c wfB cf) ℓ2 +
-        timeBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2))) ≤ _
-    have := ub.1
-    have := hc.1
-    simp only [clrT]
-    omega
-  · show lenBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2) t ≤ _
-    refine (lenBoundT_clearL_le clrAll _ t).trans ?_
-    simp only [mem_clrAll]
-    by_cases h : t = 0
-    · subst h; simp [io2, ub.2 0]
-    · have : t.val ≠ 0 := fun e => h (Fin.ext e)
-      simp [h, io2, this]
-
-/-- **`time_keyPV` for any front end** (`keyPF`, framed by `e` with `FrEmb e`): the front end's
-phase bounds `FT`, `FL` (the `ph` field of `FrontSpec`) in place of `frontT`, `frontL`. -/
-theorem time_keyPFV {sdP : XProg 82} {Ls Ts Lsd : ℕ}
-    (hsT : timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
-    (hsL : lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0)
-    {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr : XProg (R + 2)} {FT FL : ℕ → ℕ}
-    (hfr : ∀ T, Ph fr (io2 (R := R) T 0 0) (FT T) (io2 (R := R) (FL T) 0 0))
-    {wfB : XProg 256} {Tw TR GR : ℕ} {βw : Fin 256 → ℕ} (cf : KeyCfg) (K₀ : ℕ)
-    (hwT : timeBoundT wfB (wfIn Lsd (FL K₀)) ≤ Tw)
-    (hwL : lenBoundT wfB (wfIn Lsd (FL K₀)) ≤ βw)
-    (hR : Ph (winRest hk c cf) βw TR (fun _ => GR)) :
-    timeBoundT (keyPF hk c sdP e fr wfB cf) (io2 (R := 254) Ls K₀ 0) ≤
-        Ts + FT K₀ + branchTV hk c Tw TR (keyMF hk c Lsd (FL K₀) cf) +
-          clrT (branchLV hk c GR (keyMF hk c Lsd (FL K₀) cf)) ∧
-      lenBoundT (keyPF hk c sdP e fr wfB cf) (io2 (R := 254) Ls K₀ 0) ≤
-        io2 (branchLV hk c GR (keyMF hk c Lsd (FL K₀) cf)) 0 0 := by
-  set M := keyMF hk c Lsd (FL K₀) cf with hMdef
-  have e1 : (fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) = io2 (R := 80) Ls 0 0 := io2_eSd Ls K₀ 0
-  have l1 : lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ io2 (R := 254) Lsd K₀ 0 := by
-    show embedF eSd _ (lenBoundT sdP fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) ≤ _
-    rw [e1, ← embedF_eSd Ls K₀ Lsd 0]
-    exact embedF_mono _ le_rfl hsL
-  have t1 : timeBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ Ts := by
-    rw [timeBoundT_frame, e1]; exact hsT
-  set ℓ1 := lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) with hℓ1
-  have v1 : (fun j => ℓ1 (e j)) ≤ io2 (R := R) K₀ 0 0 := by
-    rw [← io2_frEmb he Lsd K₀ 0]; exact fun j => l1 (e j)
-  have pf := hfr K₀ _ v1
-  have t2 : timeBoundT (frame e fr) ℓ1 ≤ FT K₀ := by rw [timeBoundT_frame]; exact pf.1
-  have l2 : lenBoundT (frame e fr) ℓ1 ≤ io2 (R := 254) Lsd (FL K₀) 0 := by
-    show embedF e ℓ1 (lenBoundT fr fun j => ℓ1 (e j)) ≤ _
-    rw [← embedF_frEmb he Lsd K₀ (FL K₀) 0]
-    exact embedF_mono _ l1 pf.2
-  set ℓ2 := lenBoundT (frame e fr) ℓ1 with hℓ2
-  have hℓ2M : ∀ t, ℓ2 t ≤ M := fun t => (l2 t).trans (by
-    simp only [io2, hMdef, keyMF]; split_ifs <;> omega)
-  have ub := tt_branchB_ph hk c cf l2 hℓ2M hwT hwL hR
-  have hc := ub_clearL (branchLV hk c GR M) clrAll _ ub.2
-  have hlen : clrAll.length * (2 * (branchLV hk c GR M + 1) + 3) ≤
-      256 * (2 * (branchLV hk c GR M + 1) + 3) := Nat.mul_le_mul_right _ length_clrAll_le
-  refine ⟨?_, fun t => ?_⟩
-  · show timeBoundT (frame eSd sdP) _ + (timeBoundT (frame e fr) ℓ1 +
-      (timeBoundT (branchB hk c wfB cf) ℓ2 +
-        timeBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2))) ≤ _
-    have := ub.1
-    have := hc.1
-    simp only [clrT]
-    omega
-  · show lenBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2) t ≤ _
-    refine (lenBoundT_clearL_le clrAll _ t).trans ?_
-    simp only [mem_clrAll]
-    by_cases h : t = 0
-    · subst h; simp [io2, ub.2 0]
-    · have : t.val ≠ 0 := fun e => h (Fin.ext e)
-      simp [h, io2, this]
-
 /-! ### `winRest` per tape -/
 
 /-- The top of the simulated key try: `G`, then the public key copied from tape `0`. -/
@@ -403,5 +291,62 @@ theorem ph_winRest_v (G : ℕ) (cf : KeyCfg) {Wk : ℕ}
   have mW := Nat.mul_le_mul_left (2 * T + 3) hWk
   simp only [winRV, ← hT, ← hP]
   omega
+
+
+/-- **`time_keyPV` for any front end** (`keyPF`, framed by `e` with `FrEmb e`): the front end's
+phase bounds `FT`, `FL` (the `ph` field of `FrontSpec`) in place of `frontT`, `frontL`. -/
+theorem time_keyPFV {sdP : XProg 82} {Ls Ts Lsd : ℕ}
+    (hsT : timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
+    (hsL : lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0)
+    {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) {fr : XProg (R + 2)} {FT FL : ℕ → ℕ}
+    (hfr : ∀ T, Ph fr (io2 (R := R) T 0 0) (FT T) (io2 (R := R) (FL T) 0 0))
+    {wfB : XProg 256} {Tw TR GR : ℕ} {βw : Fin 256 → ℕ} (cf : KeyCfg) (K₀ : ℕ)
+    (hwT : timeBoundT wfB (wfIn Lsd (FL K₀)) ≤ Tw)
+    (hwL : lenBoundT wfB (wfIn Lsd (FL K₀)) ≤ βw)
+    (hR : Ph (winRest hk c cf) βw TR (fun _ => GR)) :
+    timeBoundT (keyPF hk c sdP e fr wfB cf) (io2 (R := 254) Ls K₀ 0) ≤
+        Ts + FT K₀ + branchTV hk c Tw TR (keyMF hk c Lsd (FL K₀) cf) +
+          clrT (branchLV hk c GR (keyMF hk c Lsd (FL K₀) cf)) ∧
+      lenBoundT (keyPF hk c sdP e fr wfB cf) (io2 (R := 254) Ls K₀ 0) ≤
+        io2 (branchLV hk c GR (keyMF hk c Lsd (FL K₀) cf)) 0 0 := by
+  set M := keyMF hk c Lsd (FL K₀) cf with hMdef
+  have e1 : (fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) = io2 (R := 80) Ls 0 0 := io2_eSd Ls K₀ 0
+  have l1 : lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ io2 (R := 254) Lsd K₀ 0 := by
+    show embedF eSd _ (lenBoundT sdP fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) ≤ _
+    rw [e1, ← embedF_eSd Ls K₀ Lsd 0]
+    exact embedF_mono _ le_rfl hsL
+  have t1 : timeBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ Ts := by
+    rw [timeBoundT_frame, e1]; exact hsT
+  set ℓ1 := lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) with hℓ1
+  have v1 : (fun j => ℓ1 (e j)) ≤ io2 (R := R) K₀ 0 0 := by
+    rw [← io2_frEmb he Lsd K₀ 0]; exact fun j => l1 (e j)
+  have pf := hfr K₀ _ v1
+  have t2 : timeBoundT (frame e fr) ℓ1 ≤ FT K₀ := by rw [timeBoundT_frame]; exact pf.1
+  have l2 : lenBoundT (frame e fr) ℓ1 ≤ io2 (R := 254) Lsd (FL K₀) 0 := by
+    show embedF e ℓ1 (lenBoundT fr fun j => ℓ1 (e j)) ≤ _
+    rw [← embedF_frEmb he Lsd K₀ (FL K₀) 0]
+    exact embedF_mono _ l1 pf.2
+  set ℓ2 := lenBoundT (frame e fr) ℓ1 with hℓ2
+  have hℓ2M : ∀ t, ℓ2 t ≤ M := fun t => (l2 t).trans (by
+    simp only [io2, hMdef, keyMF]; split_ifs <;> omega)
+  have ub := tt_branchB_ph hk c cf l2 hℓ2M hwT hwL hR
+  have hc := ub_clearL (branchLV hk c GR M) clrAll _ ub.2
+  have hlen : clrAll.length * (2 * (branchLV hk c GR M + 1) + 3) ≤
+      256 * (2 * (branchLV hk c GR M + 1) + 3) := Nat.mul_le_mul_right _ length_clrAll_le
+  refine ⟨?_, fun t => ?_⟩
+  · show timeBoundT (frame eSd sdP) _ + (timeBoundT (frame e fr) ℓ1 +
+      (timeBoundT (branchB hk c wfB cf) ℓ2 +
+        timeBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2))) ≤ _
+    have := ub.1
+    have := hc.1
+    simp only [clrT]
+    omega
+  · show lenBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2) t ≤ _
+    refine (lenBoundT_clearL_le clrAll _ t).trans ?_
+    simp only [mem_clrAll]
+    by_cases h : t = 0
+    · subst h; simp [io2, ub.2 0]
+    · have : t.val ≠ 0 := fun e => h (Fin.ext e)
+      simp [h, io2, this]
 
 end AdvancedEncryption.DualUse.Prog

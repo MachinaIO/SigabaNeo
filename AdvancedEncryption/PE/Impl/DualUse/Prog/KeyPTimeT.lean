@@ -183,69 +183,6 @@ theorem tt_branchB {wfB : XProg 256} {Tw Gw : ℕ} (cf : KeyCfg) {ℓ ι : Fin 2
 data (at most `Lsd` bits) on tape `0`, the gate list of the query (at most `LF` bits) on tape `1`. -/
 abbrev wfIn (Lsd LF : ℕ) : Fin 256 → ℕ := io2 (R := 254) Lsd LF 0
 
-variable (hk c) in
-/-- **The time and length bounds of the key component with a per-tape bound of the `W_f` block**:
-with the SimData block bounded by `Ts`, `io2 Lsd 0 0` on secrets of at most `Ls` bits, and the
-`W_f` block taking at most `Tw` steps on `wfIn Lsd (frontL c.L W)` and leaving every tape at most
-`Gw ≥ keyM …` bits, on queries of at most `K₀` bits the key component takes at most
-`Ts + frontT c.L W K₀ + branchTT … + clrT (branchLT …)` steps and leaves at most `branchLT …` bits on
-tape `0`, the other tapes blank. -/
-theorem time_keyPT {sdP : XProg 82} {Ls Ts Lsd : ℕ}
-    (hsT : timeBoundT sdP (io2 (R := 80) Ls 0 0) ≤ Ts)
-    (hsL : lenBoundT sdP (io2 (R := 80) Ls 0 0) ≤ io2 Lsd 0 0)
-    {wfB : XProg 256} {Tw Gw : ℕ} (W : ℕ) (cf : KeyCfg) (K₀ : ℕ)
-    (hwT : timeBoundT wfB (wfIn Lsd (frontL c.L W)) ≤ Tw)
-    (hwL : ∀ i, lenBoundT wfB (wfIn Lsd (frontL c.L W)) i ≤ Gw)
-    (hG : keyM hk c Lsd W cf ≤ Gw) :
-    timeBoundT (keyP hk c sdP wfB W cf) (io2 (R := 254) Ls K₀ 0) ≤
-        Ts + frontT c.L W K₀ + branchTT hk c Tw Gw cf (keyM hk c Lsd W cf) +
-          clrT (branchLT hk c Gw cf (keyM hk c Lsd W cf)) ∧
-      lenBoundT (keyP hk c sdP wfB W cf) (io2 (R := 254) Ls K₀ 0) ≤
-        io2 (branchLT hk c Gw cf (keyM hk c Lsd W cf)) 0 0 := by
-  set M := keyM hk c Lsd W cf with hMdef
-  -- the SimData block
-  have e1 : (fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) = io2 (R := 80) Ls 0 0 := io2_eSd Ls K₀ 0
-  have l1 : lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ io2 (R := 254) Lsd K₀ 0 := by
-    show embedF eSd _ (lenBoundT sdP fun j => io2 (R := 254) Ls K₀ 0 (eSd j)) ≤ _
-    rw [e1, ← embedF_eSd Ls K₀ Lsd 0]
-    exact embedF_mono _ le_rfl hsL
-  have t1 : timeBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) ≤ Ts := by
-    rw [timeBoundT_frame, e1]; exact hsT
-  -- the front end
-  set ℓ1 := lenBoundT (frame eSd sdP) (io2 (R := 254) Ls K₀ 0) with hℓ1
-  have v1 : (fun j => ℓ1 (eFr j)) ≤ io2 (R := 6) K₀ 0 0 := by
-    rw [← io2_eFr Lsd K₀ 0]; exact fun j => l1 (eFr j)
-  have t2 : timeBoundT (frame eFr (frontP c.L W)) ℓ1 ≤ frontT c.L W K₀ := by
-    rw [timeBoundT_frame]
-    exact (timeBoundT_mono _ v1).trans (timeBoundT_frontP c.L W K₀)
-  have l2 : lenBoundT (frame eFr (frontP c.L W)) ℓ1 ≤ io2 (R := 254) Lsd (frontL c.L W) 0 := by
-    show embedF eFr ℓ1 (lenBoundT (frontP c.L W) fun j => ℓ1 (eFr j)) ≤ _
-    rw [← embedF_eFr Lsd K₀ (frontL c.L W) 0]
-    exact embedF_mono _ l1 ((lenBoundT_mono _ v1).trans (lenBoundT_frontP c.L W K₀))
-  -- the branches
-  set ℓ2 := lenBoundT (frame eFr (frontP c.L W)) ℓ1 with hℓ2
-  have hℓ2M : ∀ t, ℓ2 t ≤ M := fun t => (l2 t).trans (by
-    simp only [io2, hMdef, keyM]; split_ifs <;> omega)
-  have ub := tt_branchB hk c cf l2 hℓ2M hwT hwL ((le_max_right _ _).trans hG)
-  have hc := ub_clearL (branchLT hk c Gw cf M) clrAll _ ub.2
-  have hlen : clrAll.length * (2 * (branchLT hk c Gw cf M + 1) + 3) ≤
-      256 * (2 * (branchLT hk c Gw cf M + 1) + 3) := Nat.mul_le_mul_right _ length_clrAll_le
-  refine ⟨?_, fun t => ?_⟩
-  · show timeBoundT (frame eSd sdP) _ + (timeBoundT (frame eFr (frontP c.L W)) ℓ1 +
-      (timeBoundT (branchB hk c wfB cf) ℓ2 +
-        timeBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2))) ≤ _
-    have := ub.1
-    have := hc.1
-    simp only [clrT]
-    omega
-  · show lenBoundT (clearL clrAll) (lenBoundT (branchB hk c wfB cf) ℓ2) t ≤ _
-    refine (lenBoundT_clearL_le clrAll _ t).trans ?_
-    simp only [mem_clrAll]
-    by_cases h : t = 0
-    · subst h; simp [io2, ub.2 0]
-    · have : t.val ≠ 0 := fun e => h (Fin.ext e)
-      simp [h, io2, this]
-
 /-! ### The states of the key component -/
 
 section Size
@@ -280,33 +217,5 @@ theorem size_tmplP_le (c : Fin n) (m : ℕ) : ∀ l : List (Fin n × ℕ), (∀ 
     omega
 
 end Size
-
-variable (hk c) in
-/-- **The states of the key component**: those of the SimData block, of the front end and of the
-`W_f` block, plus the prefixes of the public key, the constant words and the templates. -/
-theorem size_keyP_le (sdP : XProg 82) (wfB : XProg 256) (W : ℕ) (cf : KeyCfg) (m : ℕ)
-    (hm : ∀ x ∈ keyTmpl hk c cf, x.2 < 2 ^ m) :
-    (keyP hk c sdP wfB W cf).size ≤ sdP.size + (frontP c.L W).size + wfB.size +
-      264 * lenPK hk c + 60 * (cf.sW.length + (powW K (cf.B - 1)).length +
-        ((keyEnc (N := N) (K := K) c).enc (dummyKey c)).length) + 20 * (195 * m + 36) + 2 ^ 18 := by
-  have h1 := size_prefP (n := 256) (lenPK hk c) 0 1 100 101
-  have h2 := size_prefP (n := 256) (lenPK hk c) 0 2 100 101
-  have h3 := size_putWX (4 : Fin 256) cf.sW
-  have h4 := size_putWX (5 : Fin 256) (powW K (cf.B - 1))
-  have h5 := size_putWX (2 : Fin 256) ((keyEnc (N := N) (K := K) c).enc (dummyKey c))
-  have h6 := size_tmplP_le (120 : Fin 256) m (keyTmpl hk c cf) hm
-  have h7 := size_keyTrySimCoinsP_le
-  have h8 := size_clearL_le keyClr
-  have h9 := size_clearL_le clrAll
-  have h10 := size_clearL_le ([0] : List (Fin 256))
-  have hl : (keyTmpl hk c cf).length = 20 := rfl
-  have hc : keyClr.length = 25 := rfl
-  have hA := length_clrAll_le
-  rw [hl] at h6
-  rw [hc] at h8
-  simp only [keyP, keyPF, branchB, winB, dumB, longB, size_seq, size_frame, size_ifBit, size_ifBlank,
-    size_prog, Prog.size_prim, Prim.pad] at *
-  simp only [List.length_singleton] at h10
-  omega
 
 end AdvancedEncryption.DualUse.Prog
