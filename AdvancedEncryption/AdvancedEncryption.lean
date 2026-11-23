@@ -2,6 +2,8 @@
 import PE
 import PE.DateWindow
 import PE.BranchingProgram
+import PE.Impl.Gates.BPCircuit
+import PE.Impl.Gates.BPWord
 import PE.Impl.RingBTVW
 import PE.Impl.Gates.Eval
 import PE.Impl.Gates.DateWindow
