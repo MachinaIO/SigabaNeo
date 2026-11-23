@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Prog.WfB2Conf
+import SigabaNeo.Lib.Lattices.ProgAlgo.ValRegRP
 
 /-!
 # Stage II: the runs of the `W_f` block on register streams, at the numbers of `confA`
