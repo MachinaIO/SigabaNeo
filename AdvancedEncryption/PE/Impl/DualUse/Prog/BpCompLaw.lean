@@ -5,7 +5,13 @@ import PE.Impl.DualUse.Prog.BpComp
 
 * `run_readL`: reading one leaf advances the cursor by one entry;
 * **`run_treeP`**: the tree code appends `treeW` and advances the cursor by `2^(m+2)` entries,
-  leaving every other tape as it was (scratch, leaf bits, inner counters blank again).
+  leaving every other tape as it was (scratch, leaf bits, inner counters blank again);
+* `run_jBody`, `run_jLoop`: the `32` trees of a step; `run_stepP`: a step `i < 15` on the step
+  store `iSt` (`SV.enc`: the tapes of a step, every other tape blank); `run_steps`: the `15` steps;
+  `run_lastP`: the output table;
+* **`run_bpCompP`**, **`law_bpCompP`**: from `C` on tape `0` (`inp C`), the compiler ends in
+  `inp (compW R C)`, for every word `C` (no length condition);
+* `good_bpCompP`: coin-free and well formed.
 -/
 
 namespace AdvancedEncryption.DualUse.BpComp
@@ -383,5 +389,549 @@ theorem em_gProP (R : RL) (P : Store 64 → Prop) (hP : OStable P) : Em (gProP R
     (fun j _ => em_insP hP (em_emitU _ _) (em_emitU _ _) (em_emitU _ _))
   have h2 := (em_insP hP (em_emitU P (rs R.zero)) (em_emitU P 0) (em_emitU P 0)).seq hP h
   simpa [gProP, gProW, insL, insW] using h2
+
+/-! ### The store of a step -/
+
+/-- The tapes of a step. -/
+structure SV where
+  o : List Bool
+  cur : List Bool
+  tt : List Bool
+  ib : List Bool
+  iz : List Bool
+  pb : List Bool
+  pz : List Bool
+  qb : List Bool
+  qz : List Bool
+  jb : List Bool
+  jz : List Bool
+  jc : List Bool
+  sc : List Bool
+  ia : List Bool
+
+/-- Its store: every other tape blank. -/
+def SV.enc (v : SV) : Store 64 := fun t =>
+  if t = tO then v.o else
+  if t = tCUR then v.cur else
+  if t = tTT then v.tt else
+  if t = tIB then v.ib else
+  if t = tIZ then v.iz else
+  if t = tPB then v.pb else
+  if t = tPZ then v.pz else
+  if t = tQB then v.qb else
+  if t = tQZ then v.qz else
+  if t = tJB then v.jb else
+  if t = tJZ then v.jz else
+  if t = tJC then v.jc else
+  if t = tSC then v.sc else
+  if t = tIN then v.ia else []
+
+theorem SV.enc_o (v : SV) : v.enc tO = v.o := by unfold SV.enc; rfl
+theorem SV.enc_cur (v : SV) : v.enc tCUR = v.cur := by unfold SV.enc; rfl
+theorem SV.enc_tt (v : SV) : v.enc tTT = v.tt := by unfold SV.enc; rfl
+theorem SV.enc_ib (v : SV) : v.enc tIB = v.ib := by unfold SV.enc; rfl
+theorem SV.enc_iz (v : SV) : v.enc tIZ = v.iz := by unfold SV.enc; rfl
+theorem SV.enc_pb (v : SV) : v.enc tPB = v.pb := by unfold SV.enc; rfl
+theorem SV.enc_pz (v : SV) : v.enc tPZ = v.pz := by unfold SV.enc; rfl
+theorem SV.enc_qb (v : SV) : v.enc tQB = v.qb := by unfold SV.enc; rfl
+theorem SV.enc_qz (v : SV) : v.enc tQZ = v.qz := by unfold SV.enc; rfl
+theorem SV.enc_jb (v : SV) : v.enc tJB = v.jb := by unfold SV.enc; rfl
+theorem SV.enc_jz (v : SV) : v.enc tJZ = v.jz := by unfold SV.enc; rfl
+theorem SV.enc_jc (v : SV) : v.enc tJC = v.jc := by unfold SV.enc; rfl
+theorem SV.enc_sc (v : SV) : v.enc tSC = v.sc := by unfold SV.enc; rfl
+theorem SV.enc_ia (v : SV) : v.enc tIN = v.ia := by unfold SV.enc; rfl
+theorem SV.upd_o (v : SV) (x : List Bool) :
+    Function.update v.enc tO x = { v with o := x }.enc := by
+  funext t; by_cases h : t = tO
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_cur (v : SV) (x : List Bool) :
+    Function.update v.enc tCUR x = { v with cur := x }.enc := by
+  funext t; by_cases h : t = tCUR
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_tt (v : SV) (x : List Bool) :
+    Function.update v.enc tTT x = { v with tt := x }.enc := by
+  funext t; by_cases h : t = tTT
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_ib (v : SV) (x : List Bool) :
+    Function.update v.enc tIB x = { v with ib := x }.enc := by
+  funext t; by_cases h : t = tIB
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_iz (v : SV) (x : List Bool) :
+    Function.update v.enc tIZ x = { v with iz := x }.enc := by
+  funext t; by_cases h : t = tIZ
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_pb (v : SV) (x : List Bool) :
+    Function.update v.enc tPB x = { v with pb := x }.enc := by
+  funext t; by_cases h : t = tPB
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_pz (v : SV) (x : List Bool) :
+    Function.update v.enc tPZ x = { v with pz := x }.enc := by
+  funext t; by_cases h : t = tPZ
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_qb (v : SV) (x : List Bool) :
+    Function.update v.enc tQB x = { v with qb := x }.enc := by
+  funext t; by_cases h : t = tQB
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_qz (v : SV) (x : List Bool) :
+    Function.update v.enc tQZ x = { v with qz := x }.enc := by
+  funext t; by_cases h : t = tQZ
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_jb (v : SV) (x : List Bool) :
+    Function.update v.enc tJB x = { v with jb := x }.enc := by
+  funext t; by_cases h : t = tJB
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_jz (v : SV) (x : List Bool) :
+    Function.update v.enc tJZ x = { v with jz := x }.enc := by
+  funext t; by_cases h : t = tJZ
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_jc (v : SV) (x : List Bool) :
+    Function.update v.enc tJC x = { v with jc := x }.enc := by
+  funext t; by_cases h : t = tJC
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_sc (v : SV) (x : List Bool) :
+    Function.update v.enc tSC x = { v with sc := x }.enc := by
+  funext t; by_cases h : t = tSC
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+theorem SV.upd_ia (v : SV) (x : List Bool) :
+    Function.update v.enc tIN x = { v with ia := x }.enc := by
+  funext t; by_cases h : t = tIN
+  · subst h; rw [Function.update_self]; rfl
+  · rw [Function.update_of_ne h, SV.enc.eq_1, SV.enc.eq_1]; simp only [h, ite_false]
+
+theorem tc_eq_false {j : ℕ} {t : Fin 64} (h : t.val < 22) : (tc j = t) ↔ False :=
+  ⟨tc_ne h, False.elim⟩
+
+theorem SV.enc_tc (v : SV) (j : ℕ) : v.enc (tc j) = [] := by
+  simp (disch := decide) only [SV.enc, tc_eq_false, ite_false]
+
+theorem treeP_congr (sE nsE : ℕ → Prog 64) {Y Y' : SLay} (h0 : Y.zero = Y'.zero) (h1 : Y.x1 = Y'.x1)
+    (h2 : Y.x2 = Y'.x2) (hl : Y.lo = Y'.lo) (hh : Y.hi = Y'.hi) :
+    ∀ m dE, treeP sE nsE Y m dE = treeP sE nsE Y' m dE
+  | 0, dE => by simp only [treeP, nodeP, srcP, h0, h1, h2]
+  | m + 1, dE => by simp only [treeP, nodeP, h1, h2, hl, hh, treeP_congr sE nsE h0 h1 h2 hl hh m]
+
+theorem treeS_eq (R : RL) (i : ℕ) (dE : Prog 64) :
+    treeS R dE = treeP (sEd R) (nsEd R) (SY R i) 38 dE :=
+  treeP_congr _ _ rfl rfl rfl rfl rfl 38 dE
+
+/-- The selector emitters of step `i`. -/
+theorem em_sEd (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i : ℕ) (hi : i ≤ 15)
+    (hP : ∀ s, P s → Pq (FS i) s) (ℓ : ℕ) (h1 : 1 ≤ ℓ) (h2 : ℓ ≤ 40) :
+    Em (sEd R ℓ) P (blk ((SY R i).s ℓ)) := by
+  simp only [sEd, SY, selS]
+  split_ifs with h
+  · exact (em_inE i (8 - ℓ) hi (by omega) hP).congr (by congr 1)
+  · exact em_zE R hR i (ℓ - 9) (by omega) hP
+
+theorem TW_val {m : ℕ} {t : Fin 64} (h : TW m t) : t.val < 9 ∨ 22 ≤ t.val := by
+  rcases h with h | h | h | h | h | h | h | h | ⟨j, -, h⟩ <;> subst h <;> simp [tc_val]
+
+theorem TW_ne {m : ℕ} {t u : Fin 64} (h : TW m t) (hu1 : 9 ≤ u.val) (hu2 : u.val < 22) : u ≠ t :=
+  fun e => by subst e; have := TW_val h; omega
+
+/-- Normalize updates of a step store. -/
+macro "encs" : tactic => `(tactic| simp only [SV.upd_o, SV.upd_cur, SV.upd_tt, SV.upd_ib, SV.upd_iz, SV.upd_pb, SV.upd_pz, SV.upd_qb, SV.upd_qz, SV.upd_jb, SV.upd_jz, SV.upd_jc, SV.upd_sc, SV.upd_ia, SV.enc_o, SV.enc_cur, SV.enc_tt, SV.enc_ib, SV.enc_iz, SV.enc_pb, SV.enc_pz, SV.enc_qb, SV.enc_qz, SV.enc_jb, SV.enc_jz, SV.enc_jc, SV.enc_sc, SV.enc_ia])
+
+/-- The step tapes are those of step `i`. -/
+def SV.Ok (v : SV) (i : ℕ) : Prop :=
+  v.ib = List.replicate (8 * i) true ∧ v.iz = List.replicate (120 - 8 * i) false ∧
+    v.pb = List.replicate (32 * (i % 2)) true ∧ v.pz = List.replicate (32 - 32 * (i % 2)) false ∧
+    v.qb = List.replicate (32 - 32 * (i % 2)) true ∧ v.qz = List.replicate (32 * (i % 2)) false
+
+/-- **One round of the loop over the state bits.** -/
+theorem run_jBody (R : RL) (hR : R.Ok) (i j : ℕ) (hi : i ≤ 15) (hj : j < 32) (v : SV) (hv : v.Ok i)
+    (hjb : v.jb = List.replicate j true) (hjz : v.jz = List.replicate (31 - j) false)
+    (w : List Bool) :
+    run (jBody R) (Function.update v.enc tJC w) = Function.update
+      { v with o := v.o ++ treeW (SY R i) (lfT (31 - j) 32 v.cur) 38 0 (zS R ((i + 1) % 2) j),
+               tt := v.cur.drop tblW, jb := v.jb ++ [true], jz := v.jz.tail }.enc tJC w := by
+  obtain ⟨hib, hiz, hpb, hpz, hqb, hqz⟩ := hv
+  let Q : Store 64 → Prop := fun s => FS i s ∧ FJ j s
+  have hw : 31 - j + 1 + j = 32 := by omega
+  rw [jBody, run_seq, run_copy, run_seq, treeS_eq R i]
+  rw [run_treeP (SY R i) (sEd R) (nsEd R) (31 - j) j v.cur 38 le_rfl Q ?hQ
+    (fun ℓ h1 h2 => em_sEd R hR i hi (fun s hs => ⟨hs.1.1, hs.2⟩) ℓ h1 (by omega))
+    (fun ℓ _ _ => em_emitU _ _) (rootE R) _
+    (em_rootE R hR i j hj fun s hs => ⟨⟨hs.1.1, hs.2⟩, hs.1.2⟩) 0 _ ?hQs (by upd) (by upd) (by upd)
+    (by upd) (by upd) (by upd) ?hc ?hZ ?hJ ?hT]
+  case hQ =>
+    intro s t u ht ⟨⟨h1, h2, h3, h4, h5, h6⟩, h7, h8⟩
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩ <;>
+      rw [Function.update_of_ne (TW_ne ht (by decide) (by decide))] <;> assumption
+  case hQs =>
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩ <;> simp +decide [SV.enc, *]
+  case hc =>
+    intro j' _
+    rw [Function.update_of_ne (tc_ne (by decide)), Function.update_of_ne (tc_ne (by decide)),
+      SV.enc_tc]
+  case hZ => simp +decide [SV.enc, hjz]
+  case hJ => simp +decide [SV.enc, hjb]
+  case hT => simp +decide [SV.enc]
+  rw [run_seq, run_snocN, run_tail, hw, show 0 + 2 ^ (38 + 2) = 2 ^ 40 by norm_num,
+    show 2 ^ 40 * 32 = tblW from rfl]
+  generalize treeW (SY R i) (lfT (31 - j) 32 v.cur) 38 0 (zS R ((i + 1) % 2) j) = X
+  encs
+  rfl
+
+/-- The trees of step `i` on the table at `cur`, for the state bits `j < n`. -/
+def treesW (R : RL) (i : ℕ) (cur : List Bool) (n : ℕ) : List Bool :=
+  (List.range n).flatMap fun j => treeW (SY R i) (lfT (31 - j) 32 cur) 38 0 (zS R ((i + 1) % 2) j)
+
+theorem treesW_succ (R : RL) (i : ℕ) (cur : List Bool) (n : ℕ) :
+    treesW R i cur (n + 1) =
+      treesW R i cur n ++ treeW (SY R i) (lfT (31 - n) 32 cur) 38 0 (zS R ((i + 1) % 2) n) := by
+  simp [treesW, List.range_succ, List.flatMap_append]
+
+theorem pq_enc (v : SV) (i : ℕ) (hv : v.Ok i) : Pq (FS i) v.enc := by
+  obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hv
+  refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_⟩, ?_, ?_⟩ <;> simp +decide [SV.enc, *]
+
+/-- The state of the loop over the state bits before round `j`. -/
+def jSt (v : SV) (R : RL) (i : ℕ) (o0 : List Bool) (j : ℕ) : SV :=
+  { v with o := o0 ++ treesW R i v.cur j, tt := if j = 0 then [] else v.cur.drop tblW,
+           jb := List.replicate j true, jz := List.replicate (31 - j) false, jc := [] }
+
+/-- **The loop over the state bits.** -/
+theorem run_jLoop (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (v : SV) (hv : v.Ok i) (o0 : List Bool) :
+    run (loop tJC (jBody R)) { jSt v R i o0 0 with jc := List.replicate 32 true }.enc =
+      (jSt v R i o0 32).enc := by
+  have h := run_loop_count tJC (jBody R) (fun j => (jSt v R i o0 j).enc) 32 ?_
+    (List.replicate 32 true) 0 (by simp)
+  · simp only [SV.upd_jc, List.length_replicate, Nat.zero_add] at h
+    rw [h]
+    congr 1
+  · intro j hj w
+    rw [run_jBody R hR i j hi hj (jSt v R i o0 j) hv rfl rfl w]
+    congr 1
+    simp only [jSt, treesW_succ, List.append_assoc, List.replicate_succ', Nat.add_one_ne_zero,
+      ite_false]
+    rw [List.tail_replicate, show 31 - j - 1 = 31 - (j + 1) by omega]
+
+theorem run_jLoop' (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (u : SV) (hu : u.Ok i)
+    (htt : u.tt = []) (hjb : u.jb = []) (hjz : u.jz = List.replicate 31 false)
+    (hjc : u.jc = List.replicate 32 true) :
+    run (loop tJC (jBody R)) u.enc = SV.enc
+      { u with o := u.o ++ treesW R i u.cur 32, tt := u.cur.drop tblW,
+               jb := List.replicate 32 true, jz := [], jc := [] } := by
+  have h := run_jLoop R hR i hi u hu u.o
+  have e : { jSt u R i u.o 0 with jc := List.replicate 32 true } = u := by
+    cases u; simp_all [jSt, treesW]
+  rw [e] at h
+  rw [h]
+  simp [jSt]
+
+/-- The state before step `i`. -/
+def iSt (C o0 : List Bool) (i : ℕ) (w : List Bool) : SV :=
+  { o := o0, cur := C.drop (i * tblW), tt := [], ib := List.replicate (8 * i) true,
+    iz := List.replicate (120 - 8 * i) false, pb := List.replicate (32 * (i % 2)) true,
+    pz := List.replicate (32 - 32 * (i % 2)) false, qb := List.replicate (32 - 32 * (i % 2)) true,
+    qz := List.replicate (32 * (i % 2)) false, jb := [], jz := [], jc := [], sc := w, ia := [] }
+
+theorem iSt_ok (C o0 : List Bool) (i : ℕ) (w : List Bool) : (iSt C o0 i w).Ok i :=
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+
+/-- **One step** `i < 15`. -/
+theorem run_stepP (R : RL) (hR : R.Ok) (C o0 : List Bool) (i : ℕ) (hi : i < 15) (w : List Bool) :
+    run (stepP R) (iSt C o0 i w).enc = (iSt C (o0 ++ stepW R C i) (i + 1) w).enc := by
+  simp only [stepP, run_seq]
+  rw [em_proP R hR i (by omega) _ (pq_enc _ i (iSt_ok C o0 i w))]
+  simp only [run_clear, run_snocN]
+  encs
+  rw [run_jLoop' R hR i (by omega) _ ?ok ?tt ?jb ?jz ?jc]
+  case ok => exact iSt_ok C o0 i w
+  case tt => rfl
+  case jb => rfl
+  case jz => simp
+  case jc => simp
+  simp only [swapP, run_seq, run_copy, run_clear, run_tlN]
+  encs
+  congr 1
+  simp only [iSt, SV.mk.injEq]
+  have h2 : i % 2 = 0 ∨ i % 2 = 1 := Nat.mod_two_eq_zero_or_one i
+  have h3 : (i + 1) % 2 = 1 - i % 2 := by omega
+  refine ⟨by simp [stepW, treesW, List.append_assoc], ?_, trivial, ?_, ?_, ?_⟩
+  · rw [List.drop_drop, Nat.add_mul, Nat.one_mul, Nat.add_comm]
+  · rw [List.replicate_append_replicate, Nat.mul_succ]
+  · rw [List.drop_replicate]; congr 1
+  · rw [h3]; rcases h2 with h | h <;> rw [h] <;> simp
+
+/-- A store with the word `x` on tape `0`, every other tape blank. -/
+def inp (x : List Bool) : Store 64 := Function.update (fun _ => []) tIN x
+
+/-- The blank step store. -/
+def SV.blank : SV := ⟨[], [], [], [], [], [], [], [], [], [], [], [], [], []⟩
+
+theorem inp_eq (x : List Bool) : inp x = { SV.blank with ia := x }.enc := by
+  have : (fun _ : Fin 64 => ([] : List Bool)) = SV.blank.enc := by
+    funext t; rw [SV.enc.eq_1]; simp only [SV.blank, ite_self]
+  rw [inp, this, SV.upd_ia]
+
+/-- **The steps `0 … 14`.** -/
+theorem run_steps (R : RL) (hR : R.Ok) (C o0 : List Bool) :
+    run (loop tSC (stepP R)) (iSt C o0 0 (List.replicate 15 true)).enc =
+      (iSt C (o0 ++ (List.range 15).flatMap (stepW R C)) 15 []).enc := by
+  have h := run_loop_count tSC (stepP R)
+    (fun i => (iSt C (o0 ++ (List.range i).flatMap (stepW R C)) i []).enc) 15
+    (fun i hi w => by
+      simp only [SV.upd_sc]
+      have e : ∀ o i w, { iSt C o i [] with sc := w } = iSt C o i w := fun _ _ _ => rfl
+      rw [e, e, run_stepP R hR C _ i hi w, List.range_succ, List.flatMap_append,
+        List.flatMap_singleton, List.append_assoc])
+    (List.replicate 15 true) 0 (by simp)
+  simp only [SV.upd_sc, List.length_replicate, Nat.zero_add, List.range_zero, List.flatMap_nil,
+    List.append_nil] at h
+  exact h
+
+theorem run_steps' (R : RL) (hR : R.Ok) (C o0 : List Bool) (u : SV) (h1 : u.o = o0)
+    (h2 : u.cur = C) (h3 : u.tt = []) (h4 : u.ib = []) (h5 : u.iz = List.replicate 120 false)
+    (h6 : u.pb = []) (h7 : u.pz = List.replicate 32 false) (h8 : u.qb = List.replicate 32 true)
+    (h9 : u.qz = []) (h10 : u.jb = []) (h11 : u.jz = []) (h12 : u.jc = [])
+    (h13 : u.sc = List.replicate 15 true) (h14 : u.ia = []) :
+    run (loop tSC (stepP R)) u.enc =
+      (iSt C (o0 ++ (List.range 15).flatMap (stepW R C)) 15 []).enc := by
+  have e : u = iSt C o0 0 (List.replicate 15 true) := by cases u; simp_all [iSt]
+  rw [e]; exact run_steps R hR C o0
+
+theorem SV.eq_iSt (C o0 : List Bool) (i : ℕ) (w : List Bool) (u : SV) (h1 : u.o = o0)
+    (h2 : u.cur = C.drop (i * tblW)) (h3 : u.tt = []) (h4 : u.ib = List.replicate (8 * i) true)
+    (h5 : u.iz = List.replicate (120 - 8 * i) false) (h6 : u.pb = List.replicate (32 * (i % 2)) true)
+    (h7 : u.pz = List.replicate (32 - 32 * (i % 2)) false)
+    (h8 : u.qb = List.replicate (32 - 32 * (i % 2)) true)
+    (h9 : u.qz = List.replicate (32 * (i % 2)) false) (h10 : u.jb = []) (h11 : u.jz = [])
+    (h12 : u.jc = []) (h13 : u.sc = w) (h14 : u.ia = []) : u = iSt C o0 i w := by
+  cases u; simp_all [iSt]
+
+/-- **The last step.** -/
+theorem run_lastP (R : RL) (hR : R.Ok) (C o0 : List Bool) :
+    run (lastP R) (iSt C o0 15 []).enc = { iSt C (o0 ++ lastW R C) 15 [] with tt := [] }.enc := by
+  simp only [lastP, run_seq]
+  rw [em_proP R hR 15 le_rfl _ (pq_enc _ 15 (iSt_ok C o0 15 []))]
+  encs
+  rw [run_copy]
+  encs
+  rw [treeS_eq R 15]
+  rw [run_treeP (SY R 15) (sEd R) (nsEd R) 0 0 (C.drop (15 * tblW)) 38 le_rfl (FS 15) ?hQ
+    (fun ℓ h1 h2 => em_sEd R hR 15 le_rfl (fun s hs => hs) ℓ h1 (by omega))
+    (fun ℓ _ _ => em_emitU _ _) _ _ (em_emitU _ (rs R.out)) 0 _ ?hQs (by unfold SV.enc; rfl) (by unfold SV.enc; rfl)
+    (by unfold SV.enc; rfl) (by unfold SV.enc; rfl) (by unfold SV.enc; rfl) (by unfold SV.enc; rfl)
+    ?hc (by encs; rfl) (by encs; rfl)
+    (by encs; simp [iSt])]
+  case hQ =>
+    intro s t u ht ⟨h1, h2, h3, h4, h5, h6⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+      rw [Function.update_of_ne (TW_ne ht (by decide) (by decide))] <;> assumption
+  case hQs => exact (pq_enc _ 15 (iSt_ok C o0 15 [])).1
+  case hc => intro j _; exact SV.enc_tc _ j
+  simp only [run_clear]
+  encs
+  congr 1
+  simp [iSt, lastW, List.append_assoc]
+
+/-- **The law of the compiler** (pure semantics): from `C` on tape `0`, `compW R C` on tape `0`,
+every other tape blank. -/
+theorem run_bpCompP (R : RL) (hR : R.Ok) (C : List Bool) :
+    run (bpCompP R) (inp C) = inp (compW R C) := by
+  rw [bpCompP]
+  repeat rw [run_seq]
+  rw [inp_eq, em_gProP R (fun _ => True) (fun _ _ _ => trivial) _ trivial]
+  encs
+  simp only [run_copy, run_clear, run_snocN]
+  encs
+  rw [run_steps' R hR C (gProW R) _ (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl)
+    (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl) (by rfl)]
+  rw [run_lastP R hR]
+  encs
+  rw [inp_eq]
+  congr 1
+
+
+/-! ### Coin-freeness and well-formedness -/
+
+/-- The tapes of an emitter. -/
+def E3 (t : Fin 64) : Prop := t = tO ∨ t = tA ∨ t = tB
+
+/-- A well-behaved emitter: no coin, well formed, writes only the output and the scratch. -/
+def GoodE (p : Prog 64) : Prop := p.CoinFree ∧ p.WF ∧ WritesIn E3 p
+
+theorem goodE_seq {p q : Prog 64} (hp : GoodE p) (hq : GoodE q) : GoodE (p ⨾ q) :=
+  ⟨hp.1.seq' hq.1, ⟨hp.2.1, hq.2.1⟩, hp.2.2.seq hq.2.2⟩
+
+theorem goodE_emitU (j : ℕ) : GoodE (emitU tO 512 j) :=
+  ⟨coinFree_emitU _ _ _, wf_emitU _ _ _, writesIn_emitU (Or.inl rfl) _ _⟩
+
+theorem goodE_dynE (a : ℕ) (xs : List (Fin 64)) (b : ℕ) : GoodE (dynE tO tA tB a xs b) :=
+  ⟨coinFree_dynE _ _ _ _ _ _, wf_dynE (by decide) (by decide) _ _ _,
+    writesIn_dynE (Or.inl rfl) (Or.inr (Or.inl rfl)) (Or.inr (Or.inr rfl)) _ _ _⟩
+
+theorem goodE_ifBit {i : Fin 64} {p q : Prog 64} (hp : GoodE p) (hq : GoodE q) :
+    GoodE (ifBit i p q) := ⟨hp.1.ifBit' hq.1, ⟨hp.2.1, hq.2.1⟩, hp.2.2.ifBit hq.2.2⟩
+
+theorem goodE_ifBlank {i : Fin 64} {p q : Prog 64} (hp : GoodE p) (hq : GoodE q) :
+    GoodE (ifBlank i p q) := ⟨hp.1.ifBlank' hq.1, ⟨hp.2.1, hq.2.1⟩, hp.2.2.ifBlank hq.2.2⟩
+
+theorem goodE_nodeP (sE nsE : ℕ → Prog 64) (Y : SLay) (ℓ : ℕ) {loE hiE dE : Prog 64}
+    (hs : GoodE (sE ℓ)) (hns : GoodE (nsE ℓ)) (hlo : GoodE loE) (hhi : GoodE hiE)
+    (hd : GoodE dE) : GoodE (nodeP sE nsE Y ℓ loE hiE dE) :=
+  goodE_seq (goodE_emitU _) <| goodE_seq hs <| goodE_seq hhi <| goodE_seq (goodE_emitU _) <|
+    goodE_seq hns <| goodE_seq hlo <| goodE_seq hd <| goodE_seq (goodE_emitU _) (goodE_emitU _)
+
+/-- A well-behaved piece of the tree code of `m + 2` levels. -/
+def GoodT (m : ℕ) (p : Prog 64) : Prop := p.CoinFree ∧ p.WF ∧ WritesIn (TW m) p
+
+theorem GoodE.toT {p : Prog 64} (h : GoodE p) (m : ℕ) : GoodT m p :=
+  ⟨h.1, h.2.1, h.2.2.mono fun t ht => by
+    rcases ht with h | h | h
+    · exact Or.inl h
+    · exact Or.inr (Or.inr (Or.inl h))
+    · exact Or.inr (Or.inr (Or.inr (Or.inl h)))⟩
+
+theorem goodT_seq {m : ℕ} {p q : Prog 64} (hp : GoodT m p) (hq : GoodT m q) : GoodT m (p ⨾ q) :=
+  ⟨hp.1.seq' hq.1, ⟨hp.2.1, hq.2.1⟩, hp.2.2.seq hq.2.2⟩
+
+theorem goodT_prim {m : ℕ} (q : Prim 64) (h : ∀ i ∈ q.writes, TW m i) : GoodT m (prim q) :=
+  ⟨rfl, trivial, WritesIn.prim q h⟩
+
+theorem goodT_readL (m : ℕ) {b : Fin 64} (hb : TW m b) : GoodT m (readL b) :=
+  goodT_seq ⟨coinFree_dropT _ _ _, wf_dropT (by decide), writesIn_dropT (TW_TT m)
+      (Or.inr (Or.inr (Or.inl rfl)))⟩ <|
+    goodT_seq (goodT_prim _ (by simp [Prim.writes, TW_TT m, hb]))
+      ⟨coinFree_dropT _ _ _, wf_dropT (by decide), writesIn_dropT (TW_TT m)
+        (Or.inr (Or.inr (Or.inl rfl)))⟩
+
+/-- **The tree code** is coin-free, well formed, and writes only its tapes. -/
+theorem goodT_treeP (sE nsE : ℕ → Prog 64) (Y : SLay) (hs : ∀ ℓ, GoodE (sE ℓ))
+    (hns : ∀ ℓ, GoodE (nsE ℓ)) : ∀ m, m ≤ 38 → ∀ dE, GoodE dE → GoodT m (treeP sE nsE Y m dE)
+  | 0, _, dE, hd => by
+    refine goodT_seq (goodT_readL 0 (TW_b0 0)) <| goodT_seq (goodT_readL 0 (TW_b1 0)) <|
+      goodT_seq (goodT_readL 0 (TW_b2 0)) <| goodT_seq (goodT_readL 0 (TW_b3 0)) <|
+      goodT_seq ((goodE_nodeP sE nsE Y 2 (hs 2) (hns 2) ?_ ?_ hd).toT 0) <|
+      goodT_seq (goodT_prim _ (by simp [Prim.writes, TW_b0])) <|
+      goodT_seq (goodT_prim _ (by simp [Prim.writes, TW_b1])) <|
+      goodT_seq (goodT_prim _ (by simp [Prim.writes, TW_b2])) (goodT_prim _ (by simp [Prim.writes, TW_b3]))
+    all_goals exact goodE_ifBit (goodE_ifBit (goodE_emitU _) (hns 1)) (goodE_ifBit (hs 1) (goodE_emitU _))
+  | m + 1, hm, dE, hd => by
+    have hc : TW (m + 1) (tc m) := Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      ⟨m, by omega, rfl⟩)))))))
+    have ih := goodT_treeP sE nsE Y hs hns m (by omega) _
+      (goodE_ifBlank (i := tc m) (goodE_emitU (Y.hi (m + 2))) (goodE_emitU (Y.lo (m + 2))))
+    refine goodT_seq (goodT_prim _ (by simp [Prim.writes, hc])) <|
+      goodT_seq ⟨coinFree_snocN _ _ _, wf_snocN _ _ _, writesIn_snocN hc _ _⟩ <|
+      goodT_seq ⟨ih.1.loop', ⟨ih.2.1, ih.2.2 (tc m) (not_TW_tc (by omega))⟩,
+        WritesIn.loop hc (ih.2.2.mono fun t ht => TW_mono (by omega) ht)⟩
+        ((goodE_nodeP sE nsE Y (m + 3) (hs _) (hns _) (goodE_emitU _) (goodE_emitU _) hd).toT _)
+
+/-- Coin-free, well formed, writing only the tapes of `S`. -/
+def GoodS (S : Fin 64 → Prop) (p : Prog 64) : Prop := p.CoinFree ∧ p.WF ∧ WritesIn S p
+
+theorem GoodS.seq {S : Fin 64 → Prop} {p q : Prog 64} (hp : GoodS S p) (hq : GoodS S q) :
+    GoodS S (p ⨾ q) := ⟨hp.1.seq' hq.1, ⟨hp.2.1, hq.2.1⟩, hp.2.2.seq hq.2.2⟩
+
+theorem GoodS.mono {S S' : Fin 64 → Prop} {p : Prog 64} (hp : GoodS S p) (h : ∀ t, S t → S' t) :
+    GoodS S' p := ⟨hp.1, hp.2.1, hp.2.2.mono h⟩
+
+theorem GoodS.prim {S : Fin 64 → Prop} (q : Prim 64) (h : ∀ i ∈ q.writes, S i) : GoodS S (prim q) :=
+  ⟨rfl, trivial, WritesIn.prim q h⟩
+
+theorem GoodS.loop {S : Fin 64 → Prop} {c : Fin 64} {p : Prog 64} (hp : GoodS S p) (hc : ¬ S c)
+    (S' : Fin 64 → Prop) (hS : ∀ t, S t → S' t) (hc' : S' c) : GoodS S' (loop c p) :=
+  ⟨hp.1.loop', ⟨hp.2.1, hp.2.2 c hc⟩, WritesIn.loop hc' (hp.2.2.mono hS)⟩
+
+theorem goodS_snocN {S : Fin 64 → Prop} {o : Fin 64} (ho : S o) (b : Bool) (n : ℕ) :
+    GoodS S (snocN o b n) := ⟨coinFree_snocN _ _ _, wf_snocN _ _ _, writesIn_snocN ho _ _⟩
+
+theorem goodS_tlN {S : Fin 64 → Prop} {o : Fin 64} (ho : S o) (n : ℕ) :
+    GoodS S (tlN o n) := ⟨coinFree_tlN _ _, wf_tlN _ _, writesIn_tlN ho _⟩
+
+theorem goodE_insL : ∀ (l : List (Prog 64)), (∀ p ∈ l, GoodE p) → GoodE (insL l)
+  | [], _ => ⟨rfl, trivial, WritesIn.prim _ (by simp [Prim.writes, E3])⟩
+  | p :: l, h => goodE_seq (h p (by simp)) (goodE_insL l fun q hq => h q (by simp [hq]))
+
+theorem goodE_insP {d a b : Prog 64} (hd : GoodE d) (ha : GoodE a) (hb : GoodE b) :
+    GoodE (insP d a b) := goodE_seq hd (goodE_seq ha hb)
+
+theorem goodE_proP (R : RL) : GoodE (proP R) := by
+  refine goodE_insL _ fun p hp => ?_
+  simp only [List.mem_append, List.mem_map] at hp
+  rcases hp with ⟨m, -, rfl⟩ | ⟨j, -, rfl⟩
+  · exact goodE_insP (goodE_emitU _) (goodE_dynE _ _ _) (goodE_dynE _ _ _)
+  · exact goodE_insP (goodE_emitU _) (goodE_dynE _ _ _) (goodE_dynE _ _ _)
+
+theorem goodE_gProP (R : RL) : GoodE (gProP R) := by
+  refine goodE_insL _ fun p hp => ?_
+  simp only [List.mem_cons, List.mem_map] at hp
+  rcases hp with rfl | ⟨j, -, rfl⟩ <;>
+    exact goodE_insP (goodE_emitU _) (goodE_emitU _) (goodE_emitU _)
+
+theorem goodE_sEd (R : RL) (ℓ : ℕ) : GoodE (sEd R ℓ) := by
+  unfold sEd; split_ifs <;> exact goodE_dynE _ _ _
+
+theorem goodT_treeS (R : RL) {dE : Prog 64} (hd : GoodE dE) : GoodT 38 (treeS R dE) :=
+  goodT_treeP _ _ _ (goodE_sEd R) (fun _ => goodE_emitU _) 38 le_rfl dE hd
+
+/-- The tapes of the steps: all but the step counter. -/
+abbrev SS (t : Fin 64) : Prop := t ≠ tSC
+
+theorem TW38_SS {t : Fin 64} (h : TW 38 t) : SS t ∧ t ≠ tJC := by
+  have := TW_val h
+  exact ⟨fun e => by subst e; simp at this, fun e => by subst e; simp at this⟩
+
+theorem goodS_stepP (R : RL) : GoodS SS (stepP R) := by
+  have hT := goodT_treeS R (goodE_dynE (rs R.z0) [tQB, tJB, tJZ, tQZ] (512 - rs R.z0 - 63))
+  have hJ : GoodS (fun t => SS t ∧ t ≠ tJC) (jBody R) :=
+    (GoodS.prim _ (by simp +decide)).seq <|
+      (GoodS.mono hT fun t ht => TW38_SS ht).seq <|
+      (goodS_snocN (by decide) _ _).seq (GoodS.prim _ (by simp +decide))
+  have hP := (goodE_proP R)
+  refine (GoodS.mono ⟨hP.1, hP.2.1, hP.2.2⟩ fun t ht => by
+    rcases ht with h | h | h <;> subst h <;> decide).seq ?_
+  refine (GoodS.prim _ (by simp +decide)).seq <|
+    (GoodS.prim _ (by simp +decide)).seq <|
+    (goodS_snocN (by decide) _ _).seq <| (GoodS.prim _ (by simp +decide)).seq <|
+    (goodS_snocN (by decide) _ _).seq <|
+    (hJ.loop (by simp) SS (fun t ht => ht.1) (by decide)).seq <|
+    (GoodS.prim _ (by simp +decide)).seq <|
+    (GoodS.prim _ (by simp +decide)).seq <|
+    (GoodS.prim _ (by simp +decide)).seq <|
+    (GoodS.prim _ (by simp +decide)).seq <|
+    (goodS_snocN (by decide) _ _).seq <| (goodS_tlN (by decide) _).seq ?_
+  unfold swapP
+  repeat (first | exact GoodS.prim _ (by simp +decide) |
+    refine (GoodS.prim _ (by simp +decide)).seq ?_)
+
+/-- **The compiler is coin-free and well formed.** -/
+theorem good_bpCompP (R : RL) : (bpCompP R).CoinFree ∧ (bpCompP R).WF := by
+  have hT := goodT_treeS R (goodE_emitU (rs R.out))
+  have hP := goodE_proP R
+  have hL : GoodS (fun _ => True) (lastP R) :=
+    (GoodS.mono ⟨hP.1, hP.2.1, hP.2.2⟩ fun _ _ => trivial).seq <|
+      (GoodS.prim _ (by simp)).seq <| (GoodS.mono hT fun _ _ => trivial).seq (GoodS.prim _ (by simp))
+  have hG := goodE_gProP R
+  have h : GoodS (fun _ => True) (bpCompP R) := by
+    refine (GoodS.mono ⟨hG.1, hG.2.1, hG.2.2⟩ fun _ _ => trivial).seq ?_
+    refine (GoodS.prim _ (by simp)).seq <| (GoodS.prim _ (by simp)).seq <|
+      (goodS_snocN trivial _ _).seq <| (goodS_snocN trivial _ _).seq <|
+      (goodS_snocN trivial _ _).seq <| (GoodS.prim _ (by simp)).seq <|
+      (goodS_snocN trivial _ _).seq <|
+      ((goodS_stepP R).loop (by simp [SS]) _ (fun _ _ => trivial) trivial).seq <| hL.seq ?_
+    repeat (first | exact GoodS.prim _ (by simp) | refine (GoodS.prim _ (by simp)).seq ?_)
+  exact ⟨h.1, h.2.1⟩
+
+/-- **The compiler's law**: the point mass at `compW R C`. -/
+theorem law_bpCompP (R : RL) (hR : R.Ok) (C : List Bool) :
+    (bpCompP R).law (inp C) = PMF.pure (inp (compW R C)) := by
+  rw [law_eq_run_of_coinFree _ (good_bpCompP R).1, run_bpCompP R hR C]
 
 end AdvancedEncryption.DualUse.BpComp

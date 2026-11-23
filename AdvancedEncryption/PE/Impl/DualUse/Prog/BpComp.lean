@@ -274,9 +274,9 @@ def treeS (dE : Prog 64) : Prog 64 := treeP (sEd R) (nsEd R) (SY R 0) 38 dE
 bit. -/
 def jBody : Prog 64 := cp tTT tCUR ⨾ treeS R (rootE R) ⨾ snocN tJB true 1 ⨾ tl tJZ
 
-/-- Exchange the banks. -/
+/-- Exchange the banks (through the blank cursor tape). -/
 def swapP : Prog 64 :=
-  cp tA tPB ⨾ cp tPB tQB ⨾ cp tQB tA ⨾ cp tA tPZ ⨾ cp tPZ tQZ ⨾ cp tQZ tA ⨾ clr tA
+  cp tTT tPB ⨾ cp tPB tQB ⨾ cp tQB tTT ⨾ cp tTT tPZ ⨾ cp tPZ tQZ ⨾ cp tQZ tTT ⨾ clr tTT
 
 /-- **One step** `i < 15`. -/
 def stepP : Prog 64 :=

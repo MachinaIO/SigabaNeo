@@ -266,6 +266,77 @@ theorem run_loop_count (i : Fin k) (body : Prog k) (G : ℕ → Store k) (N : �
     rw [run_loop, Function.update_self] at h2
     rw [h1, h2, show j + 1 + w.length = j + (w.length + 1) by omega]
 
+/-! ### Coin-freeness and the tapes written, compositionally -/
+
+theorem CoinFree.seq' {p q : Prog k} (hp : p.CoinFree) (hq : q.CoinFree) : (p ⨾ q).CoinFree := by
+  simp only [CoinFree, coinFreeB, Bool.and_eq_true]; exact ⟨hp, hq⟩
+
+theorem CoinFree.ifBit' {i : Fin k} {p q : Prog k} (hp : p.CoinFree) (hq : q.CoinFree) :
+    (ifBit i p q).CoinFree := by
+  simp only [CoinFree, coinFreeB, Bool.and_eq_true]; exact ⟨hp, hq⟩
+
+theorem CoinFree.ifBlank' {i : Fin k} {p q : Prog k} (hp : p.CoinFree) (hq : q.CoinFree) :
+    (ifBlank i p q).CoinFree := by
+  simp only [CoinFree, coinFreeB, Bool.and_eq_true]; exact ⟨hp, hq⟩
+
+theorem CoinFree.loop' {i : Fin k} {p : Prog k} (hp : p.CoinFree) : (loop i p).CoinFree := hp
+
+theorem CoinFree.prim' (q : Prim k) : (prim q).CoinFree := rfl
+
+/-- `p` writes only tapes in `S`. -/
+def WritesIn (S : Fin k → Prop) (p : Prog k) : Prop := ∀ i, ¬ S i → p.Preserves i
+
+theorem WritesIn.seq {S : Fin k → Prop} {p q : Prog k} (hp : WritesIn S p) (hq : WritesIn S q) :
+    WritesIn S (p ⨾ q) := fun i hi => ⟨hp i hi, hq i hi⟩
+
+theorem WritesIn.ifBit {S : Fin k → Prop} {j : Fin k} {p q : Prog k} (hp : WritesIn S p)
+    (hq : WritesIn S q) : WritesIn S (ifBit j p q) := fun i hi => ⟨hp i hi, hq i hi⟩
+
+theorem WritesIn.ifBlank {S : Fin k → Prop} {j : Fin k} {p q : Prog k} (hp : WritesIn S p)
+    (hq : WritesIn S q) : WritesIn S (ifBlank j p q) := fun i hi => ⟨hp i hi, hq i hi⟩
+
+theorem WritesIn.loop {S : Fin k → Prop} {j : Fin k} {p : Prog k} (hj : S j) (hp : WritesIn S p) :
+    WritesIn S (loop j p) := fun i hi => ⟨fun e => hi (e ▸ hj), hp i hi⟩
+
+theorem WritesIn.prim {S : Fin k → Prop} (q : Prim k) (h : ∀ i ∈ q.writes, S i) :
+    WritesIn S (prim q) := fun i hi hw => hi (h i hw)
+
+theorem WritesIn.mono {S S' : Fin k → Prop} {p : Prog k} (hp : WritesIn S p) (h : ∀ i, S i → S' i) :
+    WritesIn S' p := fun i hi => hp i fun hs => hi (h i hs)
+
+theorem writesIn_snocN {S : Fin k → Prop} {o : Fin k} (ho : S o) (b : Bool) :
+    ∀ n, WritesIn S (snocN o b n)
+  | 0 => WritesIn.prim _ (by simp [Prim.writes, ho])
+  | n + 1 => (writesIn_snocN ho b n).seq (WritesIn.prim _ (by simp [Prim.writes, ho]))
+
+theorem writesIn_tlN {S : Fin k → Prop} {o : Fin k} (ho : S o) : ∀ n, WritesIn S (tlN o n)
+  | 0 => WritesIn.prim _ (by simp [Prim.writes, ho])
+  | n + 1 => (writesIn_tlN ho n).seq (WritesIn.prim _ (by simp [Prim.writes, ho]))
+
+theorem writesIn_emitU {S : Fin k → Prop} {o : Fin k} (ho : S o) (n j : ℕ) :
+    WritesIn S (emitU o n j) := (writesIn_snocN ho _ _).seq (writesIn_snocN ho _ _)
+
+theorem writesIn_appT {S : Fin k → Prop} {o x a b : Fin k} (ho : S o) (ha : S a) (hb : S b) :
+    WritesIn S (appT o x a b) :=
+  (WritesIn.prim _ (by simp [Prim.writes, hb])).seq <|
+    ((WritesIn.prim _ (by simp [Prim.writes, ha])).seq (WritesIn.loop ha
+      ((WritesIn.prim _ (by simp [Prim.writes, ho])).seq (WritesIn.prim _ (by simp [Prim.writes, hb]))))).seq
+      (WritesIn.prim _ (by simp [Prim.writes, hb]))
+
+theorem writesIn_dropT {S : Fin k → Prop} {t x a : Fin k} (ht : S t) (ha : S a) :
+    WritesIn S (dropT t x a) :=
+  (WritesIn.prim _ (by simp [Prim.writes, ha])).seq
+    (WritesIn.loop ha (WritesIn.prim _ (by simp [Prim.writes, ht])))
+
+theorem writesIn_appL {S : Fin k → Prop} {o a b : Fin k} (ho : S o) (ha : S a) (hb : S b) :
+    ∀ xs, WritesIn S (appL o a b xs)
+  | [] => WritesIn.prim _ (by simp [Prim.writes, ho])
+  | _ :: xs => (writesIn_appT ho ha hb).seq (writesIn_appL ho ha hb xs)
+
+theorem writesIn_dynE {S : Fin k → Prop} {o a b : Fin k} (ho : S o) (ha : S a) (hb : S b)
+    (n : ℕ) (xs : List (Fin k)) (m : ℕ) : WritesIn S (dynE o a b n xs m) :=
+  (writesIn_snocN ho _ _).seq ((writesIn_appL ho ha hb xs).seq (writesIn_snocN ho _ _))
+
 end Prog
 
 end SigabaNeo.Tape
