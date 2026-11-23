@@ -2328,6 +2328,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * `four_event_transfer`: credit > 0.643162094166 survives four dependent 2⁻¹⁶⁸ errors (> 0.6431620941).
   * Still uninstantiated: the concrete graph-coordinate instance, the table sampler's coupling, and the
     credited-event-implies-success link for the randomized calls plus validation.
+* **Lean (one-draw coupling).** OneDrawCoupling (axiom-clean). For any PMFs P, Q (including on infinite lattices), a
+  coupling with mismatch ≤ ε exists iff Σₓ (P(x) − Q(x))₊ ≤ ε, and one attains equality. So `initial_sampler` reduces to
+  the analytic bound Σₓ(P−Q)₊ ≤ 2⁻⁹²³ for the table law.
+  * Remaining for the end-to-end width-638 theorem:
+    * the concrete coordinate contract;
+    * that sampler TV bound;
+    * the event inclusion for randomized outputs (ties: two exact outputs may differ, and validation checks the chosen
+      one);
+    * an execution-level work bound.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
