@@ -2257,6 +2257,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
 * **Part 244 (audited, CONFIRMED; partial).** [generalized_deletion](research/wall1_generalized_deletion.md): generalized
   coordinate deletion. Rank-increase-detected contributions are negligible: Z₁ < 4.66·10⁻²⁰ and < 3.45·10⁻¹⁹; residual
   mean score at heights 9–30 < 1.31·10⁻⁸; length-cutoff violations < 4.95·10⁻⁶. Undetected configurations remain open.
+* **Part 245 (unaudited; structural, negative for bounds).** [undetected_span](research/wall1_undetected_span.md): vectors
+  passing every k-block span test form D_k^⊥, where D_k is the span of the column relations supported on ≤ k
+  coordinates. Local membership forces global membership iff D_k spans all relations; k ≥ r + 1 always suffices and is
+  sharp. Short lengths alone don't remove the exception (explicit example). This gives no new numerical bound.
+  Remaining allowances: Z₁ > 4.0203·10⁻¹², residual mean score ≥ 5.1098·10⁻⁷, extra prefix rejection ≥ 0.00354128.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
