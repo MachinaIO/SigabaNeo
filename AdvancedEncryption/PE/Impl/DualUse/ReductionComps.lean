@@ -89,7 +89,7 @@ theorem acceptProb_compReduction {R : ℕ} {sig : FixedEnc (Inst × Sec) nS}
     (hx : ∀ i x, ∀ σ ∈ (setupI i x).support, (sdI i σ).x = x)
     (hvalid : ∀ i x, ∀ σ ∈ (setupI i x).support, SimValid (sdI i σ)) :
     (compReduction cs cb P L A D).acceptProb μ = accOn A D instLaw F := by
-  have hH := handlesP cs c.L [] (longKeys_spPack st viewI sdI Ok) cb A L hpubL
+  have hH := handlesP cs c.L [] (longKeys_spPack hL st viewI sdI Ok) cb A L hpubL
     hkeyL (by simp) hchalL
   have hE : ∀ s, InvS IW W Ok s → ((puCodes sig).encState s).length ≤
       stateBound (puCodes sig) W := fun s h => length_encState_le h
