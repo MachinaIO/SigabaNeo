@@ -2092,6 +2092,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Verified Hermite squared caps: 56.21420, 56.79788, 57.84689, 58.89576, 60.99269 at ranks 506, 510, 520, 530, 550.
   * Cost correction: Part 140's 2^799.23 applies at rank 647, and Part 141 gives 2^794.98 word operations; neither gives
     a 0.29·Δβ increment.
+* **Part 229 (audited, CONFIRMED; negative).** [sumset_covering](research/wall1_sumset_covering.md): deferred decisions
+  and Kneser for the long-winner ceiling.
+  * Deferred decisions reproduces exactly the all-heights law of Parts 217/219: one uniform mark in H = K/M shared by all
+    heights.
+  * At t = 1.10, each half-radius image occupies < 8.535·10⁻¹³¹ of H. Even granting disjoint credit, the aperiodic Kneser
+    guarantees sum to < 6.043·10⁻¹²⁹, against the targets 0.8205 / 0.874.
+  * Reaching the target needs a stabilizer of rank ≥ 37 (40 at t = 1.05, 34 at t = 1.15), and group structure alone gives
+    no short dual representative. Diagnosis: r = t·GH lies beyond the smoothing regime, so only typicality inherited from
+    earlier randomness can give coverage (W1-R100).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
