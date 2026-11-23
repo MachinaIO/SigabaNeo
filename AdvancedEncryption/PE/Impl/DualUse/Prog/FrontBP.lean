@@ -83,17 +83,25 @@ def cutPn (m : ℕ) : Prog 72 :=
 tapes on `1 … 14`. -/
 def eA : Fin 16 ↪ Fin 72 := ⟨![70, 71, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], by decide⟩
 
-/-- The bit `f(0)`: the authorization program at `attr0` (`128` zeros) on a copy of the word. -/
+/-- The authorization bit at `attr0` (`128` zeros on tape `71`) of the word on tape `70`, on
+tape `70`. -/
 def bit0P : XProg 72 :=
-  seq (prog (.prim (.copy 70 0))) <|
-  seq (prog (SigabaNeo.Tape.Prog.putW 71 (List.replicate 128 false))) (frame eA (prog authBPC))
+  seq (putW 71 (List.replicate 128 false)) (frame eA (prog authBPC))
 
-/-- The branch of a word of `m` bits. -/
+/-- The cut, the compiler, the consed `true` (as before the bit `f(0)` was added). -/
+def compBlk (m : ℕ) : XProg 72 :=
+  seq (prog (cutPn m)) (seq (clearL clr63) (seq (frame e64 (prog bpCompC))
+    (prog (.prim (.cons 0 true)))))
+
+/-- The bit `f(0)` (the negated authorization bit on tape `70`) put after the head `true`. -/
+def fixP : XProg 72 :=
+  seq (prog (.prim (.tail 0))) <| seq (ifBit 70 (prog (.prim (.cons 0 false)))
+    (prog (.prim (.cons 0 true)))) <| seq (prog (.prim (.cons 0 true))) (prog (.prim (.clear 70)))
+
+/-- The branch of a word of `m` bits: the word saved on tape `70`, the stream, the bit `f(0)`. -/
 def validB (m : ℕ) : XProg 72 :=
-  seq (prog (.prim (.clear 64))) <| seq (prog (cutPn m)) <| seq (clearL clr63) <|
-    seq bit0P <| seq (frame e64 (prog bpCompC)) <|
-    seq (prog (.ifBit 70 (.prim (.cons 0 false)) (.prim (.cons 0 true)))) <|
-    seq (prog (.prim (.clear 70))) (prog (.prim (.cons 0 true)))
+  seq (prog (.prim (.clear 64))) <| seq (prog (.prim (.copy 70 0))) <| seq (compBlk m) <|
+    seq (clearL clr63) <| seq bit0P fixP
 
 /-- The branch of a short word of another length. -/
 def dumBP : XProg 72 :=
@@ -243,18 +251,25 @@ theorem law_cutPn {m : ℕ} {C : List Bool} (h : C.length = m) :
     · subst h0; simp [e]
     · simp [h69, h0]
 
-theorem coinFree_bit0P : bit0P.CoinFree :=
-  XProg.coinFree_seq rfl (XProg.coinFree_seq (SigabaNeo.Tape.Prog.coinFree_putW _ _)
-    (XProg.coinFree_frame eA BpComp.good_authBP.1))
+theorem coinFree_putW72 (t : Fin 72) : ∀ w : List Bool, (putW t w).CoinFree
+  | [] => rfl
+  | _ :: w => XProg.coinFree_seq rfl (coinFree_putW72 t w)
 
-theorem law_bit0P (C : List Bool) :
-    bit0P.law (o0 C) = PMF.pure (Function.update (o0 C) 70 [auth0 C]) := by
-  rw [bit0P, XProg.law_seq_pure (XProg.law_prim _ _),
-    XProg.law_seq_pure (by rw [XProg.law_prog, Prog.law_eq_run_of_coinFree _
-      (SigabaNeo.Tape.Prog.coinFree_putW _ _), SigabaNeo.Tape.Prog.run_putW]),
-    XProg.law_frame, XProg.law_prog]
-  have hv : (fun j => Function.update (Prim.apply (.copy 70 0) (o0 C)) 71
-      (List.replicate 128 false) (eA j)) = inA C (List.replicate 128 false) := by
+theorem wf_putW72 (t : Fin 72) : ∀ w : List Bool, (putW t w).WF
+  | [] => trivial
+  | _ :: w => ⟨trivial, wf_putW72 t w⟩
+
+theorem coinFree_bit0P : bit0P.CoinFree :=
+  XProg.coinFree_seq (coinFree_putW72 _ _) (XProg.coinFree_frame eA BpComp.good_authBP.1)
+
+/-- The word `X` on tape `0`, `a` on tape `70`, every other tape blank. -/
+def o70 (X a : List Bool) : Store 72 := Function.update (o0 X) 70 a
+
+theorem law_bit0P (X C : List Bool) :
+    bit0P.law (o70 X C) = PMF.pure (o70 X [auth0 C]) := by
+  rw [bit0P, XProg.law_seq_pure (law_putW _ _ _), XProg.law_frame, XProg.law_prog]
+  have hv : (fun j => Function.update (o70 X C) 71 (o70 X C 71 ++ List.replicate 128 false)
+      (eA j)) = inA C (List.replicate 128 false) := by
     funext j
     fin_cases j <;> rfl
   have ha : authBPC.law (inA C (List.replicate 128 false)) = PMF.pure (outA (auth0 C)) := by
@@ -267,30 +282,74 @@ theorem law_bit0P (C : List Bool) :
   · fin_cases j <;> rfl
   · have h70 : t ≠ 70 := fun h => ht 0 (by rw [h]; rfl)
     have h71 : t ≠ 71 := fun h => ht 1 (by rw [h]; rfl)
-    simp only [Prim.apply, Function.update_of_ne h70, Function.update_of_ne h71]
+    simp only [o70, Function.update_of_ne h70, Function.update_of_ne h71]
 
-theorem run_bitCons (X : List Bool) (a : Bool) :
-    Prog.run (.ifBit 70 (.prim (.cons 0 false)) (.prim (.cons 0 true)))
-      (Function.update (o0 X) 70 [a]) = Function.update (o0 ((!a) :: X)) 70 [a] := by
+theorem coinFree_fixP : fixP.CoinFree := by simp [fixP, XProg.CoinFree, XProg.coinFreeB, Prog.coinFreeB]
+
+theorem law_fixP (X : List Bool) (a : Bool) :
+    fixP.law (o70 (true :: X) [a]) = PMF.pure (o0 (true :: (!a) :: X)) := by
+  rw [fixP, XProg.law_seq_pure (XProg.law_prim _ _), XProg.law_seq, XProg.law_ifBit]
+  cases a
+  · rw [if_neg (by simp [Prim.apply, o70]), XProg.law_prim, PMF.pure_bind,
+      XProg.law_seq_pure (XProg.law_prim _ _), XProg.law_prim]
+    refine congrArg PMF.pure (funext fun t => ?_)
+    by_cases h0 : t = 0 <;> by_cases h70 : t = 70 <;>
+      simp_all [o70, o0, Prim.apply, Function.update_apply]
+  · rw [if_pos (by simp [Prim.apply, o70]), XProg.law_prim, PMF.pure_bind,
+      XProg.law_seq_pure (XProg.law_prim _ _), XProg.law_prim]
+    refine congrArg PMF.pure (funext fun t => ?_)
+    by_cases h0 : t = 0 <;> by_cases h70 : t = 70 <;>
+      simp_all [o70, o0, Prim.apply, Function.update_apply]
+
+theorem law_cutPn70 {m : ℕ} {C : List Bool} (h : C.length = m) (a : List Bool) :
+    (prog (cutPn m)).law (o70 C a) = PMF.pure (o70 C a) := by
+  rw [XProg.law_prog, Prog.law_eq_run_of_coinFree _ (coinFree_cutPn m)]
+  congr 1
+  simp only [cutPn, Prog.run_seq, SigabaNeo.Tape.Prog.run_putW, Prog.run_prim, Prim.apply]
+  have e : (carryOp Prog.takeOp (List.replicate m false) C).2 = C := by
+    rw [Prog.carryOp_takeOp, List.length_replicate, ← h, takeD_of_length]
   funext t
-  cases a <;> by_cases h0 : t = 0 <;> by_cases h70 : t = 70 <;>
-    simp_all [Prog.run_ifBit, Prog.run_prim, Prim.apply, o0, Function.update_apply]
+  simp only [Function.update_apply, o70, o0]
+  by_cases h69 : t = 69
+  · subst h69; simp
+  · by_cases h0 : t = 0
+    · subst h0; simp [e]
+    · simp [h69, h0]
+
+theorem law_clr_o70 {l : List (Fin 72)} (hl : (0 : Fin 72) ∉ l) (hl' : (70 : Fin 72) ∉ l)
+    (x a : List Bool) : (clearL l).law (o70 x a) = PMF.pure (o70 x a) := by
+  rw [law_clearL]
+  congr 1
+  funext t
+  split_ifs with h
+  · have : t ≠ 0 := fun e => hl (e ▸ h)
+    have h7 : t ≠ 70 := fun e => hl' (e ▸ h)
+    simp [o70, o0, Function.update_of_ne this, Function.update_of_ne h7]
+  · rfl
+
+theorem law_compBlk {m : ℕ} {C : List Bool} (hC : C.length = m) (a : List Bool) :
+    (compBlk m).law (o70 C a) = PMF.pure (o70 (true :: bwBP C) a) := by
+  have h3 := law_compBP' C a
+  rw [← o70] at h3
+  rw [compBlk, XProg.law_seq_pure (law_cutPn70 hC a),
+    XProg.law_seq_pure (law_clr_o70 (by simp [mem_clr63]) (by simp [mem_clr63]) C a),
+    XProg.law_seq_pure h3, XProg.law_prim]
+  generalize bwBP C = X
+  refine congrArg PMF.pure (funext fun t => ?_)
+  simp only [Prim.apply, o70, o0, Function.update_apply]
+  split_ifs <;> simp_all
 
 theorem law_validB {m : ℕ} {C : List Bool} (hC : C.length = m) :
     (validB m).law (Function.update (o0 C) 64 [true]) = PMF.pure (o0 (true :: bwBP0 C)) := by
-  have hcf : (Prog.ifBit (70 : Fin 72) (.prim (.cons 0 false)) (.prim (.cons 0 true))).CoinFree := by
-    simp [Prog.CoinFree, Prog.coinFreeB]
   rw [validB, XProg.law_seq_pure (XProg.law_prim _ _)]
   simp only [Prim.apply]
-  rw [update_o0_64, XProg.law_seq_pure (law_cutPn hC),
-    XProg.law_seq_pure (law_clr_o0 (by simp [mem_clr63]) C),
-    XProg.law_seq_pure (law_bit0P C), XProg.law_seq_pure (law_compBP' C _),
-    XProg.law_seq_pure (by rw [XProg.law_prog, Prog.law_eq_run_of_coinFree _ hcf, run_bitCons]),
-    XProg.law_seq_pure (XProg.law_prim _ _), XProg.law_prim]
-  congr 1
-  funext t
-  simp only [Prim.apply, o0, Function.update_apply, bwBP0]
-  by_cases h0 : t = 0 <;> by_cases h70 : t = 70 <;> simp_all
+  rw [update_o0_64, XProg.law_seq_pure (XProg.law_prim _ _)]
+  have e : Prim.apply (.copy 70 0) (o0 C) = o70 C C := by
+    funext t; simp [Prim.apply, o70, o0, Function.update_apply]
+  rw [e, XProg.law_seq_pure (law_compBlk hC C),
+    XProg.law_seq_pure (law_clr_o70 (by simp [mem_clr63]) (by simp [mem_clr63]) _ C),
+    XProg.law_seq_pure (law_bit0P _ C), law_fixP]
+  rfl
 
 theorem law_dumBP (C : List Bool) :
     dumBP.law (Function.update (o0 C) 64 [false]) = PMF.pure (o0 [false]) := by
@@ -342,9 +401,9 @@ theorem wf_cutPn (m : ℕ) : (cutPn m).WF :=
 
 theorem wf_frontBPn (n m : ℕ) : (frontBPn n m).WF :=
   ⟨Prog.wf_leP n, ⟨trivial, ⟨trivial, Prog.wf_lenEqP _,
-    ⟨⟨trivial, wf_cutPn m, wf_clearL _, ⟨trivial, SigabaNeo.Tape.Prog.wf_putW _ _,
-      BpComp.good_authBP.2⟩, wf_bpCompC, ⟨trivial, trivial⟩, trivial, trivial⟩, trivial, trivial,
-      trivial⟩⟩⟩,
+    ⟨⟨trivial, trivial, ⟨wf_cutPn m, wf_clearL _, wf_bpCompC, trivial⟩, wf_clearL _,
+      ⟨wf_putW72 _ _, BpComp.good_authBP.2⟩, ⟨trivial, ⟨trivial, trivial⟩, trivial, trivial⟩⟩,
+      trivial, trivial, trivial⟩⟩⟩,
     wf_clearL _⟩
 
 theorem wf_frontBP (n : ℕ) : (frontBP n).WF := wf_frontBPn n bpLen
@@ -359,10 +418,11 @@ theorem coinFree_frontBPn (n m : ℕ) : (frontBPn n m).CoinFree := by
   have h3 := coinFree_bpCompC
   have h4 := coinFree_cutPn m
   have h5 := coinFree_bit0P
+  have h6 := coinFree_fixP
   simp only [Prog.CoinFree] at h1 h2 h3 h4
-  simp only [XProg.CoinFree] at h5
-  simp [frontBPn, shortB, validB, dumBP, XProg.CoinFree, XProg.coinFreeB, Prog.coinFreeB, h1, h2,
-    h3, h4, h5, cf_clearL72]
+  simp only [XProg.CoinFree] at h5 h6
+  simp [frontBPn, shortB, validB, compBlk, dumBP, XProg.CoinFree, XProg.coinFreeB, Prog.coinFreeB,
+    h1, h2, h3, h4, h5, h6, cf_clearL72]
 
 theorem coinFree_frontBP (n : ℕ) : (frontBP n).CoinFree := coinFree_frontBPn n bpLen
 
