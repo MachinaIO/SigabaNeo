@@ -55,11 +55,14 @@ directly in dimension `d` is exactly the full-dimension sieve route below.
 The Hermite-factor bound that is proved (`first_norm_bound`) does not by itself recover the target
 at any `β < 6000` for these instances. It does not use the shortness of the target.
 
-**What this measures.** Even with `γ_β` at its heuristic value, the worst-case analysis costs about
-440 bits more for Kyber512. The gap is the difference between the worst-case shape of a reduced
-basis and its average shape on random q-ary lattices, which the GSA models. Closing it needs an
-average-case analysis of BKZ on random q-ary lattices. That is an open problem: no theorem in the
-literature predicts BKZ's output shape on random lattices.
+**What this measures.** With the required constraint `β ≤ d`, this worst-case
+approximation-factor route supplies no admissible block size for Kyber512, so it
+does not supply a finite attack cost to subtract from the estimator's cost.
+The former "about440 bits more" comparison is invalid after this correction.
+The missing step is a sufficiently strong average-case analysis of BKZ's selected
+profiles on the relevant random q-ary ensemble. The results recorded here do not
+yet establish that step. The local residual/error budgets below are probabilities
+in a proof route, not differences in attack-cost bits.
 
 The attacks that `H` takes into account are therefore not replaced by proven ones. Dropping the
 heuristic attacks would raise `H` for Kyber512 from 139 to several hundred bits, an
@@ -2273,6 +2276,1727 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
 * **Part 247 (unaudited; negative).** [void_exit](research/wall1_void_exit.md): a reachable family of draw-2 histories
   has b₂ > 0.2974 (probability < 10⁻⁶⁶⁸⁹), so the Part 246 exit bound must allow exceptions even at draw 2. The exit
   probability on the remaining histories is uncontrolled.
+* **Part 248 (geometry on paper; finite occupancy inequalities in Lean; no independent audit).**
+  [projected_occupancy](research/wall1_projected_occupancy.md): for a primitive positive-height
+  winner with height coprime to q, retain the exact projection quadratic form on the refined
+  grid T = K + R. If N counts ellipsoid points and J counts ordered same-class pairs, the
+  next void fraction is at most 1 − N²/(|H|J). The integer condition 727|H|J ≤ 1000N²
+  suffices for a 0.273 ceiling. Checked on 68 planar branch/radius cases, including heights
+  2 and 3. This is a sufficient statistic, not an exceptional-history bound; horizontal
+  branches, the selected-history collision estimate, and the Part 246 exit bound remain open.
+* **Lean (finite occupancy and history exits).** CosetOccupancy: `support_bound`,
+  `void_ceiling`, `void_ceiling_273`, `void_ceiling_280`, and `history_exit_count_of`.
+  Exact integer inequalities, with label types varying by draw and history. File compilation
+  and axiom audits pass with only the standard three axioms. The geometric identification
+  and the probability of certificate failures are not proved by these counting lemmas.
+* **Part 249 (paper proof; interval checks, no independent audit).**
+  [correlation_mgf](research/wall1_correlation_mgf.md): a nontrivial character of an
+  exponent-3329 mark group obeys |â(χ)| ≤ sin(πp)/(3329 sin(π/3329)) for an indicator
+  of density p. This improves the two-mark correlation second moment and exponential bound.
+  Since the first seven long-winner probabilities vanish deterministically, it suffices to
+  prove P(max_{7≤i≤404} b_i > 0.280) ≤ 6.426·10⁻¹²; the remaining compensator tail
+  is < 1.174·10⁻¹². Alternatively threshold 0.281 and allowance 4.864·10⁻¹² suffice.
+  These exit probabilities remain open. The Fourier and stopping proof is not Lean-formalized;
+  80-digit interval checks and 640 exhaustive small-group subset checks pass. This addresses
+  the vertical crossing route only, not the remaining score/horizontal/prefix obligations.
+* **Part 250 (paper proof; exact finite and interval checks, no independent audit).**
+  [affine_void_moments](research/wall1_affine_void_moments.md): under the original marginal,
+  P(max_{7≤i≤12} b_i > 0.280) < 7.150·10⁻¹⁴. Projected voids are bounded by raw affine
+  coset voids uniformly over the selected projector. An eighth-moment expansion classifies
+  compatible affine ranks and also pays for inconsistent input dependencies. All 3327
+  three-point affine coefficient classes have verified primitive integer normals, improving
+  the Gaussian circuit bound. The verifier passes 893 finite-subset regressions and 80-digit
+  interval checks. The remaining Part 249 target becomes
+  P(max_{13≤i≤404} b_i > 0.280) ≤ 6.354·10⁻¹², still open. The numerical bound is
+  not formalized. At the fixed raw radius on draw 16, the raw void fraction exceeds
+  0.292912 for every matrix (interval-checked count bound); this rules out extending
+  that same dominating raw-ball test by moment order alone, not the projected claim.
+* **Lean (exact affine graph moments for Part 250).** AffineGraphMoments:
+  `system_probability`, `joint_probability`, `first_moment`, `raw_moment`,
+  `central_moment`, and `void_le_rank_sum`. The independent offset is encoded as
+  the first uniform matrix column; incompatible and rank-deficient systems are handled.
+  All nine public theorem axiom audits and file compilation pass with only the standard
+  three axioms. Fixed candidate lists only. Geometric transfer, circuit enumeration bounds,
+  Gaussian estimates, and the final 7.150·10⁻¹⁴ numerical bound remain paper results.
+* **Part 251 (cancellation and pruned moments Lean-formalized; rank counts open).**
+  [centered_affine_cancellation](research/wall1_centered_affine_cancellation.md):
+  centered affine-incidence products vanish whenever one augmented input lies outside
+  the span of all others. This gives an exact moment sum over tuples without coloops,
+  retaining output-consistency indicators and repeated entries. All 1490 rational
+  finite checks pass, including 799 forced cancellations. Counting the surviving
+  patterns at width 506 remains open; no improvement to the history exception budget
+  or the final BKZ success bound is claimed. `AffineGraphMoments` now proves
+  `centeredProduct_zero_of_separator`, `centeredProduct_zero_of_coloop`,
+  `central_moment_no_coloops`, and `void_le_no_coloop_sum`. File compilation and
+  all thirteen axiom audits pass with only the standard three axioms. The formal
+  pruned sum uses exact expectations; the explicit subset-rank expansion and
+  rank-count majorant remain paper results. Candidate lists must be fixed.
+  A further paper identity expresses each centered term as p^k(qD_0-D)/(q-1),
+  where D counts full-support block relations and D_0 imposes one scalar output
+  pairing. Inclusion-exclusion proves the identity without an analytic limit.
+  It improves the termwise bound from 2^k p^r to p^r(1-p)^(k-r). Input circuits
+  contribute p^(k-1)(1-p) for compatible outputs and exactly -p^k otherwise.
+  An extension-field version replaces q by Q=q^m and uses a K-valued pairing,
+  sharpening the negative bound to -p^k D/(Q-1); the positive bound is unchanged.
+  Integer relation enumeration and the independent affine averages agree in all
+  finite checks. The width-506 pattern counts and selected-history bound remain open.
+* **Part 252 (paper proof and 781 exact finite checks; not Lean-formalized).**
+  [affine_fiber_moments](research/wall1_affine_fiber_moments.md): the rank-one
+  contribution alone forces the normalized Part 251 input-rank-only majorant
+  above ((q^m-1)/q^d)^(k-1). At draw 13 and order eight it exceeds 10^6977,
+  by exact integer comparison. Thus exact input-rank pattern counts cannot make
+  that majorant useful; this is not a lower bound on actual failure probability.
+  Grouping all candidate outputs at each input into one Bernoulli variable gives
+  an exact centered moment expansion with output-compatibility counts. The entire
+  same-input contribution is then at most mu^(1-k) after normalization. All 781
+  candidate-set regressions pass at orders 2, 4, 8, including dependent inputs.
+  Bounding dependent-support compatibility counts and retaining the later
+  selected projection remain open. No final BKZ probability improvement is claimed.
+* **Part 253 (paper proof, rational and interval checks; not Lean-formalized).**
+  [affine_nullity_one](research/wall1_affine_nullity_one.md): a support with exactly
+  one independent relation splits into its unique circuit and independent coloops.
+  Its centered-moment correction factors exactly; singleton coloops cancel.
+  Summing the circuit and repeated-coloop patterns with existing Part 250 counts
+  bounds the normalized order-12 nullity-one correction at draw 13 by 2.468e-54.
+  The normalized independent baseline is below 2.845e-13. **This does not bound
+  the whole failure probability:** the correction from supports of nullity at
+  least two is still present and unbounded. The interval verifier passes, and
+  grouped-moment regression now covers 908 candidate sets, including a circuit
+  with an independent fourth input. Later selected-history obligations remain open.
+* **Part 254 (paper proof; exact finite and interval checks).**
+  [affine_circuit_components](research/wall1_affine_circuit_components.md): supports
+  that are direct sums of circuits and coloops admit a component expansion. The
+  correction is bounded by k![z^k] exp(mu(e^z-1-z)) (exp(G(z))-1), with
+  G(z)=sum_j epsilon_j(e^z-1)^j/j! and the existing circuit discrepancy bounds.
+  At draw 13, order 12, the normalized correction is below 2.468e-54; terms with
+  at least two activated circuit factors are below 4.174e-96. The verifier checks
+  192 exact inequalities on two independent circuit components and the interval
+  estimates. Supports containing a connected component of nullity at least two,
+  including four collinear distinct inputs, remain unbounded. No complete void
+  probability or BKZ success bound is claimed; this addition is not Lean-formalized.
+* **Part 255 (paper proof; exact finite and interval checks).**
+  [affine_rank_two](research/wall1_affine_rank_two.md): for h distinct collinear
+  inputs, all multiplicity corrections share an envelope whose ordered sum is
+  at most (2^h-1-h-binomial(h,2)) q^(h-3) epsilon_3. Three anchor points fix the
+  input line, compatible outputs are determined, and all remaining fiber densities
+  are retained as weights. This covers overlapping relations in rank-two components.
+  Adding these activities to Part 254 keeps the normalized draw-13 order-12 correction
+  below 2.468e-54. Terms with an activated rank-two noncircuit component are below
+  4.506e-98. All 576 rational multiplicity checks, 64 aggregate checks, and interval
+  assertions pass. Components with rank >=3 and nullity >=2, plus later selected
+  histories, remain unbounded; no complete exit or BKZ probability is claimed.
+* **Part 256 (paper proof; exact finite and interval checks).**
+  [affine_rank_extensions](research/wall1_affine_rank_extensions.md): circuit
+  anchors plus inner and outer basis extensions bound the weighted correction
+  envelope at arbitrary input rank. At draw 13, order 12, including all connected
+  components through size eight gives normalized correction <1.562e-23; through
+  size nine gives <5.218e-12. Both include the earlier circuit/rank-two classes.
+  The formula passes 768 rational rank-three support checks and interval assertions.
+  Components of sizes 10--12, rank >=3 and nullity >=2 remain unbounded at a useful
+  scale: the displayed size-12 majorant alone exceeds 9e32. This is a majorant
+  limitation, not a true failure lower bound. No full draw-13 or BKZ probability
+  improvement is claimed; the general lemma is not Lean-formalized.
+* **Part 257 (paper proof; exact polynomial and interval checks).**
+  [affine_square_certificate](research/wall1_affine_square_certificate.md): a
+  degree-ten square certificate uses the Poisson orthogonal-polynomial kernel.
+  Its draw-13 reference term divided by rho is <2.274e-12, with the independent
+  nonuniform Bernoulli correction explicitly bounded by 2.575e-293. Exact rational
+  centered coefficients transfer the earlier component estimates: all components
+  through size eight, plus all circuits/rank-two components, contribute <4.859e-22.
+  The size-nine transferred majorant exceeds 8.68e-11 and is insufficient. The
+  new route leaves size-nine/ten connected components of rank >=3 and nullity >=2;
+  it needs no size-eleven/twelve supports. All 139 rational checks and interval
+  assertions pass. The remainder and later selected histories are unbounded;
+  no total draw-13 or BKZ probability is claimed. This addition is not Lean-formalized.
+* **Part 258 (paper proof; exact polynomial and interval checks).**
+  [affine_nine_cancellation](research/wall1_affine_nine_cancellation.md): adding
+  C_4/16 to the degree-five square root enforces c_9=-45c_10 in its centered square.
+  The combined nine-input contribution then carries fiber-density factors and an
+  eight-input remainder. At draw 13, the reference is <2.390e-12, the independent
+  Bernoulli error <2.597e-293, earlier small components <4.950e-22, and all nine-input
+  supports <3.210e-22. All 84 exact checks and interval assertions pass; the old
+  polynomial helpers keep their original default behavior. The only remaining
+  draw-13 class for this certificate is a connected ten-input support with rank >=3
+  and nullity >=2, with an explicit unbounded remainder. Later histories remain
+  open. This is not a total failure bound or a Lean-formalized result.
+* **Part 259 (paper deduction; exact finite and interval checks).**
+  [affine_four_circuit_stratum](research/wall1_affine_four_circuit_stratum.md):
+  the remaining ten-input rank-three/eight correction is <2.197e-18 after
+  normalization. On supports without a four-element input circuit, deleting c=4
+  from the rank-extension witness sum is valid; ranks 4--7 then contribute
+  <3.981e-14. The remaining signed term is restricted to connected ten-input
+  supports of rank 4--7 containing a four-circuit. Its old majorant still exceeds
+  752, so it is not bounded usefully. A ten-point F_11 moment-curve fixture checks
+  all 210 four-subset ranks and two exact weighted envelopes using all affine maps;
+  interval assertions pass. The new constant 2.432e-12 excludes the explicit
+  remaining term and is not a full draw-13 probability. Later histories remain open.
+* **Part 260 (paper deduction; exact finite and interval checks).**
+  [affine_proper_subset](research/wall1_affine_proper_subset.md): a proper subset
+  of a coloop-free support leaves at least one dependent outer completion. Keeping
+  its fiber-density factor bounds the normalized proper-subset correction by
+  6.927e-293. Compatible full tuples containing a three-circuit contribute <4.803e-59.
+  Thus the remaining signed term reduces to a positive count N_r of compatible
+  connected ten-point configurations, rank 4--7, with no three-circuit and with a
+  four-circuit. All 17148 finite rank-deficit checks and interval assertions pass.
+  The 2.432e-12 constant still excludes the explicit sum of N_r q^(-mr); that
+  count and later selected histories remain open. This addition is not Lean-formalized.
+* **Part 261 (paper proof; external Pollard theorem, exact finite/interval checks;
+  not independently audited or Lean-formalized).**
+  [affine_two_constraints](research/wall1_affine_two_constraints.md) closes the
+  draw-13 raw-void step: P(b_13>0.280)<2.432e-12. Connectedness extracts a second
+  circuit with a nonzero lift outside the original four-circuit span. The six-point
+  case uses a precisely stated odd-set rearrangement corollary of Pollard's theorem;
+  larger unions use Holder. Gaussian majorization retains both modular equations.
+  The positive full-incidence remainder is <3.510e-31. Checks pass for 4160 odd-set
+  cases, 282 six-form products, 132 extension witnesses, and the concrete interval
+  calculation. Combining Part 250 and Part 249 leaves the sufficient open target
+  P(max_{14<=i<=404} b_i>0.280)<=3.922e-12. The later fixed-raw-ball obstruction
+  and score/horizontal/prefix obligations remain; this is not the full BKZ proof.
+* **Part 262 (paper method obstruction; exact and interval checks).**
+  [affine_reference_barrier](research/wall1_affine_reference_barrier.md) proves that
+  the independent-fiber reference for the fixed draw-15 raw ball has zero-count
+  probability >9.2603e-5. Every nonnegative pointwise void certificate has reference
+  expectation at least that large, regardless of polynomial degree. Therefore an
+  absolute-error comparison to that reference cannot close the remaining history
+  budget. This is not a lower bound on actual affine or projected failure. The
+  81 exact product-law cases and 80-digit interval bounds pass; the draw-16 raw
+  coverage obstruction is rechecked. The next unresolved target is the selected
+  projection's occupancy/collision statistic, or a stronger radius floor, rather
+  than merely a higher moment order. No new selected-history probability is proved.
+* **Part 263 (paper whole-flag identity; exact rational checks).**
+  [flag_occupancy](research/wall1_flag_occupancy.md) gives finite half-open
+  Gram--Schmidt cylinder representatives for the entire selected primitive flag.
+  If projection loses k raw labels, each projected occupancy is repeated exactly
+  k times: N=kN', J=kJ', h=kh'. The void fraction and N^2/(hJ) are unchanged.
+  This removes positive-height and coprimality restrictions from the occupancy
+  reduction, including horizontal branches and group losses. The sufficient
+  certificate is 720 q^400 J_i<=1000 N_i^2 with raw graph collision tests.
+  All 144 rational flag/radius cases pass, including kernel sizes 1, 3, and 5.
+  The cylinder and radius remain design-dependent; fixed-candidate affine moments
+  cannot be applied without addressing that dependence. No selected-history
+  probability bound or full BKZ completion is claimed; not Lean-formalized.
+* **Part 264 (paper conditional collision moments; exact finite checks).**
+  [flag_collision_law](research/wall1_flag_collision_law.md) conditions on the
+  containment equations AY=X of a fixed flag. Consistent input rank t costs
+  q^(-mt), leaving a uniform map on d-t input dimensions. Normalizing residual
+  pair equations by their input direction gives exact collision mean and variance,
+  including repeated equations and mutually exclusive outputs. A one-sided
+  variance bound supplies an explicit summand in a flag-weighted union bound.
+  All 26 fixtures and 392 residual-map enumerations pass. The union must still
+  cover the actual selected flags and moving radii; its width-506 numerical value
+  is unbounded here. Containment is not selection, and the 3.922e-12 allowance
+  remains open. Not independently audited or Lean-formalized.
+* **Part 265 (paper saturation weights; exhaustive finite checks).**
+  [flag_saturation](research/wall1_flag_saturation.md) first excludes proposed
+  flags Gamma not containing q times their ambient saturation Lambda. For the
+  remaining flags, finite subspaces F=Gamma/qLambda and E=Lambda/qLambda express
+  exact saturation as E intersect graph(A)=F. Its conditional probability is an
+  explicit full-rank product. Augmenting F by one or two collision differences
+  gives exact joint probabilities and both collision moments under saturation.
+  All 511 nested-space cases and 14468 joint-moment terms match direct enumeration.
+  Flags with no label loss have E=F and saturation probability one; this correction
+  alone does not bound their selected-history contribution. Shortestness and the
+  width-506 flag sum remain open. Not independently audited or Lean-formalized.
+* **Part 266 (paper selected moments; exact planar checks).**
+  [selected_flag_moments](research/wall1_selected_flag_moments.md) encodes the
+  chronological shortest-vector and signed-tie comparisons by a finite forbidden
+  competitor list, using reduced raw lifts with an explicit norm bound. Combined
+  with Part 265, inclusion--exclusion yields exact selected collision moments.
+  Even truncations weighted by (J-c)^2 are pointwise upper bounds, giving a selected
+  tail certificate without assuming independence. All 102 planar flag/radius cases
+  pass selection, three moment identities, and every even-cutoff tail check.
+  This restores shortestness to the finite flag formula, but its enormous subset
+  and flag sums remain unevaluated at width 506. No improvement on the remaining
+  history allowance or full BKZ completion; not Lean-formalized.
+* **Part 267 (exact evaluation improvement; finite regression checks).**
+  [selected_flag_moments](research/wall1_selected_flag_moments.md) now groups
+  inclusion--exclusion terms by generated subspace and subset degree. Keeping
+  degree preserves the even Bonferroni bound; replacing it by rank would not.
+  Non-graphic spans and spans contradicting saturation are pruned only because
+  every extension has zero contribution. The reusable `span_exclusion.py` powers
+  the selected-moment checker. Its 102 planar cases still pass, using 144 distinct
+  span moment evaluations instead of the expression's 5364 subset evaluations.
+  Another 4100 rank-three cases verify grouping, pruning, cutoffs and repeated
+  events against direct enumeration. This is a finite evaluation improvement,
+  not a width-506 complexity or probability bound; the full flag sum remains open.
+* **Part 268 (selected-law validation and parity certificate).**
+  [selected_flag_moments](research/wall1_selected_flag_moments.md) now includes
+  three-dimensional fixtures whose containment leaves a nontrivial uniform
+  residual map. All 96 flag/radius cases pass exact selected moments, every
+  even-cutoff bound, and complete first-selection probability sums of one.
+  Twenty cases show a collision-mean change after selection. The identity
+  J=N mod 2 supplies the nonnegative certificate (J-a)^2-1 for opposite-parity
+  integer centers a, with a rigorous strict-tail denominator. It closes the
+  toy q=3,R^2=1 exit bound to zero where the variance bound is positive, but is
+  not uniformly exact in the other fixtures. None of these low-dimensional
+  checks supplies the unresolved width-506 history bound. Not Lean-formalized.
+* **Part 269 (conditional-law evaluator without field-point enumeration).**
+  [flag_saturation](research/wall1_flag_saturation.md) implements exact conditional
+  graph equations using RREF bases after eliminating fixed input pivots. It
+  evaluates joint collision and saturation probabilities on residual coordinates,
+  and is wired into the selected three-dimensional moment calculation. All 511
+  nested-space cases, 14468 joint terms and 96 selected flag/radius cases pass.
+  A q=3329, raw-dimension-517, fixed-rank-12 fixture checks 37 degree-two states
+  in residual dimension 505, including impossible equations and saturation.
+  This removes field-point enumeration from that path, but the eight added
+  constraints are artificial independent directions, not the restart's complete
+  competitor set. State/candidate/flag counts and the actual probability bound
+  remain unresolved; no BKZ completion or tractability claim.
+* **Part 270 (Lean parity and selected tail-count certificate).**
+  `Research/Wall1/SelectedCollisionCertificate.lean` proves occupancy parity,
+  nonnegativity and upper-tail monotonicity of (J-a)^2-1, positivity of its
+  denominator, and a finite selected-tail count bound. `selected_occupancy_tail`
+  applies directly to `CosetOccupancy.collisionCount` with history-dependent label
+  types. Selection remains in the numerator; no conditional independence is
+  assumed. File checking, target build and eight printed axiom audits pass using
+  only propext, Classical.choice and Quot.sound. This formalizes the parity
+  certificate layer, not the geometric identification, RREF probability formulas,
+  inclusion--exclusion law or width-506 selected-history estimate. BKZ remains open.
+* **Part 271 (Lean weighted Bonferroni and selected parity tail).**
+  `Research/Wall1/SelectedBonferroni.lean` proves the even alternating-binomial
+  upper bound, identifies present-subset counts with binomial coefficients, and
+  reorders nonnegative weighted sums into the actual intersection expression.
+  `selected_parity_tail` composes this with Part 270, retaining forbidden-event
+  absence and the collision tail at every even cutoff. The target build and all
+  eight printed axiom audits pass with only propext, Classical.choice and Quot.sound.
+  This closes the finite inequality layer of the selected bound; the BKZ competitor
+  geometry, conditional graph evaluation and width-506 numerical flag sum remain
+  outside this theorem. No conditional independence premise or full BKZ completion.
+* **Part 272 (Lean conditional graph rank-increment law).**
+  `Research/Wall1/ConditionalGraphProbability.lean` derives the probability of
+  a refined linear system conditional on a consistent row restriction. It is
+  q^(-m times the input-rank increment) for a consistent refinement and zero
+  otherwise. Conditioning positivity and rank monotonicity are proved, with
+  q^(-m) as the one-rank-increment corollary. The target build and four printed
+  axiom audits pass using only propext, Classical.choice and Quot.sound.
+  This connects Part 264's basic conditional incidence formula to the existing
+  exact system count. Saturation, geometric competitor identification, RREF
+  program correctness and the width-506 selected-history bound remain separate.
+* **Part 273 (mixed square selection certificate; exact checks).**
+  [mixed_void_square](research/wall1_mixed_void_square.md) replaces the competitor
+  absence indicator by the normalized square kernel of Part 257 while retaining
+  its joint moments with the collision polynomial. The exact expression is a
+  signed sum of factorial-weighted subset moments through degree 2t; no independence
+  of competitor and collision counts is assumed. All 288 actual finite-design
+  mixed identities and tail bounds pass; 34 improve on same-degree Bonferroni
+  numerators. Another 945 polynomial checks and 45 reference identities pass.
+  The much smaller Poisson reference value is not a design-law estimate. Actual
+  width-506 mixed moments and the aggregate flag sum remain open; no numerical
+  improvement for draws 14--404 or full BKZ completion. Not Lean-formalized.
+* **Part 274 (weighted mixed-square optimization; exact checks).**
+  [optimal_mixed_square](research/wall1_optimal_mixed_square.md) constructs the
+  PSD Gram matrix of falling-factorial competitor counts weighted by the collision
+  polynomial. Rational stationarity equations certify the optimal normalized square
+  at the fixed degree, including singular matrices. All 324 finite weighted-law
+  checks and 288 actual small-design mixed evaluations pass; 245 of the latter
+  strictly improve on the same-degree Charlier square. This optimizes a fixed
+  collision polynomial against supplied exact moments; PSD validation does not
+  establish their provenance. The width-506 moment matrix and aggregate selected
+  flag bound are still missing, so no improvement on the draw-14--404 allowance
+  or full BKZ completion is claimed. Paper derivation, not Lean-formalized.
+* **Part 275 (joint two-variable square; exact optimization certificate).**
+  [joint_tail_square](research/wall1_joint_tail_square.md) optimizes a square
+  polynomial affine in collision count J and degree t in competitor count Z.
+  Its value at Z=0 is normalized to 1+a(J-T), a>=0, so it bounds the selected
+  tail pointwise. The required moment orders remain h<=2t and collision degree<=2.
+  Rational PSD/stationarity/complementarity checks certify the optimum, including
+  active-boundary and singular cases. All 243 finite joint-law tests and 288
+  small-design evaluations pass; 94 improve on the optimized product at the same
+  integer threshold. Actual width-506 moments and their flag sum remain open;
+  no draw-14--404 numerical guarantee or BKZ completion. Not Lean-formalized.
+* **Part 276 (actual draw-14 numerical frontier; remainder still open).**
+  [draw14_frontier](research/wall1_draw14_frontier.md) uses q=3329, N=518 and
+  the proven mean floor 58.15006220912. The degree-24 Charlier square has reference
+  contribution <9.131e-13, Bernoulli correction <1.120e-289, and correction from
+  all circuits/rank-two components plus other components through size eight
+  <1.160e-15. Their sum is <9.143e-13. The full draw-14 bound still includes an
+  explicit normalized remainder from larger higher-nullity connected supports
+  through size 24. Extending the old envelope to size nine already yields >0.00185,
+  an unusable upper-bound value, not an actual probability lower bound. Interval
+  assertions pass; no completed draw-14 estimate or improvement to the unconditional
+  history budget is claimed. Later projected histories remain unresolved.
+* **Part 277 (full-incidence reduction; conditional draw-14 bound).**
+  [full_incidence_reduction](research/wall1_full_incidence_reduction.md) bounds
+  proper-subset errors through connected full-incidence counts F_h, retaining one
+  redundant outer input's density instead of repeating the one-circuit completion.
+  Under the still-unproved full-incidence transfer target T(F)<=3.01e-12, all
+  density-error terms, including mixtures, contribute <4.107e-197. The auxiliary
+  caps F_h<=mu^h follow from existing bounds through size nine and from that target
+  above size nine. Thus P(b_14>.280)<9.131e-13+T(F) conditionally; a sufficient
+  remaining requirement is T(F)+P(max_(15..404)b_i>.280)<=3.0088e-12. Exact finite
+  checks and outward interval assertions pass. The full-incidence target and later
+  histories are not proved; no unconditional draw-14 closure or Lean proof.
+* **Part 278 (general two-relation full-incidence envelopes).**
+  [general_two_relations](research/wall1_general_two_relations.md) extends the
+  circuit-pair witness to every girth, including new points inside the first
+  circuit span. A weighted three-direction Holder/rearrangement bound retains
+  the direction multiplicity constraint in the Gaussian count. At draw 14 the
+  transfer from all circuits/rank-two components and other components through
+  size nine is <7.162e-19. Components of size 10--24 and their mixtures remain
+  open; admitting size ten into this envelope already gives >3.13e-7, not a true
+  contribution lower bound. The largest size-ten strata have girth four and
+  ranks five/four. All 816 witness cases, 2248 exact weighted inequalities and
+  interval assertions pass. No full draw-14, later-history or Lean certificate.
+* **Part 279 (rank-sensitive witnesses; components through size eleven).**
+  [general_two_relations](research/wall1_general_two_relations.md) now chooses the
+  second circuit outside the first circuit's span whenever r>c-1. Connectedness
+  guarantees this choice even if other inputs lie inside that span, so t=1 witness
+  terms are unnecessary in those ranks. The actual draw-14 full-incidence transfer
+  through sizes nine/ten/eleven is respectively <9.013e-25 / 8.292e-19 / 6.038e-13.
+  Applying Part 277's density-error formula only to these known smaller sizes
+  includes proper-subset errors and all mixtures without a global incidence cap;
+  the complete covered correction remains <6.038e-13. Reference plus covered
+  terms is <1.517e-12. Remaining: the normalized signed size-12--24 correction
+  plus P(max_(15..404)b_i>.280)<=2.405e-12. The size-twelve two-relation envelope
+  exceeds 7.52e-5; its largest strata have girth four and ranks six/five/three.
+  Strengthened witness tests and interval checks pass. No full draw-14 closure,
+  later-history theorem or Lean proof. This supersedes Part 278's size-ten limit.
+* **Part 280 (fixed uniform-stratum anchors and circuit-group Holder bounds).**
+  [general_two_relations](research/wall1_general_two_relations.md) fixes both
+  circuit witnesses when girth c=r+1, removing unnecessary positional union
+  factors, and retains the three circuit group sizes in an additional Holder
+  bound. The covered draw-14 correction through size eleven, including density
+  errors and mixtures, improves to <6.541e-17. Reference plus covered terms is
+  <9.132e-13; the normalized size-12--24 remainder plus later-history probability
+  must still be <=3.0088e-12. This is not an unconditional draw-14 bound. The
+  size-twelve envelope remains >7.48e-5. Added 101 nonvacuous fixed-position and
+  510 exact three-group checks; existing witness/Holder and interval checks pass.
+  Component coverage remains through eleven; larger supports and BKZ completion
+  are unresolved. The new constants supersede Part 279's numerical accounting.
+* **Part 281 (factorial-cumulant transfer and connected-support error control).**
+  [factorial_cumulants](research/wall1_factorial_cumulants.md) retains exact
+  Poisson forward-difference cancellations before taking coefficient majorants.
+  Multivariate logarithms cancel disconnected label supports, including repeated
+  labels. Selecting a smallest partition block bounds |kappa_j-F_j| by a density
+  error; all mixtures contribute <3.475e-121 under the desired C(F)<=3.01e-12
+  target, which itself implies the needed incidence caps. The existing full-count
+  envelopes through eleven/twelve yield C bounds <2.551e-21 / <2.232e-8. Size
+  twelve is still insufficient and larger supports remain unresolved. Conditional
+  conclusion: P(b_14>.280)<9.131e-13+C(F), with remaining history target
+  C(F)+P(max_(15..404)b_i>.280)<=3.0088e-12. All 240 transfer identities, 1866
+  connected/error checks and interval assertions pass. No full draw-14 or Lean
+  certificate; this provides an alternative to the older central transfer.
+* **Part 282 (unique-four-circuit theta bound; incidence coverage through twelve).**
+  [unique_four_circuit](research/wall1_unique_four_circuit.md) confines short
+  six-column relation-code words to a saturated real plane. A unique weight-four
+  direction improves its theta bound to theta(4 alpha) theta(5 alpha), with
+  explicit long-word and periodic tails. No-coloop contractions supply at least
+  k+1 basis extensions; paired four-circuits supply two ordered anchor witnesses.
+  After removing those multiplicities, the actual draw-14 cumulant transfer
+  through size twelve is <4.871e-13 (through eleven <2.548e-21). Remaining mixed
+  charge M comes from size-13--24 components. A sufficient open target is
+  M+P(max_(15..404)b_i>.280)<=2.5217e-12, giving conditionally
+  P(b_14>.280)<1.4002e-12+M. All new exact regressions and existing cumulant/
+  interval checks pass. No full draw-14 bound, later-history theorem or Lean
+  proof; this supersedes the earlier size-twelve envelope failure.
+* **Part 283 (short-code stratification and direct pair-sum count; through thirteen).**
+  [short_relation_shapes](research/wall1_short_relation_shapes.md) separates codes
+  with zero, one or multiple norm-four directions and counts the latter using
+  finitely many balanced sign rows. The nine six-column sign pairs split into
+  five triangular and four orthogonal codes. An integer ball-intersection count
+  bounds the triangular equal-pair-sum configurations, with explicit nonzero
+  modular layers. The actual cumulant transfer through size thirteen is
+  <2.175e-13 (through twelve <4.247e-30). Remaining mixed charge M now involves
+  size-14--24 components; a sufficient open target is
+  M+P(max_(15..404)b_i>.280)<=2.7913e-12, giving conditionally
+  P(b_14>.280)<1.1306e-12+M. Short-shape, exact integer-count, cumulant and
+  interval checks pass. No full draw-14, later-history or Lean certificate.
+* **Part 284 (several equal pair sums; restricted families only).**
+  [multiple_pair_sums](research/wall1_multiple_pair_sums.md) extends the direct
+  integer count to k equal pair sums and bounds all modular layers using their
+  coordinate range. At draw fourteen, the connected 14-point family containing
+  a four-pair anchor of augmented rank five has family-only cumulant transfer
+  <3e-42. The twelve-pair rank-thirteen family on 24 points has transfer <1e-237.
+  The verifier passes 75 finite energy comparisons, 20 exact range checks and
+  interval threshold assertions. Other configurations and mixed terms remain
+  open: full-class coverage still stops at thirteen, and Part 283's M and
+  later-history target are unchanged. Paper calculation only, not a Lean proof.
+* **Part 285 (general ear coverage; overlap-blind bound fails numerically).**
+  [ear_decomposition](research/wall1_ear_decomposition.md) uses matroid ear
+  decompositions to cover every connected support by h-r independent circuit
+  relations. A labelled-witness dynamic program and triangular Holder bound
+  give a universal envelope, but its size-fourteen transfer has log10 about
+  521.573 and does not improve the existing bound. This is a loose upper
+  envelope, not a lower bound or a refutation of the target. The 2,592 complete
+  decomposition, 6,106 rank-increment and 192 rational Holder checks pass.
+  Next analytic work must retain cross-ear overlaps. Full-class coverage with
+  a useful numerical bound still stops at thirteen; no new Lean certificate.
+* **Part 286 (linear residual transfer; five size-fourteen strata remain).**
+  [linear_remainder](research/wall1_linear_remainder.md) observes that two
+  components of size >=14 cannot coexist below degree 25. Thus the unknown
+  transfer is exactly sum L_h U_h, including every mixture with known
+  components. Mean-floor coefficient evaluation is justified termwise; the
+  mixed/direct coefficient increment is <2e-42. Existing size-fourteen
+  rank/girth envelopes outside c=4, r=5..9 add <6e-18, so admitting them
+  preserves the rounded known-transfer bound <2.175e-13. Only those five
+  strata remain in U_14; the size-15--24 classes and later histories remain
+  open. Forty-eight exact identities and actual-parameter interval assertions
+  pass. This simplifies the missing estimate but does not establish it or
+  improve the complete exit bound. No Lean certificate.
+* **Part 287 (direct orthogonal pair count; triangle exclusion is insufficient).**
+  [orthogonal_pair_sums](research/wall1_orthogonal_pair_sums.md) bounds the four
+  orthogonal six-point codes using a ball-intersection product and a full
+  modular-layer correction. The production two-relation bound takes the
+  smaller of this and its previous Gaussian estimate. Twenty exact real/modular
+  and four rational Gram--Schmidt checks pass. A separately labelled diagnostic
+  excludes eligible triangular six-point anchors but still gives a size-fourteen
+  residual envelope about 6.8386e-4. No such family is admitted to the successful
+  budget: Part 286's five residual strata remain open. This is an upper-envelope
+  limitation, not a lower bound on the actual error. No new Lean certificate.
+* **Part 288 (seven-point codes; triangle-free size-fourteen strata admitted).**
+  [seven_point_codes](research/wall1_seven_point_codes.md) identifies the dominant
+  seven-point witnesses. Exactly nine balanced short codes fit each prescribed
+  four-/four- or four-/six-circuit pair, replacing 11025. A direct squared
+  triple-count bound, with explicit weighted Gaussian aliases, lowers the
+  admitted transfer including triangle-free size-fourteen strata to <5.395e-13.
+  The remaining U_14 consists only of girth-four, rank-5..9 supports containing
+  an eligible triangular six-point anchor. The sufficient open target is now
+  sum L_h U_h + P(max_(15..404)b_i>.280)<=2.4693e-12; larger residual classes
+  are unchanged. Finite code/count tests and interval budget checks pass.
+  Part 287's triangle-free envelope failure is superseded. No full draw-14,
+  later-history or Lean certificate, and no complete BKZ proof.
+* **Part 289 (Lean support-cutoff certificate for the factored remainder).**
+  `Wall1/LinearRemainder.lean` proves lower-support addition under multiplication,
+  vanishing of higher powers below twice the cutoff, and linearity of the
+  weighted factorial exponential remainder through degree 24 when U starts
+  at degree 14. Only degrees 0..10 of the known multiplier are needed.
+  File compilation passes; eleven theorem audits use only `propext`,
+  `Classical.choice`, `Quot.sound`, with no `sorry` or new axioms.
+  [Scope](research/wall1_linear_remainder.md): this formalizes the factored
+  finite correction, not exponential factorization, cumulant/probability
+  transfer, mean-floor monotonicity, or numerical geometry. No change to
+  Part 288's unresolved activities or later-history target; BKZ remains open.
+* **Part 290 (rare triangular-anchor existence; conditioning gap explicit).**
+  [rare_triangular_anchor](research/wall1_rare_triangular_anchor.md) bounds
+  eligible triangular six-point anchor existence in the fixed draw-14 fresh
+  affine-graph model by 5(G_3+Alias_3)/q^(4m)<3e-87. All modular layers are
+  retained. This does not bound high-order extension counts or selected
+  histories. An exact affine-square example shows that deleting a full
+  incidence while retaining proper-subset moments can invalidate a void upper
+  bound; absence conditioning changes those moments. Interval, finite example
+  and 256 event-TV checks pass. A robust conditional void transfer is still
+  needed before using the rare event to replace Part 288's residual target.
+  No full draw-14 or BKZ certificate follows.
+* **Part 291 (third crossing relation; large new groups and rank nine admitted).**
+  [triangular_third_relation](research/wall1_triangular_third_relation.md)
+  extracts a fundamental circuit crossing a fixed rank-four triangular anchor
+  and its basis extension. For t new points, 2<=t<=r-3 and the union rank is
+  t+3. Fourier/Holder bounds retain the old exact pair energy and count the
+  new group with all modular layers. At size fourteen, all t>=3 witness
+  families contribute <1.566e-25; rank-nine t=2 adds <1.484e-24. The enlarged
+  known transfer stays <5.395e-13. Remaining U_14 is restricted to ranks 5..8
+  with only two-new-point eligible crossings. The open activity/history
+  target remains <=2.4693e-12. All 186 crossing and 196 finite group checks
+  and interval assertions pass. Larger classes and later histories remain
+  open; no full draw-14, Lean or BKZ certificate follows.
+* **Part 292 (parallel contraction; only rank-five triangles remain at size fourteen).**
+  [parallel_contraction](research/wall1_parallel_contraction.md) shows by a
+  single basis pivot that absence of every eligible large crossing forces
+  the contraction by the triangular anchor to be loops plus independent
+  rank-one parallel classes, each of size at least two. Counting within these
+  classes gives <3.219e-17 for residual ranks 6..8, hence enlarged known
+  transfer <5.396e-13. Only rank-five triangular configurations remain in
+  U_14; larger classes are unchanged. The sufficient residual/history target
+  is <=2.4692e-12. All 2593 graph, 137 pivot, 256 parallel, 81 partition and
+  interval/budget checks pass. This is a paper refinement, not a Lean, full
+  draw-14 or BKZ certificate.
+* **Part 293 (rank-three short code; complete component coverage through fourteen).**
+  [rank_five_code](research/wall1_rank_five_code.md) retains the fixed triangular
+  plane in the last rank-five eight-point witness. The old integer projection
+  has minimum positive squared distance 2/3; the third lattice height is at
+  least 8/3. The cutoff sqrt(12)*30^2<3329 confines short representatives to
+  three dimensions, with explicit long-vector and periodic tails. The last
+  rank-five charge is <1.151e-28, so all size-fourteen classes are covered
+  with known transfer <5.396e-13. The main cumulant probe uses the refinement.
+  Remaining residual sizes are 15..24; their linear charge plus later-history
+  probability must still be <=2.4692e-12. Projection, interval and cumulant
+  checks pass. No full draw-14 exit, selected-history or BKZ proof, and the
+  new geometry is not Lean formalized.
+* **Part 294 (larger triangular components; other girths now obstruct).**
+  [larger_triangular_components](research/wall1_larger_triangular_components.md)
+  extends the third-relation bounds to sizes 15..24 and connects the smaller
+  full-stratum envelopes to the main cumulant probe. The size-fifteen
+  triangular envelope is <3.06e-4 and the full residual envelope <4.51e7,
+  still far above the needed budget. A diagnostic excluding double-short
+  anchors is dominated by rank-eight girth-three configurations; girths four
+  and five also remain. These are upper-envelope limitations, not lower
+  bounds on actual errors. Interval and prior cumulant checks pass; complete
+  admitted coverage stays through fourteen. No later-history or BKZ proof.
+* **Part 295 (external support excludes short independent directions).**
+  [external_support](research/wall1_external_support.md) proves that a second
+  circuit with t new positions and a proper nonempty old overlap has at
+  least t+1 nonzero positions in every direction independent of the first
+  circuit. For t>=4 the norm-four candidate count is therefore zero in
+  those directions; first-circuit candidates remain. The finite checks
+  cover 74,112 coefficient pairs and 369,792 directions. The full size-15
+  envelope still has weighted log10 about 7.654, so the residual budget is
+  not closed. Complete admitted coverage remains through fourteen.
+* **Part 296 (external support improves the second lattice minimum).**
+  [external_minima](research/wall1_external_minima.md) uses the support lower
+  bound and even squared norms to force the second minimum to be at least
+  E=2 ceil((t+1)/2). Gauss reduction gives height at least 3E/4, or E-1
+  when the first vector has squared norm four. The full size-15 residual
+  weighted log10 decreases to 7.62645; the no-double-short diagnostic drops
+  to 4.82972 and is now dominated by rank-seven girth-four. All tail and
+  periodic contributions remain. The necessary residual target and the
+  full BKZ proof remain open; this geometry is not Lean formalized.
+* **Part 297 (third circuits for orthogonal and shared-point anchors).**
+  [other_short_anchors](research/wall1_other_short_anchors.md) extends the
+  crossing-circuit cover to the other eligible double-short types, with
+  180 six-point and 630 seven-point witnesses checked exactly. Adding these
+  and triangular envelopes to the no-double-short remainder gives a full
+  cover, now connected to the main probe. Its size-15 candidate has weighted
+  log10 6.37057, still far above the residual budget. No selected-history
+  or full BKZ proof is obtained.
+* **Part 298 (four-circuit projection parity).**
+  [four_projection](research/wall1_four_projection.md) proves perpendicular
+  height >=t+3/4 for a second short direction outside a balanced four-row,
+  and >=t+2 for even t with a three-position overlap. Exact checks cover
+  6,561 old-coordinate tuples. The full size-15 residual weighted log10
+  improves to 6.35668; the no-double-short diagnostic falls to 1.94692 and
+  is now dominated by girth five. A first-ball/new-group alternative is
+  retained where smaller. All tails remain. Neither the residual budget,
+  selected-history bound, nor the full BKZ proof is complete.
+* **Part 299 (three-row codes retaining the other short planes).**
+  [other_third_codes](research/wall1_other_third_codes.md) proves positive
+  old projection minima 1/2 for the orthogonal plane and 3/5 for the
+  shared-point plane. With two new coordinates, the third heights are
+  5/2 and 13/5. The cutoffs 28 and 29 retain all long and periodic tails.
+  Exact checks cover 93,750 integer vectors and full cumulant regressions
+  pass. The full size-15 residual weighted log10 drops to 1.94693, now
+  close to the no-double-short remainder and dominated by girth five.
+  This is still insufficient; larger sizes, selected histories, and the
+  full BKZ proof remain open. The new geometry is not Lean formalized.
+* **Part 300 (girth-five codes split by norm-six directions).**
+  [six_short_lines](research/wall1_six_short_lines.md) shows that two
+  independent balanced norm-six rows can span a full-support girth-five
+  code only on eight positions. Short-line coefficient counts and separate
+  theta bounds improve the full size-15 residual weighted log10 to 1.40954.
+  The 1,278 finite-field classifications pass, with 144 eligible cases
+  all of size eight. Girth-five strata no longer dominate; girth-four
+  remains. The required residual and selected-history bounds, and hence
+  full BKZ, are still unproved. No Lean formalization is claimed.
+* **Part 301 (norm-six split inside the girth-four no-norm-four term).**
+  [four_six_split](research/wall1_four_six_split.md) shows that two balanced
+  norm-six rows in this restricted class force seven total positions.
+  Separate zero/one/two-line theta terms retain all tails and improve the
+  full size-15 residual weighted log10 slightly, to 1.40187. Exact finite
+  classifications find 72 eligible girth-four cases, all size seven.
+  Rank-seven girth-four remains dominant; this is not a residual-budget,
+  selected-history, or full BKZ proof.
+* **Part 302 (rare second short lines beside a norm-four circuit).**
+  [rare_second_line](research/wall1_rare_second_line.md) counts independent
+  norm-six and norm-eight witnesses beside the fixed first balanced row;
+  their absence forces second squared minimum at least ten. All three
+  cases retain cutoff-40 and periodic tails. Exact checks cover 14,465
+  short-line cases and 175 prescribed-support uniqueness cases. The full
+  size-15 residual weighted log10 drops to -3.28929, still far above the
+  necessary residual budget. Triangular extensions and girth-six terms
+  now dominate. Full BKZ and selected-history proofs remain open.
+* **Part 303 (parallel contractions for larger short-anchor supports).**
+  [larger_parallel_contraction](research/wall1_larger_parallel_contraction.md)
+  extends the no-large-crossing partition cover to all three short-anchor
+  types and sizes 15..24. The weighted recurrence is checked in 760 cases,
+  alongside the existing partition and pivot checks. At size fifteen the
+  triangular weighted log10 falls to -5.44209 and the full residual to
+  -3.67322. The budget is still unmet; girth-six remainder terms dominate.
+  Full BKZ and selected-history proofs remain open.
+* **Part 304 (girth-six short lines including the first circuit).**
+  [girth_six_lines](research/wall1_girth_six_lines.md) retains the ten
+  balanced first-six-circuit patterns and counts independent short lines
+  separately. Two-short-line Gram heights improve on supports of sizes
+  eight, ten and eleven. Exact checks cover 948 girth-six pair cases.
+  The full size-15 residual weighted log10 falls to -4.86704, still far
+  above the required budget. Girth-three/four and triangular extensions
+  remain, as do larger sizes and selected histories. Full BKZ is unproved.
+* **Part 305 (fixed short planes with arbitrary crossing size).**
+  [larger_third_codes](research/wall1_larger_third_codes.md) retains the
+  three-row short-code count for every t>=2. The crossing's nonzero old
+  row is supported in an independent anchor basis, so it cannot lie in
+  the old relation plane. Third heights are t+2/3, t+1/2, and t+3/5 for
+  the three anchor types. Exact checks cover 112,918 modular old parts.
+  The full size-15 residual weighted log10 is -4.90099, still insufficient.
+  No-large-crossing parallel completions, the no-double-short remainder,
+  larger sizes and selected histories remain open; full BKZ is unproved.
+* **Part 306 (one retained pair in a parallel class).**
+  [marked_parallel_class](research/wall1_marked_parallel_class.md) retains
+  the specialized two-new-position joint bound in one quotient class and
+  counts remaining marked/unmarked classes separately. The 306 marked
+  recurrence checks pass. The size-15 triangular weighted contribution
+  is <1.88e-13; the full residual weighted log10 remains -5.00138 because
+  the no-double-short remainder dominates. This family bound does not
+  prove the full residual, exit, selected-history or BKZ statement.
+* **Part 307 (girth-three short rows and exact five-point codes).**
+  [three_six_split](research/wall1_three_six_split.md) includes both balanced
+  six-support and (2,-1,-1) norm-six shapes, retaining short first-circuit
+  rows. This gives only a tiny improvement. The subsequent
+  [five_point_short_codes](research/wall1_five_point_short_codes.md) exhausts
+  all 105 pairs of balanced norm-four lines on five positions and finds
+  exactly six eligible codes over F_3329 for the prescribed three/four
+  supports. The coefficient count drops from 225 to six; all geometric
+  tails remain. No full residual, selected-history or BKZ proof is claimed.
+* **Part 308 (rare second lines at arbitrary first-short support).**
+  [general_rare_second](research/wall1_general_rare_second.md) bounds code
+  counts by K4*K6 and K4*K8 without assuming the unique norm-four line is
+  the prescribed first circuit. All specialized anchors use the refined
+  one-short-line term. The 4,590 additional proper-support checks pass.
+  The full size-15 residual weighted log10 improves to -7.04224, but
+  girth-three five-point configurations still dominate and the residual
+  budget is unmet. No full BKZ or selected-history proof is claimed.
+* **Part 309 (weighted full-modular five-point count).**
+  [five_point_weighted](research/wall1_five_point_weighted.md) uses unequal
+  point weights and an exact square completion for the midpoint/shared-difference
+  five-point code. All integer congruence layers are included. There are
+  3,125 exact completion checks and eight full-modular small-ball checks;
+  full cumulant regressions pass. The full size-15 residual weighted log10
+  is -10.00541, still about forty times the entire residual budget.
+  Girth-four terms, larger sizes and selected histories remain unresolved;
+  full BKZ is unproved.
+* **Part 310 (exact short-pair counts on seven and eight positions).**
+  [four_six_seven](research/wall1_four_six_seven.md) derives the 23/4
+  second height for the seven-point four/six pair and enumerates prescribed
+  overlaps. This alone has little effect. Exact eight-point code counts
+  for independent norm-six/eight rows lower the full size-15 residual
+  weighted log10 to -11.30167 (about 4.99e-12), still about twice the
+  entire residual budget before larger sizes and selected histories.
+  Exhaustive actual-field classifications and full cumulant regressions
+  pass; complete BKZ remains unproved.
+* **Part 311 (dependent-point cover and other-anchor multiplicities).**
+  [same_rank_extension](research/wall1_same_rank_extension.md) extends the
+  fixed-plane third-code bound to one dependent new point and restores
+  the justified e+1 quotient-basis multiplicity for other anchors.
+  Exact checks cover 21,090 contractions. Full regressions pass, but the
+  size-15 envelope remains about 4.99e-12. A new family/rank diagnostic
+  identifies the shared-anchor rank-five same-rank term at about 2.65e-12;
+  the new dependent-point cover does not beat its old bound. The residual,
+  larger sizes, selected histories and complete BKZ proof remain open.
+* **Part 312 (variance-based cube enlargement).**
+  [cube_variance](research/wall1_cube_variance.md) uses the exact uniform-cube
+  covariance and a one-sided second-moment inequality in the shared-point
+  triple and outer ball counts. A positive radius-margin tradeoff improves
+  the half-cube bound while retaining all modular layers. Exact small-ball
+  checks and full cumulant regressions pass. The full size-15 residual
+  weighted log10 improves to -11.47301 (about 3.37e-12), still above the
+  updated residual budget. The admitted transfer through fourteen is now
+  <3.419e-13, giving a sufficient remaining allocation of 2.6669e-12 for
+  sizes 15..24 plus later-history probability. That target is unproved.
+  Larger sizes, selected histories, and full BKZ
+  remain open; this argument is not Lean formalized.
+* **Part 313 (Gram strata; component admission through fifteen).**
+  [eight_gram_strata](research/wall1_eight_gram_strata.md) stratifies the
+  exact eight-point short-pair codes by integer Gram determinant. Unit
+  minors justify the corresponding plane heights D/4, with all tails
+  retained. The full size-15 weighted log10 is -11.61856; the admitted
+  cumulant transfer through all size-fifteen classes is <2.750e-12 and
+  is explicitly checked by the main probe. The remaining sufficient
+  target is sizes 16..24 plus later-draw (15..404) bad-history probability
+  <=2.588e-13. This target remains unproved; no complete draw-14 exit,
+  selected-history or full BKZ theorem is claimed, and the new geometry
+  is not Lean formalized.
+* **Part 314 (determinant-twenty anchors and their extensions).**
+  [twenty_plane](research/wall1_twenty_plane.md) proves that positive integer
+  squared projection off the norm-four/norm-six plane of determinant twenty
+  is at least 7/10. It counts 3360 such planes on eight labeled positions,
+  and uses the resulting third-height bound with all tails and modular
+  layers in the existing crossing/parallel-class cover. Exact checks cover
+  6561 projection identities and the two-to-one witness multiplicity at
+  three moduli. The cumulant transfer through fifteen is <1.654e-12;
+  the sufficient remaining budget for sizes 16..24 plus later-history
+  probability is now 1.3548e-12. This budget remains unproved. The size-16
+  refined envelope is now dominated by rank-six girth-four components
+  (weighted log10 about 3.53935), still far above the target. No full
+  draw-14 exit, selected-history or BKZ theorem follows, and this geometry
+  is not Lean formalized.
+* **Part 315 (third-short-line split).**
+  [third_short_split](research/wall1_third_short_split.md) splits the
+  orthogonal/shared anchor extensions according to whether a new balanced
+  norm-four line occurs. There are at most 3*choose(s,4-t) exceptional
+  codes on a fixed t-new-position support. On the complement, the old
+  planes' squared covering radii 2 and 8/5 give third squared heights at
+  least 4 and 22/5. Both branches retain all tails and modular layers.
+  The split is connected to dependent, crossing and marked-pair covers.
+  Exact checks cover 4246 integer-vector reductions and eight exceptional
+  line counts, in addition to the existing projection checks. For size16,
+  rank6, the shared-anchor small-crossing unweighted log10 drops from
+  31.11807 to 15.30519. Other anchor families and rank strata still leave
+  the total far above its target. The cumulant probe passes 2106 exact
+  checks and gives transfer through fifteen <1.557e-12, with sufficient
+  remaining allocation 1.4518e-12 for sizes16..24 plus later histories.
+  This remaining bound is unproved. This is not a full draw-14, adaptive
+  selected-history or BKZ proof, and is not Lean formalized.
+* **Part 316 (determinant-twenty third-short-line split).**
+  [twenty_plane](research/wall1_twenty_plane.md) extends the exceptional
+  line split to the determinant-twenty anchor. Its squared covering
+  radius is at most 9/5, giving third squared height at least 21/5 in
+  the absence of a new norm-four line. There are at most
+  3*choose(8,4-t) exceptional lines. The split is used for all dependent,
+  crossing and marked-pair branches; tails and modular layers remain.
+  The regression passes 13199 exact vector checks and twelve line counts.
+  It leaves the displayed full bound essentially unchanged; the next
+  dominant rank8 terms have c=4,t=5. No residual budget is established.
+* **Part 317 (nine-position Gram strata).**
+  [nine_gram_strata](research/wall1_nine_gram_strata.md) exhaustively
+  counts the c=4,t=5 norm-six/eight planes by prescribed old overlap.
+  The Gram determinants are 23 and31, and duplicate determinant23
+  witnesses are removed by equality of canonical plane sets. Unit minors
+  justify the heights D/4; the nonexceptional coefficient count and all
+  tails remain. Counts pass at q=7,17,3329 and the full cumulant probe
+  passes all 2106 exact regressions. The size16 weighted log10 is now
+  0.98644, dominated by rank5,girth4 at 0.93470, then rank8,girth4 at
+  0.02345. Transfer through fifteen remains <1.557e-12. The remaining
+  sufficient allocation 1.4518e-12 is still unproved, and the through24
+  envelope remains about 3.97e236. Neither selected histories nor the
+  full BKZ theorem have been proved; these refinements are not in Lean.
+* **Part 318 (girth-filtered dependent shared-anchor extension).**
+  [shared_dependent_codes](research/wall1_shared_dependent_codes.md)
+  enumerates all105 additional balanced norm-four lines on the eight
+  positions and checks all56 complementary supports per line. The
+  girth-four survivors have Gram determinants 36,44,56,60 with witness
+  counts24,28,24,5. Unit minors give primitive bases and third heights
+  D/15; minors of absolute value below7 make the rank test exact at
+  q=3329. The exceptional branch uses these strata and retains the
+  nonexceptional bound and all tails. The full probe passes2106 exact
+  regressions, with transfer through fifteen <5.295e-13. The sufficient
+  remaining budget is2.4793e-12 for sizes16..24 plus later histories,
+  still unproved. The size16 envelope log10 is0.04119, dominated by
+  rank8/girth4, and the through24 envelope remains about3.97e236.
+  This is not a full exit/selected-history/BKZ proof or Lean formalization.
+* **Part 319 (determinant-twenty-three anchor cover).**
+  [twenty_three_plane](research/wall1_twenty_three_plane.md) proves
+  positive integer projection >=15/23 off the nine-position norm4/norm6
+  plane and counts15120 labeled anchors. Its squared covering radius
+  <=48/23 gives third height >=90/23 without an additional norm4 line;
+  exceptional lines are retained separately. All dependent, crossing
+  and parallel-class extensions and Gaussian tails are covered. Checks
+  pass19683 projection identities,120 witness pairs,38852 plane-rounding
+  identities, sixteen rare-line counts and2106 cumulant regressions.
+  The size16 weighted log10 is -1.37896, now dominated by rank6/girth4
+  and rank5/girth4. Transfer through fifteen remains <5.295e-13, but the
+  residual allocation2.4793e-12 is unproved; the through24 envelope is
+  still about1.71e233. Selected histories and the full BKZ proof remain
+  open. The new geometry and counting are not Lean formalized.
+* **Part 320 (both balanced determinant20 dependent types).**
+  [twenty_dependent_codes](research/wall1_twenty_dependent_codes.md)
+  checks both same-sign and mixed-sign overlaps of the norm4/norm6
+  anchor. Girth filtering enumerates336 short lines and84 complementary
+  supports each; unit minors establish primitive bases. The surviving
+  third squared heights are D/20>=11/5. Per-stratum maxima across the
+  two affine sign types give a uniform upper cover; all nonexceptional
+  terms, Gaussian tails and modular layers remain. The cumulant probe
+  passes2106 exact checks and retains transfer through fifteen <5.295e-13.
+  Size16's weighted log10 is -1.76129, now led by rank5/girth4, then
+  rank8/girth3 and rank7/girth4. The residual allocation2.4793e-12 is
+  unproved and the through24 envelope remains about1.71e233. No complete
+  draw14 exit, adaptive selected-history or BKZ proof follows; the new
+  argument is not Lean formalized.
+* **Part 321 (triangular third-short-line split).**
+  [triangle_short_split](research/wall1_triangle_short_split.md) uses
+  original balanced generators for every triangular sign pattern. Their
+  squared covering radius is <=4/3, giving third height >=14/3 without
+  an additional norm4 line. The exceptional line count is retained in
+  dependent/crossing/marked-pair covers and the size14 rank5 baseline.
+  Exact checks pass41066 plane reductions,24 rare-line counts and2106
+  cumulant regressions. Transfer through fifteen is about5.28304e-13,
+  below the retained5.295e-13 cap. Size16's weighted log10 is -2.18750,
+  now led by rank8/girth3 and rank7/girth4. The remaining2.4793e-12
+  allocation is unproved and the through24 envelope remains about1.71e233.
+  The adaptive selected-history and full BKZ obligations remain open;
+  this new geometry is not Lean formalized.
+* **Part 322 (exact rare planes for girth3 on six positions).**
+  [three_circuit_six_codes](research/wall1_three_circuit_six_codes.md)
+  counts prescribed c=3,t=3 short planes, including the norm6 three-support
+  shape. Each old overlap has3 determinant20 and6 determinant23 planes;
+  all eligible norm8 planes already occur in the norm6 set. Counts and
+  primitive unit-minor checks pass at q=7,17,3329. All residual families
+  and Gaussian tails remain in the general two-relation cover. The full
+  probe passes2106 exact regressions and keeps transfer through fifteen
+  <5.295e-13. Size16's weighted log10 is -2.46811; rank8/girth3 is now
+  -5.53603 and the leading stratum is rank7/girth4. The residual budget
+  2.4793e-12 is unproved and the through24 envelope is about3.34e232.
+  Selected histories, the full BKZ theorem and Lean formalization of
+  these new counting/geometry arguments remain open.
+* **Part 323 (determinant23 dependent-code girth filter).**
+  [twenty_three_dependent_codes](research/wall1_twenty_three_dependent_codes.md)
+  enumerates252 additional norm4 lines and all120 complementary supports
+  per line. Unit minors give primitive row bases; minors below7 make
+  the girth test valid over F_3329. Surviving third heights are D/23>=56/23.
+  All exceptional Gram strata, the nonexceptional family and full tails
+  remain in the dependent cover. The full probe passes2106 regressions
+  and retains transfer through fifteen <5.295e-13. Size16's weighted
+  log10 is -3.09089, led by rank4/girth4 and rank8/girth4. The remaining
+  allocation2.4793e-12 is still unproved and the through24 envelope
+  remains about3.34e232. Full selected-history and BKZ proofs remain
+  open; the new counting/geometry argument is not Lean formalized.
+* **Part 324 (all triangular dependent sign patterns).**
+  [triangle_dependent_codes](research/wall1_triangle_dependent_codes.md)
+  checks all5 balanced triangular patterns,300 short lines and35
+  complementary supports per line. Girth-four survivors have Gram
+  determinant32 or48; primitive unit minors give third heights D/12>=8/3.
+  Uniform counts24 and6 cover all sign patterns with harmless overcounting.
+  The full probe passes2106 exact checks and gives transfer through
+  fifteen <3.419e-13. The sufficient remaining allocation is2.6669e-12,
+  still unproved. Size16's triangular contribution has weighted log10
+  -14.40256, but the full residual is -3.40933, led by rank8/girth4.
+  The through24 envelope remains about3.34e232; adaptive histories,
+  full BKZ and Lean formalization of these new arguments remain open.
+* **Part 325 (girth-filtered four-circuit planes on six positions).**
+  [four_circuit_six_codes](research/wall1_four_circuit_six_codes.md)
+  enumerates one-norm4 planes with prescribed c=4,t=2 supports, rejects
+  all support<=3 codewords, and retains exact Gram strata24,28,31,32.
+  Determinant20/23 candidates belong to the excluded girth-three family;
+  its separate cover remains. Unit minors and counts pass at q=7,17,3329.
+  All other families and Gaussian tails remain in the general evaluator.
+  The full probe passes2106 regressions and transfer through fifteen
+  stays <3.419e-13. Size16's weighted log10 is -5.53071, dominated by
+  rank8/girth3, whereas rank8/girth4 is -9.84777. The residual allocation
+  2.6669e-12 remains unproved and the through24 envelope is about1.63e232.
+  Full selected-history, BKZ and Lean formalization obligations remain.
+* **Part 326 (girth-three determinant20 anchor cover).**
+  [girth_three_twenty](research/wall1_girth_three_twenty.md) proves
+  positive old projection >=3/10 for the six-position norm4/(2,-1,-1)
+  plane and counts180 witness anchors. The full extension cover includes
+  old supports of size2 for dependent points and size1 for marked pairs,
+  as required at girth three. All short-line exceptions and tails remain.
+  Checks pass15625 projection identities,180 witnesses, coverage of all
+  removed plane keys at three moduli, and2106 cumulant regressions.
+  Size16's weighted log10 is -9.84269, now led by rank8/girth4. Transfer
+  through fifteen stays <3.419e-13, but the residual allocation2.6669e-12
+  is still unproved and the through24 envelope is about1.61e232.
+  Later selected histories, full BKZ and new-argument Lean proofs remain open.
+* **Part 327 (orthogonal norm4/norm6 determinant24 anchors).**
+  [twenty_four_plane](research/wall1_twenty_four_plane.md) proves the
+  all-integer positive projection bound7/12 by rounding in the old plane
+  and exhaustively checking all577 integer vectors of squared norm<=3.
+  It counts5880 eight-position anchors and retains all third-code tails
+  and short-line exceptions in their extension cover. Both affine
+  dependent sign types are checked on336 lines and84 complements each;
+  surviving third heights are D/24>=9/4. All2106 cumulant regressions pass.
+  Size16's residual is about3.17e-12, still above its2.6669e-12 allowance.
+  The explicitly computed transfer through sixteen is3.5070600055e-12,
+  exceeding3.01e-12: size16 is NOT admitted. The dependent refinement
+  leaves this total essentially unchanged. Through fifteen remains
+  <3.419e-13, while through24 is about1.61e232. Later histories, full BKZ
+  and new-argument Lean formalization remain open.
+* **Part 328 (seven-position determinant23; admission through sixteen).**
+  [seven_twenty_three](research/wall1_seven_twenty_three.md) distinguishes
+  the seven-position short plane from the earlier nine-position type.
+  Rounding and all99 integer vectors of squared norm<=2 prove positive
+  projection >=11/23;84 pairs per first support give2940 anchors. The
+  full extension cover keeps all exceptions and tails. The full probe
+  passes2106 exact regressions and gives transfer through sixteen
+  <9.583e-13, superseding Part327's failed admission. The remaining
+  sufficient condition is sizes17..24 plus later-draw (15..404) bad-history
+  probability <=2.0505e-12. That condition remains unproved; through24
+  still has an ineffective envelope about1.61e232. No full draw14 exit,
+  selected-history or BKZ theorem is claimed. New geometry is not in Lean.
+* **Part 329 (norm-six pair strata on nine positions).**
+  [six_six_nine_codes](research/wall1_six_six_nine_codes.md) addresses
+  the new size17 girth6 obstruction. Prescribed overlap counts for
+  determinants27/35 are28/72 at overlap3,0/96 at4, and0/240 at5.
+  Unit minors and girth tests pass at q=7,17,3329. The full short-plane
+  bound retains all other families and tails. All2106 cumulant checks
+  pass, and through sixteen stays below9.583e-13. Size17 remains open.
+* **Part 330 (girth-eight eleven-position geometry).**
+  [eight_eight_eleven](research/wall1_eight_eight_eleven.md) proves that
+  two norm8 rows with eleven-position support and girth8 have inner
+  product of absolute value one, hence second squared height63/8.
+  The other reduced-minimum case uses heights10,15/2; both full tails
+  remain. All1960 partners and2106 cumulant regressions pass. Through
+  sixteen is about8.79745e-13, below the retained9.583e-13 cap. Size17's
+  weighted log10 is8.62756, now led by rank8/girth4 and rank8/girth3.
+  The remaining2.0505e-12 allocation is unproved; through24 remains
+  about1.61e232. Full selected-history, BKZ and Lean obligations remain.
+* **Part 331 (five- and ten-position rare-plane counts).**
+  [five_ten_gram_strata](research/wall1_five_ten_gram_strata.md) removes
+  duplicate determinant23 planes on five positions and counts the
+  determinant28/32 ten-position planes for each prescribed overlap.
+  Exact enumeration passes at q=7,17,3329; all2106 cumulant checks pass.
+  Through sixteen is about8.78533e-13, below the retained9.583e-13 cap.
+  Size17's weighted log10 improves from8.62756 to7.21025, now led by
+  rank9/girth7. The remaining2.0505e-12 allocation is still unproved;
+  through24 remains about1.61e232. No full BKZ or Lean proof is claimed.
+* **Part 332 (girth-seven short-plane geometry).**
+  [girth_seven_geometry](research/wall1_girth_seven_geometry.md) uses
+  projective column-group sizes to show that norm8 pairs on H positions
+  satisfy |dot|<=3H-30. At H<=9 such pairs cannot occur; at H=10,11
+  their second squared heights are at least8,55/8 respectively. The
+  remaining reduced-minimum case and all tails are retained. All3254
+  partner checks and2106 cumulant regressions pass. Through sixteen
+  remains below9.583e-13. Size17's weighted log10 is6.56746, now led by
+  rank9/girth4. The residual allocation and full BKZ proof remain open;
+  this new geometry is not Lean formalized.
+* **Part 333 (eleven-position rare counts and full norm-eight shapes).**
+  [eleven_gram_strata](research/wall1_eleven_gram_strata.md) counts105
+  determinant31 planes for each prescribed overlap1 or3, and zero for2.
+  Separately, norm-eight reduced pairs covering eleven positions have
+  |dot|<=3 even when one row has support five and a coefficient2. This
+  improves the no-four/no-six second height to55/8, retaining the
+  other minimum case and every tail. Modular counts and2718 full-shape
+  checks pass, as do2106 cumulant regressions. Through sixteen stays
+  below9.583e-13; size17 weighted log10 is6.56131. The gain is small and
+  does not meet the residual allocation. Next separate the selected
+  cover's short-anchor charges from raw two-relation terms. Full BKZ
+  and Lean obligations remain open.
+* **Part 334 (selected-cover diagnosis and norm-ten split).**
+  [norm_ten_split](research/wall1_norm_ten_split.md) reconstructs the
+  selected cover and identifies the one-norm-four term as the dominant
+  size17 rank9/girth4 loss. On eleven positions, independent norm-ten
+  rows have ten unit entries. Inner product +/-3 produces a previously
+  counted norm-eight row; otherwise determinant39 applies. At most1512
+  witnesses suffice; the remaining second squared height is at least11.
+  All tails remain. The1512 witness checks and2106 cumulant regressions
+  pass. Size17 weighted log10 is6.24900, now led by rank8/girth3; through
+  sixteen stays below9.583e-13. The residual allocation, adaptive bridge,
+  complete BKZ proof and new Lean formalization remain open.
+* **Part 335 (five-position girth-three determinant20 anchor).**
+  [five_twenty_anchor](research/wall1_five_twenty_anchor.md) derives
+  an all-integer projection formula with positive minimum1/5 for the
+  five-position rank3 anchor. Thirty primitive affine witnesses cover
+  the family. Its complete girth-three extension cover is added back
+  before excluding that family from the exact five-position table.
+  All3125 projection checks,30 witness checks and2106 cumulant checks
+  pass. Through sixteen remains below9.583e-13; size17 weighted log10
+  is6.15469, now led by rank8/girth6. The residual allocation, adaptive
+  bridge and full BKZ proof remain open; this geometry is not in Lean.
+* **Part 336 (nine-position girth-six determinant27 anchor).**
+  [nine_twenty_seven](research/wall1_nine_twenty_seven.md) identifies
+  the dominant two-norm-six family and proves projected minimum2/3
+  from a three-group integer identity. Covering radius squared2 and
+  girth six give third squared height max(t+2/3,4). A complete rank7
+  extension cover with47040 witnesses is added back before excluding
+  determinant27 from the exact table. All19683 projection checks,
+  560 witness checks and2106 cumulant regressions pass. Through sixteen
+  stays below9.583e-13; size17 weighted log10 is5.96277, now led by
+  rank8/girth4 and rank8/girth3. Residual, adaptive BKZ and new Lean
+  obligations remain open.
+* **Part 337 (ten-position determinant28 anchor; target remains open).**
+  [ten_twenty_eight](research/wall1_ten_twenty_eight.md) proves projected
+  minimum1/2 and covering radius squared16/7 for the rank8 anchor.
+  Balanced-sign enumeration gives330 witnesses per first support and
+  69300 overall; an initial smaller count was rejected and corrected.
+  All59049 projection checks,330 witness checks and2106 cumulant
+  regressions pass. The complete new cover helps other strata but does
+  not improve the target rank8/girth4 bound: same-rank extensions remain
+  too costly. Size17 weighted log10 is5.95115; through sixteen stays
+  below9.583e-13. Residual, adaptive BKZ and new Lean obligations remain.
+* **Part 338 (girth-filtered one-point determinant28 extensions).**
+  [ten_dependent_codes](research/wall1_ten_dependent_codes.md) enumerates
+  720 norm-four rows across both affine sign types. Primitive minors
+  and165 complementary-column tests per row give exact girth-filtered
+  Gram strata68..112. Complete D/28 kernels replace the unrestricted
+  rare-line bound while retaining the no-new-four remainder and tails.
+  All checks and2106 cumulant regressions pass. Size17 weighted log10
+  is5.69665; rank8/girth4 is no longer in the five largest strata.
+  Through sixteen stays below9.583e-13. Rank8/girth3, the remaining
+  allocation, adaptive BKZ and new Lean obligations remain open.
+* **Part 339 (five-position two-four determinant15 anchor).**
+  [five_fifteen](research/wall1_five_fifteen.md) isolates the remaining
+  five-position two-four family. A covering-radius reduction to11
+  integer representatives proves projected minimum1/3. Sixty primitive
+  affine witnesses and squared covering radius8/5 give a complete
+  rank3 extension cover, added back before excluding the family.
+  Geometry, witness checks and2106 cumulant regressions pass. Size17
+  weighted log10 is5.06404, now led by rank10/girth3. Through sixteen
+  remains below9.583e-13. The residual allocation, adaptive BKZ bridge
+  and new Lean obligations remain open.
+* **Part 340 (large-support three-circuit geometry).**
+  [three_large_support](research/wall1_three_large_support.md) proves
+  that for t>=6 a norm-six row lies on the first three-circuit; its
+  integer projected minimum1/3 gives second height>=t+1/3. For t>=8
+  no norm-eight row exists, giving the no-six kernel heights10,15/2.
+  All coefficient counts and tails remain. The729 projection checks,
+  short-shape checks and2106 cumulant regressions pass. Size17 weighted
+  log10 is4.90208, now led by rank8/girth8; rank10/girth3 leaves the
+  five largest strata. Through sixteen stays below9.583e-13. The
+  residual allocation, adaptive BKZ bridge and new Lean work remain open.
+* **Part 341 (girth-eight exclusions on small supports).**
+  [girth_eight_ten](research/wall1_girth_eight_ten.md) rules out
+  eight/eight pairs on at most ten positions, and eight/ten or ten/ten
+  pairs on at most eleven, by cancelling a shared sign class. Complete
+  kernels split minima8,10,>=12 with all tails retained. The2519 new
+  pair checks, prior geometry checks and2106 cumulant regressions pass.
+  Size17 weighted log10 is4.65646, now led by rank8/girth5; through
+  sixteen remains below9.583e-13. Residual, adaptive BKZ and new Lean
+  obligations remain open.
+* **Part 342 (norm-six pairs with a prescribed five-circuit).**
+  [five_six_pair_codes](research/wall1_five_six_pair_codes.md) proves
+  that the eight-position two-six family has determinant32 and second
+  squared height16/3. Exact prescribed-overlap counts are0,36,36 for
+  overlaps2,3,4, checked at q=7,17,3329 with primitive minors. The
+  one-six/no-six families and all tails remain. All2106 cumulant checks
+  pass. Size17 weighted log10 is4.46209, now led by rank6/girth4;
+  through sixteen stays below9.583e-13. The residual allocation,
+  adaptive BKZ bridge and new Lean obligations remain open.
+* **Part 343 (shared-anchor two-point Gram strata; tighter admitted cap).**
+  [shared_two_point_codes](research/wall1_shared_two_point_codes.md)
+  identifies the shared seven-position anchor's small crossing as the
+  rank6/girth4 bottleneck. All63 new norm-four lines pass the girth test;
+  exact determinant counts44:20,50:14,54:13,56:8,60:8 improve the third
+  heights. All tails and unrestricted-family remainders remain. The
+  admitted transfer through sixteen is now below3.459e-13, with the
+  remaining sufficient allocation updated to2.6629e-12. That allocation
+  remains unproved. Size17 weighted log10 is4.18599, now led by
+  rank8/girth3; adaptive BKZ and new Lean obligations remain open.
+* **Part 344 (two norm-six lines with a prescribed three-circuit).**
+  [three_six_pair_codes](research/wall1_three_six_pair_codes.md) proves
+  that the eight-position family contains a three-position norm-six
+  row and a six-unit row. Each prescribed overlap admits10 determinant32
+  and20 determinant35 planes, with primitive minors and exact modular
+  checks. Complete kernels replace the broad two-six count; all other
+  families and tails remain. All2106 cumulant checks pass. Size17
+  weighted log10 is3.72392, now led by rank9/girth6. Through sixteen
+  stays below3.459e-13. The2.6629e-12 residual allocation, adaptive BKZ
+  bridge and new Lean obligations remain open.
+* **Part 345 (large-support girth-six strata and no-six geometry).**
+  [six_six_large_codes](research/wall1_six_six_large_codes.md) counts
+  exact norm-six pairs on10/11 positions and six/eight pairs on11,
+  preserving the longer-minimum remainder. Those refinements alone
+  barely affect the total. Girth-six cancellation then strengthens
+  the no-six kernels, with second heights8,15/2,55/8 on supports<=9,10,11.
+  All finite classifications and2106 cumulant checks pass. Size17
+  weighted log10 is2.86969; rank9/girth6 leaves the five largest strata.
+  Through sixteen stays below3.459e-13. The2.6629e-12 residual allocation,
+  adaptive BKZ bridge and new Lean obligations remain open.
+* **Part 346 (six-position girth-three determinant23 anchor).**
+  [six_twenty_three](research/wall1_six_twenty_three.md) proves projected
+  minimum7/23 by nearest-plane rounding and73 bounded integer cases.
+  The360 primitive affine witnesses give a complete rank4 anchor cover;
+  excluded determinant23 planes are added back with all tails retained.
+  Geometry, witness checks and2106 cumulant regressions pass. Size17
+  weighted log10 is2.57349, now led by rank8/girth4; through sixteen
+  stays below3.459e-13. The2.6629e-12 allocation, adaptive BKZ bridge
+  and new Lean obligations remain open.
+* **Part 347 (triangular norm-six extensions).**
+  [triangle_six_extensions](research/wall1_triangle_six_extensions.md)
+  identifies the triangular t=4 crossing as the rank8/girth4 bottleneck.
+  Exact norm-six strata on t=3,4,5 are counted across all five affine
+  patterns, excluding planes already carrying new norm-four rows.
+  The no-four/no-six remainder has third height>=20/3 by rounding;
+  all tails and coefficient remainders remain. Classification checks
+  and2106 cumulant regressions pass. Size17 weighted log10 is1.99228,
+  now led by rank10/girth4; through sixteen stays below3.459e-13.
+  The residual allocation, adaptive BKZ and new Lean work remain open.
+* **Part 348 (twelve-position short-pair exclusions).**
+  [twelve_small_circuit](research/wall1_twelve_small_circuit.md) classifies
+  reduced norm-eight/ten pairs for girth four/six with proper crossing.
+  All49638 full-support checks pass, including coefficient-two shapes.
+  The three minimum-length cases give squared GS lower bounds(8,10),
+  (10,42/5),(12,9), with existing tails and periodic terms retained.
+  All2106 cumulant regressions pass. Size17 weighted residual log10 falls
+  from1.99228 to1.52078; this is an upper envelope, not a probability.
+  Through sixteen remains below3.459e-13. Sizes17..24, the2.6629e-12
+  residual allocation, adaptive BKZ bridge and new Lean proofs remain open.
+* **Part 349 (twelve-position girth-five refinement).**
+  The same [short-pair classification](research/wall1_twelve_small_circuit.md)
+  now checks girth five. Unlike girths four/six, it permits(8,8) and(8,10),
+  but their Gram determinants are at least60 and64; no(10,10) pair qualifies.
+  The exhaustive minimum-length cases give(8,15/2),(10,19/2),(12,9).
+  The complete-kernel refinement retains all tails and coefficient counts.
+  All49638 classification checks and2106 cumulant regressions pass.
+  Size17 weighted residual log10 decreases from1.52078 to1.40866;
+  through sixteen remains below3.459e-13. This does not admit size17,
+  meet the2.6629e-12 residual budget, or resolve adaptive BKZ or Lean work.
+* **Part 350 (norm-four/ten planes on twelve positions).**
+  [Twelve-position classification](research/wall1_twelve_small_circuit.md)
+  now counts the unique-four-line norm-ten extensions: overlap2 has196
+  determinant36 and182 determinant40 planes; overlap3 has546 determinant40
+  planes; overlap1 has none. Exact checks agree for q=7,17,3329.
+  The no-norm-ten remainder has second squared GS height at least11;
+  complete kernels retain cutoff40 tails and periodic layers.
+  All2106 cumulant regressions pass. Size17 residual weighted log10
+  decreases from1.40866 to1.14821, now dominated by rank8/girth4.
+  Through sixteen remains below3.459e-13. Size17 admission, the residual
+  budget, adaptive BKZ bridge and new Lean formalization remain open.
+* **Part 351 (triangular norm-eight cover and empty four-new exception).**
+  [Triangular extensions](research/wall1_triangle_six_extensions.md) now
+  classifies norm-eight witnesses for t=3,4,5 over all five affine patterns,
+  including coefficient-two rows, with shorter-plane exclusions and unit-minor
+  checks. The no-four/six/eight remainder has squared height at least26/3.
+  Also, t=4 norm-four rows would be new-only, incompatible with a crossing
+  whose nonzero old coefficients use an independent anchor basis; their
+  previous conservative exception count3 is replaced by0.
+  Classification and2106 cumulant checks pass, with all tails retained.
+  These changes have negligible numerical effect: size17 weighted log10
+  remains1.14820799686 and through sixteen remains below3.459e-13.
+  Thus the unclassified norm-eight remainder and that norm-four exception
+  are not the effective bottleneck. The residual budget, adaptive BKZ bridge
+  and new Lean obligations remain open.
+* **Part 352 (weighted triangular norm-four Gaussian).**
+  [Weighted four-extension](research/wall1_triangle_four_weights.md) identifies
+  the t=3 norm-four crossing as the effective triangular bottleneck.
+  Weights5/8 on the attached old coordinate,1 on other old coordinates,
+  and9/8 on new coordinates preserve total weight9. All90 affine witnesses
+  have weighted squared GS lengths23/5,72/23,32/9; the determinant product
+  improves from44 to729/16. Tail and periodic bounds use the conservative
+  scale8/9, retaining every correction. Exact Gram checks and2106 cumulant
+  regressions pass. Size17 weighted residual log10 decreases from1.14821
+  to0.576616; the triangular contribution is at-1.54867. Through sixteen
+  remains below3.459e-13. These are upper envelopes, not probabilities;
+  size17 admission, the residual budget, adaptive BKZ and Lean work remain open.
+* **Part 353 (norm-ten refinement on ten positions).**
+  [Four/ten classification](research/wall1_four_ten_ten.md) isolates the
+  post-weighting rank8/girth4 residual at t=6, overlap3. Norm-ten witnesses
+  have determinant36/39 for overlaps1,3 (counts45/270 each), and
+  determinant40 for overlap2 (count46). Checks agree at q=7,17,3329,
+  including coefficient-two shapes. The remaining second squared height
+  is at least11; existing norm-eight covers, tails and periodic terms remain.
+  All2106 cumulant regressions pass. Size17 weighted residual log10 falls
+  from0.576616 to-1.440839, now led by rank5/girth4. Through sixteen
+  remains below3.459e-13. The size17 envelope still exceeds the required
+  residual allocation; adaptive BKZ and new Lean obligations remain open.
+* **Part 354 (triangular two-new norm-four determinant counts).**
+  [Two-new classification](research/wall1_triangle_two_four.md) replaces
+  the45-times-worst-kernel cover by componentwise determinant counts
+  {32:6,36:24,44:18,48:6} across all five affine patterns. All225
+  witnesses and unit-minor checks pass. Ordinary and marked parallel
+  completion paths both use the refinement, with unchanged remainder,
+  tail and periodic terms. All2106 cumulant regressions pass.
+  Transfer through sixteen is about3.42413830e-13 (the existing asserted
+  cap3.459e-13 and residual allocation are conservatively retained).
+  Size17 weighted residual log10 falls from-1.440839 to-1.892886,
+  again led by rank8/girth4. Size17 admission, the remaining residual
+  budget, adaptive BKZ and new Lean obligations are still open.
+* **Part 355 (weighted six-position determinant24 kernel).**
+  [Six-position weights](research/wall1_six_d24_weights.md) treats the
+  dominant remaining rank8/girth4 c=4,t=2,overlap2 family with weights
+  5/6 on old coordinates and4/3 on new ones. All12 exact rational checks
+  give squared GS lengths24/5,63/10 and determinant product700/27>24.
+  The complete kernel includes prefactor27/25 and tail/periodic scale3/4.
+  All2106 cumulant regressions pass. Size17 weighted residual log10
+  falls from-1.892886 to-2.080222, now led by rank5/girth4.
+  Through sixteen remains about3.42413830e-13. The existing conservative
+  cap and budget are retained; size17 admission, adaptive BKZ and new
+  Lean formalization remain unproved.
+* **Part 356 (four equal pair sums at determinant32).**
+  [Two-new triangular classification](research/wall1_triangle_two_four.md)
+  now verifies all27 determinant32 witnesses have four projective column
+  directions of multiplicity two, with unit determinants for every triple.
+  Coordinate sign changes therefore turn their equations into four equal
+  pair sums. The existing k=4 intersection-count bound plus modular alias
+  correction replaces the Gaussian kernel when smaller. All225 witness
+  checks,27 structural checks and2106 cumulant regressions pass.
+  Through sixteen is about3.418861513e-13. Size17 weighted residual log10
+  falls from-2.080222 to-2.327239, led by rank8/girth3 and rank8/girth4.
+  Existing conservative caps and allocation remain unchanged. Size17
+  admission, the residual target, adaptive BKZ and new Lean work remain open.
+* **Part 357 (three-circuit extension on ten positions).**
+  [Three/six/eight analysis](research/wall1_three_six_eight_ten.md) counts
+  norm-six/eight planes with determinant44/47 (35/70 witnesses for each
+  overlap) at q=7,17,3329, and gives the remaining one-six height17/2.
+  This alone is negligible. In the no-six family, proportional new parts
+  and affine balance exclude reduced(8,8),(8,10),(10,10) pairs; a direct
+  argument and105 finite pair checks give cases(8,10),(10,19/2),(12,9).
+  All tails remain and2106 cumulant regressions pass. Size17 weighted
+  residual log10 falls from-2.327239 to-2.434815; through sixteen stays
+  about3.418861513e-13. Existing conservative caps remain. Size17 admission,
+  the residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 358 (twelve-position exact-girth-seven exclusion).**
+  [Twelve-position analysis](research/wall1_twelve_small_circuit.md) excludes
+  two independent norm-eight rows at exact girth seven: their projective
+  column groups have size at most four, so all row supports have size at
+  least eight. The exhaustive minimum cases give squared GS heights(8,8)
+  and(10,15/2), with all cutoff14 tails and periodic terms retained.
+  All49638 pair checks and2106 cumulant regressions pass. Size17 weighted
+  residual log10 decreases from-2.434815 to-2.538231; rank10/girth7 leaves
+  the top five strata. Through sixteen stays about3.418861513e-13.
+  Existing conservative caps remain; size17 admission, the residual target,
+  adaptive BKZ and new Lean formalization remain open.
+* **Part 359 (seven-position short-family refinements).**
+  [Seven-position analysis](research/wall1_seven_eight_codes.md) counts
+  norm-four/eight planes by determinants23,28,31,32, respecting the
+  determinant23 norm-six overlap and separate anchor exclusion. Checks
+  agree at q=7,17,3329. This alone has small effect. In the no-four family,
+  girth four forces two reduced norm-six rows to have inner product+/-1,
+  giving determinant35 and height35/6. All360 pair checks and2106
+  cumulant regressions pass, with counts and all tails retained.
+  Size17 weighted residual log10 falls from-2.538231 to-2.570977;
+  through sixteen stays about3.418861513e-13. Existing conservative caps
+  remain; size17 admission, adaptive BKZ and new Lean obligations are open.
+* **Part 360 (determinant44 anchor projection certificate).**
+  [Nine-position projection](research/wall1_d44_projection.md) prepares a
+  full-anchor treatment of the remaining triangular three-new norm-four
+  crossing. Its positive integer projection minimum is exactly6/11.
+  Squared rounding radius8/3 reduces any putative smaller projection to
+  integer norm below106/33<4; all835 possible vectors are checked exactly.
+  All90 affine witnesses have the same signed-permutation column geometry.
+  Thus this is an all-integer geometric lemma, not a bounded-search guess.
+  Fourth-relation modular/tail and completion accounting are not yet
+  connected. No new numerical residual bound or Lean formalization is
+  claimed; size17 admission and the adaptive BKZ bridge remain open.
+* **Part 361 (determinant44 fourth-relation cover connected).**
+  [Fourth-relation extension](research/wall1_d44_extension.md) connects the
+  nine-position rank-six anchor, with113400 witnesses, to the full envelope.
+  Cutoff20 satisfies44*20^4<3329^2; squared fourth height is at least
+  t+6/11, or additionally10/3 when new norm-four rows are excluded.
+  Coefficient, tail, periodic, dependent and parallel completion terms are
+  retained. Removing the triangular t=3 norm-four class is paired with a
+  complete anchor addback, and the old envelope is retained as an alternative.
+  The835 projection and90 geometry checks and2106 cumulant regressions pass.
+  Size17 weighted residual log10 falls from-2.570977 to-2.835101;
+  the triangular contribution falls to-7.399184. Through sixteen stays
+  about3.418861513e-13. Size17 admission, the full residual target,
+  adaptive BKZ and new Lean formalization remain open.
+* **Part 362 (eleven-position norm-eight crossing bound).**
+  [Four-circuit/eleven-point analysis](research/wall1_four_eleven_eight.md)
+  uses proportionality on seven new coordinates to give second squared
+  height19/2 when the first minimum is eight. All1680 reduced-pair checks
+  and2106 cumulant regressions pass. Numerical effect is negligible:
+  size17 weighted log10 stays about-2.835101. An explicit primitive
+  norm-ten pair attains determinant75 and height15/2 at girth four,
+  ruling out a uniform increase for that remaining class. Isolating its
+  rare planes is a further obligation. Full residual, adaptive BKZ and
+  new Lean obligations remain open.
+* **Part 363 (eleven-position norm-ten pairs isolated).**
+  [Eleven-position analysis](research/wall1_four_eleven_eight.md) now proves
+  every reduced norm-ten pair admits a norm-ten generator on the four-circuit,
+  and enumerates its prescribed-support planes at q=7,17,3329. Complete
+  rare kernels plus remainders(10,19/2),(12,9) retain all tails. All2106
+  cumulant regressions pass, but size17 weighted log10 remains about-2.835101.
+  New split diagnostics identify the reason: at overlaps1 and3 the one-four
+  kernel exceeds the no-four kernel by about48 and41 decimal orders before
+  the common normalization. The next target is that one-four family, not
+  a further uniform improvement to the norm-ten remainder. Full residual,
+  adaptive BKZ and new Lean obligations remain open.
+* **Part 364 (weighted eleven-position determinant31 kernel).**
+  [Eleven-position weights](research/wall1_eleven_d31_weights.md) uses
+  weights55/72,11/12,77/72 on the attached old, other old, and new coordinates.
+  All420 exact checks give squared GS lengths252/55,576/77 and weighted
+  determinant product greater than31. Complete cutoff40 tails and periodic
+  layers use the conservative scale72/77. The change applies only to the
+  counted determinant31 class, with the existing remainder retained.
+  All2106 cumulant regressions pass. Size17 weighted residual log10 falls
+  from-2.835101 to-3.050645; rank9/girth4 leaves the top five strata.
+  Through sixteen remains about3.418861513e-13. Size17 admission, the
+  full residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 365 (seven-position three-circuit short families).**
+  [Three-circuit/seven-point analysis](research/wall1_three_seven_short.md)
+  counts two-six planes by determinants27,32,35,36, with agreement at
+  q=7,17,3329. In the no-six family exhaustive reduced-pair checks exclude
+  (8,8), give Gram>=76 for(8,10) and Gram>=91 for(10,10), yielding complete
+  squared-height cases(8,19/2),(10,91/10),(12,9). All coefficient remainders,
+  cutoff tails and periodic terms remain. Classification checks and2106
+  cumulant regressions pass. Size17 weighted residual log10 falls from
+  -3.050645 to-3.485263, now led by rank10/girth6. Through sixteen stays
+  about3.418861513e-13. Size17 admission, the remaining residual target,
+  adaptive BKZ and new Lean formalization remain open.
+* **Part 366 (twelve-position one-six refinement).**
+  [Six/eight twelve-position analysis](research/wall1_six_twelve_eight.md)
+  first confirms the one-six family dominates rank10/girth6. Norm-eight
+  extensions have determinants44,48, with exact prescribed-overlap counts
+  agreeing at q=7,17,3329. The remaining second squared height is at least
+  17/2. All coefficient remainders, cutoff36 tails and periodic layers stay.
+  Classification and2106 cumulant regressions pass. Size17 weighted residual
+  log10 falls from-3.485263 to-4.047737; rank10/girth6 leaves the top five.
+  Through sixteen stays about3.418861513e-13. Size17 admission, the full
+  residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 367 (weighted eight-position determinant28 kernel).**
+  [Eight-position weights](research/wall1_eight_d28_weights.md) converts
+  every norm-four/eight determinant28 witness to a sparse second row by
+  a unimodular change. Weights1/8,7/8,21/16 give squared GS lengths80/7,
+  1328/105 and determinant product37664487/1048576>28. All96 exact
+  checks and2106 cumulant regressions pass. The complete cutoff40 tail
+  and periodic corrections use scale16/21, with all counts retained.
+  Size17 weighted residual log10 falls from-4.047737 to-5.079907;
+  through sixteen stays about3.418861513e-13. Size17 admission, the
+  full residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 368 (weighted ten-position determinant32 kernel).**
+  [Ten-position weights](research/wall1_ten_d32_weights.md) uses weights
+  5/8(shared),1(old-exclusive),9/8(new) for orthogonal norm-four/eight
+  rows. Squared GS lengths26/5,128/15 give determinant product
+  2302911/65536>32. All300 exact Gram/unit-minor checks and2106 cumulant
+  regressions pass. Cutoff40 tails and periodic corrections use scale8/9;
+  both short-pair splits and diagnostics use the complete improved kernel.
+  Size17 weighted residual log10 changes from-5.079907384 to-5.079964574,
+  only about0.013% improvement. Thus this raw-term diagnosis does not
+  identify a major improvement in the selected complete cover. Through
+  sixteen remains about3.418861513e-13. Size17 admission, the full residual
+  target, adaptive BKZ and new Lean formalization remain open. Next inspect
+  the selected residual's internal contributions before choosing a new family.
+* **Part 369 (exclude reduced norm-eight pairs on ten positions).**
+  [Ten-position no-four analysis](research/wall1_four_ten_eight_pairs.md)
+  identifies the selected two-relation residual: t6/overlap3 contributes
+  about97.8% of rank8/girth4, dominated by the no-four kernel rather than
+  Part368's one-four family. Two norm-eight rows must have identical new
+  unit parts and disjoint old supports, giving dot6 and contradicting
+  Gauss reduction. All165 eligible pairs are checked exactly. The new
+  complete GS kernel cases(8,8),(10,15/2) retain cutoff14 tails and periodic
+  terms. All2106 cumulant regressions pass. Size17 weighted residual log10
+  falls from-5.079965 to-5.417096 (about2.17-fold improvement); through
+  sixteen stays about3.418861513e-13. New stratum-candidate diagnostics
+  retain both one- and two-relation alternatives. Size17 admission, the
+  full residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 370 (rare norm-eight pair cover for five-circuit planes).**
+  [Five-circuit ten-position split](research/wall1_five_ten_eight_split.md)
+  identifies the no-six kernel at t5/overlap4 as the leading rank8/girth5
+  contribution. There are6615 balanced norm-eight lines of support>=5,
+  hence at most21875805 unordered pair witnesses. Charging these with
+  the old complete(8,6) GS kernel divided by the coefficient count leaves
+  complete cases(8,8),(10,15/2). All tails and periodic terms remain.
+  The6615 exact line checks and2106 cumulant regressions pass. Size17
+  weighted residual log10 falls from-5.417096 to-6.253230. Rank8/girth3
+  now leads, followed by rank10/girth8 and rank8/girth4. Through sixteen
+  remains about3.418861513e-13. Five-circuit split diagnostics are retained.
+  Size17 admission, the full residual target, adaptive BKZ and new Lean
+  formalization remain open.
+* **Part 371 (weighted seven-position determinant27 kernel).**
+  [Seven-position weights](research/wall1_seven_d27_weights.md) identifies
+  the two-six family at t4/overlap2 as the rank8/girth3 bottleneck. Weights
+  1/8,23/16,23/16 on C and1 on the four new positions give squared GS
+  lengths768/23,100/23 and weighted determinant product75/2>27. All36
+  exact Gram checks and2106 cumulant regressions pass. The complete
+  cutoff36 tail and periodic corrections use scale16/23; other classes
+  and counts remain. Size17 weighted residual log10 falls from-6.253230
+  to-6.405900. Rank8/girth3 leaves the top five; rank10/girth8 now leads.
+  Through sixteen remains about3.418861513e-13. Size17 admission, the
+  full residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 372 (short-pair cover for twelve-position girth-eight planes).**
+  [Twelve-position girth-eight split](research/wall1_eight_twelve_pairs.md)
+  identifies t4/overlap7 as the rank10/girth8 bottleneck. Count at most
+  150069150 unordered pairs among17325 unit norm-eight lines for the
+  exceptional(8,8) family. Projective sign groups have size<=4, giving
+  |dot|<=2 for(8,10) and dot0 for(10,10). The complete residual GS cases
+  are(8,19/2),(10,19/2),(12,9), with all cutoff14 and periodic terms.
+  All6638 eligible representative-pair checks,17325 line counts and2106
+  cumulant regressions pass. Size17 weighted residual log10 falls from
+  -6.405900 to-6.536332. Rank10/girth8 leaves the top five; rank8/girth4
+  now leads. Through sixteen remains about3.418861513e-13. Size17 admission,
+  the full residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 373 (norm-ten split for nine-position four-circuit planes).**
+  [Nine-position norm-ten split](research/wall1_nine_norm_ten_split.md)
+  locates the t5/overlap3 bottleneck in the generic second-minimum>=10
+  remainder rather than the counted determinant31 class. There are5292
+  balanced norm-ten lines on nine positions and at most15876 witnesses
+  paired with the three first norm-four lines. Charge these with the
+  complete height9 kernel, leaving height11 for the higher remainder.
+  All5292 line checks and2106 cumulant regressions pass, with cutoff40
+  tails and periodic terms retained. Size17 weighted residual log10 falls
+  from-6.536332 to-6.713969. Rank8/girth4 leaves the top five; rank9/girth7
+  now leads. Through sixteen remains about3.418861513e-13. Size17 admission,
+  the full residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 374 (rare norm-eight pairs on eleven positions at girth seven).**
+  [Eleven-position girth-seven split](research/wall1_seven_eleven_eight_split.md)
+  identifies t4/overlap6 as the rank9/girth7 bottleneck. There are5775 unit
+  norm-eight lines and at most16672425 unordered pair witnesses. Charge
+  these with the complete(8,55/8) kernel divided by the coefficient count;
+  retain complete cases(8,8),(10,15/2) for the remainder. All cutoff14 tails
+  and periodic corrections remain. The5775 line checks,624 eligible
+  representative-pair checks and2106 cumulant regressions pass. Size17
+  weighted residual log10 falls from-6.713969 to-6.917041. Rank9/girth7
+  leaves the top five; rank11/girth4 and rank5/girth4 now lead. Through
+  sixteen remains about3.418861513e-13. Size17 admission, the full residual
+  target, adaptive BKZ and new Lean formalization remain open.
+* **Part 375 (four-circuit planes on thirteen positions).**
+  [Thirteen-position analysis](research/wall1_four_thirteen_ten.md)
+  identifies t9/overlap3 as the rank11/girth4 bottleneck. With a norm-four
+  row, at most1512 norm-ten extension witnesses have determinant39;
+  the remaining second height is>=11. Without norm four, no norm-six/eight
+  row fits C or covers nine new positions. Two outside norm-ten rows
+  cannot have a full C difference, leaving complete GS cases(10,19/2),
+  (12,9). All7560 exact Gram/inner-product checks and2106 cumulant
+  regressions pass. All respective cutoff40/14 tails and periodic terms
+  remain. Size17 weighted residual log10 falls from-6.917041 to-7.100985;
+  rank11/girth4 leaves the top five, and rank5/girth4 now leads. Through
+  sixteen remains about3.418861513e-13. The through24 envelope remains
+  ineffective at about7.03e226; this is not a failure probability. Size17
+  admission, the full residual target, adaptive BKZ and new Lean work remain open.
+* **Part 376 (exact marked-pair multiplicity for the rank-one quotient).**
+  [Single-class multiplicity](research/wall1_single_class_multiplicity.md)
+  weights each marked pair by1/choose(k,2), where k is its nonloop class
+  size. For a rank5 triangular support there is exactly one such class;
+  the weights sum pointwise to1. Exact rational completion counts retain
+  every loop/nonloop split and all existing joint-kernel corrections.
+  The correction is connected to the size14 baseline and sizes15..24.
+  All1981 subset checks,114 weighted count identities and2106 cumulant
+  regressions pass. Size17 triangular weighted log10 falls from-7.399184
+  to-9.138110; full residual log10 becomes-7.396911 from-7.100985. Through
+  sixteen is about3.418861456e-13, with prior conservative caps retained.
+  Rank8/girth6 and rank9/girth4 now lead. Size17 admission, the full
+  residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 377 (six-circuit refinements on ten positions).**
+  [Six-circuit ten-position analysis](research/wall1_six_ten_refinement.md)
+  splits the one-six family by at most3307500 norm-six/eight witnesses,
+  leaving second height>=17/2. For two-six determinant32 planes, weights
+  11/12(shared),49/48(exclusive) give squared GS lengths3288/539,
+  35712/6713 and weighted determinant product4719878935541/146767085568>32.
+  All2100/1575 line counts,780 weighted Gram/unit-minor checks and2106
+  cumulant regressions pass. All cutoff36 tails and periodic corrections
+  remain; weighted corrections use scale48/49. Size17 weighted residual
+  log10 falls from-7.396911 to-7.695059; rank9/girth4 now dominates.
+  Through sixteen remains about3.418861456e-13. Size17 admission, the full
+  residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 378 (all-integer projection lemma for the determinant31 anchor).**
+  [Eleven-position projection certificate](research/wall1_eleven_d31_projection.md)
+  proves projected squared minimum21/31 for the norm-four/eight plane.
+  Nearest-plane rounding has squared radius47/16; a smaller positive
+  projected value would give an integer vector of squared norm<1793/496<4.
+  All1563 resulting vectors are checked exactly, with minimum positive
+  projection numerator21. All420 balanced witnesses are certified signed
+  coordinate permutations of the canonical plane. This is an all-integer
+  paper proof supported by exact enumeration, not merely a search claim.
+  It supplies projected height t+21/31 under a nonzero old-projection
+  premise, and height49/16 when new norm-four exceptions are removed.
+  No extension cover is yet connected and no class is newly excluded;
+  numerical residual bounds remain those of Part377. The next obligation
+  is a complete added-back extension cover, followed by the global residual,
+  adaptive BKZ bridge and Lean work.
+* **Part 379 (complete determinant31 extension cover connected).**
+  [Eleven-position anchor cover](research/wall1_eleven_d31_anchor.md)
+  adds the rank9 anchor with138600 witness patterns, including same-rank
+  dependent extensions, larger crossing circuits and parallel completions.
+  New norm-four exceptions are explicitly added back, with projected
+  height49/16 on their complement and full cutoff24/40 corrections.
+  The exclusion flag and production add-back cover are connected; selected
+  cover reconstruction and2106 cumulant regressions pass. At size17/rank9
+  the new complete cover has weighted log10 about-3.543690, worse than
+  the preceding-7.743732, so the preceding bound remains selected. The
+  overall size17 log10 changes only negligibly to-7.695059283. This is a
+  completed mathematical cover, not a meaningful numerical improvement.
+  Next classify the additional norm-four relations by their actual Gram
+  determinant rather than the generic projected minimum. Full residual,
+  adaptive BKZ and Lean obligations remain open.
+* **Part 380 (girth-filtered one-point determinant31 extensions).**
+  [One-point Gram classification](research/wall1_eleven_dependent_codes.md)
+  checks495 balanced norm-four extensions and220 nine-column complements
+  per line. Unit minors prove saturation; all minors have absolute value<7,
+  so the girth filter is also valid modulo3329. All420 anchors map to the
+  balanced representative by permutations and row signs. Determinants52,54
+  are excluded by girth; the retained minimum is84. Exact determinant counts
+  replace the one-point exceptional term with complete cutoff24 kernels.
+  All classification checks and2106 cumulant regressions pass. The D31
+  added-back contribution at size17/rank9 has weighted log10-41.279008,
+  and the new complete cover is now selected. Full size17 residual log10
+  falls from-7.695059 to-8.666684. Rank5/girth4,rank8/girth4,rank8/girth6
+  now lead. Through sixteen remains about3.418861456e-13. Size17 admission,
+  the full residual target, adaptive BKZ and new Lean formalization remain open.
+* **Part 381 (four-pair anchor projection and affine patterns).**
+  [Four-pair projection](research/wall1_four_pair_projection.md) identifies
+  determinant32 as the rank5 triangular bottleneck. Its orthogonal
+  complement splits into four pair-difference directions and the all-ones
+  direction, proving projected squared minimum1/2 for ALL integer vectors.
+  Nearest-plane squared radius29/12 supplies the independent cutoff35/12<3
+  certificate; all129 short vectors satisfy the exact projection identity.
+  Affine balance permits nine signed patterns per pairing, giving945
+  patterns, checked as distinct row spaces at q=7,3329. These prerequisites
+  support a proposed eight-point/rank5 anchor extension cover. No new class
+  is excluded yet; numerical bounds remain those of Part380. The complete
+  add-back cover, global residual target, adaptive BKZ and Lean work remain open.
+* **Part 382 (complete rank-five four-pair extension cover).**
+  [Four-pair extension cover](research/wall1_four_pair_extension.md)
+  connects the945-pattern rank5 anchor at sizes14..24. One-point norm-four
+  extensions have two affine types;336 exact lines with unit four-column
+  minors and84 complement tests per line exclude determinant52 by girth.
+  Retained determinant counts are{84:96} and{84:72,116:24}. Complete
+  cutoff24 kernels and the height43/12 no-new-four complement cover every
+  dependent-point case. The D32-restricted triangular remainder receives
+  the full anchor add-back before comparison with the preceding bound.
+  All classification checks and2106 cumulant regressions pass. Size17
+  triangular weighted log10 becomes-14.455814; full residual log10 becomes
+  -8.845650 from-8.666684. Through sixteen is about3.418861455e-13; prior
+  conservative caps remain. Rank8/girth4,rank8/girth6,rank8/girth3 now lead.
+  Size17 admission, the full residual target, adaptive BKZ and Lean work remain open.
+* **Part 383 (sign-sensitive nine-position determinant31 weights).**
+  [Nine-position weights](research/wall1_nine_d31_weights.md) weights the
+  two agreeing shared coordinates5/6, the opposing shared coordinate5/12,
+  the old-exclusive coordinate13/12 and five new coordinates7/6. The
+  weighted rows are orthogonal with squared lengths372/65,318/35 and
+  determinant product19724215/559872>31. All300 exact Gram checks and2106
+  cumulant regressions pass. Complete cutoff40 and periodic corrections
+  use scale6/7; counts and added-back families remain. Size17 weighted
+  residual log10 falls from-8.845650 to-8.969919. Rank8/girth6 now leads,
+  followed by rank8/girth3 and rank8/girth4. Through sixteen remains
+  about3.418861455e-13. Size17 admission, the full residual target,
+  adaptive BKZ and new Lean formalization remain open.
+* **Part 384 (rank-eight two-six determinant32 anchor cover).**
+  [Ten-position rank-eight cover](research/wall1_six_ten_anchor.md) proves
+  projected squared minimum3/4 using radius17/6 and1161 exact short-vector
+  checks. All780 anchors map to two balance-preserving affine types.
+  Their5040 one-point norm-six extensions are classified by unit minors
+  and462 six-column complements per line; retained determinants start120.
+  Complete cutoff24 kernels and the height31/6 complement give a full
+  same-rank cover with163800 anchor witnesses. It is added back to the
+  D32-restricted c6 residual ONLY at rank8, alongside the existing D27 cover.
+  All classification checks and2106 cumulant regressions pass. Size17
+  weighted residual log10 falls from-8.969919 to-9.239619. Rank8/girth6
+  leaves the top five; rank8/girth3 and rank8/girth4 now lead. Through
+  sixteen remains about3.418861455e-13. Size17 admission, the full residual
+  target, adaptive BKZ and new Lean formalization remain open.
+* **Part 385 (parallel approach: exact five-position two-six classification).**
+  [Eight prescribed charts](research/wall1_three_five_six_pairs.md) proves
+  that C=012, S=0134 in the no-four family has four determinant32 and four
+  determinant35 planes. Exclusive unit minors prove saturation; an integer
+  quadratic-form argument proves minimum squared norm6. Exact enumeration at
+  q=7,17,3329 and an independent nine-choice construction agree. The complete
+  counted kernels, including tails and periodic corrections, now refine the
+  c3/H5/overlap2 two-six contribution in the production envelope. All2106
+  cumulant regressions pass. The full size17 residual remains log10
+  -9.239618750774848 at displayed precision: local classification alone does
+  not improve the selected full envelope. The full H5 anchor is dominated
+  by one-four; the improved no-four subfamily has relative size about4.76e-38.
+  Through24 remains about7.03e226,
+  an ineffective upper bound, not a failure probability.
+* **Part 386 (parallel approach: integer-polynomial certificate duality).**
+  [Alternative global remainder route](research/wall1_global_remainder_alternative.md)
+  tests lowering the required moment order. At the exact rational reference
+  mean58.15006220912, positive rational quadrature matching all moments through
+  degree22 proves that every polynomial P nonnegative on the nonnegative
+  integers with P(0)>=1
+  and degree<=22 has E_Poisson[P]/0.280 >=4.36531830216e-12, above3.922e-12.
+  Adjacent-root polynomials attain this bound. This is a fixed-reference
+  certificate obstruction, not a lower bound on actual failure or a result
+  for the unknown larger true mean. Degree24 improves the reference by about
+  3.7 percent; its high-order weights remain too large to remove the current
+  huge remainder envelopes. No new production probability bound is claimed.
+* **Part 387 (parallel approach: adaptive complete transcripts).**
+  [Adaptive bridge audit](research/wall1_adaptive_bridge_audit.md) proves that
+  adaptive full linear-query transcripts, including stopping, have affine
+  fibers and a uniform unused complementary map. Compressing to a selected
+  winner preserves the old law exactly when its selection likelihood is
+  constant in that map. A shortest-vector example exhibits the bias, and
+  359 transcript fibers,2680 fresh-direction laws and168 event inequalities
+  pass exact checks. Fresh-column randomness does not control the retained
+  selected geometry. The width506 history sum, sizes17..24 certification,
+  new Lean formalization and the complete BKZ proof remain open.
+* **Part 388 (odd-degree extension of the polynomial obstruction).**
+  The [integer-polynomial audit](research/wall1_global_remainder_alternative.md)
+  now also covers degree23. Interpolation at zero and the paired integer roots
+  leaves c*x*product_i((x-a_i)(x-a_i-1)); the product is nonnegative on
+  nonnegative integers, and c>=0 for every admissible odd-degree polynomial.
+  The degree22 positive quadrature therefore still supplies the same lower
+  bound at degree23. Exact rational interpolation-defect checks pass for
+  degrees17,19,21,23,25. This rules out dropping size24 merely by using an
+  odd-degree certificate at the fixed mean floor; it does not bound the
+  actual dependent-law failure probability or resolve the full BKZ goal.
+* **Part 389 (six-position two-six coefficient classification).**
+  [H6 classification](research/wall1_three_six_six_pairs.md) enumerates all
+  2415 pairs of70 balanced norm-six lines and proves completeness by their
+  support types. Prescribed overlap1 has one determinant36 chart; overlap2
+  has18 determinant32 and one determinant36 charts. Unit minors establish
+  saturation, and the excluded determinant20 charts contain norm-four rows.
+  Counts agree at q=7,17,3329. Complete counted kernels replace only the
+  two-six subfamily, with all tails and other families retained. Alone this
+  changes the size17 full-envelope log10 to-9.239826543832959; the larger
+  five-position one-four term still dominates its rank8/girth3 stratum.
+* **Part 390 (effective five-position determinant23 weighting).**
+  [H5 weighted kernel](research/wall1_five_d23_weights.md) assigns weights
+  3/20 to two shared positions and47/30 to three exclusive positions.
+  The squared GS lengths2060/141 and149730/4841, prefactor squared
+  1200000/103823, and tail/periodic scale30/47 are checked exactly for60
+  balanced pairs. Norm-eight presentations reduce to the same norm-six
+  planes. The complete kernel, not merely its determinant, improves the
+  D23 term and is minimized with the old bound in production. The whole
+  one-four split improves by log10 -4.787209; D24 then dominates locally.
+  All2106 cumulant regressions and standalone classification checks pass.
+  Combined with Part389, full size17 residual log10 is-9.422463228182312
+  (about3.7804e-10). Rank8/girth4, rank6/girth4 and rank9/girth6 now lead.
+  The through16 transfer remains about3.418861455e-13; through24 is still
+  about7.029876163e226 and unusable. Sizes17..24, later selected histories,
+  new Lean formalization and the complete BKZ theorem remain open.
+* **Part 391 (eleven-position six-circuit excludes two eight minima).**
+  [Six-support exclusion](research/wall1_six_eleven_no_eight_pair.md) proves
+  that two unit-eight rows covering eleven positions and containing a
+  six-support codeword have inner product magnitude5. Their difference
+  has norm squared6, so they cannot occur in the no-six family. The complete
+  no-six kernel now uses (8,8) or (10,15/2), with its original tails.
+  All3920 balanced full-support pairs are checked; all304 eligible cases
+  have the asserted short difference. No coefficient family is discarded.
+* **Part 392 (shared anchor with four new positions).**
+  [Norm-six split](research/wall1_shared_four_new_six.md) classifies210
+  balanced lines into determinants74,80,84,86,90 with counts64,46,44,28,28.
+  Unit minors give saturated third GS heights D/15. The complementary
+  family has height32/5 by the old covering radius8/5. Every counted kernel
+  retains cutoff29 and periodic corrections; the full split is minimized
+  with the previous bound. This directly targets the rank8 other-two-four
+  addback's four-new-position term. The production path and diagnostic
+  both use the complete bound.
+* **Part 393 (triangular containment removes a duplicate D44 cover).**
+  [D44 containment](research/wall1_shared_two_d44_reorder.md) proves that
+  all20 determinant44 two-point extensions contain a six-position triangular
+  anchor. `other_envelopes(exclude_triangular=True)` now bounds only the
+  no-triangle subfamily, omitting these complete code terms. Both production
+  callers explicitly retain the full triangular cover; the default remains
+  unrestricted. All tails of retained families remain. The three changes
+  in Parts391--393 pass2106 cumulant regressions and their exact local checks.
+  Full size17 residual log10 is-10.110085037002284 (about7.761e-11).
+  Leading strata are rank8/girth4 (-10.44865), rank9/girth6 (-10.51841),
+  and rank6/girth4 (-10.98284). Through16 remains about3.418861455e-13;
+  through24 remains about7.029876163e226. The2.6629e-12 remaining allocation,
+  the selected-history bridge, new Lean work and complete BKZ proof are open.
+* **Part 394 (seven-position D28 complete weighted kernel).**
+  [D28 weighting](research/wall1_seven_d28_weights.md) uses old weights1,
+  new coefficient-two weight1/5 and other new weights7/5. Squared GS lengths
+  (4,157/7), prefactor squared125/49 and tail/periodic scale5/7 are verified
+  for108 witnesses and18 prescribed charts. The complete kernel is minimized
+  with the prior D28 kernel, retaining all other code families.
+* **Part 395 (D20 one-point cover outside earlier two-four families).**
+  [Conditional D20 cover](research/wall1_twenty_no_two_four.md) reduces the
+  one-point norm-four rare count to at most9 determinant76 witnesses. All
+  removed configurations contain a six- or seven-position two-four anchor.
+  `twenty_envelopes(exclude_two_short=True)` is used only where the complete
+  triangle and other-two-four covers are already added; the default remains
+  unrestricted. Their combined coverage is sufficient even though `other`
+  itself is restricted to no-triangle events. Retained tails are unchanged.
+* **Part 396 (rank-nine D32 crossing cover and independent audit).**
+  [Rank-nine extension](research/wall1_six_ten_rank_nine.md) classifies4200
+  two-point norm-six extensions of the two D32 affine types; each retains1908
+  girth-six witnesses. Unit minors and all minor magnitudes below7 justify
+  saturation and the finite-field rank filter. The complete crossing cover
+  includes coefficient sum sum_(a=4)^8 choose(8,a)q^a and every completion
+  factor; the complement has GS height31/6. Production removes D32 at rank9
+  only when adding this full cover and the required D27 cover. Independent
+  audit found no missing crossing, coefficient or addback. Parts391--393
+  also received a separate [proof audit](research/wall1_parts391_393_audit.md).
+  All2106 cumulant regressions and dedicated checks pass. Full size17 residual
+  log10 is-10.997859079851332 (about1.005e-11), with rank8/girth4 now dominant.
+  The through16 transfer remains about3.418861455e-13 and through24 about
+  7.029876163e226. The shared remaining allowance2.6629e-12 is still unproved.
+  No attack-cost bit gap from the heuristic BKZ prediction is certified:
+  these are local probability envelopes, and the full selected-history and
+  cost theorems remain open. The obsolete440-bit comparison above is removed.
+* **Part 397 (uniform ball-constrained dependent completions).**
+  [Affine-slice bound](research/wall1_ball_slice_completion.md) proves
+  M_d=min(q^d,V_d(R+sqrt(d)/2)^d) for centered ball inputs in any affine
+  d-plane, by injective coordinate pivots and disjoint unit cubes. The two
+  final input-completion factors in the general one/two-relation cover now
+  use M_(r-1)^k; coefficient and probability factors are unchanged. All1164
+  finite pivot checks pass. This improves high-rank bounds but does not
+  resolve the high-order remainder or selected-cylinder distribution.
+* **Part 398 (six-position D24 full anchor cover; through17 milestone).**
+  [D24 anchor](research/wall1_six_d24_anchor.md) proves integer projected
+  minimum1/3 by nearest-plane radius5/2 and73 exhaustive short representatives.
+  All180 balanced affine witnesses have unit minors. Complete same-rank and
+  crossing covers retain every cutoff26 tail and periodic correction; the
+  no-new-four complement has height7/2. Production removes D24/H6 only while
+  adding this full cover and all previous required covers. An independent
+  [audit](research/wall1_ball_slice_d24_audit.md) checks both new arguments.
+  All2106 cumulant regressions pass. The full-incidence cumulant transfer
+  through17 is below1.077e-12 (evaluated1.076402696610603e-12). Together with
+  the reference/error cap9.131e-13, this leaves a conservative1.9318e-12
+  allocation for sizes18..24 and later bad histories; their bound is open.
+  The size17 weighted residual itself is about7.35e-13. Through24 remains
+  about3.818709584e223, an ineffective upper envelope, not a probability.
+* **Part 399 (high-order diagnosis and checkpoint).**
+  [High-order frontier](research/wall1_high_order_frontier.md) records the
+  Part396 snapshot: sizes18/19 are led by rank11/girth5 on13 positions,
+  size24 by rank12/girth4 on14 positions. Their anchors already span the
+  full rank; free completion of the remaining inputs loses the simultaneous
+  ball constraints. The note identifies the weighted conditional completion
+  moment needed to improve this step. Its witness-multiplicity ceiling is
+  limited to that specific counting method, not a lower bound on failure.
+  [Checkpoint scope](research/wall1_checkpoint_2026_11_24.md) separates these
+  paper/computational results from the existing Lean lemmas and open BKZ goal.
+* **Coset-exit audit note (no new probability bound).**
+  [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
+  family from the full exit event. Bounding that family's probability does not bound its
+  complement. Its zero-exit sampling calculation is a statistical benchmark, not an experiment.
+* **Lean (table sampler accuracy, W1-L95; rechecked 2026-11-23).** ShiftedTableAccuracy:
+  `shifted_table_excess` and `shifted_table_pmf_excess` prove the 2⁻⁹²³ one-draw bound for
+  every integer 127×511 matrix and target, at the concrete run-zero table parameters.
+  `shifted_table_coupling` constructs the corresponding coordinate-PMF coupling without
+  a sampler-accuracy premise. File compilation and all four printed axiom audits pass with
+  only `propext`, `Classical.choice`, `Quot.sound`. This discharges the analytic TV obligation
+  listed in earlier progress entries below; transporting and connecting this coupling to the
+  complete concrete solver and its execution-level cost is a separate obligation. It does not
+  resolve the width-506 selected-history estimate.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
