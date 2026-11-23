@@ -2419,6 +2419,11 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Σ' μ(ω)·Pr[recovery with S ω] ≥ 0.643162094166 − 4δ. With δ = 2⁻¹⁶⁸ this is the Part 238 success bound for randomized
   solvers. Remaining: connect `closest_point_failure` (IntegralShiftedGaussianCVP, via IntegerGridCoordinates) to
   `Correct` on the rank-638 graph; samplerTV stays a hypothesis.
+* **Lean (finite product of PMFs).** FiniteProductPMF (axiom-clean). The product of PMFs over a finite index has
+  coordinate marginals ν i and cylinder outer measures equal to those of ν i. `finiteProductPMF_uniform_bound` turns
+  per-input error bounds into the single-seed uniform bound that `recovery_randomized_pmf` needs. Remaining width-638
+  link: instantiate F x with the shifted-Gaussian selector on the rank-638 graph (via IntegerGridCoordinates and
+  `closest_point_failure`) and show Good = Correct.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
