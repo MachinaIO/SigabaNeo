@@ -1807,6 +1807,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * lexicographic tie agreement;
   * surjectivity of the fresh mark.
   The bound also holds conditionally on every 511-column history. Only the frequency of J itself remains (Parts 185–196).
+* **Part 197 (audited, SOUND).** [enlarged_cutoff](research/wall1_enlarged_cutoff.md): early-draw plane first moments.
+  * Keeping the terminal plane's area inside the flag constraints, Pr[any saturated-plane hit at cutoff 676√2] is
+    < 5.412·10⁻³⁶ through draw 154 and < 2.041·10⁻¹² through draw 161. The majorant crosses 10⁻¹¹ at draw 162, or draw 168 at
+    the original cutoff.
+  * The old 10⁷ summand came from dropping 117 flag constraints at draw 38.
+  * Small raw planes are impossible through draw 406 (< 10⁻⁶⁰⁴), so small planes can arise only through projection.
+  * The Haar floor means at draw 406 sum to < 2.221·10⁻¹³.
+  * **Remaining.** The selected-chain probability on draws 162–406.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
@@ -1816,7 +1824,7 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   randomized near-shortest selection keeps the profile but not the selection law (Part 45); exact Haar prefix laws exist but
   are quantitatively useless at finite width (Part 46). Any proof at the estimator's β ≈ 406 must analyse the concrete
   reducer's output distribution — an open research problem.
-* **Frontier after Parts 1–196 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
+* **Frontier after Parts 1–197 (Nov 2026).** For plain LWE (511, 512, 3329), CBD(3):
   * **Success (in Lean).**
     * One exact SVP call in dimension 647 succeeds with probability ≥ 99% (Part 39).
     * Two calls in dimension 646 succeed with probability > 99.409%. This is kernel-checked end to end from (A, y), for any
