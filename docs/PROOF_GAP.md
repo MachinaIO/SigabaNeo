@@ -1949,6 +1949,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Keeping the last j selections and only the earlier determinant allows terminal-hit probability 1 for every
     0 ≤ j ≤ 406 (≈ 1.5·10¹⁰ × the allowances). Membership counting alone cannot give rarity; the gates, the SVP comparisons
     and the first-hit exclusions must enter.
+* **Part 212 (audited, CONFIRMED; partial positive).** [integrality_bound](research/wall1_integrality_bound.md):
+  reachability integrality for Z_rem.
+  * Outside an event of probability < 10^-749.44, the frozen integer section has squared covolume ≥ 2^99 at every draw
+    395–406 and the terminal mark group has rank ≥ 115. Exceptional contributions: < 10^-466.5 (single ball),
+    < 10^-95.3 (line plus plane), < 10^-749.4 (horizontal terminal area).
+  * **Proved under the actual chain law (no Haar assumption):** vertical hits with incoming GH length g ≥ 35.15 have
+    eleven-draw joint hit probability ≤ 6.57448·10⁻¹². Each positive-height candidate fixes one fresh mark before
+    selection, because its height is invertible mod 3329. Remaining Z_rem budget for g < 35.15: ≈ 5.83·10⁻¹¹.
+  * Negative: the direct Gaussian majorant exceeds 10³⁰ at every eligible endpoint outside the exception (this concerns
+    the majorant only).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
