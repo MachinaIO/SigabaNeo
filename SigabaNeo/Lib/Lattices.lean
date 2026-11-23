@@ -72,6 +72,13 @@ import SigabaNeo.Lib.Lattices.Automorphism.Instance
 import SigabaNeo.Lib.Lattices.Automorphism.Basis
 import SigabaNeo.Lib.Lattices.Automorphism.LUT
 import SigabaNeo.Lib.Lattices.CircularRingLWE
+import SigabaNeo.Lib.Lattices.Algo.NegaG
+import SigabaNeo.Lib.Lattices.Algo.MersenneWords
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Residue
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Ring
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Mul
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Aut
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Bounds
 
 /-!
 # Lattice library
