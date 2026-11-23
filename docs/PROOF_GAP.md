@@ -2067,6 +2067,18 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * At draw 405 the raw GH is 259.091 and the corridor endpoint 35.074; a raw vector that short has log₁₀ probability
     −709.2. The missing estimate is the projected volume contraction along the selected frozen space (needed below
     0.16135^k for rank k; W1-R97).
+* **Part 226 (audited, CONFIRMED; partial positive).** [high_codim_sections](research/wall1_high_codim_sections.md):
+  height counts through codimension 132–134.
+  * Unconditional:
+    * terminal hits including replacement planes through syndrome codimension 132: < 10⁻⁵³³;
+    * draw-406 wholly old creation through 132: < 10⁻⁷⁰⁷;
+    * mixed hits through 133: < 10⁻¹⁴⁹;
+    * mixed hits through 134 with g ≥ 32.66: < 10⁻⁵².
+  * R93's codimension-400 flags are selected with probability < 10^-47.36 (global comparison on draw 21). A modified
+    family with ≤ 185 long winners has membership first moment > 10^356.14; its selected probability is open, and it is
+    tied to the long-winner/frozen-contraction gap (W1-R97).
+  * Balance > 4.0203·10⁻¹². Unpaid: mixed codimension 134–400 (32.33547 < g < 32.66) and 135–400 (32.66 ≤ g < 32.75);
+    wholly old creation and terminal codimension 133–400.
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
