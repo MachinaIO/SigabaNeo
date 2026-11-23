@@ -1,5 +1,6 @@
 import PE.Impl.ExpLUT.Ops
 import Mathlib.Algebra.Module.BigOperators
+import SigabaNeo.Lib.Lattices.Automorphism.LUT
 
 /-!
 # Lookup tables over encodings (Lemma 8)
@@ -15,10 +16,12 @@ coefficients `α_{k,L}` and `L(u)` for `v_{k,L}` (`encodes_lut_of_spec`).
   `A^aut_{t,·}` (public), the helpers `h_{g_t}`, `h_{g_t^{-1}}` and the digit encodings of `C_{g_t}`
   under `s_{g_t}` (ciphertext), indexed by `t : ℕ` (only `t < b` is used). Their exact form
   (`HelperOK`): `h_k = s H_k − s_k G + e_k` and `c_{t,d} = s_k(A^aut_{t,d} − d_d(C_k) G) + e_{t,d}`.
-* The coefficients (`alphaAt`, `vAt`) are those of Lemma 8, `α_{k,L} = W⁻¹ Σ_{j<W} X^{L(j)} σ_k(X^{2n−j})`
-  and `v_{k,L} = W⁻¹ Σ_{j<W} L(j) σ_k(X^{2n−j})`, at `k = g^j` (`alphaCoef`, `vCoef`). The identities of
-  Lemma 8 over the binary basis (`Lemma8`) are a hypothesis here, proved abstractly over `ExpRing`
-  in `SigabaNeo.Lib.Lattices.Automorphism.LUT`.
+* The coefficients are those of Lemma 8 (`ExpRing.alpha`, `ExpRing.vcoef` of
+  `SigabaNeo.Lib.Lattices.Automorphism.LUT`), `α_{k,L} = W⁻¹ Σ_{j<W} X^{L(j)} σ_k(X^{2n−j})` and
+  `v_{k,L} = W⁻¹ Σ_{j<W} L(j) σ_k(X^{2n−j})`, at `k = g^j` (`alphaCoef`, `vCoef`). The identities of
+  Lemma 8 over the exponents of the setting (`Lemma8`) are a hypothesis here; for the canonical
+  setting `idx j = g^j` they are `ExpRing.lut_alpha_pow`, `ExpRing.lut_vcoef_pow`
+  (`PE.Impl.ExpLUT.Canonical`).
 -/
 
 namespace AdvancedEncryption.ExpLUT
@@ -150,19 +153,12 @@ theorem encodes_lut (P : AutPub S) (coef : ℕ → R) {A : Matrix (Fin 2) (Col S
 
 /-! ### Coefficients (Lemma 8) -/
 
-/-- `α_{k,L} = W⁻¹ Σ_{j<W} X^{L(j)} σ_k(X^{2n−j})`. -/
-def alphaAt (E : ExpRing R) (L : ℕ → ℕ) (k : ℕ) : R :=
-  E.Winv * ∑ j ∈ Finset.range E.W, E.X ^ (L j) * E.σ k (E.X ^ (2 * E.n - j))
+/-- The coefficients `α_{g^j, L}` of the table `L`, indexed by the exponent `j`
+(`ExpRing.alpha`: `α_{k,L} = W⁻¹ Σ_{i<W} X^{L(i)} σ_k(X^{2n−i})`). -/
+def alphaCoef (L : ℕ → ℕ) (j : ℕ) : R := S.E.alpha L (S.idx j)
 
-/-- `v_{k,L} = W⁻¹ Σ_{j<W} L(j) σ_k(X^{2n−j})`. -/
-def vAt (E : ExpRing R) (L : ℕ → ℕ) (k : ℕ) : R :=
-  E.Winv * ∑ j ∈ Finset.range E.W, (L j : R) * E.σ k (E.X ^ (2 * E.n - j))
-
-/-- The coefficients `α_{g^j, L}` of the table `L`, indexed by the exponent `j`. -/
-def alphaCoef (L : ℕ → ℕ) (j : ℕ) : R := alphaAt S.E L (S.idx j)
-
-/-- The coefficients `v_{g^j, L}`. -/
-def vCoef (L : ℕ → ℕ) (j : ℕ) : R := vAt S.E L (S.idx j)
+/-- The coefficients `v_{g^j, L}` (`ExpRing.vcoef`: `v_{k,L} = W⁻¹ Σ_{i<W} L(i) σ_k(X^{2n−i})`). -/
+def vCoef (L : ℕ → ℕ) (j : ℕ) : R := S.E.vcoef L (S.idx j)
 
 variable (S) in
 /-- A table specification: on every `X^u` with `u < W`, the coefficients `coef` give `out u`. -/
@@ -170,7 +166,7 @@ def LUTSpec (coef : ℕ → R) (out : ℕ → R) : Prop :=
   ∀ u < S.E.W, ∑ j ∈ Finset.range S.E.W, coef j * S.E.σ (S.idx j) (S.E.X ^ u) = out u
 
 variable (S) in
-/-- **Lemma 8 over the binary basis** (to be discharged by `Lib/Lattices/Automorphism/LUT`): for
+/-- **Lemma 8 over the binary basis** (`lemma8_canon` for the canonical setting): for
 every table `L`, `Σ_{j<W} α_{g^j,L} σ_{g^j}(X^u) = X^{L(u)}` and `Σ_{j<W} v_{g^j,L} σ_{g^j}(X^u) = L(u)`
 for every `u < W`. -/
 def Lemma8 : Prop :=

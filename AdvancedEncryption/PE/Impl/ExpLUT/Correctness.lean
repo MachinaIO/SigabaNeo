@@ -75,6 +75,7 @@ def decErr (M : HelperMap S J) (w : ℕ) (half : R) (mpk : MPK S Wb J Pos) (F : 
 
 theorem sH_row0 (sb : R) : sH S sb S.row0 = sb := S.idx_zero sb
 
+omit [Fintype Wb] [Fintype J] [DecidableEq J] in
 /-- **Linearity in the secret** (eq. (4)): `y_F − κ_F = s̄_H M_F − F(x) (0, s G) + e_F`. -/
 theorem decRow_sub_decConst (h8 : Lemma8 S) (M : HelperMap S J) {w : ℕ} (half : R)
     (mpk : MPK S Wb J Pos) (F : BP Pos) (hF : F.WF S.E.W) (hw : F.w = w) (x : Pos → ℕ)
@@ -118,6 +119,7 @@ theorem decRow_sub_decConst (h8 : Lemma8 S) (M : HelperMap S J) {w : ℕ} (half 
     simp only [sec, Matrix.cons_val_zero, Matrix.cons_val_one, one_mul]
     ring
 
+omit [DecidableEq J] in
 /-- **Theorem 1, exactly**: for `F(x) = 0` and a valid key, `μ' = ⌊q/2⌉ m + e_m − e_F k_Fᵀ`. -/
 theorem decryptRaw_encrypt (h8 : Lemma8 S) (M : HelperMap S J) {w : ℕ} (half : R)
     (mpk : MPK S Wb J Pos) (F : BP Pos) (hF : F.WF S.E.W) (hw : F.w = w) (x : Pos → ℕ)
