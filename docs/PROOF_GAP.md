@@ -2049,6 +2049,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     The codimension cutoff is part of the joint event.
   * Open: codimensions up to ~405. A codimension-400 wholly old family has membership first moment > 10^10163.41, so the
     gates and the selection rules must exclude it (W1-R95).
+* **Part 224 (audited, CONFIRMED).** [budget_ledger](research/wall1_budget_ledger.md): global failure-budget ledger.
+  * Every allowance traces to its source, and each exit is charged once. Z₁: 9·10⁻¹¹ (remainder 7.1275·10⁻¹¹). Z₂: 9·10⁻¹¹
+    (Z_rem 6.485·10⁻¹¹, small-g part 2.72513·10⁻¹¹). Terminal remainder 6.515·10⁻¹². Spacing target 4·10⁻⁷.
+  * A tighter radius-250 raw-exit bound, 2.35454·10⁻¹² (Lean-checked in scratch), releases 1.89446·10⁻¹². The initial
+    prefix test then needs radius 2896, whose raw charge also passes Lean.
+  * Recomputing all 12,089 flag terms gives a whole-prefix allowance of 3.782·10⁻¹⁴ under the proved Mordell/Blichfeldt
+    caps. The total is 4.651680465762·10⁻¹² < 6.515·10⁻¹², i.e. Pr(A₄₀₆) < Pr(Z₁) + Pr(Z₂) + 4.652·10⁻¹²
+    **without γ₇ or γ₂₄**. Formalization is in progress (W1-L81).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
