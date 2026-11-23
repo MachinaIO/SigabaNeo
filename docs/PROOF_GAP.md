@@ -2057,6 +2057,16 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * Recomputing all 12,089 flag terms gives a whole-prefix allowance of 3.782·10⁻¹⁴ under the proved Mordell/Blichfeldt
     caps. The total is 4.651680465762·10⁻¹² < 6.515·10⁻¹², i.e. Pr(A₄₀₆) < Pr(Z₁) + Pr(Z₂) + 4.652·10⁻¹²
     **without γ₇ or γ₂₄**. Formalization is in progress (W1-L81).
+* **Part 225 (audited, CONFIRMED; partial positive).** [raw_graph_winner_cap](research/wall1_raw_graph_winner_cap.md):
+  raw-graph winner caps, extended.
+  * Unconditional: the draw-396 crossing below g = 34.807 has probability < 3.855·10⁻¹⁹. The fourth-moment bound (B)
+    holds through draw 21 outside failures summing to < 1.083·10⁻¹¹.
+  * Charging the vertical hit directly shrinks the sufficient windows for Z_rem itself to (A) 156–405 → 6.011·10⁻¹¹,
+    (B) 132–405 → 6.355·10⁻¹¹, (C) 129–380 → 6.296·10⁻¹¹. Crossing-only windows: 71–405, 60–405, 52–380.
+  * Outside a draw-55 exception < 4.659·10⁻¹⁵, a crossing needs ≥ 36 winners above 1.15gᵢ on draws 55–405.
+  * At draw 405 the raw GH is 259.091 and the corridor endpoint 35.074; a raw vector that short has log₁₀ probability
+    −709.2. The missing estimate is the projected volume contraction along the selected frozen space (needed below
+    0.16135^k for rank k; W1-R97).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
