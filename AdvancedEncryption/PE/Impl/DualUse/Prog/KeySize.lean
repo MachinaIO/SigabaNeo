@@ -1,5 +1,6 @@
 import PE.Impl.DualUse.Prog.SizeCost
 import PE.Impl.DualUse.Prog.KeyTightConf
+import PE.Impl.DualUse.Prog.DecSize
 
 /-!
 # The states and the description length of `KeyGen` at `confA`
@@ -11,7 +12,7 @@ import PE.Impl.DualUse.Prog.KeyTightConf
 * **`keyGen_size_conf`**: the program of `KeyGen` of `implC` with the states of its loader,
   `size + (nKG + 3) + 2 ≤ 2^204` (the reads of the public key and the input guard dominate);
 * **`descLen_keyMachineP_conf`**: the description length of `KeyGen` of `implC` is at most
-  `2^817`.
+  `2^623`.
 -/
 
 namespace AdvancedEncryption.DualUse.Prog
@@ -122,11 +123,14 @@ theorem keyGen_size_conf : (keyGenP hkp confP bfC cfP).size + (nKG hkp confP + 3
   exact ksz_arith hS bfC_size_conf nKG_le frontBP_size_conf lenPK_le rK_le
     (le_of_eq length_sW_cfP) (le_of_eq length_powW_cfP) lenDummy_le
 
-theorem dl_num_key : 6 * 2 ^ 204 * 3 ^ 256 * (4 + 4 * 256 + 2 ^ 204) ≤ 2 ^ 817 := by norm_num
+theorem dl_num_key : 6 * 2 ^ 204 * 3 ^ 256 * (4 + 4 * 256 + 205) ≤ 2 ^ 623 := by norm_num
 
-/-- **The description length of `KeyGen` of `implC`.** -/
-theorem descLen_keyMachineP_conf : (keyMachineP hkp confP bfC cfP).descLen ≤ 2 ^ 817 := by
+/-- **The description length of `KeyGen` of `implC`** (`Nat.size` of the state count `≤ 205` in
+the entry width). -/
+theorem descLen_keyMachineP_conf : (keyMachineP hkp confP bfC cfP).descLen ≤ 2 ^ 623 := by
   rw [descLen_keyMachineP]
-  exact (descLen_arithK keyGen_size_conf).trans dl_num_key
+  have h := keyGen_size_conf
+  exact (descLen_arith_size (B := 2 ^ 204) (by omega)
+    (lt_of_le_of_lt (by omega) (by norm_num : (2 : ℕ) ^ 204 < 2 ^ 205))).trans dl_num_key
 
 end AdvancedEncryption.DualUse.Prog
