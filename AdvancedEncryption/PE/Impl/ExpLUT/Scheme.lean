@@ -53,7 +53,7 @@ def HelperMap.mulRow {S : Setting R} {J : Type*} (M : HelperMap S J) (i : Fin S.
     Fin S.E.W :=
   ⟨(i + M.je k) % S.E.W, Nat.mod_lt _ S.E.W_pos⟩
 
-variable (Wb J Pos : Type*) [Fintype Wb] [Fintype J] [DecidableEq J]
+variable (Wb J Pos : Type*) [Fintype Wb] [Fintype J]
 
 /-- The master public key. -/
 structure MPK where
