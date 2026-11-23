@@ -163,6 +163,12 @@ import PE.Impl.DualUse.Prog.SizeCost
 import PE.Impl.DualUse.Prog.SizeConf
 import PE.Impl.DualUse.Prog.CostConf
 import PE.Impl.DualUse.Prog.KeyCostConf
+import PE.Impl.DualUse.Prog.KeyTightLib
+import PE.Impl.DualUse.Prog.KeyTightPre
+import PE.Impl.DualUse.Prog.KeyTightPost
+import PE.Impl.DualUse.Prog.KeyTightTry
+import PE.Impl.DualUse.Prog.KeyTightBfX
+import PE.Impl.DualUse.Prog.KeyTightWin
 import PE.Impl.DualUse.Prog.DecCostConf
 import PE.Impl.DualUse.Prog.DescConf
 import PE.Impl.DualUse.Submission
