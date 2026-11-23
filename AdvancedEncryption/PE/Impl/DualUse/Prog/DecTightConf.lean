@@ -40,7 +40,7 @@ theorem aD_le : 16 * (nDec hkp confP + 2) ≤ 2 ^ 200 := by have := nDec_le; ome
 
 theorem frontBA_le' : frontBA bpLen ≤ 2 ^ 63 := frontBA_le bpLen_le
 
-theorem frontBTn_conf : frontBTn confP.L bpLen (16 * (nDec hkp confP + 2)) ≤ 2 ^ 8 * (2 ^ 201) ^ 2 :=
+theorem frontBTn_confD : frontBTn confP.L bpLen (16 * (nDec hkp confP + 2)) ≤ 2 ^ 8 * (2 ^ 201) ^ 2 :=
   frontBTn_le le_rfl bpLen_le (confP_L_le.trans (by norm_num)) (by have := aD_le; omega)
     (by norm_num)
 
@@ -242,7 +242,7 @@ theorem time_decMachineP_conf' : (decMachineP hkp confP cfC).time ≤ 2 ^ 629 :=
   have hM : max (16 * (nDec hkp confP + 2)) (frontBA bpLen) ≤ 2 ^ 200 :=
     max_le ha (hF.trans (by norm_num))
   have hK : Kp = 2 ^ 27 := Kp_def
-  have hT := (h1.trans (decGT'_mono hn frontBTn_conf hM (TbP_conf ha hM) TfP_conf
+  have hT := (h1.trans (decGT'_mono hn frontBTn_confD hM (TbP_conf ha hM) TfP_conf
     (le_of_eq (by rw [hK])))).trans decGT'_num
   have hL := (h2.trans (decBL'_mono hM (le_of_eq (by rw [hK])))).trans decBL'_num
   exact dec_arith' hn hT hL
