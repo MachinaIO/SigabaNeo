@@ -2372,6 +2372,9 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     explicit).
   * Remaining: a numerical bound on E|C|. It should follow from the translated-ball first moment already in the
     certificate.
+* **Lean (candidate count).** MinimumCandidateCount (axiom-clean): E|C| ≤ Σᵢ E Nᵢ, where Nᵢ counts the non-planted feasible
+  points in block i's closed residual ball. It allows arbitrary dependence and counts repeated answers once. The existing
+  translated-ball theorem bounds Pr[Nᵢ ≥ 1], not E Nᵢ, so a numerical constant for E|C| is still needed.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
