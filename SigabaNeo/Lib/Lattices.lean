@@ -62,6 +62,9 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.ValRounds
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoef
 import SigabaNeo.Lib.Lattices.ProgAlgo.ValCoefFull
 import SigabaNeo.Lib.Lattices.ProgAlgo.FhatGenTape
+import SigabaNeo.Lib.Lattices.Automorphism.Interface
+import SigabaNeo.Lib.Lattices.Automorphism.Coeffs
+import SigabaNeo.Lib.Lattices.Automorphism.Ring
 
 /-!
 # Lattice library
@@ -121,6 +124,7 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   `gswGadW`, `zeroW`, `oneW` of the simulation step), `KeySum` (the key-matrix sum `keySumMW` read
   from the final store of an SLP evaluator, and `W_f`: the sum plus one block; bounds, per tape by
   the abstract interpreter, in `KeySumT`).
+* `Automorphism/`: the automorphisms `σ_k : X ↦ X^k` of `R[X]/(X^n + 1)` for lookup tables over
+  exponents (ePrint 2026/2539 §3.2, §4.3) — `Interface` (the abstract `ExpRing`), `Coeffs` (`σ_k` on
+  coefficients), `Ring` (`σ_k` is a ring endomorphism for odd `k`; monomials).
 -/
-import SigabaNeo.Lib.Lattices.Automorphism.Interface
-import SigabaNeo.Lib.Lattices.Automorphism.Coeffs
