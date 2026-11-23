@@ -2424,6 +2424,10 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   per-input error bounds into the single-seed uniform bound that `recovery_randomized_pmf` needs. Remaining width-638
   link: instantiate F x with the shifted-Gaussian selector on the rank-638 graph (via IntegerGridCoordinates and
   `closest_point_failure`) and show Good = Correct.
+* **Lean (integer-grid selection).** IntegerGridSelection (axiom-clean). If the selector returns a Euclidean closest point,
+  its pullback minimizes the integer squared residual, including ties; the pullback returns 0 on `none`. For any PMF,
+  the probability of a nonminimal pullback is at most the selector's failure probability. The per-input specialization
+  to `Width638.Correct` is not done.
 * **Frontier after Parts 1–132 (Nov 2026).** Rigorous today for plain LWE (511, 512, 3329), CBD(3): one exact SVP call in
   dimension 662 (1 − 2^-64) or 647 (99%) suffices (Part 39, in Lean), with no proven cost for that call (the prescribed
   provable sieve fails on these integral lattices, even with an irrational height). Ruled out as routes to β < 647:
