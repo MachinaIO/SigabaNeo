@@ -2014,6 +2014,15 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
     winner occurs exactly when every admissible height misses its ball under the same mark.
   * Gaussian smoothing certifies a covered fraction < 4.18·10⁻²⁸ on every unresolved entry. Dual counting from the dual
     floor and integrality alone admits shell energy > 10^109.46 on every corridor. Both ceilings (Part 217) remain open.
+* **Part 220 (audited, CONFIRMED; reduction).** [long_winner_routes](research/wall1_long_winner_routes.md): threshold
+  tradeoff and sufficient criteria for Z_rem.
+  * A crossing below 34.807 requires at least 175 winners > 1.00g, 100 > 1.10g, or 46 > 1.15g (closed form on
+    [1, 1.15]).
+  * Nearest-plane searches at 1.10g find a witness with probability ≤ 5.372·10⁻³⁷ (fixed order) or ≤ 0.00999 (exact
+    search in 12 flag dimensions). This is a limit of the search method, not of the winner law.
+  * Sufficient (open): ceilings 0.60 above 1.05g and 0.15 above 1.15g on draws 11–405 give crossing ≤ 4.21342·10⁻¹⁴; a
+    conditional fourth moment E[(sᵢ/gᵢ)⁴ | history] ≤ 1.7860 gives ≤ 2.69977·10⁻¹¹. Both are valid for dependent draws
+    (predictable stopping).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
