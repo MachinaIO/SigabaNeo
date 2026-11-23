@@ -1,5 +1,12 @@
 # Predicate encryption for branching programs: executable plan
 
+> **Status: complete.** `PE/Impl/DualUse/Submission.lean` proves `spec_submission` and
+> `valid_submission` for `BranchingProgram.primitive` with no hypotheses (axioms `propext`,
+> `Classical.choice`, `Quot.sound`): attribute hiding from decision Ring-LWE at 965 bits
+> (`attributeHiding_conf_rlwe`, `keyRConfA`; certified strength 2650 at `N = 2^36`,
+> `q = 2^(2^27)`), cost `N = 2^818` (`cost_implC`). The sections below are the plan as executed;
+> §12 records the switch.
+
 Status: plan (2026-11-23), branch `t3/bp-design`, base `c47c58f4`. Nothing below is implemented
 and nothing was built for this plan. Numbers marked "est." are hand or floating-point estimates;
 numbers with a declaration name are from the code at `c47c58f4`.

@@ -6,6 +6,7 @@ import PE.Impl.DualUse.Prog.KeyTightConf
 import PE.Impl.DualUse.Prog.KeySize
 import PE.Impl.DualUse.Prog.DecTightConf
 import PE.Impl.DualUse.Prog.DecSize
+import PE.Impl.DualUse.Prog.KeyCostV
 import PE.Impl.DualUse.Params.Strength
 import SigabaNeo.Trusted.Submission
 
@@ -135,15 +136,15 @@ theorem submission_impl : submission.impl = implC := rfl
 theorem submission_N : submission.N = Ncost := rfl
 theorem submission_deps : submission.deps .attributeHiding = [prem3, prem5] := rfl
 
-/-- **The final statement of the submission**, given the cost of the reductions' key component (`KeyRConfA`). -/
-theorem spec_submission (hkey : KeyRConfA) :
+/-- **The final statement of the submission.** -/
+theorem spec_submission :
     Spec BranchingProgram.primitive registry submission := by
   refine spec_of ?_ ?_ ?_ ?_
   · rw [submission_impl]; exact correct_implC
   · intro h
     rw [submission_deps] at h
     rw [submission_impl]
-    exact attributeHiding_implC hkey (h prem3 (List.mem_cons_self ..))
+    exact attributeHiding_implC keyRConfA (h prem3 (List.mem_cons_self ..))
       (h prem5 (List.mem_cons_of_mem _ (List.mem_cons_self ..)))
   · rw [submission_impl]; exact expressive_implC
   · rw [submission_impl, submission_N]; exact cost_implC
