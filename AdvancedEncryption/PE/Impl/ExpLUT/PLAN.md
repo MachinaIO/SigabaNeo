@@ -155,3 +155,68 @@ universe's programs to `BP`.
   lemmas, decodings into `ℤ_{2^K−1}[X]/(X^N+1)` and per-tape time bounds (`MersenneT.boundsT_*`,
   `frameT_*`; ring product `22 N² K²` sweeps, `σ_k` `14 N K k` sweeps). Gadget digits: the existing
   `digitRWP`/`ginvP` with `decRM_digitRW`, `sum_pow_digitRW`.
+
+### Package F (machines) — design (branch `t3/explut-f`)
+
+**Formats** (`PE/Impl/ExpLUT/Prog/Words.lean`, namespace `AdvancedEncryption.ExpLUT.Prog`). Generic
+dimensions `Dims` (`N = 2^e`, `q = 2^K − 1`, `W = 2^b`, `m̄ = mb`; `2W ∣ N`, `W < N`, `b ≤ K`,
+`2 ≤ K`); `setting D` = `canonSetting (expRingMersenne …) (binaryDigits …)`, `τ = K`;
+`Wb = Fin mb`, helpers `Jh = Fin b × Fin 2` (`(t,0)` = `g_t`, exponent `2^t`; `(t,1)` = `g_t⁻¹`,
+exponent `W − 2^t`; `helperMap D`; `t = b−1` is present twice, harmless), `Pos = Fin 16`,
+`wSt = 2^14`, `half = 2^{K−1}`, `msgR μ ∈ {0,1}`.
+
+* ring element: `encRM N K` — `N` blocks of `K` bits, LSB first, **canonical** (`[0, 2^K − 1)`;
+  the all-ones word is never output). `rEnc`, `vecE r`, `matE r s` = `FixedEnc.fun` in `Enum` order.
+* `mpkEnc`: `B (Fin 2 × BCol) ++ H (Jh → Fin 2 × Col) ++ a (Pos → Col) ++ A₀ ++ A^in (Pos → Dig →
+  Fin 2 × Col) ++ A^aut (Fin b → Dig → …) ++ d (Fin 2)`; `BCol = Fin mb ⊕ Fin K` (Ā columns first),
+  `Col = Fin 2 × Fin K`, `Dig = Fin 2 × Col × Fin K`.
+* `mskEnc = mpk ++ T (Wb × Fin K)`; `ctEnc = b (BCol) ++ h (Jh → Col) ++ c^aut (Fin b → Dig → Col)
+  ++ C^in bottom rows (Pos → Col) ++ c^in (Pos → Dig → Col) ++ c₀ (Col) ++ c_m`;
+  `skEnc = mpk ++ k_F (KCol = (Fin W × BCol) ⊕ (Fin W × Jh × Col) ⊕ Col)` (Dec gets no `mpk`).
+* **predicate word** `predWord F` (`predLen = 211 · 2^22`): 15 transition tables then the output
+  table, indexed by the LUT index `u = z + 2^14 a`; entry `(i, u)` = 14 bits LSB first at
+  `14 (2^22 i + u)`; output bit `u` at `210 · 2^22 + u`. `progOf C` reads it
+  (`progOf_predWord`). `bpOf F : BP Pos` (`T = 16`, `w = 2^14`, `|Σ| = 2^8`, step 15 = output as
+  `0/1`), `wf_bpOf` (`2^22 ≤ W`), **`eval_bpOf`**: `eval (bpOf F) (attrN x) = if F.output x then 1
+  else 0`. Valid predicates: `ValidC C := C.length = predLen`; KeyGen gives the zero key and Dec
+  `[false]` outside (as DualUse).
+* attribute: the universe's `encAttribute w8 x` (MSB first per symbol), `attrN x t = (x t).val`;
+  message `[μ]`; Dec outputs `[decodeBit μ']` (coefficient 0 in `[2^{K−2}, 3·2^{K−2})`).
+
+**Machine specifications** (targets for the machine agents, `Words.lean`): `SetupSpec χT`,
+`EncSpec χs χ χfl`, `KeySpec kb L`, `DecSpec L`, with the laws `setupLawW`, `encLawW`,
+`keyLawW kb` (`keyGenLaw` with `gadDec`, `Big = image of mB fair bits` (`KeyBoxes`), zero key on
+abort or invalid `C`) and `decOutW`.
+
+**Deviation (for D/G): no exact uniform law mod `2^K − 1`.** A bounded-clock fair-coin machine only
+produces dyadic probabilities, and `2^K − 1` is odd. The public matrices are drawn from
+`unifW D` (`N K` fair bits read by `decRM`: per coefficient `0` w.p. `2^{1−K}`, others `2^{−K}`),
+`setupCoinsLawW D (unifW D) χT` (same order as `setupCoinsLaw`). Distance to `setupCoinsLaw` ≤
+(number of public coefficients) · `2^{−K}` — a statistical hybrid step at H0 (or LHL statements
+for this near-uniform seed). All other laws (`χT`, `χs`, `χ`, `χfl`, `Big`) must be dyadic
+(binary, CBD, boxes of `2^w` values, `Big` = image of fair bits).
+
+**Machine conventions.** Every algorithm is an `XProg k` compiled with `toMachineT`/`toMachineB`
+(input tape: `encodeTuple (pw :: inputs)`, output tape: `encodeTuple outputs` via `frameApP`), with
+per-tape clocks `timeBoundT` and `descLen` from `XProg.size`, as `DualUse/Prog`. Every ring word a
+machine outputs is canonicalized (`canonRP`: an all-ones `K`-block → zeros), and every gadget
+decomposition (`digitRWP`) is taken of a canonical word (`binaryDigits` uses `ZMod.val`).
+
+**Planned decomposition.**
+1. *Common* (`ExpLUT/Prog/Ring*`, generic → `Lib`): `canonRP`; samplers (uniform ring word =
+   `N K` coins; coefficient samplers for dyadic laws, negatives by NOT); row × scalar, inner
+   products (`mulRMP`, `addRMP`), `x·G` (`rotBP`), `G⁻¹` (`digitRWP`), `σ_{g^j}` (`autMP`, index
+   `g^j mod 2N` in unary), `X^{w x_t}` (`rhoJP` with `2N − w x_t`).
+2. *Setup*: sample `Ā`, `T`, `B⁽²⁾`, `H`, `a`, `A₀`, `A^in`, `A^aut`, `d` in that order; gadget
+   columns `g_c − Σ_w Ā_w T_{w,c}`; assemble `mpk`, `msk = mpk ++ T`.
+3. *Enc*: parse `mpk` by fixed offsets, `x`, `μ`; coins `s, e_b, e_h, e_aut, e_in, e_din, e₀, e_m`
+   (order of `encCoinsLaw`); `b`; `s_k`, `h_k`; `C_{g_t} = gcAut`, its digits, `c^aut`; the bottom
+   rows of `C^in_t`, the digits of `C^in_t = [a_t; ·]`, `c^in`; `c₀`; `c_m`.
+4. *KeyGen* (other agents after this note): parse `msk`, `C`; `EvalPK` over `bpOf (progOf C)`
+   (16 × (`mulPK`, coefficients `α`/`v` of `L_i`, `lutPK` = W sums of `b` `Aut` rounds)); one try of
+   box rejection: `p ← Big`, `y = d₁δ₁ − pubShort p` (block structure of `M_F`), `z = gadDec y`,
+   `x = p − realTrap T z`, test `x ∈ Small`; output `mpk ++ assemble x z` (zero key on abort).
+5. *Dec*: `EvalCT` (with `EvalPK`), `y_F − κ_F`, inner product with `k_F`, `c_m − d₂ − …`,
+   `decodeBit`.
+6. *Eval*: `Machine.exists_of_almostConst` (not counted in the cost): `[true]` iff `|C| = predLen`,
+   `|x| = 128` and `(progOf C).output x = false` (`Expressive` via `progOf_predWord`).
