@@ -1992,6 +1992,14 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   * **Z_rem reduced to one lemma (long-winner ceiling):** if, on every incoming history, the conditional probability of a
     winner > 1.10·GH is ≤ 0.126, a binomial coupling (valid for dependent draws) bounds any crossing by 2.58815·10⁻¹¹, and
     Z_rem ≤ 6.485·10⁻¹¹ follows. The ceiling is open (W1-R88).
+* **Part 217 (audited, CONFIRMED; reduction).** [long_winner_ceiling](research/wall1_long_winner_ceiling.md): the
+  long-winner ceiling.
+  * Long winners are impossible through draw 7; the incoming determinant floor covers draws 8–10. On every remaining
+    unresolved prefix the conditional height-one candidate mean exceeds 1.85135·10¹⁶. The exact same-mark collision sum
+    gives the variance but is not yet bounded.
+  * Weaker sufficient ceilings: 0.126 on draws 11–380 only (all of 381–405 may be long) gives crossing < 2.456·10⁻¹¹;
+    0.1795 on draws 11–405 gives < 2.478·10⁻¹¹. Both fit the 2.72513·10⁻¹¹ allowance. Open (W1-R89: covering / dual
+    Poisson route).
 * **Lean (InheritedSuffixLift).** ControlledSuffixWindow / Family / Mordell / Descent (axiom-clean) formalize:
   * `physicalSuffixOrigin_of_short`, unconditionally: every short retained winner through draw 154 comes from the initial
     lattice or from the window of the last used coordinate;
