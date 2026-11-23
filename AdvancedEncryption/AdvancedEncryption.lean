@@ -82,6 +82,9 @@ import PE.Impl.DualUse.Prog.DecGenP
 import PE.Impl.DualUse.Prog.KeyGenCost
 import PE.Impl.DualUse.Prog.DecGenCost
 import PE.Impl.DualUse.Prog.PostCost
+import PE.Impl.DualUse.Prog.DecTightLib
+import PE.Impl.DualUse.Prog.DecTightFin
+import PE.Impl.DualUse.Prog.DecTightPre
 import PE.Impl.DualUse.ImplP
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins

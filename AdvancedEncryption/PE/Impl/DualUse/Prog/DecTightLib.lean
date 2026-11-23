@@ -1,4 +1,5 @@
 import PE.Impl.DualUse.Prog.CostTools
+import PE.Impl.DualUse.Prog.WfB2Time
 import PE.Impl.DualUse.Prog.KeyGenCost
 
 /-!
@@ -199,5 +200,22 @@ theorem ph_skipLoopP' {out src c c' tn tz tr : Fin k} (hd : [out, src, c, c', tn
   rw [hc1, skT]
   have := Nat.mul_le_mul_right (2 * X + 3 + 2 * ((R + 1) * (6 * (X + R) + 20)) + 1) hn
   omega
+
+theorem tmplTT_le2 {n : ℕ} (c : Fin n) (M T : ℕ) (hTM : T ≤ M) :
+    ∀ (l : List (Fin n × ℕ)) (β : Fin n → ℕ), (∀ i, β i ≤ M) → (∀ x ∈ l, x.2 ≤ T) →
+      tmplTT c l β ≤ (l.length + 1) * ((2 * T + 1) * (4 * M + 12))
+  | [], β, hβ, _ => by
+    simp only [tmplTT, List.length_nil, Nat.zero_add, Nat.one_mul]
+    have := supB_le_of hβ
+    nlinarith
+  | x :: l, β, hβ, hl => by
+    simp only [tmplTT, List.length_cons]
+    have hx := hl x (by simp)
+    have ih := tmplTT_le2 c M T hTM l (natB x.1 c x.2 β) (natB_leT x.1 c x.2 hβ (hx.trans hTM))
+      (fun y hy => hl y (by simp [hy]))
+    have hs : max (supB β) x.2 ≤ M := max_le (supB_le_of hβ) (hx.trans hTM)
+    have : (2 * x.2 + 1) * (4 * max (supB β) x.2 + 12) ≤ (2 * T + 1) * (4 * M + 12) :=
+      Nat.mul_le_mul (by omega) (by omega)
+    nlinarith
 
 end AdvancedEncryption.DualUse.Prog
