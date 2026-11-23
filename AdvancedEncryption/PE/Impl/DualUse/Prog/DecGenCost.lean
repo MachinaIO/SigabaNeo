@@ -151,26 +151,6 @@ theorem ub_dumDec (M : ℕ) : UB dumDec M ((2 * (M + 1) + 3) + putT 3 M) (M + 3 
 
 variable (hk c) in
 /-- The time of the branches of `Dec`. -/
-def decBT (W B Tb Gb : ℕ) : ℕ :=
-  let Mβ := max (16 * (nDec hk c + 2)) (frontL c.L W)
-  max ((2 * (Mβ + 1) + 3) + (Tb + decFT (c := c) K B Gb))
-    (max (longT Mβ) ((2 * (Mβ + 1) + 3) + putT 3 Mβ) + 1) + 1
-
-variable (hk c) in
-/-- The bound of tape `0` after the branches of `Dec`. -/
-def decBL (W B Gb : ℕ) : ℕ :=
-  let Mβ := max (16 * (nDec hk c + 2)) (frontL c.L W)
-  max (decFG K B Gb) (max Mβ (Mβ + 3 + 1))
-
-variable (hk c) in
-/-- **The time of `Dec`'s program** from its input bound. -/
-def decGT (W B Tb Gb : ℕ) : ℕ :=
-  leT (nDec hk c) (nDec hk c + 1) + (max (2 * (nDec hk c + 2 + 1) + 3)
-    (parse4T (nDec hk c + 2) + (frontT c.L W (16 * (nDec hk c + 2)) + (decBT hk c W B Tb Gb +
-      (256 * (2 * (decBL hk c W B Gb + 1) + 3) + (2 * (decBL hk c W B Gb + 1) + 3))))) + 1)
-
-variable (hk c) in
-/-- The time of the branches of `Dec`. -/
 def decBTF (LF B Tb Gb : ℕ) : ℕ :=
   let Mβ := max (16 * (nDec hk c + 2)) LF
   max ((2 * (Mβ + 1) + 3) + (Tb + decFT (c := c) K B Gb))
@@ -284,16 +264,5 @@ theorem ph_decGenF {R : ℕ} {e : Fin (R + 2) ↪ Fin 256} (he : FrEmb e) (hR : 
     gcongr
     exact Nat.le_of_eq rfl
   · simp [mem_clrAll, Prim.lenT, hβ1, Prog.inputBound]
-
-/-- **The time and the output bound of `Dec`'s program** (date-window front end). -/
-theorem ph_decGenP (cfX : XProg 256) (W B : ℕ) {Tb Gb : ℕ}
-    (hcf : ∀ β : Fin 256 → ℕ, β 0 ≤ 16 * (nDec hk c + 2) → β 1 ≤ frontL c.L W →
-      (∀ i, β i ≤ max (16 * (nDec hk c + 2)) (frontL c.L W)) → Ph cfX β Tb (fun _ => Gb))
-    (hB : ∀ x ∈ decOffs hk c, x ≤ B) (hT : ∀ x ∈ decTmpl c, x.2 ≤ Gb) :
-    timeBoundT (decGenP hk c cfX W) (Prog.inputBound (255 : Fin 256) (nDec hk c + 1)) ≤
-        decGT hk c W B Tb Gb ∧
-      lenBoundT (decGenP hk c cfX W) (Prog.inputBound (255 : Fin 256) (nDec hk c + 1)) 0 ≤
-        decBL hk c W B Gb :=
-  ph_decGenF frEmb_eFr (by norm_num) (frontSpec_frontP c.L W).ph cfX B hcf hB hT
 
 end AdvancedEncryption.DualUse.Prog
