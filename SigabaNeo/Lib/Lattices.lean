@@ -67,6 +67,7 @@ import SigabaNeo.Lib.Lattices.Automorphism.Coeffs
 import SigabaNeo.Lib.Lattices.Automorphism.Ring
 import SigabaNeo.Lib.Lattices.Automorphism.Norm
 import SigabaNeo.Lib.Lattices.Automorphism.Sieve
+import SigabaNeo.Lib.Lattices.Automorphism.Instance
 
 /-!
 # Lattice library
@@ -129,5 +130,6 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Automorphism/`: the automorphisms `σ_k : X ↦ X^k` of `R[X]/(X^n + 1)` for lookup tables over
   exponents (ePrint 2026/2539 §3.2, §4.3) — `Interface` (the abstract `ExpRing`), `Coeffs` (`σ_k` on
   coefficients), `Ring` (`σ_k` is a ring endomorphism for odd `k`; monomials), `Norm` (`σ_k` is a signed
-  permutation of the coefficients and preserves `cnorm`, `ℓ₁`, `rnorm`), `Sieve` (Lemma 7).
+  permutation of the coefficients and preserves `cnorm`, `ℓ₁`, `rnorm`), `Sieve` (Lemma 7), `Instance` (`Negacyclic R n` as an
+  `ExpRing`: `expRingOf`, `expRing` for odd `q`, `expRingMersenne` for `q = 2^K − 1`).
 -/
