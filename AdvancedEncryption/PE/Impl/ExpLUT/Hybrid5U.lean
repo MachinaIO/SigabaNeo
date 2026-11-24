@@ -142,4 +142,51 @@ def blocks : (PrI S Pos → Fin 3 → R) ≃ Prog5 S Pos × (Pos × Col S.τ →
     · funext t d c; simp [σRows, σ_kf_ki]
     · rfl
 
+/-- The digits of `C^in_t` times `G`, for the rows `a_t` and the bottom rows `cb_t`. -/
+def dInC (a cb : Pos → Col S.τ → R) : Pos → Dig S.τ → Matrix (Fin 2) (Col S.τ) R :=
+  fun t d => digits S (cinMat (a t) (cb t)) d • S.G
+
+/-- The shifts of H5's programmed components: `X^{w x_t} G⁽¹⁾`, `e_t + X^{w x_t} G⁽²⁾`, `G`, `e₀`,
+`d G` (digits of `C^in_t`), `e'`, `d G` (digits of `C_{g_t}`), `e'`. -/
+def shear (x : Pos → ℕ) (H : J → Matrix (Fin 2) (Col S.τ) R) (h : J → Col S.τ → R)
+    (fl : FloodV S Pos) : Prog5 S Pos ≃ Prog5 S Pos where
+  toFun p :=
+    let a := p.1 + fun t c => S.E.X ^ (w * x t) * S.G 0 c
+    let cb := p.2.1 + fun t c => fl.2.1 t c + S.E.X ^ (w * x t) * S.G 1 c
+    (a, cb, p.2.2.1 + S.G, p.2.2.2.1 + fl.2.2.2, p.2.2.2.2.1 + dInC a cb, p.2.2.2.2.2.1 + fl.2.2.1,
+      p.2.2.2.2.2.2.1 + dAut M H h, p.2.2.2.2.2.2.2 + fl.1)
+  invFun p :=
+    (p.1 - fun t c => S.E.X ^ (w * x t) * S.G 0 c,
+      p.2.1 - fun t c => fl.2.1 t c + S.E.X ^ (w * x t) * S.G 1 c, p.2.2.1 - S.G,
+      p.2.2.2.1 - fl.2.2.2, p.2.2.2.2.1 - dInC p.1 p.2.1, p.2.2.2.2.2.1 - fl.2.2.1,
+      p.2.2.2.2.2.2.1 - dAut M H h, p.2.2.2.2.2.2.2 - fl.1)
+  left_inv p := by
+    obtain ⟨a, cb, A0, c0, Ain, cin, Aaut, caut⟩ := p
+    simp
+  right_inv p := by
+    obtain ⟨a, cb, A0, c0, Ain, cin, Aaut, caut⟩ := p
+    simp
+
+/-- `(mpk, ct)` from the uniform components. -/
+def mkV5 (P : PubData S Wb J) (b : BCol Wb S.τ → R) (h : J → Col S.τ → R) (cm : R)
+    (p : Prog5 S Pos) : MPK S Wb J Pos × Ciphertext S Wb J Pos :=
+  (mpkOf P p.1 p.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2.2.1,
+    ⟨b, h, p.2.2.2.2.2.2.2, p.2.1, p.2.2.2.2.2.1, p.2.2.2.1, cm⟩)
+
+/-- **H5's view from its components.** -/
+theorem view5_eq (x : Pos → ℕ) (B3 : Matrix (Fin 3) Wb R) (c : Mid5 S J Pos)
+    (h3 : PrI S Pos → Fin 3 → R) :
+    view5 M w x B3 c h3 =
+      mkV5 (pubOf (Matrix.of ![B3 0, B3 1]) c.1 c.2.1) (Sum.elim (B3 2) c.2.2.1) c.2.2.2.1
+        c.2.2.2.2.1 (shear M w x c.2.1.2.1 c.2.2.2.1 c.2.2.2.2.2 (blocks h3).1) := by
+  have hcb : cbH w x (hp3 h3) (hb3 h3) c.2.2.2.2.2 =
+      (shear M w x c.2.1.2.1 c.2.2.2.1 c.2.2.2.2.2 (blocks h3).1).2.1 := by
+    funext t c
+    simp only [cbH, shear, blocks, hp3, hb3, Equiv.coe_fn_mk, Pi.add_apply]
+    rw [show (Fin.castSucc (1 : Fin 2) : Fin 3) = 1 from rfl]
+    ring
+  unfold view5 viewH mkV5 mpkOf
+  rw [hcb]
+  congr 1
+
 end AdvancedEncryption.ExpLUT
