@@ -12,6 +12,7 @@ machine with the binary sampler at `Dc`: clock `≤ 2^242`, description length `
 -/
 
 namespace AdvancedEncryption.ExpLUT.Prog
+namespace EncConf
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg
 open AdvancedEncryption.DualUse.Prog AdvancedEncryption.ExpLUT.Params
@@ -41,4 +42,5 @@ theorem time_setupMP_Dc : (setupMP (binSampler Dc)).time ≤ 2 ^ 242 :=
 theorem descLen_setupMP_Dc : (setupMP (binSampler Dc)).descLen ≤ 2 ^ 249 :=
   descLen_setupMP_conf Dc rfl Dc_K rfl Dc_mb
 
+end EncConf
 end AdvancedEncryption.ExpLUT.Prog

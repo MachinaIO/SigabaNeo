@@ -371,7 +371,7 @@ Done (axioms `[propext, Classical.choice, Quot.sound]`; no change to the formats
   with `e = 24`, `K = 2^16`, `b = 22`, `m̄ = 3·2^40 + 408` and the binary sampler
   (`S = 2^97`, `M = 2^98`): **`time_setupMP_conf`: clock ≤ 2^242** (the closed form lies in
   `(2^241, 2^242]`; dominated by `Ā T`: `22 N² K² · m̄ K` sweeps of `2 M + 3` steps),
-  **`descLen_setupMP_conf`: ≤ 2^249**; at `Dc`: `time_setupMP_Dc`, `descLen_setupMP_Dc`.
+  **`descLen_setupMP_conf`: ≤ 2^249**; at `Dc`: `EncConf.time_setupMP_Dc`, `EncConf.descLen_setupMP_Dc`.
 * **Samplers of `Enc`** (`Prog/EncSamplers.lean`): ring elements with i.i.d. coefficients
   (`ringLawD`; the word is the concatenation of the canonical coefficient words, `rEnc_ofCoeffs`,
   `ringLawD_enc`); flooding `floodR D e`, `floodP D e = repF N (entF K e)`, `law_floodP` (`e < K`);

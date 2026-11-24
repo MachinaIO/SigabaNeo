@@ -1,3 +1,15 @@
+import PE.Impl.ExpLUT.Prog.Words
+import PE.Impl.ExpLUT.Prog.UnifCanon
+import PE.Impl.ExpLUT.Prog.SetupTime
+import PE.Impl.ExpLUT.Prog.SetupSize
+import PE.Impl.ExpLUT.Prog.SetupP
+import PE.Impl.ExpLUT.Prog.SetupGad
+import PE.Impl.ExpLUT.Prog.SetupConf
+import PE.Impl.ExpLUT.Prog.Samplers
+import PE.Impl.ExpLUT.Prog.Eval
+import PE.Impl.ExpLUT.Prog.EncSamplersConf
+import PE.Impl.ExpLUT.Prog.EncSamplers
+import PE.Impl.ExpLUT.Prog.EncRow
 import PE.Impl.ExpLUT.Basic
 import PE.Impl.ExpLUT.Ops
 import PE.Impl.ExpLUT.LUT
