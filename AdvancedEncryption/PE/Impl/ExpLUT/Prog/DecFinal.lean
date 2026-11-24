@@ -811,6 +811,78 @@ theorem exec_repC (w : St) (cnt src buf : Fin 200) (hcnt : cnt.val < 180) (hsrc 
     (by rw [List.length_replicate, hb])
   simpa using this
 
+/-! ### Decoding the bit -/
+
+theorem decide_window_eq_xor {v K : ℕ} (hK : 2 ≤ K) (hv : v < 2 ^ K) :
+    decide (2 ^ (K - 2) ≤ v ∧ v < 3 * 2 ^ (K - 2)) = (v.testBit (K - 2) ^^ v.testBit (K - 1)) := by
+  obtain ⟨k, rfl⟩ : ∃ k, K = k + 2 := ⟨K - 2, by omega⟩
+  simp only [Nat.add_sub_cancel, show k + 2 - 1 = k + 1 by omega]
+  rw [Nat.testBit_eq_decide_div_mod_eq, Nat.testBit_eq_decide_div_mod_eq]
+  have hp : 0 < 2 ^ k := by positivity
+  have hq : v / 2 ^ k < 4 := by
+    rw [Nat.div_lt_iff_lt_mul hp]; calc v < 2 ^ (k + 2) := hv
+      _ = 4 * 2 ^ k := by ring
+  have h1 : v / 2 ^ (k + 1) = v / 2 ^ k / 2 := by rw [pow_succ, Nat.div_div_eq_div_mul]
+  rw [h1]
+  have hlo : 2 ^ k ≤ v ↔ 1 ≤ v / 2 ^ k := by rw [Nat.le_div_iff_mul_le hp, one_mul]
+  have hhi : v < 3 * 2 ^ k ↔ v / 2 ^ k < 3 := by rw [Nat.div_lt_iff_lt_mul hp]
+  rw [show decide (2 ^ k ≤ v ∧ v < 3 * 2 ^ k) = decide (1 ≤ v / 2 ^ k ∧ v / 2 ^ k < 3) by
+    simp only [hlo, hhi]]
+  generalize v / 2 ^ k = q at hq ⊢
+  interval_cases q <;> rfl
+
+theorem getD_concatN_lt {n K : ℕ} {f : ℕ → List Bool} (hf : ∀ i < n, (f i).length = K) (hn : 0 < n)
+    {j : ℕ} (hj : j < K) : (concatN n f).getD j false = (f 0).getD j false := by
+  have hb := block_concatN hf 0
+  rw [if_pos hn] at hb
+  have : (concatN n f).getD j false = (block K 0 (concatN n f)).getD j false := by
+    simp only [block, zero_mul, List.drop_zero, List.getD_eq_getElem?_getD,
+      List.getElem?_take, hj, ↓reduceIte]
+  rw [this, hb]
+
+/-- The bits `K − 2`, `K − 1` of the constant coefficient of a canonical word. -/
+theorem drop_encRM_bits {N K : ℕ} (hN : 0 < N) (hK : 2 ≤ K) (a : RM N K) :
+    hd ((encRM N K a).drop (K - 2)) = (coefG a 0).val.testBit (K - 2) ∧
+      hd (((encRM N K a).drop (K - 2)).tail) = (coefG a 0).val.testBit (K - 1) := by
+  have hf : ∀ i < N, (encM K (coefG a i)).length = K := fun _ _ => length_encM _ _
+  have g : ∀ j < K, (encRM N K a).getD j false = (coefG a 0).val.testBit j := fun j hj => by
+    rw [encRM, getD_concatN_lt hf hN hj, encM, getD_toBits]; simp [hj]
+  have hl : K ≤ (encRM N K a).length := by
+    rw [length_encRM]; exact Nat.le_mul_of_pos_left K hN
+  constructor
+  · rw [← g (K - 2) (by omega)]
+    rw [List.getD_eq_getElem _ _ (by omega)]
+    rw [List.drop_eq_getElem_cons (by omega)]; rfl
+  · rw [← g (K - 1) (by omega)]
+    rw [List.getD_eq_getElem _ _ (by omega)]
+    rw [List.drop_eq_getElem_cons (show K - 2 < (encRM N K a).length by omega), List.tail_cons,
+      show K - 2 + 1 = K - 1 by omega,
+      List.drop_eq_getElem_cons (show K - 1 < (encRM N K a).length by omega)]
+    rfl
+
+/-- **The decoded bit** of the canonical word on register `191` into register `179`. -/
+def decC : Code :=
+  ofList [.cp 185 191, .drop 185 15,
+    .ifb 185 (ofList [.tl 185, .ifb 185 (.cp 179 1) (.cp 179 75)])
+      (ofList [.tl 185, .ifb 185 (.cp 179 75) (.cp 179 1)])]
+
+theorem exec_decC (hN : 0 < N) (hK : 2 ≤ K) (w : St) (hc : Consts N K w) (h15 : (w 15).length = K - 2)
+    (h75 : w 75 = [true]) (a : RM N K) (h191 : w 191 = encRM N K a) :
+    (exec N K decC w) 179 =
+      [decide (2 ^ (K - 2) ≤ (coefG a 0).val ∧ (coefG a 0).val < 3 * 2 ^ (K - 2))] := by
+  have hv : (coefG a 0).val < 2 ^ K := by
+    have := ZMod.val_lt (coefG a 0)
+    have : 2 ^ K - 1 < 2 ^ K := Nat.sub_lt (by positivity) one_pos
+    omega
+  rw [decide_window_eq_xor hK hv]
+  obtain ⟨b1, b2⟩ := drop_encRM_bits hN hK a
+  simp only [decC, exec_ofList_cons, exec_ofList_nil, exec, Function.update_apply, Fin.reduceEq,
+    ↓reduceIte, h191, h15, show ¬((185 : Fin 200) = 15) by decide]
+  rw [b1]
+  cases h1 : (coefG a 0).val.testBit (K - 2) <;> simp only [↓reduceIte, Bool.false_eq_true] <;>
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, b2] <;>
+    cases h2 : (coefG a 0).val.testBit (K - 1) <;> simp [hc.one, h75]
+
 end RingVM
 
 end SigabaNeo.Tape
