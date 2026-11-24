@@ -193,4 +193,55 @@ theorem reduction_real (x : Pos → ℕ) :
   rw [← redCore_real M Ab B2b Bg1 B2g aH H2 ad d2 s eb eh em fl]
   rfl
 
+/-- **The reduction on a uniform instance gives H4.** -/
+theorem reduction_unif (x : Pos → ℕ) :
+    (circUnif S Wb J).bind (red M w χfl x) = hyb4 M w χfl x := by
+  unfold circUnif red hyb4
+  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  rw [uniform_rows_bind, uniform_sum_bind]
+  refine congrArg (PMF.bind _) (funext fun Ab => ?_)
+  simp only [uniform_prod_bind, uniform_H_bind, uniform_d_bind, PMF.bind_map, Function.comp_def]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5]; rw [uniform_sum_bind]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5, 2, y6]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5, 2, y6, 2, y7]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5, 2, y6]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1, 2, y2, 2, y3]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, y0, 2, y1]; rw [PMF.bind_comm]
+  conv_lhs => rw [PMF.bind_comm]
+  conv_rhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5, 2, y6]
+              rw [← uniform_bind_add (Sum.elim y0 y2)]
+  conv_rhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5, 2, y6, 2, y7]
+              rw [← uniform_bind_add (fun k c => -S.G 1 c + y4 k c)]
+  conv_rhs => enter [2, y0, 2, y1, 2, y2, 2, y3, 2, y4, 2, y5, 2, y6, 2, y7, 2, y8]
+              rw [← uniform_bind_add y6]
+  refine congrArg (PMF.bind _) (funext fun B2b => ?_)
+  refine congrArg (PMF.bind _) (funext fun Bg1 => ?_)
+  refine congrArg (PMF.bind _) (funext fun B2g => ?_)
+  refine congrArg (PMF.bind _) (funext fun aH => ?_)
+  refine congrArg (PMF.bind _) (funext fun H2 => ?_)
+  refine congrArg (PMF.bind _) (funext fun ad => ?_)
+  refine congrArg (PMF.bind _) (funext fun d2 => ?_)
+  refine congrArg (PMF.bind _) (funext fun vB => ?_)
+  refine congrArg (PMF.bind _) (funext fun vH => ?_)
+  refine congrArg (PMF.bind _) (funext fun vd => ?_)
+  refine congrArg (PMF.bind _) (funext fun fl => ?_)
+  refine congrArg (PMF.map · _) (funext fun zr => ?_)
+  congr 1
+  simp only [redCore, Prod.mk.injEq, true_and, and_true]
+  funext k c
+  simp only [Pi.add_apply]
+  ring
+
 end AdvancedEncryption.ExpLUT
