@@ -9,8 +9,9 @@ import numpy as np
 from mpmath import iv
 
 
-def main():
-    q=3329;m=400;half=16;J=2*half+1;degree=16;scale=2**24
+def finite_scalar_moment_upper(q=3329,half=16,degree=16,scale=2**24):
+    """Exact rational upper for mean_u K(u)^24 at theta=1/10."""
+    J=2*half+1
     denominator=10*q*q  # theta=1/10
     xmax=F(J,40)
     remainder=xmax**(degree+1)/(factorial(degree+1)*(1-xmax))
@@ -37,6 +38,12 @@ def main():
     numerator=sum(int(x)**24 for x in rows)
     divisor=q*(q*scale)**24
     # K(u) <= row[u]/(q*scale); average K(u)^24 is exact-rational upper.
+    return numerator,divisor,remainder
+
+
+def main():
+    q=3329;m=400;half=16;J=2*half+1;scale=2**24
+    numerator,divisor,remainder=finite_scalar_moment_upper(q,half,scale=scale)
     iv.dps=80;I=iv.mpf
     mu=F(q*q-1,12*q*q)
     variance=sum((F(j*j,q*q)-mu)**2 for j in range(-q//2+1,q//2+1))/q

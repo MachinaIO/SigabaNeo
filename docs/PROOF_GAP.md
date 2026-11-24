@@ -4484,6 +4484,24 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   integer-arithmetic audits plus9 exact finite checks pass. This resolves
   the earlier rectangle's one-step transition, not general selected histories.
   No claim that subsequent states remain rectangular is made; full BKZ is open.
+* **Parts 447–450 (reachability correction and conditional refinements; paper only).**
+  The [Gram obstruction](research/wall1_gram_multheight.md) proves the Part446
+  rectangle cannot be an actual cubic projection: its unit-length vectors
+  do not generate all505 directions. More generally the proposed Gram102
+  family forces g<212.241, contradicting g>=549. Its abstract local bound
+  remains valid but is unusable as an actual-history gate. The
+  [linear-section obstruction](research/wall1_linear_section_obstruction.md)
+  also excludes the fixed-positive-tilt unprojected relaxation with
+  anisotropic or redundant generators at the conservative radii considered.
+  [Capped convolution](research/wall1_two_height_convolution.md) and
+  [winner bins](research/wall1_winner_bin_convolution.md) give conditional
+  refinements, checked in3276 and18660 exact finite cases. They still require
+  actual-history nearest-distance tails. The
+  [radius check](research/wall1_draw14_radius_sensitivity.md) proves a0.024%
+  shrink exhausts the existing degree12 reference-term budget, without
+  claiming any actual failure lower bound. Independent audits and exact or
+  outward-interval certificates support these statements. No new later-history
+  failure bound, full BKZ proof, or Lean formalization is claimed.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

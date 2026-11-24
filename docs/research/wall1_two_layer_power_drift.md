@@ -121,3 +121,10 @@ inclusion and power inequalities at B^2=1,2,4,9. The paper argument proves
 the all-dimensional result; these finite checks only test its implementation
 and conventions. There is no new numerical selected-history failure bound,
 no cost bound, and no Lean formalization in this note.
+
+## Capped-potential refinement
+
+The [capped convolution note](wall1_two_height_convolution.md) retains
+X<=p before averaging: E Phi(P')<=(pr/delta)min(1,p/delta)^(k−1).
+This agrees with the uncapped conversion when p<=delta and is sharper
+when p>delta. It does not resolve the moving-radius shell premise above.

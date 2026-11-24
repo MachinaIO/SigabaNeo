@@ -132,3 +132,9 @@ this fixed state's actual one-step capped-potential transition. It combines
 strict negative expected capped drift. The conservative-radius shell
 obstruction above remains valid but does not obstruct that joint coverage.
 This is not a result for all reachable selected states.
+
+Part447 strengthens the scope restriction: this rectangle is not reachable
+as K=P Z^N. All its vectors of norm at most1 lie in the400-dimensional
+marked subspace, whereas projected coordinate vectors of norm at most1 must
+generate the entire actual K. See the
+[reachability proof](wall1_gram_multheight.md).
