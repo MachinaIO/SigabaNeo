@@ -281,6 +281,173 @@ theorem exec_iBody (hK : 0 < K) (w : St) (u0 u1 a0 a1 : Rq N K) (U0 U1 rest : Li
   vm_step
   simp [hC0, hC1, digRow_eq, add_assoc, f00, f01, f10, f11]
 
+/-! ### The `ι` loop -/
+
+theorem drop_range_cons {m n : ℕ} (h : m < n) : (List.range n).drop m = m :: (List.range n).drop (m + 1) := by
+  rw [List.drop_eq_getElem_cons (by simpa using h)]
+  simp
+
+theorem iBody_writes_rCi : iBody.writes rCi = false := by decide
+
+/-- **The `ι` loop**: `K` rounds of `iBody`. -/
+theorem exec_iLoop (hK : 0 < K) (w : St) (s0 s1 : Rq N K) (U0 U1 : ℕ → Rq N K)
+    (M : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K) (rest : List (Rq N K))
+    (hCi : w rCi = List.replicate K false)
+    (hC0 : w rCo0 = encL N K ((List.range K).map U0)) (hC1 : w rCo1 = encL N K ((List.range K).map U1))
+    (hA0 : w rAc0 = encRM N K s0) (hA1 : w rAc1 = encRM N K s1)
+    (hE : w rMAd = encL N K ((List.range K).flatMap (fun i => matL (M i)) ++ rest))
+    (hTK : w rTK = List.replicate K false) (hTK1 : w rTK1 = List.replicate (K - 1) false)
+    (hZ : w rZ = encRM N K 0) :
+    exec N K (.rep rCi iBody) w rAc0 =
+      encRM N K (s0 + ∑ i ∈ Finset.range K, digRow (M i) ![U0 i, U1 i] 0) ∧
+    exec N K (.rep rCi iBody) w rAc1 =
+      encRM N K (s1 + ∑ i ∈ Finset.range K, digRow (M i) ![U0 i, U1 i] 1) ∧
+    exec N K (.rep rCi iBody) w rMAd = encL N K rest := by
+  have key := exec_rep_inv (N := N) (K := K) rCi iBody iBody_writes_rCi
+    (fun m w' => w' rAc0 = encRM N K (s0 + ∑ i ∈ Finset.range m, digRow (M i) ![U0 i, U1 i] 0) ∧
+      w' rAc1 = encRM N K (s1 + ∑ i ∈ Finset.range m, digRow (M i) ![U0 i, U1 i] 1) ∧
+      w' rCo0 = encL N K (((List.range K).map U0).drop m) ∧
+      w' rCo1 = encL N K (((List.range K).map U1).drop m) ∧
+      w' rMAd = encL N K (((List.range K).drop m).flatMap (fun i => matL (M i)) ++ rest) ∧
+      w' rTK = List.replicate K false ∧ w' rTK1 = List.replicate (K - 1) false ∧
+      w' rZ = encRM N K 0) w
+    ⟨by simp [hA0], by simp [hA1], by simp [hC0], by simp [hC1], by simp [hE], hTK, hTK1, hZ⟩ ?_
+  · rw [hCi, List.length_replicate] at key
+    obtain ⟨k1, k2, -, -, k5, -⟩ := key
+    refine ⟨k1, k2, ?_⟩
+    rw [k5, List.drop_of_length_le (by simp)]
+    rfl
+  · intro m w' hm hP _
+    rw [hCi, List.length_replicate] at hm
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩ := hP
+    rw [drop_range_map U0 hm] at h3
+    rw [drop_range_map U1 hm] at h4
+    rw [drop_range_cons hm, List.flatMap_cons, List.append_assoc] at h5
+    have hb := exec_iBody hK (Function.update w' rCi (w' rCi).tail) (U0 m) (U1 m) _ _ _ _
+      (((List.range K).drop (m + 1)).flatMap (fun i => matL (M i)) ++ rest) (M m)
+      (by simpa using h3) (by simpa using h4) (by simpa using h1) (by simpa using h2)
+      (by simpa using h5) (by simpa using h6) (by simpa using h7) (by simpa using h8)
+    obtain ⟨b1, b2, b3, b4, b5⟩ := hb
+    refine ⟨by rw [b1, Finset.sum_range_succ, add_assoc], by rw [b2, Finset.sum_range_succ, add_assoc],
+      b3, b4, b5, ?_, ?_, ?_⟩
+    · rw [exec_writes _ _ _ (by decide)]; simpa using h6
+    · rw [exec_writes _ _ _ (by decide)]; simpa using h7
+    · rw [exec_writes _ _ _ (by decide)]; simpa using h8
+
+/-! ### The `j` body -/
+
+/-- Before the `ι` loop: pop the partial sums of `(j, 0)`, `(j, 1)`, reset the row streams. -/
+def jPre : Code :=
+  .seq (.cp rAc0 rZ) <| .seq (.mvR rAc0 rS) <| .seq (.cp rAc1 rZ) <| .seq (.mvR rAc1 rS) <|
+  .seq (.cp rCo0 rRo0) <| .seq (.cp rCo1 rRo1) (.cp rCi rTK)
+
+/-- After the `ι` loop: push the two sums. -/
+def jPost : Code := .seq (.mvR rS2 rAc0) (.mvR rS2 rAc1)
+
+/-- One column `j`. -/
+def jBody : Code := .seq jPre (.seq (.rep rCi iBody) jPost)
+
+/-- The `simp` set of straight-line VM code. -/
+macro "vm_simp" : tactic => `(tactic| simp only [vmreg, exec_seq, exec_cp, exec_clr, exec_tl,
+  exec_mvR, exec_mv, exec_drop, exec_add, exec_sub, exec_mul, exec_neg, exec_aut, exec_rho, exec_rot,
+  exec_dig, exec_nop, Fin.reduceEq, ite_false, ite_true, false_or, or_false, or_self])
+
+theorem exec_jBody (hK : 0 < K) (w : St) (s0 s1 z0 z1 : Rq N K) (S T : List (Rq N K))
+    (U0 U1 : ℕ → Rq N K) (M : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K) (rest : List (Rq N K))
+    (hS : w rS = encL N K (s0 :: s1 :: S)) (hS2 : w rS2 = encL N K (z0 :: z1 :: T))
+    (hR0 : w rRo0 = encL N K ((List.range K).map U0)) (hR1 : w rRo1 = encL N K ((List.range K).map U1))
+    (hE : w rMAd = encL N K ((List.range K).flatMap (fun i => matL (M i)) ++ rest))
+    (hTK : w rTK = List.replicate K false) (hTK1 : w rTK1 = List.replicate (K - 1) false)
+    (hZ : w rZ = encRM N K 0) :
+    exec N K jBody w rS = encL N K S ∧
+    exec N K jBody w rS2 = encL N K (T ++ [s0 + ∑ i ∈ Finset.range K, digRow (M i) ![U0 i, U1 i] 0,
+      s1 + ∑ i ∈ Finset.range K, digRow (M i) ![U0 i, U1 i] 1]) ∧
+    exec N K jBody w rMAd = encL N K rest := by
+  show exec N K jPost (exec N K (.rep rCi iBody) (exec N K jPre w)) rS = _ ∧
+    exec N K jPost (exec N K (.rep rCi iBody) (exec N K jPre w)) rS2 = _ ∧
+    exec N K jPost (exec N K (.rep rCi iBody) (exec N K jPre w)) rMAd = _
+  set W1 := exec N K jPre w with hW1
+  have f : W1 rCi = List.replicate K false ∧ W1 rCo0 = encL N K ((List.range K).map U0) ∧
+      W1 rCo1 = encL N K ((List.range K).map U1) ∧ W1 rAc0 = encRM N K s0 ∧
+      W1 rAc1 = encRM N K s1 ∧
+      W1 rMAd = encL N K ((List.range K).flatMap (fun i => matL (M i)) ++ rest) ∧
+      W1 rTK = List.replicate K false ∧ W1 rTK1 = List.replicate (K - 1) false ∧
+      W1 rZ = encRM N K 0 ∧ W1 rS = encL N K S ∧ W1 rS2 = encL N K (z0 :: z1 :: T) := by
+    rw [hW1]; unfold jPre; vm_simp
+    simp [hS, hS2, hR0, hR1, hE, hTK, hTK1, hZ]
+  obtain ⟨f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11⟩ := f
+  obtain ⟨k1, k2, k3⟩ := exec_iLoop hK W1 s0 s1 U0 U1 M rest f1 f2 f3 f4 f5 f6 f7 f8 f9
+  have g10 : exec N K (.rep rCi iBody) W1 rS = encL N K S := by
+    rw [exec_writes _ _ _ (by decide)]; exact f10
+  have g11 : exec N K (.rep rCi iBody) W1 rS2 = encL N K (z0 :: z1 :: T) := by
+    rw [exec_writes _ _ _ (by decide)]; exact f11
+  set W2 := exec N K (.rep rCi iBody) W1
+  unfold jPost; vm_simp
+  simp [g10, g11, k1, k2, k3]
+
+/-! ### The `j` loop -/
+
+theorem jBody_writes_rCj : jBody.writes rCj = false := by decide
+
+/-- The result of the `j` loop at column `t`, row `a`. -/
+def jRes (p : ℕ → Fin 2 → Rq N K) (U0 U1 : ℕ → Rq N K)
+    (Mj : ℕ → ℕ → Fin 2 → Fin 2 × Fin K → Rq N K) (t : ℕ) (a : Fin 2) : Rq N K :=
+  p t a + ∑ i ∈ Finset.range K, digRow (Mj t i) ![U0 i, U1 i] a
+
+/-- **The `j` loop**: `n` columns. -/
+theorem exec_jLoop (hK : 0 < K) (w : St) (n : ℕ) (p : ℕ → Fin 2 → Rq N K) (U0 U1 : ℕ → Rq N K)
+    (Mj : ℕ → ℕ → Fin 2 → Fin 2 × Fin K → Rq N K) (rest : List (Rq N K))
+    (hCj : w rCj = List.replicate n false)
+    (hS : w rS = encL N K ((List.range n).flatMap fun t => [p t 0, p t 1]))
+    (hS2 : w rS2 = encL N K (List.replicate (2 * n) 0))
+    (hR0 : w rRo0 = encL N K ((List.range K).map U0)) (hR1 : w rRo1 = encL N K ((List.range K).map U1))
+    (hE : w rMAd = encL N K ((List.range n).flatMap
+      (fun t => (List.range K).flatMap fun i => matL (Mj t i)) ++ rest))
+    (hTK : w rTK = List.replicate K false) (hTK1 : w rTK1 = List.replicate (K - 1) false)
+    (hZ : w rZ = encRM N K 0) :
+    exec N K (.rep rCj jBody) w rS2 =
+      encL N K ((List.range n).flatMap fun t => [jRes p U0 U1 Mj t 0, jRes p U0 U1 Mj t 1]) ∧
+    exec N K (.rep rCj jBody) w rMAd = encL N K rest := by
+  have key := exec_rep_inv (N := N) (K := K) rCj jBody jBody_writes_rCj
+    (fun m w' => w' rS = encL N K (((List.range n).drop m).flatMap fun t => [p t 0, p t 1]) ∧
+      w' rS2 = encL N K (List.replicate (2 * (n - m)) 0 ++
+        (List.range m).flatMap fun t => [jRes p U0 U1 Mj t 0, jRes p U0 U1 Mj t 1]) ∧
+      w' rMAd = encL N K (((List.range n).drop m).flatMap
+        (fun t => (List.range K).flatMap fun i => matL (Mj t i)) ++ rest) ∧
+      w' rRo0 = encL N K ((List.range K).map U0) ∧ w' rRo1 = encL N K ((List.range K).map U1) ∧
+      w' rTK = List.replicate K false ∧ w' rTK1 = List.replicate (K - 1) false ∧
+      w' rZ = encRM N K 0) w
+    ⟨by simp [hS], by simp [hS2], by simp [hE], hR0, hR1, hTK, hTK1, hZ⟩ ?_
+  · rw [hCj, List.length_replicate] at key
+    obtain ⟨-, k2, k3, -⟩ := key
+    refine ⟨by rw [k2]; simp, ?_⟩
+    rw [k3, List.drop_of_length_le (by simp)]
+    rfl
+  · intro m w' hm hP _
+    rw [hCj, List.length_replicate] at hm
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8⟩ := hP
+    rw [drop_range_cons hm, List.flatMap_cons] at h1 h3
+    have e2 : 2 * (n - m) = 2 + (2 * (n - (m + 1))) := by omega
+    rw [e2, List.replicate_add] at h2
+    have hb := exec_jBody hK (Function.update w' rCj (w' rCj).tail) (p m 0) (p m 1) 0 0
+      (((List.range n).drop (m + 1)).flatMap fun t => [p t 0, p t 1])
+      (List.replicate (2 * (n - (m + 1))) 0 ++
+        (List.range m).flatMap fun t => [jRes p U0 U1 Mj t 0, jRes p U0 U1 Mj t 1])
+      U0 U1 (Mj m) (((List.range n).drop (m + 1)).flatMap
+        (fun t => (List.range K).flatMap fun i => matL (Mj t i)) ++ rest)
+      (by simpa using h1) (by simpa [List.replicate_succ] using h2) (by simpa using h4)
+      (by simpa using h5) (by simpa [List.append_assoc] using h3) (by simpa using h6)
+      (by simpa using h7) (by simpa using h8)
+    obtain ⟨b1, b2, b3⟩ := hb
+    refine ⟨b1, ?_, b3, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [b2, List.range_succ, List.flatMap_append]
+      simp [jRes]
+    · rw [exec_writes _ _ _ (by decide)]; simpa using h4
+    · rw [exec_writes _ _ _ (by decide)]; simpa using h5
+    · rw [exec_writes _ _ _ (by decide)]; simpa using h6
+    · rw [exec_writes _ _ _ (by decide)]; simpa using h7
+    · rw [exec_writes _ _ _ (by decide)]; simpa using h8
+
 end MVM
 
 end SigabaNeo.Tape
