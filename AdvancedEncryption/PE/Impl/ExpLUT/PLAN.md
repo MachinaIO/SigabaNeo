@@ -353,6 +353,72 @@ doublings) used for `b` (`z = 0`), `h_k` (`z = (s_k, 1)`), `c^aut_{t,d}`
 (`z = digit_d(C_t)·(σ_t s, 1)`), `C^in_t` bottom rows (`A = (−a_t ; 0)`-style, `z = −X^{w x_t}(s,1)`),
 `c^in_{t,d}`, `c₀` (`z = (s, 1)`); `c_m = s d₁ + d₂ + e_m + 2^{K−1} μ`.
 
+### Package F2 (clock of `Setup`, `Enc`) — status (branch `t3/explut-f2`)
+
+Done (axioms `[propext, Classical.choice, Quot.sound]`; no change to the formats of `Words.lean`):
+
+* **Clock of `Setup`** (`Prog/SetupTime.lean`): per-tape bound vectors (`VB`) through the whole
+  program — the framed samplers on their own tapes (`vb_unifCanonP`: fair bits, two templates, the
+  tail `ucTail` certified by `check_ucTail`, the append; `vb_ucF`, `vb_TF` for the sampler of `T`,
+  fields tracked exactly, the sampler scratch at a common bound `S`), the templates at their exact
+  lengths (`vb_tmplP`), the gadget columns (`vb_detCore`: `check_matMulMP` (scratch at the top),
+  `check_gadRowP`, each sweep `2 M + 3`), the output (`vb_outP`, additive in `M`).
+  **`time_setupMP_le : SetupBounds D X.B nI S M → nInS ≤ nI → (setupMP X).time ≤ setupTF D X.B nI S M`**
+  (`SetupBounds`: `S` above every field's bits and `B.S₀`, `X.B.a ≤ N K`, `M` above the scratch, the
+  input and the templates).
+* **Concrete `Setup`** (`Prog/SetupConf.lean`, `Prog/EncSamplersConf.lean`): counts in closed form
+  (`nB2_eq`, …, `nAaut_eq`; no enumeration is evaluated), `setupTFn`, `nInS ≤ 2^11`; for any `D`
+  with `e = 24`, `K = 2^16`, `b = 22`, `m̄ = 3·2^40 + 408` and the binary sampler
+  (`S = 2^97`, `M = 2^98`): **`time_setupMP_conf`: clock ≤ 2^242** (the closed form lies in
+  `(2^241, 2^242]`; dominated by `Ā T`: `22 N² K² · m̄ K` sweeps of `2 M + 3` steps),
+  **`descLen_setupMP_conf`: ≤ 2^249**; at `Dc`: `time_setupMP_Dc`, `descLen_setupMP_Dc`.
+* **Samplers of `Enc`** (`Prog/EncSamplers.lean`): ring elements with i.i.d. coefficients
+  (`ringLawD`; the word is the concatenation of the canonical coefficient words, `rEnc_ofCoeffs`,
+  `ringLawD_enc`); flooding `floodR D e`, `floodP D e = repF N (entF K e)`, `law_floodP` (`e < K`);
+  centered binomial `cbdR D η`, `cbdPM η L K` = DualUse's `cbdP` with one's-complement leaves
+  (`mv v = v − [v < 0]`, `encM_eq_zmodEnc`), `law_cbdPM`, `cbdRP D η L = repF N (cbdPM …)`,
+  `law_cbdRP`. **Interface for `Enc`**: `AppendLaw P 0 P5 (χ.map (rEnc D).enc)` (scratch `2 … 6`
+  blank; `Setup`'s `RingSampler` has only `2 … 4`, so these are not `RingSampler`s; `n` elements
+  are `repF (n N)` coefficient samples, `catPow_mul`). At `Dc` (`EncSamplersConf`): `χc = cbdR Dc 16`,
+  `χfl = floodR Dc eFl` (`rfl`), `law_χcP` (`cbdRP Dc 16 6`), `law_χflP` (`floodP Dc eFl`).
+* **The encoding row** (Lib `ProgAlgo/Mersenne/EncRow.lean`, `Prog/EncRow.lean`): `encRowP : Prog 56`
+  (`0` output register of `L N K` bits, `1` `s`, streams `2` `A₀`, `3` `A₁`, `4` `Z`, `5` `E`,
+  templates `6` `K`, `7` `N`, `8` `N K`, `9` `L`; scratch `10 … 55`), `run_encRowP` (`rowW`),
+  `rowW_eq`, **`rowW_vecE`**: on the words of families over `α`, the word of
+  `c ↦ s A₀ c + A₁ c − Z c + E c` (canonical). `check_encRowP`, **`time_encRowP`**:
+  `(2M + 3)(200 + L (200 + 400 N + 400 N K + 100 N² + 200 N² K + 30 N² K² + 50 K))`.
+
+* **The gadget stream** (Lib `ProgAlgo/Mersenne/GadStream.lean`): `gzP : Prog 36` (`0` output
+  register of `2K · N K` bits, `1` `z₀`, `2` `z₁`, templates `3` `K`, `4` `N`, `5` `N K`, `6` `K − 1`;
+  scratch `7 … 35`), `run_gzP`: `gzW z₀ ++ gzW z₁` (`z_r, 2 z_r, …, 2^{K−1} z_r`), `decRM_gIt`:
+  entry `i` reads `2^i • z_r`; `check_gzP`, `time_gzP`
+  (`(2M + 3)(100 + 400 K + 400 N K + 400 N K² + 100 N K³ + 100 K² + 100 N)`).
+
+Remaining for `Enc` (design fixed; each block a `Prog` with a run lemma and a certificate, as
+`encRowP`):
+1. *gadget stream on the scheme's words*: entry `c = (r, i)` of `gzW z₀ ++ gzW z₁` reads
+   `(z ᵥ* G) (r, i)` (`decRM_gIt`, `vecMul_G_apply`, `Enum.getElem_product`), and `rowW_vecE` with
+   a general `Z` stream (only `decRM` of its blocks matters); `Z` of every encoding is such a stream (`b`: the zero word of `|BCol| N K` bits,
+   a template), so every component is `encRowP` with `A₀`, `A₁` the two rows of the public matrix:
+   `b` (`B`, `z = 0`), `h_k` (`H_k`, `z = (σ_{g^{je k}} s, 1)`), `c^aut_{t,d}` (`A^aut_{t,d}`, secret
+   `s_t = σ_{kf t} s`, `z = digit_d(C_t) (s_t, 1)`), `c₀` (`A₀`, `z = (s, 1)`), `c^in_{t,d}`
+   (`A^in_{t,d}`, `z = digit_d(C^in_t) (s, 1)`); the bottom rows of `C^in_t` with `A₀ = a_t`,
+   `A₁ = 0`, the sign handled by `−(s a_t) + z G + e = (0 − s a_t) − (−z) G + e` (or a variant of the
+   row with `subRMP` for the first term);
+2. `σ_{g^j}(s)`: `j` rounds of `autMP` with the unary index `g = 1 + 2N/W` (template), `j = je k`
+   or `2^t` by `natP` (`ExpRing.σ_comp`; `σ` is `2N`-periodic, so no index arithmetic);
+3. `C_t = σ_{kf t}(H_{inv t}) − [0; σ_{kf t}(h_{inv t})]` (`autMP`, `subRMP`, `canonRP` per entry;
+   `h_{inv t}` read back from the output word by its offset), then its digits (`digitRWP` of the
+   canonical words — `binaryDigits` reads `ZMod.val`), streamed in `Dig` order;
+4. `X^{w x_t}`: the template `2N − w x_t` from the 8 bits of `x_t` (most significant first: `dblP`
+   doublings, then `14` more, `dropP` from a `2N` template), `rhoJP`;
+5. parsing (`ufChunk` per field of `mpk`, as DualUse's `encParseP`), the coins in the order of
+   `encCoinsLaw` (framed `cbdRP`/`floodP`, `law_seq_app` as `law_setupP`), `c_m` (`mulRMP`,
+   `addRMP`, the word of `2^{K−1}` at coefficient `0` when `μ`), the frame of the output (`frameApP`);
+6. the law (`EncSpec D (cbdR D 16) (cbdR D 16) (floodR D eFl)`, i.e. `χc χc χfl` at `Dc`) and the
+   costs (`VB` chain as `SetupTime`; dominated by `c^aut`: `b · 4K² · 2K` rows of `2K` products,
+   about `2^{56}` products of `22 N² K²` sweeps each, top `≈ 2^{98}`: clock `≈ 2^{240}`).
+
 ### Package G (attribute hiding of the implementation) — branch `t3/explut-g`
 
 Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the aggregator) and
