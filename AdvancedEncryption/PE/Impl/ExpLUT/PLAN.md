@@ -592,9 +592,11 @@ ring words, rows in the registry's order `ρ D`), `instR` (`decRM` of the blocks
    ++ canonical coin words ++ `zr` bits.
 2. `setupP`: copy the instance words, sample with `unifCanonP` (package F), a `floodRing` sampler
    (`400` fair bits per coefficient, zero-padded: canonical), fair bits for `zr`.
-3. `authP` = `authW impl` (`C.length = predLen ∧ (progOf C).output x = false`): adapt
-   `DualUse/Prog/AuthBP` (same `211 · 2^22` layout; index `u = z + 2^14 a` = `numB (a ++ z_msb)`,
-   table entries LSB first, so the 14 read bits are prepended (`consHead`) instead of appended).
+3. ~~`authP`~~ — **done** (`Prog/AuthW`, `Prog/AuthWCost`, `Prog/AuthWX`): `authW8` (DualUse's
+   `authBP` with the offset of `a ‖ z` and the entry bits prepended), `authAW_encAttr`,
+   **`authWX hR : XProg (R + 2)`** (any `R ≥ 14`) with **`law_authWX`** (the bit `authW impl C x`
+   when `Eval = evalMachineX`), `time_authWX` (`≤ 2^109` for `|C| ≤ 2^49`), `len_authWX` (one bit),
+   `size_authWX` (`≤ 2^18`).
 4. `pubP`, `chalP`: `mpkEnc`/`ctEnc` of `view2 …` (programming `a_t = B⁽¹⁾ Z_t + X^{w x_t} G`,
    `A₀`, `A^in`, `A^aut`, the shifted challenge) — VM code (`law_compile`) behind a front end.
 5. `keyP` = `KGsim`: EvalPK over `bpOf (progOf C)` (F3b's routines), `simKey` (`R̂_F` by
