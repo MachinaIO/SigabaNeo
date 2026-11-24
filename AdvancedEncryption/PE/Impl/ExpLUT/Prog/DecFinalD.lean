@@ -13,7 +13,7 @@ ciphertext (the words of `FixedEnc.fun`, in the order of `Enum`) and words of `c
 
 * list sums: `sum_range_enum` (a loop over the enumeration is the `Fintype` sum), `dotL_eq`,
   `conjL_eq` (with `decRM (f y) = φ (decRM y)`, the `i`-th block is `φ^[i]`);
-* indexing products: `getD_map_product`;
+* indexing products: `getD_map_product_F`;
 * `σ_g^[i] = σ_{g^i}` inside `H` (`iterate_σ_idx_one`), `autMW` with a template of length
   `κD D 0` is `σ_{g}` (`decRM_autMW_κ0`); the gadget row words `g1W` decode to `G⁽²⁾`.
 -/
@@ -38,7 +38,7 @@ theorem sum_range_enum {α M : Type} [Enum α] [Fintype α] [AddCommMonoid M] (f
   rw [hG i i.isLt]
   rfl
 
-theorem getD_map_of_lt {β γ : Type} (l : List β) (g : β → γ) (d : γ) (d' : β) {e : ℕ}
+theorem getD_map_of_lt_F {β γ : Type} (l : List β) (g : β → γ) (d : γ) (d' : β) {e : ℕ}
     (he : e < l.length) : (l.map g).getD e d = g (l.getD e d') := by
   rw [List.getD_eq_getElem _ _ (by simpa using he), List.getD_eq_getElem _ _ he, List.getElem_map]
 
@@ -46,7 +46,7 @@ theorem getD_drop' {β : Type} (l : List β) (a e : ℕ) (d : β) : (l.drop a).g
   simp only [List.getD_eq_getElem?_getD, List.getElem?_drop]
 
 /-- **Indexing a product.** -/
-theorem getD_map_product {α β γ : Type} (l₁ : List α) (l₂ : List β) (g : α × β → γ) (d : γ) :
+theorem getD_map_product_F {α β γ : Type} (l₁ : List α) (l₂ : List β) (g : α × β → γ) (d : γ) :
     ∀ {i e : ℕ} (hi : i < l₁.length) (he : e < l₂.length),
       ((l₁.product l₂).map g).getD (i * l₂.length + e) d = g (l₁[i], l₂[e]) := by
   induction l₁ with
@@ -57,7 +57,7 @@ theorem getD_map_product {α β γ : Type} (l₁ : List α) (l₂ : List β) (g 
     rw [hp, List.map_append, List.map_map]
     rcases i with _ | i
     · rw [zero_mul, zero_add, List.getD_append _ _ _ _ (by simpa using he),
-        getD_map_of_lt _ _ _ (l₂[e]) he, List.getD_eq_getElem _ _ he]
+        getD_map_of_lt_F _ _ _ (l₂[e]) he, List.getD_eq_getElem _ _ he]
       rfl
     · rw [List.getD_append_right _ _ _ _ (by simp; nlinarith)]
       have : (i + 1) * l₂.length + e - (l₂.map (g ∘ fun b => (a, b))).length = i * l₂.length + e := by
@@ -111,7 +111,7 @@ theorem conjL_eq {α : Type} [Enum α] [Fintype α] (f : List Bool → List Bool
   refine dotL_eq (fun a => φ^[i] (x a)) (kk i) _ _ (fun e he => ?_) (fun e he => ?_)
   · have he' : e < xs.length := by omega
     have hm : xs.getD e [] ∈ xs := by rw [List.getD_eq_getElem _ _ he']; exact List.getElem_mem he'
-    rw [getD_map_of_lt _ _ _ [] he', (hfi i _ (hxw _ hm)).2, hx e he]
+    rw [getD_map_of_lt_F _ _ _ [] he', (hfi i _ (hxw _ hm)).2, hx e he]
   · rw [getD_drop', hk i i.isLt e he]
 
 end Sums
@@ -261,7 +261,7 @@ theorem key_getD_β (k : Keyt D) {i e : ℕ} (hi : i < 2 ^ D.b)
     rw [List.length_map, length_enum_prod, enum_fin, List.length_finRange]; exact lt_mul_of hi he)]
   show decRM D.N D.K ((((List.finRange (2 ^ D.b)).product
     (Enum.list (α := BCol (Wb D) D.K))).map _).getD _ _) = _
-  rw [getD_map_product _ _ _ _ (by simpa using hi) he, decRM_encRM D.K_pos]
+  rw [getD_map_product_F _ _ _ _ (by simpa using hi) he, decRM_encRM D.K_pos]
   simp
 
 theorem key_getD_η (k : Keyt D) {i e : ℕ} (hi : i < 2 ^ D.b)
@@ -276,7 +276,7 @@ theorem key_getD_η (k : Keyt D) {i e : ℕ} (hi : i < 2 ^ D.b)
       List.length_finRange]; exact lt_mul_of hi he)]
   show decRM D.N D.K ((((List.finRange (2 ^ D.b)).product
     (Enum.list (α := Jh D × Col D.K))).map _).getD _ _) = _
-  rw [getD_map_product _ _ _ _ (by simpa using hi) he, decRM_encRM D.K_pos]
+  rw [getD_map_product_F _ _ _ _ (by simpa using hi) he, decRM_encRM D.K_pos]
   simp
 
 theorem key_getD_c (k : Keyt D) {e : ℕ} (he : e < (Enum.list (α := Col D.K)).length) :
