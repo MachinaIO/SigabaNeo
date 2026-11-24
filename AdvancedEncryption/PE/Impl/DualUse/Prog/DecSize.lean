@@ -10,7 +10,7 @@ length `X` read and in the bits `m` of the templates):
 
 * `size_preCoreC`, `size_postCoreC` (65 tapes, the gadget row under `ifBit`), **`size_cfX_le`**;
 * **`size_decGenF`**: the program of `Dec` for any front end;
-* at `confA`: **`cfC_size_conf`** (`≤ 2^270`), **`size_decGenP_conf`**, and
+* at `confP`: **`cfC_size_conf`** (`≤ 2^257`), **`size_decGenP_conf`**, and
   **`descLen_decMachineP_conf`**: the description length of the `Dec` machine of `implC`.
 -/
 
@@ -156,30 +156,77 @@ open AdvancedEncryption.DualUse.Params AdvancedEncryption.DualUse.Sub
 set_option maxRecDepth 100000
 set_option exponentiation.threshold 2000
 
+/-! The sizes at `confP` (`N = 2^34`, `K = 2^26`, `d = 2^62`), tight. -/
+
+theorem lenPK_le_t : lenPK hkp confP ≤ 2 ^ 183 := by rw [lenPK_eq]; norm_num
+theorem fixLen_skEnc_le_t : fixLen (skEnc hkp confP) ≤ 2 ^ 183 := by
+  simp only [fixLen]; comp_unfold; norm_num
+theorem fixLen_ctEnc_le_t : fixLen (ctEnc hkp confP) ≤ 2 ^ 183 := by
+  simp only [fixLen]; comp_unfold; norm_num
+theorem fixLen_keyEnc_le_t : fixLen (keyEnc (N := Np) (K := Kp) confP) ≤ 2 ^ 123 := by
+  simp only [fixLen]; comp_unfold; norm_num
+theorem lPsi_le_t : lPsi (N := Np) (K := Kp) hkp ≤ 2 ^ 97 := by
+  simp only [lPsi, fixLen]; comp_unfold; norm_num
+theorem lenKA_le_t : lenKA hkp confP ≤ 2 ^ 124 := by
+  simp only [lenKA, lPsi, fixLen]; comp_unfold; norm_num
+theorem NK_le_t : Np * Kp ≤ 2 ^ 60 := by rw [NK_eq]; norm_num
+theorem kNK_le_t : kp * (Np * Kp) ≤ 2 ^ 87 := by rw [kNK_eq]; norm_num
+theorem rowL_le_t : DualUse.rowL Np Kp kp ≤ 2 ^ 88 := by rw [rowL_conf]; norm_num
+theorem nJ_le_t : nJ (N := Np) (K := Kp) hkp ≤ 2 ^ 96 := by rw [nJ_conf]; norm_num
+theorem lenZ_le_t : lenZ confP ≤ 2 ^ 150 := by rw [lenZ_conf]; norm_num
+theorem lenCj_le_t : lenCj (N := Np) (K := Kp) hkp ≤ 2 ^ 183 := by
+  simp only [lenCj]; rw [nJ_conf, rowL_conf]; norm_num
+theorem LW_le_t : nJ (N := Np) (K := Kp) hkp * (lenZ confP + DualUse.rowL Np Kp kp) ≤ 2 ^ 245 := by
+  rw [nJ_conf, lenZ_conf, rowL_conf]; norm_num
+theorem offWk_le_t : offWk hkp confP ≤ 2 ^ 183 := by
+  rw [offWk_conf, lenPK_eq, show nA = 128 from rfl]; norm_num
+theorem rK_le_t : 2 * kp * (Np * Kp) ≤ 2 ^ 88 := by rw [kp_eq, Np_def, Kp_def]; norm_num
+theorem fixLen_msk_le_t : fixLen (mskEnc hkp confP) ≤ 2 ^ 183 := by
+  simp only [fixLen]; comp_unfold; norm_num
+theorem nKG_le_t : nKG hkp confP ≤ 2 ^ 185 := by
+  simp only [nKG, DualUse.pw]
+  have h1 := DualUse.length_paramsWord_pu
+  have h2 := fixLen_msk_le_t
+  have h3 := confP_L_le
+  omega
+theorem lenDummy_le_t : ((keyEnc (N := Np) (K := Kp) confP).enc (dummyKey confP)).length ≤ 2 ^ 123 := by
+  rw [length_enc_fixLen]; simp only [fixLen]; comp_unfold; norm_num
+theorem lenTc_le_t : lenT Np Kp kp ≤ 2 ^ 88 := by rw [lenT_conf]; norm_num
+
 theorem preTmplC_conf : ∀ x ∈ preTmplC (lenZ confP) (DualUse.rowL Np Kp kp) (nJ (N := Np) (K := Kp) hkp)
     (confP.d * (Np * Kp)) ((confP.d - 2) * DualUse.rowL Np Kp kp) (2 * DualUse.rowL Np Kp kp)
-    (lenZ confP - (lenKA hkp confP + Np * Kp + 1)) (lPsi (N := Np) (K := Kp) hkp), x.2 < 2 ^ 158 := by
-  have h1 := lenZ_le
-  have h2 := rowL_le
-  have h3 := nJ_le
-  have h4 : confP.d * (Np * Kp) ≤ 2 ^ 128 := by rw [dNK_conf]; norm_num
-  have h5 : (confP.d - 2) * DualUse.rowL Np Kp kp ≤ 2 ^ 157 := by rw [confP_d, rowL_conf]; norm_num
-  have h6 := lPsi_le
+    (lenZ confP - (lenKA hkp confP + Np * Kp + 1)) (lPsi (N := Np) (K := Kp) hkp), x.2 < 2 ^ 151 := by
+  have h1 := lenZ_le_t
+  have h2 := rowL_le_t
+  have h3 := nJ_le_t
+  have h4 : confP.d * (Np * Kp) ≤ 2 ^ 122 := by rw [dNK_conf]; norm_num
+  have h5 : (confP.d - 2) * DualUse.rowL Np Kp kp ≤ 2 ^ 150 := by rw [confP_d, rowL_conf]; norm_num
+  have h6 := lPsi_le_t
   have hn : nA = 128 := rfl
   intro x hx
   simp only [preTmplC, List.mem_cons, List.not_mem_nil, or_false] at hx
   rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> dsimp only <;> omega
 
 theorem postTmplC_lt : ∀ x ∈ postTmplC Np Kp kp (lenZ confP) (DualUse.rowL Np Kp kp)
-    (nJ (N := Np) (K := Kp) hkp), x.2 < 2 ^ 158 := fun x hx =>
-  lt_of_le_of_lt (postTmplC_conf x hx) (by norm_num)
+    (nJ (N := Np) (K := Kp) hkp), x.2 < 2 ^ 151 := by
+  have h1 := lenZ_le_t
+  have h2 := rowL_le_t
+  have h3 := nJ_le_t
+  have h4 := kNK_le_t; have h5 := NK_le_t; have h6 := rK_le_t
+  have h7 : kp ≤ 2 ^ 27 := by rw [kp_eq]; norm_num
+  have h8 : Np ≤ 2 ^ 34 := by rw [Np_def]
+  have h9 : Kp ≤ 2 ^ 26 := by rw [Kp_def]
+  have h10 : 1 * (2 * kp) * Np ≤ 2 ^ 62 := by rw [kp_eq, Np_def]; norm_num
+  intro x hx
+  simp only [postTmplC, List.mem_cons, List.not_mem_nil, or_false] at hx
+  rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> dsimp only <;> omega
 
 /-- **The states of the `c_f̂` block of `implC`.** -/
-theorem cfC_size_conf : cfC.size ≤ 2 ^ 270 := by
-  have hPK := lenPK_le; have hKA := lenKA_le; have hCj := lenCj_le; have hNK := NK_le
-  have hkE := fixLen_keyEnc_le; have hPs := lPsi_le; have hW := offWk_le; have hLW := LW_le
-  have hZ := lenZ_le; have hk := kNK_le
-  have hb := size_cfX_le hkp confP wfC (X := 2 ^ 258) (m := 158) (by omega) (by omega)
+theorem cfC_size_conf : cfC.size ≤ 2 ^ 257 := by
+  have hPK := lenPK_le_t; have hKA := lenKA_le_t; have hCj := lenCj_le_t; have hNK := NK_le_t
+  have hkE := fixLen_keyEnc_le_t; have hPs := lPsi_le_t; have hW := offWk_le_t; have hLW := LW_le_t
+  have hZ := lenZ_le_t; have hk := kNK_le_t
+  have hb := size_cfX_le hkp confP wfC (X := 2 ^ 245) (m := 151) (by omega) (by omega)
     (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) hLW (by omega)
     (by simp only [lenCj] at hCj; omega) (by omega) preTmplC_conf postTmplC_lt
   have hw := size_wfC
@@ -198,9 +245,18 @@ theorem descLen_arith_size {k S B b : ℕ} (h : S ≤ B) (hb : S < 2 ^ b) :
 
 theorem dsz_arith {S n F b B K : ℕ}
     (hS : S ≤ 36 * n + F + b + 4000 * B + 200 * K + 10 * (195 * 67 + 36) + 2 ^ 20)
-    (hb : b ≤ 2 ^ 270) (hn : n ≤ 2 ^ 195) (hF : F ≤ 36 * 2 ^ 49 + 2 ^ 56) (hB : B ≤ 2 ^ 194)
-    (hK : K ≤ 2 ^ 27) : S + (n + 3) + 2 ≤ 2 ^ 270 + 2 ^ 208 := by
+    (hb : b ≤ 2 ^ 257) (hn : n ≤ 2 ^ 186) (hF : F ≤ 36 * 2 ^ 49 + 2 ^ 56) (hB : B ≤ 2 ^ 185)
+    (hK : K ≤ 2 ^ 26) : S + (n + 3) + 2 ≤ 2 ^ 257 + 2 ^ 198 := by
   omega
+
+theorem nDec_le_t : nDec hkp confP ≤ 2 ^ 186 :=
+  (nDec_le_gen hkp confP fixLen_skEnc_le_t fixLen_ctEnc_le_t confP_L_le).trans (by norm_num)
+
+theorem decOffs_conf_t : ∀ x ∈ decOffs hkp confP, x ≤ 2 ^ 185 := fun x hx =>
+  (decOffs_le_gen hkp confP (X := 2 ^ 183) fixLen_skEnc_le_t fixLen_ctEnc_le_t
+    (lPsi_le_t.trans (by norm_num)) lenPK_le_t (by rw [dNK_conf]; norm_num)
+    (by rw [nTk_eq, NK_eq]; norm_num) (rK_le_t.trans (by norm_num)) (NK_le_t.trans (by norm_num))
+    x hx).trans (by norm_num)
 
 theorem decTmpl_lt67 : ∀ x ∈ decTmpl confP, x.2 < 2 ^ 67 := fun x hx =>
   lt_of_le_of_lt (decTmpl_conf (G := 2 ^ 66) le_rfl x hx) (by norm_num)
@@ -216,30 +272,30 @@ theorem decGenP_eqF : decGenP hkp confP cfC = decGenF hkp confP eF (frontBP conf
 
 /-- **The states of the program of `Dec` in `implC`.** -/
 theorem size_decGenP_conf : (decGenP hkp confP cfC).size + (nDec hkp confP + 3) + 2 ≤
-    2 ^ 270 + 2 ^ 208 := by
-  have hS := size_decGenF hkp confP eF (frontBP confP.L) cfC (2 ^ 194) 67 decOffs_conf decTmpl_lt67
+    2 ^ 257 + 2 ^ 198 := by
+  have hS := size_decGenF hkp confP eF (frontBP confP.L) cfC (2 ^ 185) 67 decOffs_conf_t decTmpl_lt67
   have hF := (frontSpec_frontBP confP.L).size
   have hL := confP_L_le
-  have hK : Kp ≤ 2 ^ 27 := by rw [Kp_def]
+  have hK : Kp ≤ 2 ^ 26 := by rw [Kp_def]
   have hc := cfC_size_conf
-  have hn := nDec_le
+  have hn := nDec_le_t
   rw [decGenP_eqF]
   omega
 
 set_option exponentiation.threshold 2000 in
-theorem dl_num_dec : 6 * (2 ^ 270 + 2 ^ 208) * 3 ^ 256 * (4 + 4 * 256 + 271) ≤ 2 ^ 689 := by
+theorem dl_num_dec : 6 * (2 ^ 257 + 2 ^ 198) * 3 ^ 256 * (4 + 4 * 256 + 258) ≤ 2 ^ 676 := by
   norm_num
 
-/-- **The description length of the `Dec` machine of `implC`**: at most `2^689` (the state count
-`≤ 2^270 + 2^208`, linear in the SimData length through the unrolled reads of the `c_f̂` block;
-`256` tapes; `Nat.size` of the state count `≤ 271` in the entry width). -/
-theorem descLen_decMachineP_conf : (decMachineP hkp confP cfC).descLen ≤ 2 ^ 689 := by
+/-- **The description length of the `Dec` machine of `implC`**: at most `2^676` (the state count
+`≤ 2^257 + 2^198`, linear in the SimData length through the unrolled reads of the `c_f̂` block;
+`256` tapes; `Nat.size` of the state count `≤ 258` in the entry width). -/
+theorem descLen_decMachineP_conf : (decMachineP hkp confP cfC).descLen ≤ 2 ^ 676 := by
   rw [descLen_decMachineP]
   have h := size_decGenP_conf
   exact (descLen_arith_size h (lt_of_le_of_lt h (by norm_num))).trans dl_num_dec
 
 /-- **The description length of the `Dec` machine of `implC`** (`msC.dec`). -/
-theorem descLen_dec_msC : msC.dec.descLen ≤ 2 ^ 689 := descLen_decMachineP_conf
+theorem descLen_dec_msC : msC.dec.descLen ≤ 2 ^ 676 := descLen_decMachineP_conf
 
 end Conf
 

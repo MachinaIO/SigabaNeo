@@ -64,7 +64,7 @@ theorem confP_L_le : confP.L ≤ 2 ^ 49 := by rw [confP_L]; exact bpLen_le
 /-! ### The words at `confA` -/
 
 theorem lenPK_eq : lenPK hkp confP =
-    1569275468922709748577758203934090069617389767520910573568 := by
+    6129982437495116521683020588912456589297838140178825216 := by
   simp only [lenPK, fixLen]; comp_unfold; norm_num
 
 theorem lenPK_le : lenPK hkp confP ≤ 2 ^ 191 := by rw [lenPK_eq]; norm_num
@@ -72,38 +72,38 @@ theorem lenPK_le : lenPK hkp confP ≤ 2 ^ 191 := by rw [lenPK_eq]; norm_num
 theorem lenDummy_le : ((keyEnc (N := Np) (K := Kp) confP).enc (dummyKey confP)).length ≤ 2 ^ 129 := by
   rw [length_enc_fixLen]; simp only [fixLen]; comp_unfold; norm_num
 
-theorem length_sW_cfP : cfP.sW.length = 2 ^ 27 := by
+theorem length_sW_cfP : cfP.sW.length = 2 ^ 26 := by
   show SpW.length = _; rw [length_SpW, Kp_def]
 
-theorem length_powW_cfP : (powW Kp (cfP.B - 1)).length = 2 ^ 27 := by
+theorem length_powW_cfP : (powW Kp (cfP.B - 1)).length = 2 ^ 26 := by
   rw [powW, length_toBits, Kp_def]
 
-theorem rowL_conf : DualUse.rowL Np Kp kp = 2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) := by
+theorem rowL_conf : DualUse.rowL Np Kp kp = 2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) := by
   rw [kp_eq, Np_def, Kp_def]
 
 theorem nJ_conf : nJ (N := Np) (K := Kp) hkp =
-    128 * (2 * (2 * (2 ^ 27 + 1) * ((2 ^ 27 + 1) * 2 ^ 36))) := by
+    128 * (2 * (2 * (2 ^ 26 + 1) * ((2 ^ 26 + 1) * 2 ^ 34))) := by
   simp only [nJ, DualUse.JIx, SigabaNeo.Encode.Enum.length_prod, len_Attr, len_Index]
   rw [kp_eq, Np_def]
 
-theorem lenZ_conf : lenZ confP = (2 ^ 65 - 1) * (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27)) := by
+theorem lenZ_conf : lenZ confP = (2 ^ 62 - 1) * (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26)) := by
   simp only [lenZ]; rw [confP_d, rowL_conf]
 
-theorem lenT_conf : lenT Np Kp kp = 2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) + 2 ^ 36 * 2 ^ 27 := by
+theorem lenT_conf : lenT Np Kp kp = 2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) + 2 ^ 34 * 2 ^ 26 := by
   simp only [lenT]; rw [rowL_conf, Np_def, Kp_def]
 
-theorem offBk_conf : offBk confP = 1 * (2 ^ 65 * (2 ^ 36 * 2 ^ 27)) +
-    1 * ((1 + (2 * (2 ^ 27 + 1) + 2 * (2 ^ 27 + 1))) * (2 ^ 36 * 2 ^ 27)) := by
+theorem offBk_conf : offBk confP = 1 * (2 ^ 62 * (2 ^ 34 * 2 ^ 26)) +
+    1 * ((1 + (2 * (2 ^ 26 + 1) + 2 * (2 ^ 26 + 1))) * (2 ^ 34 * 2 ^ 26)) := by
   simp only [offBk, len_fin, len_trap]; rw [confP_d, kp_eq, Np_def, Kp_def]
 
 theorem offWk_eq {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) :
     offWk hk c = lenPK hk c + c.d * (N * K) + nA * (c.d * DualUse.rowL N K k) := rfl
 
-theorem offWk_conf : offWk hkp confP = lenPK hkp confP + 2 ^ 65 * (2 ^ 36 * 2 ^ 27) +
-    nA * (2 ^ 65 * (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27))) := by
-  rw [offWk_eq, rowL_conf, confP_d, show Np * Kp = 2 ^ 36 * 2 ^ 27 by rw [Np_def, Kp_def]]
+theorem offWk_conf : offWk hkp confP = lenPK hkp confP + 2 ^ 62 * (2 ^ 34 * 2 ^ 26) +
+    nA * (2 ^ 62 * (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26))) := by
+  rw [offWk_eq, rowL_conf, confP_d, show Np * Kp = 2 ^ 34 * 2 ^ 26 by rw [Np_def, Kp_def]]
 
-theorem dNK_conf : confP.d * (Np * Kp) = 2 ^ 65 * (2 ^ 36 * 2 ^ 27) := by
+theorem dNK_conf : confP.d * (Np * Kp) = 2 ^ 62 * (2 ^ 34 * 2 ^ 26) := by
   rw [confP_d, Np_def, Kp_def]
 
 theorem rK_le : 2 * kp * (Np * Kp) ≤ 2 ^ 92 := by rw [kp_eq, Np_def, Kp_def]; norm_num

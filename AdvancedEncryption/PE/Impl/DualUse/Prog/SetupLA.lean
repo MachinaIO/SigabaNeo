@@ -32,8 +32,8 @@ set_option exponentiation.threshold 1000
 
 variable {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k)
 
-theorem lbTail3_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
-    (hd : c.d = 2 ^ 65) (hw : c.w = 768) {A : ℕ} (hA : A = 2 ^ 27) :
+theorem lbTail3_numA (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk' : k = 2 ^ 26 + 1)
+    (hd : c.d = 2 ^ 62) (hw : c.w = 768) {A : ℕ} (hA : A = 2 ^ 26) :
     (lbTail3 hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).w ≤ 2 ^ 197 ∧
       (lbTail3 hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).E ≤ 2 ^ 195 := by
   simp only [lbTail3, lbRest, LB.seq, LB.cnt, lbCoins, lbZeros, lbEntB, lbEntF, LB.coin, LB.prim,
@@ -42,8 +42,8 @@ theorem lbTail3_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
   subst hN hK hk' hA
   norm_num
 
-theorem lbTailI_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
-    (hd : c.d = 2 ^ 65) (hw : c.w = 768) {A : ℕ} (hA : A = 2 ^ 27) :
+theorem lbTailI_numA (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk' : k = 2 ^ 26 + 1)
+    (hd : c.d = 2 ^ 62) (hw : c.w = 768) {A : ℕ} (hA : A = 2 ^ 26) :
     (lbTailI hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).w ≤ 2 ^ 197 ∧
       (lbTailI hk c (Bnd.prim A 64) ⟨2 ^ 40, 2 ^ 40⟩).E ≤ 2 ^ 195 := by
   simp only [lbTailI, lbEncCoins, lbCt, LB.seq, LB.cnt, lbCoins, lbZeros, lbEntB, lbEntF, LB.coin,
@@ -52,24 +52,24 @@ theorem lbTailI_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
   subst hN hK hk' hA
   norm_num
 
-theorem bTail3_as_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
-    (hd : c.d = 2 ^ 65) (hw : c.w = 768) {A : ℕ} (hA : A = 2 ^ 27) :
+theorem bTail3_as_numA (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk' : k = 2 ^ 26 + 1)
+    (hd : c.d = 2 ^ 62) (hw : c.w = 768) {A : ℕ} (hA : A = 2 ^ 26) :
     (bTail3 hk c (Bnd.prim A 64)).a ≤ 2 ^ 194 ∧ (bTail3 hk c (Bnd.prim A 64)).s ≤ 2 ^ 194 := by
   simp only [bTail3, bRest, Bnd.seq, Bnd.count, Bnd.prim, bCoins, bZeros, bEntB, bEntF, bCoin,
     nW_eq, nR_eq, nE_eq, lenFin, len_col, hd, hw]
   subst hN hK hk' hA
   norm_num
 
-theorem bTailI_as_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
-    (hd : c.d = 2 ^ 65) (hw : c.w = 768) {A : ℕ} (hA : A = 2 ^ 27) :
+theorem bTailI_as_numA (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk' : k = 2 ^ 26 + 1)
+    (hd : c.d = 2 ^ 62) (hw : c.w = 768) {A : ℕ} (hA : A = 2 ^ 26) :
     (bTailI hk c (Bnd.prim A 64)).a ≤ 2 ^ 194 ∧ (bTailI hk c (Bnd.prim A 64)).s ≤ 2 ^ 194 := by
   simp only [bTailI, bEncCoins, bCt, Bnd.seq, Bnd.count, Bnd.prim, bCoins, bZeros, bEntB, bEntF,
     bCoin, nW_eq, nR_eq, nE_eq, nPsi_eq, nC0_eq, nC1_eq, nCj_eq, lenFin, len_col, len_trap, hd, hw]
   subst hN hK hk' hA
   norm_num
 
-theorem tail5_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
-    (hd : c.d = 2 ^ 65) (hw : c.w = 768) :
+theorem tail5_numA (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk' : k = 2 ^ 26 + 1)
+    (hd : c.d = 2 ^ 62) (hw : c.w = 768) :
     wTail5 hk c ≤ 2 ^ 197 ∧ eTail5 hk c ≤ 2 ^ 195 ∧ s5 hk c ≤ 2 ^ 194 ∧
       N * K + (nW hk c + (nR hk c * (1 + (N * K - 1)) +
         nE (N := N) hk * (min c.w K + (K - c.w)))) ≤ 2 ^ 194 := by
@@ -77,8 +77,8 @@ theorem tail5_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
   subst hN hK hk'
   norm_num
 
-theorem cntSum_numA (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk' : k = 2 ^ 27 + 1)
-    (hd : c.d = 2 ^ 65) (hw : c.w = 768) : 128 + K + cntSum hk c ≤ 2 ^ 194 := by
+theorem cntSum_numA (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk' : k = 2 ^ 26 + 1)
+    (hd : c.d = 2 ^ 62) (hw : c.w = 768) : 128 + K + cntSum hk c ≤ 2 ^ 194 := by
   simp only [cntSum, nW_eq, nR_eq, nE_eq, nPsi_eq, nC0_eq, nC1_eq, nCj_eq, lenFin, len_col, len_trap,
     hd, hw]
   subst hN hK hk'

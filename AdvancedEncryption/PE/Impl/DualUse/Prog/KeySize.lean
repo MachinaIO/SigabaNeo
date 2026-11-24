@@ -1,17 +1,18 @@
 import PE.Impl.DualUse.Prog.SizeCost
 import PE.Impl.DualUse.Prog.KeyTightConf
+import PE.Impl.DualUse.Prog.DecSize
 
 /-!
 # The states and the description length of `KeyGen` at `confA`
 
 * `size_bfX_le`: the states of the key-row block `bfX` from the largest offset `X` it reads (each
   read is unrolled) and the bits `m` of its templates;
-* `bfC_size_conf`: the key-row block of `implC` has at most `2^203` states (`X = 2^192`: the
+* `bfC_size_conf`: the key-row block of `implC` has at most `2^195` states (`X = 2^184`: the
   public key, `offWk + lenT`; the stream block `≤ 2^25`);
 * **`keyGen_size_conf`**: the program of `KeyGen` of `implC` with the states of its loader,
-  `size + (nKG + 3) + 2 ≤ 2^204` (the reads of the public key and the input guard dominate);
+  `size + (nKG + 3) + 2 ≤ 2^196` (the reads of the public key and the input guard dominate);
 * **`descLen_keyMachineP_conf`**: the description length of `KeyGen` of `implC` is at most
-  `2^817`.
+  `2^615`.
 -/
 
 namespace AdvancedEncryption.DualUse.Prog
@@ -81,32 +82,32 @@ theorem preTmpl_conf : ∀ x ∈ preTmpl (lenZ confP) (DualUse.rowL Np Kp kp) (n
   · rw [hn]; norm_num
   · exact lt_of_le_of_lt ((Nat.sub_le _ _).trans hZ) (by norm_num)
 
-theorem nJR_le : nJ (N := Np) (K := Kp) hkp * DualUse.rowL Np Kp kp ≤ 2 ^ 192 := by
+theorem nJR_le : nJ (N := Np) (K := Kp) hkp * DualUse.rowL Np Kp kp ≤ 2 ^ 184 := by
   rw [nJ_conf, rowL_conf]; norm_num
 
-theorem offWkT_le : offWk hkp confP + lenT Np Kp kp ≤ 2 ^ 192 := by
-  have h1 := offWk_le
-  have h2 := lenTc_le
-  have : (2 : ℕ) ^ 192 = 2 ^ 191 + 2 ^ 191 := by norm_num
-  have : (2 : ℕ) ^ 92 ≤ 2 ^ 191 := by norm_num
+theorem offWkT_le : offWk hkp confP + lenT Np Kp kp ≤ 2 ^ 184 := by
+  have h1 := offWk_le_t
+  have h2 := lenTc_le_t
+  have : (2 : ℕ) ^ 184 = 2 ^ 183 + 2 ^ 183 := by norm_num
+  have : (2 : ℕ) ^ 88 ≤ 2 ^ 183 := by norm_num
   omega
 
 /-- **The states of the key-row block of `implC`.** -/
-theorem bfC_size_conf : bfC.size ≤ 2 ^ 203 := by
-  have hb := size_bfX_le hkp confP wfC (X := 2 ^ 192) (m := 164)
-    (lenPK_le.trans (by norm_num)) (Nat.succ_le_of_lt (lt_of_le_of_lt lenTc_le (by norm_num)))
-    (offBk_le.trans (by norm_num)) nJR_le offWkT_le (lenZ_le.trans (by norm_num)) preTmpl_conf
+theorem bfC_size_conf : bfC.size ≤ 2 ^ 195 := by
+  have hb := size_bfX_le hkp confP wfC (X := 2 ^ 184) (m := 164)
+    (lenPK_le_t.trans (by norm_num)) (Nat.succ_le_of_lt (lt_of_le_of_lt lenTc_le_t (by norm_num)))
+    (offBk_le.trans (by norm_num)) nJR_le offWkT_le (lenZ_le_t.trans (by norm_num)) preTmpl_conf
     (fun x hx => lt_of_le_of_lt (postTmpl_conf x hx) (by norm_num))
   have hw := size_wfC
   refine hb.trans ?_
   generalize wfC.size = w at hw ⊢
-  have : 2 ^ 192 * 2048 ≤ (2 : ℕ) ^ 203 := by norm_num
+  have : 2 ^ 184 * 2048 ≤ (2 : ℕ) ^ 195 := by norm_num
   omega
 
 theorem ksz_arith {S n F b P R s p d : ℕ}
     (hS : S ≤ 36 * n + F + b + 400 * (P + R) + 60 * (s + p + d) + 23 * (195 * 193 + 36) + 2 ^ 21)
-    (hb : b ≤ 2 ^ 203) (hn : n ≤ 2 ^ 193) (hF : F ≤ 2 ^ 57) (hP : P ≤ 2 ^ 191) (hR : R ≤ 2 ^ 92)
-    (hs : s ≤ 2 ^ 27) (hp : p ≤ 2 ^ 27) (hd : d ≤ 2 ^ 129) : S + (n + 3) + 2 ≤ 2 ^ 204 := by
+    (hb : b ≤ 2 ^ 195) (hn : n ≤ 2 ^ 185) (hF : F ≤ 2 ^ 57) (hP : P ≤ 2 ^ 183) (hR : R ≤ 2 ^ 88)
+    (hs : s ≤ 2 ^ 26) (hp : p ≤ 2 ^ 26) (hd : d ≤ 2 ^ 123) : S + (n + 3) + 2 ≤ 2 ^ 196 := by
   omega
 
 theorem fsz_arith {n : ℕ} (h : n ≤ 2 ^ 49) : 36 * n + 2 ^ 56 ≤ 2 ^ 57 := by omega
@@ -115,18 +116,21 @@ theorem frontBP_size_conf : (frontBP confP.L).size ≤ 2 ^ 57 :=
   (frontSpec_frontBP confP.L).size.trans (fsz_arith confP_L_le)
 
 /-- **The states of `KeyGen` of `implC`**, with those of its loader. -/
-theorem keyGen_size_conf : (keyGenP hkp confP bfC cfP).size + (nKG hkp confP + 3) + 2 ≤ 2 ^ 204 := by
+theorem keyGen_size_conf : (keyGenP hkp confP bfC cfP).size + (nKG hkp confP + 3) + 2 ≤ 2 ^ 196 := by
   have hm : ∀ x ∈ keyTmplR hkp confP cfP, x.2 < 2 ^ 193 := fun x hx =>
     lt_of_le_of_lt ((le_tmplMax _ x hx).trans (keyTmplR_conf le_rfl)) (by norm_num)
   have hS := size_keyGenF (hk := hkp) (c := confP) eF (frontBP confP.L) bfC 512 cfP 193 hm
-  exact ksz_arith hS bfC_size_conf nKG_le frontBP_size_conf lenPK_le rK_le
-    (le_of_eq length_sW_cfP) (le_of_eq length_powW_cfP) lenDummy_le
+  exact ksz_arith hS bfC_size_conf nKG_le_t frontBP_size_conf lenPK_le_t rK_le_t
+    (le_of_eq length_sW_cfP) (le_of_eq length_powW_cfP) lenDummy_le_t
 
-theorem dl_num_key : 6 * 2 ^ 204 * 3 ^ 256 * (4 + 4 * 256 + 2 ^ 204) ≤ 2 ^ 817 := by norm_num
+theorem dl_num_key : 6 * 2 ^ 196 * 3 ^ 256 * (4 + 4 * 256 + 197) ≤ 2 ^ 615 := by norm_num
 
-/-- **The description length of `KeyGen` of `implC`.** -/
-theorem descLen_keyMachineP_conf : (keyMachineP hkp confP bfC cfP).descLen ≤ 2 ^ 817 := by
+/-- **The description length of `KeyGen` of `implC`** (`Nat.size` of the state count `≤ 197` in
+the entry width). -/
+theorem descLen_keyMachineP_conf : (keyMachineP hkp confP bfC cfP).descLen ≤ 2 ^ 615 := by
   rw [descLen_keyMachineP]
-  exact (descLen_arithK keyGen_size_conf).trans dl_num_key
+  have h := keyGen_size_conf
+  exact (descLen_arith_size (B := 2 ^ 196) (by omega)
+    (lt_of_le_of_lt (by omega) (by norm_num : (2 : ℕ) ^ 196 < 2 ^ 197))).trans dl_num_key
 
 end AdvancedEncryption.DualUse.Prog

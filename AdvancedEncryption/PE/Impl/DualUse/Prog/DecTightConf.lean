@@ -97,8 +97,8 @@ noncomputable def TbP (a Mβ : ℕ) : ℕ :=
         (lenZ confP) (DualUse.rowL Np Kp kp) (nJ (N := Np) (K := Kp) hkp) WB2.Lbn (2 ^ 157))))
 
 theorem dRow_eq : nA * ((confP.d - 2) * DualUse.rowL Np Kp kp + 2 * DualUse.rowL Np Kp kp) =
-    128 * ((2 ^ 65 - 2) * (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27)) +
-      2 * (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27))) := by
+    128 * ((2 ^ 62 - 2) * (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26)) +
+      2 * (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26))) := by
   rw [confP_d, rowL_conf]
 
 theorem aP_le {a : ℕ} (ha : a ≤ 2 ^ 200) : aP a ≤ WB2.Lbn := by
@@ -154,7 +154,7 @@ theorem ph_cfC_conf' {a : ℕ} (ha : a ≤ 2 ^ 200) {β : Fin 256 → ℕ} (h0 :
     (by omega) (by omega) (by omega) (by norm_num) hZ (by omega) (by omega) (by rw [hdNK]; norm_num)
     hdR (by omega) (by omega) (by omega) (by rw [hn]; norm_num)
   have hw : Ph wfC (io2 (R := 254) (aP a) (frontBA bpLen) 0) (2 ^ 628) WB2.wOutS := by
-    obtain ⟨t1, t2⟩ := WB2.time_wfB2S_out hkp confP Np_def Kp_def confP_d rfl treeHeight_le
+    obtain ⟨t1, t2⟩ := WB2.time_wfB2S_out hkp confP Np_def Kp_def confP_d rfl (treeHeight_le.trans (by norm_num [eTree]))
       offB_conf offW_conf (offPsi_conf.trans (by unfold WB2.Lbn; norm_num)) offR_conf offX_conf
       (aP a) (frontBA bpLen) (aP_le ha) (by unfold WB2.Lgn; omega)
     exact fun ℓ hℓ => ⟨(timeBoundT_mono _ hℓ).trans t1, (lenBoundT_mono _ hℓ).trans t2⟩
@@ -216,13 +216,13 @@ set_option exponentiation.threshold 2000 in
 theorem decGT'_num : decGT' (2 ^ 195) (2 ^ 8 * (2 ^ 201) ^ 2) (2 ^ 200)
     (256 * (2 * (2 ^ 200 + 1) + 3) + (2 * (2 ^ 200 + 1) + 3) +
       (mvBitT (2 ^ 200) (2 ^ 63) + (2 ^ 520 + (2 ^ 628 + 2 ^ 521)))) (2 ^ 600)
-      (decG' (2 ^ 27) (2 ^ 194) (2 ^ 194)) ≤ 2 ^ 628 + 2 ^ 602 := by
+      (decG' (2 ^ 26) (2 ^ 194) (2 ^ 194)) ≤ 2 ^ 628 + 2 ^ 602 := by
   simp only [decGT', decBT', decBL', decG', leT, parse4T, unfrT, longT, putT, mvBitT,
     List.length_cons, List.length_nil]
   norm_num
 
 set_option exponentiation.threshold 2000 in
-theorem decBL'_num : decBL' (2 ^ 200) (decG' (2 ^ 27) (2 ^ 194) (2 ^ 194)) ≤ 2 ^ 201 := by
+theorem decBL'_num : decBL' (2 ^ 200) (decG' (2 ^ 26) (2 ^ 194) (2 ^ 194)) ≤ 2 ^ 201 := by
   simp only [decBL', decG', List.length_cons, List.length_nil]; norm_num
 
 theorem dec_arith' {n T L : ℕ} (hn : n ≤ 2 ^ 195) (hT : T ≤ 2 ^ 628 + 2 ^ 602) (hL : L ≤ 2 ^ 201) :
@@ -241,7 +241,7 @@ theorem time_decMachineP_conf' : (decMachineP hkp confP cfC).time ≤ 2 ^ 629 :=
   have hF := frontBA_le'
   have hM : max (16 * (nDec hkp confP + 2)) (frontBA bpLen) ≤ 2 ^ 200 :=
     max_le ha (hF.trans (by norm_num))
-  have hK : Kp = 2 ^ 27 := Kp_def
+  have hK : Kp = 2 ^ 26 := Kp_def
   have hT := (h1.trans (decGT'_mono hn frontBTn_confD hM (TbP_conf ha hM) TfP_conf
     (le_of_eq (by rw [hK])))).trans decGT'_num
   have hL := (h2.trans (decBL'_mono hM (le_of_eq (by rw [hK])))).trans decBL'_num

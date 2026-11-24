@@ -41,11 +41,11 @@ set_option maxRecDepth 100000 in
 theorem lenKA_le : lenKA hkp confP ≤ 2 ^ 132 := by
   simp only [lenKA, lPsi, fixLen]; comp_unfold; norm_num
 
-theorem NK_eq : Np * Kp = 2 ^ 36 * 2 ^ 27 := by rw [Np_def, Kp_def]
+theorem NK_eq : Np * Kp = 2 ^ 34 * 2 ^ 26 := by rw [Np_def, Kp_def]
 
 theorem NK_le : Np * Kp ≤ 2 ^ 63 := by rw [NK_eq]; norm_num
 
-theorem kNK_eq : kp * (Np * Kp) = (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) := by rw [kp_eq, NK_eq]
+theorem kNK_eq : kp * (Np * Kp) = (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) := by rw [kp_eq, NK_eq]
 
 theorem kNK_le : kp * (Np * Kp) ≤ 2 ^ 91 := by rw [kNK_eq]; norm_num
 
@@ -83,7 +83,7 @@ theorem decOffs_le_gen {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) (c : Conf N K k) {X : 
   simp only [decOffs, List.mem_cons, List.not_mem_nil, or_false] at hx
   rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> omega
 
-theorem nTk_eq : Algo.nT kp = 1 + (2 * (2 ^ 27 + 1) + 2 * (2 ^ 27 + 1)) := by
+theorem nTk_eq : Algo.nT kp = 1 + (2 * (2 ^ 26 + 1) + 2 * (2 ^ 26 + 1)) := by
   simp only [Algo.nT]; rw [kp_eq]
 
 /-- **The offsets read by the end of decryption at `confA`.** -/
@@ -95,11 +95,11 @@ theorem decOffs_conf : ∀ x ∈ decOffs hkp confP, x ≤ 2 ^ 194 := fun x hx =>
 
 /-- The templates of the end of decryption at `confA`. -/
 theorem decTmpl_conf {G : ℕ} (hG : 2 ^ 66 ≤ G) : ∀ x ∈ decTmpl confP, x.2 ≤ G := by
-  have h1 : Kp ≤ 2 ^ 27 := by rw [Kp_def]
-  have h2 : Np ≤ 2 ^ 36 := by rw [Np_def]
+  have h1 : Kp ≤ 2 ^ 26 := by rw [Kp_def]
+  have h2 : Np ≤ 2 ^ 34 := by rw [Np_def]
   have h3 := NK_le
   have h4 : 2 * kp ≤ 2 ^ 29 := by rw [kp_eq]; norm_num
-  have h5 : confP.d ≤ 2 ^ 65 := by rw [confP_d]
+  have h5 : confP.d ≤ 2 ^ 62 := by rw [confP_d]
   have h6 : Algo.nT kp ≤ 2 ^ 30 := by rw [nTk_eq]; norm_num
   intro x hx
   simp only [decTmpl, List.mem_cons, List.not_mem_nil, or_false] at hx
@@ -113,9 +113,9 @@ theorem postTmplC_conf : ∀ x ∈ postTmplC Np Kp kp (lenZ confP) (DualUse.rowL
   have h3 := nJ_le
   have h4 := kNK_le; have h5 := NK_le; have h6 := rK_le
   have h7 : kp ≤ 2 ^ 28 := by rw [kp_eq]; norm_num
-  have h8 : Np ≤ 2 ^ 36 := by rw [Np_def]
-  have h9 : Kp ≤ 2 ^ 27 := by rw [Kp_def]
-  have h10 : 1 * (2 * kp) * Np ≤ 2 ^ 65 := by rw [kp_eq, Np_def]; norm_num
+  have h8 : Np ≤ 2 ^ 34 := by rw [Np_def]
+  have h9 : Kp ≤ 2 ^ 26 := by rw [Kp_def]
+  have h10 : 1 * (2 * kp) * Np ≤ 2 ^ 62 := by rw [kp_eq, Np_def]; norm_num
   intro x hx
   simp only [postTmplC, List.mem_cons, List.not_mem_nil, or_false] at hx
   rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> dsimp only <;> omega

@@ -182,7 +182,7 @@ theorem lin_bChi : Lin bChi.T (2 ^ 40) (2 ^ 40) := by
 set_option maxRecDepth 100000 in
 /-- **The χ sampler is linear with the same constants for any `K ≤ 2^27`** (the weight is about
 `429 K`), e.g. at `confA`. -/
-theorem lin_bChi_of_le (hK : Params.Kp ≤ 2 ^ 27) : Lin bChi.T (2 ^ 40) (2 ^ 40) := by
+theorem lin_bChi_of_le (hK : Params.Kp ≤ 2 ^ 26) : Lin bChi.T (2 ^ 40) (2 ^ 40) := by
   have hC := lin_bChain Params.Kp 6 (lin_bLeaf Params.Kp 6) (16 + 16)
   have hD : Lin ((((Bnd.prim 0 0).ite (Bnd.prim 0 0)).seq (Bnd.prim 0 0))).T (2 + 2 + 1 + 2)
       (3 + 3 + 1 + 3 + 0 + 0) := by
