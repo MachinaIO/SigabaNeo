@@ -878,6 +878,87 @@ theorem exec_ginvMulC (hK : 0 < K) (w : St) (X Y : Fin 2 → Fin 2 × Fin K → 
   rw [exec_tOut W4 _ _ (by simp) (by simp) hT4 c1 c2, matL_eq_range hK]
   rfl
 
+/-! ### `σ_k` on every entry -/
+
+/-- The count register of `autMatC` (read only). -/
+@[simp, vmreg] abbrev rKc : Fin 64 := 31
+
+/-- Two entries: `σ_k` on each. -/
+def aBody : Code :=
+  .seq (.cp rX0 rZ) <| .seq (.mvR rX0 rTmp) <| .seq (.op .aut rX1 rX0 rKc) <| .seq (.mvR rS2 rX1) <|
+  .seq (.cp rX0 rZ) <| .seq (.mvR rX0 rTmp) <| .seq (.op .aut rX1 rX0 rKc) (.mvR rS2 rX1)
+
+/-- The setup of `autMatC`. -/
+def aPre : Code := .seq (.cp rTmp rMA) <| .seq (.cp rS2 rT4KNK) (.cp rCj rT2K)
+
+/-- **`rMOut := σ_k(A)` entrywise**, `k = |rKc|` (`A` in `rMA`). -/
+def autMatC : Code := .seq aPre <| .seq (.rep rCj aBody) (.cp rMOut rS2)
+
+theorem aBody_writes_rCj : aBody.writes rCj = false := by decide
+
+theorem drop_two_cons {α : Type} (L : List α) {m n : ℕ} (hL : L.length = 2 * n) (hm : m < n) :
+    L.drop (2 * m) = L[2 * m]'(by omega) :: L[2 * m + 1]'(by omega) :: L.drop (2 * (m + 1)) := by
+  rw [List.drop_eq_getElem_cons (by omega), List.drop_eq_getElem_cons (by omega)]
+  congr 2
+
+theorem take_two_succ {α : Type} (L : List α) {m n : ℕ} (hL : L.length = 2 * n) (hm : m < n) :
+    L.take (2 * (m + 1)) = L.take (2 * m) ++ [L[2 * m]'(by omega), L[2 * m + 1]'(by omega)] := by
+  have e : 2 * (m + 1) = (2 * m + 1) + 1 := by ring
+  rw [e, List.take_add_one, List.take_add_one,
+    List.getElem?_eq_getElem (show 2 * m < L.length by omega),
+    List.getElem?_eq_getElem (show 2 * m + 1 < L.length by omega)]
+  simp only [Option.toList_some, List.append_assoc, List.cons_append, List.nil_append]
+
+theorem exec_aLoop (hN : 0 < N) (hK : 0 < K) (w : St) (n : ℕ) (L : List (Rq N K))
+    (hL : L.length = 2 * n) (hk : 0 < (w rKc).length) (hCj : w rCj = List.replicate n false)
+    (hTmp : w rTmp = encL N K L) (hS2 : w rS2 = encL N K (List.replicate (2 * n) 0))
+    (hZ : w rZ = encRM N K 0) :
+    exec N K (.rep rCj aBody) w rS2 = encL N K (L.map (aut N (w rKc).length)) := by
+  have key := exec_rep_inv (N := N) (K := K) rCj aBody aBody_writes_rCj
+    (fun m w' => w' rTmp = encL N K (L.drop (2 * m)) ∧
+      w' rS2 = encL N K (List.replicate (2 * (n - m)) 0 ++
+        (L.take (2 * m)).map (aut N (w rKc).length)) ∧
+      w' rKc = w rKc ∧ w' rZ = encRM N K 0) w
+    ⟨by simp [hTmp], by simp [hS2], rfl, hZ⟩ ?_
+  · rw [hCj, List.length_replicate] at key
+    rw [key.2.1, ← hL, List.take_length]; simp
+  · intro m w' hm hP _
+    rw [hCj, List.length_replicate] at hm
+    obtain ⟨h1, h2, h3, h4⟩ := hP
+    rw [drop_two_cons L hL hm] at h1
+    have e2 : 2 * (n - m) = 2 + (2 * (n - (m + 1))) := by omega
+    rw [e2, List.replicate_add] at h2
+    unfold aBody
+    vm_simp
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · simp [h1, h4]
+    · simp [h1, h2, h3, h4, take_two_succ L hL hm, canonW_aut hK hN hk]
+    · simp [h3]
+    · simp [h4]
+
+theorem aPre_writes_ge : ∀ q : Fin 64, 57 ≤ q.val → aPre.writes q = false := by decide
+theorem aLoop_writes_ge : ∀ q : Fin 64, 57 ≤ q.val → (Code.rep rCj aBody).writes q = false := by
+  decide
+
+/-- **`autMatC` applies `σ_k` (`k = |rKc| > 0`) to every entry.** -/
+theorem exec_autMatC (hN : 0 < N) (hK : 0 < K) (w : St) (A : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (hMA : w rMA = encL N K (matL A)) (hk : 0 < (w rKc).length) (hT : MulTmpl N K w) :
+    exec N K autMatC w rMOut = encL N K (matL fun a c => aut N (w rKc).length (A a c)) ∧
+    (∀ q : Fin 64, 57 ≤ q.val → exec N K autMatC w q = w q) := by
+  refine ⟨?_, fun q hq => exec_writes _ _ _ (by revert q; decide)⟩
+  show exec N K (.cp rMOut rS2) (exec N K (.rep rCj aBody) (exec N K aPre w)) rMOut = _
+  set W1 := exec N K aPre w with hW1
+  have f : W1 rCj = List.replicate (2 * K) false ∧ W1 rTmp = encL N K (matL A) ∧
+      W1 rS2 = encL N K (List.replicate (2 * (2 * K)) 0) ∧ W1 rZ = encRM N K 0 ∧
+      W1 rKc = w rKc := by
+    rw [hW1]; unfold aPre; vm_simp; simp [hMA, hT.t4KNK, hT.t2K, hT.z]
+  obtain ⟨f1, f2, f3, f4, f5⟩ := f
+  have g := exec_aLoop hN hK W1 (2 * K) (matL A) (by simp; ring) (by rw [f5]; exact hk) f1 f2 f3 f4
+  rw [exec_cp, Function.update_self, g, f5]
+  congr 1
+  simp only [matL, List.map_flatMap, List.map_map]
+  rfl
+
 end MVM
 
 end SigabaNeo.Tape
