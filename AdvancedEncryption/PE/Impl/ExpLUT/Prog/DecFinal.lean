@@ -1159,6 +1159,119 @@ theorem exec_finHC (hN : 0 < N) (hK : 0 < K) (w : St) {Hps : List (List (List Bo
     simp only [ht9, Function.update_apply, Fin.reduceEq, ↓reduceIte, t8_180]
   · intro j hj; rw [e, cf j (not_mem_hi hj rfl), t9lo j hj]
 
+/-- Part `c_F`: `acc += Σ_c (c_F − A_F⁽²⁾)_c k_c` (`c_F` on `176`, `A_F` on `177`). -/
+def finFC : Code := ofList [.cp 192 176, .cp 193 177, .drop 193 6, .cp 194 2, .cp 195 2, subVecC 8 6,
+  .cp 181 188, .cp 183 2, .cp 184 2, dotC 8]
+
+theorem exec_finFC (w : St) (hc : Consts N K w) {cFs AF0s AF1s ks : List (List Bool)}
+    (r6 : w 6 = List.replicate (2 * K * (N * K)) false) (r8 : (w 8).length = 2 * K)
+    (hcF : w 176 = cFs.flatten) (hAF : w 177 = AF0s.flatten ++ AF1s.flatten)
+    (hcFl : cFs.length = 2 * K) (hA0 : AF0s.length = 2 * K) (hA1 : AF1s.length = 2 * K)
+    (hcFw : ∀ x ∈ cFs, x.length = N * K) (hA0w : ∀ x ∈ AF0s, x.length = N * K)
+    (hA1w : ∀ x ∈ AF1s, x.length = N * K) (hk : w 182 = ks.flatten) (hkl : 2 * K ≤ ks.length)
+    (hkw : ∀ x ∈ ks, x.length = N * K) (hacc : (w 180).length = N * K) :
+    ((exec N K finFC w) 180).length = N * K ∧
+      decRM N K ((exec N K finFC w) 180) = decRM N K (w 180) +
+        dotL (List.zipWith (subRMW N K) cFs AF1s) ks (2 * K) ∧
+      ∀ j : Fin 200, j.val < 180 → (exec N K finFC w) j = w j := by
+  have hw6 : (w 6).length = 2 * K * (N * K) := by rw [r6, List.length_replicate]
+  set t1 := exec N K (ofList [.cp 192 176, .cp 193 177, .drop 193 6, .cp 194 2, .cp 195 2]) w
+    with ht1
+  have t1_eq : t1 = Function.update (Function.update (Function.update (Function.update w 192
+      (w 176)) 193 AF1s.flatten) 194 (w 2)) 195 (w 2) := by
+    simp only [ht1, exec_ofList_cons, exec_ofList_nil, exec, Function.update_apply, Fin.reduceEq,
+      ↓reduceIte, Function.update_idem, hAF]
+    rw [List.drop_left' (by rw [length_flatten_of hA0w, hA0, hw6]; try ring)]
+  have t1lo : ∀ j : Fin 200, j.val < 180 → t1 j = w j := fun j hj => by
+    rw [t1_eq, Function.update_of_ne (lo_ne hj 195), Function.update_of_ne (lo_ne hj 194),
+      Function.update_of_ne (lo_ne hj 193), Function.update_of_ne (lo_ne hj 192)]
+  have hc1 : Consts N K t1 := consts_of_agree hc fun j hj => t1lo j (by omega)
+  obtain ⟨a188, -, -, -, -, af⟩ := exec_subVecC t1 hc1 8 6 (by decide) (by decide)
+    (La := []) (Lb := []) hcFw hA1w (by rw [t1lo 8 (by decide), r8]; exact hcFl)
+    (by rw [t1lo 8 (by decide), r8]; exact hA1)
+    (by rw [t1lo 8 (by decide), t1lo 6 (by decide), r8, hw6])
+    (by simp [t1_eq, hcF]) (by simp [t1_eq])
+    (by simp [t1_eq, hc.zero]) (by simp [t1_eq, hc.zero])
+  set t2 := exec N K (subVecC 8 6) t1
+  have t2lo : ∀ j : Fin 200, j.val < 180 → t2 j = w j := fun j hj => by
+    rw [af j (not_mem_hi hj rfl), t1lo j hj]
+  have t2_180 : t2 180 = w 180 := by
+    rw [af 180 (by rw [wr_subVecC]; simp), t1_eq]; simp
+  have t2_182 : t2 182 = w 182 := by
+    rw [af 182 (by rw [wr_subVecC]; simp), t1_eq]; simp
+  set xs := List.zipWith (subRMW N K) cFs AF1s
+  have xsw : ∀ x ∈ xs, x.length = N * K := fun x hx => by
+    obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hx
+    rw [List.getElem_zipWith]
+    exact length_subRMW N K (hcFw _ (List.getElem_mem _)) _
+  set t3 := Function.update (Function.update (Function.update t2 181 (t2 188)) 183 (t2 2)) 184
+    (t2 2) with ht3
+  have t3lo : ∀ j : Fin 200, j.val < 180 → t3 j = w j := fun j hj => by
+    rw [ht3, Function.update_of_ne (lo_ne hj 184), Function.update_of_ne (lo_ne hj 183),
+      Function.update_of_ne (lo_ne hj 181), t2lo j hj]
+  have hc3 : Consts N K t3 := consts_of_agree hc fun j hj => t3lo j (by omega)
+  have e : exec N K finFC w = exec N K (dotC 8) t3 := rfl
+  obtain ⟨-, -, -, -, d180, dd, df⟩ := exec_dotC t3 hc3 8 (by decide) (L := []) (L' := []) xsw hkw
+    (by rw [t3lo 8 (by decide), r8]; simp [xs, hcFl, hA1])
+    (by rw [t3lo 8 (by decide), r8]; exact hkl)
+    (by simp only [ht3, Function.update_apply, Fin.reduceEq, ↓reduceIte, a188, List.append_nil])
+    (by simp only [ht3, Function.update_apply, Fin.reduceEq, ↓reduceIte, t2_182, hk,
+      List.append_nil])
+    (by simp only [ht3, Function.update_apply, Fin.reduceEq, ↓reduceIte, t2lo 2 (by decide),
+      hc.zero, List.length_replicate])
+    (by simp only [ht3, Function.update_apply, Fin.reduceEq, ↓reduceIte, t2lo 2 (by decide),
+      hc.zero, List.length_replicate])
+    (by simp only [ht3, Function.update_apply, Fin.reduceEq, ↓reduceIte, t2_180]; exact hacc)
+  rw [t3lo 8 (by decide), r8] at dd
+  refine ⟨by rw [e]; exact d180, ?_, fun j hj => ?_⟩
+  · rw [e, dd]
+    simp only [ht3, Function.update_apply, Fin.reduceEq, ↓reduceIte, t2_180]
+  · rw [e, df j (not_mem_hi hj rfl), t3lo j hj]
+
+/-- **`μ' = c_m − d₂ − acc`, canonical, decoded** into register `179` (`d` on `64`, `c_m` on
+`72`). -/
+def outC : Code := ofList [.cp 190 64, .cp 191 2, .mv 191 190 2, .mv 191 190 2, .sub 191 72 191,
+  .sub 191 191 180, .canon 191 191, decC]
+
+theorem exec_outC (hN : 0 < N) (hK : 2 ≤ K) (w : St) (hc : Consts N K w)
+    (h15 : (w 15).length = K - 2) (h75 : w 75 = [true]) {d0 d1 : List Bool}
+    (hd0 : d0.length = N * K) (hd1 : d1.length = N * K) (h64 : w 64 = d0 ++ d1)
+    (h72 : (w 72).length = N * K) (h180 : (w 180).length = N * K) :
+    (exec N K outC w) 179 = [decide (2 ^ (K - 2) ≤ (coefG (decRM N K (w 72) - decRM N K d1 -
+        decRM N K (w 180)) 0).val ∧ (coefG (decRM N K (w 72) - decRM N K d1 -
+        decRM N K (w 180)) 0).val < 3 * 2 ^ (K - 2))] := by
+  have hK0 : 0 < K := by omega
+  set t1 := exec N K (ofList [.cp 190 64, .cp 191 2, .mv 191 190 2, .mv 191 190 2]) w with ht1
+  have t1_eq : t1 = Function.update (Function.update (Function.update (Function.update
+      (Function.update (Function.update w 190 (w 64)) 191 (w 2)) 190 d1) 191 d0) 190 []) 191 d1 := by
+    simp only [ht1, exec_ofList_cons, exec_ofList_nil]
+    rw [show exec N K (.cp 191 2) (exec N K (.cp 190 64) w) =
+      Function.update (Function.update w 190 (w 64)) 191 (w 2) from rfl]
+    have s2 : exec N K (.mv 191 190 2) (Function.update (Function.update w 190 (w 64)) 191 (w 2)) =
+        Function.update (Function.update (Function.update (Function.update w 190 (w 64)) 191 (w 2))
+          190 d1) 191 d0 :=
+      exec_mv_pop (v := d0) (L := d1) (by decide) (by simp [hc.zero])
+        (by simp [hc.zero, hd0]) (by simp [h64])
+    rw [s2]
+    exact exec_mv_pop (v := d1) (L := []) (by decide) (by simp [hc.zero, hd0])
+      (by simp [hc.zero, hd1]) (by simp)
+  have hs1 := length_subRMW N K h72 d1
+  have hs2 := length_subRMW N K hs1 (w 180)
+  have e : exec N K outC w = exec N K decC (Function.update t1 191
+      (canonW N K (subRMW N K (subRMW N K (w 72) d1) (w 180)))) := by
+    show exec N K decC (exec N K (.canon 191 191) (exec N K (.sub 191 191 180)
+      (exec N K (.sub 191 72 191) t1))) = _
+    simp only [exec, t1_eq, Function.update_apply, Fin.reduceEq, ↓reduceIte, Function.update_idem,
+      opd_eq h72, opd_eq hd1, opd_eq hs1, opd_eq h180, opd_eq hs2]
+  rw [e, exec_decC hN hK _ (consts_of_agree hc fun j hj => by
+      rw [Function.update_of_ne (by intro h; subst h; simp at hj), t1_eq]
+      simp only [Function.update_apply]
+      split_ifs <;> first | rfl | (exfalso; subst_vars; simp at hj))
+    (by simp [t1_eq, h15]) (by simp [t1_eq, h75])
+    (decRM N K (subRMW N K (subRMW N K (w 72) d1) (w 180)))
+    (by simp only [Function.update_self]; rw [canonW_eq hK0 hs2])]
+  rw [decRM_subRMW hs1 h180, decRM_subRMW h72 hd1]
+
 end RingVM
 
 end SigabaNeo.Tape
