@@ -107,7 +107,7 @@ theorem bfC_size_conf : bfC.size ≤ 2 ^ 203 := by
 theorem ksz_arith {S n F b P R s p d : ℕ}
     (hS : S ≤ 36 * n + F + b + 400 * (P + R) + 60 * (s + p + d) + 23 * (195 * 193 + 36) + 2 ^ 21)
     (hb : b ≤ 2 ^ 203) (hn : n ≤ 2 ^ 193) (hF : F ≤ 2 ^ 57) (hP : P ≤ 2 ^ 191) (hR : R ≤ 2 ^ 92)
-    (hs : s ≤ 2 ^ 27) (hp : p ≤ 2 ^ 27) (hd : d ≤ 2 ^ 129) : S + (n + 3) + 2 ≤ 2 ^ 204 := by
+    (hs : s ≤ 2 ^ 26) (hp : p ≤ 2 ^ 26) (hd : d ≤ 2 ^ 129) : S + (n + 3) + 2 ≤ 2 ^ 204 := by
   omega
 
 theorem fsz_arith {n : ℕ} (h : n ≤ 2 ^ 49) : 36 * n + 2 ^ 56 ≤ 2 ^ 57 := by omega

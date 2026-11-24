@@ -199,7 +199,7 @@ theorem descLen_arith_size {k S B b : ℕ} (h : S ≤ B) (hb : S < 2 ^ b) :
 theorem dsz_arith {S n F b B K : ℕ}
     (hS : S ≤ 36 * n + F + b + 4000 * B + 200 * K + 10 * (195 * 67 + 36) + 2 ^ 20)
     (hb : b ≤ 2 ^ 270) (hn : n ≤ 2 ^ 195) (hF : F ≤ 36 * 2 ^ 49 + 2 ^ 56) (hB : B ≤ 2 ^ 194)
-    (hK : K ≤ 2 ^ 27) : S + (n + 3) + 2 ≤ 2 ^ 270 + 2 ^ 208 := by
+    (hK : K ≤ 2 ^ 26) : S + (n + 3) + 2 ≤ 2 ^ 270 + 2 ^ 208 := by
   omega
 
 theorem decTmpl_lt67 : ∀ x ∈ decTmpl confP, x.2 < 2 ^ 67 := fun x hx =>
@@ -220,7 +220,7 @@ theorem size_decGenP_conf : (decGenP hkp confP cfC).size + (nDec hkp confP + 3) 
   have hS := size_decGenF hkp confP eF (frontBP confP.L) cfC (2 ^ 194) 67 decOffs_conf decTmpl_lt67
   have hF := (frontSpec_frontBP confP.L).size
   have hL := confP_L_le
-  have hK : Kp ≤ 2 ^ 27 := by rw [Kp_def]
+  have hK : Kp ≤ 2 ^ 26 := by rw [Kp_def]
   have hc := cfC_size_conf
   have hn := nDec_le
   rw [decGenP_eqF]

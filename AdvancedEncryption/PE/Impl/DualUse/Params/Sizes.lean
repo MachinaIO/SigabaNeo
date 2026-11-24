@@ -6,18 +6,18 @@ import PE.Impl.DualUse.Params.NoiseGen
 
 The parameters of the configuration `confP` for branching programs (`BP_PLAN.md` §4):
 
-* `q = 2^K`, `K = 2^27`, `k = K + 1` binary digits;
-* ring degree `N = 2^36`, so that `log₂ q / N = 2^{-9}` (Ring-LWE estimate in
+* `q = 2^K`, `K = 2^26`, `k = K + 1` binary digits;
+* ring degree `N = 2^34`, so that `log₂ q / N = 2^{-8}` (Ring-LWE estimate in
   `Params/Strength.lean`);
-* `|Wd| = 2^65 ≥ 2 · K · N + 1000` columns of `B₀`, for the leftover hash lemma over `R_q²`;
-* the shift of every trapdoor (real, or simulated for predicates of depth at most `Dmax = 1054`,
-  which covers the circuits of the branching programs, `depth_bpPred`) within
-  `τ = 2^{51055984}` (`simTrapBound_le`, `realShift_le`);
-* key boxes of `B = 51056224` bits per coefficient;
+* `|Wd| = 2^62 ≥ 2 · K · N + 1000` columns of `B₀`, for the leftover hash lemma over `R_q²`;
+* the shift of every trapdoor (real, or simulated for predicates of depth at most `Dmax = 478`,
+  which covers the circuits of the branching programs on 14-bit states, `depth_bpPred`) within
+  `τ = 2^{21138808}` (`simTrapBound_le`, `realShift_le`);
+* key boxes of `B = 21139048` bits per coefficient;
 * errors from the centered binomial law of width `16`, flooding below `2^768`.
 
 For every predicate of depth at most `Dmax` and keys within `2^{B−1}`, the noise bound is below
-`2^{eNoise} / 4 < q / 4` with `eNoise = 102113082` (`noise_ok`), a margin of `32104646` bits. The
+`2^{eNoise} / 4 < q / 4` with `eNoise = 42278725` (`noise_ok`), a margin of `24830139` bits. The
 sizes are opaque (`irreducible_def`): no power of `2` with a large exponent is evaluated, all
 bounds are exponent arithmetic through the generic chain of `Params/NoiseGen.lean`. Every bound is
 stated through a named exponent (`ak`, `an`, `ad`, `wP`, `Dmax`, `eWN`, …, `eNoise`).
@@ -29,17 +29,17 @@ open SigabaNeo.Lattices SigabaNeo.Lattices.SLP AdvancedEncryption.RingBTVW
 open AdvancedEncryption.DualUse.Concrete (pow_mul_le' pow_mul_le pow_le_pow' sum_bound)
 
 /-- `K = log₂ q`. -/
-irreducible_def Kp : ℕ := 2 ^ 27
+irreducible_def Kp : ℕ := 2 ^ 26
 /-- The number of digits. -/
 def kp : ℕ := Kp + 1
 /-- The ring degree. -/
-irreducible_def Np : ℕ := 2 ^ 36
+irreducible_def Np : ℕ := 2 ^ 34
 /-- The columns of `B₀`. -/
-irreducible_def dp : ℕ := 2 ^ 65
+irreducible_def dp : ℕ := 2 ^ 62
 /-- `log₂` of the bound on the shifts of the trapdoors. -/
-irreducible_def Eτ : ℕ := 51055984
+irreducible_def Eτ : ℕ := 21138808
 /-- The bits of a coefficient of the big box. -/
-irreducible_def Bp : ℕ := 51056224
+irreducible_def Bp : ℕ := 21139048
 
 theorem hkp : 2 ^ Kp < 2 ^ kp := Nat.pow_lt_pow_right (by norm_num) (Nat.lt_succ_self Kp)
 
@@ -50,38 +50,38 @@ theorem Np_pos : 0 < Np := by rw [Np_def]; positivity
 The exponents of the bounds; every statement below is through them. -/
 
 /-- The bound on the depth of the predicates. -/
-def Dmax : ℕ := 1054
+def Dmax : ℕ := 478
 /-- `k ≤ 2^ak`. -/
-def ak : ℕ := 28
+def ak : ℕ := 27
 /-- `N ≤ 2^an`. -/
-def an : ℕ := 36
+def an : ℕ := 34
 /-- `|Wd| ≤ 2^ad`. -/
-def ad : ℕ := 65
+def ad : ℕ := 62
 /-- The flooding width: flooding errors below `2^wP`. -/
 def wP : ℕ := 768
 /-- `|Col k| N ≤ 2^eWN`. -/
-def eWN : ℕ := 65
+def eWN : ℕ := 62
 /-- `log₂` of the bound on `modFactor`. -/
-def eMod : ℕ := 722
+def eMod : ℕ := 690
 /-- The bound on `treeHeight`. -/
-def eTree : ℕ := 66
+def eTree : ℕ := 63
 /-- `gswFactor ≤ 2^eG`. -/
-def eG : ℕ := 48440
+def eG : ℕ := 44223
 /-- `gswFactor^Dmax ≤ 2^eGD`. -/
-def eGD : ℕ := 51055760
+def eGD : ℕ := 21138594
 /-- `|rowBits| ≤ 2^eR`. -/
-def eR : ℕ := 93
+def eR : ℕ := 89
 /-- `|rowBits| WN + 1 ≤ 2^eRW`. -/
-def eRW : ℕ := 159
+def eRW : ℕ := 152
 /-- `|TrapCol k| ≤ 2^eTC`. -/
-def eTC : ℕ := 31
+def eTC : ℕ := 30
 /-- `|Wd| N 2^wP ≤ 2^eE`. -/
-def eE : ℕ := 869
+def eE : ℕ := 864
 /-- `4 · noise + 2 < 2^eNoise ≤ 2^K`. -/
-def eNoise : ℕ := 102113082
+def eNoise : ℕ := 42278725
 
 theorem kp_le : kp ≤ 2 ^ ak := by
-  have : 2 ^ 27 + 1 ≤ 2 ^ 28 := by norm_num
+  have : 2 ^ 26 + 1 ≤ 2 ^ 27 := by norm_num
   rw [kp, Kp_def]; exact this
 
 theorem two_le_ak : 2 ≤ ak := by norm_num [ak]

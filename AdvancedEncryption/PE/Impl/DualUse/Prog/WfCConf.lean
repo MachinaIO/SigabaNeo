@@ -53,12 +53,12 @@ theorem offX_conf : offPsi hkp confP + nA * lenPsi Np Kp kp ≤ 2 ^ 260 := by
 theorem time_wfC {Lsd Lg : ℕ} (hLsd : Lsd ≤ 2 ^ 260) (hLg : Lg ≤ 2 ^ 64) :
     XProg.timeBoundT wfC (io2 (R := 254) Lsd Lg 0) ≤ 2 ^ 628 ∧
       ∀ t, XProg.lenBoundT wfC (io2 (R := 254) Lsd Lg 0) t ≤ 2 ^ 262 :=
-  WB2.time_wfB2S_conf hkp confP Np_def Kp_def confP_d rfl treeHeight_le offB_conf offW_conf
+  WB2.time_wfB2S_conf hkp confP Np_def Kp_def confP_d rfl (treeHeight_le.trans (by norm_num [eTree])) offB_conf offW_conf
     (offPsi_conf.trans (by unfold WB2.Lbn; norm_num)) offR_conf offX_conf Lsd Lg hLsd hLg
 
 /-- **The states of the stream block at `confA`.** -/
 theorem size_wfC : wfC.size ≤ 2 ^ 25 :=
-  WB2.size_wfB2S_conf hkp confP Np_def Kp_def confP_d rfl treeHeight_le offB_conf offW_conf
+  WB2.size_wfB2S_conf hkp confP Np_def Kp_def confP_d rfl (treeHeight_le.trans (by norm_num [eTree])) offB_conf offW_conf
     (offPsi_conf.trans (by unfold WB2.Lbn; norm_num)) offR_conf offX_conf
 
 end AdvancedEncryption.DualUse.Prog

@@ -72,8 +72,8 @@ theorem keyTotV_mono {n FL FT P R sW pW dl Tb G tm KT n' FL' FT' P' R' sW' pW' d
 
 set_option maxRecDepth 100000 in
 set_option exponentiation.threshold 5000 in
-theorem keyTotV_conf : keyTotV (2 ^ 193) (2 ^ 63) (2 ^ 404) (2 ^ 191) (2 ^ 92) (2 ^ 27)
-    (2 ^ 27) (2 ^ 129) (2 ^ 628 + 2 ^ 531) (2 ^ 263) (2 ^ 130) (2 ^ 559) ≤ 2 ^ 629 := by
+theorem keyTotV_conf : keyTotV (2 ^ 193) (2 ^ 63) (2 ^ 404) (2 ^ 191) (2 ^ 92) (2 ^ 26)
+    (2 ^ 26) (2 ^ 129) (2 ^ 628 + 2 ^ 531) (2 ^ 263) (2 ^ 130) (2 ^ 559) ≤ 2 ^ 629 := by
   simp only [keyTotV, prefT, etT, putT, frT, leT, parseT, unfrT, longT, coinT]
   norm_num
 
@@ -119,16 +119,16 @@ theorem postTVv_mono {L LT oW Zr G W L' LT' oW' Zr' G' W' : ℕ} (h1 : L ≤ L')
 /-- The bound of the tapes after the key-row block at `confA`. -/
 noncomputable abbrev Gc : ℕ := postMd (lenPK hkp confP) (lenT Np Kp kp) (2 ^ 262)
 
-theorem Gc_eq : Gc = 2 ^ 262 + 1 + 1569275468922709748577758203934090069617389767520910573568 + 1 +
-    (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) + 2 ^ 36 * 2 ^ 27) + 1 + 1 + 1 +
-    1569275468922709748577758203934090069617389767520910573568 + 1 +
-    (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) + 2 ^ 36 * 2 ^ 27) := by
+theorem Gc_eq : Gc = 2 ^ 262 + 1 + 6129982437495116521683020588912456589297838140178825216 + 1 +
+    (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) + 2 ^ 34 * 2 ^ 26) + 1 + 1 + 1 +
+    6129982437495116521683020588912456589297838140178825216 + 1 +
+    (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) + 2 ^ 34 * 2 ^ 26) := by
   simp only [Gc, postMd]; rw [lenPK_eq, lenT_conf]
 
-theorem ρP_conf : ρP Gc Np Kp kp = [2 ^ 262 + 1 + 1569275468922709748577758203934090069617389767520910573568 + 1 +
-    (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) + 2 ^ 36 * 2 ^ 27) + 1 + 1 + 1 +
-    1569275468922709748577758203934090069617389767520910573568 + 1 +
-    (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) + 2 ^ 36 * 2 ^ 27), 2 ^ 36, 2 ^ 27, 2 ^ 27 + 1] := by
+theorem ρP_conf : ρP Gc Np Kp kp = [2 ^ 262 + 1 + 6129982437495116521683020588912456589297838140178825216 + 1 +
+    (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) + 2 ^ 34 * 2 ^ 26) + 1 + 1 + 1 +
+    6129982437495116521683020588912456589297838140178825216 + 1 +
+    (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) + 2 ^ 34 * 2 ^ 26), 2 ^ 34, 2 ^ 26, 2 ^ 26 + 1] := by
   rw [ρP, Gc_eq, Np_def, Kp_def, kp_eq]
 
 set_option maxRecDepth 100000 in
@@ -194,21 +194,21 @@ theorem ph_bfC_v {a M : ℕ} (ha : a ≤ 2 ^ 197) {β : Fin 256 → ℕ} (h0 : �
 
 /-! ### The key try at `confA` -/
 
-theorem cfP_B : cfP.B = 51056224 := by show Bp = _; rw [Bp_def]
+theorem cfP_B : cfP.B = 21139048 := by show Bp = _; rw [Bp_def]
 
-theorem cfP_m : cfP.m = (2 ^ 65 + (1 + (2 * (2 ^ 27 + 1) + 2 * (2 ^ 27 + 1)))) * 2 ^ 36 * 51056224 := by
+theorem cfP_m : cfP.m = (2 ^ 62 + (1 + (2 * (2 ^ 26 + 1) + 2 * (2 ^ 26 + 1)))) * 2 ^ 34 * 21139048 := by
   show mBp = _; rw [mBp, dp_def, kp_eq, Np_def, Bp_def]
 
 theorem ρK_conf : ρK hkp confP Gc cfP =
-    [(2 ^ 262 + 1 + 1569275468922709748577758203934090069617389767520910573568 + 1 +
-      (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) + 2 ^ 36 * 2 ^ 27) + 1 + 1 + 1 +
-      1569275468922709748577758203934090069617389767520910573568 + 1 +
-      (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27) + 2 ^ 36 * 2 ^ 27)) + 1 +
-      1569275468922709748577758203934090069617389767520910573568 + 1 +
-      2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27),
-    2 ^ 36, 2 ^ 27, 2 ^ 27 + 1, 2 ^ 65, 1 + (2 * (2 ^ 27 + 1) + 2 * (2 ^ 27 + 1)),
-    1569275468922709748577758203934090069617389767520910573568, 51056224,
-    (2 ^ 65 + (1 + (2 * (2 ^ 27 + 1) + 2 * (2 ^ 27 + 1)))) * 2 ^ 36 * 51056224] := by
+    [(2 ^ 262 + 1 + 6129982437495116521683020588912456589297838140178825216 + 1 +
+      (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) + 2 ^ 34 * 2 ^ 26) + 1 + 1 + 1 +
+      6129982437495116521683020588912456589297838140178825216 + 1 +
+      (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26) + 2 ^ 34 * 2 ^ 26)) + 1 +
+      6129982437495116521683020588912456589297838140178825216 + 1 +
+      2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26),
+    2 ^ 34, 2 ^ 26, 2 ^ 26 + 1, 2 ^ 62, 1 + (2 * (2 ^ 26 + 1) + 2 * (2 ^ 26 + 1)),
+    6129982437495116521683020588912456589297838140178825216, 21139048,
+    (2 ^ 62 + (1 + (2 * (2 ^ 26 + 1) + 2 * (2 ^ 26 + 1)))) * 2 ^ 34 * 21139048] := by
   simp only [ρK, winTop, AdvancedEncryption.DualUse.Algo.nT]
   rw [Gc_eq, lenPK_eq, confP_d, cfP_B, cfP_m, Np_def, Kp_def, kp_eq]
 
@@ -268,7 +268,7 @@ theorem time_keyMachineP_conf' : (keyMachineP hkp confP bfC cfP).time ≤ 2 ^ 62
     (fun _ h0 h1 hβ => ph_bfC_v (a := 8 * (nKG hkp confP + 2))
       (M := max (8 * (nKG hkp confP + 2)) (frontBA bpLen)) aK_le h0 h1 hβ)
     (le_of_eq (by rw [length_sW_cfP, Kp_def])) (le_of_eq (by rw [length_powW_cfP, Kp_def]))
-    (Kp_def.le.trans ((by norm_num : (2 : ℕ) ^ 27 ≤ 2 ^ 262).trans winTop_ge)) keyTmplR_Gc
+    (Kp_def.le.trans ((by norm_num : (2 : ℕ) ^ 26 ≤ 2 ^ 262).trans winTop_ge)) keyTmplR_Gc
   calc _ ≤ 2 * (nKG hkp confP + 1) + 2 +
         keyGTFv hkp confP (frontBTn confP.L bpLen (8 * (nKG hkp confP + 2))) (frontBA bpLen) cfP TbV Gc +
         (2 * keyBLFv hkp confP (frontBA bpLen) cfP Gc + 2) := by
@@ -284,7 +284,7 @@ theorem time_keyMachineP_conf' : (keyMachineP hkp confP bfC cfP).time ≤ 2 ^ 62
         generalize keyBLFv hkp confP (frontBA bpLen) cfP Gc = B at *
         omega
     _ = _ := keyTot_eq hkp confP _ _ cfP TbV Gc
-    _ ≤ keyTotV (2 ^ 193) (2 ^ 63) (2 ^ 404) (2 ^ 191) (2 ^ 92) (2 ^ 27) (2 ^ 27) (2 ^ 129)
+    _ ≤ keyTotV (2 ^ 193) (2 ^ 63) (2 ^ 404) (2 ^ 191) (2 ^ 92) (2 ^ 26) (2 ^ 26) (2 ^ 129)
         (2 ^ 628 + 2 ^ 531) (2 ^ 263) (2 ^ 130) (2 ^ 559) :=
       keyTotV_mono nKG_le frontBA_conf frontBTn_conf lenPK_le rK_le
         (le_of_eq length_sW_cfP) (le_of_eq length_powW_cfP) lenDummy_le TbV_le Gc_le mBp_le KT_conf

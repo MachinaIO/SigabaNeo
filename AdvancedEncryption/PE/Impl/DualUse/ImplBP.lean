@@ -62,8 +62,8 @@ theorem hSC : lenKA hkp confP + Np * Kp + 1 ≤ lenZ confP := by
   rw [hdp]
   generalize Np * Kp = Q at *
   have hk2 : 2 ≤ kp := by rw [kp, Kp_def]; norm_num
-  have hkle : kp ≤ 2 ^ 28 := kp_le
-  have hd65 : dp = 2 ^ 65 := dp_def
+  have hkle : kp ≤ 2 ^ 27 := kp_le
+  have hd62 : dp = 2 ^ 62 := dp_def
   obtain ⟨D, hD⟩ : ∃ D, dp = D + 1 := ⟨dp - 1, by omega⟩
   rw [hD, Nat.add_sub_cancel]
   have hDk : 522 * kp + 6 ≤ 2 * D := by omega

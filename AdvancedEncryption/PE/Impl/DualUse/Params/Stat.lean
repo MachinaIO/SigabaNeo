@@ -122,10 +122,10 @@ def eAttrBits : ℕ := 7
 /-- The slack of the leftover hash lemma: `|Wd| ≥ 2 K N + 2 sP`. -/
 def sP : ℕ := 500
 
-theorem kp_le' : kp ≤ 2 ^ 27 + 1 := by rw [kp, Kp_def]
+theorem kp_le' : kp ≤ 2 ^ 26 + 1 := by rw [kp, Kp_def]
 
 theorem k3_le : 8 * kp ^ 3 ≤ 2 ^ 85 := by
-  calc 8 * kp ^ 3 ≤ 8 * (2 ^ 27 + 1) ^ 3 := by gcongr; exact kp_le'
+  calc 8 * kp ^ 3 ≤ 8 * (2 ^ 26 + 1) ^ 3 := by gcongr; exact kp_le'
     _ ≤ 2 ^ 85 := by norm_num
 
 /-- `|JC| ≤ 2^128` for `128` attribute bits. -/

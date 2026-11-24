@@ -137,8 +137,8 @@ theorem simTop_conf : simTop hkp confP (2 ^ 262) ≤ 2 ^ 263 := by
 
 theorem simTop_ge : 2 ^ 262 ≤ simTop hkp confP (2 ^ 262) := by simp only [simTop]; omega
 
-theorem winRV_num : prefT (2 ^ 191) (2 ^ 262) + (2 ^ 27 + 1) * (2 * (2 ^ 263 + 2 ^ 27 + 1) + 3) +
-    (2 ^ 27 + 1) * (2 * (2 ^ 263 + 2 ^ 27 + 1) + 3) + 21 * ((2 * 2 ^ 263 + 1) * (4 * 2 ^ 263 + 12)) +
+theorem winRV_num : prefT (2 ^ 191) (2 ^ 262) + (2 ^ 26 + 1) * (2 * (2 ^ 263 + 2 ^ 26 + 1) + 3) +
+    (2 ^ 26 + 1) * (2 * (2 ^ 263 + 2 ^ 26 + 1) + 3) + 21 * ((2 * 2 ^ 263 + 1) * (4 * 2 ^ 263 + 12)) +
     (coinT (2 ^ 263) (2 ^ 130) + (2 * 2 ^ 263 + 3) * 2 ^ 224) +
     (25 * (2 * (2 ^ 263 + 1) + 3) + (2 * (2 ^ 263 + 1) + 3)) ≤ 2 ^ 534 := by
   simp only [prefT, coinT]; norm_num
@@ -156,7 +156,7 @@ theorem ph_winRest_conf :
     Ph (winRest hkp confP cfP) (v02 (2 ^ 262)) (2 ^ 534) (fun _ => simTop hkp confP (2 ^ 262)) :=
   (ph_winRest_v hkp confP (2 ^ 262) cfP pEval_wKS_conf (le_of_eq (by rw [length_sW_cfP, Kp_def]))
     (le_of_eq (by rw [length_powW_cfP, Kp_def]))
-    (Kp_def.le.trans ((by norm_num : (2 : ℕ) ^ 27 ≤ 2 ^ 262).trans simTop_ge)) tmpl_simTop).mono
+    (Kp_def.le.trans ((by norm_num : (2 : ℕ) ^ 26 ≤ 2 ^ 262).trans simTop_ge)) tmpl_simTop).mono
     le_rfl winRV_confA le_rfl
 
 /-! ### The key component -/
@@ -232,8 +232,8 @@ theorem size_wfR : wfR.size ≤ 2 ^ 25 + 100 := by
   omega
 
 theorem ksz_arithR {S F W P s p d : ℕ} (hS : S ≤ 2 ^ 25) (hF : F ≤ 2 ^ 57) (hW : W ≤ 2 ^ 25 + 100)
-    (hP : P = 1569275468922709748577758203934090069617389767520910573568) (hs : s = 2 ^ 27)
-    (hp : p = 2 ^ 27) (hd : d ≤ 2 ^ 129) :
+    (hP : P = 6129982437495116521683020588912456589297838140178825216) (hs : s = 2 ^ 26)
+    (hp : p = 2 ^ 26) (hd : d ≤ 2 ^ 129) :
     S + F + W + 264 * P + 60 * (s + p + d) + 20 * (195 * 193 + 36) + 2 ^ 18 ≤ 2 ^ 198 + 2 ^ 196 := by
   subst hP hs hp
   omega

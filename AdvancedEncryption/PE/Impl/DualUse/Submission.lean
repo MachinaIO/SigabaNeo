@@ -19,17 +19,17 @@ The width chosen is `w8` (16 symbols of 8 bits); the implementation's predicates
 trees of depth at most `478` (`depth_bpPred`).
 
 `submission`: the compiled implementation `implC` (`ImplBP`) of the Ring-LWE scheme at `confP`
-(the sizes of `confA`: `N = 2^36`, `K = 2^27`, `k = K + 1`, `d = 2^65`), with the χ sampler
+(`N = 2^34`, `K = 2^26`, `k = K + 1`, `d = 2^62`, depth `≤ 478`), with the χ sampler
 `chiSamplerP`, the key-row block `bfX … wfC` and the `c_f̂` block `cfX … wfC` around the stream
 block `wfC`; attribute hiding rests on decision Ring-LWE at the parameters of hybrids 3 and 5 with
 **`965` bits** each, correctness and expressiveness on nothing. The claimed cost is `N = 2^690`.
 
 * `spec_submission`: the final statement `Spec` (`correct_implC`, `expressive_implC`,
-  `attributeHiding_conf_rlwe`, and `cost_implC`: clocks `Setup ≤ 2^387`, `KeyGen ≤ 2^629`,
+  `attributeHiding_conf_rlwe`, and `cost_implC`: clocks `Setup ≤ 2^371`, `KeyGen ≤ 2^629`,
   `Enc ≤ 2^452`, `Dec ≤ 2^629` steps, description lengths `≤ 2^300`, `≤ 2^623`, `≤ 2^300`,
   `≤ 2^689` bits);
 * `valid_submission`: every premise is valid at the initial strengths of the registry
-  (`965 ≤ 2650 ≤ RingLWE.H`, `ringLWE_H_registry3/5`).
+  (`965 ≤ 1158 ≤ RingLWE.H`, `ringLWE_H_registry3/5`).
 -/
 
 namespace AdvancedEncryption.DualUse.Sub
@@ -87,11 +87,11 @@ theorem e_enc : implC.machine .enc = encMP hkp confP chiSamplerP := rfl
 theorem e_dec : implC.machine .dec = decMachineP hkp confP cfC := rfl
 
 set_option exponentiation.threshold 2000 in
-theorem cost_arith {a b c d e f g h : ℕ} (ha : a ≤ 2 ^ 387) (hb : b ≤ 2 ^ 629) (hc : c ≤ 2 ^ 452)
+theorem cost_arith {a b c d e f g h : ℕ} (ha : a ≤ 2 ^ 371) (hb : b ≤ 2 ^ 629) (hc : c ≤ 2 ^ 452)
     (hd : d ≤ 2 ^ 629) (he : e ≤ 2 ^ 300) (hf : f ≤ 2 ^ 623) (hg : g ≤ 2 ^ 300)
     (hh : h ≤ 2 ^ 689) : a + 1 * b + 1 * (c + d) + (e + f + g + h) ≤ 2 ^ 690 :=
   calc a + 1 * b + 1 * (c + d) + (e + f + g + h)
-      ≤ 2 ^ 387 + 1 * 2 ^ 629 + 1 * (2 ^ 452 + 2 ^ 629) + (2 ^ 300 + 2 ^ 623 + 2 ^ 300 + 2 ^ 689) := by
+      ≤ 2 ^ 371 + 1 * 2 ^ 629 + 1 * (2 ^ 452 + 2 ^ 629) + (2 ^ 300 + 2 ^ 623 + 2 ^ 300 + 2 ^ 689) := by
         gcongr
     _ ≤ 2 ^ 690 := by norm_num
 
@@ -103,7 +103,7 @@ theorem cost_le_of {impl : Impl PE.sig} {T : ℕ}
         (impl.machine .enc).descLen + (impl.machine .dec).descLen) ≤ T) :
     PE.cost BranchingProgram.params impl ≤ T := h
 
-/-- **The cost of the implementation** at `confP` is at most `2^690`: the clocks `Setup ≤ 2^387`
+/-- **The cost of the implementation** at `confP` is at most `2^690`: the clocks `Setup ≤ 2^371`
 (`time_setupMP_conf'`), `KeyGen ≤ 2^629` (`time_keyMachineP_conf'`), `Enc ≤ 2^452`
 (`time_encMP_confT`), `Dec ≤ 2^629` (`time_decMachineP_conf'`), and the description lengths
 `≤ 2^300`, `≤ 2^623` (`descLen_keyMachineP_conf`), `≤ 2^300`, `≤ 2^689`
@@ -154,7 +154,7 @@ theorem spec_submission :
   · rw [submission_impl]; exact expressive_implC
   · rw [submission_impl, submission_N]; exact cost_implC
 
-/-- **The submission is valid** at the initial strengths of the registry: `965 ≤ 2650 ≤ RingLWE.H`
+/-- **The submission is valid** at the initial strengths of the registry: `965 ≤ 1158 ≤ RingLWE.H`
 at both instances. -/
 theorem valid_submission : submission.Valid (Registry.initial assumptions) := by
   intro i d hd

@@ -28,16 +28,16 @@ open AdvancedEncryption.PE
 
 section ConfA
 
-variable (hN : Np = 2 ^ 36) (hK : Kp = 2 ^ 27) (hd : confP.d = 2 ^ 65) (hA : nA = 128)
+variable (hN : Np = 2 ^ 34) (hK : Kp = 2 ^ 26) (hd : confP.d = 2 ^ 62) (hA : nA = 128)
   (hw : confP.w = 768) (hpw : DualUse.pw.length ≤ 2 ^ 20)
 
 /-- The `B_j` field at `confA`. -/
-abbrev c3A : ℕ := 128 * (2 * (2 * (2 ^ 27 + 1) * ((2 ^ 27 + 1) * 2 ^ 36))) *
-  (1 * (2 * (2 ^ 27 + 1) * (2 ^ 36 * 2 ^ 27)))
+abbrev c3A : ℕ := 128 * (2 * (2 * (2 ^ 26 + 1) * ((2 ^ 26 + 1) * 2 ^ 34))) *
+  (1 * (2 * (2 ^ 26 + 1) * (2 ^ 34 * 2 ^ 26)))
 
 /-- The other fields at `confA`. -/
-abbrev c1A : ℕ := 1 * (2 ^ 65 * (2 ^ 36 * 2 ^ 27))
-abbrev c2A : ℕ := 1 * ((1 + (2 * (2 ^ 27 + 1) + 2 * (2 ^ 27 + 1))) * (2 ^ 36 * 2 ^ 27))
+abbrev c1A : ℕ := 1 * (2 ^ 62 * (2 ^ 34 * 2 ^ 26))
+abbrev c2A : ℕ := 1 * ((1 + (2 * (2 ^ 26 + 1) + 2 * (2 ^ 26 + 1))) * (2 ^ 34 * 2 ^ 26))
 
 include hN hK hd in
 theorem c1_A : (Enum.list (α := Fin 1)).length * ((Enum.list (α := Fin confP.d)).length *
@@ -67,7 +67,7 @@ theorem nInE_leA : nInE hkp confP ≤ 3 * 2 ^ 190 := by
 include hN hK hd hA in
 theorem tmpl_A : ∀ p ∈ tmplList hkp confP, p.2 ≤ 2 * 2 ^ 190 := by
   have ek := kp_A hN hK
-  have eJ : nJenc (N := Np) hkp = 128 * (2 * (2 * (2 ^ 27 + 1) * ((2 ^ 27 + 1) * 2 ^ 36))) := by
+  have eJ : nJenc (N := Np) hkp = 128 * (2 * (2 * (2 ^ 26 + 1) * ((2 ^ 26 + 1) * 2 ^ 34))) := by
     rw [nJenc_eqA, hA, ek, hN]
   intro p hp
   simp only [tmplList, List.mem_cons, List.not_mem_nil, or_false] at hp
@@ -83,8 +83,8 @@ theorem tmpl_A : ∀ p ∈ tmplList hkp confP, p.2 ≤ 2 * 2 ^ 190 := by
 
 include hN hK hd hA hw in
 theorem encSN_A (M : ℕ) : encSN hkp confP Kp 64 M ≤ M + 2 ^ 191 := by
-  have hdl : (Enum.list (α := Fin confP.d)).length = 2 ^ 65 := by rw [len_fin, hd]
-  have hcl : (Enum.list (α := RingBTVW.Col kp)).length = 2 * (2 ^ 27 + 1) := by
+  have hdl : (Enum.list (α := Fin confP.d)).length = 2 ^ 62 := by rw [len_fin, hd]
+  have hcl : (Enum.list (α := RingBTVW.Col kp)).length = 2 * (2 ^ 26 + 1) := by
     rw [len_col, kp_A hN hK]
   dsimp only [encSN]
   rw [hdl, hcl, nR_eqA, nE_eqA, (bEntB_as _ _).1, (bEntB_as _ _).2, (bEntF_as _ _).1,
@@ -93,13 +93,13 @@ theorem encSN_A (M : ℕ) : encSN hkp confP Kp 64 M ≤ M + 2 ^ 191 := by
   exact Nat.add_le_add_left (by norm_num) M
 
 /-- The bound after the parser at `confA` (from `3 · 2^190`). -/
-def PEA : ℕ := 3 * 2 ^ 190 + c1A + c2A + c3A + 2 ^ 36 * 2 ^ 27 + 128 + 1
+def PEA : ℕ := 3 * 2 ^ 190 + c1A + c2A + c3A + 2 ^ 34 * 2 ^ 26 + 128 + 1
 
 /-- The time of the parser at `confA`. -/
-def TEA (p : ℕ) : ℕ := parseETv p c1A c2A c3A (2 ^ 36 * 2 ^ 27) (3 * 2 ^ 190)
+def TEA (p : ℕ) : ℕ := parseETv p c1A c2A c3A (2 ^ 34 * 2 ^ 26) (3 * 2 ^ 190)
 
 include hA in
-theorem parseEGv_A : parseEGv c1A c2A c3A (2 ^ 36 * 2 ^ 27) (3 * 2 ^ 190) = PEA := by
+theorem parseEGv_A : parseEGv c1A c2A c3A (2 ^ 34 * 2 ^ 26) (3 * 2 ^ 190) = PEA := by
   unfold parseEGv PEA; rw [hA]
 
 theorem PEA_le : 3 * 2 ^ 190 ≤ PEA ∧ PEA ≤ 5 * 2 ^ 190 := by
@@ -123,13 +123,13 @@ theorem encST_A : encST hkp confP chiSamplerP.B PEA ≤ 2 ^ 400 := by
   refine (encST_le hkp confP (Bχ := chiSamplerP.B) (lin_bChi_of_le (by rw [hK]))
     (lin_bEntB _ _) (lin_bEntF _ _) _).trans ?_
   rw [chiB, bChi_a, bChi_s]
-  have hdl : (Enum.list (α := Fin confP.d)).length = 2 ^ 65 := by rw [len_fin, hd]
-  have hcl : (Enum.list (α := AdvancedEncryption.RingBTVW.Col kp)).length = 2 * (2 ^ 27 + 1) := by
+  have hdl : (Enum.list (α := Fin confP.d)).length = 2 ^ 62 := by rw [len_fin, hd]
+  have hcl : (Enum.list (α := AdvancedEncryption.RingBTVW.Col kp)).length = 2 * (2 ^ 26 + 1) := by
     rw [len_col, kp_A hN hK]
-  have hR : nR hkp confP = 128 * (2 * (2 ^ 27 + 1)) * 2 ^ 65 := by
+  have hR : nR hkp confP = 128 * (2 * (2 ^ 26 + 1)) * 2 ^ 62 := by
     rw [nR_eqA, hA, hd, kp_A hN hK]
-  have hE : nE (N := Np) hkp = 128 * (2 * (2 * (2 ^ 27 + 1) * ((2 ^ 27 + 1) * 2 ^ 36))) *
-      (2 * (2 ^ 27 + 1)) * 2 ^ 36 := by
+  have hE : nE (N := Np) hkp = 128 * (2 * (2 * (2 ^ 26 + 1) * ((2 ^ 26 + 1) * 2 ^ 34))) *
+      (2 * (2 ^ 26 + 1)) * 2 ^ 34 := by
     rw [nE_eqA, hA, kp_A hN hK, hN]
   rw [encSTL_eqv hkp confP hdl hcl hR hE, (bEntB_as _ _).1, (bEntB_as _ _).2,
     (bEntF_as _ _).1, (bEntF_as _ _).2, hw, hN, hK]
@@ -144,12 +144,12 @@ theorem time_encMP_A_of (hW : ∀ G, pEval (ρE hkp confP G) wE ≤ 45 * 2 ^ 252
     (encMP hkp confP chiSamplerP).time ≤ 2 ^ 452 := by
   have hn := nInE_leA hN hK hd hA hpw
   obtain ⟨hP1, hP2⟩ := PEA_le
-  have hK27 : Kp = 2 ^ 27 := hK
-  have hKc : bChi.S₀ ≤ 2 ^ 27 := bChi_S₀.trans (by rw [hK])
+  have hK26 : Kp = 2 ^ 26 := hK
+  have hKc : bChi.S₀ ≤ 2 ^ 26 := bChi_S₀.trans (by rw [hK])
   have e1 := c1_A hN hK hd
   have e2 := c2_A hN hK
   have e3 := c3_A hN hK hA
-  have enk : Np * Kp = 2 ^ 36 * 2 ^ 27 := by rw [hN, hK]
+  have enk : Np * Kp = 2 ^ 34 * 2 ^ 26 := by rw [hN, hK]
   have c1 : (Enum.list (α := Fin confP.d)).length * Np ≤ 2 ^ 150 := by
     rw [len_fin, hd, hN]; norm_num
   have c2 : (Enum.list (α := AdvancedEncryption.RingBTVW.Col kp)).length * Np ≤ 2 ^ 150 := by
@@ -216,15 +216,15 @@ theorem time_encMP_A_of (hW : ∀ G, pEval (ρE hkp confP G) wE ≤ 45 * 2 ^ 252
 
 include hN hK hd hA in
 /-- The values of the variables of the core at `confA`. -/
-theorem ρE_A (G : ℕ) : ρE hkp confP G = [G, 2 ^ 36, 2 ^ 27, 2 ^ 27 + 1, 2 ^ 65,
-    1 + (2 * (2 ^ 27 + 1) + 2 * (2 ^ 27 + 1)), 128 * (2 * (2 * (2 ^ 27 + 1) * ((2 ^ 27 + 1) * 2 ^ 36))),
-    128, 2 ^ 27 + 1 - 2 ^ 27, 2 ^ 36 * 2 ^ 27 - 2 ^ 27] := by
+theorem ρE_A (G : ℕ) : ρE hkp confP G = [G, 2 ^ 34, 2 ^ 26, 2 ^ 26 + 1, 2 ^ 62,
+    1 + (2 * (2 ^ 26 + 1) + 2 * (2 ^ 26 + 1)), 128 * (2 * (2 * (2 ^ 26 + 1) * ((2 ^ 26 + 1) * 2 ^ 34))),
+    128, 2 ^ 26 + 1 - 2 ^ 26, 2 ^ 34 * 2 ^ 26 - 2 ^ 26] := by
   simp only [ρE, nTrap_eqA, nJenc_eqA]
   rw [hA, hd, kp_A hN hK, hN, hK]
 
-theorem wE_numA : pEval [0, 2 ^ 36, 2 ^ 27, 2 ^ 27 + 1, 2 ^ 65,
-    1 + (2 * (2 ^ 27 + 1) + 2 * (2 ^ 27 + 1)), 128 * (2 * (2 * (2 ^ 27 + 1) * ((2 ^ 27 + 1) * 2 ^ 36))),
-    128, 2 ^ 27 + 1 - 2 ^ 27, 2 ^ 36 * 2 ^ 27 - 2 ^ 27] wE ≤ 45 * 2 ^ 252 := by decide +kernel
+theorem wE_numA : pEval [0, 2 ^ 34, 2 ^ 26, 2 ^ 26 + 1, 2 ^ 62,
+    1 + (2 * (2 ^ 26 + 1) + 2 * (2 ^ 26 + 1)), 128 * (2 * (2 * (2 ^ 26 + 1) * ((2 ^ 26 + 1) * 2 ^ 34))),
+    128, 2 ^ 26 + 1 - 2 ^ 26, 2 ^ 34 * 2 ^ 26 - 2 ^ 26] wE ≤ 45 * 2 ^ 252 := by decide +kernel
 
 include hN hK hd hA in
 /-- **The sweeps of the core at `confA`**: `pEval ρ wE ≈ 44.0000025 · 2^252`. -/
