@@ -448,6 +448,150 @@ theorem exec_jLoop (hK : 0 < K) (w : St) (n : ℕ) (p : ℕ → Fin 2 → Rq N K
     · rw [exec_writes _ _ _ (by decide)]; simpa using h7
     · rw [exec_writes _ _ _ (by decide)]; simpa using h8
 
+/-! ### Blocks of queues -/
+
+theorem takeD_encL (l rest : List (Rq N K)) {c : ℕ} (h : l.length = c) :
+    takeD (c * (N * K)) (encL N K (l ++ rest)) = encL N K l := by
+  rw [encL_append, ← h, ← length_encL]
+  exact takeD_append_of_length _ rfl
+
+theorem drop_encL (l rest : List (Rq N K)) {c : ℕ} (h : l.length = c) :
+    (encL N K (l ++ rest)).drop (c * (N * K)) = encL N K rest := by
+  rw [encL_append, ← h, ← length_encL, List.drop_left]
+
+theorem shiftIn_encL (l l' x rest : List (Rq N K)) {c : ℕ} (hl : l.length = c) (hx : x.length = c) :
+    ValVM.shiftIn (c * (N * K)) (encL N K (l ++ l')) (encL N K (x ++ rest)) = encL N K (l' ++ x) := by
+  unfold ValVM.shiftIn
+  rw [takeD_encL x rest hx, encL_append, List.append_assoc, ← hl, ← length_encL, List.drop_left,
+    encL_append]
+
+@[simp] theorem takeD_encL' (x : List (Rq N K)) (u : List Bool) {c : ℕ} (h : x.length = c) :
+    takeD (c * (N * K)) (encL N K x ++ u) = encL N K x := by
+  rw [← h, ← length_encL]; exact takeD_append_of_length _ rfl
+
+@[simp] theorem takeD_encL'' (x : List (Rq N K)) {c : ℕ} (h : x.length = c) :
+    takeD (c * (N * K)) (encL N K x) = encL N K x := by
+  rw [← h, ← length_encL]; exact takeD_of_length _
+
+@[simp] theorem drop_encL' (x : List (Rq N K)) (u : List Bool) {c : ℕ} (h : x.length = c) :
+    (encL N K x ++ u).drop (c * (N * K)) = u := by
+  rw [← h, ← length_encL, List.drop_left]
+
+@[simp] theorem drop_encL'' (x : List (Rq N K)) {c : ℕ} (h : x.length = c) :
+    (encL N K x).drop (c * (N * K)) = [] := by
+  rw [← h, ← length_encL, List.drop_length]
+
+@[simp] theorem shiftIn_encL' (l : List (Rq N K)) (s : List Bool) {c : ℕ} (h : l.length = c) :
+    ValVM.shiftIn (c * (N * K)) (encL N K l) s = takeD (c * (N * K)) s := by
+  unfold ValVM.shiftIn
+  rw [← h, ← length_encL, List.drop_left]
+
+theorem encL_replicate_eq (m : ℕ) :
+    List.replicate (m * (N * K)) false = encL N K (List.replicate m (0 : Rq N K)) :=
+  (encL_replicate_zero N K m).symm
+
+/-! ### One `r` -/
+
+/-- The column of index `t` (in the order of `Enum`). -/
+def colOf (hK : 0 < K) (t : ℕ) : Fin 2 × Fin K := (Enum.list (α := Fin 2 × Fin K)).getD t (0, ⟨0, hK⟩)
+
+/-- The digit index `i`. -/
+def finOf (hK : 0 < K) (i : ℕ) : Fin K := (List.finRange K).getD i ⟨0, hK⟩
+
+/-- The digit matrices of `r`, by column index `t` and digit index `i`. -/
+def adMj (hK : 0 < K) (Ad : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (r : Fin 2) :
+    ℕ → ℕ → Fin 2 → Fin 2 × Fin K → Rq N K :=
+  fun t i => Ad (r, colOf hK t, finOf hK i)
+
+/-- The part `r` of the stream of digit matrices. -/
+def adBlock (hK : 0 < K) (Ad : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (r : Fin 2) :
+    List (Rq N K) :=
+  (List.range (2 * K)).flatMap fun t => (List.range K).flatMap fun i => matL (adMj hK Ad r t i)
+
+/-- The rows of part `r`. -/
+def rowF (A : Fin 2 → Fin 2 × Fin K → Rq N K) (a r : Fin 2) : ℕ → Rq N K :=
+  extF K fun i => A a (r, i)
+
+/-- Before the `j` loop of `r`: the row segments `A_{a, (r, ·)}`, the templates. -/
+def rPre (r : Fin 2) : Code :=
+  .seq (.cp rTmp rMA) <| .seq (if r = 1 then .drop rTmp rTKNK else .nop) <|
+  .seq (.cp rRo0 rTKNK) <| .seq (.mv rRo0 rTmp rTKNK) <| .seq (.drop rTmp rTKNK) <|
+  .seq (.cp rRo1 rTKNK) <| .seq (.mv rRo1 rTmp rTKNK) <|
+  .seq (.cp rS2 rT4KNK) (.cp rCj rT2K)
+
+/-- One `r`: the row segments, the `j` loop. -/
+def rPart (r : Fin 2) : Code := .seq (rPre r) (.seq (.rep rCj jBody) (.cp rS rS2))
+
+theorem ne_of_val_lt {a q : Fin 64} (h : a.val < q.val) : a ≠ q := fun e => by
+  subst e; exact lt_irrefl _ h
+
+theorem rPre_writes (r : Fin 2) (q : Fin 64) (hq : 57 ≤ q.val) : (rPre r).writes q = false := by
+  have h1 : (55 : Fin 64) ≠ q := ne_of_val_lt (by simp; omega)
+  have h2 : (41 : Fin 64) ≠ q := ne_of_val_lt (by simp; omega)
+  have h3 : (42 : Fin 64) ≠ q := ne_of_val_lt (by simp; omega)
+  have h4 : (36 : Fin 64) ≠ q := ne_of_val_lt (by simp; omega)
+  have h5 : (45 : Fin 64) ≠ q := ne_of_val_lt (by simp; omega)
+  fin_cases r <;> simp [rPre, Code.writes, h1, h2, h3, h4, h5]
+
+/-- The templates of `mulPKC`. -/
+structure MulTmpl (N K : ℕ) (w : St) : Prop where
+  tK : w rTK = List.replicate K false
+  tK1 : w rTK1 = List.replicate (K - 1) false
+  z : w rZ = encRM N K 0
+  t2K : w rT2K = List.replicate (2 * K) false
+  tKNK : w rTKNK = encL N K (List.replicate K 0)
+  t2KNK : w rT2KNK = encL N K (List.replicate (2 * K) 0)
+  t4KNK : w rT4KNK = encL N K (List.replicate (2 * (2 * K)) 0)
+
+theorem MulTmpl.of_writes {w w' : St} (h : MulTmpl N K w)
+    (hw : ∀ r : Fin 64, 57 ≤ r.val → w' r = w r) : MulTmpl N K w' :=
+  ⟨by rw [hw _ (by decide)]; exact h.tK, by rw [hw _ (by decide)]; exact h.tK1,
+    by rw [hw _ (by decide)]; exact h.z, by rw [hw _ (by decide)]; exact h.t2K,
+    by rw [hw _ (by decide)]; exact h.tKNK, by rw [hw _ (by decide)]; exact h.t2KNK,
+    by rw [hw _ (by decide)]; exact h.t4KNK⟩
+
+theorem segL_eq_rowF (A : Fin 2 → Fin 2 × Fin K → Rq N K) (a r : Fin 2) :
+    segL A a r = (List.range K).map (rowF A a r) := by
+  rw [segL, finRange_map_eq]; rfl
+
+theorem exec_rPart (hK : 0 < K) (r : Fin 2) (w : St) (A : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Ad : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (p : ℕ → Fin 2 → Rq N K) (rest : List (Rq N K))
+    (hMA : w rMA = encL N K (matL A))
+    (hS : w rS = encL N K ((List.range (2 * K)).flatMap fun t => [p t 0, p t 1]))
+    (hE : w rMAd = encL N K (adBlock hK Ad r ++ rest)) (hT : MulTmpl N K w) :
+    exec N K (rPart r) w rS = encL N K ((List.range (2 * K)).flatMap fun t =>
+      [jRes p (rowF A 0 r) (rowF A 1 r) (adMj hK Ad r) t 0,
+        jRes p (rowF A 0 r) (rowF A 1 r) (adMj hK Ad r) t 1]) ∧
+    exec N K (rPart r) w rMAd = encL N K rest := by
+  have hA := matL_eq A
+  rw [segL_eq_rowF, segL_eq_rowF, segL_eq_rowF, segL_eq_rowF] at hA
+  rw [hA] at hMA
+  simp only [List.append_assoc] at hMA
+  have pre : ∃ W1, exec N K (rPre r) w = W1 ∧
+      W1 rRo0 = encL N K ((List.range K).map (rowF A 0 r)) ∧
+      W1 rRo1 = encL N K ((List.range K).map (rowF A 1 r)) ∧
+      W1 rS2 = encL N K (List.replicate (2 * (2 * K)) 0) ∧ W1 rCj = List.replicate (2 * K) false ∧
+      W1 rS = w rS ∧ W1 rMAd = w rMAd := by
+    refine ⟨_, rfl, ?_⟩
+    unfold rPre
+    fin_cases r
+    · vm_simp
+      simp [hMA, hT.tKNK, hT.t4KNK, hT.t2K]
+    · vm_simp
+      simp [hMA, hT.tKNK, hT.t4KNK, hT.t2K]
+  obtain ⟨W1, hW1, p1, p2, p3, p4, p5, p6⟩ := pre
+  have hT1 : MulTmpl N K W1 := hT.of_writes fun q hq => by
+    rw [← hW1]; exact exec_writes _ _ _ (rPre_writes r q hq)
+  show exec N K (.seq (.rep rCj jBody) (.cp rS rS2)) (exec N K (rPre r) w) rS = _ ∧
+    exec N K (.seq (.rep rCj jBody) (.cp rS rS2)) (exec N K (rPre r) w) rMAd = _
+  rw [hW1]
+  obtain ⟨k1, k2⟩ := exec_jLoop hK W1 (2 * K) p (rowF A 0 r) (rowF A 1 r) (adMj hK Ad r) rest p4
+    (by rw [p5, hS]) p3 p1 p2 (by rw [p6, hE]; rfl) hT1.tK hT1.tK1 hT1.z
+  rw [exec_seq]
+  simp only [exec_cp, Function.update_self]
+  refine ⟨k1, ?_⟩
+  rw [Function.update_of_ne (by decide), k2]
+
 end MVM
 
 end SigabaNeo.Tape
