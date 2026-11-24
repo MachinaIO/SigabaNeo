@@ -5,7 +5,7 @@ import PE.Impl.ExpLUT.Prog.KeyVM
 
 VM code (`SigabaNeo.Tape.MVM`) for the lookup tables of `EvalPK` (§4.3–§4.4), generic in `N`, `K`:
 
-* `matAddC`: `rAcc += rMOut` entrywise (`exec_matAddC`);
+* `matAddC`: `rAccL += rMOut` entrywise (`exec_matAddC`);
 * `agC`: the matrix `α G` (`gM α`) in `rMA` from `α` in `rAl` (`exec_agC`);
 * `bitLoopC`: from `e` bits of the stream `rCp`, `rE := X⁻ᶜ · rE` with `c` the complement of the
   bits, `Σ_{i<e} [¬ bit_i] 2^i` (`exec_bitLoopC`);
@@ -38,7 +38,7 @@ open SigabaNeo.Lattices.Algo (encRM decRM block concatN encM length_encM block_c
 /-- The current public matrix `A_i`. -/
 @[simp, vmreg] abbrev rA : Fin 64 := 4
 /-- The accumulator of a table. -/
-@[simp, vmreg] abbrev rAcc : Fin 64 := 5
+@[simp, vmreg] abbrev rAccL : Fin 64 := 5
 /-- The index `j` as a constant. -/
 @[simp, vmreg] abbrev rJ : Fin 64 := 6
 /-- `μ_j = σ_{g^j}(X⁻¹)`. -/
@@ -113,29 +113,29 @@ theorem exec_rep_inv2 (c : Fin 64) (body : Code) (hb : body.writes c = false) (P
       rw [exec_writes body _ r hr, Function.update_of_ne hrc, hP.2 r hr hrc]⟩)
   exact key.1
 
-/-! ### `rAcc += rMOut` -/
+/-! ### `rAccL += rMOut` -/
 
 /-- One entry. -/
 def maBody : Code :=
   .seq (.cp rX0 rZ) <| .seq (.mvR rX0 rRo0) <| .seq (.cp rX1 rZ) <| .seq (.mvR rX1 rRo1) <|
-  .seq (.op .add rX0 rX0 rX1) (.app rAcc rX0)
+  .seq (.op .add rX0 rX0 rX1) (.app rAccL rX0)
 
 /-- Before the loop of `matAddC`. -/
-def maPre : Code := .seq (.cp rRo0 rAcc) <| .seq (.cp rRo1 rMOut) <| .seq (.clr rAcc) (.cp rCi rT4K)
+def maPre : Code := .seq (.cp rRo0 rAccL) <| .seq (.cp rRo1 rMOut) <| .seq (.clr rAccL) (.cp rCi rT4K)
 
-/-- **`rAcc += rMOut`** entrywise (`|rT4K|` entries). -/
+/-- **`rAccL += rMOut`** entrywise (`|rT4K|` entries). -/
 def matAddC : Code := .seq maPre (.rep rCi maBody)
 
 theorem maBody_writes_rCi : maBody.writes rCi = false := by decide
 
 theorem exec_maLoop (hK : 0 < K) (w : St) (l1 l2 : List (Rq N K)) (n : ℕ)
     (h1 : l1.length = n) (h2 : l2.length = n) (hA : w rRo0 = encL N K l1)
-    (hO : w rRo1 = encL N K l2) (hC : w rCi = List.replicate n false) (hAcc : w rAcc = [])
+    (hO : w rRo1 = encL N K l2) (hC : w rCi = List.replicate n false) (hAcc : w rAccL = [])
     (hZ : w rZ = encRM N K 0) :
-    exec N K (.rep rCi maBody) w rAcc = encL N K (List.zipWith (· + ·) l1 l2) := by
+    exec N K (.rep rCi maBody) w rAccL = encL N K (List.zipWith (· + ·) l1 l2) := by
   have key := exec_rep_inv (N := N) (K := K) rCi maBody maBody_writes_rCi
     (fun m w' => w' rRo0 = encL N K (l1.drop m) ∧ w' rRo1 = encL N K (l2.drop m) ∧
-      w' rAcc = encL N K (List.zipWith (· + ·) (l1.take m) (l2.take m)) ∧ w' rZ = encRM N K 0) w
+      w' rAccL = encL N K (List.zipWith (· + ·) (l1.take m) (l2.take m)) ∧ w' rZ = encRM N K 0) w
     ⟨by simp [hA], by simp [hO], by simp [hAcc], hZ⟩ ?_
   · rw [hC, List.length_replicate] at key
     rw [key.2.2.1, List.take_of_length_le (by omega), List.take_of_length_le (by omega)]
@@ -160,10 +160,10 @@ theorem exec_maLoop (hK : 0 < K) (w : St) (l1 l2 : List (Rq N K)) (n : ℕ)
     · simp [Function.update_apply, p4]
 
 theorem exec_matAddC (hK : 0 < K) (w : St) (l1 l2 : List (Rq N K)) (n : ℕ)
-    (h1 : l1.length = n) (h2 : l2.length = n) (hA : w rAcc = encL N K l1)
+    (h1 : l1.length = n) (h2 : l2.length = n) (hA : w rAccL = encL N K l1)
     (hO : w rMOut = encL N K l2) (hT : w rT4K = List.replicate n false)
     (hZ : w rZ = encRM N K 0) :
-    exec N K matAddC w rAcc = encL N K (List.zipWith (· + ·) l1 l2) := by
+    exec N K matAddC w rAccL = encL N K (List.zipWith (· + ·) l1 l2) := by
   rw [matAddC, exec_seq]
   refine exec_maLoop hK _ l1 l2 n h1 h2 ?_ ?_ ?_ ?_ ?_ <;>
     (unfold maPre; vm_simp; simp [hA, hO, hT, hZ])
@@ -696,13 +696,13 @@ theorem exec_chainC (hN : 0 < N) (hK : 0 < K) (w : St) (g b j : ℕ) (hg : 0 < g
 
 /-! ### The table: the loop over `j` -/
 
-/-- The registers the `j` loop only reads: the caller's registers but `rAcc`, `rJ`, `rMu`,
+/-- The registers the `j` loop only reads: the caller's registers but `rAccL`, `rJ`, `rMu`,
 `rCj2`, `rAl`, `rSs`, `rHs`, `rCt`, `rPw2`, and `rKc`, the templates `57 … 63`. -/
 def roJ (r : Fin 64) : Bool :=
   (decide (r.val < 29) && !([5, 6, 7, 9, 11, 12, 13, 14, 15] : List ℕ).contains r.val) ||
     r == rKc || decide (57 ≤ r.val)
 
-/-- One `j`: the coefficient (`cf`, into `rAl`), `A_j`, `rAcc += A_j G⁻¹(α G)`, `μ := σ_g(μ)`,
+/-- One `j`: the coefficient (`cf`, into `rAl`), `A_j`, `rAccL += A_j G⁻¹(α G)`, `μ := σ_g(μ)`,
 `j := j + 1`. -/
 def jBodyK (cf : Code) : Code :=
   .seq cf <| .seq (.cp rMA rB) <| .seq chainC <| .seq (.cp rGX rMA) <| .seq agC <|
@@ -772,7 +772,7 @@ theorem jBodyK_writes_rCj2 (cf : Code) (hcf : CoefW cf) : (jBodyK cf).writes rCj
   simp only [jBodyK, Code.writes, Bool.or_eq_false_iff] at h2 ⊢
   exact ⟨h1, h2.2⟩
 
-/-- **The loop over `j`**: `rAcc := Σ_{j<n} A_j G⁻¹(α_j G)`. -/
+/-- **The loop over `j`**: `rAccL := Σ_{j<n} A_j G⁻¹(α_j G)`. -/
 theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
     (cv : Rq N K → Rq N K) (w : St)
     (hcf : ∀ w' : St, (∀ r : Fin 64, roJ r = true → w' r = w r) → ∀ μ : Rq N K,
@@ -781,11 +781,11 @@ theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
     (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (B : Fin 2 → Fin 2 × Fin K → Rq N K)
     (μ0 : Rq N K) (hin : ChainIn w g b Hf Hi Aa) (hB : w rB = encL N K (matL B))
     (hO : w rOne = encRM N K 1) (h4K : w rT4K = List.replicate (4 * K) false)
-    (hAcc : w rAcc = encL N K (matL (fun _ _ => 0))) (hJ : w rJ = encRM N K 0)
+    (hAcc : w rAccL = encL N K (matL (fun _ _ => 0))) (hJ : w rJ = encRM N K 0)
     (hMu : w rMu = encRM N K μ0) (hC : w rCj2 = List.replicate n false) :
-    exec N K (.rep rCj2 (jBodyK cf)) w rAcc = encL N K (matL (accM cv g Hf Aa b B μ0 n)) := by
+    exec N K (.rep rCj2 (jBodyK cf)) w rAccL = encL N K (matL (accM cv g Hf Aa b B μ0 n)) := by
   have key := exec_rep_inv2 (N := N) (K := K) rCj2 (jBodyK cf) (jBodyK_writes_rCj2 cf hcfw)
-    (fun j w' => w' rAcc = encL N K (matL (accM cv g Hf Aa b B μ0 j)) ∧
+    (fun j w' => w' rAccL = encL N K (matL (accM cv g Hf Aa b B μ0 j)) ∧
       w' rJ = encRM N K (j : Rq N K) ∧ w' rMu = encRM N K ((aut N g)^[j] μ0)) w
     ⟨by simp only [accM, Finset.sum_range_zero]; exact hAcc, by simpa using hJ,
       by simpa using hMu⟩ ?_
@@ -798,7 +798,7 @@ theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
     have f0 : ∀ r : Fin 64, roJ r = true → W0 r = w r := fun r hr => by
       have hr' : r ≠ rCj2 := by intro e; subst e; simp [roJ] at hr
       rw [← hW0, Function.update_of_ne hr', hfr r (jBodyK_writes cf hcfw r hr) hr']
-    have q1 : W0 rAcc = encL N K (matL (accM cv g Hf Aa b B μ0 j)) := by
+    have q1 : W0 rAccL = encL N K (matL (accM cv g Hf Aa b B μ0 j)) := by
       rw [← hW0, Function.update_of_ne (by decide), p1]
     have q2 : W0 rJ = encRM N K (j : Rq N K) := by rw [← hW0, Function.update_of_ne (by decide), p2]
     have q3 : W0 rMu = encRM N K ((aut N g)^[j] μ0) := by
@@ -810,7 +810,7 @@ theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
     have c1 : W1 rAl = encRM N K (cv ((aut N g)^[j] μ0)) := hW1 ▸ hcf W0 f0 _ q3
     have g1 : ∀ r : Fin 64, roJ r = true → W1 r = w r :=
       hW1 ▸ roJ_frame (N := N) (K := K) cf hcfw.ro f0
-    have a1 : W1 rAcc = W0 rAcc := hW1 ▸ hcfw.frame _ _ (by decide) (by decide)
+    have a1 : W1 rAccL = W0 rAccL := hW1 ▸ hcfw.frame _ _ (by decide) (by decide)
     have j1 : W1 rJ = W0 rJ := hW1 ▸ hcfw.frame _ _ (by decide) (by decide)
     have m1 : W1 rMu = W0 rMu := hW1 ▸ hcfw.frame _ _ (by decide) (by decide)
     -- `A_j`
@@ -819,7 +819,7 @@ theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
       hW2 ▸ roJ_frame (N := N) (K := K) (.cp rMA rB) (by decide) g1
     have c2 : W2 rMA = encL N K (matL B) := by rw [← hW2]; vm_simp; simp [g1 rB (by decide), hB]
     have j2 : W2 rJ = encRM N K (j : Rq N K) := by rw [← hW2]; vm_simp; simp [j1, q2]
-    have w2 : ∀ r : Fin 64, (r = rAl ∨ r = rAcc ∨ r = rJ ∨ r = rMu) → W2 r = W1 r := by
+    have w2 : ∀ r : Fin 64, (r = rAl ∨ r = rAccL ∨ r = rJ ∨ r = rMu) → W2 r = W1 r := by
       intro r hr
       rw [← hW2, exec_cp, Function.update_of_ne (by rcases hr with rfl | rfl | rfl | rfl <;> decide)]
     generalize hW3 : exec N K chainC W2 = W3
@@ -827,14 +827,14 @@ theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
       hW3 ▸ exec_chainC hN hK W2 g b j hg (by omega) Hf Hi Aa B (hin.of_roJ g2) j2 c2
     have g3 : ∀ r : Fin 64, roJ r = true → W3 r = w r :=
       hW3 ▸ roJ_frame (N := N) (K := K) chainC (by decide) g2
-    have w3 : ∀ r : Fin 64, (r = rAl ∨ r = rAcc ∨ r = rJ ∨ r = rMu) → W3 r = W1 r := by
+    have w3 : ∀ r : Fin 64, (r = rAl ∨ r = rAccL ∨ r = rJ ∨ r = rMu) → W3 r = W1 r := by
       intro r hr
       rw [← hW3, exec_writes _ _ _ (by rcases hr with rfl | rfl | rfl | rfl <;> decide), w2 r hr]
     -- `α G`, `A_j G⁻¹(α G)`
     generalize hW4 : exec N K (.cp rGX rMA) W3 = W4
     have g4 : ∀ r : Fin 64, roJ r = true → W4 r = w r :=
       hW4 ▸ roJ_frame (N := N) (K := K) (.cp rGX rMA) (by decide) g3
-    have w4 : ∀ r : Fin 64, (r = rAl ∨ r = rAcc ∨ r = rJ ∨ r = rMu) → W4 r = W1 r := by
+    have w4 : ∀ r : Fin 64, (r = rAl ∨ r = rAccL ∨ r = rJ ∨ r = rMu) → W4 r = W1 r := by
       intro r hr
       rw [← hW4, exec_cp, Function.update_of_ne (by rcases hr with rfl | rfl | rfl | rfl <;> decide),
         w3 r hr]
@@ -848,7 +848,7 @@ theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
       hW5 ▸ roJ_frame (N := N) (K := K) agC (by decide) g4
     have x5 : W5 rGX = encL N K (matL (chainM g Hf Aa b j B)) := by
       rw [← hW5, exec_writes _ _ _ (by decide), x4]
-    have w5 : ∀ r : Fin 64, (r = rAcc ∨ r = rJ ∨ r = rMu) → W5 r = W1 r := by
+    have w5 : ∀ r : Fin 64, (r = rAccL ∨ r = rJ ∨ r = rMu) → W5 r = W1 r := by
       intro r hr
       rw [← hW5, exec_writes _ _ _ (by rcases hr with rfl | rfl | rfl <;> decide),
         w4 r (by tauto)]
@@ -858,10 +858,10 @@ theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
       hW6 ▸ exec_ginvMulC hK W5 _ _ x5 c5 (hin.tm.of_writes fun r hr => g5 r (by simp [roJ, hr]))
     have g6 : ∀ r : Fin 64, roJ r = true → W6 r = w r :=
       hW6 ▸ roJ_frame (N := N) (K := K) ginvMulC (by decide) g5
-    have w6 : ∀ r : Fin 64, (r = rAcc ∨ r = rJ ∨ r = rMu) → W6 r = W1 r := by
+    have w6 : ∀ r : Fin 64, (r = rAccL ∨ r = rJ ∨ r = rMu) → W6 r = W1 r := by
       intro r hr
       rw [← hW6, exec_writes _ _ _ (by rcases hr with rfl | rfl | rfl <;> decide), w5 r hr]
-    -- `rAcc += …`
+    -- `rAccL += …`
     generalize hW7 : exec N K matAddC W6 = W7
     have c7 := exec_matAddC hK W6 (matL (accM cv g Hf Aa b B μ0 j))
       (matL (ginvMulm (chainM g Hf Aa b j B) (gM (cv ((aut N g)^[j] μ0))))) (4 * K)
@@ -903,13 +903,13 @@ theorem roJ_of_roC : ∀ r : Fin 64, roC r = true → roJ r = true := by decide
 /-- Before the loop over `j`: `rB := mulPK(rA, A^in_i)`, the accumulator, `j`, `μ`. -/
 def stepPre : Code :=
   .seq (.cp rMA rA) <| .seq (.cp rMAd rAinS) <| .seq mulPKC <| .seq (.cp rAinS rMAd) <|
-  .seq (.cp rB rMOut) <| .seq (.cp rAcc rT4KNK) <| .seq (.cp rJ rZ) <| .seq (.cp rMu rMu0)
+  .seq (.cp rB rMOut) <| .seq (.cp rAccL rT4KNK) <| .seq (.cp rJ rZ) <| .seq (.cp rMu rMu0)
     (.cp rCj2 rTW)
 
 /-- **One step** with the coefficient routine `cf`: `rA := LUT(mulPK(rA, A^in_i))`, the table
 stream advanced by `|rTtab|` bits. -/
 def stepK (cf : Code) : Code :=
-  .seq stepPre <| .seq (.rep rCj2 (jBodyK cf)) <| .seq (.cp rA rAcc) (.drop rCs rTtab)
+  .seq stepPre <| .seq (.rep rCj2 (jBodyK cf)) <| .seq (.cp rA rAccL) (.drop rCs rTtab)
 
 /-- The registers of a step (read only). -/
 structure StepIn (w : St) (g b n tl : ℕ) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
@@ -981,7 +981,7 @@ theorem exec_stepK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
   have hT := hin.ch.tm
   -- `mulPK`
   have hm : W1 rB = encL N K (matL (mulPKm A Ad)) ∧ W1 rAinS = encL N K rest ∧
-      W1 rAcc = encL N K (matL (fun _ _ => 0)) ∧ W1 rJ = encRM N K 0 ∧
+      W1 rAccL = encL N K (matL (fun _ _ => 0)) ∧ W1 rJ = encRM N K 0 ∧
       W1 rMu = encRM N K μ0 ∧ W1 rCj2 = List.replicate n false := by
     rw [← hW1]
     unfold stepPre

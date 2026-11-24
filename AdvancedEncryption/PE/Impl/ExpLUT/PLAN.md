@@ -404,12 +404,12 @@ pure function, and every routine is proved once at the level of lists of ring el
   `vm_step`/`vm_simp`.
 * `ExpLUT/Prog/KeyLut.lean` — the VM code of `EvalPK`, generic in `N`, `K` (caller registers
   `rAinS … rT15` = `0 … 28`; scratch `35 … 46` of the library between routine calls):
-  `exec_matAddC` (`rAcc += rMOut`), `exec_agC` (`α G` as `gM α`), `exec_bitLoop`/`exec_coefAC`
+  `exec_matAddC` (`rAccL += rMOut`), `exec_agC` (`α G` as `gM α`), `exec_bitLoop`/`exec_coefAC`
   (`α = 2^{K−b}(Σ_{u<n} X^{−c_u} μ^u · X_c)`, `c_u` the complement of the `e` bits of entry `u`,
   `sumA`), `exec_coefVC` (`v = 2^{K−b} Σ_u [C_u] μ^u`, `sumV`), `exec_chainLoop`/`exec_chainC`
   (`A_j = chainM`: for `t < b`, digit `t` of the constant `j` (`hd_dig_natCast`) selects `autPKC`
   with `|rP| = 2^t` (doubled by `app`) and `H_{(t,0)}` from the `H` stream, or skips the block of
-  `A^aut_t`), `exec_jLoopK` (`rAcc = accM = Σ_{j<n} A_j G⁻¹(α_j G)`, `μ_{j+1} = σ_g(μ_j)`,
+  `A^aut_t`), `exec_jLoopK` (`rAccL = accM = Σ_{j<n} A_j G⁻¹(α_j G)`, `μ_{j+1} = σ_g(μ_j)`,
   `j := j + 1` as a ring constant), `exec_stepK` (`mulPKC` with the `A^in` stream, then the
   table; `rCs` advanced by `|rTtab|`), **`exec_evalC`** (15 `α`-steps and the `v`-step:
   `rA = evalVM … 16`). Read-only register sets `roJ`, `roC`, `roS`; input structures `ChainIn`,
