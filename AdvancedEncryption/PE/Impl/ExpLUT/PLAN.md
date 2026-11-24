@@ -388,10 +388,17 @@ Done (axioms `[propext, Classical.choice, Quot.sound]`; no change to the formats
   `c ↦ s A₀ c + A₁ c − Z c + E c` (canonical). `check_encRowP`, **`time_encRowP`**:
   `(2M + 3)(200 + L (200 + 400 N + 400 N K + 100 N² + 200 N² K + 30 N² K² + 50 K))`.
 
+* **The gadget stream** (Lib `ProgAlgo/Mersenne/GadStream.lean`): `gzP : Prog 36` (`0` output
+  register of `2K · N K` bits, `1` `z₀`, `2` `z₁`, templates `3` `K`, `4` `N`, `5` `N K`, `6` `K − 1`;
+  scratch `7 … 35`), `run_gzP`: `gzW z₀ ++ gzW z₁` (`z_r, 2 z_r, …, 2^{K−1} z_r`), `decRM_gIt`:
+  entry `i` reads `2^i • z_r`; `check_gzP`, `time_gzP`
+  (`(2M + 3)(100 + 400 K + 400 N K + 400 N K² + 100 N K³ + 100 K² + 100 N)`).
+
 Remaining for `Enc` (design fixed; each block a `Prog` with a run lemma and a certificate, as
 `encRowP`):
-1. *gadget stream* `zG(z₀, z₁)`: the word of `(r, i) ↦ 2^i z_r` over `Col K` (`gIt`-style doublings,
-   `rotBW (K − 1)`); `Z` of every encoding is such a stream (`b`: the zero word of `|BCol| N K` bits,
+1. *gadget stream on the scheme's words*: entry `c = (r, i)` of `gzW z₀ ++ gzW z₁` reads
+   `(z ᵥ* G) (r, i)` (`decRM_gIt`, `vecMul_G_apply`, `Enum.getElem_product`), and `rowW_vecE` with
+   a general `Z` stream (only `decRM` of its blocks matters); `Z` of every encoding is such a stream (`b`: the zero word of `|BCol| N K` bits,
    a template), so every component is `encRowP` with `A₀`, `A₁` the two rows of the public matrix:
    `b` (`B`, `z = 0`), `h_k` (`H_k`, `z = (σ_{g^{je k}} s, 1)`), `c^aut_{t,d}` (`A^aut_{t,d}`, secret
    `s_t = σ_{kf t} s`, `z = digit_d(C_t) (s_t, 1)`), `c₀` (`A₀`, `z = (s, 1)`), `c^in_{t,d}`
@@ -410,7 +417,7 @@ Remaining for `Enc` (design fixed; each block a `Prog` with a run lemma and a ce
    `addRMP`, the word of `2^{K−1}` at coefficient `0` when `μ`), the frame of the output (`frameApP`);
 6. the law (`EncSpec D (cbdR D 16) (cbdR D 16) (floodR D eFl)`, i.e. `χc χc χfl` at `Dc`) and the
    costs (`VB` chain as `SetupTime`; dominated by `c^aut`: `b · 4K² · 2K` rows of `2K` products,
-   about `2^{58}` products of `22 N² K²` sweeps each, top `≈ 2^{98}`: clock `≈ 2^{243}`).
+   about `2^{56}` products of `22 N² K²` sweeps each, top `≈ 2^{98}`: clock `≈ 2^{240}`).
 
 ### Package G (attribute hiding of the implementation) — branch `t3/explut-g`
 
