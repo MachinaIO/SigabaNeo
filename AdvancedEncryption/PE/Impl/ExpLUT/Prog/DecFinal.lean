@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMDot
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.GadRow
 
 /-!
 # The end of decryption on the ring-word machine: the key sums
@@ -649,6 +650,89 @@ theorem exec_halvesC (w : St) (cnt : Fin 200) (hcnt : cnt.val < 180)
     simpa using this
   · rw [e1, p192, List.drop_of_length_le le_rfl]; simp
   · intro j hj; rw [e1]; exact pf j hj
+
+/-- **The gadget row `G⁽²⁾`** into register `196`: `K` zero words, then the words of
+`2^i`, `i < K` (doublings of the word of `1` on register `3`; register `5` holds `K − 1` bits). -/
+def g1C : Code :=
+  ofList [.cp 196 6, .cp 195 3, .cp 197 4, .rep 197 (ofList [.cp 194 195, .mv 196 194 2, .rotB 195 195 5])]
+
+theorem wr_g1C : wr g1C = [196, 195, 197, 197, 194, 196, 194, 195] := rfl
+
+theorem exec_g1C (w : St) (hc : Consts N K w) (h6 : w 6 = List.replicate (2 * K * (N * K)) false)
+    (h3 : (w 3).length = N * K) (h5 : (w 5).length = K - 1) :
+    (exec N K g1C w) 196 = List.replicate (K * (N * K)) false ++
+        ((List.range K).map (gIt N K (w 3))).flatten ∧
+      ∀ j, j ∉ wr g1C → (exec N K g1C w) j = w j := by
+  set w1 := exec N K (ofList [.cp 196 6, .cp 195 3, .cp 197 4]) w with hw1
+  have e1 : exec N K g1C w = exec N K (.rep 197 (ofList [.cp 194 195, .mv 196 194 2,
+      .rotB 195 195 5])) w1 := rfl
+  have w1_eq : w1 = Function.update (Function.update (Function.update w 196 (w 6)) 195 (w 3)) 197
+      (w 4) := by
+    simp only [hw1, exec_ofList_cons, exec_ofList_nil, exec, Function.update_apply, Fin.reduceEq,
+      ↓reduceIte]
+  have h197 : (w1 197).length = K := by rw [w1_eq]; simp [hc.k]
+  let gs : ℕ → List (List Bool) := fun i => (List.range i).map (gIt N K (w 3))
+  have hgl : ∀ i, ∀ y ∈ gs i, y.length = N * K := fun i y hy => by
+    obtain ⟨k, _, rfl⟩ := List.mem_map.mp hy; exact length_gIt h3 k
+  let P : ℕ → St → Prop := fun i w' =>
+    Consts N K w' ∧ w' 5 = w 5 ∧ w' 195 = gIt N K (w 3) i ∧
+      w' 196 = (w 6 ++ (gs i).flatten).drop (i * (N * K)) ∧
+      ∀ j, j ∉ wr g1C → w' j = w j
+  have hP := exec_rep_inv (N := N) (K := K) 197 (ofList [.cp 194 195, .mv 196 194 2,
+      .rotB 195 195 5]) (by decide) P w1
+    ⟨by rw [w1_eq]; exact consts_update (consts_update (consts_update hc 196 (by decide) _) 195
+        (by decide) _) 197 (by decide) _,
+      by rw [w1_eq]; simp, by rw [w1_eq]; simp [gIt], by rw [w1_eq]; simp [gs],
+      fun j hj => by
+        rw [w1_eq, Function.update_of_ne (fun e => hj (by rw [e, wr_g1C]; simp)),
+          Function.update_of_ne (fun e => hj (by rw [e, wr_g1C]; simp)),
+          Function.update_of_ne (fun e => hj (by rw [e, wr_g1C]; simp))]⟩
+    (fun i hi w' hw' _ => by
+      obtain ⟨hc', p5, p195, p196, pf⟩ := hw'
+      set w'' := Function.update w' 197 (w' 197).tail
+      have hgi := length_gIt h3 i
+      have e2 : exec N K (ofList [.cp 194 195, .mv 196 194 2, .rotB 195 195 5]) w'' =
+          Function.update (Function.update (Function.update (Function.update w'' 194 (gIt N K (w 3) i))
+            194 []) 196 ((w' 196 ++ gIt N K (w 3) i).drop (N * K))) 195
+            (rotBW N K (w 5).length (gIt N K (w 3) i)) := by
+        simp only [exec_ofList_cons, exec_ofList_nil]
+        rw [show exec N K (.cp 194 195) w'' = Function.update w'' 194 (gIt N K (w 3) i) by
+          simp only [exec, w'', Function.update_of_ne (show (195 : Fin 200) ≠ 197 by decide), p195]]
+        have hz : (Function.update w'' 194 (gIt N K (w 3) i)) 2 = List.replicate (N * K) false := by
+          simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, w'']; exact hc'.zero
+        rw [exec_mv_shift (v := gIt N K (w 3) i) (L := []) (by decide)
+          (by rw [hz, List.length_replicate]; exact hgi) (by simp)]
+        simp only [exec, Function.update_apply, Fin.reduceEq, ↓reduceIte, hz, List.length_replicate,
+          w'', p5, p195, hc'.zero, opd_eq hgi]
+      have hcE : Consts N K (exec N K (ofList [.cp 194 195, .mv 196 194 2, .rotB 195 195 5]) w'') :=
+        consts_exec (consts_update hc' 197 (by decide) _) _ rfl
+      refine ⟨hcE, ?_, ?_, ?_, fun j hj => ?_⟩
+      · rw [e2]; simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, w'', p5]
+      · rw [e2]; simp only [Function.update_self, p5]
+        rw [h5, gIt, gIt, Function.iterate_succ_apply']
+      · rw [e2]; simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, p196]
+        have hlen : (gs i).length = i := by simp [gs]
+        have := drop_append_flatten_succ (b := w 6) (vs := gs i) (x := gIt N K (w 3) i) hgi (hgl i)
+        rw [hlen] at this
+        rw [this]
+        simp [gs, List.range_succ]
+      · have hj1 : j ≠ 195 := fun e => hj (by rw [e, wr_g1C]; simp)
+        have hj2 : j ≠ 196 := fun e => hj (by rw [e, wr_g1C]; simp)
+        have hj3 : j ≠ 194 := fun e => hj (by rw [e, wr_g1C]; simp)
+        have hj4 : j ≠ 197 := fun e => hj (by rw [e, wr_g1C]; simp)
+        rw [e2, Function.update_of_ne hj1, Function.update_of_ne hj2, Function.update_of_ne hj3,
+          Function.update_of_ne hj3]
+        simp only [w'', Function.update_of_ne hj4]
+        exact pf j hj)
+  rw [h197] at hP
+  obtain ⟨_, _, _, p196, pf⟩ := hP
+  refine ⟨?_, fun j hj => by rw [e1]; exact pf j hj⟩
+  rw [e1, p196, h6]
+  have hfl : ((gs K).flatten).length = K * (N * K) := by
+    rw [length_flatten_of (hgl K)]; simp [gs]
+  have e2 : 2 * K * (N * K) = K * (N * K) + K * (N * K) := by ring
+  rw [List.drop_append_of_le_length (by simp; omega), List.drop_replicate, e2,
+    Nat.add_sub_cancel]
 
 end RingVM
 
