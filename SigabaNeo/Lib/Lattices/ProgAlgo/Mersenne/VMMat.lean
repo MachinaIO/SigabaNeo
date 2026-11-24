@@ -767,6 +767,117 @@ theorem exec_mulPKC (hK : 0 < K) (w : St) (A : Fin 2 → Fin 2 × Fin K → Rq N
     simp only [mulPKm_eq]
   · rw [exec_writes _ _ _ (by decide), hW3, exec_writes _ _ _ (by decide), b2]
 
+/-! ### `X · G⁻¹(Y)` -/
+
+@[simp, vmreg] abbrev rGX : Fin 64 := 56
+
+/-- `(X · G⁻¹(Y))_{a, col} = Σ_c X_{a, c} · digit_{c.2}(Y_{c.1, col})` (binary digits). -/
+def ginvMulm (X Y : Fin 2 → Fin 2 × Fin K → Rq N K) : Fin 2 → Fin 2 × Fin K → Rq N K :=
+  fun a col => digRow X ![Y 0 col, Y 1 col] a
+
+/-- Before the column loop: the rows of `Y` (`rMA`). -/
+def gPre : Code :=
+  .seq (.cp rTmp rMA) <| .seq (.cp rCo0 rT2KNK) <| .seq (.mv rCo0 rTmp rT2KNK) <|
+  .seq (.cp rCo1 rT2KNK) <| .seq (.mv rCo1 rTmp rT2KNK) <| .seq (.cp rS2 rT4KNK) (.cp rCj rT2K)
+
+/-- One column of `Y`: the two digit accumulations against `X` (`rGX`). -/
+def gBody : Code :=
+  .seq (.cp rAc0 rZ) <| .seq (.cp rAc1 rZ) <| .seq (.cp rMAd rGX) <| .seq iBody <|
+  .seq (.mvR rS2 rAc0) (.mvR rS2 rAc1)
+
+/-- **`rMOut := X · G⁻¹(Y)`** (`X` in `rGX`, `Y` in `rMA`). -/
+def ginvMulC : Code := .seq gPre <| .seq (.rep rCj gBody) <| .seq (.cp rS rS2) <| .seq tLoop tOut
+
+theorem gBody_writes_rCj : gBody.writes rCj = false := by decide
+
+theorem exec_gLoop (hK : 0 < K) (w : St) (n : ℕ) (X : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Y0 Y1 : ℕ → Rq N K) (hCj : w rCj = List.replicate n false)
+    (hC0 : w rCo0 = encL N K ((List.range n).map Y0)) (hC1 : w rCo1 = encL N K ((List.range n).map Y1))
+    (hS2 : w rS2 = encL N K (List.replicate (2 * n) 0)) (hGX : w rGX = encL N K (matL X))
+    (hTK : w rTK = List.replicate K false) (hTK1 : w rTK1 = List.replicate (K - 1) false)
+    (hZ : w rZ = encRM N K 0) :
+    exec N K (.rep rCj gBody) w rS2 = encL N K ((List.range n).flatMap fun t =>
+      [digRow X ![Y0 t, Y1 t] 0, digRow X ![Y0 t, Y1 t] 1]) := by
+  have key := exec_rep_inv (N := N) (K := K) rCj gBody gBody_writes_rCj
+    (fun m w' => w' rCo0 = encL N K (((List.range n).map Y0).drop m) ∧
+      w' rCo1 = encL N K (((List.range n).map Y1).drop m) ∧
+      w' rS2 = encL N K (List.replicate (2 * (n - m)) 0 ++ (List.range m).flatMap fun t =>
+        [digRow X ![Y0 t, Y1 t] 0, digRow X ![Y0 t, Y1 t] 1]) ∧
+      w' rGX = encL N K (matL X) ∧ w' rTK = List.replicate K false ∧
+      w' rTK1 = List.replicate (K - 1) false ∧ w' rZ = encRM N K 0) w
+    ⟨by simp [hC0], by simp [hC1], by simp [hS2], hGX, hTK, hTK1, hZ⟩ ?_
+  · rw [hCj, List.length_replicate] at key
+    rw [key.2.2.1]; simp
+  · intro m w' hm hP _
+    rw [hCj, List.length_replicate] at hm
+    obtain ⟨h1, h2, h3, h4, h5, h6, h7⟩ := hP
+    rw [drop_range_map Y0 hm] at h1
+    rw [drop_range_map Y1 hm] at h2
+    have e2 : 2 * (n - m) = 2 + (2 * (n - (m + 1))) := by omega
+    rw [e2, List.replicate_add] at h3
+    have eB : ∀ v, exec N K gBody v = exec N K (.seq (.mvR rS2 rAc0) (.mvR rS2 rAc1))
+        (exec N K iBody (exec N K (.seq (.cp rAc0 rZ) <| .seq (.cp rAc1 rZ) (.cp rMAd rGX)) v)) :=
+      fun v => rfl
+    rw [eB]
+    set W1 := exec N K (.seq (.cp rAc0 rZ) <| .seq (.cp rAc1 rZ) (.cp rMAd rGX))
+      (Function.update w' rCj (w' rCj).tail) with hW1
+    obtain ⟨b1, b2, b3, b4, -⟩ := exec_iBody hK W1 (Y0 m) (Y1 m) 0 0
+      (((List.range n).map Y0).drop (m + 1)) (((List.range n).map Y1).drop (m + 1)) [] X
+      (by rw [hW1]; vm_simp; simp [h1]) (by rw [hW1]; vm_simp; simp [h2])
+      (by rw [hW1]; vm_simp; simp [h7]) (by rw [hW1]; vm_simp; simp [h7])
+      (by rw [hW1]; vm_simp; simp [h4]) (by rw [hW1]; vm_simp; simp [h5])
+      (by rw [hW1]; vm_simp; simp [h6]) (by rw [hW1]; vm_simp; simp [h7])
+    have f3 : exec N K iBody W1 rS2 = w' rS2 := by
+      rw [exec_writes _ _ _ (by decide), hW1]; vm_simp; simp
+    have fo : ∀ r : Fin 64, iBody.writes r = false → r ≠ rAc0 → r ≠ rAc1 → r ≠ rMAd → r ≠ rCj →
+        exec N K iBody W1 r = w' r := by
+      intro r hr h0 h1' h2' h3'
+      rw [exec_writes _ _ _ hr, hW1]; vm_simp
+      simp [Function.update_apply, h0, h1', h2', h3']
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · vm_simp; simp [b3]
+    · vm_simp; simp [b4]
+    · vm_simp; simp [b1, b2, f3, h3, List.range_succ]
+    · vm_simp; simp [fo rGX (by decide) (by decide) (by decide) (by decide) (by decide), h4]
+    · vm_simp; simp [fo rTK (by decide) (by decide) (by decide) (by decide) (by decide), h5]
+    · vm_simp; simp [fo rTK1 (by decide) (by decide) (by decide) (by decide) (by decide), h6]
+    · vm_simp; simp [fo rZ (by decide) (by decide) (by decide) (by decide) (by decide), h7]
+
+theorem gPre_writes_ge : ∀ q : Fin 64, 57 ≤ q.val → gPre.writes q = false := by decide
+theorem gLoop_writes_ge : ∀ q : Fin 64, 57 ≤ q.val → (Code.rep rCj gBody).writes q = false := by
+  decide
+
+/-- **`ginvMulC` computes `X · G⁻¹(Y)`.** -/
+theorem exec_ginvMulC (hK : 0 < K) (w : St) (X Y : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (hGX : w rGX = encL N K (matL X)) (hMA : w rMA = encL N K (matL Y)) (hT : MulTmpl N K w) :
+    exec N K ginvMulC w rMOut = encL N K (matL (ginvMulm X Y)) := by
+  show exec N K (.seq tLoop tOut) (exec N K (.cp rS rS2) (exec N K (.rep rCj gBody)
+    (exec N K gPre w))) rMOut = _
+  have hY := matL_eq_range hK Y
+  rw [hY] at hMA
+  set W1 := exec N K gPre w with hW1
+  have f : W1 rCj = List.replicate (2 * K) false ∧
+      W1 rCo0 = encL N K ((List.range (2 * K)).map fun t => Y 0 (colOf hK t)) ∧
+      W1 rCo1 = encL N K ((List.range (2 * K)).map fun t => Y 1 (colOf hK t)) ∧
+      W1 rS2 = encL N K (List.replicate (2 * (2 * K)) 0) ∧ W1 rGX = encL N K (matL X) := by
+    rw [hW1]; unfold gPre; vm_simp
+    simp [hMA, hT.t2KNK, hT.t4KNK, hT.t2K, hGX]
+  obtain ⟨f1, f2, f3, f4, f5⟩ := f
+  have hT1 : MulTmpl N K W1 := hT.of_writes fun q hq => exec_writes _ _ _ (gPre_writes_ge q hq)
+  have g := exec_gLoop hK W1 (2 * K) X _ _ f1 f2 f3 f4 f5 hT1.tK hT1.tK1 hT1.z
+  set W2 := exec N K (.rep rCj gBody) W1 with hW2
+  have hT2 : MulTmpl N K W2 := hT1.of_writes fun q hq => exec_writes _ _ _ (gLoop_writes_ge q hq)
+  set W3 := exec N K (.cp rS rS2) W2 with hW3
+  have hT3 : MulTmpl N K W3 := hT2.of_writes fun q hq => by
+    rw [hW3, exec_cp, Function.update_of_ne (fun e => by subst e; simp at hq)]
+  obtain ⟨c1, c2⟩ := exec_tLoop W3 (fun t a => digRow X ![Y 0 (colOf hK t), Y 1 (colOf hK t)] a)
+    hT3 (by rw [hW3, exec_cp, Function.update_self, g])
+  rw [exec_seq]
+  set W4 := exec N K tLoop W3 with hW4
+  have hT4 : MulTmpl N K W4 := hT3.of_writes fun q hq => exec_writes _ _ _ (by revert q; decide)
+  rw [exec_tOut W4 _ _ (by simp) (by simp) hT4 c1 c2, matL_eq_range hK]
+  rfl
+
 end MVM
 
 end SigabaNeo.Tape
