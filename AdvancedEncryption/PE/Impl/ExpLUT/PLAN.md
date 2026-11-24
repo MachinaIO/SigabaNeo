@@ -433,9 +433,14 @@ pure function, and every routine is proved once at the level of lists of ring el
 * `ExpLUT/Prog/KeyTryVM.lean` — queue routines (registers `29 … 55`, free after `EvalPK`):
   `exec_ipC` (`rIa += Σ a_t b_t`), `exec_autQC` (`σ_k` on a queue), `exec_gadRecC`
   (`Σ_j 2^j a_j`), `exec_tstC` (`rFa += Σ_{m<n} (digit_{B+m}(x + R) + digit_{B+m}(R − x))`),
-  `exec_decC` (one element from `N·B` coins: coefficient `j` = `val(chunk_j) − c₂`).
+  `exec_decC` (one element from `N·B` coins: coefficient `j` = `val(chunk_j) − c₂`),
+  `exec_decQC` (`n` elements, `decList`), `exec_digQC` (the digits `0 … n−1` of `rY` as a queue).
+* `Lib/Lattices/CoinsUniform.lean` — `map_uniformList_eq_uniformOfFinset` (coins decoded
+  injectively onto `S` have the law `uniformOfFinset S`; for `S = kbDc.Big = famBig` via
+  `kbOf_Big`, with `c₂ = 2^{Bk−1}` so that `val(chunk) − c₂ = cenEmb chunk`).
 
-**Remaining for `KeyGen`** (design fixed by the code above):
+**Remaining for `KeyGen`** (design fixed by the code above; the next agent should start with 3,
+whose routines exist, then 1–2, 4, 5):
 
 1. *Parsing (VM)*: from the `msk` word, by a stream and length templates: `B` (row 0: `m̄ + K`
    words, row 1), `H` word (`rHW`), `a`, `A₀` (`rA`), `A^in` (`rAinS`), `A^aut` (`rAautW`),
