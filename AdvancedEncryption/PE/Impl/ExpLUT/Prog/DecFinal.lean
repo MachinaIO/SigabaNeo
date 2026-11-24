@@ -401,6 +401,160 @@ theorem exec_conjC (hN : 0 < N) (w : St) (hc : Consts N K w) (cnt buf : Fin 200)
   rw [e1]
   exact ⟨p182, p180, pd, pf⟩
 
+/-! ### `X := a − b` -/
+
+/-- One entry: pop `a_e`, `b_e`, push `a_e − b_e`. -/
+def subBody : Code := ofList [.mv 194 192 2, .mv 195 193 2, .sub 196 194 195, .mv 198 196 2]
+
+/-- **`X := a − b`** (streams `192`, `193`, `n = |cnt|` entries, `buf` a template of `n N K`
+bits) into register `188`. -/
+def subVecC (cnt buf : Fin 200) : Code :=
+  ofList [.cp 198 buf, .cp 197 cnt, .rep 197 subBody, .cp 188 198]
+
+theorem wr_subBody : wr subBody = [194, 192, 195, 193, 196, 198, 196] := rfl
+theorem wr_subVecC (cnt buf : Fin 200) :
+    wr (subVecC cnt buf) = [198, 197, 197, 194, 192, 195, 193, 196, 198, 196, 188] := rfl
+
+theorem exec_subBody (w : St) (hc : Consts N K w) {a b La Lb : List Bool}
+    (ha : a.length = N * K) (hb : b.length = N * K) (h192 : w 192 = a ++ La) (h193 : w 193 = b ++ Lb)
+    (h194 : (w 194).length = N * K) (h195 : (w 195).length = N * K) :
+    (exec N K subBody w) 192 = La ∧ (exec N K subBody w) 193 = Lb ∧
+      ((exec N K subBody w) 194).length = N * K ∧ ((exec N K subBody w) 195).length = N * K ∧
+      (exec N K subBody w) 198 = (w 198 ++ subRMW N K a b).drop (N * K) ∧
+      ∀ j, j ∉ wr subBody → (exec N K subBody w) j = w j := by
+  have hs := length_subRMW N K ha b
+  have e : exec N K subBody w = Function.update (Function.update (Function.update
+      (Function.update (Function.update (Function.update w 192 La) 194 a) 193 Lb) 195 b) 196 [])
+      198 ((w 198 ++ subRMW N K a b).drop (N * K)) := by
+    simp only [subBody, exec_ofList_cons, exec_ofList_nil]
+    rw [exec_mv_pop (by decide) (by rw [h194, hc.zero, List.length_replicate])
+      (by rw [ha, hc.zero, List.length_replicate]) h192]
+    rw [exec_mv_pop (d := 195) (s := 193) (c := 2) (by decide)
+      (by simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+          rw [h195, hc.zero, List.length_replicate])
+      (by simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+          rw [hb, hc.zero, List.length_replicate])
+      (by simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]; exact h193)]
+    rw [exec_mv_push (d := 198) (s := 196) (c := 2) (by decide) (by
+      simp only [exec, Function.update_apply, Fin.reduceEq, ↓reduceIte, opd_eq ha, opd_eq hb]
+      rw [hs, hc.zero, List.length_replicate])]
+    simp only [exec, Function.update_apply, Fin.reduceEq, ↓reduceIte, opd_eq ha, opd_eq hb,
+      hc.zero, List.length_replicate]
+    funext j
+    simp only [Function.update_apply]
+    split_ifs <;> rfl
+  refine ⟨?_, ?_, ?_, ?_, ?_, fun j hj => exec_not_mem _ _ j hj⟩ <;> rw [e] <;>
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+  · exact ha
+  · exact hb
+
+/-- **`X := a − b`.** -/
+theorem exec_subVecC (w : St) (hc : Consts N K w) (cnt buf : Fin 200)
+    (hcnt : cnt.val < 180) (hbf : buf.val < 180) {as bs : List (List Bool)} {La Lb : List Bool}
+    (has : ∀ x ∈ as, x.length = N * K) (hbs : ∀ x ∈ bs, x.length = N * K)
+    (hla : as.length = (w cnt).length) (hlb : bs.length = (w cnt).length)
+    (hbuf : (w buf).length = (w cnt).length * (N * K))
+    (h192 : w 192 = as.flatten ++ La) (h193 : w 193 = bs.flatten ++ Lb)
+    (h194 : (w 194).length = N * K) (h195 : (w 195).length = N * K) :
+    (exec N K (subVecC cnt buf) w) 188 = (List.zipWith (subRMW N K) as bs).flatten ∧
+      (exec N K (subVecC cnt buf) w) 192 = La ∧ (exec N K (subVecC cnt buf) w) 193 = Lb ∧
+      ((exec N K (subVecC cnt buf) w) 194).length = N * K ∧
+      ((exec N K (subVecC cnt buf) w) 195).length = N * K ∧
+      ∀ j, j ∉ wr (subVecC cnt buf) → (exec N K (subVecC cnt buf) w) j = w j := by
+  set n := (w cnt).length
+  set w1 := exec N K (ofList [.cp 198 buf, .cp 197 cnt]) w with hw1
+  have e1 : exec N K (subVecC cnt buf) w =
+      exec N K (.cp 188 198) (exec N K (.rep 197 subBody) w1) := rfl
+  have w1_eq : w1 = Function.update (Function.update w 198 (w buf)) 197 (w cnt) := by
+    simp only [hw1, exec_ofList_cons, exec_ofList_nil, exec]
+    rw [Function.update_of_ne (lo_ne hcnt 198)]
+  have h197 : (w1 197).length = n := by rw [w1_eq]; simp [n]
+  let zs := List.zipWith (subRMW N K) as bs
+  have hzl : zs.length = n := by simp [zs, hla, hlb]
+  have hzs : ∀ i, (i < n) → zs.getD i [] = subRMW N K (as.getD i []) (bs.getD i []) := by
+    intro i hi
+    simp only [zs, List.getD_eq_getElem?_getD, List.getElem?_zipWith]
+    rw [List.getElem?_eq_getElem (by omega), List.getElem?_eq_getElem (by omega)]
+    rfl
+  let P : ℕ → St → Prop := fun i w' =>
+    Consts N K w' ∧ w' 192 = (as.drop i).flatten ++ La ∧ w' 193 = (bs.drop i).flatten ++ Lb ∧
+      (w' 194).length = N * K ∧ (w' 195).length = N * K ∧
+      w' 198 = (w buf ++ (zs.take i).flatten).drop (i * (N * K)) ∧
+      ∀ j, j ∉ wr (subVecC cnt buf) → w' j = w j
+  have hP := exec_rep_inv (N := N) (K := K) 197 subBody (by decide) P w1
+    ⟨by rw [w1_eq]; exact consts_update (consts_update hc 198 (by decide) _) 197 (by decide) _,
+      by rw [w1_eq]; simp [h192], by rw [w1_eq]; simp [h193], by rw [w1_eq]; simp [h194],
+      by rw [w1_eq]; simp [h195], by rw [w1_eq]; simp,
+      fun j hj => by
+        rw [w1_eq, Function.update_of_ne (fun e => hj (by rw [e, wr_subVecC]; simp)),
+          Function.update_of_ne (fun e => hj (by rw [e, wr_subVecC]; simp))]⟩
+    (fun i hi w' hw' _ => by
+      obtain ⟨hc', p192, p193, p194, p195, p198, pf⟩ := hw'
+      rw [h197] at hi
+      set w'' := Function.update w' 197 (w' 197).tail
+      have hc'' : Consts N K w'' := consts_update hc' 197 (by decide) _
+      have hia : i < as.length := by omega
+      have hib : i < bs.length := by omega
+      have hai : as.getD i [] ∈ as := by
+        rw [List.getD_eq_getElem _ _ hia]; exact List.getElem_mem hia
+      have hbi : bs.getD i [] ∈ bs := by
+        rw [List.getD_eq_getElem _ _ hib]; exact List.getElem_mem hib
+      obtain ⟨b192, b193, b194, b195, b198, bf⟩ := exec_subBody w'' hc''
+        (a := as.getD i []) (b := bs.getD i []) (La := (as.drop (i + 1)).flatten ++ La)
+        (Lb := (bs.drop (i + 1)).flatten ++ Lb)
+        (has _ hai) (hbs _ hbi)
+        (by simp only [w'', Function.update_of_ne (show (192 : Fin 200) ≠ 197 by decide), p192,
+          flatten_drop_succ hia, List.append_assoc])
+        (by simp only [w'', Function.update_of_ne (show (193 : Fin 200) ≠ 197 by decide), p193,
+          flatten_drop_succ hib, List.append_assoc])
+        (by simp only [w'', Function.update_of_ne (show (194 : Fin 200) ≠ 197 by decide)]; exact p194)
+        (by simp only [w'', Function.update_of_ne (show (195 : Fin 200) ≠ 197 by decide)]; exact p195)
+      refine ⟨consts_exec hc'' _ rfl, b192, b193, b194, b195, ?_, fun j hj => ?_⟩
+      · rw [b198]
+        simp only [w'', Function.update_of_ne (show (198 : Fin 200) ≠ 197 by decide), p198]
+        have hzt : ∀ y ∈ zs.take i, y.length = N * K := fun y hy => by
+          have hy' := List.mem_of_mem_take hy
+          obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hy'
+          rw [← List.getD_eq_getElem _ [] hk, hzs k (by omega)]
+          exact length_subRMW N K (has _ (by
+            rw [List.getD_eq_getElem _ _ (by omega)]; exact List.getElem_mem _)) _
+        have hlen : (zs.take i).length = i := by simp; omega
+        have := drop_append_flatten_succ (b := w buf) (vs := zs.take i)
+          (x := subRMW N K (as.getD i []) (bs.getD i []))
+          (length_subRMW N K (has _ hai) _) hzt
+        rw [hlen] at this
+        rw [this, List.take_succ, List.getElem?_eq_getElem (show i < zs.length by omega),
+          ← List.getD_eq_getElem _ [] (show i < zs.length by omega), hzs i hi]
+        simp [Nat.add_mul, Nat.min_eq_left (show i ≤ zs.length by omega)]
+      · rw [bf j (fun hm => hj (mem_of_all rfl hm))]
+        simp only [w'']
+        rw [Function.update_of_ne (fun e => hj (by rw [e, wr_subVecC]; simp))]
+        exact pf j hj)
+  rw [h197] at hP
+  obtain ⟨_, p192, p193, p194, p195, p198, pf⟩ := hP
+  have hzt : zs.take n = zs := List.take_of_length_le (by omega)
+  have hzall : ∀ y ∈ zs, y.length = N * K := fun y hy => by
+    obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hy
+    rw [← List.getD_eq_getElem _ [] hk, hzs k (by omega)]
+    exact length_subRMW N K (has _ (by
+      rw [List.getD_eq_getElem _ _ (by omega)]; exact List.getElem_mem _)) _
+  have hfin : (w buf ++ (zs.take n).flatten).drop (n * (N * K)) = zs.flatten := by
+    rw [hzt]
+    have := drop_append_flatten (b := w buf) (vs := zs) (n := N * K) (by rw [hbuf, hzl])
+    rwa [hzl] at this
+  have g : ∀ j : Fin 200, j ≠ 188 → exec N K (subVecC cnt buf) w j = exec N K (.rep 197 subBody) w1 j :=
+    fun j hj => by rw [e1]; exact Function.update_of_ne hj _ _
+  refine ⟨?_, ?_, ?_, ?_, ?_, fun j hj => ?_⟩
+  · rw [e1]
+    show Function.update (exec N K (.rep 197 subBody) w1) 188
+      (exec N K (.rep 197 subBody) w1 198) 188 = _
+    rw [Function.update_self, p198, hfin]
+  · rw [g _ (by decide), p192, List.drop_of_length_le (by omega)]; simp
+  · rw [g _ (by decide), p193, List.drop_of_length_le (by omega)]; simp
+  · rw [g _ (by decide)]; exact p194
+  · rw [g _ (by decide)]; exact p195
+  · rw [g j (fun e => hj (by rw [e, wr_subVecC]; simp))]; exact pf j hj
+
 end RingVM
 
 end SigabaNeo.Tape
