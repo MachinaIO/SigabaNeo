@@ -4144,6 +4144,42 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   This checkpoint contains paper proofs and interval/exact computations;
   these new results have not been formalized in Lean. The complete
   BKZ cost/probability theorem remains open.
+* **Part 415 (all-rank D32 coverage and integrated checks).**
+  [Higher ranks](research/wall1_six_ten_higher_rank.md) and
+  [all ranks](research/wall1_six_ten_all_rank.md) cover all fundamental
+  crossings through rank21 where r<=h-3. Production retains the earlier
+  special covers, D27 addbacks, periodic corrections and tails. All2106
+  cumulant checks and all18 frontier reconstructions pass. Through17
+  remains below6.144e-13; through24 remains ineffective. The optional
+  all-t projection bonus is not enabled in production.
+* **Part 416 (completion and initialization obstructions).**
+  [Uniform occupancy](research/wall1_uniform_completion_obstruction.md)
+  is exactly maximized by a coordinate plane. Improving this cap alone
+  cannot close the displayed leading terms. [Girth-four completion](research/wall1_girth_four_completion_obstruction.md)
+  retains almost all candidates in a large span; its concrete anchor is
+  not certified to survive every residual exclusion. [Raw initialization](research/wall1_initial_small_radius_obstruction.md)
+  has small-radius void nearly one. [Smoothed potentials](research/wall1_smoothed_void_potential.md)
+  and [marked lattice shells](research/wall1_lattice_radial_profile.md)
+  specify the scope of the resulting obstacles, without claiming a
+  reachable-history or BKZ failure counterexample.
+* **Part 417 (conditional drift with additional geometry).**
+  [Multiple heights](research/wall1_multi_height_drift.md) give an optimized
+  pairwise-independent second-moment bound, verified by2289 exact tests.
+  [Overlap energy](research/wall1_overlap_energy_drift.md) gives a sharp
+  mean/variance-to-power bound for k>=2. Its1411 assertion groups and
+  strengthened variance feasibility checks pass. [Actual winner projection](research/wall1_winner_projection_gain.md)
+  proves power contraction for a planar, rank-one-marked subclass by
+  exhaustive winner evaluation. None supplies the required profile/energy
+  law for actual selected histories or reused columns.
+* **Part 418 (mixed-fiber weighted completion reduction).**
+  [Independent maps](research/wall1_independent_map_energy.md) avoid the
+  common-map Jensen loss with normalization q^(-2mr) and doubled shared
+  input weights. A direct pinned-completion alternative uses19 input
+  positions with input nullity8, output-anchor nullity2, and q^(-mr).
+  It avoids degree25/26 energy moments but requires a new asymmetric
+  kernel bound; ordinary19-point joint-ball estimates would undercount.
+  Sixty exact identities/majorants pass. This is a reduction, not a
+  numerical improvement to the remaining global residual or a Lean proof.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

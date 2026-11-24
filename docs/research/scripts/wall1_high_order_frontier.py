@@ -117,9 +117,14 @@ def main():
         if c==6 and r>=7:
             added={'D27-nine':l['nine_twenty_seven'][h,r]}
             result['D27-nine']=({'remaining':l['no_nine_twenty_seven'][key],**added},'no_nine_twenty_seven')
-            if r in (8,9,10):
-                source={8:'six_ten_thirty_two',9:'six_ten_rank_nine',10:'six_ten_rank_ten'}[r]
-                added['D32-ten']=l[source][h]
+            if r in (8,9,10,11,12) or (r>=13 and (h,r) in l["six_ten_all_rank"]):
+                if r>=13:
+                    added["D32-ten"]=l["six_ten_all_rank"][h,r]
+                elif r>=11:
+                    added['D32-ten']=l['six_ten_higher_rank'][h,r]
+                else:
+                    source={8:'six_ten_thirty_two',9:'six_ten_rank_nine',10:'six_ten_rank_ten'}[r]
+                    added['D32-ten']=l[source][h]
                 result['D32-ten']=({'remaining':l['no_six_ten_thirty_two'][key],**added},'no_six_ten_thirty_two')
         if c==4 and r>=4 and 'no_six_d24' in l:
             previous=result['D31-eleven'][0]
