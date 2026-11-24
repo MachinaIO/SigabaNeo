@@ -236,13 +236,31 @@ theorem view1_eq_view2 (half : R) (P : PubData S Wb J) (x : Pos → ℕ) (zr : P
     ring
   · simp [coreOf, progMPK]
 
-/-! ### The programmed public key is in simulation form -/
+/-! ### The programmed public key is programmed -/
 
-variable [DecidableEq J]
+omit [Fintype Wb] [Fintype J] in
+theorem σ_bitVal (k : ℕ) (b : Bool) : S.E.σ k (bitVal b : R) = bitVal b := by
+  cases b <;> simp [bitVal]
 
-omit [Fintype J] [DecidableEq J] in
-theorem vecMul_progOf (Bb : Matrix (Fin 2) Wb R) (z : Wb → Bool) :
-    Bb 0 ᵥ* (Matrix.of fun v (_ : Col S.τ) => bitVal (z v) : Matrix Wb (Col S.τ) R) =
-      fun _ => Bb 0 ⬝ᵥ bv z := rfl
+omit [Fintype J] in
+/-- **The public key of H2 (and of H1) is `Programmed`** with the programming matrices of `zr`, so
+Corollary 1 and Lemma 11 apply to it. -/
+theorem programmed_view2 (P : PubData S Wb J) (x : Pos → ℕ) (zr : PrI S Pos → Wb → Bool)
+    (core : Core S Wb J) (fl : FloodV S Pos) :
+    Programmed M w (view2 M w P x zr core fl).1 (view2 M w P x zr core fl).2 x (progOf zr) where
+  a t := by
+    funext c
+    simp [view2, progMPK, progA, hpOf_apply, abarOf, progOf, PubData.B, Matrix.vecMul, dotProduct,
+      bv]
+  A0 := by
+    funext c
+    simp [view2, progMPK, hpOf_apply, abarOf, progOf, PubData.B, Matrix.vecMul, dotProduct, bv]
+  Ain t d := by
+    funext c
+    simp [view2, progMPK, hpOf_apply, abarOf, progOf, PubData.B, Matrix.vecMul, dotProduct, bv, ct2]
+  Aaut t d := by
+    funext c
+    simp [view2, progMPK, hpOf_apply, abarOf, progOf, PubData.B, Matrix.vecMul, dotProduct, bv, ct2,
+      map_sum, σ_bitVal]
 
 end AdvancedEncryption.ExpLUT

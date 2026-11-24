@@ -106,16 +106,17 @@ theorem uniform_prod_bind {α β γ : Type} [Fintype α] [Nonempty α] [Fintype 
 uniform values. -/
 theorem closeTo_binaryHash_bind_mid {R : Type} [CommRing R] [Fintype R] [DecidableEq R]
     {rr mm I C V : Type} [Fintype rr] [Fintype mm] [Fintype I] [DecidableEq rr] [DecidableEq mm]
-    [DecidableEq I] [Nonempty mm] (μ : PMF C) (F : Matrix rr mm R → C → (I → rr → R) → PMF V) :
-    CloseTo ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A => μ.bind fun c =>
+    [DecidableEq I] [Nonempty mm] (μ : Matrix rr mm R → PMF C)
+    (F : Matrix rr mm R → C → (I → rr → R) → PMF V) :
+    CloseTo ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A => (μ A).bind fun c =>
         (Cslib.Probability.PMF.pi fun _ : I =>
           (PMF.uniformOfFintype (mm → Bool)).map (binaryHash A)).bind (F A c))
-      ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A => μ.bind fun c =>
+      ((PMF.uniformOfFintype (Matrix rr mm R)).bind fun A => (μ A).bind fun c =>
         (Cslib.Probability.PMF.pi fun _ : I => PMF.uniformOfFintype (rr → R)).bind (F A c))
       (ENNReal.ofReal
         (Fintype.card I * (Real.sqrt (Fintype.card (rr → R) * (2 ^ Fintype.card mm : ℝ)⁻¹) / 2))) := by
   have h := closeTo_binaryHash_bind (R := R) (rr := rr) (mm := mm) (I := I)
-    (fun A hs => μ.bind fun c => F A c hs)
+    (fun A hs => (μ A).bind fun c => F A c hs)
   convert h using 2 <;> funext A <;> exact PMF.bind_comm _ _ _
 
 variable {R : Type} [CommRing R]
