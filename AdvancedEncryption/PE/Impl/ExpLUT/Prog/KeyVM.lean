@@ -86,4 +86,58 @@ theorem autPK_eq {k : ℕ} (hk : Odd k) (Hk A : Matrix (Fin 2) (Col (setting D).
   rw [autPK, autMid, mul_ginv_eq, mulPK_eq_mulPKm, autMat_eq D hk]
   rfl
 
+/-! ### The rounds as chains over the bits of the index -/
+
+section Chain
+
+variable {α : Type*}
+
+/-- Apply `f s` for each set bit `s < t` of `j`, in increasing order of `s`. -/
+def bitChain (f : ℕ → α → α) : ℕ → ℕ → α → α
+  | 0, _, a => a
+  | t + 1, j, a => if j.testBit t then f t (bitChain f t j a) else bitChain f t j a
+
+theorem bitChain_congr (f : ℕ → α → α) : ∀ (t : ℕ) {j j' : ℕ},
+    (∀ s < t, j.testBit s = j'.testBit s) → ∀ a, bitChain f t j a = bitChain f t j' a
+  | 0, _, _, _, _ => rfl
+  | t + 1, j, j', h, a => by
+    simp only [bitChain, h t (by omega), bitChain_congr f t (fun s hs => h s (by omega)) a]
+
+theorem testBit_sub_two_pow {j t s : ℕ} (h1 : 2 ^ t ≤ j) (h2 : j < 2 ^ (t + 1)) (hs : s < t) :
+    (j - 2 ^ t).testBit s = j.testBit s := by
+  have e : j - 2 ^ t = j % 2 ^ t := by
+    rw [Nat.mod_eq_sub_mod h1, Nat.mod_eq_of_lt (by rw [pow_succ] at h2; omega)]
+  rw [e, Nat.testBit_mod_two_pow]; simp [hs]
+
+theorem testBit_top {j t : ℕ} (h2 : j < 2 ^ (t + 1)) : j.testBit t = decide (2 ^ t ≤ j) := by
+  by_cases h : 2 ^ t ≤ j
+  · rw [decide_eq_true h]
+    have : j / 2 ^ t = 1 := by
+      rw [pow_succ] at h2
+      exact le_antisymm (Nat.lt_succ_iff.mp ((Nat.div_lt_iff_lt_mul (by positivity)).mpr
+        (by omega))) ((Nat.le_div_iff_mul_le (by positivity)).mpr (by omega))
+    rw [Nat.testBit_eq_decide_div_mod_eq, this]; rfl
+  · rw [decide_eq_false h]
+    exact Nat.testBit_eq_false_of_lt (by omega)
+
+end Chain
+
+variable {R : Type*} [CommRing R] {S : Setting R}
+
+/-- **The rounds are chains**: `A_j` after `t` rounds applies `Aut_{g_s}` for the set bits `s` of
+`j`, in increasing order (`j < 2^t`). -/
+theorem roundsPK_eq_bitChain (P : AutPub S) (A : Matrix (Fin 2) (Col S.τ) R) :
+    ∀ (t j : ℕ), j < 2 ^ t → roundsPK P A t j =
+      bitChain (fun s M => autPK S (S.kf s) (P.Hf s) (P.Aaut s) M) t j A
+  | 0, j, _ => rfl
+  | t + 1, j, hj => by
+    simp only [roundsPK, bitChain, testBit_top hj]
+    by_cases h : j < 2 ^ t
+    · rw [if_pos h, decide_eq_false (by omega), roundsPK_eq_bitChain P A t j h]
+      rfl
+    · rw [if_neg h, decide_eq_true (by omega), if_pos rfl,
+        roundsPK_eq_bitChain P A t (j - 2 ^ t) (by rw [pow_succ] at hj; omega)]
+      congr 1
+      exact bitChain_congr _ t (fun s hs => testBit_sub_two_pow (by omega) hj hs) A
+
 end AdvancedEncryption.ExpLUT.Prog
