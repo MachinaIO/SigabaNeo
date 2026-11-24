@@ -355,3 +355,26 @@ cumulant checks and 18 interval reconstruction checks. Through17 remains below
 leader is rank11/girth4, log10 envelope −0.2900398457. The 3.01e-12 target,
 selected-history transport, and full BKZ proof remain open. Logs:
 `/tmp/wall1_spectral_cumulants.log`, `/tmp/wall1_spectral_frontier.log`.
+
+## Parts 439–440: diagonal and correlated anchor moments
+
+[Canonical moments](wall1_canonical_anchor_moments.md) give the diagonal
+refinement; [correlated moments](wall1_correlated_anchor_moments.md) retain the
+full Gram matrix via exact LDL pivots. Both complete runs pass. The final
+through24 envelope is0.00039232861950197982 (<3.924e-4), with through17<3.219e-17.
+The size24 leader is rank10/girth3 (log10 −3.4859477485), dominated by the
+H5 anchor. H5 needs explicit dimension scoping and a common-theta split before
+using the same lemma; those steps are documented but not integrated. Target
+3.01e-12, selected-history transport, and full BKZ remain open. Logs:
+`/tmp/wall1_correlated_cumulants.log`, `/tmp/wall1_correlated_frontier.log`.
+
+## Part 441: H5 exceptional correlated completion
+
+The [H5 split](wall1_five_point_normalizer.md) uses explicit anchor-size scope
+for D15. Exact chart recovery, cache separation, independent provenance audit,
+2106 cumulant checks and18 frontier reconstructions pass. Through24 is now
+below2.025e-8 (envelope2.0248575735038707e-8), with through17<3.219e-17.
+Size24 is led by rank11/girth4,H6 t2/overlap2 with7 free extensions,
+log10 −7.7881732232. Target3.01e-12 and actual-history transport remain open.
+Logs: `/tmp/wall1_h5_correlated_cumulants.log` and
+`/tmp/wall1_h5_correlated_frontier.log`.

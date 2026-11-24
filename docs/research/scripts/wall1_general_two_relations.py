@@ -188,6 +188,7 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
     theta_anchors = {}
     two_four_theta_parts = {}
     shared_four_theta_parts = {}
+    five_theta_parts = {}
     for c in range(3, 24):
         for t in range(1, 25-c):
             union = c+t
@@ -594,6 +595,11 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         counts={1:((20,1),),2:((20,1),(23,6),(24,6),(31,12))}[overlap]
                         if exclude_five_twenty:
                             counts=tuple((det,count) for det,count in counts if det!=20)
+                        # Retain the common-beta one-four family before D23 weighting.
+                        five_theta_one=min((one_power,
+                            sum((I(count)/coefficient_count
+                                 *fixed_four_plane(I(det)/4)**n for det,count in counts),I(0))
+                            +I(one_count)/coefficient_count*fixed_four_plane(9)**n),key=lambda v:v.b)
                         # D23 norm-four/six pairs: weights3/20 on the two
                         # shared positions,47/30 on the three exclusive ones.
                         # Total weight5 preserves the ball Markov factor.
@@ -901,6 +907,16 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                        /q**(m*(union-2)))
                         theta_anchors[c,t,overlap]=min(
                             (theta_anchors[c,t,overlap],common_anchor),key=lambda v:v.b)
+                    if c==3 and union==5:
+                        # The six D15 codes retain their Gaussian reference,
+                        # before the weighted five-point ball replacement below.
+                        five_prefactor=iv.exp(5*beta*radius**2)/q**(3*m)
+                        five_theta_parts[overlap]={
+                            15:five_prefactor*I(bad_count)/coefficient_count*bad_bound**n,
+                            None:five_prefactor*(five_theta_one+none_power)}
+                        five_common=sum(five_theta_parts[overlap].values(),I(0))
+                        theta_anchors[c,t,overlap]=min(
+                            (theta_anchors[c,t,overlap],five_common),key=lambda v:v.b)
                     split = (I(bad_count)/coefficient_count*bad_bound**n
                              +one_power+none_power)
                     if c==4 and union==11:
@@ -1297,6 +1313,12 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
             coordinate_count=518,anchor_gram_det=15)
         for h in range(7,25) for r in range(5,h-1)
         for mode in ('same','free')}
+    five_dual_completions={
+        (h,r,mode):dual_completion_bound(s,r,h,anchor_size=5,
+            free_beta=free_beta if mode=='free' else None,
+            coordinate_count=518,anchor_gram_det=15)
+        for h in range(5,25) for r in range(3,h-1)
+        for mode in ('same','free')}
     gaussian_free={}
     for H0 in range(4,25):
         original_beta=I((H0-2)*n)/(2*H0*radius**2)
@@ -1331,6 +1353,15 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                             *optimized_gaussian_free**free_basis
                                             *anisotropic_dual_completions[h,r,c+t]/(free_basis+1))
                         charge=min((charge,theta_charge,anisotropic_charge),key=lambda v:v.b)
+                        if c==3 and t==2 and a==2:
+                            for mode,free_cost,generic in (
+                                ('same',gaussian_free[5],extended_dual_completions[h,r,5]),
+                                ('free',optimized_gaussian_free,anisotropic_dual_completions[h,r,5])):
+                                parts=five_theta_parts[a]
+                                split_completed=(parts[None]*generic
+                                    +parts[15]*five_dual_completions[h,r,mode])
+                                split_charge=choices*q**3*free_cost**free_basis*split_completed/(free_basis+1)
+                                charge=min((charge,split_charge),key=lambda v:v.b)
                         if c==4 and t==3 and a in (1,3):
                             for mode,free_cost,generic in (
                                 ('same',gaussian_free[7],extended_dual_completions[h,r,7]),

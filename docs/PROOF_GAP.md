@@ -4393,6 +4393,35 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   The size24 leader is rank11/girth4. These are upper envelopes, not measured
   probabilities. Selected-history transport and full BKZ remain unproved;
   no new Lean theorem is claimed.
+* **Part 439 (weighted diagonal anchor majorizers).**
+  Positive row weights yield a diagonal majorizer by an exact sum of squares.
+  [Canonical moments](research/wall1_canonical_anchor_moments.md) retain all prior
+  scalar candidates. All27 charts and19116 weighted-square fixtures pass;
+  independent audit and complete cumulant/frontier runs pass. Through24 is
+  below0.007831. This remains above the target.
+* **Part 440 (correlated canonical anchor moments).**
+  [Correlated moments](research/wall1_correlated_anchor_moments.md) expand integer
+  powers, bound all fractional shifts by centered lattice theta, and use exact
+  LDL pivots. All27 charts are maximized over before minimizing other bounds.
+  Two independent proof/implementation audits,405 exact square identities,
+  normalizer regression checks,2106 cumulant checks and18 frontier interval
+  reconstructions pass. Through17 is below3.219e-17; through24 is below3.924e-4
+  (computed envelope0.00039232861950197982), still above3.01e-12.
+  The size24 leader is rank10/girth3, with the c3/H5 anchor now dominant.
+  H5 adaptation is derived but not integrated. These are analytic upper
+  envelopes, not measured probabilities or new Lean results. Actual selected
+  histories and the full BKZ theorem remain unproved.
+* **Part 441 (H5 exceptional correlated completion).**
+  [H5 normalizer](research/wall1_five_point_normalizer.md) separates the six
+  D15 codes from the isotropic remainder, before weighted D23/ball refinements.
+  Exact enumeration at q7,17,3329 verifies canonical unit minors and LDL
+  profiles; H5/H7 dimension/cache separation and old-family regressions pass.
+  Independent implementation/provenance audit,2106 cumulant checks and18
+  frontier reconstructions pass. Through17 remains below3.219e-17; through24
+  is below2.025e-8 (computed envelope2.0248575735038707e-8), still above3.01e-12.
+  The size24 leader is again rank11/girth4,H6 t2/overlap2 with7 free extensions.
+  This is an analytic upper envelope, not a measured probability. Adaptive
+  selected histories and full BKZ remain unproved; no new Lean result claimed.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

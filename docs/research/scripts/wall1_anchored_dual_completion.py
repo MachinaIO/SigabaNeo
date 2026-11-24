@@ -5,11 +5,15 @@ The caller must establish the common relaxed-anchor theta reference.
 """
 from mpmath import iv
 from math import comb
+from functools import lru_cache
+from fractions import Fraction
+from wall1_correlated_anchor_moments import moment_profiles
 from wall1_dual_frequency_rank import gauss_binomial
 
 GAMMA_GRID=('.5e-6','.75e-6','1e-6','1.25e-6','1.5e-6','1.75e-6',
             '2e-6','2.25e-6','2.5e-6','3e-6','4e-6','5e-6','6.85e-6')
 _theta_cache={};_tail_cache={};_cap_cache={}
+_correlated_cache={};
 _packing_cache={};_raw_moment_cache={};_hyperplane_cache={}
 HOLDER_ORDERS=(2,3,4,5,6,8)
 FULL_HOLDER_ORDERS=HOLDER_ORDERS+(10,12,14,16,20,24,32)
@@ -57,6 +61,57 @@ def raw_moment(q,beta,L):
 def free_moment(q,beta,L):
     """Normalized moment: its normalizer is at least one and its maximum is one."""
     return min((iv.mpf(1),raw_moment(q,beta,L)),key=lambda x:x.b)
+
+
+@lru_cache(maxsize=3)
+def canonical_moment_profiles(anchor_size):
+    if anchor_size==5:
+        # All six H5 exceptional charts have this exact pair of profiles.
+        F=Fraction
+        return {15:(((F(1,3),F(3,5),F(1,3)),(F(14,15),F(5,14))),)}
+    return moment_profiles()
+
+
+def correlated_moments(q,alpha,L,determinant,anchor_size=None):
+    """Uniform (hyperplane, full) raw moment bounds over every certified chart."""
+    H0=(7 if determinant==15 else 6) if anchor_size is None else anchor_size
+    assert (H0,determinant) in ((5,15),(6,12),(6,16),(7,15))
+    key=(iv.dps,q,alpha._mpi_,L,H0,determinant)
+    if key not in _correlated_cache:
+        I=iv.mpf;r0=H0-2
+        lam={12:6,16:4,15:5}[determinant]
+        tau=iv.pi**2/(q*q*alpha)
+        alias=theta(iv.pi**2/(alpha*L*lam))**(r0*(L-1))
+        fulls=[];hypers=[]
+        for full,root in canonical_moment_profiles(H0)[determinant]:
+            values=[]
+            for pivots in (full,root):
+                value=I(1)
+                for p in pivots:value*=theta(L*tau*I(p.numerator)/p.denominator)
+                values.append(value)
+            fulls.append(alias*values[0]/q**r0)
+            hypers.append(alias*values[1]*theta(L*iv.pi**2/(alpha*H0))/q**(r0-1))
+        # Maximize over charts before minimizing against other valid bounds.
+        _correlated_cache[key]=(max(hypers,key=lambda x:x.b),max(fulls,key=lambda x:x.b))
+    return _correlated_cache[key]
+
+
+def diagonal_spectral_profiles(determinant,anchor_size=None):
+    """Certified diagonal majorizers, invariant up to coordinate permutation.
+
+    Positive weights are one on shared support and t on the remaining rows.
+    D-G is a sum of weighted squares. Scalar profiles retain Part 438.
+    """
+    I=iv.mpf
+    if anchor_size==5:
+        assert determinant==15
+        return [(I(5),)*3]
+    profiles=[tuple(I({12:6,16:4,15:5}[determinant])
+                    for _ in range(5 if determinant==15 else 4))]
+    for t in (I(1),I(3)/2,I(2),I(3)):
+        if determinant==12:profiles.append((5+2*t,)*2+(2+2/t,)*2)
+        if determinant==15:profiles.append((3+4*t,)+(3+1/t,)*4)
+    return profiles
 
 
 def hyperplane_sum_bound(q,alpha,beta_free,r0,f):
@@ -108,7 +163,8 @@ def completion_details(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=
     coordinate_count=518 requires a full joint-incidence target; it cannot
     bound the input-only mixed-fiber relaxation. The input candidate is retained.
     anchor_gram_det requires a certified canonical chart: H6 two-four with
-    determinant12/16, or H7 shared-four with determinant15. Not a general family.
+    determinant12/16, H5 exceptional or H7 shared-four with determinant15.
+    Anchor size distinguishes the two D15 families. Not a general family.
     """
     assert s['iv'] is iv
     q=s['q'];N=s['N'];n=coordinate_count;k=h-r-2;I=iv.mpf
@@ -116,7 +172,7 @@ def completion_details(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=
     assert q==3329 and N==518 and 2<=r and 0<=k<=118
     H0=r+2 if anchor_size is None else anchor_size
     assert 4<=H0<=r+2
-    assert anchor_gram_det is None or (H0==6 and anchor_gram_det in (12,16)) or (H0==7 and anchor_gram_det==15)
+    assert anchor_gram_det is None or (H0==6 and anchor_gram_det in (12,16)) or (H0 in (5,7) and anchor_gram_det==15)
     if k==0:return I(1),'none'
     R2=s['radius']**2
     alpha=I((H0-2)*N)/(2*H0*R2)
@@ -158,11 +214,17 @@ def completion_details(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=
             if anchor_gram_det is not None:
                 # Completion-square theta cancels against the exact normalizer.
                 # These raw spectral moments must not be clipped or divided by boost.
-                spectral_beta={12:6,16:4,15:5}[anchor_gram_det]*alpha
-                raw_L=raw_moment(q,spectral_beta,L)
-                spectral_h=theta(iv.pi**2/spectral_beta)
-                candidates.append(spectral_h**L*raw_L**(r0-1)*free_L**f)
-                if f:candidates.append(raw_L**r0*free_L**(f-1))
+                hyper_L,full_L=correlated_moments(q,alpha,L,anchor_gram_det,H0)
+                candidates.append(hyper_L*free_L**f)
+                if f:candidates.append(full_L*free_L**(f-1))
+                for profile in diagonal_spectral_profiles(anchor_gram_det,H0):
+                    raw=[raw_moment(q,scale*alpha,L) for scale in profile]
+                    hs=[theta(iv.pi**2/(scale*alpha)) for scale in profile]
+                    product=I(1)
+                    for value in raw:product*=value
+                    for i in range(r0):
+                        candidates.append(hs[i]**L*(product/raw[i])*free_L**f)
+                    if f:candidates.append(product*free_L**(f-1))
             holder_etas[L]=min(candidates,key=lambda x:x.b)
     best=None
     for gs in gamma_grid:
