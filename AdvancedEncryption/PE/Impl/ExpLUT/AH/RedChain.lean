@@ -14,7 +14,8 @@ The reduction machine of the circular Ring-LWE step is the chain (as `DualUse.re
 
 with the generic handlers `Generic.handlersP` of component programs (`Generic.Comps`) for the
 machines' reduction challenger `specRedW` (`AH/RedGame`), whose secret is drawn from the instance
-word kept in the handlers' state (`setupR`: `redSecW` of the decoded instance), the
+word kept in the handlers' state (`setupR`: a law `setupS` representing `redSecW` of the decoded
+instance through `f`, `spS`), the
 post-processing `Generic.Post` (`[false]` when the flag is up, else `true :: viewObs8 o`) and the
 distinguisher `Dm` behind a guard.
 
@@ -77,7 +78,7 @@ theorem guardK_postG (Dm : Machine) (ob : Ob8) :
     (Dm.guardK (postG ob)) [true] = DcB Dm ob true := by
   unfold postG DcB
   rcases hb : ob.2.2.2
-  · simp only [Bool.false_eq_true, if_false, Machine.guardK_true]
+  · simp only [Bool.false_eq_true, ite_false, Machine.guardK_true]
     rw [PMF.map_apply, tsum_eq_single [true]]
     · simp [viewObs8]
     · intro b hb; simp [hb]
@@ -138,36 +139,48 @@ theorem acceptProb_redM8 {σ : Type} (P Post : Machine) (A : Machine 3)
 
 variable (D : Dims) (kb : KeyBoxes D) (L : ℕ)
 
-/-- **The secret of the selection for the state word `w`**: the machines' reduction secret of the
-instance `instOf w`. -/
-noncomputable def setupR (χfl : PMF (Rg D)) (instOf : List Bool → CInst D) (w : List Bool)
-    (x : Attribute w8) : PMF (RSec D) :=
-  redSecW D χfl x (instOf w)
+variable {Sig : Type} (f : Sig → RSec D) (setupS : CInst D → Attribute w8 → PMF Sig)
+
+/-- **The challenger of the handlers**: `specRedW` reading its secret through `f` (the handlers'
+secret type `Sig` is finite and encoded with a fixed length, unlike `RSec D`). -/
+noncomputable def spS (impl : Impl sig) (χfl : PMF (Rg D)) (i₀ : CInst D) : Spec (univ w8) Sig :=
+  (specRedW D kb L impl χfl i₀).comap f (setupS i₀)
+
+/-- **The secret of the selection for the state word `w`**: `setupS` of the instance
+`instOf w`. -/
+noncomputable def setupR (instOf : List Bool → CInst D) (w : List Bool) (x : Attribute w8) :
+    PMF Sig :=
+  setupS (instOf w) x
 
 /-- **The handlers' oracle has the observations of the machines' reduction experiment** of the
-instance of the state word. -/
-theorem obs_oracleW_red (impl : Impl sig) (χfl : PMF (Rg D)) (instOf : List Bool → CInst D)
+instance of the state word, when `setupS` represents the machines' reduction secret through `f`. -/
+theorem obs_oracleW_red (impl : Impl sig) (χfl : PMF (Rg D))
+    (hS : ∀ i x, (setupS i x).map f = redSecW D χfl x i) (instOf : List Bool → CInst D)
     (i₀ : CInst D) (A : Machine 3) (w : List Bool) :
-    (A.runWith (oracleW (specRedW D kb L impl χfl i₀) (setupR D χfl instOf))
+    (A.runWith (oracleW (spS D kb L f setupS impl χfl i₀) (setupR D setupS instOf))
         (paramsWord (univ w8) params) (w, {})).map (fun r => Generic.obs (r.1, r.2.2)) =
       redGameW D kb L impl χfl A (instOf w) := by
   have h1 := ProbOracleComp.runWith_map_state
-    (Generic.oracle (specRedW D kb L impl χfl (instOf w)))
-    (oracleW (specRedW D kb L impl χfl i₀) (setupR D χfl instOf)) (fun s => (w, s))
+    (Generic.oracle (spS D kb L f setupS impl χfl (instOf w)))
+    (oracleW (spS D kb L f setupS impl χfl i₀) (setupR D setupS instOf)) (fun s => (w, s))
     (fun q s => rfl) (A.machine.runOracle A.time (paramsWord (univ w8) params))
-    ({} : Generic.GState (univ w8) (RSec D))
+    ({} : Generic.GState (univ w8) Sig)
+  have h2 := Generic.runWith_comap (specRedW D kb L impl χfl (instOf w)) f
+    (A.machine.runOracle A.time (paramsWord (univ w8) params)) (setupS (instOf w))
+    (fun x => hS (instOf w) x)
   unfold Machine.runWith redGameW
   rw [← h1, PMF.map_comp]
+  rw [← h2, PMF.map_comp]
   rfl
 
 /-- **Long key queries**: answered by the empty word and never authorized, when `predLen ≤ L`. -/
 theorem longKeys_red {impl : Impl sig} (hEval : impl.machine .eval = evalMachineX)
-    (hL : predLen ≤ L) (χfl : PMF (Rg D)) (i₀ : CInst D) (Ok : RSec D → Prop) :
-    LongKeys (specRedW D kb L impl χfl i₀) Ok L [] where
+    (hL : predLen ≤ L) (χfl : PMF (Rg D)) (i₀ : CInst D) (Ok : Sig → Prop) :
+    LongKeys (spS D kb L f setupS impl χfl i₀) Ok L [] where
   key σ C _ hC := by
-    show KGsim D kb L σ C = PMF.pure []
+    show KGsim D kb L (f σ) C = PMF.pure []
     unfold KGsim
-    rw [if_neg (show ¬ C.length ≤ L by omega)]
+    simp only [show ¬ C.length ≤ L by omega, ↓reduceIte]
   auth C x hC := by
     show authW impl C x = false
     unfold authW
@@ -193,20 +206,27 @@ on the answers. -/
 structure RedComps (impl : Impl sig) (χfl : PMF (Rg D)) where
   /-- The scratch tapes of the components. -/
   R : ℕ
+  /-- The secret of the handlers. -/
+  Sig : Type
+  /-- The machines' reduction secret it represents. -/
+  f : Sig → RSec D
+  /-- Its law, for an instance and an attribute. -/
+  setupS : CInst D → Attribute w8 → PMF Sig
+  map_setupS : ∀ i x, (setupS i x).map f = redSecW D χfl x i
   /-- The length of the encoded secret. -/
   nS : ℕ
   /-- The encoding of the secret. -/
-  senc : FixedEnc (RSec D) nS
+  senc : FixedEnc Sig nS
   /-- The admissible state words. -/
   IW : List Bool → Prop
   /-- The admissible secrets. -/
-  Ok : RSec D → Prop
+  Ok : Sig → Prop
   /-- A bound on the state words. -/
   W : ℕ
   /-- The instance of a state word. -/
   instOf : List Bool → CInst D
   /-- The components. -/
-  cs : Comps R (w8Codes senc) (specRedW D kb L impl χfl (instOf [])) (setupR D χfl instOf) IW Ok
+  cs : Comps R (w8Codes senc) (spS D kb L f setupS impl χfl (instOf [])) (setupR D setupS instOf) IW Ok
   /-- Their length bounds, key queries cut at `L`. -/
   cb : CompBoundsP cs L W
   /-- The decoder. -/
@@ -247,12 +267,12 @@ noncomputable def const : ℕ :=
     rc.La rc.E (postA rc.E 128 1 + postB rc.E 128 1) (paramsWord (univ w8) params).length
 
 theorem hgame (A : Machine 3) (w : List Bool) :
-    (A.runWith (oracleW (specRedW D kb L impl χfl (rc.instOf [])) (setupR D χfl rc.instOf))
+    (A.runWith (oracleW (spS D kb L rc.f rc.setupS impl χfl (rc.instOf [])) (setupR D rc.setupS rc.instOf))
         (paramsWord (univ w8) params) (w, {})).map (fun r => Generic.obs (r.1, r.2.2)) =
       redGameW D kb L impl χfl A (rc.instOf w) :=
-  obs_oracleW_red D kb L impl χfl rc.instOf (rc.instOf []) A w
+  obs_oracleW_red D kb L rc.f rc.setupS impl χfl rc.map_setupS rc.instOf (rc.instOf []) A w
 
-theorem length_KGsim (σ : RSec D) (C : List Bool) :
+theorem length_KGsim' (σ : RSec D) (C : List Bool) :
     ∀ sk ∈ (KGsim D kb L σ C).support, sk.length ≤ (skEnc D).len := by
   intro sk hsk
   unfold KGsim at hsk
@@ -265,12 +285,12 @@ theorem length_KGsim (σ : RSec D) (C : List Bool) :
 
 /-- **The handlers of the components serve the oracle**, per query. -/
 theorem handles (hEval : impl.machine .eval = evalMachineX) (hL : predLen ≤ L) (A : Machine 3) :
-    HandlesP A rc.H (oracleW (specRedW D kb L impl χfl (rc.instOf [])) (setupR D χfl rc.instOf))
+    HandlesP A rc.H (oracleW (spS D kb L rc.f rc.setupS impl χfl (rc.instOf [])) (setupR D rc.setupS rc.instOf))
       (w8Codes rc.senc).encState (InvS rc.IW rc.W rc.Ok) (handlerQ0 rc.cb [])
       (handlerQ1 (w8Codes rc.senc) L []) rc.La :=
-  handlesP rc.cs L [] (longKeys_red D kb L hEval hL χfl (rc.instOf []) rc.Ok) rc.cb A rc.La
+  handlesP rc.cs L [] (longKeys_red D kb L rc.f rc.setupS hEval hL χfl (rc.instOf []) rc.Ok) rc.cb A rc.La
     (fun σ _ => le_trans (le_of_eq ((mpkEnc D).length _)) rc.pubL)
-    (fun σ C _ _ sk hsk => le_trans (length_KGsim σ C sk hsk) rc.keyL)
+    (fun σ C _ _ sk hsk => le_trans (length_KGsim' (rc.f σ) C sk hsk) rc.keyL)
     (Nat.zero_le _)
     (fun σ μ _ ct hct => by
       rw [(PMF.mem_support_pure_iff _ _).mp hct]
@@ -290,7 +310,7 @@ theorem acceptProb_machine (hEval : impl.machine .eval = evalMachineX) (hL : pre
   have hE : ∀ s, InvS rc.IW rc.W rc.Ok s → ((w8Codes rc.senc).encState s).length ≤ rc.E :=
     fun s h => length_encState_le h
   have key := acceptProb_redM8 rc.P (Post A.time rc.E 128 1) A rc.H
-    (oracleW (specRedW D kb L impl χfl (rc.instOf [])) (setupR D χfl rc.instOf))
+    (oracleW (spS D kb L rc.f rc.setupS impl χfl (rc.instOf [])) (setupR D rc.setupS rc.instOf))
     (w8Codes rc.senc).encState (InvS rc.IW rc.W rc.Ok) rc.E (handlerQ0 rc.cb [])
     (handlerQ1 (w8Codes rc.senc) L []) rc.La (rc.handles hEval hL A) hE
     (fun o s => Generic.obs (o, s.2)) Dm (ν.map (enc D)) (fun w => (rc.dw w, {}))
