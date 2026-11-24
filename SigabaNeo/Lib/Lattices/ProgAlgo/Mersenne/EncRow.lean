@@ -1,4 +1,5 @@
 import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.GadRow
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Bounds
 
 /-!
 # One encoding row modulo `2^K − 1`
@@ -13,6 +14,11 @@ of `s · A₀_c + A₁_c − Z_c + E_c` (`rowE`, `decRM_rowE`):
   `9` (`L`); scratch `10 … 55`, blank before and after;
 * per entry: the four entries are moved into registers (`mvP`), then `mulRMP`, `addRMP`,
   `subRMP`, `addRMP`, `canonRP`, and the canonical word is shifted into the output (`mvP`).
+
+**Cost** (`check_encRowP`, the abstract interpreter, variables `top, N, K, L`): from the inputs at
+their lengths and every tape at most `M`, at most `(2 M + 3) · L · (200 + 400 N + 400 N K +
+100 N² + 200 N² K + 30 N² K² + 50 K) + 200 (2 M + 3)` steps (`time_encRowP`), dominated by the
+`L` ring products (`22 N² K²` sweeps each).
 -/
 
 namespace SigabaNeo.Tape
@@ -250,6 +256,36 @@ theorem run_encRowP {K N L : ℕ} (hK : 0 < K) (s : Store 56)
 
 theorem noGrow_encRowP : encRowP.NoGrow := rfl
 theorem wf_encRowP : encRowP.WF := wf_of_wfB (by decide)
+
+section Cert
+
+open SigabaNeo.Tape.Sym SigabaNeo.Tape.Prog.SpecT
+
+/-- The streams of `L` ring words. -/
+def pLNK : Poly := mo 1 [1, 1, 1]
+
+/-- The inputs of `encRowP` (variables `top, N, K, L`); scratch below the top size. -/
+def σRow' : Asg := [pTop, pNK, pLNK, pLNK, pLNK, pLNK, pK, pN, pNK, pm]
+def σRow : Asg := σRow' ++ List.replicate 46 pTop
+
+/-- A bound of the sweeps of `encRowP`. -/
+def wRow : Poly := [([], 200), ([0, 0, 0, 1], 200), ([0, 1, 0, 1], 400), ([0, 1, 1, 1], 400),
+  ([0, 2, 0, 1], 100), ([0, 2, 1, 1], 200), ([0, 2, 2, 1], 30), ([0, 0, 1, 1], 50)]
+
+set_option maxRecDepth 100000 in
+/-- **The certificate of `encRowP`.** -/
+theorem check_encRowP : check 8 encRowP σRow σRow' wRow = true := by decide +kernel
+
+/-- **The time of one encoding row** from the inputs at their lengths and tapes at most `M`. -/
+theorem time_encRowP {M N K L : ℕ} {ℓ : Fin 56 → ℕ} (hℓ : ℓ ≤ bnd (vars M N K L 0 0 0) σRow)
+    (hM : ∀ t, ℓ t ≤ M) :
+    timeBoundT encRowP ℓ ≤ (2 * M + 3) * (200 + L * (200 + 400 * N + 400 * (N * K) +
+      100 * N ^ 2 + 200 * (N ^ 2 * K) + 30 * (N ^ 2 * K ^ 2) + 50 * K)) := by
+  refine (bounds_of_check check_encRowP (vars M N K L 0 0 0) hℓ hM).2.2.trans (le_of_eq ?_)
+  simp [wRow, pEval, mEval, vars, top]
+  ring
+
+end Cert
 
 end Prog
 
