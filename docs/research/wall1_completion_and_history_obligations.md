@@ -475,3 +475,69 @@ Their expected capped potentials are26/27 and24/25. The exact signed-unit
 cover construction needs(q^r−1)/2 coordinates, excluding its direct use
 at q3329,width506 even at rank1. Thus the obstruction is not merely binary,
 but remains distinct from the production selected-history question.
+
+## Part 454: auxiliary-mark cancellation in the mixed expansion
+
+[Mixed cumulants](wall1_mixed_cumulant_identity.md) expand the negative
+weighted competitor term without independence. For a fixed raw candidate
+set and an independent uniform auxiliary syndrome, the first mixed
+cumulant is exactly zero under any A-only requirement law. The next is
+q^(-m) Cov(Q,J), with J the ordered collision count. This removes one
+correction but not the central collision problem; exact finite examples
+give both signs for the next coefficient. Twenty joint-law checks through
+degree24 and60 auxiliary-shift checks pass, with independent proof audit.
+No production mixed-covariance estimate or full BKZ completion is claimed.
+
+## Part 455: packing under conditional atoms, without column independence
+
+[Correlated packing](wall1_correlated_packing.md) proves the generating-column
+bound under uniform complete-conditional flat-mass bounds. Sequential
+domination replaces the independent-binomial argument. A shift-uniform
+mod-q atom bound supplies this premise for unrestricted joint discrete
+Gaussians with bounded precision diagonal, even with row and column
+correlations. Ten exact parity-correlated packing checks pass; independent
+audits approve the general argument. This can support anisotropic auxiliary
+Gaussian majorants, but no bound for production cylinder normalization or
+selected-history probability is asserted. Extra support restrictions and
+linear images still need explicit justification.
+
+## Part 456: broad Gaussian periodization avoids the fixed strip loss
+
+[Gaussian periodization](wall1_gaussian_periodization.md) proves uniform
+upper and lower theta bounds from a bounded fundamental cell. After
+normalization, a sufficiently broad parallel Gaussian approximates each
+projected fiber's unit mass within exp(plus/minus eta), for arbitrarily
+small eta, without increasing the ambient precision-diagonal ceiling.
+An exact fiber partition of unity and a weighted second-moment comparison
+make the counting scope explicit. The full frozen kernel lattice is
+required. These are deterministic analytic proofs, not Lean formalizations.
+Production moments and selection costs remain unresolved; noninteger
+weighted counts cannot directly replace the previous factorial counts.
+
+Part456 extension: ordered tuples of distinct projected fibers do retain
+factorial moments within exp(plus/minus k*eta). The periodization note now
+proves signed polynomial bounds after multiplication by any nonnegative
+selected-history weight. This repairs the algebraic connection to factorial
+moments without substituting a noninteger weighted count into a falling
+factorial. It leaves a precise obstruction: enlarging the Gaussian tuple
+domain bounds positive moments above, whereas negative polynomial terms
+need lower bounds and cannot use that enlargement. No production moment
+or cumulative failure estimate is supplied by this bridge alone.
+
+A conditional auxiliary thinning additionally gives an integer count Z
+with factorial moments exp(-k*eta)D_k. Its void probability exceeds the
+original by at most 1-exp(-2eta), independently of candidate count.
+Consequently existing pointwise integer void polynomials give valid signed
+witnesses for these weighted moments. The auxiliary independence is
+conditional on the entire original state; no independence of lattice hits
+is inferred. Negative-term numerical lower bounds are still required.
+
+Part456 precision audit: at a fixed rational draw14 reference mean,
+independent relative factorial-moment boxes for the degree24 square would
+need width about1.20523e-19 to fit the3.922e-12 normalized allocation.
+This is a limitation of that absolute-error method, not of all moment
+proofs. An exact integer law on{0,59,60} matches the first two Poisson
+factorial moments but has void probability>.0168, ruling out a shortcut
+based on those two moments alone. The rational diagnostic passes and was
+independently reproduced; neither the count-law example nor the reference
+mean is asserted to be production.

@@ -4517,6 +4517,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   These examples do not refute the q3329,width506 claim; their unit-cover
   construction cannot fit that width. The central selected-history estimate
   and the full BKZ theorem remain unproved. No new Lean result is claimed.
+* **Parts 454–456 (mixed moments and frozen-fiber Gaussian weights; paper only).**
+  [Mixed cumulants](research/wall1_mixed_cumulant_identity.md) isolate the
+  negative weighted competitor term, prove auxiliary-mark first-covariance
+  cancellation, and express the next covariance by signed constraint buckets.
+  [Correlated packing](research/wall1_correlated_packing.md) extends the
+  auxiliary bound to unrestricted joint discrete Gaussians with bounded
+  precision diagonal. [Periodization](research/wall1_gaussian_periodization.md)
+  removes a fixed loss per frozen dimension and preserves distinct-fiber
+  factorial moments; conditional thinning gives an integer void witness.
+  Exact checks cover20 joint laws,60 auxiliary-shift cases,1049 constraint
+  pairs,10 correlated packing cases, and a rational precision audit.
+  General lemmas received independent mathematical review, not Lean
+  formalization. Matrix reformulation and low-moment shortcuts do not
+  supply the missing selected-history moments. No improvement to the
+  later-history probability bound or full BKZ completion is claimed.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

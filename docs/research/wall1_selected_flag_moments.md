@@ -247,3 +247,13 @@ Identifying the actual BKZ competitors with these abstract hit lists, connecting
 the conditional graph law to these particular intersection weights (including
 saturation), and bounding the total over width-506 selected flags remain separate,
 unproved connections.
+
+## Mixed-cumulant expression for the negative weighted term
+
+[Mixed cumulant identity](wall1_mixed_cumulant_identity.md) expands
+E[Q f(N)] exactly in mixed factorial cumulants and forward differences.
+For nonnegative f it gives a lower envelope from two-sided mixed bounds
+and univariate factorial moments under the same law. This supplies an
+algebraic route to the negative Bonferroni term, not the missing numerical
+competitor/cylinder estimates. Raw unconditioned bounds cannot be reused
+as conditional inputs without proof.

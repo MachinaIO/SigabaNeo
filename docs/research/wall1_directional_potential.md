@@ -23,6 +23,28 @@ The two labels \((X_0,X_1)\) are independent before the reveal, by the bijection
 \]
 Every next winner has length one, since old unit axes survive. Any unit winner with nonzero height is purely vertical. Every winner is therefore perpendicular to **all** these nearest vectors. The mean capture is zero, even conditional on an individual next branch. This prefix has probability \(q^{-93200}<10^{-328279}\) and \(g_{129}=3337.63998\ldots\), above the R101 corridor upper endpoint 583.27530. It disproves a pathwise consequence of mark uniformity. It supplies no lower bound of order \(10^{-12}\) on a corridor exit.
 
+### Averaged isotropy does not remove the shared-history dependence
+
+The conditional identity above averages to `E_S tr(A_S T_S)`, not
+`tr((E_S A_S)(E_S T_S))`. Even exact isotropy of both marginal means
+would not supply a positive capture lower bound. For any d>=2, choose I
+uniformly in{1,...,d}, set A_I=e_I e_I^T and T_I=(Id-A_I)/(d-1).
+Both are positive semidefinite of trace1. Direct summation gives
+
+    E A_I = E T_I = Id/d,
+    E tr(A_I T_I) = 0,
+    tr((E A_I)(E T_I)) = 1/d.
+
+The joint law is invariant under simultaneous signed coordinate permutations.
+Thus that symmetry, even if established for a particular tie convention,
+does not justify factoring the shared-history product. The missing term is
+`E tr((A-E A)(T-E T))`, which equals−1/d in this example. This is an
+algebraic obstruction to that inference, not a reachable lattice construction
+or a lower bound on production failure. A proof using averaged symmetry
+would still need a bound on the joint covariance. Moreover the actual
+raw ensemble distinguishes output coordinates from the sequentially exposed
+input coordinates, so full retained-space isotropy is not automatic.
+
 ## 2. A directional recursion with an explicit coverage term
 
 Keep a separate cloud \(\mathcal C_x(L)=(\tilde x+M)\cap B_L\) for each mark, including zero when present. Its radius is a physical length. For an outgoing query of radius \(b\ge0\) and branch \(u\), set \(L=\sqrt{b^2+s_u^2/4}\). For a label \(v\), form the following finite set:

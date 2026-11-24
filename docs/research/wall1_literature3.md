@@ -1,5 +1,25 @@
 # Wall 1 after Part 86 — fixed shears, quotient selection, and the DBKZ stopping rule
 
+## Additional source check, 24 November 2026
+
+The primary text of Ducas--Engelberts--de Perthuis,
+[Predicting Module-Lattice Reduction, v1](https://arxiv.org/html/2510.10540v1),
+was checked as another possible source of a selected-block law. Despite
+the abstract's description as a concrete average-case analysis, the
+introduction and Section 1.1 explicitly describe the analysis as heuristic
+and experimentally supported. Sections 3--4 use GSA and Gaussian-heuristic
+predictions. This paper therefore does not supply the missing rigorous
+selected-history probability estimate in the current argument. This is an
+applicability finding about that version, not a rejection of its predictive
+or experimental results.
+
+The PDF of Hao Chen's `2016/439` returned HTTP403 in this check. Indexed
+text exposes a Haar-measure minimum estimate in Theorem3.2, but the full
+application argument was not inspected successfully. It must not be
+treated as an audited transfer to adaptive finite-q blocks on that evidence.
+These targeted searches found no usable new transfer theorem; they do not
+establish an exhaustive absence result.
+
 **22 November 2026.** The closest external theorem I found for the void lemma is Kelmer’s mean-square estimate on the full unipotent shear orbit. It integrates over precisely the coefficients in the repository’s fixed-diagonal model. Its constant depends on the diagonal and its conclusion controls a second moment. I found no published estimate strong enough on the bad-profile region to improve Part 86. For self-dual BKZ there is also an important qualification about which runs Part 86 covers, stated explicitly immediately after Lemma 1 of the original paper. [Kelmer, Theorem 1](https://arxiv.org/pdf/1512.06012) · [Micciancio–Walter, §3.1](https://eprint.iacr.org/2015/1123.pdf)
 
 Throughout, the terminal *height* is the zero-based GS length at index $n-b$, the head of the last width-$b$ window. A lower bound on this height bounds the terminal minimum if the head is shortest. If the head only satisfies a $c$-approximate SVP condition, divide the height bound by $c$. For an unrestricted head the implication fails. All numerical Haar radii below use covolume one.
