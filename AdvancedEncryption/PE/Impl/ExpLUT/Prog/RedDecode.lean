@@ -295,6 +295,9 @@ theorem rowsD_Dc_le : rowsD Dc ≤ 2 ^ 51 := by
 /-- The input bound of the decoder at `Dc`. -/
 noncomputable def nDc : ℕ := encLen (rowsD Dc) Dc.N Dc.K
 
+theorem encLen_le_nDc : encLen (rowsD Dc) Dc.N Dc.K ≤ nDc := by
+  unfold nDc; exact le_rfl
+
 theorem Dc_N : Dc.N = 2 ^ 24 := rfl
 
 theorem nDc_le : nDc ≤ 2 ^ 120 := by

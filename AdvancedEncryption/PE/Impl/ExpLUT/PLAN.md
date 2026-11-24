@@ -585,6 +585,16 @@ registry's words modulo `2^K − 1` (generic `decodeW_encodeRingQ` for any `q �
 ring words, rows in the registry's order `ρ D`), `instR` (`decRM` of the blocks), **`instR_dwR`**,
 `rowsD_eq : rows = mCirc D + K (2b)`, 14 tapes.
 
+**Decoder and raw secret fixed (`AH/RedCompsR`).** `RawComps D kb L impl χfl` = the five component
+programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), with state words
+`IWR D` (= `dwR D (enc D i)`, `WR D = 1 + 2 rows N K` bits), and their bounds (`CompBoundsP cs L
+(WR D)`); `RawComps.toRedComps` (decoder `decR D n`, `La = |mpk| + |sk| + |ct|`);
+**`attributeHiding_Dc_raw`**: `AttributeHiding (univ w8) params impl` from
+`CircularRingLWE.decision.Holds`, `ImplSpec Dc kb L impl χc χc χfl`, `KbCover kb coverBound`,
+`predLen ≤ L`, `rc : RawComps Dc kb L impl χfl` and `64 · 2^256 · (rc.toRedComps nDc _).const ≤
+2^1155`. **So what remains of G2 is exactly a `RawComps` at `Dc` (components `setupP`, `pubP`,
+`keyP`, `chalP`; `authP := authWX`) and the numeric bound via `RedComps.const_le`.**
+
 **Remaining for G2** (the components of `RedComps` at `Dc` and their bounds):
 1. ~~`Sig`/`senc`/`setupS`~~ — **done** (`AH/RedSecret`): `RawSec D = Attribute w8 × CInst D × B̄⁽²⁾ ×
    H⁽²⁾ × d₂ × FloodV × zr`, `rawF` (= `attrN x`, `redPub`, `zr`, `redCore`, `fl`), `rawSetup`

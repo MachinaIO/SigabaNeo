@@ -29,6 +29,7 @@ import PE.Impl.ExpLUT.Prog.RedDecode
 import PE.Impl.ExpLUT.AH.RedConst
 import PE.Impl.ExpLUT.Prog.AuthWX
 import PE.Impl.ExpLUT.AH.RedSecret
+import PE.Impl.ExpLUT.AH.RedCompsR
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
