@@ -110,7 +110,13 @@ which is at most E_U H_S(U)^k by Jensen and can be strictly smaller. It is
 therefore an invalid substitution in this upper bound. The winner and radius
 must also not be independently resampled for different replicas.
 
-## The precise unproved bridge
+## The uncapped sufficient bridge
+
+Part443's [capped potential](wall1_capped_history_potential.md) supplies a
+stronger usable initialization: the draw14 first-moment certificate bounds
+its initial potential directly. The uncapped formulation below remains valid,
+but its separate high-power seed is no longer needed for the capped route.
+
 
 Let F_i be the actual incoming history filtration, P_i its actual void fraction
 at the current radius, and B_i={P_i>=delta}, with delta>0. The next state must

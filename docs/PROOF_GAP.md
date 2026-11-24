@@ -4438,6 +4438,52 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   216 replica and27 quotient-kernel checks. Its quantitative stopped drift
   and selected-state initial moment remain open. Full BKZ remains unproved;
   no new Lean theorem is claimed.
+* **Part 443 (capped history potential closes initialization).**
+  [Capped potential](research/wall1_capped_history_potential.md) uses
+  Phi(P)=min(1,(P/.280)^24)<=P/.280. The Part442 certificate controls the
+  expected void fraction before Markov, so the matching actual draw14
+  initial potential is below1.9704509e-12 under the original matrix law.
+  Independent provenance/stopping audit and452 exact rational checks pass.
+  Initial exits are included once. The remaining sufficient budget for
+  normalized stopped charges (and any additional gate exits) is1.9515491e-12.
+  The capped winner-coupled target is weaker than the raw-power target.
+  Its small conditional charge remains unproved; full BKZ remains open.
+* **Part 444 (actual-winner drift obstruction and gain/loss reduction).**
+  [Rank-two drift](research/wall1_rank_two_capped_drift.md) gives an exact
+  low-dimensional example with initial void0 but positive expected capped
+  potential after actual shortest-vector selection and projection. It persists
+  strictly inside the incoming radius, and independent algebra verifies the
+  complete coset minima. The66-case finite search agrees. This refutes only
+  a universal zero-drift assertion for that q3,dimension3 model with exponent506;
+  production-state reachability and a506-dimensional counterexample are not
+  established. [Gain/loss accounting](research/wall1_projection_gain_loss.md)
+  gives an exact witness-void identity and a capped increment envelope that
+  offsets lost coverage by gained coverage;39762 exact checks pass. The
+  required small stopped charge on actual reachable histories remains unproved.
+* **Part 445 (determinant-consistent model checks).**
+  [Orthogonal embedding](research/wall1_determinant_consistent_embedding.md)
+  shows that matching the rank-two fixture to detM=V506 g506 creates an
+  unmarked vector of length<1. Its actual radius cannot shrink and that
+  embedding has zero outgoing void. Exact rational certificates also exclude
+  restoration of the old diagonal winner under common marked scaling.
+  [Dimension-three marking](research/wall1_dimension_three_marking.md) proves
+  by AM-GM that every determinant-coupled q3 rectangular model has incoming
+  void>=4/9, outside the pre-exit regime;56 finite grid checks pass.
+  These results constrain use of the earlier counterexample, not the actual
+  q3329,rank400 selected-state law. No new history probability is obtained.
+  The required stopped gain/loss estimate and full BKZ proof remain open.
+* **Part 446 (multheight contraction for the400-marked rectangle).**
+  [Rectangular multheight bound](research/wall1_rectangular_multheight.md)
+  treats33 heights jointly with the actual winner bounded by the unmarked
+  axis c. The shared-mark24th moment factorizes across400 coordinates.
+  All11082241 scalar pairs are enclosed by exact fixed-point Taylor sums;
+  final geometry uses outward intervals. The outgoing capped potential is
+  below5.105e-27. The existing iid Berry–Esseen input supplies a positive
+  incoming lower bound, proving strictly negative expected capped drift for
+  this fixed q3329,g550 rectangular state. Independent mathematical and
+  integer-arithmetic audits plus9 exact finite checks pass. This resolves
+  the earlier rectangle's one-step transition, not general selected histories.
+  No claim that subsequent states remain rectangular is made; full BKZ is open.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

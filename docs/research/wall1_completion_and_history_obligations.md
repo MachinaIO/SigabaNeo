@@ -48,9 +48,10 @@ alone do not cancel that loss. Two further geometric checks sharpen this:
   arithmetic or the coupled actual winner and projection.
 
 The remaining useful target is a quantitative projection gain under the
-actual selected-prefix law, or an initial moment at a later selected state
-proved under that law. A small design-radius void moment cannot simply be
-reused at a smaller physical radius.
+actual selected-prefix law. Part443 below initializes a capped potential at
+draw14 from the proved unconditional first-moment certificate. This does not
+reuse a design-radius moment at a smaller physical radius or assert a uniform
+residual law after selection. The conditional drift charge remains unproved.
 
 ## Verification and scope
 
@@ -325,3 +326,50 @@ pointwise domination. It does not condition on that projection or history.
 Size24 is now led by rank7/girth4. The later-history bound remains open;
 a sufficient rounded remaining budget is1.951e-12. See the winner-coupled
 replica formulation for the unproved conditional estimate.
+
+## Part 443: initialization from a capped potential
+
+[The capped potential](wall1_capped_history_potential.md) satisfies
+Phi(P)<=P/.280. Part442 directly bounds the expected empty-mark fraction,
+so its pointwise projection comparison supplies the actual draw14 seed
+E Phi(P14)<=1.9704509e-12. The initial-seed obstacle of the uncapped route
+is therefore removed for this matching observable; no survival conditioning
+is introduced. The stopped bound includes draw14 exactly once and leaves
+1.9515491e-12 for normalized accumulated drift charges and any added gate
+exits. That geometric charge estimate is still unproved. Independent audit
+and452 exact checks validate the seed and stopping algebra only.
+
+## Part 444: nonzero actual drift and the geometric statistic to bound
+
+[The rank-two example](wall1_rank_two_capped_drift.md) has initial void0
+and positive capped drift despite actual shortest-vector selection and exact
+projection. This is a low-dimensional model, not a demonstrated production
+history. It rules out using a universal zero-drift claim for that model.
+[Gain/loss accounting](wall1_projection_gain_loss.md) instead writes the
+witness void as P+loss−gain and bounds the conditional capped increment,
+including optional signed cancellation across branches. Finite tests validate
+the formulas but do not establish the required1.9515491e-12 stopped charge.
+A reachability-specific or averaged geometric estimate is still needed.
+
+## Part 445: enforce determinant and radius together
+
+The [orthogonal embedding](wall1_determinant_consistent_embedding.md) of the
+rank-two counterfixture becomes nonincreasing at its original scale when
+determinant normalization forces a shortest vector below one. The old diagonal
+winner cannot be restored by common marked scaling in that embedding family.
+In the true [dimension-three determinant model](wall1_dimension_three_marking.md),
+AM-GM excludes incoming void below the threshold for all positive rectangular
+scales at q3. Thus the earlier counterexample cannot justify dropping the
+determinant-radius relation. These restricted results do not certify actual
+q3329/rank400 histories or their required stopped charge.
+
+## Part 446: a fixed400-marked state has zero required drift charge
+
+[The multheight certificate](wall1_rectangular_multheight.md) bounds the
+actual outgoing capped potential in the previous q3329,g550 rectangle by
+5.105e-27, strictly below its incoming potential. This proves negative
+conditional expected drift for that state and resolves its one-step case.
+It retains one shared fresh mark across all replicas and uses only the
+valid deterministic winner cap c. General selected states need not admit
+this rectangular coordinate factorization, and subsequent transitions need
+not preserve it. Their stopped accumulated charge remains unproved.

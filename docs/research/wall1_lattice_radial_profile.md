@@ -123,3 +123,12 @@ existing S-based shell premise.
 
 Run `python3 docs/research/scripts/wall1_lattice_radial_profile.py`.
 Log: `/tmp/wall1_lattice_radial_profile.log`. No production files are changed.
+
+## Part446 follow-up: actual next potential contracts
+
+[The multheight calculation](wall1_rectangular_multheight.md) now resolves
+this fixed state's actual one-step capped-potential transition. It combines
+33 heights, the stronger valid cap c, and the shared-mark24th moment, giving
+strict negative expected capped drift. The conservative-radius shell
+obstruction above remains valid but does not obstruct that joint coverage.
+This is not a result for all reachable selected states.
