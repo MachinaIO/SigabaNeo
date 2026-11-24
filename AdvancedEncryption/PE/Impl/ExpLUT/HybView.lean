@@ -54,6 +54,10 @@ variable (S Pos) in
 /-- The programming columns: `Z_t`, `R₀`, `R^in_{t,d}`, `R^aut_{t,d}`. -/
 abbrev PrI := (Pos × Col S.τ) ⊕ Col S.τ ⊕ (Pos × Dig S.τ × Col S.τ) ⊕ (Fin S.b × Dig S.τ × Col S.τ)
 
+instance PrI.decEq [DecidableEq Pos] : DecidableEq (PrI S Pos) :=
+  @instDecidableEqSum _ _ inferInstance
+    (@instDecidableEqSum _ _ inferInstance (@instDecidableEqSum _ _ inferInstance inferInstance))
+
 /-- The binary vector `zr i` as a vector of ring elements. -/
 def bv (z : Wb → Bool) : Wb → R := fun w => bitVal (z w)
 
