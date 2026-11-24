@@ -192,6 +192,10 @@ theorem exec_seq (p q : Code) (w : St) : exec N K (.seq p q) w = exec N K q (exe
 @[simp] theorem exec_clr (t : Fin 64) (w : St) : exec N K (.clr t) w = Function.update w t [] := rfl
 @[simp] theorem exec_tl (t : Fin 64) (w : St) :
     exec N K (.tl t) w = Function.update w t (w t).tail := rfl
+@[simp] theorem exec_app (d s : Fin 64) (w : St) :
+    exec N K (.app d s) w = Function.update w d (w d ++ w s) := rfl
+@[simp] theorem exec_eqb (f a b : Fin 64) (w : St) : exec N K (.eqb f a b) w =
+    if f = a ∨ f = b ∨ a = b then w else Function.update w f [decide (w a = w b)] := rfl
 @[simp] theorem exec_drop (t c : Fin 64) (w : St) : exec N K (.drop t c) w =
     if t = c then w else Function.update w t ((w t).drop (w c).length) := rfl
 @[simp] theorem exec_mv (d s c : Fin 64) (w : St) : exec N K (.mv d s c) w =
@@ -254,6 +258,14 @@ theorem exec_writes : ∀ (c : Code) (w : St) (r : Fin 64), c.writes r = false �
   | .tl t, w, r, h => by
     simp only [Code.writes, beq_eq_false_iff_ne] at h
     simp [exec, Function.update_of_ne (Ne.symm h)]
+  | .app d s, w, r, h => by
+    simp only [Code.writes, beq_eq_false_iff_ne] at h
+    simp [exec, Function.update_of_ne (Ne.symm h)]
+  | .eqb f a b, w, r, h => by
+    simp only [Code.writes, beq_eq_false_iff_ne] at h
+    simp only [exec]; split_ifs
+    · rfl
+    · rw [Function.update_of_ne (Ne.symm h)]
   | .rep c body, w, r, h => by
     simp only [Code.writes, Bool.or_eq_false_iff, beq_eq_false_iff_ne] at h
     simp only [exec]
