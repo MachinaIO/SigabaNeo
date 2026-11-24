@@ -58,6 +58,12 @@ instance PrI.decEq [DecidableEq Pos] : DecidableEq (PrI S Pos) :=
   @instDecidableEqSum _ _ inferInstance
     (@instDecidableEqSum _ _ inferInstance (@instDecidableEqSum _ _ inferInstance inferInstance))
 
+instance decEqInIdx [DecidableEq Pos] : DecidableEq (Pos × Dig S.τ × Col S.τ) :=
+  @instDecidableEqProd _ _ inferInstance inferInstance
+
+instance decEqAutIdx : DecidableEq (Fin S.b × Dig S.τ × Col S.τ) :=
+  @instDecidableEqProd _ _ inferInstance inferInstance
+
 /-- The binary vector `zr i` as a vector of ring elements. -/
 def bv (z : Wb → Bool) : Wb → R := fun w => bitVal (z w)
 
