@@ -665,6 +665,108 @@ theorem exec_tOut (w : St) (x y : List (Rq N K)) (hx : x.length = 2 * K) (hy : y
     shiftIn_encL_gen _ _ _ (List.length_replicate ..) hx,
     shiftIn_encL_gen _ x _ (List.length_replicate ..) hy]
 
+/-! ### The main theorem of `mulPKC` -/
+
+theorem map_eq_range_getD {α β : Type} (L : List α) (d : α) (f : α → β) :
+    (List.range L.length).map (fun t => f (L.getD t d)) = L.map f := by
+  apply List.ext_getElem (by simp)
+  intro i h1 h2
+  simp only [List.getElem_map, List.getElem_range]
+  rw [List.getD_eq_getElem _ _ (by simpa using h1)]
+
+theorem flatMap_eq_range_getD {α β : Type} (L : List α) (d : α) (g : α → List β) :
+    L.flatMap g = (List.range L.length).flatMap (fun t => g (L.getD t d)) := by
+  rw [List.flatMap_def, List.flatMap_def, ← map_eq_range_getD L d g]
+
+theorem length_enum_col : (Enum.list (α := Fin 2 × Fin K)).length = 2 * K := by
+  show ((Enum.list (α := Fin 2)).product (Enum.list (α := Fin K))).length = _
+  have : (Enum.list (α := Fin K)) = List.finRange K := rfl
+  simp [List.product, enum_fin2, this]; ring
+
+theorem adL_blocks (hK : 0 < K) (Ad : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) :
+    adL Ad = adBlock hK Ad 0 ++ adBlock hK Ad 1 := by
+  rw [adL_eq, enum_fin2]
+  simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, adBlock]
+  congr 1 <;>
+  · rw [flatMap_eq_range_getD _ (0, ⟨0, hK⟩), length_enum_col]
+    congr 1; funext t
+    rw [flatMap_eq_range_getD (List.finRange K) ⟨0, hK⟩, List.length_finRange]
+    rfl
+
+theorem zeros_eq_flatMap (n : ℕ) :
+    List.replicate (2 * n) (0 : Rq N K) = (List.range n).flatMap fun _ => [0, 0] := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    rw [List.range_succ, List.flatMap_append, ← ih, show 2 * (n + 1) = 2 * n + 2 by ring,
+      List.replicate_add]
+    rfl
+
+theorem matL_eq_range (hK : 0 < K) (M : Fin 2 → Fin 2 × Fin K → Rq N K) :
+    matL M = (List.range (2 * K)).map (fun t => M 0 (colOf hK t)) ++
+      (List.range (2 * K)).map (fun t => M 1 (colOf hK t)) := by
+  rw [matL, enum_fin2]
+  simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
+  rw [← map_eq_range_getD _ (0, ⟨0, hK⟩), ← map_eq_range_getD _ (0, ⟨0, hK⟩), length_enum_col]
+  rfl
+
+theorem finOf_val (hK : 0 < K) (i : Fin K) : finOf hK i.val = i := by
+  rw [finOf, List.getD_eq_getElem _ _ (by simp)]; simp
+
+theorem mulPKm_eq (hK : 0 < K) (A : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Ad : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (t : ℕ) (a : Fin 2) :
+    jRes (jRes (fun _ _ => 0) (rowF A 0 0) (rowF A 1 0) (adMj hK Ad 0)) (rowF A 0 1) (rowF A 1 1)
+      (adMj hK Ad 1) t a = mulPKm A Ad a (colOf hK t) := by
+  simp only [jRes, zero_add, mulPKm, Fintype.sum_prod_type, Fin.sum_univ_two, Finset.sum_range]
+  congr 1 <;>
+  · refine Finset.sum_congr rfl fun i _ => ?_
+    simp only [adMj, finOf_val, digRow, rowF, extF, i.isLt, dite_true, Fintype.sum_prod_type,
+      Fin.sum_univ_two]
+    simp
+
+theorem mulPKC_writes_rMA : mulPKC.writes rMA = false := by decide
+theorem rPart_writes_ge (r : Fin 2) : ∀ q : Fin 64, 57 ≤ q.val → (rPart r).writes q = false := by
+  fin_cases r <;> decide
+
+/-- **`mulPKC` computes `EvalPK` of `Mul`**: from the list of `A` in `rMA` and the stream
+`adL Ad ++ rest` in `rMAd`, it writes the list of `mulPKm A Ad` in `rMOut` and leaves `rest` in
+`rMAd`. -/
+theorem exec_mulPKC (hK : 0 < K) (w : St) (A : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Ad : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (rest : List (Rq N K))
+    (hMA : w rMA = encL N K (matL A)) (hE : w rMAd = encL N K (adL Ad ++ rest))
+    (hT : MulTmpl N K w) :
+    exec N K mulPKC w rMOut = encL N K (matL (mulPKm A Ad)) ∧
+    exec N K mulPKC w rMAd = encL N K rest := by
+  show exec N K (.seq tLoop tOut) (exec N K (rPart 1) (exec N K (rPart 0)
+      (exec N K (.cp rS rT4KNK) w))) rMOut = _ ∧
+    exec N K (.seq tLoop tOut) (exec N K (rPart 1) (exec N K (rPart 0)
+      (exec N K (.cp rS rT4KNK) w))) rMAd = _
+  rw [adL_blocks hK, List.append_assoc] at hE
+  set W0 := exec N K (.cp rS rT4KNK) w with hW0
+  have hT0 : MulTmpl N K W0 := hT.of_writes fun q hq => by
+    rw [hW0, exec_cp, Function.update_of_ne (fun e => by subst e; simp at hq)]
+  have hS0 : W0 rS = encL N K ((List.range (2 * K)).flatMap fun t =>
+      [(fun (_ : ℕ) (_ : Fin 2) => (0 : Rq N K)) t 0, (fun (_ : ℕ) (_ : Fin 2) => (0 : Rq N K)) t 1]) := by
+    rw [hW0, exec_cp, Function.update_self, hT.t4KNK, zeros_eq_flatMap]
+  obtain ⟨a1, a2⟩ := exec_rPart hK 0 W0 A Ad (fun _ _ => 0) _ (by rw [hW0, exec_cp,
+    Function.update_of_ne (by decide), hMA]) hS0 (by rw [hW0, exec_cp,
+    Function.update_of_ne (by decide), hE]) hT0
+  set W1 := exec N K (rPart 0) W0 with hW1
+  have hT1 : MulTmpl N K W1 := hT0.of_writes fun q hq => exec_writes _ _ _ (rPart_writes_ge 0 q hq)
+  have hMA1 : W1 rMA = encL N K (matL A) := by
+    rw [hW1, exec_writes _ _ _ (by decide), hW0, exec_cp, Function.update_of_ne (by decide), hMA]
+  obtain ⟨b1, b2⟩ := exec_rPart hK 1 W1 A Ad _ rest hMA1 a1 a2 hT1
+  set W2 := exec N K (rPart 1) W1 with hW2
+  have hT2 : MulTmpl N K W2 := hT1.of_writes fun q hq => exec_writes _ _ _ (rPart_writes_ge 1 q hq)
+  obtain ⟨c1, c2⟩ := exec_tLoop W2 _ hT2 b1
+  rw [exec_seq]
+  set W3 := exec N K tLoop W2 with hW3
+  have hT3 : MulTmpl N K W3 := hT2.of_writes fun q hq => exec_writes _ _ _ (by revert q; decide)
+  refine ⟨?_, ?_⟩
+  · rw [exec_tOut W3 _ _ (by simp) (by simp) hT3 c1 c2, matL_eq_range hK]
+    simp only [mulPKm_eq]
+  · rw [exec_writes _ _ _ (by decide), hW3, exec_writes _ _ _ (by decide), b2]
+
 end MVM
 
 end SigabaNeo.Tape
