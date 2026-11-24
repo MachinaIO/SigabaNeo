@@ -40,7 +40,7 @@ tapes), and `64 · (2^128)² · Cst ≤ 2^965` (`kb_confA`).
 
 * `attributeHiding_conf`: from `KeyRCost` and `HardAt (params3 …) kb`, `HardAt (params5 …) kb`
   with `965 ≤ kb`;
-* `attributeHiding_conf_rlwe`: the same at `kb` with the registry's strength: `965 ≤ 2650 ≤
+* `attributeHiding_conf_rlwe`: the same at `kb` with the registry's strength: `965 ≤ 1158 ≤
   RingLWE.H` at both instances (`ringLWE_H_registry3/5`, `registry_covers_kb`).
 -/
 
@@ -575,25 +575,25 @@ theorem attributeHiding_conf {Ts Ls Tk Lk Sk : ℕ} (hkey : KeyRCost Ts Ls Tk Lk
   exact kb_confA.trans (pow_le_pow_right₀ (by norm_num) hkb)
 
 theorem params3_conf : params3 Np (2 ^ Kp) kp (.cbd 16) =
-    params3 (2 ^ 36) (2 ^ (2 ^ 27)) (2 ^ 27 + 1) (.cbd 16) := by
+    params3 (2 ^ 34) (2 ^ (2 ^ 26)) (2 ^ 26 + 1) (.cbd 16) := by
   rw [Np_def, kp, Kp_def]
 
 theorem params5_conf : params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16) =
-    params5 (2 ^ 36) (2 ^ (2 ^ 27)) (2 ^ 27 + 1) (Fin (2 ^ 65)) (.cbd 16) := by
+    params5 (2 ^ 34) (2 ^ (2 ^ 26)) (2 ^ 26 + 1) (Fin (2 ^ 62)) (.cbd 16) := by
   show params5 Np (2 ^ Kp) kp (Fin dp) (.cbd 16) = _
   rw [Np_def, kp, Kp_def, dp_def]
 
-/-- **The registry's strength covers the strength needed**: `965 ≤ 2650 ≤ RingLWE.H` at the
+/-- **The registry's strength covers the strength needed**: `965 ≤ 1158 ≤ RingLWE.H` at the
 parameters of hybrids 3 and 5. -/
 theorem registry_covers_kb :
     965 ≤ RingLWE.H (params3 Np (2 ^ Kp) kp (.cbd 16)) ∧
       965 ≤ RingLWE.H (params5 Np (2 ^ Kp) kp (Fin confP.d) (.cbd 16)) := by
-  refine ⟨(show 965 ≤ 2650 by norm_num).trans ?_, (show 965 ≤ 2650 by norm_num).trans ?_⟩
+  refine ⟨(show 965 ≤ 1158 by norm_num).trans ?_, (show 965 ≤ 1158 by norm_num).trans ?_⟩
   · rw [params3_conf]; exact Strength.ringLWE_H_registry3
   · rw [params5_conf]; exact Strength.ringLWE_H_registry5
 
 /-- **Attribute hiding of the concrete scheme from the registry's decision Ring-LWE**: the
-assumption `RingLWE.decision.Holds` gives `HardAt` at `965 ≤ 2650 ≤ RingLWE.H` bits. -/
+assumption `RingLWE.decision.Holds` gives `HardAt` at `965 ≤ 1158 ≤ RingLWE.H` bits. -/
 theorem attributeHiding_conf_registry (hR : RingLWE.decision.Holds) {Ts Ls Tk Lk Sk : ℕ}
     (hkey : KeyRCost Ts Ls Tk Lk Sk) (hTs : 520 ≤ Ts) (hLs : 259 ≤ Ls) (hTk : Tk ≤ 650)
     (hLk : Lk ≤ 270) (hSk : Sk ≤ 2 ^ 198 + 2 ^ 196) :

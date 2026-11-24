@@ -5,10 +5,10 @@ import Mathlib.Data.Set.Finite.List
 /-!
 # The predicate word of a branching program, and `Eval`
 
-**The word** (`bpWord F`, `bpLen = 15 · 2^40 · 32 + 2^40 = 481 · 2^40` bits): the 15 transition
-tables, then the output table. Entry `(z, a)` of table `i` is at index `2^40 i + 256 z + a`, as 32
+**The word** (`bpWord F`, `bpLen = 15 · 2^22 · 14 + 2^22 = 211 · 2^22` bits): the 15 transition
+tables, then the output table. Entry `(z, a)` of table `i` is at index `2^22 i + 256 z + a`, as 14
 bits, most significant first (`entryIdx`); the output bit `(z, a)` is at
-`outOff + 256 z + a`, `outOff = 15 · 2^45`. `tablesOf C` reads a word back (`tablesOf_bpWord`),
+`outOff + 256 z + a`, `outOff = 210 · 2^22`. `tablesOf C` reads a word back (`tablesOf_bpWord`),
 and every word of `bpLen` bits is the word of the program it reads (`bpWord_tablesOf`).
 
 **Attributes.** `attrOf w` reads 16 symbols of 8 bits, most significant first: the inverse of
@@ -30,29 +30,29 @@ open AdvancedEncryption.PE.Gates.BPCircuit AdvancedEncryption.PE.Gates
 /-! ### The word -/
 
 /-- The length of a predicate word. -/
-def bpLen : ℕ := 481 * 2 ^ 40
+def bpLen : ℕ := 211 * 2 ^ 22
 
 /-- The offset of the output table. -/
-def outOff : ℕ := 15 * 2 ^ 45
+def outOff : ℕ := 210 * 2 ^ 22
 
 /-- The index of entry `(z, a)` of table `i`. -/
-def entryIdx (i : Fin 15) (z : State) (a : Sym) : ℕ := 2 ^ 40 * i.val + 256 * z.val + a.val
+def entryIdx (i : Fin 15) (z : State) (a : Sym) : ℕ := 2 ^ 22 * i.val + 256 * z.val + a.val
 
-/-- The 32-bit number at bit `p`, most significant first. -/
+/-- The 14-bit number at bit `p`, most significant first. -/
 def readNum (C : List Bool) (p : ℕ) : State :=
-  ⟨MuxTree.idx (fun ℓ => C.getD (p + (32 - ℓ)) false) 32, MuxTree.idx_lt _ _⟩
+  ⟨MuxTree.idx (fun ℓ => C.getD (p + (14 - ℓ)) false) 14, MuxTree.idx_lt _ _⟩
 
 /-- **The program of a word.** -/
 def tablesOf (C : List Bool) : BP where
-  step i z a := readNum C (32 * entryIdx i z a)
+  step i z a := readNum C (14 * entryIdx i z a)
   out z a := C.getD (outOff + 256 * z.val + a.val) false
 
 /-- Bit `k` of the word of `F`. -/
 def wordBit (F : BP) (k : ℕ) : Bool :=
   if h : k < outOff then
-    F.step ⟨k / 32 / 2 ^ 40, by unfold outOff at h; omega⟩
-      ⟨k / 32 % 2 ^ 40 / 256, by omega⟩ ⟨k / 32 % 256, by omega⟩ |>.val.testBit (31 - k % 32)
-  else if h' : k - outOff < 2 ^ 40 then
+    F.step ⟨k / 14 / 2 ^ 22, by unfold outOff at h; omega⟩
+      ⟨k / 14 % 2 ^ 22 / 256, by omega⟩ ⟨k / 14 % 256, by omega⟩ |>.val.testBit (13 - k % 14)
+  else if h' : k - outOff < 2 ^ 22 then
     F.out ⟨(k - outOff) / 256, by omega⟩ ⟨(k - outOff) % 256, by omega⟩
   else false
 
@@ -65,21 +65,21 @@ theorem getD_bpWord (F : BP) {k : ℕ} (hk : k < bpLen) : (bpWord F).getD k fals
   rw [bpWord, List.getD_eq_getElem _ _ (by rw [List.length_ofFn]; exact hk), List.getElem_ofFn]
 
 theorem readNum_bpWord (F : BP) (i : Fin 15) (z : State) (a : Sym) :
-    readNum (bpWord F) (32 * entryIdx i z a) = F.step i z a := by
+    readNum (bpWord F) (14 * entryIdx i z a) = F.step i z a := by
   have hi := i.isLt; have hz := z.isLt; have ha := a.isLt
   apply Fin.ext
   simp only [readNum]
-  rw [MuxTree.idx_congr _ (fun ℓ => (F.step i z a).val.testBit (ℓ - 1)) 32 (fun ℓ h1 h2 => ?_),
+  rw [MuxTree.idx_congr _ (fun ℓ => (F.step i z a).val.testBit (ℓ - 1)) 14 (fun ℓ h1 h2 => ?_),
     MuxTree.idx_testBit, Nat.mod_eq_of_lt (F.step i z a).isLt]
-  have hk : 32 * entryIdx i z a + (32 - ℓ) < outOff := by unfold entryIdx outOff; omega
+  have hk : 14 * entryIdx i z a + (14 - ℓ) < outOff := by unfold entryIdx outOff; omega
   rw [getD_bpWord F (by unfold bpLen; unfold outOff at hk; omega), wordBit, dif_pos hk]
-  have e1 : (32 * entryIdx i z a + (32 - ℓ)) / 32 = entryIdx i z a := by omega
-  have e2 : (32 * entryIdx i z a + (32 - ℓ)) % 32 = 32 - ℓ := by omega
+  have e1 : (14 * entryIdx i z a + (14 - ℓ)) / 14 = entryIdx i z a := by omega
+  have e2 : (14 * entryIdx i z a + (14 - ℓ)) % 14 = 14 - ℓ := by omega
   simp only [e1, e2]
-  have f1 : entryIdx i z a / 2 ^ 40 = i.val := by unfold entryIdx; omega
-  have f2 : entryIdx i z a % 2 ^ 40 / 256 = z.val := by unfold entryIdx; omega
+  have f1 : entryIdx i z a / 2 ^ 22 = i.val := by unfold entryIdx; omega
+  have f2 : entryIdx i z a % 2 ^ 22 / 256 = z.val := by unfold entryIdx; omega
   have f3 : entryIdx i z a % 256 = a.val := by unfold entryIdx; omega
-  simp only [f1, f2, f3, show 31 - (32 - ℓ) = ℓ - 1 by omega]
+  simp only [f1, f2, f3, show 13 - (14 - ℓ) = ℓ - 1 by omega]
 
 /-- **A word reads back its program.** -/
 theorem tablesOf_bpWord (F : BP) : tablesOf (bpWord F) = F := by
@@ -103,12 +103,12 @@ theorem bpWord_tablesOf (C : List Bool) (hC : C.length = bpLen) : bpWord (tables
   unfold wordBit
   split_ifs with ha hb
   · simp only [tablesOf, readNum, MuxTree.testBit_idx]
-    have he : entryIdx ⟨k / 32 / 2 ^ 40, by unfold outOff at ha; omega⟩
-        ⟨k / 32 % 2 ^ 40 / 256, by omega⟩ ⟨k / 32 % 256, by omega⟩ = k / 32 := by
+    have he : entryIdx ⟨k / 14 / 2 ^ 22, by unfold outOff at ha; omega⟩
+        ⟨k / 14 % 2 ^ 22 / 256, by omega⟩ ⟨k / 14 % 256, by omega⟩ = k / 14 := by
       unfold entryIdx; simp only; omega
     rw [he]
-    simp only [show 31 - k % 32 < 32 by omega, decide_true, Bool.true_and]
-    exact congrArg (C.getD · false) (show 32 * (k / 32) + (32 - (31 - k % 32 + 1)) = k by omega)
+    simp only [show 13 - k % 14 < 14 by omega, decide_true, Bool.true_and]
+    exact congrArg (C.getD · false) (show 14 * (k / 14) + (14 - (13 - k % 14 + 1)) = k by omega)
   · simp only [tablesOf]
     exact congrArg (C.getD · false)
       (show outOff + 256 * ((k - outOff) / 256) + (k - outOff) % 256 = k by omega)

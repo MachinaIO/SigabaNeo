@@ -11,7 +11,7 @@ the bounds, the word of `simWP sd (predR rp ins')`.
 
 **`wfSpecS_of_wfSpecR`**: the block on the stream (`WfSpecS`, the tail of the block word
 `blockWord W C = bit0 C :: rpW W (bpRP (tablesOf C))`) from `WfSpecR`: `rp := bpRP (tablesOf C)`,
-`length_bpRP < 2^50`, `nA + 183 ≤ W`, and the predicate as the value of the last instruction's
+`length_bpRP < 2^50`, `nA + 93 ≤ W`, and the predicate as the value of the last instruction's
 destination `rOUT` (`bpRP_getLast`). **`wfSpec_tailB`**: the block behind the bit (`tail 1` first)
 meets `WfSpec` on the block word, for the key component of the reductions.
 -/
@@ -46,7 +46,7 @@ theorem predR_eq_pred {W' : ℕ} (rp : RP (Fin nA) W') (ins' : Instr (Fin nA) W'
 open AdvancedEncryption.PE.Gates.BPCircuit in
 /-- **`WfSpecS` from the stream spec** at the store width `W ≥ 311` and the instruction bound
 `Ic ≥ 2^50`: the stream of a program word is that of `bpRP (tablesOf C)`, of
-`1443 · 2^39 − 770 < 2^50` instructions on `183` registers, and its predicate is the value of the
+`633 · 2^21 − 266 < 2^50` instructions on `93` registers, and its predicate is the value of the
 last instruction's destination `rOUT` (`bpPred = RP.pred · rOUT`). -/
 theorem wfSpecS_of_wfSpecR {wfB : XProg 256} {W Ic : ℕ} (h : WfSpecR hk c wfB W Ic)
     (hW : 311 ≤ W) (hIc : 2 ^ 50 ≤ Ic) : WfSpecS hk c wfB W where
@@ -54,7 +54,7 @@ theorem wfSpecS_of_wfSpecR {wfB : XProg 256} {W Ic : ℕ} (h : WfSpecR hk c wfB 
   law sd C _ _ := by
     have hp : WB2.predR (bpRP (tablesOf C)) ⟨rOUT, .reg (lay 15).x1, .reg (lay 15).x2⟩ = predC C := by
       rw [predR_eq_pred, predC_eq_pred]
-    rw [blockWord_eq, List.tail_cons, h.law sd (bpRP (tablesOf C)) _ (by omega)
+    rw [blockWord_eq, List.tail_cons, h.law sd (bpRP (tablesOf C)) _ (by have : nA = 128 := rfl; omega)
       ((le_of_eq (length_bpRP _)).trans (le_trans (by norm_num) hIc)) (bpRP_getLast _), hp,
       ← simW_eq_P]
 

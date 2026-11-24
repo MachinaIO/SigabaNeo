@@ -289,11 +289,11 @@ theorem sz_clrS : SZ clrS 360 := by
 end SetupSizes
 
 
-theorem kp_eq : kp = 2 ^ 27 + 1 := by rw [kp, Kp_def]
+theorem kp_eq : kp = 2 ^ 26 + 1 := by rw [kp, Kp_def]
 
 theorem sz_chiP : SZ chiP (2 ^ 21) := by
-  have hK : Kp ≤ 2 ^ 27 := by rw [Kp_def]
-  have hB : (2 : ℕ) ^ 27 < 2 ^ 240 := by norm_num
+  have hK : Kp ≤ 2 ^ 26 := by rw [Kp_def]
+  have hB : (2 : ℕ) ^ 26 < 2 ^ 240 := by norm_num
   unfold chiP cbdP
   exact ((sz_repX (sz_coinAp 2 4) (16 + 16)).seq ((sz_repX (sz_bitAp 3 true) 16).seq
     ((sz_repX sz_upStep 16).seq ((sz_repX sz_downStep 16).seq

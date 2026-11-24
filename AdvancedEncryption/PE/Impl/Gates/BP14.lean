@@ -1,16 +1,15 @@
 import PE.BranchingProgram
 
 /-!
-# Branching programs with 32-bit states and 8-bit symbols
+# Branching programs with 14-bit states and 8-bit symbols
 
-The predicate class of the dual-use implementation (`PE/Impl/DualUse`): branching programs of 16
-steps on 32-bit states over 8-bit symbols (`BP`, `run`, `output`), the 128-bit attribute as 16
-symbols (`Attr`, `encAttr`), and the universe `bpUniverse` whose required predicates are these
-programs. It was the problem definition before the problem was relaxed (`PE/BranchingProgram.lean`:
-14-bit states, symbol width chosen by the implementation); for the width of 8 bits its attributes,
-messages, encodings and description coincide with those of `univ w8`, so correctness and
-attribute hiding transfer as they are, and every required 14-bit program is one of these
-(`PE/Impl/DualUse/Relaxed.lean`).
+The predicate class of the dual-use implementation (`PE/Impl/DualUse`), in the concrete form its
+proofs use: branching programs of 16 steps on 14-bit states (`State`, the problem's `ProgState`)
+over 8-bit symbols (`BP`, `run`, `output`), the 128-bit attribute as 16 symbols (`Attr`,
+`encAttr`), and the universe `bpUniverse` whose required predicates are these programs. This is
+`PE.BranchingProgram.univ w8` field by field (the width chosen by the implementation is `w8`):
+the attributes, messages, encodings and description are definitionally those of `univ w8`, and a
+`Program w8` is a `BP` with the same tables (`PE/Impl/DualUse/Relaxed.lean`).
 -/
 
 namespace AdvancedEncryption.PE.BranchingProgram
@@ -22,8 +21,10 @@ open SigabaNeo
 /-- An 8-bit symbol. -/
 abbrev Sym := Fin 256
 
-/-- A 32-bit state. -/
-abbrev State := Fin (2 ^ 32)
+/-- A 14-bit state. -/
+abbrev State := Fin (2 ^ 14)
+
+theorem state_eq : State = ProgState := rfl
 
 /-- An attribute: 16 symbols. -/
 abbrev Attr := Fin 16 → Sym

@@ -19,14 +19,14 @@ open SigabaNeo AdvancedEncryption.DualUse.Params
 set_option maxRecDepth 100000
 set_option exponentiation.threshold 1000
 
-theorem m3_eqA {k : ℕ} (hk : k = 2 ^ 27 + 1) : m3 k = 2 * (2 ^ 27 + 1) := by
+theorem m3_eqA {k : ℕ} (hk : k = 2 ^ 26 + 1) : m3 k = 2 * (2 ^ 26 + 1) := by
   subst hk; simp [m3, Fintype.card_prod]
 
-theorem m5_eqA {k d : ℕ} (hk : k = 2 ^ 27 + 1) (hd : d = 2 ^ 65) :
-    m5 k d = 2 ^ 65 + (2 * (2 ^ 27 + 1) + (2 * (2 ^ 27 + 1) + 1)) := by
+theorem m5_eqA {k d : ℕ} (hk : k = 2 ^ 26 + 1) (hd : d = 2 ^ 62) :
+    m5 k d = 2 ^ 62 + (2 * (2 ^ 26 + 1) + (2 * (2 ^ 26 + 1) + 1)) := by
   subst hk hd; simp [m5, Idx5, Fintype.card_sum, Fintype.card_prod]
 
-theorem time_dec3M_A {N K k : ℕ} (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk : k = 2 ^ 27 + 1) :
+theorem time_dec3M_A {N K k : ℕ} (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk : k = 2 ^ 26 + 1) :
     (dec3M N K k).time ≤ 2 ^ 380 := by
   refine time_dec3M_le.trans ?_
   rw [m3_eqA hk]
@@ -34,27 +34,27 @@ theorem time_dec3M_A {N K k : ℕ} (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk : k =
   subst hN hK
   norm_num
 
-theorem time_dec5M_A {N K k d : ℕ} (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk : k = 2 ^ 27 + 1)
-    (hd : d = 2 ^ 65) : (dec5M N K k d).time ≤ 2 ^ 380 := by
+theorem time_dec5M_A {N K k d : ℕ} (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk : k = 2 ^ 26 + 1)
+    (hd : d = 2 ^ 62) : (dec5M N K k d).time ≤ 2 ^ 380 := by
   refine (time_dec5M_le _).trans ?_
   rw [m5_eqA hk hd]
   simp only [encLen]
   subst hN hK
   norm_num
 
-theorem states_dec3M_A {N K k : ℕ} (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk : k = 2 ^ 27 + 1) :
+theorem states_dec3M_A {N K k : ℕ} (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk : k = 2 ^ 26 + 1) :
     (dec3M N K k).states ≤ 2 ^ 16 := by
   refine (states_dec3M_le (m := 130) ?_ ?_).trans (by norm_num)
   · subst hK; norm_num
   · rw [m3_eqA hk]; subst hN hK; norm_num
 
-theorem states_dec5M_A {N K k d : ℕ} (hN : N = 2 ^ 36) (hK : K = 2 ^ 27) (hk : k = 2 ^ 27 + 1)
-    (hd : d = 2 ^ 65) : (dec5M N K k d).states ≤ 2 ^ 16 := by
+theorem states_dec5M_A {N K k d : ℕ} (hN : N = 2 ^ 34) (hK : K = 2 ^ 26) (hk : k = 2 ^ 26 + 1)
+    (hd : d = 2 ^ 62) : (dec5M N K k d).states ≤ 2 ^ 16 := by
   refine (states_dec5M_le _ (m := 130) ?_ ?_).trans (by norm_num)
   · subst hK; norm_num
   · rw [m5_eqA hk hd]; subst hN hK; norm_num
 
-theorem kp_eqA : kp = 2 ^ 27 + 1 := by rw [kp, Kp_def]
+theorem kp_eqA : kp = 2 ^ 26 + 1 := by rw [kp, Kp_def]
 
 theorem time_dec3M_confA : (dec3M Np Kp kp).time ≤ 2 ^ 380 := time_dec3M_A Np_def Kp_def kp_eqA
 

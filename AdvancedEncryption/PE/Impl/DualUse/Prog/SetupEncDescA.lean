@@ -96,12 +96,12 @@ theorem descLen_encMP_of_counts {M : ℕ} (hB : M < 2 ^ 240) (h0 : 2 * DualUse.p
 
 section ConfA
 
-variable (hN : Np = 2 ^ 36) (hK : Kp = 2 ^ 27) (hd : confP.d = 2 ^ 65) (hA : nA = 128)
+variable (hN : Np = 2 ^ 34) (hK : Kp = 2 ^ 26) (hd : confP.d = 2 ^ 62) (hA : nA = 128)
 include hN hK
 
-theorem kp_A : kp = 2 ^ 27 + 1 := by rw [kp, hK]
+theorem kp_A : kp = 2 ^ 26 + 1 := by rw [kp, hK]
 
-theorem nk_A : Np * Kp = 2 ^ 63 := by rw [hN, hK]; norm_num
+theorem nk_A : Np * Kp = 2 ^ 60 := by rw [hN, hK]; norm_num
 
 include hd hA in
 /-- **The description length of `Setup` at the sizes of `confA`.** -/
@@ -129,7 +129,7 @@ theorem descLen_encMP_A (hw : confP.w = 768) (hpw : DualUse.pw.length ≤ 2 ^ 20
     (encMP hkp confP chiSamplerP).descLen ≤ 2 ^ 300 := by
   have ek := kp_A hN hK
   have enk := nk_A hN hK
-  have eJ : nJenc (N := Np) hkp = 128 * (2 * (2 * (2 ^ 27 + 1) * ((2 ^ 27 + 1) * 2 ^ 36))) := by
+  have eJ : nJenc (N := Np) hkp = 128 * (2 * (2 * (2 ^ 26 + 1) * ((2 ^ 26 + 1) * 2 ^ 34))) := by
     rw [nJenc_eqA, hA, ek, hN]
   refine descLen_encMP_of_counts (M := 2 ^ 200) (by norm_num) (by omega) ?_ ?_ ?_ (by omega) ?_ ?_ ?_
     ?_ ?_ ?_ ?_ ?_

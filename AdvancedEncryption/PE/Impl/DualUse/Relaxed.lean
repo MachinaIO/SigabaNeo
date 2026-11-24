@@ -1,17 +1,17 @@
 import PE.Impl.DualUse.ImplBase
 
 /-!
-# The dual-use implementation for the relaxed problem (width 8)
+# The dual-use implementation for the problem at width 8
 
 The problem (`PE/BranchingProgram.lean`) asks for branching programs on 14-bit states, with the
 symbol width chosen by the submission. The dual-use implementation chooses the width `w8` (16
-symbols of 8 bits) and keeps its own predicates, the programs on 32-bit states of
-`PE/Impl/Gates/BP32.lean`:
+symbols of 8 bits); its predicate class is `bpUniverse` (`PE/Impl/Gates/BP14.lean`), the same
+programs in the concrete form its proofs use:
 
 * `univ w8` and `bpUniverse` have the same attributes, messages, encodings and description
   (`correct_iff`, `attributeHiding_iff`: the propositions are the same);
-* every required program on 14-bit states is a program on 32-bit states with the same output
-  (`liftBP`, `output_liftBP`), so expressiveness for `bpUniverse` gives expressiveness for
+* a required program is a `BP` with the same tables (`ofProgram`) and the same output, by
+  definition (`output_ofProgram`), so expressiveness for `bpUniverse` is expressiveness for
   `univ w8` (`expressive_of`).
 -/
 
@@ -87,44 +87,22 @@ theorem attributeHiding_iff (impl : Impl sig) :
   unfold AttributeHiding
   simp only [admissible_iff, view_real, view_ideal]
 
-/-- A 14-bit state as a 32-bit state. -/
-def up (z : ProgState) : State := Fin.castLE (Nat.pow_le_pow_right (by norm_num) (by norm_num)) z
+/-- A program of the problem as a program of the implementation: the same tables. -/
+def ofProgram (F : Program w8) : BP where
+  step := F.step
+  out := F.out
 
-/-- A 32-bit state cut to its low 14 bits. -/
-def down (z : State) : ProgState := ⟨z.val % 2 ^ stateBits, Nat.mod_lt _ (by norm_num)⟩
-
-theorem down_up (z : ProgState) : down (up z) = z := by
-  apply Fin.ext; simp [down, up, Nat.mod_eq_of_lt z.isLt]
-
-/-- A program on 14-bit states as a program on 32-bit states. -/
-def liftBP (F : Program w8) : BP where
-  step i z a := up (F.step i (down z) a)
-  out z a := F.out (down z) a
-
-theorem foldl_up (m : ℕ) (f : ProgState → Fin m → ProgState) (a : ProgState) :
-    Fin.foldl m (fun z i => up (f (down z) i)) (up a) = up (Fin.foldl m f a) := by
-  induction m generalizing a with
-  | zero => simp [Fin.foldl_zero]
-  | succ m ih =>
-    rw [Fin.foldl_succ_last, Fin.foldl_succ_last, ih (fun z i => f z i.castSucc) a, down_up]
-
-theorem run_liftBP (F : Program w8) (x : Attr) : run (liftBP F) x = up (F.run x) :=
-  foldl_up 15 (fun z (i : Fin 15) => F.step (show Fin (w8.len - 1) from i) z (x i.castSucc)) 0
-
-theorem output_liftBP (F : Program w8) (x : Attr) : output (liftBP F) x = F.output x := by
-  have h1 : output (liftBP F) x = F.out (down (run (liftBP F) x)) (x (Fin.last 15)) := rfl
-  rw [h1, run_liftBP, down_up]
-  rfl
+theorem output_ofProgram (F : Program w8) (x : Attr) : output (ofProgram F) x = F.output x := rfl
 
 /-- Expressiveness for `bpUniverse` gives expressiveness for `univ w8`. -/
 theorem expressive_of {impl : Impl sig} (h : Expressive bpUniverse params impl) :
     Expressive (univ w8) params impl := by
   intro (F : Program w8)
-  obtain ⟨C, hC⟩ := h (liftBP F)
+  obtain ⟨C, hC⟩ := h (ofProgram F)
   refine ⟨C, fun x => ?_⟩
   have := hC x
   show Authorized params impl C x ↔ F.output x = false
-  rw [← output_liftBP F x]
+  rw [← output_ofProgram F x]
   exact this
 
 end AdvancedEncryption.DualUse.Relaxed
