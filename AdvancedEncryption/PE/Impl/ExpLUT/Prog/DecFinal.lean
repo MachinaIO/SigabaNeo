@@ -742,8 +742,8 @@ def repC (cnt src buf : Fin 200) : Code :=
 theorem wr_repC (cnt src buf : Fin 200) : wr (repC cnt src buf) = [193, 197, 197, 194, 193, 194] :=
   rfl
 
-theorem exec_repC (w : St) (cnt src buf : Fin 200) (hcnt : cnt.val < 180) (hsrc : src.val < 193)
-    (hbuf : buf.val < 180) (hs : (w src).length = (w 6).length)
+theorem exec_repC (w : St) (cnt src buf : Fin 200) (hcnt : cnt.val < 180) (hsrc1 : src ≠ 193)
+    (hsrc2 : src ≠ 197) (hsrc3 : src ≠ 194) (hbuf : buf.val < 180) (hs : (w src).length = (w 6).length)
     (hb : (w buf).length = (w cnt).length * (w 6).length) :
     (exec N K (repC cnt src buf) w) 193 = (List.replicate (w cnt).length (w src)).flatten ∧
       ∀ j, j ∉ wr (repC cnt src buf) → (exec N K (repC cnt src buf) w) j = w j := by
@@ -755,9 +755,6 @@ theorem exec_repC (w : St) (cnt src buf : Fin 200) (hcnt : cnt.val < 180) (hsrc 
     simp only [hw1, exec_ofList_cons, exec_ofList_nil, exec]
     rw [Function.update_of_ne (lo_ne hcnt 193)]
   have h197 : (w1 197).length = (w cnt).length := by rw [w1_eq]; simp
-  have hsrc1 : src ≠ 193 := fun e => by subst e; simp at hsrc
-  have hsrc2 : src ≠ 197 := fun e => by subst e; simp at hsrc
-  have hsrc3 : src ≠ 194 := fun e => by subst e; simp at hsrc
   let P : ℕ → St → Prop := fun i w' =>
     w' 6 = w 6 ∧ w' src = w src ∧
       w' 193 = (w buf ++ (List.replicate i (w src)).flatten).drop (i * V) ∧
@@ -955,6 +952,212 @@ theorem exec_finBC (hN : 0 < N) (w : St) {bs B2s ks : List (List Bool)} (h : Fin
     simp only [hs3, Function.update_apply, Fin.reduceEq, ↓reduceIte]
     rw [hs2lo 2 (by decide), hc.zero, decRM_replicate, zero_add]
   · intro j hj; rw [e, cf j (not_mem_hi hj rfl), hs3lo j hj]
+
+/-- Part `η`: `acc += Σ_{i<W} Σ_{k,c} σ^i(h − (H⁽²⁾ − G⁽²⁾))_{k,c} k`. -/
+def finHC : Code := ofList [.cp 192 59, .cp 199 19, halvesC 74, g1C, repC 74 196 19,
+  .cp 192 199, .cp 194 2, .cp 195 2, subVecC 18 19,
+  .cp 193 188, .cp 192 67, .cp 194 2, .cp 195 2, subVecC 18 19,
+  .cp 183 2, .cp 184 2, conjC 18 19]
+
+/-- The words of the gadget row `G⁽²⁾`. -/
+def g1W (N K : ℕ) (one : List Bool) : List (List Bool) :=
+  List.replicate K (List.replicate (N * K) false) ++ (List.range K).map (gIt N K one)
+
+/-- The inputs of part `η`. -/
+structure FinHIn (N K : ℕ) (w : St) (Hps : List (List (List Bool) × List (List Bool)))
+    (hs ks : List (List Bool)) : Prop where
+  c : Consts N K w
+  r3 : (w 3).length = N * K
+  r5 : (w 5).length = K - 1
+  r6 : w 6 = List.replicate (2 * K * (N * K)) false
+  r8 : (w 8).length = 2 * K
+  r18 : (w 18).length = (w 74).length * (2 * K)
+  r19 : (w 19).length = (w 18).length * (N * K)
+  H : w 59 = (Hps.map fun p => p.1.flatten ++ p.2.flatten).flatten
+  Hl : Hps.length = (w 74).length
+  Hw : ∀ p ∈ Hps, p.1.length = 2 * K ∧ p.2.length = 2 * K ∧ (∀ x ∈ p.1, x.length = N * K) ∧
+    ∀ x ∈ p.2, x.length = N * K
+  h : w 67 = hs.flatten
+  hl : hs.length = (w 18).length
+  hw : ∀ x ∈ hs, x.length = N * K
+  key : w 182 = ks.flatten
+  ksl : (w 12).length * (w 18).length ≤ ks.length
+  ksw : ∀ x ∈ ks, x.length = N * K
+  acc : (w 180).length = N * K
+
+set_option maxHeartbeats 2000000 in
+theorem exec_finHC (hN : 0 < N) (hK : 0 < K) (w : St) {Hps : List (List (List Bool) × List (List Bool))}
+    {hs ks : List (List Bool)} (h : FinHIn N K w Hps hs ks) :
+    (exec N K finHC w) 182 = (ks.drop ((w 12).length * (w 18).length)).flatten ∧
+      ((exec N K finHC w) 180).length = N * K ∧
+      decRM N K ((exec N K finHC w) 180) = decRM N K (w 180) +
+        conjL (autMW N K (w 20).length)
+          (List.zipWith (subRMW N K) hs (List.zipWith (subRMW N K) (Hps.map Prod.snd).flatten
+            (List.replicate (w 74).length (g1W N K (w 3))).flatten)) ks (w 18).length
+          (w 12).length ∧
+      ∀ j : Fin 200, j.val < 180 → (exec N K finHC w) j = w j := by
+  have hc := h.c
+  set m := (w 74).length
+  set H1s := (Hps.map Prod.snd).flatten
+  set G1s := (List.replicate m (g1W N K (w 3))).flatten
+  have hw6 : (w 6).length = 2 * K * (N * K) := by rw [h.r6, List.length_replicate]
+  have hflat : ∀ l : List (List Bool), (∀ x ∈ l, x.length = N * K) → l.length = 2 * K →
+      l.flatten.length = (w 6).length := fun l hl hl2 => by
+    rw [length_flatten_of hl, hl2, hw6]
+  -- stage 1: the rows H⁽²⁾
+  set t1 := Function.update (Function.update w 192 (w 59)) 199 (w 19) with ht1
+  have t1lo : ∀ j : Fin 200, j.val < 180 → t1 j = w j := fun j hj => by
+    rw [ht1, Function.update_of_ne (lo_ne hj 199), Function.update_of_ne (lo_ne hj 192)]
+  set Hps' := Hps.map fun p => (p.1.flatten, p.2.flatten)
+  obtain ⟨a199, -, af⟩ := exec_halvesC (N := N) (K := K) t1 74 (by decide) (ps := Hps') (L := [])
+    (fun p hp => by
+      obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hp
+      obtain ⟨h1, h2, h3, h4⟩ := h.Hw q hq
+      exact ⟨by rw [t1lo 6 (by decide)]; exact hflat _ h3 h1,
+        by rw [t1lo 6 (by decide)]; exact hflat _ h4 h2⟩)
+    (by rw [t1lo 74 (by decide)]; simp [Hps', h.Hl, m])
+    (by simp only [ht1, Function.update_apply, Fin.reduceEq, ↓reduceIte, h.H, List.append_nil,
+      Hps', List.map_map]; rfl)
+    (by rw [show t1 199 = w 19 by simp [ht1], t1lo 6 (by decide), h.r19, h.r18, hw6]
+        simp [Hps', h.Hl]; ring)
+  set t2 := exec N K (halvesC 74) t1
+  have t2lo : ∀ j : Fin 200, j.val < 180 → t2 j = w j := fun j hj => by
+    rw [af j (not_mem_hi hj rfl), t1lo j hj]
+  have hc2 : Consts N K t2 := consts_of_agree hc fun j hj => t2lo j (by omega)
+  -- stage 2: G⁽²⁾ and its repetitions
+  obtain ⟨g196, gf⟩ := exec_g1C t2 hc2 (by rw [t2lo 6 (by decide)]; exact h.r6)
+    (by rw [t2lo 3 (by decide)]; exact h.r3) (by rw [t2lo 5 (by decide)]; exact h.r5)
+  set t3 := exec N K g1C t2
+  have t3lo : ∀ j : Fin 200, j.val < 180 → t3 j = w j := fun j hj => by
+    rw [gf j (not_mem_hi hj rfl), t2lo j hj]
+  have hg1 : (g1W N K (w 3)).flatten = t3 196 := by
+    rw [g196, t2lo 3 (by decide), g1W, List.flatten_append, List.flatten_replicate_replicate]
+  have hg1w : ∀ x ∈ g1W N K (w 3), x.length = N * K := fun x hx => by
+    rcases List.mem_append.mp hx with hx | hx
+    · rw [List.eq_of_mem_replicate hx, List.length_replicate]
+    · obtain ⟨k, _, rfl⟩ := List.mem_map.mp hx; exact length_gIt h.r3 k
+  have hg1l : (g1W N K (w 3)).length = 2 * K := by simp [g1W]; ring
+  obtain ⟨r193, rf⟩ := exec_repC (N := N) (K := K) t3 74 196 19 (by decide) (by decide) (by decide)
+    (by decide) (by decide)
+    (by rw [← hg1, t3lo 6 (by decide)]; exact hflat _ hg1w hg1l)
+    (by rw [t3lo 19 (by decide), t3lo 74 (by decide), t3lo 6 (by decide), h.r19, h.r18, hw6]; ring)
+  set t4 := exec N K (repC 74 196 19) t3
+  have t4lo : ∀ j : Fin 200, j.val < 180 → t4 j = w j := fun j hj => by
+    rw [rf j (not_mem_hi hj rfl), t3lo j hj]
+  have t4_199 : t4 199 = H1s.flatten := by
+    rw [rf 199 (by rw [wr_repC]; simp), gf 199 (by rw [wr_g1C]; simp), a199]
+    simp only [Hps', List.map_map, H1s]
+    rw [List.flatten_flatten]; simp [Function.comp_def]
+  have t4_193 : t4 193 = G1s.flatten := by
+    rw [r193, t3lo 74 (by decide), ← hg1]
+    simp only [G1s, List.flatten_flatten, List.map_replicate]; rfl
+  -- stage 3: H⁽²⁾ − G⁽²⁾
+  set t5 := Function.update (Function.update (Function.update t4 192 (t4 199)) 194 (t4 2)) 195
+    (t4 2) with ht5
+  have t5lo : ∀ j : Fin 200, j.val < 180 → t5 j = w j := fun j hj => by
+    rw [ht5, Function.update_of_ne (lo_ne hj 195), Function.update_of_ne (lo_ne hj 194),
+      Function.update_of_ne (lo_ne hj 192), t4lo j hj]
+  have hc5 : Consts N K t5 := consts_of_agree hc fun j hj => t5lo j (by omega)
+  have H1w : ∀ x ∈ H1s, x.length = N * K := fun x hx => by
+    obtain ⟨l, hl, hxl⟩ := List.mem_flatten.mp hx
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hl
+    exact (h.Hw q hq).2.2.2 x hxl
+  have H1l : H1s.length = (w 18).length := by
+    rw [List.length_flatten, h.r18, List.map_map]
+    have : Hps.map (List.length ∘ Prod.snd) = Hps.map fun _ => 2 * K :=
+      List.map_congr_left fun p hp => (h.Hw p hp).2.1
+    rw [this, List.map_const', List.sum_replicate, h.Hl, smul_eq_mul]
+  have G1w : ∀ x ∈ G1s, x.length = N * K := fun x hx => by
+    obtain ⟨l, hl, hxl⟩ := List.mem_flatten.mp hx
+    rw [List.eq_of_mem_replicate hl] at hxl; exact hg1w x hxl
+  have G1l : G1s.length = (w 18).length := by
+    simp only [G1s, List.length_flatten, List.map_replicate, List.sum_replicate, hg1l, h.r18,
+      smul_eq_mul, m]
+  obtain ⟨b188, -, -, b194, b195, bf⟩ := exec_subVecC t5 hc5 18 19 (by decide) (by decide)
+    (La := []) (Lb := []) H1w G1w (by rw [t5lo 18 (by decide)]; exact H1l)
+    (by rw [t5lo 18 (by decide)]; exact G1l)
+    (by rw [t5lo 18 (by decide), t5lo 19 (by decide)]; exact h.r19)
+    (by simp only [ht5, Function.update_apply, Fin.reduceEq, ↓reduceIte, t4_199, List.append_nil])
+    (by simp only [ht5, Function.update_apply, Fin.reduceEq, ↓reduceIte, t4_193, List.append_nil])
+    (by simp only [ht5, Function.update_apply, Fin.reduceEq, ↓reduceIte, t4lo 2 (by decide),
+      hc.zero, List.length_replicate])
+    (by simp only [ht5, Function.update_apply, Fin.reduceEq, ↓reduceIte, t4lo 2 (by decide),
+      hc.zero, List.length_replicate])
+  set t6 := exec N K (subVecC 18 19) t5
+  have t6lo : ∀ j : Fin 200, j.val < 180 → t6 j = w j := fun j hj => by
+    rw [bf j (not_mem_hi hj rfl), t5lo j hj]
+  -- stage 4: h − (H⁽²⁾ − G⁽²⁾)
+  set xs1 := List.zipWith (subRMW N K) H1s G1s
+  have xs1w : ∀ x ∈ xs1, x.length = N * K := fun x hx => by
+    obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hx
+    rw [List.getElem_zipWith]
+    exact length_subRMW N K (H1w _ (List.getElem_mem _)) _
+  have xs1l : xs1.length = (w 18).length := by simp [xs1, H1l, G1l]
+  set t7 := Function.update (Function.update (Function.update (Function.update t6 193 (t6 188)) 192
+    (t6 67)) 194 (t6 2)) 195 (t6 2) with ht7
+  have t7lo : ∀ j : Fin 200, j.val < 180 → t7 j = w j := fun j hj => by
+    rw [ht7, Function.update_of_ne (lo_ne hj 195), Function.update_of_ne (lo_ne hj 194),
+      Function.update_of_ne (lo_ne hj 192), Function.update_of_ne (lo_ne hj 193), t6lo j hj]
+  have hc7 : Consts N K t7 := consts_of_agree hc fun j hj => t7lo j (by omega)
+  obtain ⟨d188, -, -, -, -, df⟩ := exec_subVecC t7 hc7 18 19 (by decide) (by decide)
+    (La := []) (Lb := []) h.hw xs1w (by rw [t7lo 18 (by decide)]; exact h.hl)
+    (by rw [t7lo 18 (by decide)]; exact xs1l)
+    (by rw [t7lo 18 (by decide), t7lo 19 (by decide)]; exact h.r19)
+    (by simp only [ht7, Function.update_apply, Fin.reduceEq, ↓reduceIte, t6lo 67 (by decide), h.h,
+      List.append_nil])
+    (by simp only [ht7, Function.update_apply, Fin.reduceEq, ↓reduceIte, b188, List.append_nil])
+    (by simp only [ht7, Function.update_apply, Fin.reduceEq, ↓reduceIte, t6lo 2 (by decide),
+      hc.zero, List.length_replicate])
+    (by simp only [ht7, Function.update_apply, Fin.reduceEq, ↓reduceIte, t6lo 2 (by decide),
+      hc.zero, List.length_replicate])
+  set t8 := exec N K (subVecC 18 19) t7
+  have t8lo : ∀ j : Fin 200, j.val < 180 → t8 j = w j := fun j hj => by
+    rw [df j (not_mem_hi hj rfl), t7lo j hj]
+  -- stage 5: the sums
+  set xs2 := List.zipWith (subRMW N K) hs xs1
+  have xs2w : ∀ x ∈ xs2, x.length = N * K := fun x hx => by
+    obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hx
+    rw [List.getElem_zipWith]
+    exact length_subRMW N K (h.hw _ (List.getElem_mem _)) _
+  set t9 := Function.update (Function.update t8 183 (t8 2)) 184 (t8 2) with ht9
+  have t9lo : ∀ j : Fin 200, j.val < 180 → t9 j = w j := fun j hj => by
+    rw [ht9, Function.update_of_ne (lo_ne hj 184), Function.update_of_ne (lo_ne hj 183), t8lo j hj]
+  have hc9 : Consts N K t9 := consts_of_agree hc fun j hj => t9lo j (by omega)
+  -- registers 180, 182 are untouched by the stages before the sums
+  have t8_180 : t8 180 = w 180 := by
+    rw [df 180 (by rw [wr_subVecC]; simp), ht7]
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+    rw [bf 180 (by rw [wr_subVecC]; simp), ht5]
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+    rw [rf 180 (by rw [wr_repC]; simp), gf 180 (by rw [wr_g1C]; simp),
+      af 180 (by rw [wr_halvesC]; simp), ht1]
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+  have t8_182 : t8 182 = w 182 := by
+    rw [df 182 (by rw [wr_subVecC]; simp), ht7]
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+    rw [bf 182 (by rw [wr_subVecC]; simp), ht5]
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+    rw [rf 182 (by rw [wr_repC]; simp), gf 182 (by rw [wr_g1C]; simp),
+      af 182 (by rw [wr_halvesC]; simp), ht1]
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+  have e : exec N K finHC w = exec N K (conjC 18 19) t9 := rfl
+  obtain ⟨c182, c180, cd, cf⟩ := exec_conjC hN t9 hc9 18 19 (by decide) (by decide) (L' := [])
+    xs2w h.ksw (by rw [t9lo 18 (by decide)]; simp [xs2, h.hl, xs1l])
+    (by rw [t9lo 18 (by decide), t9lo 12 (by decide)]; exact h.ksl)
+    (by rw [t9lo 18 (by decide), t9lo 19 (by decide)]; exact h.r19)
+    (by simp only [ht9, Function.update_apply, Fin.reduceEq, ↓reduceIte, d188])
+    (by simp only [ht9, Function.update_apply, Fin.reduceEq, ↓reduceIte, t8_182, h.key,
+      List.append_nil])
+    (by simp only [ht9, Function.update_apply, Fin.reduceEq, ↓reduceIte, t8lo 2 (by decide),
+      hc.zero, List.length_replicate])
+    (by simp only [ht9, Function.update_apply, Fin.reduceEq, ↓reduceIte, t8lo 2 (by decide),
+      hc.zero, List.length_replicate])
+    (by simp only [ht9, Function.update_apply, Fin.reduceEq, ↓reduceIte, t8_180]; exact h.acc)
+  rw [t9lo 12 (by decide), t9lo 18 (by decide), t9lo 20 (by decide)] at *
+  refine ⟨by rw [e, c182, List.append_nil], by rw [e]; exact c180, ?_, ?_⟩
+  · rw [e, cd]
+    simp only [ht9, Function.update_apply, Fin.reduceEq, ↓reduceIte, t8_180]
+  · intro j hj; rw [e, cf j (not_mem_hi hj rfl), t9lo j hj]
 
 end RingVM
 
