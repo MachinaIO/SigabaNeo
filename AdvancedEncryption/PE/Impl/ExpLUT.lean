@@ -10,6 +10,10 @@ import PE.Impl.ExpLUT.Correctness
 import PE.Impl.ExpLUT.KeyGen
 import PE.Impl.ExpLUT.CorrectBound
 import PE.Impl.ExpLUT.Laws
+import PE.Impl.ExpLUT.Params.Conf
+import PE.Impl.ExpLUT.Params.Noise
+import PE.Impl.ExpLUT.Params.Correct
+import PE.Impl.ExpLUT.BPBridge
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
@@ -28,4 +32,8 @@ The algebra of §4 and the scheme and correctness of §5, over an abstract ring 
 * `Correctness`: eq. (4) and Theorem 1 exactly; `CorrectBound`: at the norm level.
 * `KeyGen`: keys by box rejection, with a trapdoor-independent law.
 * `Laws`: the laws of the coins; Theorem 1 in probability.
+* `Params/Conf`: the concrete configuration (`q = 2^{2^16} − 1`, `n = 2^24`, `W = 2^22`, `m̄`, laws,
+  key boxes and their cover bound); `Params/Noise`: the noise certificate (Lemma 9, Lemma 11's
+  shift, `corrBound < q/4`); `Params/Correct`: correctness at the concrete parameters.
+* `BPBridge`: the universe's programs of width `w8` as branching programs; correctness for them.
 -/
