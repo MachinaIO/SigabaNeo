@@ -506,6 +506,125 @@ Remaining for `Enc` (design fixed; each block a `Prog` with a run lemma and a ce
 6. the law (`EncSpec D (cbdR D 16) (cbdR D 16) (floodR D eFl)`, i.e. `χc χc χfl` at `Dc`) and the
    costs (`VB` chain as `SetupTime`; dominated by `c^aut`: `b · 4K² · 2K` rows of `2K` products,
    about `2^{56}` products of `22 N² K²` sweeps each, top `≈ 2^{98}`: clock `≈ 2^{240}`).
+
+### Package G (attribute hiding of the implementation) — branch `t3/explut-g`
+
+Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the aggregator) and
+`PE/Impl/Game/OneSetup.lean`. Axioms `[propext, Classical.choice, Quot.sound]`.
+
+**Main results.**
+* `AH/Final.attributeHiding_Dc`: `AttributeHiding (univ w8) params impl` for every `impl` with
+  `ImplSpec Dc kb L impl χc χc χfl` (`Setup` meets `SetupSpec Dc (χbin Dc)`, `Enc` meets
+  `EncSpec Dc χc χc χfl`, `KeyGen` meets `KeySpec Dc kb L` **and `KeyLongSpec Dc L`** (empty word on
+  predicate words longer than `L`, as DualUse's `key_long`), `Eval = evalMachineX`), from
+  `CircularRingLWE.decision.HardAt (circParamsD Dc) kb'` with `64 · 2^256 · C ≤ 2^kb'`, given
+  `KbCover kb 2^18500`, the flooding hypothesis `hflood` at some `ε_fl ≤ 2^{−148}`, and the
+  reduction machines `RedMachine … C A Dm` (below). Simulator: `simMachine Dc` (`AH/Sim`: the
+  encoding of `ctUW`, independent `unifW` entries; existence via `Machine.exists_finiteAlg'`, cost
+  not bounded — it does not enter the definition).
+* `attributeHiding_Dc_registry`: the same from `CircularRingLWE.decision.Holds`, with
+  `strength_Dc : 1155 ≤ CircularRingLWE.decision.H (circParamsD Dc)` (`m = m_B + 1 + τ|J| ≤ 2^50`).
+  **Required strength**: `kb' ≥ 262 + log₂ C`; `1155` bits cover `log₂ C ≤ 893`.
+* Generic: `AH/Assembly.attributeHiding_of_reduction` (any `D`, `kb`, coverage, statistical
+  hypotheses), `advantage_le` (`|adv| ≤ statW ε_fl + |rAcc − uAcc|`).
+
+**Pieces.**
+* `AH/Unif`: `unifW` is within `ε_U = N 2^{−K}` of uniform (`closeTo_unif_unifW`, every element has
+  probability `≥ 2^{−NK}`, Bernoulli); `closeTo_setupLaw` (`epsSetup`), `ctUW` and `closeTo_ctU_ctUW`
+  (`epsCT`), `mem_support_setupLawW`.
+* `AH/Games`: `real_eq_gameV` (real experiment = `gameV` of `realVW`, keys `KGiW` = ideal key law
+  on `Setup`'s support under `RealCovW`), `realVW_close` (to D's `hyb0`, `χbin = bitLaw`),
+  `ideal_eq_gameV0` (unshifted challenge), `idealVW_close`, `gameV0_idealView_eq` (`ctU_shift`).
+* `AH/RedGame`: the reduction's experiment `redGame` (secret `redSec`, view `view2`, keys `KGsim`
+  = `redKeyLaw` with `T_sim`); `accept_red`: equal to the hybrid's for continuations rejecting
+  `bad` (`KGsim_eq_KGiW` under `SimCovW`, `22 ≤ b`).
+* `Game/OneSetup` + `AH/Chain1`: **a statistical change of the secret costs its distance once**
+  (`closeTo_runWith_setup_one`; D's `chain` pays `|Attr| = 2^128` per step, which with P's
+  `m̄ = 3NK + 408` would give only `2^{−20}`); `chain1`.
+* `AH/Conf`: `Dc` (`setting Dc = confS` by `rfl`), coverage `realCovW_of`, `simCovW_of` from
+  `KbCover kb coverBound`: real shift `≤ τn = 2^40`; `T_sim` shift `≤ W τ n D^b (B_R̂ + 2)` with
+  `B_R̂ = (stepBound 1 1 1)^[16] 1` (`matBnd_simKey`, `progBnd_progOf`, `rowBnd_simTrap`,
+  `vBound_iterate_le`, `simShift_rhat_le`). **The cover bound `2^18500` suffices.**
+* `AH/Stat`: `delta1, delta5 ≤ 2^{−148}`, `deltaT ≤ 2^{−189}`, `epsSetup, epsCT ≤ 2^{−150}`,
+  `statW Dc ε_fl ≤ 2^{−140}` for `ε_fl ≤ 2^{−148}`, `hstat_Dc`.
+
+**Open (hypotheses of `attributeHiding_Dc`).**
+1. ~~`hflood` at `χfl`~~ — **done in package G3** (`hflood_Dc`, `attributeHiding_Dc'`).
+2. `KbCover kb 2^18500` for the KeyGen machine's `KeyBoxes` (P's `famBig`/`famBall` boxes over
+   `PIdx (Wb Dc) (Jh Dc) …` have it by `add_mem_of_eq`; `Big` must be the image of fair bits).
+3. **The reduction machine** (`RedMachine Dc kb L (circParamsD Dc) impl χc χc χfl C A Dm`): for every
+   admissible `A` and distinguisher `Dm`, a machine `R` with
+   `R.acceptProb (realLaw (circParamsD Dc)) = rAcc …`, `R.acceptProb (idealLaw …) = uAcc …` and
+   `cost R ≤ C (cost A + cost Dm)²`. `rAcc`/`uAcc` = probability over `circReal`/`circUnif` that
+   `redGame` followed by `DcB Dm` accepts. `R` must: decode the instance word (B's rows: plain rows
+   = the columns of `B`, `d`, and the helper columns `(k, (1, i))`; key row `(i, j)` = helper
+   `k = jhE j` column `(0, i)`, automorphism index `jList`; the law bridge is **done in package G3**:
+   `realLaw_bind_decode`/`idealLaw_bind_decode`, so `R` only has to run `F ∘ decode D` on its input);
+   draw `B̄⁽²⁾`, gadget columns of `B⁽²⁾`, `H⁽²⁾`, `d₂`, the flooding errors, `zr` (`redSec`); run
+   `A` (`Lib/Machines/Inline`) answering select with `mpkEnc (view2 …).1`, key queries with
+   `KGsim` (`EvalPK` over `bpOf (progOf C)` for `R̂_F` via `simKey` (Corollary 1 propagation),
+   `simX`/`simTrap` (Lemma 11), one box try with `kb`, encoding `skEnc`), the challenge with
+   `ctEnc (shiftCT ⌊q/2⌉ μ (view2 …).2)`; track `bad` (`authW`: `|C| = predLen ∧ output x = false`);
+   output `Dm`'s verdict on `viewObs8` if not `bad`, `[false]` otherwise.
+
+### Package G3 (flooding at `χfl`, circular law bridge) — branch `t3/explut-g3`
+
+Files `SigabaNeo/Lib/Lattices/FloodRing.lean`, `SigabaNeo/Lib/Lattices/CircularRingLWEInst.lean`,
+`PE/Impl/ExpLUT/FloodBound.lean`, `PE/Impl/ExpLUT/AH/Flood.lean`, `PE/Impl/ExpLUT/AH/CircBridge.lean`
+(all in the aggregators). Axioms `[propext, Classical.choice, Quot.sound]`.
+
+**Flooding (open hypothesis 1 of G, closed).**
+* Library `FloodRing`: `floodRing N Q W` (one ring element, coefficients uniform below `W`; P's `χfl`
+  is `floodRing (2^24) q (2^eFl)` by `rfl`, `χfl_eq`), `closeTo_floodRing_add` (`∑ⱼ |δⱼ|/W`),
+  `closeTo_floodRing_add_le` (`N B / W` for `cnorm δ ≤ B`), `closeTo_pi_floodRing_add_le`
+  (independent families: `#entries · N B / W`, via `Stat.closeTo_pi`). D's `floodLaw` is not
+  rewritten as `Lattices.floodLaw` over a flattened index type: its four independent families are
+  flooded one by one (`CloseTo.bind`), which needs no law equality.
+* `FloodBound` (generic over `S : Setting (Negacyclic (ZMod Q) n)` with a `NormSpec` whose norm is
+  `cnorm`): `closeTo_iidFam_floodRing_add`, `floodCount S Pos` (the flooded ring elements),
+  `closeTo_floodLaw_add_le`, `cnorm_floodShift_le` (entries of `floodShift ē_b zr` are `±` sums of at
+  most `|Wb|` entries of `ē_b`, possibly under `σ_{g_t}` (`nrm_σ`); norm `≤ |Wb| B_χ`, no factor `n`
+  since `zr` is binary), **`hflood_floodRing`**: `hflood` at `ε = floodCount · n (|Wb| B_χ) / W`.
+* `AH/Flood`: `εflDc = floodCount (setting Dc) Pos · 2^24 (m̄ · 16) / 2^eFl`,
+  `floodCount_Dc_le : floodCount ≤ lhlCols`, **`εflDc_le : εflDc ≤ 2^{−249}`** (P's `flood_budget`,
+  generic `natCast_mul_div_le_inv_pow`, `flood_budget_gen`), `εflDc_le_148`,
+  **`hflood_Dc`** (exactly the hypothesis of `attributeHiding_Dc`), and
+  **`attributeHiding_Dc'`** / **`attributeHiding_Dc_registry'`**: package G's results without
+  `hflood` (remaining hypotheses: `ImplSpec`, `KbCover kb coverBound`, `RedMachine`, the
+  constant `C`).
+
+**Circular Ring-LWE law bridge.**
+* Library `CircularRingLWEInst`: `CircularRingLWE.circRing p` (`σ ← polyOf χ_s`, uniform `aᵣ`,
+  `eᵣ ← polyOf χ_e`, `(aᵣ, aᵣ σ + eᵣ − keyShiftRing p σ r)`), `realLaw_eq_circRing :
+  realLaw p = (circRing p).map encodeRing`, `idealLaw_eq_uniform`; `pi_sum_bind`, `pi_unit_bind`,
+  `pi_prod_bind`.
+* `AH/Final`: `jList` now uses the explicit order **`jhE D : Fin (b·2) ≃ Jh D :=
+  finProdFinEquiv.symm`** (was `Fintype.equivFin`, whose order is unspecified, so a machine could
+  not know it), and `mCirc D = m̄ + K + 1 + K (b·2)` (same value). `strength_Dc` is unchanged
+  (it holds for every `J`).
+* `AH/CircBridge` (generic in `D : Dims`): row layout `ρ D : Fin (circParamsD D).rows ≃ Coord D`,
+  `Coord D = BCol ⊕ Unit ⊕ (Jh × Col)`: plain rows (`plainE`) are, in order, the columns of `B`
+  (`Fin (m̄+K) ≃ Wb ⊕ Fin K`, `bcolE`), `d`, then the plain helper samples `(k, (1, i))` at
+  `m̄ + K + 1 + (i·2b + j)`, `k = jhE j`; key rows (`keyE`, the registry's `finProdFinEquiv`
+  order) `m + (i·2b + j)` are the circular samples `(k, (0, i))`, `k = jhE j`, automorphism index
+  `(jList D)[j]` (`get_jList`). `toPair`, **`enc D i = encodeRing (toPair D i)`** (the registry's
+  word), `decode D` (choice on `encodeRing`; zero instance on other words), **`decode_enc`**.
+  `keyShiftRing_eq` (the registry's key shifts are `σ_{g^{je k}}(s̄) G⁽¹⁾_{(0,i)}`, via
+  `autσ_of_odd` and `G 0 (0, i) = 2^i`), `circRing_eq`, **`realLaw_circParamsD :
+  realLaw (circParamsD D) = (circReal … (χcbd D) (χcbd D)).map (enc D)`** (`χcbd D` = CBD(16)
+  coefficients, `χcbd_Dc : χcbd Dc = χc` by `rfl`), **`idealLaw_circParamsD :
+  idealLaw (circParamsD D) = (circUnif …).map (enc D)`**, `realLaw_circParamsD_Dc` (with `circR Dc χc χc`),
+  and for G2 **`realLaw_bind_decode` / `idealLaw_bind_decode`**: `(realLaw p).bind (F ∘ decode D) =
+  (circReal …).bind F` (resp. `circUnif`). Hence a reduction machine whose output law on a word `w`
+  is `F (decode D w)` with `F i = (redGame … i).bind (DcB Dm)` has acceptance `rAcc`/`uAcc`.
+* Note for G2: `decode` is specified by choice; the machine parses `encodeSample`'s word
+  (`encPair encBits (encList encNat)`: the public matrix, then the `rows · N` coefficients) and must
+  be shown to agree with `decode` on encodings (`decode_enc`), e.g. by computing `toPair`'s inverse
+  `ofPair` from the parsed coefficients (`ofPair_toPair`).
+
+**Remaining for attribute hiding at `Dc`**: `KbCover kb 2^18500` for the KeyGen machine's boxes
+(G's item 2), the reduction machine with its cost bound (G's item 3, package G2), the machines
+meeting `ImplSpec` (package F).
 ### Package F3 (the `KeyGen` machine) — status (branch `t3/explut-f3`)
 
 **Design: a register machine on ring words.** `KeyGen` is far too large for hand-plumbed tape
