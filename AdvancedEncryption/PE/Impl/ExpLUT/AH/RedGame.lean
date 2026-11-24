@@ -167,4 +167,53 @@ theorem accept_red {impl : Impl sig} (hEval : impl.machine .eval = evalMachineX)
   intro x σ hσ C hC
   exact KGsim_eq_KGiW hEval hb hcov x σ (redSec_attr D χfl x inst σ hσ) C hC
 
+
+/-! ### The machines' reduction secret
+
+A machine with fair coins and a bounded clock only produces dyadic probabilities, and
+`2^K − 1` is odd: the uniform parts `B̄⁽²⁾`, `H⁽²⁾`, `d₂` of `redSec` cannot be drawn exactly.
+The reduction machine draws them from `unifW` (`redSecW`); the secret is drawn once, so the
+experiment moves by at most `epsRed = (|BCol| + |Jh| |Col| + 1) ε_U` (`closeTo_redGame`). -/
+
+variable (D kb L)
+
+/-- **The machines' reduction secret**: `redSec` with independent `unifW` entries for the uniform
+parts. -/
+noncomputable def redSecW (χfl : PMF (Rg D)) (x : Attribute w8) (inst : CInst D) : PMF (RSec D) :=
+  (iidLaw (unifW D) (BCol (Wb D) D.K)).bind fun B2 =>
+  (iidFam (unifW D) (Jh D) (Col D.K)).bind fun H2 =>
+  (unifW D).bind fun d2 =>
+  (floodLaw (setting D) Pos χfl).bind fun fl =>
+  (zrLaw (setting D) (Wb D) Pos).map fun zr =>
+    (attrN x, redPub inst B2 H2 d2, zr, redCore inst B2 H2 d2, fl)
+
+/-- The distance of the machines' reduction secret: `ε_U` per uniform ring element. -/
+noncomputable def epsRed : ℝ≥0∞ :=
+  Fintype.card (BCol (Wb D) D.K) * epsU D +
+    (Fintype.card (Jh D) * (Fintype.card (Col D.K) * epsU D) + (epsU D + 0))
+
+theorem closeTo_redSec (χfl : PMF (Rg D)) (x : Attribute w8) (inst : CInst D) :
+    CloseTo (redSec D χfl x inst) (redSecW D χfl x inst) (epsRed D) := by
+  unfold redSec redSecW epsRed
+  refine (closeTo_iid_unif D (BCol (Wb D) D.K)).bind fun B2 _ => ?_
+  refine (closeTo_iidFam_unif D (Jh D) (Col D.K)).bind fun H2 _ => ?_
+  exact (closeTo_unif_unifW D).bind fun d2 _ => CloseTo.refl _
+
+/-- **The machines' reduction challenger**: `specRed` with the secret `redSecW`. -/
+noncomputable def specRedW (impl : Impl sig) (χfl : PMF (Rg D)) (inst : CInst D) :
+    Generic.Spec (univ w8) (RSec D) :=
+  { specRed D kb L impl χfl inst with setup := fun x => redSecW D χfl x inst }
+
+/-- The observable experiment of the machines' reduction for the instance `inst`. -/
+noncomputable def redGameW (impl : Impl sig) (χfl : PMF (Rg D)) (A : Machine 3) (inst : CInst D) :=
+  (ProbOracleComp.runWith (Generic.oracle (specRedW D kb L impl χfl inst))
+    (A.machine.runOracle A.time (paramsWord (univ w8) params))
+    ({} : Generic.GState (univ w8) (RSec D))).map Generic.obs
+
+/-- **The machines' reduction runs the reduction's experiment up to `epsRed`.** -/
+theorem closeTo_redGame (impl : Impl sig) (χfl : PMF (Rg D)) (A : Machine 3) (inst : CInst D) :
+    CloseTo (redGame D kb L impl χfl A inst) (redGameW D kb L impl χfl A inst) (epsRed D) :=
+  (Generic.closeTo_runWith_setup_one (specRed D kb L impl χfl inst)
+    (fun x => redSecW D χfl x inst) (fun x => closeTo_redSec D χfl x inst) _ {}).map _
+
 end AdvancedEncryption.ExpLUT.Prog
