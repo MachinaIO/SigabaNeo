@@ -16,12 +16,12 @@ open SigabaNeo AdvancedEncryption.DualUse.Params
 set_option maxRecDepth 100000
 set_option exponentiation.threshold 1000
 
-theorem m3_conf : m3 kp = 2 * (2 ^ 27 + 1) := by
+theorem m3_conf : m3 kp = 2 * (2 ^ 26 + 1) := by
   simp [m3, Fintype.card_prod, kp, Kp_def]
 
-theorem confD : confP.d = 2 ^ 65 := dp_def
+theorem confD : confP.d = 2 ^ 62 := dp_def
 
-theorem m5_conf : m5 kp confP.d = 2 ^ 65 + (2 * (2 ^ 27 + 1) + (2 * (2 ^ 27 + 1) + 1)) := by
+theorem m5_conf : m5 kp confP.d = 2 ^ 62 + (2 * (2 ^ 26 + 1) + (2 * (2 ^ 26 + 1) + 1)) := by
   simp [m5, Idx5, Fintype.card_sum, Fintype.card_prod, kp, Kp_def, confD]
 
 theorem time_dec3M_conf : (dec3M Np Kp kp).time ≤ 2 ^ 350 := by

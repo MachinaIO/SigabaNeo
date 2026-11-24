@@ -22,7 +22,7 @@ theorem len_Index {N K k : ℕ} (hk : 2 ^ K < 2 ^ k) :
   show (Enum.list (α := Fin 2 × (RingBTVW.Col k × (Fin k × Fin N)))).length = _
   simp only [Enum.length_prod, len_fin, len_col]
 
-theorem confP_d : confP.d = 2 ^ 65 := dp_def
+theorem confP_d : confP.d = 2 ^ 62 := dp_def
 
 theorem scrL_length : scrL.length = 81 := rfl
 

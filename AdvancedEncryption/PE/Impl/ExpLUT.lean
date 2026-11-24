@@ -1,3 +1,15 @@
+import PE.Impl.ExpLUT.Prog.Words
+import PE.Impl.ExpLUT.Prog.UnifCanon
+import PE.Impl.ExpLUT.Prog.SetupTime
+import PE.Impl.ExpLUT.Prog.SetupSize
+import PE.Impl.ExpLUT.Prog.SetupP
+import PE.Impl.ExpLUT.Prog.SetupGad
+import PE.Impl.ExpLUT.Prog.SetupConf
+import PE.Impl.ExpLUT.Prog.Samplers
+import PE.Impl.ExpLUT.Prog.Eval
+import PE.Impl.ExpLUT.Prog.EncSamplersConf
+import PE.Impl.ExpLUT.Prog.EncSamplers
+import PE.Impl.ExpLUT.Prog.EncRow
 import PE.Impl.ExpLUT.Basic
 import PE.Impl.ExpLUT.Ops
 import PE.Impl.ExpLUT.LUT
@@ -20,6 +32,10 @@ import PE.Impl.ExpLUT.Params.Conf
 import PE.Impl.ExpLUT.Params.Noise
 import PE.Impl.ExpLUT.Params.Correct
 import PE.Impl.ExpLUT.BPBridge
+import PE.Impl.ExpLUT.AH.Final
+import PE.Impl.ExpLUT.FloodBound
+import PE.Impl.ExpLUT.AH.Flood
+import PE.Impl.ExpLUT.AH.CircBridge
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
@@ -51,4 +67,5 @@ The proof of Theorem 2 (Appendix A):
   key boxes and their cover bound); `Params/Noise`: the noise certificate (Lemma 9, Lemma 11's
   shift, `corrBound < q/4`); `Params/Correct`: correctness at the concrete parameters.
 * `BPBridge`: the universe's programs of width `w8` as branching programs; correctness for them.
+* `AH/*` (package G): attribute hiding of the implementation (`AH/Final.attributeHiding_Dc`).
 -/

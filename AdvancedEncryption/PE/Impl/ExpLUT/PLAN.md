@@ -404,8 +404,224 @@ programs:
   `μ' = c_m − d₂ − …`, canonical word, decoded bit on register 179) from `c_F` (reg 176) and `A_F`
   (reg 177).
 
-**Remaining for F4** (see the final report of the session for the exact state):
-`autStep`/LUT/Mul/step loops with their link to `evalPK`/`evalCT`, the link of `exec_finC` to
-`decryptRaw` at `setting D`, the front end
-(parsing `encodeTuple [pw, sk, C, ct]` into registers, templates by `natP`, length guard,
-`ValidC`), `DecSpec`, and the clock/descLen bounds (generic, then at `Params/Conf`).
+* `ExpLUT/Prog/DecFinalD`: **`exec_finC_D`** — register 179 = `[decodeBit D (decryptRaw …)]` under
+  `FinD` (registers hold the word lists of `mpk`, `ct`, `k_F`; c_F, A_F⁽²⁾ words decode to
+  `evalCiphertext`, `keyPK … 1`).
+* `ExpLUT/Prog/Dec{Rep,Blocks,Calls,Round,RoundT,Rounds,Lut,Mul,Steps,Enc}`: **`exec_evalC_regs`**
+  (`D.b = 22`, `C.length = predLen`, `DecRegs D mpk ct C w`): `evalC` leaves `A_F = keyPK` (reg 177)
+  and `c_F = evalCiphertext` (reg 176), `RepM`/`RepV` entrywise; registers below 80 unchanged. One
+  round = `roundC t` (`roundPK_eq`/`roundCT_eq`), rounds along the bits (`exec_roundsN` →
+  `bitRounds`), the table loop `lutC`, Mul `mulC i`, the steps `stepsN` (`evalPKAt`/`evalCTAt`).
+  `DecRegs` needs templates 76 = `4K` bits, 77 = `famMLen D`, 78 = `14·2^22` bits.
+* `ExpLUT/Prog/DecSplit` (`splitSkC`/`splitCtC`: fields of `sk`/`ct` from registers 76/77),
+  `DecFront` (`run_parseD`: input `encodeTuple [pw, sk, C, ct]` onto registers 76, 73, 77),
+  `Mersenne/VMFront` (`tmplsP`: templates by `natP`), `Mersenne/VMWF` (`wf_compile`,
+  `coinFree_compile`).
+* **Cost** (`Mersenne/VMCert`, `VMCost`, `VMSize`): every instruction re-certified with scratch at
+  the top size (`checkT_*`, `decide +kernel`); **`compile_time`**: for per-register bounds `B`
+  closed under the code (`Closed`), `timeBoundT (compile c) (encB Mo N K B) ≤ vmTime … c` and the
+  bounds are kept; per-instruction table `instrTime`; **`size_compile`**: exact state count
+  `vmSize c` (per-op sizes: mulRMP 13341, autMP 5859, addRMP 4906, digitRWP 3751, …).
+* **Description length warning**: `descLen_toMachineB` has the factor `3^k` (k tapes); RingVM has
+  247 tapes (256 for the whole machine), so Dec's descLen is about `2^400+`, not `2^200–2^260`.
+  The lever: shrink the register file (e.g. ≤ 81 registers → 128 tapes → `3^128 ≈ 2^203`).
+
+**Remaining for F4**:
+1. Register clash in the front end: `run_parseD`/`splitSkC`/`splitCtC` use 76/77 for the raw
+   `sk`/`ct`, while `DecRegs` wants templates there (and 78). Fix without touching proofs: build
+   the templates for 76–78 elsewhere (e.g. 175, 178, 199 — never written by `evalC` before use),
+   and `cp` them into 76–78 after the split; the validity flag (`lenEqP predLen`) on another free
+   register.
+2. The template list of the prelude (`tmplsP`, plus `ONE` on 3, `[true]` on 75, the VM tapes
+   40–43 incl. the all-ones word), and the bridge of `exec_evalC_regs` (`RepM`/`RepV`) and of the
+   split fields to `FinD`/`DecRegs` (`cFs := cs`, `AF0s := as.take 2K`, `AF1s := as.drop 2K`).
+3. The machine `(seq guard (ifBlank … (seq parse (seq templates (seq (frame vmE (compile decCode))
+   output)))).toMachineB 255 0 nDec` and **`DecSpec`** (determinism from `coinFree_compile`;
+   `[false]` for invalid `C`; output `[true, b, false]` on tape 0).
+4. Clock: a per-register bound `B` for the Dec code, `Closed`, closed forms of the `w*`
+   polynomials, then the concrete numbers at `Params/Conf`; descLen via `size_compile` (and
+   possibly the register-file shrink above).
+### Package F2 (clock of `Setup`, `Enc`) — status (branch `t3/explut-f2`)
+
+Done (axioms `[propext, Classical.choice, Quot.sound]`; no change to the formats of `Words.lean`):
+
+* **Clock of `Setup`** (`Prog/SetupTime.lean`): per-tape bound vectors (`VB`) through the whole
+  program — the framed samplers on their own tapes (`vb_unifCanonP`: fair bits, two templates, the
+  tail `ucTail` certified by `check_ucTail`, the append; `vb_ucF`, `vb_TF` for the sampler of `T`,
+  fields tracked exactly, the sampler scratch at a common bound `S`), the templates at their exact
+  lengths (`vb_tmplP`), the gadget columns (`vb_detCore`: `check_matMulMP` (scratch at the top),
+  `check_gadRowP`, each sweep `2 M + 3`), the output (`vb_outP`, additive in `M`).
+  **`time_setupMP_le : SetupBounds D X.B nI S M → nInS ≤ nI → (setupMP X).time ≤ setupTF D X.B nI S M`**
+  (`SetupBounds`: `S` above every field's bits and `B.S₀`, `X.B.a ≤ N K`, `M` above the scratch, the
+  input and the templates).
+* **Concrete `Setup`** (`Prog/SetupConf.lean`, `Prog/EncSamplersConf.lean`): counts in closed form
+  (`nB2_eq`, …, `nAaut_eq`; no enumeration is evaluated), `setupTFn`, `nInS ≤ 2^11`; for any `D`
+  with `e = 24`, `K = 2^16`, `b = 22`, `m̄ = 3·2^40 + 408` and the binary sampler
+  (`S = 2^97`, `M = 2^98`): **`time_setupMP_conf`: clock ≤ 2^242** (the closed form lies in
+  `(2^241, 2^242]`; dominated by `Ā T`: `22 N² K² · m̄ K` sweeps of `2 M + 3` steps),
+  **`descLen_setupMP_conf`: ≤ 2^249**; at `Dc`: `EncConf.time_setupMP_Dc`, `EncConf.descLen_setupMP_Dc`.
+* **Samplers of `Enc`** (`Prog/EncSamplers.lean`): ring elements with i.i.d. coefficients
+  (`ringLawD`; the word is the concatenation of the canonical coefficient words, `rEnc_ofCoeffs`,
+  `ringLawD_enc`); flooding `floodR D e`, `floodP D e = repF N (entF K e)`, `law_floodP` (`e < K`);
+  centered binomial `cbdR D η`, `cbdPM η L K` = DualUse's `cbdP` with one's-complement leaves
+  (`mv v = v − [v < 0]`, `encM_eq_zmodEnc`), `law_cbdPM`, `cbdRP D η L = repF N (cbdPM …)`,
+  `law_cbdRP`. **Interface for `Enc`**: `AppendLaw P 0 P5 (χ.map (rEnc D).enc)` (scratch `2 … 6`
+  blank; `Setup`'s `RingSampler` has only `2 … 4`, so these are not `RingSampler`s; `n` elements
+  are `repF (n N)` coefficient samples, `catPow_mul`). At `Dc` (`EncSamplersConf`): `χc = cbdR Dc 16`,
+  `χfl = floodR Dc eFl` (`rfl`), `law_χcP` (`cbdRP Dc 16 6`), `law_χflP` (`floodP Dc eFl`).
+* **The encoding row** (Lib `ProgAlgo/Mersenne/EncRow.lean`, `Prog/EncRow.lean`): `encRowP : Prog 56`
+  (`0` output register of `L N K` bits, `1` `s`, streams `2` `A₀`, `3` `A₁`, `4` `Z`, `5` `E`,
+  templates `6` `K`, `7` `N`, `8` `N K`, `9` `L`; scratch `10 … 55`), `run_encRowP` (`rowW`),
+  `rowW_eq`, **`rowW_vecE`**: on the words of families over `α`, the word of
+  `c ↦ s A₀ c + A₁ c − Z c + E c` (canonical). `check_encRowP`, **`time_encRowP`**:
+  `(2M + 3)(200 + L (200 + 400 N + 400 N K + 100 N² + 200 N² K + 30 N² K² + 50 K))`.
+
+* **The gadget stream** (Lib `ProgAlgo/Mersenne/GadStream.lean`): `gzP : Prog 36` (`0` output
+  register of `2K · N K` bits, `1` `z₀`, `2` `z₁`, templates `3` `K`, `4` `N`, `5` `N K`, `6` `K − 1`;
+  scratch `7 … 35`), `run_gzP`: `gzW z₀ ++ gzW z₁` (`z_r, 2 z_r, …, 2^{K−1} z_r`), `decRM_gIt`:
+  entry `i` reads `2^i • z_r`; `check_gzP`, `time_gzP`
+  (`(2M + 3)(100 + 400 K + 400 N K + 400 N K² + 100 N K³ + 100 K² + 100 N)`).
+
+Remaining for `Enc` (design fixed; each block a `Prog` with a run lemma and a certificate, as
+`encRowP`):
+1. *gadget stream on the scheme's words*: entry `c = (r, i)` of `gzW z₀ ++ gzW z₁` reads
+   `(z ᵥ* G) (r, i)` (`decRM_gIt`, `vecMul_G_apply`, `Enum.getElem_product`), and `rowW_vecE` with
+   a general `Z` stream (only `decRM` of its blocks matters); `Z` of every encoding is such a stream (`b`: the zero word of `|BCol| N K` bits,
+   a template), so every component is `encRowP` with `A₀`, `A₁` the two rows of the public matrix:
+   `b` (`B`, `z = 0`), `h_k` (`H_k`, `z = (σ_{g^{je k}} s, 1)`), `c^aut_{t,d}` (`A^aut_{t,d}`, secret
+   `s_t = σ_{kf t} s`, `z = digit_d(C_t) (s_t, 1)`), `c₀` (`A₀`, `z = (s, 1)`), `c^in_{t,d}`
+   (`A^in_{t,d}`, `z = digit_d(C^in_t) (s, 1)`); the bottom rows of `C^in_t` with `A₀ = a_t`,
+   `A₁ = 0`, the sign handled by `−(s a_t) + z G + e = (0 − s a_t) − (−z) G + e` (or a variant of the
+   row with `subRMP` for the first term);
+2. `σ_{g^j}(s)`: `j` rounds of `autMP` with the unary index `g = 1 + 2N/W` (template), `j = je k`
+   or `2^t` by `natP` (`ExpRing.σ_comp`; `σ` is `2N`-periodic, so no index arithmetic);
+3. `C_t = σ_{kf t}(H_{inv t}) − [0; σ_{kf t}(h_{inv t})]` (`autMP`, `subRMP`, `canonRP` per entry;
+   `h_{inv t}` read back from the output word by its offset), then its digits (`digitRWP` of the
+   canonical words — `binaryDigits` reads `ZMod.val`), streamed in `Dig` order;
+4. `X^{w x_t}`: the template `2N − w x_t` from the 8 bits of `x_t` (most significant first: `dblP`
+   doublings, then `14` more, `dropP` from a `2N` template), `rhoJP`;
+5. parsing (`ufChunk` per field of `mpk`, as DualUse's `encParseP`), the coins in the order of
+   `encCoinsLaw` (framed `cbdRP`/`floodP`, `law_seq_app` as `law_setupP`), `c_m` (`mulRMP`,
+   `addRMP`, the word of `2^{K−1}` at coefficient `0` when `μ`), the frame of the output (`frameApP`);
+6. the law (`EncSpec D (cbdR D 16) (cbdR D 16) (floodR D eFl)`, i.e. `χc χc χfl` at `Dc`) and the
+   costs (`VB` chain as `SetupTime`; dominated by `c^aut`: `b · 4K² · 2K` rows of `2K` products,
+   about `2^{56}` products of `22 N² K²` sweeps each, top `≈ 2^{98}`: clock `≈ 2^{240}`).
+
+### Package G (attribute hiding of the implementation) — branch `t3/explut-g`
+
+Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the aggregator) and
+`PE/Impl/Game/OneSetup.lean`. Axioms `[propext, Classical.choice, Quot.sound]`.
+
+**Main results.**
+* `AH/Final.attributeHiding_Dc`: `AttributeHiding (univ w8) params impl` for every `impl` with
+  `ImplSpec Dc kb L impl χc χc χfl` (`Setup` meets `SetupSpec Dc (χbin Dc)`, `Enc` meets
+  `EncSpec Dc χc χc χfl`, `KeyGen` meets `KeySpec Dc kb L` **and `KeyLongSpec Dc L`** (empty word on
+  predicate words longer than `L`, as DualUse's `key_long`), `Eval = evalMachineX`), from
+  `CircularRingLWE.decision.HardAt (circParamsD Dc) kb'` with `64 · 2^256 · C ≤ 2^kb'`, given
+  `KbCover kb 2^18500`, the flooding hypothesis `hflood` at some `ε_fl ≤ 2^{−148}`, and the
+  reduction machines `RedMachine … C A Dm` (below). Simulator: `simMachine Dc` (`AH/Sim`: the
+  encoding of `ctUW`, independent `unifW` entries; existence via `Machine.exists_finiteAlg'`, cost
+  not bounded — it does not enter the definition).
+* `attributeHiding_Dc_registry`: the same from `CircularRingLWE.decision.Holds`, with
+  `strength_Dc : 1155 ≤ CircularRingLWE.decision.H (circParamsD Dc)` (`m = m_B + 1 + τ|J| ≤ 2^50`).
+  **Required strength**: `kb' ≥ 262 + log₂ C`; `1155` bits cover `log₂ C ≤ 893`.
+* Generic: `AH/Assembly.attributeHiding_of_reduction` (any `D`, `kb`, coverage, statistical
+  hypotheses), `advantage_le` (`|adv| ≤ statW ε_fl + |rAcc − uAcc|`).
+
+**Pieces.**
+* `AH/Unif`: `unifW` is within `ε_U = N 2^{−K}` of uniform (`closeTo_unif_unifW`, every element has
+  probability `≥ 2^{−NK}`, Bernoulli); `closeTo_setupLaw` (`epsSetup`), `ctUW` and `closeTo_ctU_ctUW`
+  (`epsCT`), `mem_support_setupLawW`.
+* `AH/Games`: `real_eq_gameV` (real experiment = `gameV` of `realVW`, keys `KGiW` = ideal key law
+  on `Setup`'s support under `RealCovW`), `realVW_close` (to D's `hyb0`, `χbin = bitLaw`),
+  `ideal_eq_gameV0` (unshifted challenge), `idealVW_close`, `gameV0_idealView_eq` (`ctU_shift`).
+* `AH/RedGame`: the reduction's experiment `redGame` (secret `redSec`, view `view2`, keys `KGsim`
+  = `redKeyLaw` with `T_sim`); `accept_red`: equal to the hybrid's for continuations rejecting
+  `bad` (`KGsim_eq_KGiW` under `SimCovW`, `22 ≤ b`).
+* `Game/OneSetup` + `AH/Chain1`: **a statistical change of the secret costs its distance once**
+  (`closeTo_runWith_setup_one`; D's `chain` pays `|Attr| = 2^128` per step, which with P's
+  `m̄ = 3NK + 408` would give only `2^{−20}`); `chain1`.
+* `AH/Conf`: `Dc` (`setting Dc = confS` by `rfl`), coverage `realCovW_of`, `simCovW_of` from
+  `KbCover kb coverBound`: real shift `≤ τn = 2^40`; `T_sim` shift `≤ W τ n D^b (B_R̂ + 2)` with
+  `B_R̂ = (stepBound 1 1 1)^[16] 1` (`matBnd_simKey`, `progBnd_progOf`, `rowBnd_simTrap`,
+  `vBound_iterate_le`, `simShift_rhat_le`). **The cover bound `2^18500` suffices.**
+* `AH/Stat`: `delta1, delta5 ≤ 2^{−148}`, `deltaT ≤ 2^{−189}`, `epsSetup, epsCT ≤ 2^{−150}`,
+  `statW Dc ε_fl ≤ 2^{−140}` for `ε_fl ≤ 2^{−148}`, `hstat_Dc`.
+
+**Open (hypotheses of `attributeHiding_Dc`).**
+1. ~~`hflood` at `χfl`~~ — **done in package G3** (`hflood_Dc`, `attributeHiding_Dc'`).
+2. `KbCover kb 2^18500` for the KeyGen machine's `KeyBoxes` (P's `famBig`/`famBall` boxes over
+   `PIdx (Wb Dc) (Jh Dc) …` have it by `add_mem_of_eq`; `Big` must be the image of fair bits).
+3. **The reduction machine** (`RedMachine Dc kb L (circParamsD Dc) impl χc χc χfl C A Dm`): for every
+   admissible `A` and distinguisher `Dm`, a machine `R` with
+   `R.acceptProb (realLaw (circParamsD Dc)) = rAcc …`, `R.acceptProb (idealLaw …) = uAcc …` and
+   `cost R ≤ C (cost A + cost Dm)²`. `rAcc`/`uAcc` = probability over `circReal`/`circUnif` that
+   `redGame` followed by `DcB Dm` accepts. `R` must: decode the instance word (B's rows: plain rows
+   = the columns of `B`, `d`, and the helper columns `(k, (1, i))`; key row `(i, j)` = helper
+   `k = jhE j` column `(0, i)`, automorphism index `jList`; the law bridge is **done in package G3**:
+   `realLaw_bind_decode`/`idealLaw_bind_decode`, so `R` only has to run `F ∘ decode D` on its input);
+   draw `B̄⁽²⁾`, gadget columns of `B⁽²⁾`, `H⁽²⁾`, `d₂`, the flooding errors, `zr` (`redSec`); run
+   `A` (`Lib/Machines/Inline`) answering select with `mpkEnc (view2 …).1`, key queries with
+   `KGsim` (`EvalPK` over `bpOf (progOf C)` for `R̂_F` via `simKey` (Corollary 1 propagation),
+   `simX`/`simTrap` (Lemma 11), one box try with `kb`, encoding `skEnc`), the challenge with
+   `ctEnc (shiftCT ⌊q/2⌉ μ (view2 …).2)`; track `bad` (`authW`: `|C| = predLen ∧ output x = false`);
+   output `Dm`'s verdict on `viewObs8` if not `bad`, `[false]` otherwise.
+
+### Package G3 (flooding at `χfl`, circular law bridge) — branch `t3/explut-g3`
+
+Files `SigabaNeo/Lib/Lattices/FloodRing.lean`, `SigabaNeo/Lib/Lattices/CircularRingLWEInst.lean`,
+`PE/Impl/ExpLUT/FloodBound.lean`, `PE/Impl/ExpLUT/AH/Flood.lean`, `PE/Impl/ExpLUT/AH/CircBridge.lean`
+(all in the aggregators). Axioms `[propext, Classical.choice, Quot.sound]`.
+
+**Flooding (open hypothesis 1 of G, closed).**
+* Library `FloodRing`: `floodRing N Q W` (one ring element, coefficients uniform below `W`; P's `χfl`
+  is `floodRing (2^24) q (2^eFl)` by `rfl`, `χfl_eq`), `closeTo_floodRing_add` (`∑ⱼ |δⱼ|/W`),
+  `closeTo_floodRing_add_le` (`N B / W` for `cnorm δ ≤ B`), `closeTo_pi_floodRing_add_le`
+  (independent families: `#entries · N B / W`, via `Stat.closeTo_pi`). D's `floodLaw` is not
+  rewritten as `Lattices.floodLaw` over a flattened index type: its four independent families are
+  flooded one by one (`CloseTo.bind`), which needs no law equality.
+* `FloodBound` (generic over `S : Setting (Negacyclic (ZMod Q) n)` with a `NormSpec` whose norm is
+  `cnorm`): `closeTo_iidFam_floodRing_add`, `floodCount S Pos` (the flooded ring elements),
+  `closeTo_floodLaw_add_le`, `cnorm_floodShift_le` (entries of `floodShift ē_b zr` are `±` sums of at
+  most `|Wb|` entries of `ē_b`, possibly under `σ_{g_t}` (`nrm_σ`); norm `≤ |Wb| B_χ`, no factor `n`
+  since `zr` is binary), **`hflood_floodRing`**: `hflood` at `ε = floodCount · n (|Wb| B_χ) / W`.
+* `AH/Flood`: `εflDc = floodCount (setting Dc) Pos · 2^24 (m̄ · 16) / 2^eFl`,
+  `floodCount_Dc_le : floodCount ≤ lhlCols`, **`εflDc_le : εflDc ≤ 2^{−249}`** (P's `flood_budget`,
+  generic `natCast_mul_div_le_inv_pow`, `flood_budget_gen`), `εflDc_le_148`,
+  **`hflood_Dc`** (exactly the hypothesis of `attributeHiding_Dc`), and
+  **`attributeHiding_Dc'`** / **`attributeHiding_Dc_registry'`**: package G's results without
+  `hflood` (remaining hypotheses: `ImplSpec`, `KbCover kb coverBound`, `RedMachine`, the
+  constant `C`).
+
+**Circular Ring-LWE law bridge.**
+* Library `CircularRingLWEInst`: `CircularRingLWE.circRing p` (`σ ← polyOf χ_s`, uniform `aᵣ`,
+  `eᵣ ← polyOf χ_e`, `(aᵣ, aᵣ σ + eᵣ − keyShiftRing p σ r)`), `realLaw_eq_circRing :
+  realLaw p = (circRing p).map encodeRing`, `idealLaw_eq_uniform`; `pi_sum_bind`, `pi_unit_bind`,
+  `pi_prod_bind`.
+* `AH/Final`: `jList` now uses the explicit order **`jhE D : Fin (b·2) ≃ Jh D :=
+  finProdFinEquiv.symm`** (was `Fintype.equivFin`, whose order is unspecified, so a machine could
+  not know it), and `mCirc D = m̄ + K + 1 + K (b·2)` (same value). `strength_Dc` is unchanged
+  (it holds for every `J`).
+* `AH/CircBridge` (generic in `D : Dims`): row layout `ρ D : Fin (circParamsD D).rows ≃ Coord D`,
+  `Coord D = BCol ⊕ Unit ⊕ (Jh × Col)`: plain rows (`plainE`) are, in order, the columns of `B`
+  (`Fin (m̄+K) ≃ Wb ⊕ Fin K`, `bcolE`), `d`, then the plain helper samples `(k, (1, i))` at
+  `m̄ + K + 1 + (i·2b + j)`, `k = jhE j`; key rows (`keyE`, the registry's `finProdFinEquiv`
+  order) `m + (i·2b + j)` are the circular samples `(k, (0, i))`, `k = jhE j`, automorphism index
+  `(jList D)[j]` (`get_jList`). `toPair`, **`enc D i = encodeRing (toPair D i)`** (the registry's
+  word), `decode D` (choice on `encodeRing`; zero instance on other words), **`decode_enc`**.
+  `keyShiftRing_eq` (the registry's key shifts are `σ_{g^{je k}}(s̄) G⁽¹⁾_{(0,i)}`, via
+  `autσ_of_odd` and `G 0 (0, i) = 2^i`), `circRing_eq`, **`realLaw_circParamsD :
+  realLaw (circParamsD D) = (circReal … (χcbd D) (χcbd D)).map (enc D)`** (`χcbd D` = CBD(16)
+  coefficients, `χcbd_Dc : χcbd Dc = χc` by `rfl`), **`idealLaw_circParamsD :
+  idealLaw (circParamsD D) = (circUnif …).map (enc D)`**, `realLaw_circParamsD_Dc` (with `circR Dc χc χc`),
+  and for G2 **`realLaw_bind_decode` / `idealLaw_bind_decode`**: `(realLaw p).bind (F ∘ decode D) =
+  (circReal …).bind F` (resp. `circUnif`). Hence a reduction machine whose output law on a word `w`
+  is `F (decode D w)` with `F i = (redGame … i).bind (DcB Dm)` has acceptance `rAcc`/`uAcc`.
+* Note for G2: `decode` is specified by choice; the machine parses `encodeSample`'s word
+  (`encPair encBits (encList encNat)`: the public matrix, then the `rows · N` coefficients) and must
+  be shown to agree with `decode` on encodings (`decode_enc`), e.g. by computing `toPair`'s inverse
+  `ofPair` from the parsed coefficients (`ofPair_toPair`).
+
+**Remaining for attribute hiding at `Dc`**: `KbCover kb 2^18500` for the KeyGen machine's boxes
+(G's item 2), the reduction machine with its cost bound (G's item 3, package G2), the machines
+meeting `ImplSpec` (package F).

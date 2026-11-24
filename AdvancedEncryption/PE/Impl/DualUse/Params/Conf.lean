@@ -7,9 +7,9 @@ import PE.Impl.DualUse.Params.Sizes
 # A configuration covering real and simulated keys
 
 The configuration `confP` over `R = ℤ_{2^K}[X]/(X^N + 1)` with the sizes of `Params/Sizes.lean`
-(`K = 2^27`, `N = 2^36`, `|Wd| = 2^65`): errors from the centered binomial law of width `16`,
-flooding below `2^768`, big box of `B = 51056224` bits per coefficient, small box of radius
-`S = 2^{B−1} − 1 − τ` and inner box of radius `2^{B−1} − 1 − 2τ`, with `τ = 2^{51055984}`; the
+(`K = 2^26`, `N = 2^34`, `|Wd| = 2^62`): errors from the centered binomial law of width `16`,
+flooding below `2^768`, big box of `B = 21139048` bits per coefficient, small box of radius
+`S = 2^{B−1} − 1 − τ` and inner box of radius `2^{B−1} − 1 − 2τ`, with `τ = 2^{21138808}`; the
 predicates are the words of `bpLen` bits (`confP.L = bpLen`).
 
 * **Both trapdoors are covered**: the real trapdoor of every key of `Setup`
@@ -18,7 +18,7 @@ predicates are the words of `bpLen` bits (`confP.L = bpLen`).
   exactly the law of real keys (`keyLaw_real_eq_sim_conf`), the ideal key law
   (`keyLaw_sim_eq_ideal`).
 * **Correctness** (`correct_conf`): with the larger key box `S` entering the noise, every
-  predicate of depth at most `Dmax = 1054` (`depth_predC`, from `depth_bpPred`) stays below `q/4`
+  predicate of depth at most `Dmax = 478` (`depth_predC`, from `depth_bpPred`) stays below `q/4`
   (`Params.noise_ok`); the abort probability is at most `2^{-128}`.
 * **Expressiveness** (`expressive_conf`).
 -/
@@ -140,7 +140,7 @@ theorem shift_shortP (v : PK hkp confP × SKey hkp confP) (hv : v ∈ (setupM hk
   simp [cnorm_zero]
 
 /-- `|Coef| ≤ 2^eCoef`. -/
-def eCoef : ℕ := 102
+def eCoef : ℕ := 97
 
 theorem kp4_le : 1 + 4 * kp ≤ 2 ^ ad := by
   have h1 := kp_le
@@ -163,7 +163,7 @@ theorem abortP : (((confP.Big.card - innerP.card : ℕ) : ℝ≥0∞) / confP.Bi
 
 /-- The predicates have depth at most `Dmax`. -/
 theorem depth_predC (C : List Bool) : SLP.depth (predC C).1 (predC C).2 ≤ Dmax :=
-  depth_bpPred _
+  (depth_bpPred _).trans (by norm_num [Dmax])
 
 variable {ms : Machines hkp confP}
 
