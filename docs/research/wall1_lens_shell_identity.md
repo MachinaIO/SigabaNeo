@@ -71,6 +71,11 @@ points, and it does not control N_M(t) above r or the whole value of J.
 
 ## Remaining analytic work and verification
 
+The [primal/dual auxiliary-function screen](wall1_primal_dual_auxiliary.md)
+uses both shortest-length floors in the continuum lens sum, but the simplest
+quadratic Gaussian is inadmissible at its shell-matching width. It does not
+settle the discrete lens discrepancy.
+
 J measures the selected old lattice's radial discrepancy; E measures the
 projected grid's discrete lens discrepancy. Delta measures its candidate
 count normalization. A valid bound must control their displayed combination

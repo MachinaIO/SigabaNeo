@@ -69,3 +69,7 @@ Run `python3 docs/research/scripts/wall1_selected_pair_collision.py`.
 Exact rational enumeration and an independent mathematical audit verify the
 identities, mixed-gate distinction, and geometric vector-list completeness.
 No production selected-history bound or Lean theorem is claimed.
+
+The [selected multiheight Gram evaluator](wall1_selected_height_gram.md)
+retains the same mixed gates for unequal candidate families at several signed
+heights, including their shared-mark cross moments and zero-label corrections.

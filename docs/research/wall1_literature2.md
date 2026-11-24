@@ -4,6 +4,31 @@
 
 ## Which probability needs bounding?
 
+### Primary-source applicability recheck, 24 November 2026
+
+Sato–Yasuda's 2026 PotBKZ paper was checked as a possible new route.
+Theorem 2 bounds PotENUM calls by
+`d * log_(1/delta)(Pot(B))` for its integer-lattice algorithm. Section 3.3.1
+explicitly assumes that relevant shortest vectors have final nonzero basis
+coefficient ±1 in its quality analysis. This is a different oracle/update
+rule; the termination theorem does not establish our selected collision or
+lens-error estimates. No change to the target reducer is justified by this
+result. [Original paper, Theorem 2 and Section 3.3.1](https://link.springer.com/article/10.1007/s13160-026-00799-6)
+
+Li–Nguyen's original text was rechecked at Theorems 2 and 4 and Section 4.2.
+Theorem 2 controls prefix-volume quality during GBKZ. Theorem 4 concerns
+Haar unit-volume input; Section 4.2 separately models practical BKZ
+heuristically. Hence combining the two theorems does not supply the law of
+an adaptively selected quotient. [Author/institutional PDF](https://pure.royalholloway.ac.uk/ws/portalfiles/portal/39276060/BKZ2020.10.10.pdf)
+
+For the current [lens decomposition](wall1_lens_shell_identity.md), an
+applicable theorem must control the state-dependent signed combination of
+radial discrepancy, discrete lens discrepancy and count normalization under
+the actual selected histories. An unconditional mean, an asymptotic statement
+without finite constants, or a termination bound does not discharge it.
+This targeted source check found no such implication in the two papers; it
+is not an exhaustive claim that no applicable theorem exists elsewhere.
+
 Write $d=1023$, $m=511$, $q=3329$, $D=q^m$, $g_i=\|b_i^*\|$ in forward order, and $V_j=\prod_{i\le j}g_i$. After projecting off the first $k$ rows, the terminal lattice $T$ has determinant $D/V_k$. If the entire remaining block is SVP-reduced at its first row, $g_{k+1}=\lambda_1(T)$. In general $g_{k+1}$ is an **upper** bound on that minimum. Even a lower bound on the terminal geometric mean $(D/V_k)^{1/(d-k)}$ leaves room for a short direction.
 
 Part 47 reduces the decoupled variant to a terminal minimum on the unplanted lattice and a sum of prefix Babai failure bounds. The ordinary planted reducer has a different output law and a capture-or-terminal success criterion. Part 49 already certifies prefix lifting at about width 915 and improves the width-1000 terminal radius to 80.21 without improving the crossing width. The dimension-647, 99% certificate uses puncturing and an exact SVP call. None of those numbers is an observation about a typical BKZ profile. [Current frontier, Parts 46–49](../PROOF_GAP.md) · [Earlier survey](wall1_literature.md)
