@@ -23,6 +23,7 @@ import PE.Impl.ExpLUT.BPBridge
 import PE.Impl.ExpLUT.AH.Final
 import PE.Impl.ExpLUT.FloodBound
 import PE.Impl.ExpLUT.AH.Flood
+import PE.Impl.ExpLUT.AH.CircBridge
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)

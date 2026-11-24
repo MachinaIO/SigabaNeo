@@ -20,6 +20,7 @@ import SigabaNeo.Lib.Lattices.BoxSampler
 import SigabaNeo.Lib.Lattices.Boxes
 import SigabaNeo.Lib.Lattices.Flood
 import SigabaNeo.Lib.Lattices.FloodRing
+import SigabaNeo.Lib.Lattices.CircularRingLWEInst
 import SigabaNeo.Lib.Lattices.RingLWEInst
 import SigabaNeo.Lib.Lattices.CoinMaps
 import SigabaNeo.Lib.Lattices.BitLaw
@@ -95,6 +96,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   parameters, problem, security function) and asymptotic (cslib-frontier).
 * `CircularRingLWE`: circular Ring-LWE with automorphism keys (Assumption 1 of ePrint 2026/2539),
   concrete, with Ring-LWE's security function; at `J = []` it is decision Ring-LWE.
+* `CircularRingLWEInst`: its laws as laws on ring-level pairs (`circRing`, `realLaw_eq_circRing`,
+  `idealLaw_eq_uniform`); independent products split along sums, units and products.
 * `Reduction/`: lattice reduction and SVP tools shared by the attacks — `LLL`, `BKZ` (GSA-free bound on the first
   vector of a BKZ-reduced basis, `docs/PROOF_GAP.md`), `Hermite2`, `AvgBKZ`, `Slide`, `Sieve`, `SieveWide`,
   `QArySieve`, `Search`, `Rogers`.
