@@ -586,10 +586,10 @@ ring words, rows in the registry's order `ρ D`), `instR` (`decRM` of the blocks
 `rowsD_eq : rows = mCirc D + K (2b)`, 14 tapes.
 
 **Remaining for G2** (the components of `RedComps` at `Dc` and their bounds):
-1. `Sig`/`senc`/`setupS` — planned: the raw secret `Sig = Attribute w8 × CInst D × B̄⁽²⁾ × H⁽²⁾ × d₂ ×
-   FloodV × zr`, `f` = (`attrN x`, `redPub`, `zr`, `redCore`, `fl`), `setupS` = `redSecW`'s draws
-   (then `map_setupS` is `rfl`-level), `senc` = attribute bits ++ the instance part of the state word
-   ++ canonical coin words ++ `zr` bits.
+1. ~~`Sig`/`senc`/`setupS`~~ — **done** (`AH/RedSecret`): `RawSec D = Attribute w8 × CInst D × B̄⁽²⁾ ×
+   H⁽²⁾ × d₂ × FloodV × zr`, `rawF` (= `attrN x`, `redPub`, `zr`, `redCore`, `fl`), `rawSetup`
+   (`redSecW`'s draws), **`map_rawSetup`**, `rawEnc` (attribute bits ++ `instEnc` (canonical words of
+   `toPair i`, the same words as the state word `dwR`) ++ coin words ++ `floodEnc` ++ `zrEnc`).
 2. `setupP`: copy the instance words, sample with `unifCanonP` (package F), a `floodRing` sampler
    (`400` fair bits per coefficient, zero-padded: canonical), fair bits for `zr`.
 3. ~~`authP`~~ — **done** (`Prog/AuthW`, `Prog/AuthWCost`, `Prog/AuthWX`): `authW8` (DualUse's
@@ -602,5 +602,11 @@ ring words, rows in the registry's order `ρ D`), `instR` (`decRM` of the blocks
 5. `keyP` = `KGsim`: EvalPK over `bpOf (progOf C)` (F3b's routines), `simKey` (`R̂_F` by
    simulation-form propagation: `simMul`, `simAut`/`simPerm`, `simLut`), `simX`/`simTrap`
    (Lemma 11: `vRounds`, `ginvTop`), one box try with `kb` and the encoding `skEnc` — on the VM.
-6. Bounds: times/lengths/sizes of all components (`CompBoundsP`, `compTimeP`), the decoder at `Dc`
-   (`time_decodeMX_le`, `states_decodeMX_le`), then `64 · 2^256 · compBoundG … ≤ 2^1155`.
+6. Bounds: times/lengths/sizes of all components (`CompBoundsP`, `compTimeP`), then
+   `64 · 2^256 · compBoundG … ≤ 2^1155` (`RedComps.const_le`). The decoder at `Dc` is **done**
+   (`Prog/RedDecode`): `nDc = encLen rows N K ≤ 2^120` (instance words), **`time_decR_Dc ≤ 2^270`**,
+   **`states_decR_Dc ≤ 2^16`**, 14 tapes. Budget check (`compBoundG`): with `R ≤ 250` scratch tapes the
+   factor `3^(14 + R + 30)` is `≤ 2^465`; states `2^{30}`-ish; slope `≤ 2^{t}` with `t` the log of the
+   components' time (KeyGen-like `≈ 2^{215}`) — so `log₂ C ≈ 465 + 30 + 20 + 215 ≪ 893`.
+   Kernel pitfall met: never state a bound on a closed term like `decT Dc` by unfolding at `Dc`
+   (the kernel tries to evaluate `rowsD Dc` through `Nat.mul`); prove it for `D` and instantiate.

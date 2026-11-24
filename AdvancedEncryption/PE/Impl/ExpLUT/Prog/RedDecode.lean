@@ -257,4 +257,70 @@ theorem instR_dwR (i : CInst D) : instR D (dwR D (enc D i)) = i := by
       rw [length_wordsOf, ← Nat.succ_mul]; exact Nat.mul_le_mul_right _ r.isLt), ringAt_wordsOf]
   simp only [h1, ringAt_wordsOf]
 
+/-! ### The decoder at the concrete parameters -/
+
+set_option exponentiation.threshold 1000
+
+theorem encLen_le_gen {r N K : ℕ} (hr : r ≤ 2 ^ 51) (hN : N ≤ 2 ^ 24) (hK : K ≤ 2 ^ 16) :
+    encLen r N K ≤ 2 ^ 120 := by
+  unfold encLen
+  calc 2 * (r * N * (2 * (N * (2 * K + 1)) + 1)) + 1 + r * N * (2 * K + 1)
+      ≤ 2 * (2 ^ 51 * 2 ^ 24 * (2 * (2 ^ 24 * (2 * 2 ^ 16 + 1)) + 1)) + 1 +
+          2 ^ 51 * 2 ^ 24 * (2 * 2 ^ 16 + 1) := by gcongr
+    _ ≤ 2 ^ 120 := by norm_num
+
+theorem decTime_le_gen {n K T : ℕ} (hn : n ≤ 2 ^ 120) (hK : K ≤ 2 ^ 16) (hT : T ≤ 2 ^ 92) :
+    (2 * n + 2) + ((2 * K + 1) * (4 * (n + K + T + 1) + 12) +
+        ((2 * (T + 1) + 1) * (4 * (n + K + T + 1) + 12) +
+          (14 * (2 * (n + K + T + 1 + 14) + 5) +
+            (2 * (n + K + T + 1) + 3) * (4 + 25 * n + 4 * n * K)))) +
+        (2 * (n + K + T + 1) + 2) ≤ 2 ^ 270 := by
+  calc _ ≤ (2 * 2 ^ 120 + 2) + ((2 * 2 ^ 16 + 1) * (4 * (2 ^ 120 + 2 ^ 16 + 2 ^ 92 + 1) + 12) +
+        ((2 * (2 ^ 92 + 1) + 1) * (4 * (2 ^ 120 + 2 ^ 16 + 2 ^ 92 + 1) + 12) +
+          (14 * (2 * (2 ^ 120 + 2 ^ 16 + 2 ^ 92 + 1 + 14) + 5) +
+            (2 * (2 ^ 120 + 2 ^ 16 + 2 ^ 92 + 1) + 3) *
+              (4 + 25 * 2 ^ 120 + 4 * 2 ^ 120 * 2 ^ 16)))) +
+        (2 * (2 ^ 120 + 2 ^ 16 + 2 ^ 92 + 1) + 2) := by gcongr
+    _ ≤ 2 ^ 270 := by norm_num
+
+theorem rowsD_Dc_le : rowsD Dc ≤ 2 ^ 51 := by
+  rw [rowsD_eq]
+  have h1 := mCirc_Dc_le
+  have h2 : Dc.K ≤ 2 ^ 16 := Params.Kc_le
+  have h3 : Dc.b = 22 := Dc_b
+  rw [h3]
+  have : Dc.K * (22 * 2) ≤ 2 ^ 16 * 44 := Nat.mul_le_mul_right _ h2
+  omega
+
+/-- The input bound of the decoder at `Dc`. -/
+noncomputable def nDc : ℕ := encLen (rowsD Dc) Dc.N Dc.K
+
+theorem Dc_N : Dc.N = 2 ^ 24 := rfl
+
+theorem nDc_le : nDc ≤ 2 ^ 120 := by
+  unfold nDc
+  exact encLen_le_gen rowsD_Dc_le Dc_N.le Params.Kc_le
+
+theorem decT_le_gen {r N K : ℕ} (hr : r ≤ 2 ^ 51) (hN : N ≤ 2 ^ 24) (hK : K ≤ 2 ^ 16) :
+    2 * r * N * K ≤ 2 ^ 92 :=
+  calc 2 * r * N * K ≤ 2 * 2 ^ 51 * 2 ^ 24 * 2 ^ 16 := by gcongr
+    _ = 2 ^ 92 := by norm_num
+
+theorem decT_le {D : Dims} (hr : rowsD D ≤ 2 ^ 51) (hN : D.N ≤ 2 ^ 24) (hK : D.K ≤ 2 ^ 16) :
+    decT D ≤ 2 ^ 92 := by
+  unfold decT; exact decT_le_gen hr hN hK
+
+theorem decT_Dc_le : decT Dc ≤ 2 ^ 92 := decT_le rowsD_Dc_le Dc_N.le Params.Kc_le
+
+/-- **The time of the decoder at `Dc`**: at most `2^270` steps. -/
+theorem time_decR_Dc : (decR Dc nDc).time ≤ 2 ^ 270 :=
+  (Tape.XProg.time_decodeMX_le false Dc.K (decT Dc) nDc).trans
+    (decTime_le_gen nDc_le Params.Kc_le decT_Dc_le)
+
+/-- **The states of the decoder at `Dc`**: at most `2^16`. -/
+theorem states_decR_Dc : (decR Dc nDc).states ≤ 2 ^ 16 := by
+  have hK : Dc.K < 2 ^ 93 := lt_of_le_of_lt Params.Kc_le (by norm_num)
+  have hT : decT Dc + 1 < 2 ^ 93 := by have := decT_Dc_le; omega
+  refine (Tape.XProg.states_decodeMX_le false hK hT).trans (by norm_num)
+
 end AdvancedEncryption.ExpLUT.Prog
