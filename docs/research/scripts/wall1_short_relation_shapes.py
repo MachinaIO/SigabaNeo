@@ -6,12 +6,21 @@ from math import comb, factorial
 from mpmath import iv
 
 
+def half_factorial(twice_argument):
+    """Gamma(twice_argument/2+1), using exact integer factorials and sqrt(pi)."""
+    assert isinstance(twice_argument,int) and twice_argument >= 0
+    if twice_argument % 2 == 0:
+        return iv.mpf(factorial(twice_argument//2))
+    k = (twice_argument+1)//2
+    return iv.mpf(factorial(2*k))/(4**k*factorial(k))*iv.sqrt(iv.pi)
+
+
 def equal_pair_sum_ball_bound(radius_sq, dimension, pairs):
-    assert dimension % 2 == 0 and pairs >= 2
+    assert dimension > 0 and pairs >= 2
     n, k = dimension, pairs
-    exponent = (k+1)*n//2
-    return (iv.mpf(2)**(k+1+n)*iv.pi**exponent*factorial(k*n//2)
-            /factorial(n//2)**k/factorial(exponent)
+    exponent = iv.mpf((k+1)*n)/2
+    return (iv.mpf(2)**(k+1+n)*iv.pi**exponent*half_factorial(k*n)
+            /half_factorial(n)**k/half_factorial((k+1)*n)
             *(radius_sq+iv.mpf(5)*n/16)**exponent)
 
 
@@ -22,9 +31,9 @@ def pair_sum_ball_bound(radius_sq, dimension):
 def orthogonal_pair_ball_bound(radius_sq, dimension):
     """Count r(x+y) r(x-y) over x,y in the ball, with clipping dropped."""
     n = dimension
-    assert n % 2 == 0
+    assert n > 0
     return (8*iv.mpf(4)**n*iv.pi**(2*n)*factorial(n)
-            /factorial(n//2)**2/factorial(2*n)
+            /half_factorial(n)**2/factorial(2*n)
             *(radius_sq+iv.mpf(3)*n/8)**(2*n))
 
 
@@ -57,13 +66,13 @@ def shared_four_gaussian_bound(radius_sq, dimension, q, *, aliases_only=False):
 def shared_four_ball_bound(radius_sq, dimension):
     """Sum of squared triple counts over a common point in the ball."""
     n = dimension
-    assert n % 2 == 0 and n > 0
-    p = n//2
+    assert n > 0
+    p = iv.mpf(n)/2
     outer = radius_sq+iv.mpf(n)/4
     boundary = iv.mpf(8)*radius_sq/3+iv.mpf(3)*n/2
     ratio = 2*n*outer/(3*boundary*(p+1))
     assert ratio.b < 1
-    factor = iv.pi**(iv.mpf(5)*n/2)/factorial(n)**2/factorial(p)/iv.mpf(3)**n
+    factor = iv.pi**(iv.mpf(5)*n/2)/factorial(n)**2/half_factorial(n)/iv.mpf(3)**n
     best = 8*factor*outer**p*boundary**(2*n)/(1-ratio)
     # Cantelli improves the uniform half-cube loss. For the triple-sum
     # kernel G has largest eigenvalue 3, so Var(2<z,Ge>) <= 3R^2.

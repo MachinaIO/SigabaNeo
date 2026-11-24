@@ -126,7 +126,7 @@ def group_holder_checks():
     print(f'Passed {checked} exact three-group Holder bounds.')
 
 
-def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anchors=False,
+def draw14_bounds(*, geometry_state=None, exclude_triangular_anchors=False, exclude_double_short_anchors=False,
                   exclude_four_six_twenty=False, exclude_four_six_twenty_three=False,
                   exclude_three_circuit_twenty=False, exclude_four_six_twenty_four=False,
                   exclude_seven_four_six=False, exclude_five_twenty=False,
@@ -156,9 +156,21 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
     exclude_five_fifteen removes five-position girth-three two-four anchors.
     exclude_six_twenty_three removes six-position girth-three determinant23 anchors.
     exclude_six_d24 removes six-position girth-four determinant24 anchors.
+    geometry_state supplies explicit raw geometry, an upper mean for free
+    points and compatible circuit counts through24. With it, return the
+    incidence cover without the draw14-specific polynomial/error reporter.
+    All exclusion flags must remain false for a complete cover unless the
+    caller separately restores the removed families.
     """
-    with contextlib.redirect_stdout(io.StringIO()):
-        s = runpy.run_path(str(Path(__file__).with_name('wall1_draw14_frontier.py')))
+    if geometry_state is None:
+        with contextlib.redirect_stdout(io.StringIO()):
+            s = runpy.run_path(str(Path(__file__).with_name('wall1_draw14_frontier.py')))
+    else:
+        # Caller supplies a proved upper mean for free extensions, compatible
+        # circuit bounds through24, and geometry. No draw14 numerical report.
+        s = dict(geometry_state)
+        assert s['q'] == 3329 and s['N'] == s['m']+s['inputs']
+        assert s['mu'].a > 0 and all(j in s['epsilon'] for j in range(3,25))
     I, iv, q, m, n, mu, radius = [s[k] for k in ('I', 'iv', 'q', 'm', 'N', 'mu', 'radius')]
     from wall1_triangular_third_relation import new_group_bound
     four_ball = (equal_pair_sum_ball_bound(radius**2, n, 2)
@@ -940,7 +952,7 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                     if c == 4 and t == 2 and overlap == 2:
                         # Five triangular and four orthogonal balanced-sign codes.
                         # Real equal-pair-sum count, plus nonzero modular layers.
-                        assert n % 2 == 0
+                        # The beta-integral count also holds in odd dimension.
                         lens = pair_sum_ball_bound(radius**2, n)
                         kernel = theta(2*beta)**3*theta(I(3)*beta/2)
                         layers = theta(beta*q**2/6)**(2*n)-1
@@ -1291,32 +1303,32 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
     from wall1_ball_slice_completion import completion_bound
     completions={r:completion_bound(s,r-1) for r in range(2,23)}
     from wall1_anchored_dual_completion import completion_bound as dual_completion_bound
-    dual_completions={(h,r):dual_completion_bound(s,r,h,coordinate_count=518)
+    dual_completions={(h,r):dual_completion_bound(s,r,h,coordinate_count=n)
                       for h in range(4,25) for r in range(2,h-1)}
-    extended_dual_completions={(h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0,coordinate_count=518)
+    extended_dual_completions={(h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0,coordinate_count=n)
                               for h in range(4,25) for r in range(2,h-1)
                               for H0 in range(4,r+3)}
     free_beta=I(n)/(2*radius**2)
     optimized_gaussian_free=iv.exp(free_beta*radius**2)*theta(free_beta)**n/q**m
     anisotropic_dual_completions={
-        (h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0,free_beta=free_beta,coordinate_count=518)
+        (h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0,free_beta=free_beta,coordinate_count=n)
         for h in range(4,25) for r in range(2,h-1) for H0 in range(4,r+3)}
     two_four_dual_completions={
         (h,r,D,mode):dual_completion_bound(s,r,h,anchor_size=6,
             free_beta=free_beta if mode=='free' else None,
-            coordinate_count=518,anchor_gram_det=D)
+            coordinate_count=n,anchor_gram_det=D)
         for h in range(6,25) for r in range(4,h-1)
         for D in (12,16) for mode in ('same','free')}
     shared_four_dual_completions={
         (h,r,mode):dual_completion_bound(s,r,h,anchor_size=7,
             free_beta=free_beta if mode=='free' else None,
-            coordinate_count=518,anchor_gram_det=15)
+            coordinate_count=n,anchor_gram_det=15)
         for h in range(7,25) for r in range(5,h-1)
         for mode in ('same','free')}
     five_dual_completions={
         (h,r,mode):dual_completion_bound(s,r,h,anchor_size=5,
             free_beta=free_beta if mode=='free' else None,
-            coordinate_count=518,anchor_gram_det=15)
+            coordinate_count=n,anchor_gram_det=15)
         for h in range(5,25) for r in range(3,h-1)
         for mode in ('same','free')}
     gaussian_free={}
@@ -1395,6 +1407,8 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                     s['size17_stratum_candidates'][r,c] = {'one':one, 'two':two, 'selected':chosen}
                 strata[h, r, c] = chosen
                 full[h] += chosen
+    if geometry_state is not None:
+        return s, full, strata
     for cap in range(8, 25):
         covered = {h: full[h] if h <= cap else s['base'][h] for h in range(3, 25)}
         bound = s['transfer'](covered)

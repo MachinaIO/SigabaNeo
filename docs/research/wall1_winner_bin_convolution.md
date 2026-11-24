@@ -100,3 +100,16 @@ fixture, not a claimed reachable BKZ state or a production probability gain.
 The checker additionally passes11110 exact nested-set/branch-partition
 checks. This strengthens the certificate available when radial inputs are
 known; it does not supply the outstanding radial inputs themselves.
+
+The [joint tail/convolution bound](wall1_tail_convolution_coupling.md) adds
+interval constraints sum_(l<j<=k)m_j<=J_q(p_k,r_k,beta_l). It retains the
+fact that a long winner forces the same fresh mark into an incoming miss
+set, and bounds the resulting three-set correlation by Fourier coefficients.
+These constraints can be stronger than the separate tail and prefix bounds.
+Fractional filling permits certified upper caps on all three densities,
+without requiring exact densities or monotonicity of the formula for J_q.
+They still require selected-state radial caps at the indicated radii.
+For the linear cap, that note also implements a rational dynamic program
+combining consecutive interval budgets into a conditional transition bound.
+Its returned partition certifies the bound without relying on an approximate
+LP optimum. It does not establish the input caps on selected histories.

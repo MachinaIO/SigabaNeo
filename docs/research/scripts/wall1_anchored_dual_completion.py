@@ -173,25 +173,27 @@ def packing_tail(q,n,k,L,gs):
     return _packing_cache[key]
 
 
-def completion_details(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=118,anchor_gram_det=None):
+def completion_details(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=None,anchor_gram_det=None):
     """Return (cap, chosen_gamma_text) for k=h-r-2 dependent positions.
 
-    q=3329 and N=518 are the audited parameter domain. s['radius'] is the
+    q=3329, m=400 and N in (518,519) are the supported geometry domain. s['radius'] is the
     existing interval radius; the caller's iv precision is not changed.
     anchor_size selects the original common Gaussian weight. Additional
     free_beta optionally changes only the independent extension weights.
     Free-point Gaussian costs are NOT included in this completion cap.
     No anchor Chernoff prefactor or output normalization is included.
-    coordinate_count=518 requires a full joint-incidence target; it cannot
+    coordinate_count=N requires a full joint-incidence target; it cannot
     bound the input-only mixed-fiber relaxation. The input candidate is retained.
     anchor_gram_det requires a certified canonical chart: H6 two-four with
     determinant12/16, H5 exceptional or H7 shared-four with determinant15.
     Anchor size distinguishes the two D15 families. Not a general family.
     """
     assert s['iv'] is iv
-    q=s['q'];N=s['N'];n=coordinate_count;k=h-r-2;I=iv.mpf
-    assert n in (118,518)
-    assert q==3329 and N==518 and 2<=r and 0<=k<=118
+    q=s['q'];N=s['N'];inputs=N-s.get('m',400);k=h-r-2;I=iv.mpf
+    n=inputs if coordinate_count is None else coordinate_count
+    assert s.get('m',400)==400 and s.get('inputs',inputs)==inputs
+    assert n in (inputs,N)
+    assert q==3329 and N in (518,519) and 2<=r and 0<=k<=inputs
     H0=r+2 if anchor_size is None else anchor_size
     assert 4<=H0<=r+2
     assert anchor_gram_det is None or (H0==6 and anchor_gram_det in (12,16)) or (H0 in (5,7) and anchor_gram_det==15)
@@ -203,8 +205,8 @@ def completion_details(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=
     assert beta_free>0
     gamma_grid=(('.2e-6','.25e-6','.3e-6','.35e-6','.4e-6',
                  '.55e-6','.6e-6','.65e-6','.7e-6','.8e-6','.9e-6')+GAMMA_GRID
-                if n==518 else GAMMA_GRID)
-    holder_orders=FULL_HOLDER_ORDERS if n==518 else HOLDER_ORDERS
+                if n==N else GAMMA_GRID)
+    holder_orders=FULL_HOLDER_ORDERS if n==N else HOLDER_ORDERS
     key=(iv.dps,q,N,n,r,k,H0,R2._mpi_,alpha._mpi_,beta_free._mpi_,gamma_grid,holder_orders,anchor_gram_det)
     if key in _cap_cache:return _cap_cache[key]
     base_h=theta(iv.pi**2/alpha);Q=theta(iv.pi**2/(alpha*q*q));d=r-1
@@ -260,16 +262,16 @@ def completion_details(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=
         logcap=d*k*iv.log(q)+k*gamma*R2+k*n*iv.log(theta(q*q*gamma))+iv.log(moment)
         if best is None or logcap.b<best[0].b:best=(logcap,gs)
     answer=(iv.exp(best[0]),best[1])
-    if n==518:
+    if n==N:
         # This branch is authorized only for full joint-incidence targets.
         old=completion_details(s,r,h,anchor_size=H0,free_beta=free_beta,
-                               anchor_gram_det=anchor_gram_det)
+                               coordinate_count=inputs,anchor_gram_det=anchor_gram_det)
         answer=min((answer,old),key=lambda x:x[0].b)
     _cap_cache[key]=answer
     return answer
 
 
-def completion_bound(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=118,anchor_gram_det=None):
+def completion_bound(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=None,anchor_gram_det=None):
     return completion_details(s,r,h,anchor_size=anchor_size,free_beta=free_beta,
                               coordinate_count=coordinate_count,anchor_gram_det=anchor_gram_det)[0]
 

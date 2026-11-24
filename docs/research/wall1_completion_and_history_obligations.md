@@ -91,6 +91,56 @@ was obtained. This attempt does not close the capped-potential charge.
 
 ## Connected-incidence completion
 
+The [draw15 signed lower witness](wall1_draw15_lower_witness.md) gives a
+degree21 polynomial below the raw empty-count indicator and certifies its
+Poisson expectation above0.0000647 throughout the proved mean interval.
+The [complete draw15 incidence transfer](wall1_draw15_incidence_transfer.md)
+now certifies factorial-moment discrepancy below1e-25 and proves
+Pr_(A,v)(Z(A,v)=0)>0.00006469 for the fixed raw ball. This is the mean raw
+void over the original matrix and an independent uniform raw coset, not
+Pr_A(raw void>.280), projected void, or BKZ failure. It excludes obtaining
+a tiny upper bound for this same raw observable even via signed corrections.
+The next coverage proof must retain projection gains or change its candidate
+family. The selected-history drift remains unproved.
+The[raw-miss recovery formulation](wall1_raw_miss_recovery.md) retains the
+same raw labels through the selected cylinder and identifies the remaining
+degree21/22 mixed moments. The raw-only incidence bounds do not supply
+those moments, even though their polynomial degree is within the earlier
+order24 range: their geometry depends on the actual selected flag.
+The raw square baseline is now certified between0.00020014983 and1+1e-25
+using840 exact Bernstein coefficients and coefficientwise domination by
+the existing absolute factorial discrepancy. Substituting only the upper
+mean gives an invalid stronger estimate. The recovery note also states
+the gated first-exit conversion and explicitly charges histories where
+the projected radius is smaller than the raw radius. Gated mixed moments
+and the resulting production exit estimate remain unproved.
+Evaluating the existing centered-ball lower count at draw15 narrows the
+mean interval to(4.5740608,9.287185), and840 additional exact Bernstein
+coefficients improve the raw-square upper certificate to0.015595758
+(more than64 times smaller). This also bounds the unnormalized gated raw
+term at that geometry, but does not estimate either selected mixed term.
+
+The [height-one covariance screen](wall1_height_one_covariance_screen.md)
+gives a valid selected-sector PSD lower bound, but shows why even ideal
+isotropy cannot repair the existing mean-projector shell certificate.
+The [joint tail/convolution inequality](wall1_tail_convolution_coupling.md)
+instead couples the winner-bin event and its coverage moment using their
+shared fresh mark. Its three-set Fourier bound strengthens the conditional
+linear program when radial inputs are supplied; exhaustive finite checks
+do not supply those inputs for production selected histories. Neither
+result closes the remaining drift or changes the proved failure bound.
+Fractional filling now proves that upper caps on the three radial densities
+suffice for the joint inequality; exact densities and a monotonicity claim
+for its analytic expression are unnecessary. The extra8,000 finite cap
+checks verify that extension, not its production premises. General dyadic
+sumset growth was already screened in[the sumset note](wall1_sumset_covering.md)
+and does not by itself supply the missing smaller-radius caps.
+The joint inequalities now feed an exact rational partition certificate
+for the whole linear-cap transition, with a strict two-bin improvement
+over the old shared-prefix relaxation. This completes the conditional
+calculation from supplied radial caps to a drift charge; the actual
+stopped average of that charge remains unproved.
+
 At the initial checkpoint of this note, the dominant size19/rank11/c4 and
 size24/rank12/c5 branches contained
 full-rank anchors with no remaining free basis points. Their dependent
