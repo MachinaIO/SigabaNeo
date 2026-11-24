@@ -555,6 +555,101 @@ theorem exec_subVecC (w : St) (hc : Consts N K w) (cnt buf : Fin 200)
   · rw [g _ (by decide)]; exact p195
   · rw [g j (fun e => hj (by rw [e, wr_subVecC]; simp))]; exact pf j hj
 
+/-! ### Second halves of a stream of pairs, repeated words, the gadget row -/
+
+/-- **Shift** a word of the template's width from a stream into a buffer. -/
+theorem exec_mv_shift {d s c : Fin 200} (h : ¬(d = s ∨ d = c ∨ s = c)) {w : St} {v L : List Bool}
+    (hv : v.length = (w c).length) (hs : w s = v ++ L) :
+    exec N K (.mv d s c) w =
+      Function.update (Function.update w s L) d ((w d ++ v).drop (w c).length) := by
+  simp only [exec, if_neg h, ValVM.shiftIn, hs]
+  rw [takeD_eq_take (by simp; omega), List.take_left' hv, List.drop_left' hv]
+
+/-- **`199 :=` the second halves**: `|cnt|` rounds of dropping `|reg 6|` bits of the stream `192`
+and moving the next `|reg 6|` bits into the buffer `199`. -/
+def halvesC (cnt : Fin 200) : Code := ofList [.cp 197 cnt, .rep 197 (ofList [.drop 192 6, .mv 199 192 6])]
+
+theorem wr_halvesC (cnt : Fin 200) : wr (halvesC cnt) = [197, 197, 192, 199, 192] := rfl
+
+theorem exec_halvesC (w : St) (cnt : Fin 200) (hcnt : cnt.val < 180)
+    {ps : List (List Bool × List Bool)} {L : List Bool}
+    (hps : ∀ p ∈ ps, p.1.length = (w 6).length ∧ p.2.length = (w 6).length)
+    (hl : ps.length = (w cnt).length) (h192 : w 192 = (ps.map fun p => p.1 ++ p.2).flatten ++ L)
+    (h199 : (w 199).length = ps.length * (w 6).length) :
+    (exec N K (halvesC cnt) w) 199 = (ps.map Prod.snd).flatten ∧
+      (exec N K (halvesC cnt) w) 192 = L ∧
+      ∀ j, j ∉ wr (halvesC cnt) → (exec N K (halvesC cnt) w) j = w j := by
+  set V := (w 6).length
+  set w1 := Function.update w 197 (w cnt) with hw1
+  have e1 : exec N K (halvesC cnt) w = exec N K (.rep 197 (ofList [.drop 192 6, .mv 199 192 6])) w1 :=
+    rfl
+  have h197 : (w1 197).length = ps.length := by simp [hw1, hl]
+  have h6 : w1 6 = w 6 := by simp [hw1]
+  let P : ℕ → St → Prop := fun i w' =>
+    w' 6 = w 6 ∧ w' 192 = ((ps.drop i).map fun p => p.1 ++ p.2).flatten ++ L ∧
+      w' 199 = (w 199 ++ ((ps.take i).map Prod.snd).flatten).drop (i * V) ∧
+      ∀ j, j ∉ wr (halvesC cnt) → w' j = w j
+  have hP := exec_rep_inv (N := N) (K := K) 197 (ofList [.drop 192 6, .mv 199 192 6]) (by decide) P w1
+    ⟨h6, by simp [hw1, h192], by simp [hw1],
+      fun j hj => by rw [hw1, Function.update_of_ne (fun e => hj (by rw [e, wr_halvesC]; simp))]⟩
+    (fun i hi w' hw' _ => by
+      obtain ⟨p6, p192, p199, pf⟩ := hw'
+      rw [h197] at hi
+      have hpi := hps _ (List.getElem_mem hi)
+      set w'' := Function.update w' 197 (w' 197).tail
+      have e192 : w'' 192 = (ps[i].1 ++ ps[i].2) ++ ((ps.drop (i + 1)).map fun p => p.1 ++ p.2).flatten
+          ++ L := by
+        simp only [w'', Function.update_of_ne (show (192 : Fin 200) ≠ 197 by decide), p192]
+        rw [List.drop_eq_getElem_cons hi, List.map_cons, List.flatten_cons, List.append_assoc]
+      have e6 : w'' 6 = w 6 := by
+        simp only [w'', Function.update_of_ne (show (6 : Fin 200) ≠ 197 by decide), p6]
+      set rest := ((ps.drop (i + 1)).map fun p => p.1 ++ p.2).flatten ++ L
+      have ed : exec N K (.drop 192 6) w'' = Function.update w'' 192 (ps[i].2 ++ rest) := by
+        simp only [exec, show ¬((192 : Fin 200) = 6) by decide, ↓reduceIte, e192, e6]
+        simp only [List.append_assoc]
+        rw [List.drop_left' hpi.1]
+      set u := Function.update w'' 192 (ps[i].2 ++ rest)
+      have u6 : u 6 = w 6 := by simp only [u, Function.update_of_ne (show (6 : Fin 200) ≠ 192 by decide), e6]
+      have u199 : u 199 = w' 199 := by
+        simp only [u, w'', Function.update_of_ne (show (199 : Fin 200) ≠ 192 by decide),
+          Function.update_of_ne (show (199 : Fin 200) ≠ 197 by decide)]
+      have em : exec N K (ofList [.drop 192 6, .mv 199 192 6]) w'' =
+          Function.update (Function.update u 192 rest) 199 ((w' 199 ++ ps[i].2).drop V) := by
+        simp only [exec_ofList_cons, exec_ofList_nil]
+        rw [ed]
+        rw [exec_mv_shift (v := ps[i].2) (L := rest) (by decide) (by rw [u6]; exact hpi.2)
+          (by simp only [u, Function.update_self]), u6, u199]
+      have hsnd : ∀ y ∈ (ps.take i).map Prod.snd, y.length = V := fun y hy => by
+        obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hy
+        exact (hps q (List.mem_of_mem_take hq)).2
+      have hlen : ((ps.take i).map Prod.snd).length = i := by simp; omega
+      refine ⟨?_, ?_, ?_, fun j hj => ?_⟩
+      · rw [em]; simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]; exact u6
+      · rw [em]; simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]; rfl
+      · rw [em]; simp only [Function.update_self, p199]
+        have := drop_append_flatten_succ (b := w 199) (vs := (ps.take i).map Prod.snd)
+          (x := ps[i].2) hpi.2 hsnd
+        rw [hlen] at this
+        rw [this, List.take_succ, List.getElem?_eq_getElem hi, List.map_append, List.length_append,
+          hlen]
+        simp only [Option.toList_some, List.map_cons, List.map_nil, List.length_singleton]
+      · have hj1 : j ≠ 199 := fun e => hj (by rw [e, wr_halvesC]; simp)
+        have hj2 : j ≠ 192 := fun e => hj (by rw [e, wr_halvesC]; simp)
+        have hj3 : j ≠ 197 := fun e => hj (by rw [e, wr_halvesC]; simp)
+        rw [em, Function.update_of_ne hj1, Function.update_of_ne hj2]
+        simp only [u, w'', Function.update_of_ne hj2, Function.update_of_ne hj3]
+        exact pf j hj)
+  rw [h197] at hP
+  obtain ⟨_, p192, p199, pf⟩ := hP
+  have hall : ∀ y ∈ ps.map Prod.snd, y.length = V := fun y hy => by
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hy; exact (hps q hq).2
+  refine ⟨?_, ?_, ?_⟩
+  · rw [e1, p199, List.take_of_length_le le_rfl]
+    have := drop_append_flatten (b := w 199) (vs := ps.map Prod.snd) (n := V) (by simp [h199])
+    simpa using this
+  · rw [e1, p192, List.drop_of_length_le le_rfl]; simp
+  · intro j hj; rw [e1]; exact pf j hj
+
 end RingVM
 
 end SigabaNeo.Tape
