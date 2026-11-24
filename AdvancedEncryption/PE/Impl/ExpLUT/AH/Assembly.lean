@@ -17,10 +17,14 @@ boxes covering the real trapdoor and `T_sim` (`RealCovW`, `SimCovW`) and the flo
   (the near-uniform public matrices on both sides, H1, H2, H3′, H5, H6) plus `|r − u|`, where
   `r`, `u` are the probabilities that the reduction's experiment (`redGame`: keys from `T_sim`),
   followed by `Dm` rejecting the runs whose flag is up (`DcB`), accepts on a real and on a uniform
-  circular instance (`rAcc`, `uAcc`);
+  circular instance (`rAcc`, `uAcc`); since a fair-coin machine cannot draw the uniform parts
+  of the reduction's secret modulo the odd `2^K − 1`, `statW` also contains `2 · epsRed`, the
+  distance to the machines' reduction experiment (`redGameW`: `unifW` entries), and the bound is
+  stated with its acceptances `rAccW`, `uAccW` (`advantage_le`; `advantage_le0` with `rAcc`,
+  `uAcc`);
 * `attributeHiding_of_reduction`: **`AttributeHiding (univ w8) params impl`** from
   `CircularRingLWE.decision.HardAt p kb`, given a **reduction machine** `R` for every admissible
-  `A` and `Dm` with `R.acceptProb (realLaw p) = rAcc`, `R.acceptProb (idealLaw p) = uAcc` and
+  `A` and `Dm` with `R.acceptProb (realLaw p) = rAccW`, `R.acceptProb (idealLaw p) = uAccW` and
   `cost R ≤ C (cost A + cost Dm)²` (`RedMachine`), `64 · (2^128)² · C ≤ 2^kb` and
   `4 · 2^128 · statW² ≤ 1` (`SimSpec`'s simulator is the one of the definition).
 -/
@@ -83,11 +87,16 @@ variable (D : Dims) (kb : KeyBoxes D) (L : ℕ)
 
 /-! ### The statistical terms and the reduction's acceptance -/
 
-/-- **The statistical terms**: the machines' public matrices (real side), H1, H2 (flooding), H3′,
-H5, H6, and the machines' public matrices and the simulator's ciphertext (ideal side). -/
-noncomputable def statW (εfl : ℝ≥0∞) : ℝ≥0∞ :=
+/-- The statistical terms of the chain: the machines' public matrices (real side), H1, H2
+(flooding), H3′, H5, H6, and the machines' public matrices and the simulator's ciphertext (ideal
+side). -/
+noncomputable def statW0 (εfl : ℝ≥0∞) : ℝ≥0∞ :=
   epsSetup D + (delta1 (setting D) (Wb D) Pos + εfl + deltaT (setting D) (Wb D) +
     delta5 (setting D) (Wb D) Pos + deltaT (setting D) (Wb D)) + (epsSetup D + epsCT D)
+
+/-- **The statistical terms**: those of the chain (`statW0`) and the machines' reduction secret on
+real and on uniform instances (`epsRed`, twice). -/
+noncomputable def statW (εfl : ℝ≥0∞) : ℝ≥0∞ := statW0 D εfl + (epsRed D + epsRed D)
 
 /-- The circular instances: real. -/
 noncomputable abbrev circR (χs χ : PMF (Rg D)) : PMF (CInst D) :=
@@ -104,7 +113,28 @@ noncomputable def rAcc (impl : Impl sig) (χs χ χfl : PMF (Rg D)) (A : Machine
 noncomputable def uAcc (impl : Impl sig) (χfl : PMF (Rg D)) (A : Machine 3) (Dm : Machine) : ℝ :=
   (((circU D).bind fun i => (redGame D kb L impl χfl A i).bind (DcB Dm)) true).toReal
 
+/-- **The acceptance of the machines' reduction experiment on real instances.** -/
+noncomputable def rAccW (impl : Impl sig) (χs χ χfl : PMF (Rg D)) (A : Machine 3) (Dm : Machine) :
+    ℝ :=
+  (((circR D χs χ).bind fun i => (redGameW D kb L impl χfl A i).bind (DcB Dm)) true).toReal
+
+/-- **The acceptance of the machines' reduction experiment on uniform instances.** -/
+noncomputable def uAccW (impl : Impl sig) (χfl : PMF (Rg D)) (A : Machine 3) (Dm : Machine) : ℝ :=
+  (((circU D).bind fun i => (redGameW D kb L impl χfl A i).bind (DcB Dm)) true).toReal
+
 variable {D kb L}
+
+theorem abs_rAcc_sub_rAccW_le (impl : Impl sig) (χs χ χfl : PMF (Rg D)) (A : Machine 3)
+    (Dm : Machine) (h : epsRed D ≠ ⊤) :
+    |rAcc D kb L impl χs χ χfl A Dm - rAccW D kb L impl χs χ χfl A Dm| ≤ (epsRed D).toReal :=
+  abs_sub_le_of_closeTo' (CloseTo.bind_right _ fun i _ =>
+    (closeTo_redGame D kb L impl χfl A i).bind_left (DcB Dm)) h true
+
+theorem abs_uAcc_sub_uAccW_le (impl : Impl sig) (χfl : PMF (Rg D)) (A : Machine 3)
+    (Dm : Machine) (h : epsRed D ≠ ⊤) :
+    |uAcc D kb L impl χfl A Dm - uAccW D kb L impl χfl A Dm| ≤ (epsRed D).toReal :=
+  abs_sub_le_of_closeTo' (CloseTo.bind_right _ fun i _ =>
+    (closeTo_redGame D kb L impl χfl A i).bind_left (DcB Dm)) h true
 
 /-- The real experiment as seen by the distinguisher. -/
 theorem real_accept [Nonempty (Wb D)] {impl : Impl sig} {χs χ χfl : PMF (Rg D)}
@@ -137,19 +167,20 @@ theorem ideal_accept {impl : Impl sig} {χs χ χfl : PMF (Rg D)}
     obtain ⟨r, hr, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp ho
     exact hadm r hr
 
-/-- **The advantage of any distinguisher against an admissible adversary.** -/
-theorem advantage_le [Nonempty (Wb D)] {impl : Impl sig} {χs χ χfl : PMF (Rg D)}
+/-- The advantage of any distinguisher against an admissible adversary, with the reduction's
+exact experiment. -/
+theorem advantage_le0 [Nonempty (Wb D)] {impl : Impl sig} {χs χ χfl : PMF (Rg D)}
     (hI : ImplSpec D kb L impl χs χ χfl) (hcovR : RealCovW D kb) (hcovS : SimCovW D kb)
     (hb : 22 ≤ D.b) {Sim : Machine} (hSim : SimSpec D Sim) {εfl : ℝ≥0∞}
     (hflood : ∀ eb ∈ (iidLaw χ (BCol (Wb D) (setting D).τ)).support,
       ∀ zr : PrI (setting D) Pos → Wb D → Bool,
         CloseTo ((floodLaw (setting D) Pos χfl).map (· + floodShift eb zr))
           (floodLaw (setting D) Pos χfl) εfl)
-    (hS : statW D εfl ≠ ⊤) (A : Machine 3) (Dm : Machine)
+    (hS : statW0 D εfl ≠ ⊤) (A : Machine 3) (Dm : Machine)
     (hadm : Admissible (univ w8) params impl Sim A) :
     |Dm.acceptProb ((PE.real (univ w8) params impl A).map view) -
         Dm.acceptProb ((PE.ideal (univ w8) params impl Sim A).map view)| ≤
-      (statW D εfl).toReal + |rAcc D kb L impl χs χ χfl A Dm - uAcc D kb L impl χfl A Dm| := by
+      (statW0 D εfl).toReal + |rAcc D kb L impl χs χ χfl A Dm - uAcc D kb L impl χfl A Dm| := by
   rw [real_accept hI hcovR A Dm hadm.1, ideal_accept hI hcovR hSim A Dm hadm.2]
   -- real side: the machines' public matrices
   have g0 : CloseTo ((GV D kb L impl A (realVW D χs χ χfl)).bind (DcB Dm))
@@ -192,16 +223,47 @@ theorem advantage_le [Nonempty (Wb D)] {impl : Impl sig} {χs χ χfl : PMF (Rg 
       (delta1 (setting D) (Wb D) Pos + εfl + deltaT (setting D) (Wb D) +
         ENNReal.ofReal |rAcc D kb L impl χs χ χfl A Dm - uAcc D kb L impl χfl A Dm| +
         delta5 (setting D) (Wb D) Pos + deltaT (setting D) (Wb D)) + (epsSetup D + epsCT D) =
-      statW D εfl + ENNReal.ofReal |rAcc D kb L impl χs χ χfl A Dm - uAcc D kb L impl χfl A Dm| := by
-    unfold statW; ring
+      statW0 D εfl + ENNReal.ofReal |rAcc D kb L impl χs χ χfl A Dm - uAcc D kb L impl χfl A Dm| := by
+    unfold statW0; ring
   unfold rAcc uAcc at hfin
   rw [hfin] at htot
-  have hne : statW D εfl + ENNReal.ofReal |rAcc D kb L impl χs χ χfl A Dm -
+  have hne : statW0 D εfl + ENNReal.ofReal |rAcc D kb L impl χs χ χfl A Dm -
       uAcc D kb L impl χfl A Dm| ≠ ⊤ := ENNReal.add_ne_top.mpr ⟨hS, ENNReal.ofReal_ne_top⟩
   have key := abs_sub_le_of_closeTo' htot (by unfold rAcc uAcc at hne; exact hne) true
   refine key.trans (le_of_eq ?_)
   rw [ENNReal.toReal_add hS ENNReal.ofReal_ne_top, ENNReal.toReal_ofReal (abs_nonneg _)]
   rfl
+
+/-- **The advantage of any distinguisher against an admissible adversary**, with the machines'
+reduction experiment (`rAccW`, `uAccW`). -/
+theorem advantage_le [Nonempty (Wb D)] {impl : Impl sig} {χs χ χfl : PMF (Rg D)}
+    (hI : ImplSpec D kb L impl χs χ χfl) (hcovR : RealCovW D kb) (hcovS : SimCovW D kb)
+    (hb : 22 ≤ D.b) {Sim : Machine} (hSim : SimSpec D Sim) {εfl : ℝ≥0∞}
+    (hflood : ∀ eb ∈ (iidLaw χ (BCol (Wb D) (setting D).τ)).support,
+      ∀ zr : PrI (setting D) Pos → Wb D → Bool,
+        CloseTo ((floodLaw (setting D) Pos χfl).map (· + floodShift eb zr))
+          (floodLaw (setting D) Pos χfl) εfl)
+    (hS : statW D εfl ≠ ⊤) (A : Machine 3) (Dm : Machine)
+    (hadm : Admissible (univ w8) params impl Sim A) :
+    |Dm.acceptProb ((PE.real (univ w8) params impl A).map view) -
+        Dm.acceptProb ((PE.ideal (univ w8) params impl Sim A).map view)| ≤
+      (statW D εfl).toReal + |rAccW D kb L impl χs χ χfl A Dm - uAccW D kb L impl χfl A Dm| := by
+  have h0 : statW0 D εfl ≠ ⊤ := ne_top_of_le_ne_top hS le_self_add
+  have hR : epsRed D + epsRed D ≠ ⊤ := ne_top_of_le_ne_top hS le_add_self
+  have hR1 : epsRed D ≠ ⊤ := ne_top_of_le_ne_top hR le_self_add
+  have h := advantage_le0 hI hcovR hcovS hb hSim hflood h0 A Dm hadm
+  have hr := abs_rAcc_sub_rAccW_le (kb := kb) (L := L) impl χs χ χfl A Dm hR1
+  have hu := abs_uAcc_sub_uAccW_le (kb := kb) (L := L) impl χfl A Dm hR1
+  have e : (statW D εfl).toReal = (statW0 D εfl).toReal + ((epsRed D).toReal + (epsRed D).toReal) := by
+    unfold statW
+    rw [ENNReal.toReal_add h0 hR, ENNReal.toReal_add hR1 hR1]
+  rw [e]
+  have t := abs_sub_le (rAcc D kb L impl χs χ χfl A Dm) (rAccW D kb L impl χs χ χfl A Dm)
+    (uAcc D kb L impl χfl A Dm)
+  have t2 := abs_sub_le (rAccW D kb L impl χs χ χfl A Dm) (uAccW D kb L impl χfl A Dm)
+    (uAcc D kb L impl χfl A Dm)
+  rw [abs_sub_comm (uAccW D kb L impl χfl A Dm)] at t2
+  linarith
 
 /-! ### Attribute hiding -/
 
@@ -209,11 +271,12 @@ variable (D kb L)
 
 /-- **The reduction machine** for the adversary `A` and the distinguisher `Dm`: it accepts the
 words of real and uniform circular Ring-LWE instances at `p` with the acceptance probabilities of
-the reduction's experiment, at a cost at most `C (cost A + cost Dm)²`. -/
+the machines' reduction experiment (`redGameW`: the uniform parts of the secret from `unifW`), at a
+cost at most `C (cost A + cost Dm)²`. -/
 def RedMachine (p : CircularRingLWE.Params) (impl : Impl sig) (χs χ χfl : PMF (Rg D)) (C : ℝ)
     (A : Machine 3) (Dm : Machine) : Prop :=
-  ∃ R : Machine, R.acceptProb (CircularRingLWE.realLaw p) = rAcc D kb L impl χs χ χfl A Dm ∧
-    R.acceptProb (CircularRingLWE.idealLaw p) = uAcc D kb L impl χfl A Dm ∧
+  ∃ R : Machine, R.acceptProb (CircularRingLWE.realLaw p) = rAccW D kb L impl χs χ χfl A Dm ∧
+    R.acceptProb (CircularRingLWE.idealLaw p) = uAccW D kb L impl χfl A Dm ∧
     (R.cost : ℝ) ≤ C * ((A.cost + Dm.cost : ℕ) : ℝ) ^ 2
 
 variable {D kb L}

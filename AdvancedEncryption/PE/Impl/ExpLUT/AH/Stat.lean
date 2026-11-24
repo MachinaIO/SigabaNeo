@@ -9,7 +9,8 @@ With `m̄ = 3 N K + 408` (P's `mbar`), `|R| ≤ 2^{NK}`, at most `2^57` programm
 * `delta1_le`, `delta5_le`: `≤ 2^{−147}` (leftover hash lemma, seeds of 2 and 3 rows);
 * `deltaT_le`: `≤ 2^{−187}`;
 * `epsSetup_le`, `epsCT_le`: `≤ 2^{−150}` (the machines' near-uniform public matrices);
-* `statW_le`: `statW Dc ε_fl ≤ 2^{−140}` for `ε_fl ≤ 2^{−145}`, so `4 · 2^128 · statW² ≤ 1`
+* `epsRed_le`: `≤ 2^{−150}` (the machines' reduction secret);
+* `statW_le`: `statW Dc ε_fl ≤ 2^{−140}` for `ε_fl ≤ 2^{−148}`, so `4 · 2^128 · statW² ≤ 1`
   (`hstat_Dc`).
 -/
 
@@ -166,6 +167,20 @@ theorem epsCT_le : epsCT Dc ≤ ((2 : ℝ≥0∞) ^ 150)⁻¹ := by
   push_cast
   ring
 
+theorem nRed_gen {M K : ℕ} (hM : M ≤ 2 ^ 42) (hK : K ≤ 2 ^ 16) :
+    (M + K) + (22 * 2 * (2 * K) + 1) ≤ 2 ^ 63 := by
+  omega
+
+/-- **The machines' reduction secret**: `epsRed ≤ 2^{−150}`. -/
+theorem epsRed_le : epsRed Dc ≤ ((2 : ℝ≥0∞) ^ 150)⁻¹ := by
+  have h := mul_epsU_le (nRed_gen (M := mbar) (K := Kc) mbar_le42 Kc_le)
+  refine le_trans (le_of_eq ?_) h
+  unfold epsRed
+  simp only [Fintype.card_sum, Fintype.card_prod, Fintype.card_fin, card_Wb_Dc]
+  simp only [Dc_mb, Dc_K, Dc_b]
+  push_cast
+  ring
+
 /-! ### All the statistical terms -/
 
 theorem inv_pow_mono {a b : ℕ} (h : a ≤ b) : ((2 : ℝ≥0∞) ^ b)⁻¹ ≤ ((2 : ℝ≥0∞) ^ a)⁻¹ :=
@@ -181,9 +196,10 @@ theorem statW_le {εfl : ℝ≥0∞} (hfl : εfl ≤ ((2 : ℝ≥0∞) ^ 148)⁻
   have h1 : delta1 (setting Dc) (Wb Dc) Pos ≤ x := delta1_le
   have h5 : delta5 (setting Dc) (Wb Dc) Pos ≤ x := delta5_le
   have hT : deltaT (setting Dc) (Wb Dc) ≤ x := deltaT_le.trans (inv_pow_mono (by norm_num))
-  unfold statW
-  calc _ ≤ x + (x + x + x + x + x) + (x + x) := by gcongr
-    _ = 8 * x := by ring
+  have hR : epsRed Dc ≤ x := epsRed_le.trans (inv_pow_mono (by norm_num))
+  unfold statW statW0
+  calc _ ≤ x + (x + x + x + x + x) + (x + x) + (x + x) := by gcongr
+    _ ≤ 16 * x := by ring_nf; gcongr; norm_num
     _ ≤ _ := by
         have h0 : (2 : ℝ≥0∞) ^ 140 ≠ 0 := pow_ne_zero _ two_ne_zero
         have hT' : (2 : ℝ≥0∞) ^ 140 ≠ ⊤ := ENNReal.pow_ne_top (by simp)
@@ -192,8 +208,8 @@ theorem statW_le {εfl : ℝ≥0∞} (hfl : εfl ≤ ((2 : ℝ≥0∞) ^ 148)⁻
             (Or.inl (ENNReal.pow_ne_top (by simp))), ← pow_add]
         rw [e, ← mul_assoc]
         refine mul_le_of_le_one_left (zero_le (a := ((2 : ℝ≥0∞) ^ 140)⁻¹)) ?_
-        rw [show (8 : ℝ≥0∞) = 2 ^ 3 by norm_num]
-        exact (two_pow_mul_inv_le (a := 3) (b := 0) (c := 8) (by norm_num)).trans (by simp)
+        rw [show (16 : ℝ≥0∞) = 2 ^ 4 by norm_num]
+        exact (two_pow_mul_inv_le (a := 4) (b := 0) (c := 8) (by norm_num)).trans (by simp)
 
 theorem statW_ne_top {εfl : ℝ≥0∞} (hfl : εfl ≤ ((2 : ℝ≥0∞) ^ 148)⁻¹) : statW Dc εfl ≠ ⊤ :=
   ne_top_of_le_ne_top (ENNReal.inv_ne_top.mpr (pow_ne_zero _ two_ne_zero)) (statW_le hfl)
