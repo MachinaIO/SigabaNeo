@@ -163,7 +163,7 @@ theorem abortP : (((confP.Big.card - innerP.card : ℕ) : ℝ≥0∞) / confP.Bi
 
 /-- The predicates have depth at most `Dmax`. -/
 theorem depth_predC (C : List Bool) : SLP.depth (predC C).1 (predC C).2 ≤ Dmax :=
-  depth_bpPred _
+  (depth_bpPred _).trans (by norm_num [Dmax])
 
 variable {ms : Machines hkp confP}
 

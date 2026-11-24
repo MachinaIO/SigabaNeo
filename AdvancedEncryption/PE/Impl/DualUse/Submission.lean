@@ -15,8 +15,8 @@ import SigabaNeo.Trusted.Submission
 # The submission for predicate encryption for branching programs
 
 The width chosen is `w8` (16 symbols of 8 bits); the implementation's predicates are the programs on
-32-bit states of `PE/Impl/Gates/BP32.lean`, into which the required 14-bit programs embed
-(`Relaxed`).
+14-bit states of `PE/Impl/Gates/BP14.lean` (`univ w8` field by field, `Relaxed`), compiled to mux
+trees of depth at most `478` (`depth_bpPred`).
 
 `submission`: the compiled implementation `implC` (`ImplBP`) of the Ring-LWE scheme at `confP`
 (the sizes of `confA`: `N = 2^36`, `K = 2^27`, `k = K + 1`, `d = 2^65`), with the χ sampler

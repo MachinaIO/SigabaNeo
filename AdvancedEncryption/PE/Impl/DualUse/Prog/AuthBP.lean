@@ -7,10 +7,11 @@ import SigabaNeo.Lib.Machines.Prog.CoinFreeX
 
 `authBP` (`Prog 16`; `BP_PLAN.md` §5.2): from the predicate word `C` on tape `0` and the attribute
 bits `xs` on tape `1`, it writes `[authA C xs]` on tape `0`, every other tape blank:
-`authA C xs = decide (|C| = 481 · 2^40) && !lastBit C xs`, where the program is run on the table
-word directly: the state `z` (32 bits, most significant first) starts at `0`; step `i < 15` reads
-the entry `256 z + a` (`a` the next 8 bits of `xs`) of table `i`, the `32` bits at
-`i · 2^45 + 32 (256 z + a)`; the result is the bit at `15 · 2^45 + 256 z₁₅ + a₁₅` (`zA`, `lastBit`).
+`authA C xs = decide (|C| = 211 · 2^22) && !lastBit C xs`, where the program is run on the table
+word directly: the state `z` (14 bits, most significant first) starts at `0`; step `i < 15` reads
+the entry `256 z + a` (`a` the next 8 bits of `xs`) of table `i`, the `14` bits at
+`i · tblW + 14 (256 z + a)` (`tblW = 14 · 2^22`); the result is the bit at
+`15 · tblW + 256 z₁₅ + a₁₅` (`zA`, `lastBit`).
 
 The entry offset is built in unary by doubling along the bits of `z ‖ a` (`offP`), so no number
 is ever converted. **`run_authBP`**, **`law_authBP`**; `good_authBP`: coin-free, well formed.
@@ -33,18 +34,18 @@ open scoped Prog
 def numB (l : List Bool) : ℕ := l.foldl (fun acc b => 2 * acc + b.toNat) 0
 
 /-- The length of a predicate word. -/
-def bpLenA : ℕ := 481 * 2 ^ 40
+def bpLenA : ℕ := 211 * 2 ^ 22
 
-/-- One step: the 32 bits of entry `numB (z ++ a)` of table `i`. -/
+/-- One step: the 14 bits of entry `numB (z ++ a)` of table `i`. -/
 def stepZ (C : List Bool) (i : ℕ) (z a : List Bool) : List Bool :=
-  ((C.drop (i * tblW)).drop (32 * numB (z ++ a))).take 32
+  ((C.drop (i * tblW)).drop (14 * numB (z ++ a))).take 14
 
 /-- The symbol bits of step `i`. -/
 def symA (xs : List Bool) (i : ℕ) : List Bool := (xs.drop (8 * i)).take 8
 
 /-- The states. -/
 def zA (C xs : List Bool) : ℕ → List Bool
-  | 0 => List.replicate 32 false
+  | 0 => List.replicate 14 false
   | i + 1 => stepZ C i (zA C xs i) (symA xs i)
 
 /-- The output bit: entry `numB (z₁₅ ++ a₁₅)` of the output table. -/
@@ -84,7 +85,7 @@ def offP : Prog 16 :=
 /-- One step: the next state from table `i` (at `CUR`), then the next table. -/
 def stepA : Prog 16 :=
   offP ⨾ cp tT2 tCU ⨾ dropT tT2 tU tA2 ⨾ clr tZB ⨾
-    iter tT2 (pp tT2 tBit ⨾ prim (.snocHead tZB tBit) ⨾ clr tBit) 32 ⨾ clr tT2 ⨾
+    iter tT2 (pp tT2 tBit ⨾ prim (.snocHead tZB tBit) ⨾ clr tBit) 14 ⨾ clr tT2 ⨾
     dropT tCU tTB tA2 ⨾ clr tU
 
 /-- The length test on `C`, into `F` (`lenEqP` on the tapes `C, F, LT, T2, A, B`). -/
@@ -92,9 +93,9 @@ def uL : Fin 6 → Fin 16 := ![tC, tF, tLT, tT2, tA2, tB2]
 
 theorem uL_inj : Function.Injective uL := by decide
 
-/-- The tables and the start: `TB := 1^(2^45)`, `E := 1^32`, `CUR := C`, `z := 0`, 15 steps. -/
+/-- The tables and the start: `TB := 1^tblW`, `E := 1^14`, `CUR := C`, `z := 0`, 15 steps. -/
 def initA : Prog 16 :=
-  natU tTB tA2 tB2 tblW ⨾ natU tE tA2 tB2 32 ⨾ cp tCU tC ⨾ clr tZB ⨾ snocN tZB false 32 ⨾
+  natU tTB tA2 tB2 tblW ⨾ natU tE tA2 tB2 14 ⨾ cp tCU tC ⨾ clr tZB ⨾ snocN tZB false 14 ⨾
     natU tS2 tA2 tB2 15
 
 /-- The last step: the bit of the output table into `Bit`. -/
@@ -338,18 +339,18 @@ theorem run_offP (v : AV) (e : ℕ) (he : v.e = List.replicate e true) (ht : v.t
 
 /-- The store before step `i`. -/
 def aSt (C xs : List Bool) (fl : Bool) (i : ℕ) (w : List Bool) : AV :=
-  ⟨C, xs.drop (8 * i), C.drop (i * tblW), zA C xs i, [], [], List.replicate 32 true, [], [], [], [],
+  ⟨C, xs.drop (8 * i), C.drop (i * tblW), zA C xs i, [], [], List.replicate 14 true, [], [], [], [],
     w, List.replicate tblW true, [], [], [fl]⟩
 
 /-- **One step.** -/
 theorem run_stepA (C xs : List Bool) (fl : Bool) (i : ℕ) (w : List Bool) :
     run stepA (aSt C xs fl i w).enc = (aSt C xs fl (i + 1) w).enc := by
   simp only [stepA, run_seq]
-  rw [run_offP _ 32 rfl rfl rfl rfl rfl]
+  rw [run_offP _ 14 rfl rfl rfl rfl rfl]
   rw [run_copy]; encA
   rw [run_dropT_blank (t := tT2) (x := tU) (by decide) _ ?h1]; encA
   rw [run_clear (i := tZB)]; encA
-  rw [run_iter_mv tT2 tZB tBit tT2 (by decide) (by decide) (by decide) 32 _ ?h2]; encA
+  rw [run_iter_mv tT2 tZB tBit tT2 (by decide) (by decide) (by decide) 14 _ ?h2]; encA
   rw [run_clear (i := tT2)]; encA
   rw [run_dropT_blank (t := tCU) (x := tTB) (by decide) _ ?h3]; encA
   rw [run_clear]; encA
@@ -514,7 +515,7 @@ theorem goodA_stepA : GoodA SA stepA :=
   goodA_offP.seq <| (GoodA.prim _ (by simp +decide)).seq <|
     (goodA_dropT (by decide) (by decide) (by decide)).seq <| (GoodA.prim _ (by simp +decide)).seq <|
     (GoodA.iter (by decide) ((GoodA.prim _ (by simp +decide)).seq <|
-      (GoodA.prim _ (by simp +decide)).seq (GoodA.prim _ (by simp +decide))) 32).seq <|
+      (GoodA.prim _ (by simp +decide)).seq (GoodA.prim _ (by simp +decide))) 14).seq <|
     (GoodA.prim _ (by simp +decide)).seq <| (goodA_dropT (by decide) (by decide) (by decide)).seq
       (GoodA.prim _ (by simp +decide))
 
@@ -528,7 +529,7 @@ theorem good_authBP : authBP.CoinFree ∧ authBP.WF := by
       (goodA_natU trivial trivial trivial (by decide) (by decide) _).seq <|
       (GoodA.prim _ (by simp [T])).seq <| (GoodA.prim _ (by simp [T])).seq <|
         GoodA.seq (⟨coinFree_snocN _ _ _, wf_snocN _ _ _,
-        writesIn_snocN trivial _ _⟩ : GoodA T (snocN tZB false 32))
+        writesIn_snocN trivial _ _⟩ : GoodA T (snocN tZB false 14))
         (goodA_natU trivial trivial trivial (by decide) (by decide) _)
   have hS : GoodA T (loop tS2 stepA) :=
     ⟨goodA_stepA.1.loop', ⟨goodA_stepA.2.1, goodA_stepA.2.2 tS2 (by simp)⟩,
@@ -608,18 +609,18 @@ theorem symA_encAttr (x : Attr) (i : ℕ) (hi : i < 16) :
   simp only [List.getElem_ofFn, bitsN]
   rw [getD_encAttr x hi (by simp at h1; omega)]
 
-theorem bitsN_32 (C : List Bool) (p : ℕ) :
-    bitsN (readNum C p).val 32 = List.ofFn fun k : Fin 32 => C.getD (p + k) false := by
+theorem bitsN_14 (C : List Bool) (p : ℕ) :
+    bitsN (readNum C p).val 14 = List.ofFn fun k : Fin 14 => C.getD (p + k) false := by
   apply List.ext_getElem (by simp [bitsN])
   intro k h1 h2
   simp only [bitsN, List.getElem_ofFn, readNum, MuxTree.testBit_idx]
-  have hk : k < 32 := by simpa [bitsN] using h1
-  simp only [show 32 - 1 - k < 32 by omega, decide_true, Bool.true_and]
+  have hk : k < 14 := by simpa [bitsN] using h1
+  simp only [show 14 - 1 - k < 14 by omega, decide_true, Bool.true_and]
   congr 1; omega
 
 /-- **The states of the authorization program** are those of the program of the word. -/
 theorem zA_encAttr (C : List Bool) (hC : C.length = bpLen) (x : Attr) :
-    ∀ i, i ≤ 15 → zA C (encAttr x) i = bitsN (zs (tablesOf C) x i).val 32
+    ∀ i, i ≤ 15 → zA C (encAttr x) i = bitsN (zs (tablesOf C) x i).val 14
   | 0, _ => by
     simp only [zA, zs]
     apply List.ext_getElem (by simp [bitsN]); intro k h1 h2; simp [bitsN]
@@ -627,7 +628,7 @@ theorem zA_encAttr (C : List Bool) (hC : C.length = bpLen) (x : Attr) :
     rw [zA, zA_encAttr C hC x i (by omega), symA_encAttr x i (by omega), zs]
     simp only [show i < 15 from by omega, dite_true]
     simp only [tablesOf]
-    rw [bitsN_32, stepZ, numB_append, numB_bitsN, numB_bitsN, List.drop_drop,
+    rw [bitsN_14, stepZ, numB_append, numB_bitsN, numB_bitsN, List.drop_drop,
       take_drop_eq_ofFn _ _ _ ?_]
     · congr 1; funext k; congr 1
       have hz := (zs (tablesOf C) x i).isLt

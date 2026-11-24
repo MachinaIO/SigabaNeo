@@ -7,7 +7,7 @@ import PE.Impl.Gates.BPWord
 * `run_readL`: reading one leaf advances the cursor by one entry;
 * **`run_treeP`**: the tree code appends `treeW` and advances the cursor by `2^(m+2)` entries,
   leaving every other tape as it was (scratch, leaf bits, inner counters blank again);
-* `run_jBody`, `run_jLoop`: the `32` trees of a step; `run_stepP`: a step `i < 15` on the step
+* `run_jBody`, `run_jLoop`: the `14` trees of a step; `run_stepP`: a step `i < 15` on the step
   store `iSt` (`SV.enc`: the tapes of a step, every other tape blank); `run_steps`: the `15` steps;
   `run_lastP`: the output table;
 * **`run_bpCompP`**, **`law_bpCompP`**: from `C` on tape `0` (`inp C`), the compiler ends in
@@ -98,7 +98,7 @@ theorem tc_ne_TW0 (m : ℕ) : tc m ≠ tO ∧ tc m ≠ tTT ∧ tc m ≠ tA ∧ t
   ⟨tc_ne (by decide), tc_ne (by decide), tc_ne (by decide), tc_ne (by decide), tc_ne (by decide),
     tc_ne (by decide), tc_ne (by decide), tc_ne (by decide), tc_ne (by decide), tc_ne (by decide)⟩
 
-theorem not_TW_tc {m : ℕ} (hm : m < 38) : ¬ TW m (tc m) := by
+theorem not_TW_tc {m : ℕ} (hm : m < 20) : ¬ TW m (tc m) := by
   rintro (h | h | h | h | h | h | h | h | ⟨j, hj, h⟩)
   all_goals first
     | exact (tc_ne (by decide) h) | exact absurd (tc_inj hm (by omega) h) (by omega)
@@ -151,7 +151,7 @@ theorem run_read4 (s : Store 64) (hA : s tA = []) {d1 d2 : ℕ} (hZ : (s tJZ).le
 set_option maxHeartbeats 1000000 in
 /-- **The law of the tree code.** -/
 theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List Bool) :
-    ∀ (m : ℕ), m ≤ 38 → ∀ (Q : Store 64 → Prop), (∀ s t w, TW m t → Q s → Q (Function.update s t w)) →
+    ∀ (m : ℕ), m ≤ 20 → ∀ (Q : Store 64 → Prop), (∀ s t w, TW m t → Q s → Q (Function.update s t w)) →
     (∀ ℓ, 1 ≤ ℓ → ℓ ≤ m + 2 → Em (sE ℓ) (Pq Q) (blk (Y.s ℓ))) →
     (∀ ℓ, 1 ≤ ℓ → ℓ ≤ m + 2 → Em (nsE ℓ) (Pq Q) (blk (Y.ns ℓ))) →
     ∀ (dE : Prog 64) (d : ℕ), Em dE (Pq Q) (blk d) →
@@ -203,7 +203,7 @@ theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List
     funext t
     upd
   | m + 1, hm, Q, hQ, hs, hns, dE, d, hdE, base, s, hQs, hA, hB, h0, h1, h2, h3, hc, hZ, hJ, hT => by
-    have hm' : m < 38 := by omega
+    have hm' : m < 20 := by omega
     set c := tc m with hcdef
     have hc0 : s c = [] := hc m (by omega)
     have hcTW : ∀ t, TW m t → t ≠ c := fun t ht e => not_TW_tc hm' (by rw [← hcdef, ← e]; exact ht)
@@ -293,12 +293,12 @@ theorem run_treeP (Y : SLay) (sE nsE : ℕ → Prog 64) (d1 d2 : ℕ) (T0 : List
 /-- The tapes of the selector and root emitters in step `i` (parity `i mod 2`). -/
 def FS (i : ℕ) (s : Store 64) : Prop :=
   s tIB = List.replicate (8 * i) true ∧ s tIZ = List.replicate (120 - 8 * i) false ∧
-    s tPB = List.replicate (32 * (i % 2)) true ∧ s tPZ = List.replicate (32 - 32 * (i % 2)) false ∧
-    s tQB = List.replicate (32 - 32 * (i % 2)) true ∧ s tQZ = List.replicate (32 * (i % 2)) false
+    s tPB = List.replicate (14 * (i % 2)) true ∧ s tPZ = List.replicate (14 - 14 * (i % 2)) false ∧
+    s tQB = List.replicate (14 - 14 * (i % 2)) true ∧ s tQZ = List.replicate (14 * (i % 2)) false
 
 /-- The layout fits: every register slot below `512`. -/
 structure RL.Ok (R : RL) : Prop where
-  z : rs R.z0 + 64 ≤ 512
+  z : rs R.z0 + 28 ≤ 512
 
 theorem rep_app_rep_app (n m : ℕ) (a : Bool) (l : List Bool) :
     List.replicate n a ++ (List.replicate m a ++ l) = List.replicate (n + m) a ++ l := by
@@ -321,7 +321,7 @@ theorem em_inE {P : Store 64 → Prop} (i m : ℕ) (hi : i ≤ 15) (hm : m ≤ 8
   runs
   rw [blk_of (j := 1 + 8 * i + m) (by omega) (by omega)]
 
-theorem em_zE (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i j : ℕ) (hj : j < 32)
+theorem em_zE (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i j : ℕ) (hj : j < 14)
     (hP : ∀ s, P s → Pq (FS i) s) : Em (zE R j) P (blk (zS R (i % 2) j)) := by
   intro s hs
   obtain ⟨⟨-, -, hPB, hPZ, -⟩, hA, hB⟩ := hP s hs
@@ -335,9 +335,9 @@ theorem em_zE (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i j : ℕ) (hj : j <
 
 /-- The tapes of the root emitter: bit `j` of the other bank. -/
 def FJ (j : ℕ) (s : Store 64) : Prop :=
-  s tJB = List.replicate j true ∧ s tJZ = List.replicate (31 - j) false
+  s tJB = List.replicate j true ∧ s tJZ = List.replicate (13 - j) false
 
-theorem em_rootE (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i j : ℕ) (hj : j < 32)
+theorem em_rootE (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i j : ℕ) (hj : j < 14)
     (hP : ∀ s, P s → Pq (FS i) s ∧ FJ j s) : Em (rootE R) P (blk (zS R ((i + 1) % 2) j)) := by
   intro s hs
   obtain ⟨⟨⟨-, -, -, -, hQB, hQZ⟩, hA, hB⟩, hJB, hJZ⟩ := hP s hs
@@ -380,7 +380,7 @@ theorem em_proP (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) : Em (proP R) (Pq
   have hP := Pq_ostable (FS_ostable i)
   have h32 := em_insL_map hP (fun j => insP (emitU tO 512 (rs (R.nz + j))) (zE R j) (zE R j))
     (fun j => insW (rs (R.nz + j)) (zS R (i % 2) j) (zS R (i % 2) j)) [] [] (em_insL_nil _)
-    (List.range 32)
+    (List.range 14)
     (fun j hj => em_insP hP (em_emitU _ _) (em_zE R hR i j (List.mem_range.mp hj) fun _ h => h)
       (em_zE R hR i j (List.mem_range.mp hj) fun _ h => h))
   have h8 := em_insL_map hP (fun m => insP (emitU tO 512 (rs (R.na + m))) (inE m) (inE m))
@@ -392,7 +392,7 @@ theorem em_proP (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) : Em (proP R) (Pq
 /-- **The global prologue.** -/
 theorem em_gProP (R : RL) (P : Store 64 → Prop) (hP : OStable P) : Em (gProP R) P (gProW R) := by
   have h := em_insL_map hP (fun j => insP (emitU tO 512 (zS R 0 j)) (emitU tO 512 0)
-    (emitU tO 512 0)) (fun j => insW (zS R 0 j) 0 0) [] [] (em_insL_nil _) (List.range 32)
+    (emitU tO 512 0)) (fun j => insW (zS R 0 j) 0 0) [] [] (em_insL_nil _) (List.range 14)
     (fun j _ => em_insP hP (em_emitU _ _) (em_emitU _ _) (em_emitU _ _))
   have h2 := (em_insP hP (em_emitU P (rs R.zero)) (em_emitU P 0) (em_emitU P 0)).seq hP h
   simpa [gProP, gProW, insL, insW] using h2
@@ -547,12 +547,12 @@ theorem treeP_congr (sE nsE : ℕ → Prog 64) {Y Y' : SLay} (h0 : Y.zero = Y'.z
   | m + 1, dE => by simp only [treeP, nodeP, h1, h2, hl, hh, treeP_congr sE nsE h0 h1 h2 hl hh m]
 
 theorem treeS_eq (R : RL) (i : ℕ) (dE : Prog 64) :
-    treeS R dE = treeP (sEd R) (nsEd R) (SY R i) 38 dE :=
-  treeP_congr _ _ rfl rfl rfl rfl rfl 38 dE
+    treeS R dE = treeP (sEd R) (nsEd R) (SY R i) 20 dE :=
+  treeP_congr _ _ rfl rfl rfl rfl rfl 20 dE
 
 /-- The selector emitters of step `i`. -/
 theorem em_sEd (R : RL) (hR : R.Ok) {P : Store 64 → Prop} (i : ℕ) (hi : i ≤ 15)
-    (hP : ∀ s, P s → Pq (FS i) s) (ℓ : ℕ) (h1 : 1 ≤ ℓ) (h2 : ℓ ≤ 40) :
+    (hP : ∀ s, P s → Pq (FS i) s) (ℓ : ℕ) (h1 : 1 ≤ ℓ) (h2 : ℓ ≤ 22) :
     Em (sEd R ℓ) P (blk ((SY R i).s ℓ)) := by
   simp only [sEd, SY, selS]
   split_ifs with h
@@ -571,22 +571,22 @@ macro "encs" : tactic => `(tactic| simp only [SV.upd_o, SV.upd_cur, SV.upd_tt, S
 /-- The step tapes are those of step `i`. -/
 def SV.Ok (v : SV) (i : ℕ) : Prop :=
   v.ib = List.replicate (8 * i) true ∧ v.iz = List.replicate (120 - 8 * i) false ∧
-    v.pb = List.replicate (32 * (i % 2)) true ∧ v.pz = List.replicate (32 - 32 * (i % 2)) false ∧
-    v.qb = List.replicate (32 - 32 * (i % 2)) true ∧ v.qz = List.replicate (32 * (i % 2)) false
+    v.pb = List.replicate (14 * (i % 2)) true ∧ v.pz = List.replicate (14 - 14 * (i % 2)) false ∧
+    v.qb = List.replicate (14 - 14 * (i % 2)) true ∧ v.qz = List.replicate (14 * (i % 2)) false
 
 /-- **One round of the loop over the state bits.** -/
-theorem run_jBody (R : RL) (hR : R.Ok) (i j : ℕ) (hi : i ≤ 15) (hj : j < 32) (v : SV) (hv : v.Ok i)
-    (hjb : v.jb = List.replicate j true) (hjz : v.jz = List.replicate (31 - j) false)
-    (h31 : v.t31 = List.replicate 31 true) (w : List Bool) :
+theorem run_jBody (R : RL) (hR : R.Ok) (i j : ℕ) (hi : i ≤ 15) (hj : j < 14) (v : SV) (hv : v.Ok i)
+    (hjb : v.jb = List.replicate j true) (hjz : v.jz = List.replicate (13 - j) false)
+    (h31 : v.t31 = List.replicate 13 true) (w : List Bool) :
     run (jBody R) (Function.update v.enc tJC w) = Function.update
-      { v with o := v.o ++ treeW (SY R i) (lfT (31 - j) 32 v.cur) 38 0 (zS R ((i + 1) % 2) j),
-               tt := v.cur.drop tblW, jb := List.replicate (31 - (31 - (j + 1))) true,
+      { v with o := v.o ++ treeW (SY R i) (lfT (13 - j) 14 v.cur) 20 0 (zS R ((i + 1) % 2) j),
+               tt := v.cur.drop tblW, jb := List.replicate (13 - (13 - (j + 1))) true,
                jz := v.jz.tail }.enc tJC w := by
   obtain ⟨hib, hiz, hpb, hpz, hqb, hqz⟩ := hv
   let Q : Store 64 → Prop := fun s => FS i s ∧ FJ j s
-  have hw : 31 - j + 1 + j = 32 := by omega
+  have hw : 13 - j + 1 + j = 14 := by omega
   rw [jBody, run_seq, run_copy, run_seq, treeS_eq R i]
-  rw [run_treeP (SY R i) (sEd R) (nsEd R) (31 - j) j v.cur 38 le_rfl Q ?hQ
+  rw [run_treeP (SY R i) (sEd R) (nsEd R) (13 - j) j v.cur 20 le_rfl Q ?hQ
     (fun ℓ h1 h2 => em_sEd R hR i hi (fun s hs => ⟨hs.1.1, hs.2⟩) ℓ h1 (by omega))
     (fun ℓ _ _ => em_emitU _ _) (rootE R) _
     (em_rootE R hR i j hj fun s hs => ⟨⟨hs.1.1, hs.2⟩, hs.1.2⟩) 0 _ ?hQs (by upd) (by upd) (by upd)
@@ -604,8 +604,8 @@ theorem run_jBody (R : RL) (hR : R.Ok) (i j : ℕ) (hi : i ≤ 15) (hj : j < 32)
   case hZ => simp +decide [SV.enc, hjz]
   case hJ => simp +decide [SV.enc, hjb]
   case hT => simp +decide [SV.enc]
-  rw [hw, show 0 + 2 ^ (38 + 2) = 2 ^ 40 by norm_num, show 2 ^ 40 * 32 = tblW from rfl]
-  generalize treeW (SY R i) (lfT (31 - j) 32 v.cur) 38 0 (zS R ((i + 1) % 2) j) = X
+  rw [hw, show 0 + 2 ^ (20 + 2) = 2 ^ 22 by norm_num, show 2 ^ 22 * 14 = tblW from rfl]
+  generalize treeW (SY R i) (lfT (13 - j) 14 v.cur) 20 0 (zS R ((i + 1) % 2) j) = X
   rw [run_seq, run_tail]; encs
   rw [run_seq, run_copy]; encs
   rw [run_dropT_blank (by decide) _ (by unfold SV.enc; rfl)]; encs
@@ -613,15 +613,15 @@ theorem run_jBody (R : RL) (hR : R.Ok) (i j : ℕ) (hi : i ≤ 15) (hj : j < 32)
   simp only [SV.mk.injEq, h31, hjz, List.length_tail, List.length_replicate, List.drop_replicate]
   refine ⟨trivial, trivial, trivial, trivial, trivial, trivial, trivial, trivial, trivial, ?_,
     trivial, trivial, trivial, trivial, trivial, trivial⟩
-  rw [show 31 - j - 1 = 31 - (j + 1) by omega]
+  rw [show 13 - j - 1 = 13 - (j + 1) by omega]
 
 /-- The trees of step `i` on the table at `cur`, for the state bits `j < n`. -/
 def treesW (R : RL) (i : ℕ) (cur : List Bool) (n : ℕ) : List Bool :=
-  (List.range n).flatMap fun j => treeW (SY R i) (lfT (31 - j) 32 cur) 38 0 (zS R ((i + 1) % 2) j)
+  (List.range n).flatMap fun j => treeW (SY R i) (lfT (13 - j) 14 cur) 20 0 (zS R ((i + 1) % 2) j)
 
 theorem treesW_succ (R : RL) (i : ℕ) (cur : List Bool) (n : ℕ) :
     treesW R i cur (n + 1) =
-      treesW R i cur n ++ treeW (SY R i) (lfT (31 - n) 32 cur) 38 0 (zS R ((i + 1) % 2) n) := by
+      treesW R i cur n ++ treeW (SY R i) (lfT (13 - n) 14 cur) 20 0 (zS R ((i + 1) % 2) n) := by
   simp [treesW, List.range_succ, List.flatMap_append]
 
 theorem pq_enc (v : SV) (i : ℕ) (hv : v.Ok i) : Pq (FS i) v.enc := by
@@ -631,15 +631,15 @@ theorem pq_enc (v : SV) (i : ℕ) (hv : v.Ok i) : Pq (FS i) v.enc := by
 /-- The state of the loop over the state bits before round `j`. -/
 def jSt (v : SV) (R : RL) (i : ℕ) (o0 : List Bool) (j : ℕ) : SV :=
   { v with o := o0 ++ treesW R i v.cur j, tt := if j = 0 then [] else v.cur.drop tblW,
-           jb := List.replicate (31 - (31 - j)) true, jz := List.replicate (31 - j) false, jc := [] }
+           jb := List.replicate (13 - (13 - j)) true, jz := List.replicate (13 - j) false, jc := [] }
 
 /-- **The loop over the state bits.** -/
 theorem run_jLoop (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (v : SV) (hv : v.Ok i)
-    (ht31 : v.t31 = List.replicate 31 true) (o0 : List Bool) :
-    run (loop tJC (jBody R)) { jSt v R i o0 0 with jc := List.replicate 32 true }.enc =
-      (jSt v R i o0 32).enc := by
-  have h := run_loop_count tJC (jBody R) (fun j => (jSt v R i o0 j).enc) 32 ?_
-    (List.replicate 32 true) 0 (by simp)
+    (ht31 : v.t31 = List.replicate 13 true) (o0 : List Bool) :
+    run (loop tJC (jBody R)) { jSt v R i o0 0 with jc := List.replicate 14 true }.enc =
+      (jSt v R i o0 14).enc := by
+  have h := run_loop_count tJC (jBody R) (fun j => (jSt v R i o0 j).enc) 14 ?_
+    (List.replicate 14 true) 0 (by simp)
   · simp only [SV.upd_jc, List.length_replicate, Nat.zero_add] at h
     rw [h]
     congr 1
@@ -648,16 +648,16 @@ theorem run_jLoop (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (v : SV) (hv : 
     congr 1
     simp only [jSt, treesW_succ, List.append_assoc, Nat.add_one_ne_zero,
       ite_false]
-    rw [List.tail_replicate, show 31 - j - 1 = 31 - (j + 1) by omega]
+    rw [List.tail_replicate, show 13 - j - 1 = 13 - (j + 1) by omega]
 
 theorem run_jLoop' (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (u : SV) (hu : u.Ok i)
-    (htt : u.tt = []) (hjb : u.jb = []) (hjz : u.jz = List.replicate 31 false)
-    (hjc : u.jc = List.replicate 32 true) (ht31 : u.t31 = List.replicate 31 true) :
+    (htt : u.tt = []) (hjb : u.jb = []) (hjz : u.jz = List.replicate 13 false)
+    (hjc : u.jc = List.replicate 14 true) (ht31 : u.t31 = List.replicate 13 true) :
     run (loop tJC (jBody R)) u.enc = SV.enc
-      { u with o := u.o ++ treesW R i u.cur 32, tt := u.cur.drop tblW,
-               jb := List.replicate 31 true, jz := [], jc := [] } := by
+      { u with o := u.o ++ treesW R i u.cur 14, tt := u.cur.drop tblW,
+               jb := List.replicate 13 true, jz := [], jc := [] } := by
   have h := run_jLoop R hR i hi u hu ht31 u.o
-  have e : { jSt u R i u.o 0 with jc := List.replicate 32 true } = u := by
+  have e : { jSt u R i u.o 0 with jc := List.replicate 14 true } = u := by
     cases u; simp_all [jSt, treesW]
   rw [e] at h
   rw [h]
@@ -666,10 +666,10 @@ theorem run_jLoop' (R : RL) (hR : R.Ok) (i : ℕ) (hi : i ≤ 15) (u : SV) (hu :
 /-- The state before step `i`. -/
 def iSt (C o0 : List Bool) (i : ℕ) (w : List Bool) : SV :=
   { o := o0, cur := C.drop (i * tblW), tt := [], ib := List.replicate (8 * i) true,
-    iz := List.replicate (120 - 8 * i) false, pb := List.replicate (32 * (i % 2)) true,
-    pz := List.replicate (32 - 32 * (i % 2)) false, qb := List.replicate (32 - 32 * (i % 2)) true,
-    qz := List.replicate (32 * (i % 2)) false, jb := [], jz := [], jc := [], sc := w, ia := [],
-    t31 := List.replicate 31 true, t120 := List.replicate 120 true }
+    iz := List.replicate (120 - 8 * i) false, pb := List.replicate (14 * (i % 2)) true,
+    pz := List.replicate (14 - 14 * (i % 2)) false, qb := List.replicate (14 - 14 * (i % 2)) true,
+    qz := List.replicate (14 * (i % 2)) false, jb := [], jz := [], jc := [], sc := w, ia := [],
+    t31 := List.replicate 13 true, t120 := List.replicate 120 true }
 
 theorem iSt_ok (C o0 : List Bool) (i : ℕ) (w : List Bool) : (iSt C o0 i w).Ok i :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
@@ -732,10 +732,10 @@ theorem run_steps (R : RL) (hR : R.Ok) (C o0 : List Bool) :
 
 theorem run_steps' (R : RL) (hR : R.Ok) (C o0 : List Bool) (u : SV) (h1 : u.o = o0)
     (h2 : u.cur = C) (h3 : u.tt = []) (h4 : u.ib = []) (h5 : u.iz = List.replicate 120 false)
-    (h6 : u.pb = []) (h7 : u.pz = List.replicate 32 false) (h8 : u.qb = List.replicate 32 true)
+    (h6 : u.pb = []) (h7 : u.pz = List.replicate 14 false) (h8 : u.qb = List.replicate 14 true)
     (h9 : u.qz = []) (h10 : u.jb = []) (h11 : u.jz = []) (h12 : u.jc = [])
     (h13 : u.sc = List.replicate 15 true) (h14 : u.ia = [])
-    (h15 : u.t31 = List.replicate 31 true) (h16 : u.t120 = List.replicate 120 true) :
+    (h15 : u.t31 = List.replicate 13 true) (h16 : u.t120 = List.replicate 120 true) :
     run (loop tSC (stepP R)) u.enc =
       (iSt C (o0 ++ (List.range 15).flatMap (stepW R C)) 15 []).enc := by
   have e : u = iSt C o0 0 (List.replicate 15 true) := by cases u; simp_all [iSt]
@@ -743,12 +743,12 @@ theorem run_steps' (R : RL) (hR : R.Ok) (C o0 : List Bool) (u : SV) (h1 : u.o = 
 
 theorem SV.eq_iSt (C o0 : List Bool) (i : ℕ) (w : List Bool) (u : SV) (h1 : u.o = o0)
     (h2 : u.cur = C.drop (i * tblW)) (h3 : u.tt = []) (h4 : u.ib = List.replicate (8 * i) true)
-    (h5 : u.iz = List.replicate (120 - 8 * i) false) (h6 : u.pb = List.replicate (32 * (i % 2)) true)
-    (h7 : u.pz = List.replicate (32 - 32 * (i % 2)) false)
-    (h8 : u.qb = List.replicate (32 - 32 * (i % 2)) true)
-    (h9 : u.qz = List.replicate (32 * (i % 2)) false) (h10 : u.jb = []) (h11 : u.jz = [])
+    (h5 : u.iz = List.replicate (120 - 8 * i) false) (h6 : u.pb = List.replicate (14 * (i % 2)) true)
+    (h7 : u.pz = List.replicate (14 - 14 * (i % 2)) false)
+    (h8 : u.qb = List.replicate (14 - 14 * (i % 2)) true)
+    (h9 : u.qz = List.replicate (14 * (i % 2)) false) (h10 : u.jb = []) (h11 : u.jz = [])
     (h12 : u.jc = []) (h13 : u.sc = w) (h14 : u.ia = [])
-    (h15 : u.t31 = List.replicate 31 true) (h16 : u.t120 = List.replicate 120 true) :
+    (h15 : u.t31 = List.replicate 13 true) (h16 : u.t120 = List.replicate 120 true) :
     u = iSt C o0 i w := by
   cases u; simp_all [iSt]
 
@@ -761,7 +761,7 @@ theorem run_lastP (R : RL) (hR : R.Ok) (C o0 : List Bool) :
   rw [run_copy]
   encs
   rw [treeS_eq R 15]
-  rw [run_treeP (SY R 15) (sEd R) (nsEd R) 0 0 (C.drop (15 * tblW)) 38 le_rfl (FS 15) ?hQ
+  rw [run_treeP (SY R 15) (sEd R) (nsEd R) 0 0 (C.drop (15 * tblW)) 20 le_rfl (FS 15) ?hQ
     (fun ℓ h1 h2 => em_sEd R hR 15 le_rfl (fun s hs => hs) ℓ h1 (by omega))
     (fun ℓ _ _ => em_emitU _ _) _ _ (em_emitU _ (rs R.out)) 0 _ ?hQs (by unfold SV.enc; rfl) (by unfold SV.enc; rfl)
     (by unfold SV.enc; rfl) (by unfold SV.enc; rfl) (by unfold SV.enc; rfl) (by unfold SV.enc; rfl)
@@ -851,7 +851,7 @@ theorem goodT_readL (m : ℕ) {b : Fin 64} (hb : TW m b) : GoodT m (readL b) :=
 
 /-- **The tree code** is coin-free, well formed, and writes only its tapes. -/
 theorem goodT_treeP (sE nsE : ℕ → Prog 64) (Y : SLay) (hs : ∀ ℓ, GoodE (sE ℓ))
-    (hns : ∀ ℓ, GoodE (nsE ℓ)) : ∀ m, m ≤ 38 → ∀ dE, GoodE dE → GoodT m (treeP sE nsE Y m dE)
+    (hns : ∀ ℓ, GoodE (nsE ℓ)) : ∀ m, m ≤ 20 → ∀ dE, GoodE dE → GoodT m (treeP sE nsE Y m dE)
   | 0, _, dE, hd => by
     refine goodT_seq (goodT_readL 0 (TW_b0 0)) <| goodT_seq (goodT_readL 0 (TW_b1 0)) <|
       goodT_seq (goodT_readL 0 (TW_b2 0)) <| goodT_seq (goodT_readL 0 (TW_b3 0)) <|
@@ -916,18 +916,18 @@ theorem goodE_gProP (R : RL) : GoodE (gProP R) := by
 theorem goodE_sEd (R : RL) (ℓ : ℕ) : GoodE (sEd R ℓ) := by
   unfold sEd; split_ifs <;> exact goodE_dynE _ _ _
 
-theorem goodT_treeS (R : RL) {dE : Prog 64} (hd : GoodE dE) : GoodT 38 (treeS R dE) :=
-  goodT_treeP _ _ _ (goodE_sEd R) (fun _ => goodE_emitU _) 38 le_rfl dE hd
+theorem goodT_treeS (R : RL) {dE : Prog 64} (hd : GoodE dE) : GoodT 20 (treeS R dE) :=
+  goodT_treeP _ _ _ (goodE_sEd R) (fun _ => goodE_emitU _) 20 le_rfl dE hd
 
 /-- The tapes of the steps: all but the step counter. -/
 abbrev SS (t : Fin 64) : Prop := t ≠ tSC
 
-theorem TW38_SS {t : Fin 64} (h : TW 38 t) : SS t ∧ t ≠ tJC := by
+theorem TW38_SS {t : Fin 64} (h : TW 20 t) : SS t ∧ t ≠ tJC := by
   have := TW_val h
   exact ⟨fun e => by subst e; simp at this, fun e => by subst e; simp at this⟩
 
 theorem goodS_stepP (R : RL) : GoodS SS (stepP R) := by
-  have hT := goodT_treeS R (goodE_dynE (rs R.z0) [tQB, tJB, tJZ, tQZ] (512 - rs R.z0 - 63))
+  have hT := goodT_treeS R (goodE_dynE (rs R.z0) [tQB, tJB, tJZ, tQZ] (512 - rs R.z0 - 27))
   have hJ : GoodS (fun t => SS t ∧ t ≠ tJC) (jBody R) :=
     (GoodS.prim _ (by simp +decide)).seq <|
       (GoodS.mono hT fun t ht => TW38_SS ht).seq <|
@@ -982,20 +982,20 @@ theorem law_bpCompP (R : RL) (hR : R.Ok) (C : List Bool) :
 
 theorem unary_eq_blk (j : ℕ) : RP.unary 512 j = blk j := rfl
 
-theorem rpW_single (ins : Instr (Fin 128) 183) :
+theorem rpW_single (ins : Instr (Fin 128) 93) :
     RP.rpW 512 [ins] = insW (RP.regSlot 128 ins.dst) (Src.slot ins.a) (Src.slot ins.b) := by
   simp [RP.rpW, insW, unary_eq_blk]
 
-theorem slot_reg (r : Fin 183) : Src.slot (Src.reg (ι := Fin 128) r) = RP.regSlot 128 r := rfl
+theorem slot_reg (r : Fin 93) : Src.slot (Src.reg (ι := Fin 128) r) = RP.regSlot 128 r := rfl
 
 /-- **A mux tree as words.** -/
-theorem rpW_tree (L : MuxTree.Layout (Fin 128) 183) (Y : SLay) (leaf : ℕ → Bool)
-    (hs : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 40 → Src.slot (L.s ℓ) = Y.s ℓ)
-    (hns : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 40 → Src.slot (L.ns ℓ) = Y.ns ℓ)
+theorem rpW_tree (L : MuxTree.Layout (Fin 128) 93) (Y : SLay) (leaf : ℕ → Bool)
+    (hs : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 22 → Src.slot (L.s ℓ) = Y.s ℓ)
+    (hns : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 22 → Src.slot (L.ns ℓ) = Y.ns ℓ)
     (hz : RP.regSlot 128 L.zero = Y.zero) (h1 : RP.regSlot 128 L.x1 = Y.x1)
     (h2 : RP.regSlot 128 L.x2 = Y.x2) (hlo : ∀ ℓ, RP.regSlot 128 (L.lo ℓ) = Y.lo ℓ)
     (hhi : ∀ ℓ, RP.regSlot 128 (L.hi ℓ) = Y.hi ℓ) :
-    ∀ m, m ≤ 38 → ∀ base dst,
+    ∀ m, m ≤ 20 → ∀ base dst,
       RP.rpW 512 (MuxTree.tree L leaf m base dst) = treeW Y leaf m base (RP.regSlot 128 dst) := by
   have hsrc : ∀ base, Src.slot (MuxTree.src1 L leaf base) = src1W Y leaf base := by
     intro base
@@ -1005,7 +1005,7 @@ theorem rpW_tree (L : MuxTree.Layout (Fin 128) 183) (Y : SLay) (leaf : ℕ → B
     · exact hns 1 le_rfl (by omega)
     · exact hs 1 le_rfl (by omega)
     · exact hz
-  have hnode : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 40 → ∀ (a b : Src (Fin 128) 183) (d : Fin 183),
+  have hnode : ∀ ℓ, 1 ≤ ℓ → ℓ ≤ 22 → ∀ (a b : Src (Fin 128) 93) (d : Fin 93),
       RP.rpW 512 (MuxTree.node L ℓ a b d) =
         nodeW Y ℓ (Src.slot a) (Src.slot b) (RP.regSlot 128 d) := by
     intro ℓ hl1 hl2 a b d
@@ -1051,18 +1051,18 @@ theorem hd_drop : ∀ (l : List Bool) (k : ℕ), hd (l.drop k) = l.getD k false
 /-- The register layout of `BPCircuit`. -/
 def Rbp : RL where
   zero := 0
-  x1 := 181
-  x2 := 182
+  x1 := 91
+  x2 := 92
   out := 1
   z0 := 1
-  nz := 65
-  na := 97
-  lo ℓ := 105 + (ℓ - 2) % 38
-  hi ℓ := 143 + (ℓ - 2) % 38
+  nz := 29
+  na := 43
+  lo ℓ := 51 + (ℓ - 2) % 20
+  hi ℓ := 71 + (ℓ - 2) % 20
 
 theorem Rbp_ok : Rbp.Ok := ⟨by decide⟩
 
-theorem rpW_map (f : ℕ → Instr (Fin 128) 183) :
+theorem rpW_map (f : ℕ → Instr (Fin 128) 93) :
     ∀ l : List ℕ, RP.rpW 512 (l.map f) = l.flatMap fun j => RP.rpW 512 [f j]
   | [] => rfl
   | j :: l => by
@@ -1095,8 +1095,8 @@ theorem rpW_negs (i : ℕ) (hi : i ≤ 15) : RP.rpW 512 (negs i) = proW Rbp i :=
     rw [e1, e2]
 
 /-- The slots of the trees of step `i`. -/
-theorem rpW_tree_lay (i : ℕ) (hi : i ≤ 15) (leaf : ℕ → Bool) (dst : Fin 183) :
-    RP.rpW 512 (MuxTree.tree (lay i) leaf 38 0 dst) = treeW (SY Rbp i) leaf 38 0 (RP.regSlot 128 dst) :=
+theorem rpW_tree_lay (i : ℕ) (hi : i ≤ 15) (leaf : ℕ → Bool) (dst : Fin 93) :
+    RP.rpW 512 (MuxTree.tree (lay i) leaf 20 0 dst) = treeW (SY Rbp i) leaf 20 0 (RP.regSlot 128 dst) :=
   rpW_tree (lay i) (SY Rbp i) leaf
     (fun ℓ h1 h2 => by
       simp only [lay, SY, selS]
@@ -1104,30 +1104,30 @@ theorem rpW_tree_lay (i : ℕ) (hi : i ≤ 15) (leaf : ℕ → Bool) (dst : Fin 
     (fun ℓ h1 h2 => by
       simp only [lay, SY, nselS]
       split_ifs <;> simp only [rNA, rNZ, Src.slot, rs, Rbp] <;> omega)
-    rfl rfl rfl (fun ℓ => rfl) (fun ℓ => rfl) 38 le_rfl 0 dst
+    rfl rfl rfl (fun ℓ => rfl) (fun ℓ => rfl) 20 le_rfl 0 dst
 
-theorem leafStep_tablesOf (C : List Bool) {i j u : ℕ} (hi : i < 15) (hj : j < 32) (hu : u < 2 ^ 40) :
-    leafStep (tablesOf C) i j u = lfT (31 - j) 32 (C.drop (i * tblW)) u := by
+theorem leafStep_tablesOf (C : List Bool) {i j u : ℕ} (hi : i < 15) (hj : j < 14) (hu : u < 2 ^ 22) :
+    leafStep (tablesOf C) i j u = lfT (13 - j) 14 (C.drop (i * tblW)) u := by
   simp only [leafStep, tblLeaf, hu, hi, ↓reduceDIte, tablesOf, readNum, MuxTree.testBit_idx,
     decide_eq_true hj, Bool.true_and, lfT, List.drop_drop, hd_drop]
   congr 1
   simp only [entryIdx, tblW]
   omega
 
-theorem leafOut_tablesOf (C : List Bool) {u : ℕ} (hu : u < 2 ^ 40) :
+theorem leafOut_tablesOf (C : List Bool) {u : ℕ} (hu : u < 2 ^ 22) :
     leafOut (tablesOf C) u = lfT 0 1 (C.drop (15 * tblW)) u := by
   simp only [leafOut, tblLeaf, hu, ↓reduceDIte, tablesOf, lfT, List.drop_drop, hd_drop]
   congr 1
   simp only [outOff, tblW]
   omega
 
-theorem rpW_flatMap (f : ℕ → RP (Fin 128) 183) :
+theorem rpW_flatMap (f : ℕ → RP (Fin 128) 93) :
     ∀ l : List ℕ, RP.rpW 512 (l.flatMap f) = l.flatMap fun j => RP.rpW 512 (f j)
   | [] => rfl
   | j :: l => by rw [List.flatMap_cons, List.flatMap_cons, RP.rpW_append, rpW_flatMap f l]
 
 theorem rpW_treesRP (C : List Bool) (i : ℕ) (hi : i < 15) :
-    RP.rpW 512 (treesRP (tablesOf C) i 32) = treesW Rbp i (C.drop (i * tblW)) 32 := by
+    RP.rpW 512 (treesRP (tablesOf C) i 14) = treesW Rbp i (C.drop (i * tblW)) 14 := by
   rw [treesRP, treesW, rpW_flatMap]
   refine List.flatMap_congr fun j hj => ?_
   have hj := List.mem_range.mp hj
@@ -1135,7 +1135,7 @@ theorem rpW_treesRP (C : List Bool) (i : ℕ) (hi : i < 15) :
   have e : RP.regSlot 128 (rZ (i + 1) j) = zS Rbp ((i + 1) % 2) j := by
     simp only [rZ, RP.regSlot, zS, rs, Rbp]; omega
   rw [e]
-  exact treeW_congr _ 38 0 _ fun u hu => by
+  exact treeW_congr _ 20 0 _ fun u hu => by
     rw [Nat.zero_add]; exact leafStep_tablesOf C hi hj (by simpa using hu)
 
 theorem rpW_stepsRP (C : List Bool) : ∀ n, n ≤ 15 →
@@ -1150,7 +1150,7 @@ theorem rpW_stepsRP (C : List Bool) : ∀ n, n ≤ 15 →
 theorem rpW_lastRP (C : List Bool) : RP.rpW 512 (lastRP (tablesOf C)) = lastW Rbp C := by
   rw [lastRP, RP.rpW_append, rpW_negs 15 le_rfl, rpW_tree_lay 15 le_rfl, lastW,
     show RP.regSlot 128 rOUT = rs Rbp.out from rfl]
-  refine congrArg (proW Rbp 15 ++ ·) (treeW_congr _ 38 0 _ fun u hu => ?_)
+  refine congrArg (proW Rbp 15 ++ ·) (treeW_congr _ 20 0 _ fun u hu => ?_)
   exact (by
     rw [Nat.zero_add]; exact leafOut_tablesOf C (by simpa using hu))
 
