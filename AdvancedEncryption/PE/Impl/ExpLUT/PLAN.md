@@ -220,3 +220,37 @@ decomposition (`digitRWP`) is taken of a canonical word (`binaryDigits` uses `ZM
    `decodeBit`.
 6. *Eval*: `Machine.exists_of_almostConst` (not counted in the cost): `[true]` iff `|C| = predLen`,
    `|x| = 128` and `(progOf C).output x = false` (`Expressive` via `progOf_predWord`).
+
+### Package F — status (branch `t3/explut-f`)
+
+Done (axioms `[propext, Classical.choice, Quot.sound]`):
+* `Prog/Words.lean` (formats, specs; see the design note above).
+* `Prog/Eval.lean`: `evalMachineX` (almost-constant machine), `authorized_iff`
+  (`Authorized ↔ C.length = predLen ∧ (progOf C).output x = false`), `expressive`.
+* Lib `ProgAlgo/Mersenne/Canon` (`canonRP`, `canonW_eq`: canonical words are `encRM ∘ decRM`),
+  `Mersenne/MatMul` (`matMulMP`, `decRM_sumLoopM`), `Mersenne/GadRow` (`gadRowP`: canonical
+  `g_c − P_c`, `2^c` by doublings of `1`). Cost certificates checked (not yet committed as
+  lemmas): `check 8 canonRP σRing σRing' [7, 44 N, 40 NK]`, `check 8 matMulMP σMat σMat' wMatM`
+  (`wMat` with the `m n l` coefficients `48, 76 NK, 73 N, 71 N², 107 N²K, 22 N²K², 7 K`),
+  `gadRowP`: `8 + 27 K + 63 NK + 11 K² + 89 NK² + 18 NK³` sweeps (output tape `≤ top`).
+* `Prog/UnifCanon.lean`: `unifCanonP` (fair bits → canonical words), `appendLaw_unifCanonP`,
+  word laws of i.i.d. families (`lawVec`, `lawMat`, `lawFunMat`, `lawFunFunMat`, `υW_eq`).
+* `Prog/SetupGad.lean`, `Prog/SetupP.lean`: **`setupP X : XProg 128`, `law_setupP`,
+  `setupSpec_setupMP`** — the `Setup` machine realizes `setupLawW D χT` exactly, for any explicit
+  sampler `X : RingSampler D χT` (7-tape program appending the canonical word of a `χT` sample).
+
+Remaining for F:
+* clocks of `setupMP` (per-tape, as `DualUse/Prog/TightSetup`: `vb_smp` for `repF`, `VB.natP`,
+  `VB.checkMap` with the certificates above, `vb_appendTapeP`/`vb_frameApP`), its `descLen`, numerics;
+* concrete `RingSampler`s (binary `χT`: one fair bit then zeros; CBD/box coefficient samplers with
+  negatives as one's complement NOT);
+* `Enc` (design below), then its clock/descLen.
+
+**Enc plan** (all ring words canonical; `σ_{g^j}` as `j` iterations of `σ_g`, `g = 1 + 2N/W` in
+unary — `autMP` with a template of length `g`; `X^{w x_t}` by `rhoJP` with `2N − w x_t`): parse the
+input frames (`ufChunk`/`dropChunk` of `DualUse/Prog/EncP`), sample the coins in the order of
+`encCoinsLaw` with `RingSampler`s, then one generic block
+`encRow(s, A, z, e) = canon(s·A⁽⁰⁾ + A⁽¹⁾ − z·G + e)` (per column `(r, i)`: `z_r 2^i` by `rotBP`
+doublings) used for `b` (`z = 0`), `h_k` (`z = (s_k, 1)`), `c^aut_{t,d}`
+(`z = digit_d(C_t)·(σ_t s, 1)`), `C^in_t` bottom rows (`A = (−a_t ; 0)`-style, `z = −X^{w x_t}(s,1)`),
+`c^in_{t,d}`, `c₀` (`z = (s, 1)`); `c_m = s d₁ + d₂ + e_m + 2^{K−1} μ`.
