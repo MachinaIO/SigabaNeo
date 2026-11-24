@@ -734,6 +734,83 @@ theorem exec_g1C (w : St) (hc : Consts N K w) (h6 : w 6 = List.replicate (2 * K 
   rw [List.drop_append_of_le_length (by simp; omega), List.drop_replicate, e2,
     Nat.add_sub_cancel]
 
+/-- **`193 :=` the word of `src` repeated `|cnt|` times** (`buf` a template of the total width,
+`|src| = |reg 6|`). -/
+def repC (cnt src buf : Fin 200) : Code :=
+  ofList [.cp 193 buf, .cp 197 cnt, .rep 197 (ofList [.cp 194 src, .mv 193 194 6])]
+
+theorem wr_repC (cnt src buf : Fin 200) : wr (repC cnt src buf) = [193, 197, 197, 194, 193, 194] :=
+  rfl
+
+theorem exec_repC (w : St) (cnt src buf : Fin 200) (hcnt : cnt.val < 180) (hsrc : src.val < 193)
+    (hbuf : buf.val < 180) (hs : (w src).length = (w 6).length)
+    (hb : (w buf).length = (w cnt).length * (w 6).length) :
+    (exec N K (repC cnt src buf) w) 193 = (List.replicate (w cnt).length (w src)).flatten ∧
+      ∀ j, j ∉ wr (repC cnt src buf) → (exec N K (repC cnt src buf) w) j = w j := by
+  set V := (w 6).length
+  set w1 := exec N K (ofList [.cp 193 buf, .cp 197 cnt]) w with hw1
+  have e1 : exec N K (repC cnt src buf) w =
+      exec N K (.rep 197 (ofList [.cp 194 src, .mv 193 194 6])) w1 := rfl
+  have w1_eq : w1 = Function.update (Function.update w 193 (w buf)) 197 (w cnt) := by
+    simp only [hw1, exec_ofList_cons, exec_ofList_nil, exec]
+    rw [Function.update_of_ne (lo_ne hcnt 193)]
+  have h197 : (w1 197).length = (w cnt).length := by rw [w1_eq]; simp
+  have hsrc1 : src ≠ 193 := fun e => by subst e; simp at hsrc
+  have hsrc2 : src ≠ 197 := fun e => by subst e; simp at hsrc
+  have hsrc3 : src ≠ 194 := fun e => by subst e; simp at hsrc
+  let P : ℕ → St → Prop := fun i w' =>
+    w' 6 = w 6 ∧ w' src = w src ∧
+      w' 193 = (w buf ++ (List.replicate i (w src)).flatten).drop (i * V) ∧
+      ∀ j, j ∉ wr (repC cnt src buf) → w' j = w j
+  have hP := exec_rep_inv (N := N) (K := K) 197 (ofList [.cp 194 src, .mv 193 194 6]) (by
+      intro hm; simp only [wr, wr_ofList, List.flatMap_cons, List.flatMap_nil, List.mem_append,
+        List.mem_cons, List.not_mem_nil] at hm; rcases hm with h | h | h | h | h | h <;>
+        first | exact absurd h (by decide) | (subst h; exact hsrc2 rfl) | simp_all) P w1
+    ⟨by rw [w1_eq]; simp, by rw [w1_eq, Function.update_of_ne hsrc2, Function.update_of_ne hsrc1],
+      by rw [w1_eq]; simp,
+      fun j hj => by
+        rw [w1_eq, Function.update_of_ne (fun e => hj (by rw [e, wr_repC]; simp)),
+          Function.update_of_ne (fun e => hj (by rw [e, wr_repC]; simp))]⟩
+    (fun i hi w' hw' _ => by
+      obtain ⟨p6, psrc, p193, pf⟩ := hw'
+      set w'' := Function.update w' 197 (w' 197).tail
+      have e2 : exec N K (ofList [.cp 194 src, .mv 193 194 6]) w'' =
+          Function.update (Function.update (Function.update w'' 194 (w src)) 194 [])
+            193 ((w'' 193 ++ w src).drop V) := by
+        simp only [exec_ofList_cons, exec_ofList_nil]
+        rw [show exec N K (.cp 194 src) w'' = Function.update w'' 194 (w src) by
+          simp only [exec, w'', Function.update_of_ne hsrc2, psrc]]
+        rw [exec_mv_shift (v := w src) (L := []) (by decide) (by
+          simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, w'', p6]; exact hs) (by simp)]
+        simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, w'', p6]
+        rfl
+      refine ⟨?_, ?_, ?_, fun j hj => ?_⟩
+      · rw [e2]; simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, w'', p6]
+      · rw [e2, Function.update_of_ne hsrc1, Function.update_of_ne hsrc3,
+          Function.update_of_ne hsrc3]
+        simp only [w'', Function.update_of_ne hsrc2, psrc]
+      · rw [e2]
+        simp only [Function.update_self, w'', Function.update_of_ne (show (193 : Fin 200) ≠ 197
+          by decide), p193]
+        have := drop_append_flatten_succ (b := w buf) (vs := List.replicate i (w src)) (x := w src)
+          hs (fun y hy => by rw [List.eq_of_mem_replicate hy]; exact hs)
+        rw [List.length_replicate] at this
+        rw [this, List.replicate_succ']
+        simp [Nat.add_mul]
+      · have hj1 : j ≠ 193 := fun e => hj (by rw [e, wr_repC]; simp)
+        have hj2 : j ≠ 194 := fun e => hj (by rw [e, wr_repC]; simp)
+        have hj3 : j ≠ 197 := fun e => hj (by rw [e, wr_repC]; simp)
+        rw [e2, Function.update_of_ne hj1, Function.update_of_ne hj2, Function.update_of_ne hj2]
+        simp only [w'', Function.update_of_ne hj3]
+        exact pf j hj)
+  rw [h197] at hP
+  obtain ⟨_, _, p193, pf⟩ := hP
+  refine ⟨?_, fun j hj => by rw [e1]; exact pf j hj⟩
+  rw [e1, p193]
+  have := drop_append_flatten (b := w buf) (vs := List.replicate (w cnt).length (w src)) (n := V)
+    (by rw [List.length_replicate, hb])
+  simpa using this
+
 end RingVM
 
 end SigabaNeo.Tape
