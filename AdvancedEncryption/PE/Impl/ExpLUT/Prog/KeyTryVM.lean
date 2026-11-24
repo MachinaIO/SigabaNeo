@@ -341,4 +341,121 @@ theorem exec_decC (hK : 0 < K) (w : St) (cs rest : List Bool) (B : ℕ) (hBK : B
       rw [List.drop_append_of_le_length (by simp; rw [mul_add, mul_one] at hle; omega),
         List.drop_drop, mul_add, mul_one]
 
+theorem decC_writes : ∀ r : Fin 64, decC.writes r = true →
+    r = rDw ∨ r = rDn ∨ r = rDx ∨ r = rCoin ∨ r = rDo := by decide
+
+/-! ### A queue of elements from coins -/
+
+@[simp, vmreg] abbrev rDq : Fin 64 := 28
+@[simp, vmreg] abbrev rDqn : Fin 64 := 27
+
+/-- One element, to the tail of `rDq`. -/
+def decQBody : Code := .seq decC (.app rDq rDo)
+
+/-- **`n` elements from coins** (`n = |rDqn|`) into the queue `rDq`. -/
+def decQC : Code := .seq (.clr rDq) (.rep rDqn decQBody)
+
+theorem decQBody_writes_rDqn : decQBody.writes rDqn = false := by decide
+
+/-- The `n` elements of the coins `cs`, `N B` coins each. -/
+noncomputable def decList (N K : ℕ) (cs : List Bool) (B : ℕ) (c : ZMod (2 ^ K - 1)) (n : ℕ) :
+    List (Rq N K) :=
+  (List.range n).map fun t => decCoins N K ((cs.drop (t * (N * B))).take (N * B)) B c
+
+theorem exec_decQC (hK : 0 < K) (w : St) (cs rest : List Bool) (B n : ℕ) (hBK : B ≤ K)
+    (hcs : cs.length = n * (N * B)) (c2 : ZMod (2 ^ K - 1)) (hC : w rCoin = cs ++ rest)
+    (hB : w rTBk = List.replicate B false) (hKB : w rTKmB = List.replicate (K - B) false)
+    (hN : w rTN = List.replicate N false)
+    (h2 : w rC2 = encRM N K (Negacyclic.ofCoeffs fun _ => c2))
+    (hn : w rDqn = List.replicate n false) :
+    exec N K decQC w rDq = encL N K (decList N K cs B c2 n) ∧ exec N K decQC w rCoin = rest := by
+  unfold decQC
+  rw [exec_seq]
+  generalize hW1 : exec N K (.clr rDq) w = W1
+  have fr1 : ∀ r : Fin 64, r ≠ rDq → W1 r = w r := fun r h => by
+    rw [← hW1, exec_clr, Function.update_of_ne h]
+  have key := exec_rep_inv2 (N := N) (K := K) rDqn decQBody decQBody_writes_rDqn
+    (fun m w' => w' rDq = encL N K (decList N K cs B c2 m) ∧
+      w' rCoin = cs.drop (m * (N * B)) ++ rest) W1
+    ⟨by rw [← hW1]; simp [decList], by rw [fr1 _ (by decide), hC]; simp⟩ ?_
+  · rw [fr1 _ (by decide), hn, List.length_replicate] at key
+    refine ⟨key.1, ?_⟩
+    rw [key.2, List.drop_of_length_le (by rw [hcs])]; rfl
+  · intro m w' hm hP _ hfr
+    rw [fr1 _ (by decide), hn, List.length_replicate] at hm
+    obtain ⟨p1, p2⟩ := hP
+    have g : ∀ r : Fin 64, decQBody.writes r = false → r ≠ rDqn → w' r = w r := fun r h1 h2 => by
+      rw [hfr r h1 h2, fr1 r (by intro e; subst e; revert h1; decide)]
+    have hle : (m + 1) * (N * B) ≤ cs.length := by rw [hcs]; exact Nat.mul_le_mul_right _ hm
+    unfold decQBody
+    rw [exec_seq]
+    generalize hU : Function.update w' rDqn (w' rDqn).tail = U
+    have fU : ∀ r : Fin 64, r ≠ rDqn → U r = w' r := fun r h => by
+      rw [← hU, Function.update_of_ne h]
+    have hle' : m * (N * B) + N * B ≤ cs.length := by rw [add_mul, one_mul] at hle; exact hle
+    have hlen : ((cs.drop (m * (N * B))).take (N * B)).length = N * B := by
+      simp only [List.length_take, List.length_drop]; omega
+    have e : cs.drop (m * (N * B)) =
+        (cs.drop (m * (N * B))).take (N * B) ++ cs.drop ((m + 1) * (N * B)) := by
+      rw [add_mul, one_mul, ← List.drop_drop, List.take_append_drop]
+    obtain ⟨d1, d2⟩ := exec_decC hK U ((cs.drop (m * (N * B))).take (N * B))
+      (cs.drop ((m + 1) * (N * B)) ++ rest) B hBK hlen c2
+      (by rw [fU _ (by decide), p2]; conv_lhs => rw [e]
+          rw [List.append_assoc])
+      (by rw [fU _ (by decide), g _ (by decide) (by decide), hB])
+      (by rw [fU _ (by decide), g _ (by decide) (by decide), hKB])
+      (by rw [fU _ (by decide), g _ (by decide) (by decide), hN])
+      (by rw [fU _ (by decide), g _ (by decide) (by decide), h2])
+    have q1 : exec N K decC U rDq = encL N K (decList N K cs B c2 m) := by
+      rw [exec_writes _ _ _ (by decide), fU _ (by decide), p1]
+    refine ⟨?_, ?_⟩
+    · vm_simp
+      simp only [Function.update_self, q1, d1, decList, List.range_succ, List.map_append,
+        List.map_singleton, encL_append, encL_singleton]
+    · rw [exec_app, Function.update_of_ne (by decide), d2]
+
+/-! ### The digits of an element -/
+
+@[simp, vmreg] abbrev rY : Fin 64 := 26
+@[simp, vmreg] abbrev rZq : Fin 64 := 25
+@[simp, vmreg] abbrev rU : Fin 64 := 24
+@[simp, vmreg] abbrev rCK : Fin 64 := 23
+
+/-- One digit `i = |rU|` of `rY` to the tail of `rZq`. -/
+def digQBody : Code := .seq (.op .dig rTd rY rU) <| .seq (.app rZq rTd) (.app rU rB1)
+
+/-- **The digits `0 … n − 1` of `rY`** into the queue `rZq` (`n = |rCK|`). -/
+def digQC : Code := .seq (.clr rZq) <| .seq (.clr rU) (.rep rCK digQBody)
+
+theorem digQBody_writes_rCK : digQBody.writes rCK = false := by decide
+
+theorem exec_digQC (hK : 0 < K) (w : St) (y : Rq N K) (n : ℕ) (hy : w rY = encRM N K y)
+    (hn : w rCK = List.replicate n false) (h1 : w rB1 = [false]) :
+    exec N K digQC w rZq = encL N K ((List.range n).map (binaryDigit y)) := by
+  unfold digQC
+  simp only [exec_seq]
+  generalize hW1 : exec N K (.clr rU) (exec N K (.clr rZq) w) = W1
+  have fr1 : ∀ r : Fin 64, r ≠ rZq → r ≠ rU → W1 r = w r := fun r h1 h2 => by
+    rw [← hW1]; vm_simp; rw [Function.update_of_ne h2, Function.update_of_ne h1]
+  have key := exec_rep_inv2 (N := N) (K := K) rCK digQBody digQBody_writes_rCK
+    (fun m w' => w' rZq = encL N K ((List.range m).map (binaryDigit y)) ∧
+      w' rU = List.replicate m false) W1
+    ⟨by rw [← hW1]; vm_simp; simp, by rw [← hW1]; vm_simp; simp⟩ ?_
+  · rw [fr1 _ (by decide) (by decide), hn, List.length_replicate] at key
+    exact key.1
+  · intro m w' _ hP _ hfr
+    obtain ⟨p1, p2⟩ := hP
+    have ty : w' rY = encRM N K y := by
+      rw [hfr _ (by decide) (by decide), fr1 _ (by decide) (by decide), hy]
+    have t1 : w' rB1 = [false] := by
+      rw [hfr _ (by decide) (by decide), fr1 _ (by decide) (by decide), h1]
+    unfold digQBody
+    vm_simp
+    refine ⟨?_, ?_⟩
+    · simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, p1, p2, ty, takeD_encRM,
+        List.length_replicate, canonW_dig hK, List.range_succ, List.map_append, List.map_singleton,
+        encL_append, encL_singleton]
+    · simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, p2, t1]
+      rw [List.replicate_succ']
+
 end AdvancedEncryption.ExpLUT.Prog
