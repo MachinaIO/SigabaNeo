@@ -424,6 +424,16 @@ pure function, and every routine is proved once at the level of lists of ring el
   `Small = famBall r`), `kbCover_of`, `kbCover_of_eq`; **`kbDc`** (`Bk = 18750`,
   `r = 2^{Bk−1} − 1 − 2^{18500}`, opaque) and **`kbCover_Dc : KbCover kbDc coverBound`**.
   (Pitfall: `KbCover (kbOf Dc …)` makes the elaborator enumerate the ball — keep `kbDc` opaque.)
+* `Lib/Lattices/BallTest.lean` — `zabs_le_iff_val` (`|x| ≤ r ⟺ val(x+r) < 2^B ∧ val(r−x) < 2^B`
+  for `2r < 2^B`, `2^{B+1} ≤ q`), `cnorm_le_iff_digits` (digits `[B, K)` of `v + allC r`,
+  `allC r − v` vanish), `sum_binaryDigit_eq_zero_iff` (fewer than `q` digits).
+* `ExpLUT/Prog/KeyTryMath.lean` — `pubShort_apply` (row `i'` of `M_F(p, 0)`: the `Ā` columns, the
+  `η_{i',k}`, `− Σ_{i,k} [i' = i·k] Σ_c G_{0,c} p_{i,k,c}`, `[i' = 0] Σ_c A_F[0,c] p_c`),
+  `HelperMap.backRow`, `mulRow_eq_iff`, `sum_mulRow` (`Σ_i [i' = i·k] f_i = f_{backRow i' k}`).
+* `ExpLUT/Prog/KeyTryVM.lean` — queue routines (registers `29 … 55`, free after `EvalPK`):
+  `exec_ipC` (`rIa += Σ a_t b_t`), `exec_autQC` (`σ_k` on a queue), `exec_gadRecC`
+  (`Σ_j 2^j a_j`), `exec_tstC` (`rFa += Σ_{m<n} (digit_{B+m}(x + R) + digit_{B+m}(R − x))`),
+  `exec_decC` (one element from `N·B` coins: coefficient `j` = `val(chunk_j) − c₂`).
 
 **Remaining for `KeyGen`** (design fixed by the code above):
 
