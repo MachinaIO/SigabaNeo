@@ -35,6 +35,7 @@ import PE.Impl.ExpLUT.SimEval
 import PE.Impl.ExpLUT.SimBound
 import PE.Impl.ExpLUT.SimTrap
 import PE.Impl.ExpLUT.SimKeys
+import PE.Impl.ExpLUT.SimTrapRev
 import PE.Impl.ExpLUT.GameChain
 import PE.Impl.ExpLUT.Params.Conf
 import PE.Impl.ExpLUT.Params.Noise
