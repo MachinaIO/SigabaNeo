@@ -6,7 +6,7 @@ import PE.Impl.ExpLUT.AH.Stat
 * `circParamsD D`: the circular Ring-LWE parameters of the reduction: ring degree `N`, modulus
   `q = 2^K − 1`, CBD(16) secret and errors, `m_B + 1 + τ |J|` plain samples (`mCirc`: the columns
   of `B`, `d`, the second gadget halves of the helpers), the automorphism indices
-  `idx (je k) = g^{je k}` of the helpers (`jList`, `|J| = 2b`), `τ = K`;
+  `idx (je k) = g^{je k}` of the helpers (`jList`, in the order `jhE`, `|J| = 2b`), `τ = K`;
   `strength_Dc`: **`1155 ≤ CircularRingLWE.decision.H (circParamsD Dc)`** (package B, `m ≤ 2^50`).
 * `attributeHiding_Dc`: **`AttributeHiding (univ w8) params impl`** for every implementation whose
   machines meet the specifications at `Dc` (`ImplSpec`, laws `χc`, `χc`, `χfl` of package P), with
@@ -26,13 +26,16 @@ open SigabaNeo SigabaNeo.Lattices Cslib Cslib.Probability AdvancedEncryption.PE
 open AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.ExpLUT.Params
 open scoped ENNReal
 
-/-- The automorphism indices of the helpers, in the order of `Fintype.equivFin`. -/
-noncomputable def jList (D : Dims) : List ℕ :=
-  List.ofFn fun j : Fin (Fintype.card (Jh D)) =>
-    (setting D).idx (je D ((Fintype.equivFin (Jh D)).symm j))
+/-- The helpers in the order of the key rows: `j ↦ (j / 2, j % 2)` (`finProdFinEquiv`). -/
+def jhE (D : Dims) : Fin (D.b * 2) ≃ Jh D := finProdFinEquiv.symm
 
-/-- The plain samples: the columns of `B`, `d`, the second gadget halves of the helpers. -/
-def mCirc (D : Dims) : ℕ := Fintype.card (BCol (Wb D) D.K) + 1 + D.K * Fintype.card (Jh D)
+/-- The automorphism indices of the helpers, in the order of `jhE`. -/
+noncomputable def jList (D : Dims) : List ℕ :=
+  List.ofFn fun j : Fin (D.b * 2) => (setting D).idx (je D (jhE D j))
+
+/-- The plain samples: the columns of `B` (`m̄ + K`), `d`, the second gadget halves of the helpers
+(`K · 2b`). -/
+def mCirc (D : Dims) : ℕ := D.mb + D.K + 1 + D.K * (D.b * 2)
 
 /-- **The circular Ring-LWE parameters of the reduction.** -/
 noncomputable def circParamsD (D : Dims) : CircularRingLWE.Params :=
@@ -43,10 +46,8 @@ theorem mCirc_gen {M K : ℕ} (hM : M + K ≤ 2 ^ 42) (hK : K ≤ 2 ^ 16) :
   have : K * (22 * 2) ≤ 2 ^ 16 * 44 := Nat.mul_le_mul_right _ hK
   omega
 
-theorem mCirc_Dc_le : mCirc Dc ≤ 2 ^ 50 := by
-  unfold mCirc
-  simp only [Fintype.card_sum, Fintype.card_prod, Fintype.card_fin]
-  exact mCirc_gen mbar_le Kc_le
+theorem mCirc_Dc_le : mCirc Dc ≤ 2 ^ 50 :=
+  mCirc_gen mbar_le Kc_le
 
 theorem circParamsD_Dc : circParamsD Dc =
     circParams (2 ^ 24) (2 ^ 16) (mCirc Dc) (by norm_num) (jList Dc) Kc := by

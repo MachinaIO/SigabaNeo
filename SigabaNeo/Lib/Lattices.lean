@@ -19,6 +19,8 @@ import SigabaNeo.Lib.Lattices.LeftoverHash
 import SigabaNeo.Lib.Lattices.BoxSampler
 import SigabaNeo.Lib.Lattices.Boxes
 import SigabaNeo.Lib.Lattices.Flood
+import SigabaNeo.Lib.Lattices.FloodRing
+import SigabaNeo.Lib.Lattices.CircularRingLWEInst
 import SigabaNeo.Lib.Lattices.RingLWEInst
 import SigabaNeo.Lib.Lattices.CoinMaps
 import SigabaNeo.Lib.Lattices.BitLaw
@@ -94,6 +96,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   parameters, problem, security function) and asymptotic (cslib-frontier).
 * `CircularRingLWE`: circular Ring-LWE with automorphism keys (Assumption 1 of ePrint 2026/2539),
   concrete, with Ring-LWE's security function; at `J = []` it is decision Ring-LWE.
+* `CircularRingLWEInst`: its laws as laws on ring-level pairs (`circRing`, `realLaw_eq_circRing`,
+  `idealLaw_eq_uniform`); independent products split along sums, units and products.
 * `Reduction/`: lattice reduction and SVP tools shared by the attacks — `LLL`, `BKZ` (GSA-free bound on the first
   vector of a BKZ-reduced basis, `docs/PROOF_GAP.md`), `Hermite2`, `AvgBKZ`, `Slide`, `Sieve`, `SieveWide`,
   `QArySieve`, `Search`, `Rogers`.
@@ -117,6 +121,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   not depend on the trapdoor (`boxSample_eq`).
 * `Flood`: noise flooding over `ℤ_q[X]/(X^N + 1)`: wide uniform errors hide a fixed shift
   (`closeTo_floodLaw_add`).
+* `FloodRing`: the same for one ring element (`floodRing`, `closeTo_floodRing_add`) and for
+  independent families shifted by elements of bounded norm (`closeTo_pi_floodRing_add_le`).
 * `RingLWEInst`: the registry's Ring-LWE laws as laws on ring elements (`ringReal`,
   `ringLWE_realLaw_eq`, `ringLWE_idealLaw_eq`).
 * `CoinMaps`: samples from fair coins (`bitsToZMod`, `uniform_bitsToZMod`).
