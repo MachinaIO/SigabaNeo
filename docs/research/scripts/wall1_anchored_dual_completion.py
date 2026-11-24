@@ -16,7 +16,7 @@ _theta_cache={};_tail_cache={};_cap_cache={}
 _correlated_cache={};
 _packing_cache={};_raw_moment_cache={};_hyperplane_cache={}
 HOLDER_ORDERS=(2,3,4,5,6,8)
-FULL_HOLDER_ORDERS=HOLDER_ORDERS+(10,12,14,16,20,24,32)
+FULL_HOLDER_ORDERS=HOLDER_ORDERS+(10,12,13,14,16,20,24,32)
 
 
 def theta(t):
@@ -132,6 +132,27 @@ def hyperplane_sum_bound(q,alpha,beta_free,r0,f):
     return _hyperplane_cache[key]
 
 
+def binomial_outside_tail(N,b,p):
+    """Upper bound Pr[Bin(N,1-p)<=b], using decreasing backward ratios."""
+    assert 0<=b<N and 0<p<1
+    ratio=b*p/((N-b+1)*(1-p))
+    if ratio.b>=1:return iv.mpf(1)
+    last=comb(N,b)*(1-p)**b*p**(N-b)
+    return min((iv.mpf(1),last/(1-ratio)),key=lambda x:x.b)
+
+
+def matroid_packing_tail(q,n,k,L,M):
+    """Union over deficient flats, using ambient and actual-generator counts."""
+    assert n>=L*k
+    total=iv.mpf(0)
+    for c in range(1,k+1):
+        t=k-c;b=L*c-1;p=M**c
+        ambient=gauss_binomial(k,c,q)*binomial_outside_tail(n,b,p)
+        generated=comb(n,t)*binomial_outside_tail(n-t,b,p)
+        total+=min((ambient,generated),key=lambda x:x.b)
+    return min((iv.mpf(1),total),key=lambda x:x.b)
+
+
 def packing_tail(q,n,k,L,gs):
     key=(iv.dps,q,n,k,L,gs)
     if key not in _packing_cache:
@@ -147,6 +168,7 @@ def packing_tail(q,n,k,L,gs):
             for c in range(1,k+1):
                 value*=((1-M**c)/(1-z*M**c))**L
             candidates.append(value)
+        candidates.append(matroid_packing_tail(q,n,k,L,M))
         _packing_cache[key]=min(candidates,key=lambda x:x.b)
     return _packing_cache[key]
 

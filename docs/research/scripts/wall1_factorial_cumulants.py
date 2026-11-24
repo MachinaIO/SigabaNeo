@@ -181,8 +181,8 @@ def draw14_probe():
         _, refined, _ = refined_fourteen()
         from wall1_larger_triangular_components import actual_parameters as refined_larger
         _, higher = refined_larger()
-    # Use the complete size-14 decomposition and the valid (but still too large)
-    # higher-size triangular refinements; no higher-size budget is certified.
+    # Use complete size-14 and higher-size refinements, then certify the
+    # full transfer before invoking the temporary-cap implication below.
     full[14] = refined[14]
     full.update(higher)
     I, mu, order, iv = [s[k] for k in ('I', 'mu', 'order', 'iv')]
@@ -211,6 +211,8 @@ def draw14_probe():
         if cap == 17:
             assert charge < I('8.048e-13')
         print('Full-incidence cumulant transfer through', cap, ':', charge, flush=True)
+    transfer_charge=charge  # final loop iteration covers every size through24
+    assert transfer_charge.b < I('3.01e-12').a
     n, radius = s['N'], s['radius']
     mu_upper = 2*s['geometry']['volume'][n]*(radius**2+I(n)/4)**(I(n)/2)/s['q']**s['m']
     assert mu_upper < I(119)
@@ -238,7 +240,11 @@ def draw14_probe():
     assert F(39219,10**16) < F(3922,10**15)
     assert F(10770+9131+19318,10**16)==F(39219,10**16)
     print('Conditional cumulant error log10:', iv.log10(error_charge))
-    print('Caps follow from the still-unproved cumulant transfer target <=3.01e-12.')
+    total_charge=s['baseline']+transfer_charge+error_charge
+    assert total_charge.b < I('1.971e-12').a
+    print('Certified full-incidence transfer target <3.01e-12:', transfer_charge)
+    print('Certified raw draw-14 baseline plus transfer plus error:', total_charge)
+    print('Actual selected-history transport and complete BKZ remain unproved.')
     return s, full, weights, error_charge
 
 

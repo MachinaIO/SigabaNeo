@@ -3,17 +3,17 @@
 This paper reduction replaces the absolute central-monomial transfer with an
 exact factorial-cumulant expansion. It also bounds the difference between these
 cumulants and connected full-incidence counts, including repeated input labels.
-With [Part 283](wall1_short_relation_shapes.md)'s strengthened counts, the
-draw-14 transfer through size thirteen is below 2.175e-13. The later
-[Part 293](wall1_rank_five_code.md) refinement covers all size-fourteen classes
-with transfer below 5.396e-13. The current
-[Part 343](wall1_shared_two_point_codes.md) bounds the admitted transfer through
-all size-sixteen classes by 3.459e-13. Sizes 17..24 and later selected-history
-probability must still fit within the remaining 2.6629e-12 allowance; that
-condition is unproved. The original inputs
-to this reduction gave 2.232e-8, improving the older central envelope above
-7.48e-5. Larger components still remain unresolved. No complete draw-14
-or BKZ theorem follows. These deductions are not Lean-formalized.
+Part442 closes the complete size3..24 incidence-transfer target:
+C(F)<1.058e-12<3.01e-12. This independently computed nonnegative envelope
+implies the temporary caps below; the cumulant error is then bounded without
+circularity. The baseline plus transfer plus error is below1.971e-12.
+By the pointwise projection domination in
+[affine void moments](wall1_affine_void_moments.md), this bounds
+Pr_A(b_14>0.280) under the original unconditioned uniform matrix law, including
+the actual selected projection. It does not give a bound conditional on a
+selected history. The draws15..404 history estimate remains open, and the
+complete BKZ theorem is not proved. These numerical deductions are not
+Lean-formalized. Earlier checkpoints below are retained as historical results.
 
 ## Exact finite-polynomial transfer
 
@@ -175,8 +175,9 @@ monomial of w_h^+. The single-factor term in (7) implies
 \]
 
 All 21 inequalities are checked exactly over the rationals; 24-h-d_h>=0.
-This implication does not prove the target. Combining (9) with the reference
-term gives only the conditional statement
+The implication alone does not prove the target. Part442 separately verifies
+the premise by complete incidence envelopes. Combining (9) with the reference
+term gives the following implication, whose premise is now verified:
 
 \[
  \mathcal C(F)\le3.01\,10^{-12}\ \Longrightarrow\
@@ -185,9 +186,10 @@ term gives only the conditional statement
 
 A sufficient remaining history condition is
 C(F)+Pr(max_(15..404)b_i>.280)<=3.0088e-12. It implies the premise of (11) and
-fits the earlier 3.922e-12 allowance, but it is not established here.
+fits the earlier 3.922e-12 allowance. The later-history term is still not
+established here; a sufficient rounded budget for it is1.951e-12.
 
-## Numerical reach and verification
+## Historical numerical reach through Part 343
 
 Apply (7) to Part 280's envelopes, admitting all circuits and rank-two components
 at every size and other components up to a cutoff. The new transfer is:
@@ -205,14 +207,15 @@ at every size and other components up to a cutoff. The new transfer is:
   two-point Gram strata.
 
 These are envelopes for admitted components, not lower bounds on failures or
-full failure upper bounds. Sizes17--24 remain uncontrolled. Part 327's
+full failure upper bounds. At those checkpoints sizes17--24 were uncontrolled. Part 327's
 failed size16 cutoff was superseded by Part 328: its full cutoff transfer
 was about9.582432310768002e-13 from above, below9.583e-13. Part 343
-improves it to about3.45843824783e-13, below3.459e-13. The current
+improved it to about3.45843824783e-13, below3.459e-13. The then
 remaining sufficient allowance for sizes17--24 plus later histories is
 2.6629e-12 after the admitted size16 cutoff. Indeed,
-(0.3459+0.9131+2.6629)e-12=3.9219e-12<3.922e-12. The total C(F) target and
-the later selected-history condition are still unproved.
+(0.3459+0.9131+2.6629)e-12=3.9219e-12<3.922e-12. At Part343, both the total C(F) target and
+the later selected-history condition were unproved. Part442 closes the former;
+the latter remains open.
 
 For these evaluations the lower mean can be used termwise: known full-incidence
 bounds have mu-degree at most h-4 (circuits have degree zero), and the degree

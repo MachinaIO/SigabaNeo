@@ -378,3 +378,14 @@ Size24 is led by rank11/girth4,H6 t2/overlap2 with7 free extensions,
 log10 −7.7881732232. Target3.01e-12 and actual-history transport remain open.
 Logs: `/tmp/wall1_h5_correlated_cumulants.log` and
 `/tmp/wall1_h5_correlated_frontier.log`.
+
+## Part 442: complete transfer target met
+
+[Matroid packing](wall1_matroid_packing.md) gives through24<1.058e-12,
+below3.01e-12. The independent bootstrap audit confirms no circularity in
+temporary caps. Baseline+transfer+error<1.971e-12 bounds the draw14 event
+under the original uniform matrix law, including its actual projection by
+pointwise domination. It does not condition on that projection or history.
+Size24 is now led by rank7/girth4. The later-history bound remains open;
+a sufficient rounded remaining budget is1.951e-12. See the winner-coupled
+replica formulation for the unproved conditional estimate.

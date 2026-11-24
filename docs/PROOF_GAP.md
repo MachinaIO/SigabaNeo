@@ -4422,6 +4422,22 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   The size24 leader is again rank11/girth4,H6 t2/overlap2 with7 free extensions.
   This is an analytic upper envelope, not a measured probability. Adaptive
   selected histories and full BKZ remain unproved; no new Lean result claimed.
+* **Part 442 (base-packing criterion closes the draw-14 transfer).**
+  [Matroid packing](research/wall1_matroid_packing.md) bounds absence of
+  disjoint auxiliary frequency bases by deficient flats, with either ambient
+  subspace counts or actual generating-column counts. Independent audits,
+  2246 finite configurations,308 CDF checks,nonuniform weighted checks,
+  2106 cumulant checks and18 frontier reconstructions pass. Through24 is
+  below1.058e-12, meeting the3.01e-12 target. Independent bootstrap audit finds
+  no circularity: this implies temporary caps before the error bound is used.
+  Baseline plus transfer plus error is below1.971e-12, bounding b14>.280 under
+  the original uniform matrix law via pointwise projection domination.
+  This includes the actual projection but is not conditional on history.
+  [Winner-coupled replicas](research/wall1_winner_coupled_replicas.md) supplies
+  a deterministic witness and exact shared-winner expansion, with270 branch,
+  216 replica and27 quotient-kernel checks. Its quantitative stopped drift
+  and selected-state initial moment remain open. Full BKZ remains unproved;
+  no new Lean theorem is claimed.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its
