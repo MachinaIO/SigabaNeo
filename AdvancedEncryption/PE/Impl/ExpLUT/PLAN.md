@@ -396,37 +396,67 @@ pure function, and every routine is proved once at the level of lists of ring el
   `μ = σ_k(X^{2n−1})`; the basis of item 2).
   Axioms of all of these: `[propext, Classical.choice, Quot.sound]`.
 
-**Plan for the rest of `KeyGen`** (not done):
+**Done on `t3/explut-f3b`** (axioms `[propext, Classical.choice, Quot.sound]`):
 
-1. *`A_j` without `W`-sized queues.* `roundsPK P A b j` applies `autPK_t` for the set bits `t` of `j`
-   in increasing order (`roundsPK (t+1) j = autPK_t (roundsPK t (j − 2^t))` for `j ≥ 2^t`), so
-   `lutPK = Σ_{j<W} smulPK(α_j, A_j)` is computed as one loop over `j` with a `b`-bit binary counter:
-   for each `t` either `autPKC` (with `σ_{kf t} = σ_g^{2^t}`, `kf t = idx(2^t) = g^{2^t}`, `|rP| = 2^t`
-   kept by doubling: `x := T; drop x p; drop x p; p := T; drop p x`), or skip the stream block
-   `Aaut_t` (`drop` with a template of `16K³ N K` bits). Cost `≈ (b/2) W` `autPK` per step instead of
-   `W`; no queue of `W` matrices. Needs the math lemma `roundsPK = ` the bit chain (pure algebra).
-2. *Coefficients.* `α_j = W⁻¹ Σ_u X^{L(u)} μ_j^u`, `μ_j = σ_{g^j}(X^{−1}) = σ_g(μ_{j−1})`
-   (`aut` with `|count| = g`), `X^{L(u)}` from the `14` bits of the table entry (LSB first, `ifb`/`tl`
-   on the predicate word) times a queue of `X^{2^i}`; `W⁻¹ = 2^{K−b}` by `rot` with `|count| = b`;
-   the last table gives `v_j` (`L(u) ∈ {0, 1}`). `smulPK(α, A) = A · G⁻¹(αG)` with `ginvMulC`
-   (`αG` built by doublings `rot` with `|count| = K − 1`).
-3. *Steps.* `16` steps: `mulPKC` with `A^in_i` (stream of `mpk`), then the `j` loop of 1–2;
-   `15` `α`-steps and one `v`-step; result `keyPK`.
-4. *Box try.* The coins `p ← Big` (a sampler parameter like `RingSampler`, giving the word of
-   `kb.emb c` from `mB` fair bits), `y = d₁δ₁ − pubShort p` row by row (the blocks of `M_F`:
-   `Σ_w σ_i(B_{0,w}) p_{i,w}`, `Σ_{k,c} σ_i(H_k[0,c]) p_{i,k,c}`, `− Σ_k Σ_j 2^j p_{i − je k, k, (0,j)}`,
-   `A_F⁽¹⁾ · p_last` on row `0`), `z = gadDec y` (`dig`), `x = p − realTrap T z`
-   (`σ_{idx i}(T_{w,c})`), the test `x ∈ Small` (a test-program parameter), the output
-   `mpk ++ assemble x z` or the zero key.
-5. *The machine.* An `XProg` around the VM phases: parse `encodeTuple [pw, msk, C]`, the length
-   guard (**`KeyLongSpec`** of package G: `encodeTuple []` on predicate words longer than `L`),
-   `|C| = predLen` else the zero key, the templates (`natP`), the coins, the framed output;
-   **`KeySpec kb L`** for a `KeyBoxes Dc` value satisfying **`KbCover kb (2^18500)`** (package G;
-   `famBig`/`famBall` boxes of `RingBoxes`).
-6. *Costs.* Per-instruction clocks from the frames (`XProg.timeBoundT_frame` and the Mersenne
-   `MersenneT` bounds), loops by `timeBoundT_loop_le`; estimate at `Conf`: the `Aaut_t` stream passes
-   dominate, `16 · 2^22 · 11 · 2^184 ≈ 2^214` steps; `descLen` from `XProg.size` of the compiled code
-   (a few thousand instructions, `105` tapes).
+* VM extension (`Mersenne/VM.lean`, `VMRing.lean`): `app d s` (`d := d ++ s`; `app d d` doubles)
+  and `eqb f a b` (`f := [a = b]`); `law_compile` now via `coinFree_flat_compile` (the compiled
+  code is coin free; `app`/`eq` lengthen words, so not `NoGrow`). `exec_app`, `exec_eqb` are in
+  `vm_step`/`vm_simp`.
+* `ExpLUT/Prog/KeyLut.lean` — the VM code of `EvalPK`, generic in `N`, `K` (caller registers
+  `rAinS … rT15` = `0 … 28`; scratch `35 … 46` of the library between routine calls):
+  `exec_matAddC` (`rAcc += rMOut`), `exec_agC` (`α G` as `gM α`), `exec_bitLoop`/`exec_coefAC`
+  (`α = 2^{K−b}(Σ_{u<n} X^{−c_u} μ^u · X_c)`, `c_u` the complement of the `e` bits of entry `u`,
+  `sumA`), `exec_coefVC` (`v = 2^{K−b} Σ_u [C_u] μ^u`, `sumV`), `exec_chainLoop`/`exec_chainC`
+  (`A_j = chainM`: for `t < b`, digit `t` of the constant `j` (`hd_dig_natCast`) selects `autPKC`
+  with `|rP| = 2^t` (doubled by `app`) and `H_{(t,0)}` from the `H` stream, or skips the block of
+  `A^aut_t`), `exec_jLoopK` (`rAcc = accM = Σ_{j<n} A_j G⁻¹(α_j G)`, `μ_{j+1} = σ_g(μ_j)`,
+  `j := j + 1` as a ring constant), `exec_stepK` (`mulPKC` with the `A^in` stream, then the
+  table; `rCs` advanced by `|rTtab|`), **`exec_evalC`** (15 `α`-steps and the `v`-step:
+  `rA = evalVM … 16`). Read-only register sets `roJ`, `roC`, `roS`; input structures `ChainIn`,
+  `StepIn`, `CoefIn`.
+* `ExpLUT/Prog/KeyEval.lean` — **`keyPK_eq_evalVM`** (`D.b = 22`): `(fun a c => keyPK (helperMap D)
+  mpk (bpOf (progOf C)) a c) = evalVM (cvsK D C) (gD D) (HfK D mpk) (AaK D mpk) D.b X⁻¹ (2^b)
+  (AinK D mpk) A₀ 16`, with `xInvG_mul_monoX`, `monoX_pow_two_n_sub_one`, `val_take_add_cmpl`
+  (`L(u) + c_u = 2^{14} − 1`), `table_bpOf`/`table15_bpOf`, `coefs_eq`, `roundsPK_eq_chainM`,
+  `lutPK_eq`, `evalPKAt_eq`.
+* `ExpLUT/Prog/KeyBoxW.lean` — the key boxes: `kbOf D B hB r` (`Big` = image of
+  `|PIdx| N B` coins, `kbOf_Big : Big = famBig B` whatever order a machine reads the coins;
+  `Small = famBall r`), `kbCover_of`, `kbCover_of_eq`; **`kbDc`** (`Bk = 18750`,
+  `r = 2^{Bk−1} − 1 − 2^{18500}`, opaque) and **`kbCover_Dc : KbCover kbDc coverBound`**.
+  (Pitfall: `KbCover (kbOf Dc …)` makes the elaborator enumerate the ball — keep `kbDc` opaque.)
+
+**Remaining for `KeyGen`** (design fixed by the code above):
+
+1. *Parsing (VM)*: from the `msk` word, by a stream and length templates: `B` (row 0: `m̄ + K`
+   words, row 1), `H` word (`rHW`), `a`, `A₀` (`rA`), `A^in` (`rAinS`), `A^aut` (`rAautW`),
+   `d`, `T`; bridge lemmas: `matE_enc`/`digE_enc` + `FixedEnc.fun` over `Jh`/`Pos`/`Fin b` as
+   `hL`/`ainL`/`aautL` (with `HfK`/`HiK`/`AaK`/`AinK`).
+2. *Constants (VM)*: `rOne` (`[true] ++ 0^{NK−1}`), `rMu0 = X⁻¹` (`rho` of `1` by `[false]`),
+   `rXc = X^{2^{14}−1}` (`rho` of `1` by a template of `2N − 2^{14} + 1`), templates of the
+   `StepIn`/`CoefIn`/`ChainIn`/`MulTmpl` structures (outer program, `natP`).
+3. *Box try (VM)*, per row `i' < W` (math: `boxSample` with `p ← Big`):
+   `y(i') = [i'=0](d₁ − Σ_c A_F[0,c] p_last,c) − Σ_w σ_{i'}(B_{0,w}) p_{i',w}
+   − Σ_{k,c} σ_{i'}(H_k[0,c]) p_{i',k,c} + Σ_k Σ_j 2^j p_{(i'−je k) mod W, k, (0,j)}`
+   (`pubShort`; the last term from `PE ++ PE` with the offset `(i' + W − je k)` rows, `je (t,0) = 2^t`
+   by doubling, `je (t,1) = W − 2^t`); `z = digits of y(i')` (`dig`); `x_{i',w} = p_{i',w} +
+   Σ_c σ_{i'}(T_{w,c}) z_c` (`realTrap`); `σ_{i'}` kept by one `σ_g` per row on the queues of
+   `B₀`, `H_k[0,·]`, `T`. Coins: `p_last`, the `η` part, then the rows (`Bk` bits per
+   coefficient, `val − 2^{Bk−1}` via `sub` of the constant with all coefficients `2^{Bk−1}`);
+   their decoding is a bijection onto `famBig` (so the law is `uniformOfFinset Big` by
+   `kbOf_Big`). Test `x ∈ famBall r`: `zabs c ≤ r ⟺ val(c + r) < 2^{Bk} ∧ val(r − c) < 2^{Bk}`
+   (`2^{Bk+1} < q`), i.e. the digits `≥ Bk` of `x + R`, `R − x` vanish (`R` the element with all
+   coefficients `r`); accumulate them in one register and test `= 0` with `eqb` (no wrap: fewer
+   than `q` terms). Output `mpk ++ assemble x z` or `mpk ++ 0`; `|C| ≠ predLen` by two `drop`s and
+   `eqb` with a blank register → `mpk ++ 0`.
+4. *The machine*: an `XProg` (as `DualUse/Prog/KeyGenP.keyGenF`): `leP n` guard (`n` = length of
+   the input with `|C| = L`; longer → `encodeTuple []`, **`KeyLongSpec`**), parse
+   `encodeTuple [pw, msk, C]`, `natP`/`appendLaw_bits` templates, `coinsP` (`mB` coins), the VM
+   code in a frame of `105` tapes (`MVM.law_compile`), output `frP`; **`KeySpec kbDc L`**.
+5. *Costs*: a clock for compiled VM code (per instruction from `XProg.timeBoundT_frame` and the
+   Mersenne `MersenneT` bounds; `rep` by `timeBoundT_loop_le_of_inv` with register-length
+   invariants), `descLen` from `XProg.size`; estimate `≈ 2^214` steps at `Conf` (the `A^aut`
+   stream passes of `autPKC`, `16 · 2^22 · 11` calls).
+
 ### Package G (attribute hiding of the implementation) — branch `t3/explut-g`
 
 Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the aggregator) and
