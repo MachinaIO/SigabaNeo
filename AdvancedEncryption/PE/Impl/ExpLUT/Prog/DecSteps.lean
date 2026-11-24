@@ -122,7 +122,7 @@ def stepsN : ℕ → Code
   | n + 1 => .seq (stepsN n) (stepC n (decide (n = 15)))
 
 /-- **`EvalPK` and `EvalCT` on the machine**: `A₀` from `61`, `c₀` from `71`, then the 16 steps. -/
-def evalC : Code := ofList [.cp 177 61, .cp 176 71, stepsN 16]
+def devalC : Code := ofList [.cp 177 61, .cp 176 71, stepsN 16]
 
 variable (D) in
 /-- **The inputs of the evaluation** (registers below `80`). -/
@@ -222,16 +222,16 @@ theorem exec_stepsN (hb : D.b = 22) {C : List Bool} (hC : C.length = predLen)
       exact lut_sumCT_eq hb _ _ _ _ _ c'
 
 /-- **`EvalPK` and `EvalCT` on the machine**: `A_F` on `177`, `c_F` on `176`. -/
-theorem exec_evalC (hb : D.b = 22) {C : List Bool} (hC : C.length = predLen)
+theorem dexec_evalC (hb : D.b = 22) {C : List Bool} (hC : C.length = predLen)
     {pp : EvalPub (setting D) Pos} {ctd : EvalCTData (setting D) Pos} {rd : RData} {w : St}
     (hin : EvIn D C pp ctd rd w) :
-    (∃ as, (exec D.N D.K evalC w) 177 = as.flatten ∧ RepM D as (evalPK (bpOf (progOf C)) pp)) ∧
-      (∃ cs, (exec D.N D.K evalC w) 176 = cs.flatten ∧
+    (∃ as, (exec D.N D.K devalC w) 177 = as.flatten ∧ RepM D as (evalPK (bpOf (progOf C)) pp)) ∧
+      (∃ cs, (exec D.N D.K devalC w) 176 = cs.flatten ∧
         RepV D cs (evalCT (bpOf (progOf C)) pp ctd)) ∧
-      ∀ r : Fin 200, r.val < 80 → (exec D.N D.K evalC w) r = w r := by
+      ∀ r : Fin 200, r.val < 80 → (exec D.N D.K devalC w) r = w r := by
   set w1 := Function.update (Function.update w 177 (w 61)) 176 (w 71) with hw1
-  have e : exec D.N D.K evalC w = exec D.N D.K (stepsN 16) w1 := by
-    simp only [evalC, exec_ofList_cons, exec_ofList_nil, exec, hw1]
+  have e : exec D.N D.K devalC w = exec D.N D.K (stepsN 16) w1 := by
+    simp only [devalC, exec_ofList_cons, exec_ofList_nil, exec, hw1]
     rw [Function.update_of_ne (by decide)]
   have lo : ∀ r : Fin 200, r.val < 80 → w1 r = w r := fun r hr => by
     rw [hw1, Function.update_of_ne (by intro e; subst e; simp at hr),
@@ -249,11 +249,11 @@ theorem exec_evalC (hb : D.b = 22) {C : List Bool} (hC : C.length = predLen)
 theorem exec_evalC_scheme (hb : D.b = 22) {C : List Bool} (hC : C.length = predLen)
     {mpk : MPKt D} {ct : CTt D} {rd : RData} {w : St}
     (hin : EvIn D C (evalPub (helperMap D) mpk) (evalData (helperMap D) mpk ct) rd w) :
-    (∃ as, (exec D.N D.K evalC w) 177 = as.flatten ∧
+    (∃ as, (exec D.N D.K devalC w) 177 = as.flatten ∧
         RepM D as (keyPK (helperMap D) mpk (bpOf (progOf C)))) ∧
-      (∃ cs, (exec D.N D.K evalC w) 176 = cs.flatten ∧
+      (∃ cs, (exec D.N D.K devalC w) 176 = cs.flatten ∧
         RepV D cs (evalCiphertext (helperMap D) mpk (bpOf (progOf C)) ct)) ∧
-      ∀ r : Fin 200, r.val < 80 → (exec D.N D.K evalC w) r = w r :=
-  exec_evalC hb hC hin
+      ∀ r : Fin 200, r.val < 80 → (exec D.N D.K devalC w) r = w r :=
+  dexec_evalC hb hC hin
 
 end AdvancedEncryption.ExpLUT.Prog

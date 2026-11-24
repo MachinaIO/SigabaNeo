@@ -43,7 +43,7 @@ theorem getD_map_product {β γ δ : Type*} (l₁ : List β) (l₂ : List γ) (g
 theorem len_prod {β γ : Type*} (l₁ : List β) (l₂ : List γ) :
     (l₁.product l₂).length = l₁.length * l₂.length := List.length_product l₁ l₂
 
-theorem len_col (K : ℕ) : (Enum.list (α := Col K)).length = 2 * K := by
+theorem dlen_col (K : ℕ) : (Enum.list (α := Col K)).length = 2 * K := by
   show ((List.finRange 2).product (List.finRange K)).length = 2 * K
   have := List.length_product (l₁ := List.finRange 2) (l₂ := List.finRange K)
   simp only [List.length_finRange] at this
@@ -67,7 +67,7 @@ theorem flatten_vecWords (v : Col D.K → Rg D) : (vecWords v).flatten = (vecE D
   simp [vecWords, List.flatMap, List.map_map, Function.comp_def, rEnc_enc]
 
 theorem repV_vecWords (v : Col D.K → Rg D) : RepV D (vecWords v) v where
-  len := by rw [vecWords, List.length_map, len_col]
+  len := by rw [vecWords, List.length_map, dlen_col]
   wid x hx := by obtain ⟨c, _, rfl⟩ := List.mem_map.mp hx; exact length_encRM _ _ _
   val c := by rw [vecWords, getD_map_col, decRM_encRM D.K_pos]
 
@@ -89,9 +89,9 @@ theorem repM_matWords (M : Matrix (Fin 2) (Col D.K) (Rg D)) : RepM D (matWords M
 
 /-! ### Families over the digit positions -/
 
-theorem len_dig (K : ℕ) : (Enum.list (α := Dig K)).length = 2 * (2 * K) * K := by
+theorem dlen_dig (K : ℕ) : (Enum.list (α := Dig K)).length = 2 * (2 * K) * K := by
   show ((List.finRange 2).product ((Enum.list (α := Col K)).product (List.finRange K))).length = _
-  rw [len_prod, len_prod, len_col]; simp; ring
+  rw [len_prod, len_prod, dlen_col]; simp; ring
 
 theorem getElem_enum_col (K : ℕ) (c : Col K) (h : cidx K c < (Enum.list (α := Col K)).length) :
     (Enum.list (α := Col K))[cidx K c] = c := by
@@ -106,7 +106,7 @@ theorem getD_map_dig {δ : Type*} (K : ℕ) (g : Dig K → δ) (x : δ) (d : Dig
   have hc := cidx_lt d.2.1
   have hi := d.2.2.isLt
   have hl : ((Enum.list (α := Col K)).product (List.finRange K)).length = 2 * K * K := by
-    rw [len_prod, len_col]; simp
+    rw [len_prod, dlen_col]; simp
   have hb : cidx K d.2.1 * K + d.2.2.val < ((Enum.list (α := Col K)).product (List.finRange K)).length := by
     rw [hl]; nlinarith
   have := getD_map_product (List.finRange 2) ((Enum.list (α := Col K)).product (List.finRange K)) g x
@@ -114,8 +114,8 @@ theorem getD_map_dig {δ : Type*} (K : ℕ) (g : Dig K → δ) (x : δ) (d : Dig
   rw [hl] at this
   rw [didx, add_assoc, this]
   have inner := getD_map_product (Enum.list (α := Col K)) (List.finRange K) id d.2
-    (a := cidx K d.2.1) (b := d.2.2.val) (by rw [len_col]; exact hc) (by simpa using hi)
-  rw [List.map_id, List.getD_eq_getElem _ _ (by simpa [len_col] using hb)] at inner
+    (a := cidx K d.2.1) (b := d.2.2.val) (by rw [dlen_col]; exact hc) (by simpa using hi)
+  rw [List.map_id, List.getD_eq_getElem _ _ (by simpa [dlen_col] using hb)] at inner
   simp only [List.length_finRange] at inner
   rw [inner, getElem_enum_col]
   simp
@@ -125,7 +125,7 @@ noncomputable def famVWords (F : Dig D.K → Col D.K → Rg D) : List (List (Lis
   (Enum.list (α := Dig D.K)).map fun d => vecWords (F d)
 
 theorem repFV_famVWords (F : Dig D.K → Col D.K → Rg D) : RepFV D (famVWords F) F where
-  len := by rw [famVWords, List.length_map, len_dig]
+  len := by rw [famVWords, List.length_map, dlen_dig]
   ok v hv := by
     obtain ⟨d, _, rfl⟩ := List.mem_map.mp hv
     exact ⟨(repV_vecWords _).len, (repV_vecWords _).wid⟩
@@ -168,11 +168,11 @@ theorem read_bpOf (C : List Bool) (i : ℕ) (hi : i < 16) : (bpOf (progOf C)).re
   Fin.ext (Nat.mod_eq_of_lt hi)
 
 theorem len_vecE_col (v : Col D.K → Rg D) : ((vecE D (Col D.K)).enc v).length = 2 * D.K * (D.N * D.K) := by
-  rw [FixedEnc.length, len_col]
+  rw [FixedEnc.length, dlen_col]
 
 /-! ### The helper streams -/
 
-theorem map_finRange_val {α : Type*} (n : ℕ) (g : ℕ → α) :
+theorem dmap_finRange_val {α : Type*} (n : ℕ) (g : ℕ → α) :
     (List.finRange n).map (fun t => g t.val) = (List.range' 0 n).map g := by
   rw [← List.range_eq_range']
   apply List.ext_getElem (by simp)
@@ -206,7 +206,7 @@ noncomputable def rdOf (mpk : MPKt D) (ct : CTt D) : RData where
 theorem sH_rdOf (hb : D.b = 22) (mpk : MPKt D) (ct : CTt D) :
     sH (rdOf mpk ct) 0 = (FixedEnc.fun (α := Jh D) (matE D (Fin 2) (Col D.K))).enc mpk.H := by
   refine Eq.trans ?_ (enc_jh (D := D) (matE D (Fin 2) (Col D.K)) mpk.H).symm
-  rw [sH, show 22 - 0 = D.b by omega, ← map_finRange_val]
+  rw [sH, show 22 - 0 = D.b by omega, ← dmap_finRange_val]
   congr 1
   refine List.map_congr_left fun t _ => ?_
   simp only [rdOf, dif_pos t.isLt, Fin.eta]
@@ -215,7 +215,7 @@ theorem sH_rdOf (hb : D.b = 22) (mpk : MPKt D) (ct : CTt D) :
 theorem sh_rdOf (hb : D.b = 22) (mpk : MPKt D) (ct : CTt D) :
     sh (rdOf mpk ct) 0 = (FixedEnc.fun (α := Jh D) (vecE D (Col D.K))).enc ct.h := by
   refine Eq.trans ?_ (enc_jh (D := D) (vecE D (Col D.K)) ct.h).symm
-  rw [sh, show 22 - 0 = D.b by omega, ← map_finRange_val]
+  rw [sh, show 22 - 0 = D.b by omega, ← dmap_finRange_val]
   congr 1
   refine List.map_congr_left fun t _ => ?_
   simp only [rdOf, dif_pos t.isLt, Fin.eta]
@@ -226,7 +226,7 @@ theorem sA_rdOf (hb : D.b = 22) (mpk : MPKt D) (ct : CTt D) :
       (FixedEnc.fun (α := Dig D.K) (matE D (Fin 2) (Col D.K)))).enc mpk.Aaut := by
   refine Eq.trans ?_ (enc_finb (D := D) (FixedEnc.fun (α := Dig D.K) (matE D (Fin 2) (Col D.K)))
     mpk.Aaut).symm
-  rw [sA, show 22 - 0 = D.b by omega, ← map_finRange_val]
+  rw [sA, show 22 - 0 = D.b by omega, ← dmap_finRange_val]
   congr 1
   refine List.map_congr_left fun t _ => ?_
   simp only [rdOf, dif_pos t.isLt, Fin.eta]
@@ -237,7 +237,7 @@ theorem sc_rdOf (hb : D.b = 22) (mpk : MPKt D) (ct : CTt D) :
       (FixedEnc.fun (α := Dig D.K) (vecE D (Col D.K)))).enc ct.caut := by
   refine Eq.trans ?_ (enc_finb (D := D) (FixedEnc.fun (α := Dig D.K) (vecE D (Col D.K)))
     ct.caut).symm
-  rw [sc, show 22 - 0 = D.b by omega, ← map_finRange_val]
+  rw [sc, show 22 - 0 = D.b by omega, ← dmap_finRange_val]
   congr 1
   refine List.map_congr_left fun t _ => ?_
   simp only [rdOf, dif_pos t.isLt, Fin.eta]
@@ -313,36 +313,36 @@ theorem evIn_of_regs (hb : D.b = 22) {mpk : MPKt D} {ct : CTt D} {C : List Bool}
   Ain i hi := by
     rw [read_bpOf C i hi, h.Ain]
     obtain ⟨s1, s2⟩ := seg_fun' (FixedEnc.fun (α := Dig D.K) (matE D (Fin 2) (Col D.K))) mpk.Ain i hi
-      (famMLen D) (by rw [len_dig, len_fin, len_col]; ring)
+      (famMLen D) (by rw [dlen_dig, len_fin, dlen_col]; ring)
     exact ⟨famMWords (mpk.Ain ⟨i, hi⟩) 0, famMWords (mpk.Ain ⟨i, hi⟩) 1,
       s1.trans (famMW_famMWords _).symm, s2, repFV_famVWords _, repFV_famVWords _⟩
   cin i hi := by
     rw [read_bpOf C i hi, h.cin]
     obtain ⟨s1, s2⟩ := seg_fun' (FixedEnc.fun (α := Dig D.K) (vecE D (Col D.K))) ct.cin i hi
-      (2 * (2 * D.K) * D.K * (2 * D.K * (D.N * D.K))) (by rw [len_dig, len_col])
+      (2 * (2 * D.K) * D.K * (2 * D.K * (D.N * D.K))) (by rw [dlen_dig, dlen_col])
     exact ⟨famVWords (ct.cin ⟨i, hi⟩), s1.trans (famVW_famVWords _).symm, s2, repFV_famVWords _⟩
   a i hi := by
     rw [read_bpOf C i hi, h.a]
     obtain ⟨s1, s2⟩ := seg_fun' (vecE D (Col D.K)) mpk.a i hi (2 * D.K * (D.N * D.K))
-      (by rw [len_col])
+      (by rw [dlen_col])
     exact ⟨vecWords (mpk.a ⟨i, hi⟩), s1.trans (flatten_vecWords _).symm, s2, repV_vecWords _⟩
   bot i hi := by
     rw [read_bpOf C i hi, h.cb]
     obtain ⟨s1, s2⟩ := seg_fun' (vecE D (Col D.K)) ct.cinBot i hi (2 * D.K * (D.N * D.K))
-      (by rw [len_col])
+      (by rw [dlen_col])
     exact ⟨vecWords (ct.cinBot ⟨i, hi⟩), s1.trans (flatten_vecWords _).symm, s2, repV_vecWords _⟩
 
 /-- **The evaluation of `Dec` from the encodings**: if the registers below `80` hold the encodings of
-`mpk`, `ct` and the predicate word `C` (`DecRegs`), `evalC` leaves words representing
+`mpk`, `ct` and the predicate word `C` (`DecRegs`), `devalC` leaves words representing
 `A_F = keyPK (helperMap D) mpk (bpOf (progOf C))` on `177` and
 `c_F = evalCiphertext (helperMap D) mpk (bpOf (progOf C)) ct` on `176`. -/
 theorem exec_evalC_regs (hb : D.b = 22) {mpk : MPKt D} {ct : CTt D} {C : List Bool}
     (hC : C.length = predLen) {w : St} (h : DecRegs D mpk ct C w) :
-    (∃ as, (exec D.N D.K evalC w) 177 = as.flatten ∧
+    (∃ as, (exec D.N D.K devalC w) 177 = as.flatten ∧
         RepM D as (keyPK (helperMap D) mpk (bpOf (progOf C)))) ∧
-      (∃ cs, (exec D.N D.K evalC w) 176 = cs.flatten ∧
+      (∃ cs, (exec D.N D.K devalC w) 176 = cs.flatten ∧
         RepV D cs (evalCiphertext (helperMap D) mpk (bpOf (progOf C)) ct)) ∧
-      ∀ r : Fin 200, r.val < 80 → (exec D.N D.K evalC w) r = w r :=
+      ∀ r : Fin 200, r.val < 80 → (exec D.N D.K devalC w) r = w r :=
   exec_evalC_scheme hb hC (evIn_of_regs hb h)
 
 end AdvancedEncryption.ExpLUT.Prog

@@ -8,7 +8,7 @@ definitions of `PE.Impl.ExpLUT.{Ops, LUT, Eval, Scheme}`. Here the reshaped form
 identities over an abstract `Setting`:
 
 * **One kernel, the digit dot product.** `(v G⁻¹(M))_col = Σ_{c} v_c · d(M_{c.1, col}, c.2)`
-  (`vecMul_ginv_apply`): only the column `col` of `M` is read. `Mul`, `SMul` and `Aut` are sums of
+  (`dvecMul_ginv_apply`): only the column `col` of `M` is read. `Mul`, `SMul` and `Aut` are sums of
   such products (`mulCT_eq`, `mulPK_eq`, `autPK_row`, `smulPK_row`, `autCT_eq`).
 * **Rounds along the bits** (`rounds_eq_bitRounds`): after `t` rounds, the pair (public matrix,
   encoding) of index `j < 2^t` is obtained from the input by applying `Aut_{g_s}` for the set bits
@@ -30,7 +30,7 @@ variable {R : Type*} [CommRing R] {S : Setting R}
 /-! ### The digit dot product -/
 
 /-- **`(v G⁻¹(M))_col = Σ_c v_c d(M_{c.1, col}, c.2)`.** -/
-theorem vecMul_ginv_apply (v : Col S.τ → R) (M : Matrix (Fin 2) (Col S.τ) R) (col : Col S.τ) :
+theorem dvecMul_ginv_apply (v : Col S.τ → R) (M : Matrix (Fin 2) (Col S.τ) R) (col : Col S.τ) :
     (v ᵥ* S.ginv M) col = ∑ c : Col S.τ, v c * S.D.d (M c.1 col) c.2 := by
   simp only [Matrix.vecMul, dotProduct, ginv_apply]
 
@@ -39,7 +39,7 @@ theorem mulCT_eq (A C : Matrix (Fin 2) (Col S.τ) R) (cd : Dig S.τ → Col S.τ
     (c : Col S.τ → R) (j : Col S.τ) :
     mulCT S A C cd c j = ∑ ri : Col S.τ, (cd (ri.1, j, ri.2) ᵥ* S.ginv A) ri +
       (c ᵥ* S.ginv C) j := by
-  rw [mulCT, Finset.sum_add_distrib, vecMul_ginv_apply]
+  rw [mulCT, Finset.sum_add_distrib, dvecMul_ginv_apply]
   congr 1
   refine Finset.sum_congr rfl fun ri _ => ?_
   rw [digits, mul_comm]

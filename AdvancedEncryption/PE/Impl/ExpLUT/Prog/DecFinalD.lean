@@ -42,7 +42,7 @@ theorem getD_map_of_lt_F {β γ : Type} (l : List β) (g : β → γ) (d : γ) (
     (he : e < l.length) : (l.map g).getD e d = g (l.getD e d') := by
   rw [List.getD_eq_getElem _ _ (by simpa using he), List.getD_eq_getElem _ _ he, List.getElem_map]
 
-theorem getD_drop' {β : Type} (l : List β) (a e : ℕ) (d : β) : (l.drop a).getD e d = l.getD (a + e) d := by
+theorem dgetD_drop' {β : Type} (l : List β) (a e : ℕ) (d : β) : (l.drop a).getD e d = l.getD (a + e) d := by
   simp only [List.getD_eq_getElem?_getD, List.getElem?_drop]
 
 /-- **Indexing a product.** -/
@@ -112,7 +112,7 @@ theorem conjL_eq {α : Type} [Enum α] [Fintype α] (f : List Bool → List Bool
   · have he' : e < xs.length := by omega
     have hm : xs.getD e [] ∈ xs := by rw [List.getD_eq_getElem _ _ he']; exact List.getElem_mem he'
     rw [getD_map_of_lt_F _ _ _ [] he', (hfi i _ (hxw _ hm)).2, hx e he]
-  · rw [getD_drop', hk i i.isLt e he]
+  · rw [dgetD_drop', hk i i.isLt e he]
 
 end Sums
 

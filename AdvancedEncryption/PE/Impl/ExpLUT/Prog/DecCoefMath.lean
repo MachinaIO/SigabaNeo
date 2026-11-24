@@ -24,7 +24,7 @@ open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices SigabaNeo
 
 /-! ### `X⁻¹` -/
 
-theorem xInvG_mul_monoX {R : Type} [CommRing R] {N : ℕ} (hN : 2 ≤ N) :
+theorem dxInvG_mul_monoX {R : Type} [CommRing R] {N : ℕ} (hN : 2 ≤ N) :
     xInvG R N * monoX N = 1 := by
   rw [← rhoG_eq_mul]
   apply ext_coefG
@@ -46,7 +46,7 @@ theorem xInvG_pow_eq {R : Type} [CommRing R] {N : ℕ} (hN : 2 ≤ N) {u : ℕ} 
   calc xInvG R N ^ u = xInvG R N ^ u * monoX N ^ (2 * N) := by rw [monoX_pow_two_n, mul_one]
     _ = (xInvG R N * monoX N) ^ u * monoX N ^ (2 * N - u) := by
         rw [mul_pow, mul_assoc, ← pow_add, show u + (2 * N - u) = 2 * N by omega]
-    _ = monoX N ^ (2 * N - u) := by rw [xInvG_mul_monoX hN, one_pow, one_mul]
+    _ = monoX N ^ (2 * N - u) := by rw [dxInvG_mul_monoX hN, one_pow, one_mul]
 
 /-! ### The bits of an entry -/
 
@@ -118,7 +118,7 @@ theorem getD_toBits_22 (j t : ℕ) (ht : t < 22) : (toBits 22 j).getD t false = 
 
 /-! ### The tables of the predicate word -/
 
-theorem uOf_toSt_toSym {u : ℕ} (hu : u < 2 ^ 22) :
+theorem duOf_toSt_toSym {u : ℕ} (hu : u < 2 ^ 22) :
     (uOf (toSt (u % wSt)) (toSym (u / wSt))).val = u := by
   simp only [uOf, toSt, toSym, wSt, stateBits]
   omega
@@ -131,7 +131,7 @@ theorem table_eq_val (C : List Bool) {i u : ℕ} (hi : i < 15) (hu : u < 2 ^ 22)
   show bpStep (progOf C) i (u % wSt) (u / wSt) = _
   rw [bpStep, dif_pos hi]
   simp only [progOf, readSt]
-  rw [uOf_toSt_toSym hu]
+  rw [duOf_toSt_toSym hu]
   have hl : val ((C.drop (14 * (2 ^ 22 * i + u))).take 14) < 2 ^ 14 :=
     lt_of_lt_of_le (val_lt _) (Nat.pow_le_pow_right (by norm_num) (by simp))
   simp only [stateBits, lutBits]
@@ -145,7 +145,7 @@ theorem table_last (C : List Bool) {u : ℕ} (hu : u < 2 ^ 22) :
   show bpStep (progOf C) 15 (u % wSt) (u / wSt) = _
   rw [bpStep, dif_neg (by omega)]
   simp only [progOf]
-  simp only [uOf_toSt_toSym hu]
+  simp only [duOf_toSt_toSym hu]
 
 /-! ### The coefficients -/
 

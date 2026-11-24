@@ -408,7 +408,7 @@ programs:
   `FinD` (registers hold the word lists of `mpk`, `ct`, `k_F`; c_F, A_F⁽²⁾ words decode to
   `evalCiphertext`, `keyPK … 1`).
 * `ExpLUT/Prog/Dec{Rep,Blocks,Calls,Round,RoundT,Rounds,Lut,Mul,Steps,Enc}`: **`exec_evalC_regs`**
-  (`D.b = 22`, `C.length = predLen`, `DecRegs D mpk ct C w`): `evalC` leaves `A_F = keyPK` (reg 177)
+  (`D.b = 22`, `C.length = predLen`, `DecRegs D mpk ct C w`): `devalC` leaves `A_F = keyPK` (reg 177)
   and `c_F = evalCiphertext` (reg 176), `RepM`/`RepV` entrywise; registers below 80 unchanged. One
   round = `roundC t` (`roundPK_eq`/`roundCT_eq`), rounds along the bits (`exec_roundsN` →
   `bitRounds`), the table loop `lutC`, Mul `mulC i`, the steps `stepsN` (`evalPKAt`/`evalCTAt`).
@@ -429,7 +429,7 @@ programs:
 **Remaining for F4**:
 1. Register clash in the front end: `run_parseD`/`splitSkC`/`splitCtC` use 76/77 for the raw
    `sk`/`ct`, while `DecRegs` wants templates there (and 78). Fix without touching proofs: build
-   the templates for 76–78 elsewhere (e.g. 175, 178, 199 — never written by `evalC` before use),
+   the templates for 76–78 elsewhere (e.g. 175, 178, 199 — never written by `devalC` before use),
    and `cp` them into 76–78 after the split; the validity flag (`lenEqP predLen`) on another free
    register.
 2. The template list of the prelude (`tmplsP`, plus `ONE` on 3, `[true]` on 75, the VM tapes
@@ -892,3 +892,8 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
    components' time (KeyGen-like `≈ 2^{215}`) — so `log₂ C ≈ 465 + 30 + 20 + 215 ≪ 893`.
    Kernel pitfall met: never state a bound on a closed term like `decT Dc` by unfolding at `Dc`
    (the kernel tries to evaluate `rowsD Dc` through `Nat.mul`); prove it for `D` and instantiate.
+
+* **Orchestrator note (merge of F4):** Dec's VM is `SigabaNeo.Tape.RingVM` in `ProgAlgo/Mersenne/RingVM.lean`,
+  `RingVMRing.lean` (renamed from `VM.lean`/`VMRing.lean`, which hold KeyGen's `MVM`). Dec lemmas that clashed with
+  KeyGen/Setup/SimForm names got a `d` prefix: `devalC`, `dexec_evalC`, `dvecMul_ginv_apply`, `dxInvG_mul_monoX`,
+  `duOf_toSt_toSym`, `dgetD_drop'`, `dmap_finRange_val`, `dlen_col`, `dlen_dig`.
