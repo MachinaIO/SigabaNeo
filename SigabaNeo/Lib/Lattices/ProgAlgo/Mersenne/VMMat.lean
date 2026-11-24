@@ -959,6 +959,92 @@ theorem exec_autMatC (hN : 0 < N) (hK : 0 < K) (w : St) (A : Fin 2 → Fin 2 × 
   simp only [matL, List.map_flatMap, List.map_map]
   rfl
 
+/-! ### `EvalPK` of `Aut` -/
+
+/-- The repetition count of `autPKC` (read only). -/
+@[simp, vmreg] abbrev rP : Fin 64 := 30
+
+/-- `rMA := σ_k(rMA)` (`k = |rKc|`). -/
+def aStep : Code := .seq autMatC (.cp rMA rMOut)
+
+theorem aStep_writes_rP : aStep.writes rP = false := by decide
+
+/-- A saved stream (`autPKC`). -/
+@[simp, vmreg] abbrev rSv : Fin 64 := 29
+
+/-- **`EvalPK` of `Aut`**: `rMOut := H · G⁻¹(mulPK(σ_k^{m}(A), Aaut))`, with `A` in `rMA`,
+`k = |rKc|`, `m = |rP|`, the digit matrices `Aaut` streamed from `rMAd`, `H` in `rGX`. -/
+def autPKC : Code := .seq (.rep rP aStep) <| .seq mulPKC <| .seq (.cp rSv rMAd) <|
+  .seq (.cp rMA rMOut) <| .seq ginvMulC (.cp rMAd rSv)
+
+theorem exec_aRep (hN : 0 < N) (hK : 0 < K) (w : St) (A : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (hMA : w rMA = encL N K (matL A)) (hk : 0 < (w rKc).length) (hT : MulTmpl N K w) :
+    exec N K (.rep rP aStep) w rMA =
+      encL N K (matL fun a c => (aut N (w rKc).length)^[(w rP).length] (A a c)) ∧
+    MulTmpl N K (exec N K (.rep rP aStep) w) := by
+  have key := exec_rep_inv (N := N) (K := K) rP aStep aStep_writes_rP
+    (fun m w' => w' rMA = encL N K (matL fun a c => (aut N (w rKc).length)^[m] (A a c)) ∧
+      w' rKc = w rKc ∧ MulTmpl N K w') w ⟨by simp [hMA], rfl, hT⟩ ?_
+  · exact ⟨key.1, key.2.2⟩
+  · intro m w' _ hP _
+    obtain ⟨h1, h2, h3⟩ := hP
+    set W := Function.update w' rP (w' rP).tail with hW
+    have hT' : MulTmpl N K W := h3.of_writes fun q hq => by
+      rw [hW, Function.update_of_ne (fun e => by subst e; simp at hq)]
+    have hKc : W rKc = w rKc := by rw [hW, Function.update_of_ne (by decide), h2]
+    have hMA' : W rMA = encL N K (matL fun a c => (aut N (w rKc).length)^[m] (A a c)) := by
+      rw [hW, Function.update_of_ne (by decide), h1]
+    obtain ⟨a1, a2⟩ := exec_autMatC hN hK W (fun a c => (aut N (w rKc).length)^[m] (A a c))
+      hMA' (by rw [hKc]; exact hk) hT'
+    refine ⟨?_, ?_, ?_⟩
+    · show Function.update (exec N K autMatC W) rMA (exec N K autMatC W rMOut) rMA = _
+      rw [Function.update_self, a1, hKc]
+      congr 2; funext a c; rw [Function.iterate_succ_apply']
+    · show Function.update (exec N K autMatC W) rMA (exec N K autMatC W rMOut) rKc = _
+      rw [Function.update_of_ne (by decide), exec_writes _ _ _ (by decide), hKc]
+    · exact (hT'.of_writes a2).of_writes fun q hq => by
+        show Function.update (exec N K autMatC W) rMA (exec N K autMatC W rMOut) q = _
+        rw [Function.update_of_ne (fun e => by subst e; simp at hq)]
+
+theorem aRep_writes : ∀ q : Fin 64, (q = rMAd ∨ q = rGX) → (Code.rep rP aStep).writes q = false := by
+  decide
+
+theorem mulPKC_writes_rGX : mulPKC.writes rGX = false := by decide
+theorem mulPKC_writes_ge : ∀ q : Fin 64, 57 ≤ q.val → mulPKC.writes q = false := by decide
+
+/-- **`autPKC` computes `EvalPK` of `Aut`.** -/
+theorem exec_autPKC (hN : 0 < N) (hK : 0 < K) (w : St) (A H : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Aaut : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (rest : List (Rq N K))
+    (hMA : w rMA = encL N K (matL A)) (hE : w rMAd = encL N K (adL Aaut ++ rest))
+    (hGX : w rGX = encL N K (matL H)) (hk : 0 < (w rKc).length) (hT : MulTmpl N K w) :
+    exec N K autPKC w rMOut = encL N K (matL (ginvMulm H (mulPKm
+      (fun a c => (aut N (w rKc).length)^[(w rP).length] (A a c)) Aaut))) ∧
+    exec N K autPKC w rMAd = encL N K rest := by
+  obtain ⟨r1, r2⟩ := exec_aRep hN hK w A hMA hk hT
+  set W1 := exec N K (.rep rP aStep) w with hW1
+  have e1 : W1 rMAd = w rMAd := exec_writes _ _ _ (aRep_writes _ (Or.inl rfl))
+  have e2 : W1 rGX = w rGX := exec_writes _ _ _ (aRep_writes _ (Or.inr rfl))
+  obtain ⟨m1, m2⟩ := exec_mulPKC hK W1 _ Aaut rest r1 (by rw [e1, hE]) r2
+  set W2 := exec N K mulPKC W1 with hW2
+  have hT2 : MulTmpl N K W2 := r2.of_writes fun q hq => exec_writes _ _ _ (mulPKC_writes_ge q hq)
+  have e3 : W2 rGX = w rGX := by rw [hW2, exec_writes _ _ _ mulPKC_writes_rGX, e2]
+  set W3 := exec N K (.seq (.cp rSv rMAd) (.cp rMA rMOut)) W2 with hW3
+  have hT3 : MulTmpl N K W3 := hT2.of_writes fun q hq => by
+    rw [hW3, exec_seq, exec_cp, exec_cp, Function.update_of_ne (fun e => by subst e; simp at hq),
+      Function.update_of_ne (fun e => by subst e; simp at hq)]
+  have hGX3 : W3 rGX = encL N K (matL H) := by
+    rw [hW3]; vm_simp; simp [e3, hGX]
+  have hMA3 : W3 rMA = encL N K (matL (mulPKm
+      (fun a c => (aut N (w rKc).length)^[(w rP).length] (A a c)) Aaut)) := by
+    rw [hW3]; vm_simp; simp [m1]
+  have hSv3 : W3 rSv = encL N K rest := by rw [hW3]; vm_simp; simp [m2]
+  have g := exec_ginvMulC hK W3 H _ hGX3 hMA3 hT3
+  show exec N K (.seq ginvMulC (.cp rMAd rSv)) W3 rMOut = _ ∧
+    exec N K (.seq ginvMulC (.cp rMAd rSv)) W3 rMAd = _
+  rw [exec_seq, exec_cp, exec_writes _ _ rSv (by decide), hSv3, Function.update_self,
+    Function.update_of_ne (by decide), g]
+  exact ⟨rfl, rfl⟩
+
 end MVM
 
 end SigabaNeo.Tape
