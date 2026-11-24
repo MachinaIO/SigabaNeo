@@ -352,3 +352,42 @@ input frames (`ufChunk`/`dropChunk` of `DualUse/Prog/EncP`), sample the coins in
 doublings) used for `b` (`z = 0`), `h_k` (`z = (s_k, 1)`), `c^aut_{t,d}`
 (`z = digit_d(C_t)·(σ_t s, 1)`), `C^in_t` bottom rows (`A = (−a_t ; 0)`-style, `z = −X^{w x_t}(s,1)`),
 `c^in_{t,d}`, `c₀` (`z = (s, 1)`); `c_m = s d₁ + d₂ + e_m + 2^{K−1} μ`.
+
+### Package F4 — the `Dec` machine (branch `t3/explut-f4`, in progress)
+
+**Design.** `Dec` is written as code of a small verified register machine instead of raw tape
+programs:
+* `SigabaNeo/Lib/Lattices/ProgAlgo/Mersenne/VM.lean`: **`RingVM`** — 200 word registers, the ring
+  instructions of `ℤ_{2^K−1}[X]/(X^N+1)` (`add sub mul canon neg`, and with a template register
+  `digit rotB aut rhoJ`; operands cut to `N K` bits by `takeD`, so `exec` is total), the moves of
+  `ValVM` (`mv cp drop clr tl`), `rep`/`seq`/`ifb`. `compile : Code → XProg 247` (every
+  instruction framed on its own tapes); **`run_flat_compile`/`law_compile`**: the compiled program
+  realizes `exec` exactly (from `enc N K w`, `0 < N`, `0 < K`). Cost: each instruction is framed, so
+  its clock is that of its Mersenne program on its own tapes (to be summed along `exec`).
+* `VMLib` (`wr`, `exec_not_mem`, `exec_rep_inv`, pop/push/shift of words), `VMRing`
+  (`decRM_digitRW_canon`: digits of canonical words are `binaryDigit`; `digitRW_zero_rotBW`),
+  `VMDot` (**`exec_ddotC`**: the digit dot product `Σ_{i<K} v_i d_i(m₀) + Σ_i v_{K+i} d_i(m₁)`, the
+  kernel of Mul/SMul/Aut; constants `Consts`: reg 0 `[]`, 1 `[false]`, 2 zero word, 4 `K` bits).
+* `ExpLUT/Prog/DecAlg.lean` (ring level, any `Setting`): `vecMul_ginv_apply`, `mulCT_eq`,
+  `mulPK_eq`, `autPK_row`, `smulPK_row`, `autCT_eq` (everything is digit dot products);
+  **`rounds_eq_bitRounds`**, `lutPK_eq`, `lutCT_eq` (LUT = one loop over `j < W`, the pair of `j`
+  recomputed along the set bits of `j`); **`σ_idx_eq_bitAut`**, `σ_idx_succ`; **`decryptRaw_eq`**
+  (`μ' = c_m − d₂ − (Σ_{i,c} σ_{g^i}(b − B⁽²⁾)_c k + Σ_{i,k,c} σ_{g^i}(h − H⁽²⁾ + G⁽²⁾) k +
+  Σ_c (c_F − A_F⁽²⁾)_c k)`).
+* `ExpLUT/Prog/DecFinal.lean`: the key sums on `RingVM` (registers 180–199): `dotC`, `autVecC`
+  (`X := σ_κ(X)`), **`conjC`** (`Σ_{i<W} Σ_e σ_κ^i(x_e) k_{in+e}`), `subVecC`, `halvesC` (rows
+  `H_k⁽²⁾`), `g1C` (`G⁽²⁾`), all with exact `exec` theorems.
+* Register map: 0–19 constants/templates, 20–41 `κ_t = g^{2^t} mod 2N` (`σ_{g_t}`), 42–55
+  `2N − 2^{b'}` (`X^{2^{b'}}`), 58–73 the parsed inputs, 80–89 ddot, 90–119 vector/G⁻¹ blocks,
+  140–159 LUT coefficients, 180–199 final sums.
+* Decoding: for canonical `v < 2^K`, `2^{K−2} ≤ v < 3·2^{K−2}` iff bit `K−1` ≠ bit `K−2`.
+* EvalPK is computed inside Dec alongside EvalCT (the same `bitRounds` loop carries the pair
+  (public matrix, encoding)); F3 has no shared `EvalPK.lean` yet — a separate PK-only program for
+  KeyGen can reuse `RingVM` and the blocks (`mulAcc`, `matGinv`, `bitRounds`) unchanged.
+
+**Remaining for F4** (see the final report of the session for the exact state): the vector/G⁻¹
+blocks (`vecGinv`, `matGinv`, `mulAcc`, de-interleave), the LUT coefficient block (α/v from the
+predicate table, `σ` along bits, `X^{L(u)}` by bits, the binary counter), `autStep`/LUT/Mul/step
+loops with their link to `evalPK`/`evalCT`, the final assembly (`finC`, decode), the front end
+(parsing `encodeTuple [pw, sk, C, ct]` into registers, templates by `natP`, length guard,
+`ValidC`), `DecSpec`, and the clock/descLen bounds (generic, then at `Params/Conf`).
