@@ -16,6 +16,10 @@ import PE.Impl.ExpLUT.SimBound
 import PE.Impl.ExpLUT.SimTrap
 import PE.Impl.ExpLUT.SimKeys
 import PE.Impl.ExpLUT.GameChain
+import PE.Impl.ExpLUT.Params.Conf
+import PE.Impl.ExpLUT.Params.Noise
+import PE.Impl.ExpLUT.Params.Correct
+import PE.Impl.ExpLUT.BPBridge
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
@@ -43,4 +47,8 @@ The proof of Theorem 2 (Appendix A):
 * `HybLaws`, `HybView`, `Hybrid0`, `Hybrid12`, `Hybrid3`, `Reduction`, `Hybrid5`, `Hybrid5U`,
   `Hybrid6`: the hybrids H0–H6 and the reduction to circular Ring-LWE.
 * `GameChain`: the chain over the generic attribute-hiding game.
+* `Params/Conf`: the concrete configuration (`q = 2^{2^16} − 1`, `n = 2^24`, `W = 2^22`, `m̄`, laws,
+  key boxes and their cover bound); `Params/Noise`: the noise certificate (Lemma 9, Lemma 11's
+  shift, `corrBound < q/4`); `Params/Correct`: correctness at the concrete parameters.
+* `BPBridge`: the universe's programs of width `w8` as branching programs; correctness for them.
 -/

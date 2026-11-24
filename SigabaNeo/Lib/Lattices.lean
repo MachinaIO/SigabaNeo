@@ -10,6 +10,7 @@ import SigabaNeo.Lib.Lattices.LWE
 import SigabaNeo.Lib.Lattices.RingLWE
 import SigabaNeo.Lib.Lattices.ModuleLWE
 import SigabaNeo.Lib.Lattices.Estimator.Bound.Cbd
+import SigabaNeo.Lib.Lattices.Estimator.Bound.CbdQ
 import SigabaNeo.Lib.Lattices.Trapdoor
 import SigabaNeo.Lib.Lattices.Trapdoor.Family
 import SigabaNeo.Lib.Lattices.Homomorphic
@@ -70,6 +71,14 @@ import SigabaNeo.Lib.Lattices.Automorphism.Sieve
 import SigabaNeo.Lib.Lattices.Automorphism.Instance
 import SigabaNeo.Lib.Lattices.Automorphism.Basis
 import SigabaNeo.Lib.Lattices.Automorphism.LUT
+import SigabaNeo.Lib.Lattices.CircularRingLWE
+import SigabaNeo.Lib.Lattices.Algo.NegaG
+import SigabaNeo.Lib.Lattices.Algo.MersenneWords
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Residue
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Ring
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Mul
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Aut
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Bounds
 
 /-!
 # Lattice library
@@ -83,6 +92,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Gadget`: the gadget matrix and binary decomposition.
 * `LWE`, `RingLWE`, `ModuleLWE`: the assumptions, concrete (`SigabaNeo.Trusted.Assumption`:
   parameters, problem, security function) and asymptotic (cslib-frontier).
+* `CircularRingLWE`: circular Ring-LWE with automorphism keys (Assumption 1 of ePrint 2026/2539),
+  concrete, with Ring-LWE's security function; at `J = []` it is decision Ring-LWE.
 * `Reduction/`: lattice reduction and SVP tools shared by the attacks — `LLL`, `BKZ` (GSA-free bound on the first
   vector of a BKZ-reduced basis, `docs/PROOF_GAP.md`), `Hermite2`, `AvgBKZ`, `Slide`, `Sieve`, `SieveWide`,
   `QArySieve`, `Search`, `Rogers`.
@@ -90,7 +101,9 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   (`docs/ATTACK_PROOFS.md`).
 * `Research/`: the open walls and recorded obstructions — `Wall1`, `Wall2`, `Wall1Rej`, `PolyQ`, `Rerand`, `RevMink`.
 * `Estimator/`: the lattice estimator's attack cost models; `estimatorBits` is the `H` of the
-  concrete assumptions (`docs/LWE_ESTIMATOR.md`).
+  concrete assumptions (`docs/LWE_ESTIMATOR.md`). `Estimator/Bound/Cbd`, `Estimator/Bound/CbdQ`:
+  certified lower bounds at `CBD(16)` laws (`q = 2^e`, one sample count; any `q ≥ 2^1024` given
+  `log₂ q`, a range of sample counts).
 * `Hardness`: an earlier conservative bound, kept as a cross-check (`docs/LWE_HARDNESS.md`).
 * `Trapdoor`: the ideal preimage distribution and trapdoor samplers (`Trapdoor.Exists`);
   `Trapdoor/Family`: a sampler for one parameter family (`Trapdoor.Family.exists_sampler`).
