@@ -1,9 +1,9 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VM
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.RingVM
 
 /-!
 # Reasoning about codes of the ring-word machine
 
-Tools for the semantics `RingVM.exec` of `SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VM`:
+Tools for the semantics `RingVM.exec` of `SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.RingVM`:
 
 * `wr c`: the registers a code may write; **`exec_not_mem`**: the others are unchanged;
 * **`exec_rep_inv`**: a loop `rep c body` whose body leaves the counter `c` alone, by an invariant

@@ -4,7 +4,7 @@ import SigabaNeo.Lib.Machines.Prog.CoinFreeX
 /-!
 # Well-formedness of compiled ring-word codes
 
-`compile c` (`SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VM`) is well formed (every loop body leaves
+`compile c` (`SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.RingVM`) is well formed (every loop body leaves
 its counter tape alone) when every `rep t body` of `c` has `t ∉ wr body` (`loopOkB`,
 **`wf_compile`**), and it is coin-free (**`coinFree_compile`**), so its machine is deterministic.
 -/

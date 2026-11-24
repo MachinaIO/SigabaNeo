@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VM
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.RingVM
 import SigabaNeo.Lib.Machines.Prog.FrameSize
 
 /-!

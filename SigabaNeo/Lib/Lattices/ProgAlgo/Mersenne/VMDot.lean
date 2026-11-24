@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMRing
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.RingVMRing
 
 /-!
 # The digit dot product on the ring-word machine

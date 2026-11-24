@@ -1,10 +1,10 @@
 import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Bounds
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VM
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.RingVM
 
 /-!
 # Cost certificates of the programs of the ring-word machine
 
-The instructions of `RingVM` (`SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VM`) run the Mersenne
+The instructions of `RingVM` (`SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.RingVM`) run the Mersenne
 programs on the **operation area**, whose scratch tapes are not blank between instructions as far
 as the per-tape length bounds know (the abstract interpreter bounds them by the top size only). So
 the certificates here take every scratch tape at the top size `pTop` (and give the same sweep
