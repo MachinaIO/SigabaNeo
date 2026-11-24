@@ -352,3 +352,75 @@ input frames (`ufChunk`/`dropChunk` of `DualUse/Prog/EncP`), sample the coins in
 doublings) used for `b` (`z = 0`), `h_k` (`z = (s_k, 1)`), `c^aut_{t,d}`
 (`z = digit_d(C_t)·(σ_t s, 1)`), `C^in_t` bottom rows (`A = (−a_t ; 0)`-style, `z = −X^{w x_t}(s,1)`),
 `c^in_{t,d}`, `c₀` (`z = (s, 1)`); `c_m = s d₁ + d₂ + e_m + 2^{K−1} μ`.
+
+### Package F3 (the `KeyGen` machine) — status (branch `t3/explut-f3`)
+
+**Design: a register machine on ring words.** `KeyGen` is far too large for hand-plumbed tape
+programs (nested loops five deep over `16` steps, `W = 2^22` coefficients, `b = 22` rounds,
+`16K³` digit products per `Mul`), so it is written as code of a small VM whose semantics is a
+pure function, and every routine is proved once at the level of lists of ring elements.
+
+* `Lib/Lattices/ProgAlgo/Mersenne/VM.lean` — **`MVM.Code`**: `64` word registers;
+  `op o d a b` for `o ∈ {add, sub, mul, neg, aut, rho, rot, dig}` (the Mersenne programs `addRMP`,
+  `subRMP`, `mulRMP`, `notP`, `autMP` (`σ_{|b|}`), `rhoJP` (`X^{−|b|}`), `rotBP` (`2^{K−|b|}`),
+  `digitRWP` (digit `|b|`)), each result **canonicalized** (`canonRP`); word moves `mv` (shift `|c|`
+  bits), `mvR` (shift `N K` bits), `cp`, `drop`, `clr`, `tl`; `rep c body`, `seq`, `ifb`, `nop`.
+  `compile : Code → XProg 105`, every instruction in a frame of its own tapes (operands loaded into
+  work tapes cut to `N K` bits, so the semantics `exec N K` is **total and exact**).
+  **`law_compile`**: the law of the compiled program on `enc N K w` is the point mass at
+  `enc N K (exec N K c w)`; **`wf_compile`** (no `rep` body writes its counter, `Code.WFc`).
+* `Mersenne/VMRing.lean` — reasoning tools: registers as **queues** `encL l` of canonical words
+  (`mvR d s` moves the head of `s` to the tail of `d`); every `op` on canonical words is the ring
+  operation (`canonW_add/sub/mul/neg/aut/rho/rot/dig`); `exec_writes` (footprints);
+  `exec_rep_inv` (loops by invariants); one-instruction `exec_*` lemmas and the tactics `vm_step`
+  (execute the head instruction of a `seq`) / `vm_simp`, which symbolically execute straight-line
+  code (register names are `@[vmreg]` abbrevs, equalities decided by `Fin.reduceEq`). Routines clear
+  their scratch registers so their effect is an exact update chain and composes by `rw`.
+* `Mersenne/VMMat.lean` — **routines with exact specifications** (all on fixed registers
+  `29 … 63`; callers use `0 … 28`):
+  * `digAccC` (`exec_digAccC`): `acc += Σ_{i<K} e_i · digit_i(x)` over the next `K` stream elements;
+  * **`mulPKC`** (`exec_mulPKC`): `EvalPK` of `Mul` with binary digits,
+    `A'_{a,j} = Σ_{(r,i)} Σ_c Ad_{(r,j,i)}[a,c] · digit_{c.2}(A_{c.1,(r,i)})` (`mulPKm`), streaming
+    the digit matrices once in the order of their word (`adL`), `(r, j, i, a, c)`; structure:
+    `iBody` (four digit accumulations), the `ι` loop, the `j` loop (partial sums as a queue),
+    the two `r` parts, a transposition (`tLoop`, `tOut`);
+  * **`ginvMulC`** (`exec_ginvMulC`): `X · G⁻¹(Y)` (`ginvMulm`);
+  * **`autMatC`** (`exec_autMatC`): `σ_k` on every entry, `k = |rKc|`;
+  * **`autPKC`** (`exec_autPKC`): `EvalPK` of `Aut`: `H · G⁻¹(mulPK(σ_g^{m}(A), Aaut))`
+    (`m = |rP|` applications of `σ_g`).
+* `ExpLUT/Prog/KeyVM.lean` — the bridge to the scheme at the dimensions `D`: `matE_enc`,
+  `digE_enc` (the words of `Words.lean` are the queues of the routines), `mulPK_eq_mulPKm`,
+  `mul_ginv_eq`, `autMat_eq`, `aut_iterate` (`σ_g^{m} = σ_{g^m}`), **`autPK_eq`**.
+  Axioms of all of these: `[propext, Classical.choice, Quot.sound]`.
+
+**Plan for the rest of `KeyGen`** (not done):
+
+1. *`A_j` without `W`-sized queues.* `roundsPK P A b j` applies `autPK_t` for the set bits `t` of `j`
+   in increasing order (`roundsPK (t+1) j = autPK_t (roundsPK t (j − 2^t))` for `j ≥ 2^t`), so
+   `lutPK = Σ_{j<W} smulPK(α_j, A_j)` is computed as one loop over `j` with a `b`-bit binary counter:
+   for each `t` either `autPKC` (with `σ_{kf t} = σ_g^{2^t}`, `kf t = idx(2^t) = g^{2^t}`, `|rP| = 2^t`
+   kept by doubling: `x := T; drop x p; drop x p; p := T; drop p x`), or skip the stream block
+   `Aaut_t` (`drop` with a template of `16K³ N K` bits). Cost `≈ (b/2) W` `autPK` per step instead of
+   `W`; no queue of `W` matrices. Needs the math lemma `roundsPK = ` the bit chain (pure algebra).
+2. *Coefficients.* `α_j = W⁻¹ Σ_u X^{L(u)} μ_j^u`, `μ_j = σ_{g^j}(X^{−1}) = σ_g(μ_{j−1})`
+   (`aut` with `|count| = g`), `X^{L(u)}` from the `14` bits of the table entry (LSB first, `ifb`/`tl`
+   on the predicate word) times a queue of `X^{2^i}`; `W⁻¹ = 2^{K−b}` by `rot` with `|count| = b`;
+   the last table gives `v_j` (`L(u) ∈ {0, 1}`). `smulPK(α, A) = A · G⁻¹(αG)` with `ginvMulC`
+   (`αG` built by doublings `rot` with `|count| = K − 1`).
+3. *Steps.* `16` steps: `mulPKC` with `A^in_i` (stream of `mpk`), then the `j` loop of 1–2;
+   `15` `α`-steps and one `v`-step; result `keyPK`.
+4. *Box try.* The coins `p ← Big` (a sampler parameter like `RingSampler`, giving the word of
+   `kb.emb c` from `mB` fair bits), `y = d₁δ₁ − pubShort p` row by row (the blocks of `M_F`:
+   `Σ_w σ_i(B_{0,w}) p_{i,w}`, `Σ_{k,c} σ_i(H_k[0,c]) p_{i,k,c}`, `− Σ_k Σ_j 2^j p_{i − je k, k, (0,j)}`,
+   `A_F⁽¹⁾ · p_last` on row `0`), `z = gadDec y` (`dig`), `x = p − realTrap T z`
+   (`σ_{idx i}(T_{w,c})`), the test `x ∈ Small` (a test-program parameter), the output
+   `mpk ++ assemble x z` or the zero key.
+5. *The machine.* An `XProg` around the VM phases: parse `encodeTuple [pw, msk, C]`, the length
+   guard (**`KeyLongSpec`** of package G: `encodeTuple []` on predicate words longer than `L`),
+   `|C| = predLen` else the zero key, the templates (`natP`), the coins, the framed output;
+   **`KeySpec kb L`** for a `KeyBoxes Dc` value satisfying **`KbCover kb (2^18500)`** (package G;
+   `famBig`/`famBall` boxes of `RingBoxes`).
+6. *Costs.* Per-instruction clocks from the frames (`XProg.timeBoundT_frame` and the Mersenne
+   `MersenneT` bounds), loops by `timeBoundT_loop_le`; estimate at `Conf`: the `Aaut_t` stream passes
+   dominate, `16 · 2^22 · 11 · 2^184 ≈ 2^214` steps; `descLen` from `XProg.size` of the compiled code
+   (a few thousand instructions, `105` tapes).
