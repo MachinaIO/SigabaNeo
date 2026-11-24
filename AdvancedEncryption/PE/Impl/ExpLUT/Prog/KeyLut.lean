@@ -530,7 +530,7 @@ theorem length_adL (Ad : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) :
   ring
 
 /-- The registers a chain reads. -/
-structure ChainIn (w : St) (g b j : ℕ) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
+structure ChainIn (w : St) (g b : ℕ) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
     (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) : Prop where
   kc : w rKc = List.replicate g false
   aw : w rAautW = encL N K (aautL Aa (List.range b))
@@ -538,7 +538,6 @@ structure ChainIn (w : St) (g b j : ℕ) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin
   bit1 : w rBit1 = [false]
   tb : w rTb = List.replicate b false
   blk : w rTBlk = List.replicate (16 * K ^ 3 * (N * K)) false
-  jw : w rJ = encRM N K (j : Rq N K)
   tm : MulTmpl N K w
 
 theorem chBody_writes_ge : ∀ r : Fin 64, 57 ≤ r.val → chBody.writes r = false := by decide
@@ -560,7 +559,8 @@ theorem chainM_succ (g : ℕ) (Hf : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
 theorem exec_chainLoop (hN : 0 < N) (hK : 0 < K) (w : St) (g b j : ℕ) (hg : 0 < g)
     (hj : j < 2 ^ K - 1) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
     (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (B : Fin 2 → Fin 2 × Fin K → Rq N K)
-    (hin : ChainIn w g b j Hf Hi Aa) (hMA : w rMA = encL N K (matL B))
+    (hin : ChainIn w g b Hf Hi Aa) (hJ : w rJ = encRM N K (j : Rq N K))
+    (hMA : w rMA = encL N K (matL B))
     (hSs : w rSs = encL N K (aautL Aa (List.range b)))
     (hHs : w rHs = encL N K (hL Hf Hi (List.range b))) (hP2 : w rPw2 = [false])
     (hCt : w rCt = List.replicate b false) :
@@ -583,7 +583,7 @@ theorem exec_chainLoop (hN : 0 < N) (hK : 0 < K) (w : St) (g b j : ℕ) (hg : 0 
     have fTb : w' rTb = List.replicate b false := by rw [hfr _ (by decide) (by decide), hin.tb]
     have fBlk : w' rTBlk = List.replicate (16 * K ^ 3 * (N * K)) false := by
       rw [hfr _ (by decide) (by decide), hin.blk]
-    have fJ : w' rJ = encRM N K (j : Rq N K) := by rw [hfr _ (by decide) (by decide), hin.jw]
+    have fJ : w' rJ = encRM N K (j : Rq N K) := by rw [hfr _ (by decide) (by decide), hJ]
     have hT : MulTmpl N K (Function.update w' rCt (w' rCt).tail) :=
       hT'.of_writes fun r hr => Function.update_of_ne (by intro e; subst e; simp at hr) _ _
     have h4K := hT'.t4KNK
@@ -656,5 +656,235 @@ theorem exec_chainLoop (hN : 0 < N) (hK : 0 < K) (w : St) (g b j : ℕ) (hg : 0 
         rw [encL_append, drop_encL' _ _ (length_adL _)]
       · simp [q3]
       · simp [q6, pow_succ, mul_two]
+
+theorem chainC_writes : ∀ r : Fin 64, chainC.writes r = true →
+    r = rSs ∨ r = rHs ∨ r = rPw2 ∨ r = rCt ∨ 29 ≤ r.val ∧ r.val < 57 := by decide
+
+theorem ChainIn.of_writes {w w' : St} {g b : ℕ} {Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K}
+    {Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K} (h : ChainIn w g b Hf Hi Aa)
+    (hw : ∀ r : Fin 64, (r.val < 29 ∨ r = rKc ∨ 57 ≤ r.val) → r ≠ rSs → r ≠ rHs → r ≠ rPw2 →
+      r ≠ rCt → w' r = w r) : ChainIn w' g b Hf Hi Aa :=
+  ⟨by rw [hw _ (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h.kc,
+   by rw [hw _ (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h.aw,
+   by rw [hw _ (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h.hw,
+   by rw [hw _ (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h.bit1,
+   by rw [hw _ (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h.tb,
+   by rw [hw _ (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h.blk,
+   h.tm.of_writes fun r hr => hw r (Or.inr (Or.inr hr)) (by intro e; subst e; simp at hr)
+     (by intro e; subst e; simp at hr) (by intro e; subst e; simp at hr)
+     (by intro e; subst e; simp at hr)⟩
+
+/-- **`chainC` computes `A_j`** from `B` in `rMA`. -/
+theorem exec_chainC (hN : 0 < N) (hK : 0 < K) (w : St) (g b j : ℕ) (hg : 0 < g)
+    (hj : j < 2 ^ K - 1) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (B : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (hin : ChainIn w g b Hf Hi Aa) (hJ : w rJ = encRM N K (j : Rq N K))
+    (hMA : w rMA = encL N K (matL B)) :
+    exec N K chainC w rMA = encL N K (matL (chainM g Hf Aa b j B)) := by
+  unfold chainC
+  rw [exec_seq, exec_seq, exec_seq, exec_seq]
+  set w1 := exec N K (.cp rCt rTb) (exec N K (.cp rPw2 rBit1) (exec N K (.cp rHs rHW)
+    (exec N K (.cp rSs rAautW) w))) with hw1
+  have hin1 : ChainIn w1 g b Hf Hi Aa := hin.of_writes fun r _ h1 h2 h3 h4 => by
+    rw [hw1]; vm_simp
+    rw [Function.update_of_ne h4, Function.update_of_ne h3, Function.update_of_ne h2,
+      Function.update_of_ne h1]
+  exact exec_chainLoop hN hK w1 g b j hg hj Hf Hi Aa B hin1 (by rw [hw1]; vm_simp; simp [hJ])
+    (by rw [hw1]; vm_simp; simp [hMA]) (by rw [hw1]; vm_simp; simp [hin.aw])
+    (by rw [hw1]; vm_simp; simp [hin.hw]) (by rw [hw1]; vm_simp; simp [hin.bit1])
+    (by rw [hw1]; vm_simp; simp [hin.tb])
+
+/-! ### The table: the loop over `j` -/
+
+/-- The registers the `j` loop only reads: the caller's registers but `rAcc`, `rJ`, `rMu`,
+`rCj2`, `rAl`, `rSs`, `rHs`, `rCt`, `rPw2`, and `rKc`, the templates `57 … 63`. -/
+def roJ (r : Fin 64) : Bool :=
+  (decide (r.val < 29) && !([5, 6, 7, 9, 11, 12, 13, 14, 15] : List ℕ).contains r.val) ||
+    r == rKc || decide (57 ≤ r.val)
+
+/-- One `j`: the coefficient (`cf`, into `rAl`), `A_j`, `rAcc += A_j G⁻¹(α G)`, `μ := σ_g(μ)`,
+`j := j + 1`. -/
+def jBodyK (cf : Code) : Code :=
+  .seq cf <| .seq (.cp rMA rB) <| .seq chainC <| .seq (.cp rGX rMA) <| .seq agC <|
+  .seq ginvMulC <| .seq matAddC <| .seq (.op .aut rMu rMu rKc) (.op .add rJ rJ rOne)
+
+/-- A coefficient routine: writes `rAl` and the scratch registers `35 … 40` only. -/
+def CoefW (cf : Code) : Prop := ∀ r : Fin 64, cf.writes r = true → r = rAl ∨ (35 ≤ r.val ∧ r.val ≤ 40)
+
+theorem jBodyK_writes (cf : Code) (hcf : CoefW cf) :
+    ∀ r : Fin 64, roJ r = true → (jBodyK cf).writes r = false := by
+  intro r hr
+  have h1 : cf.writes r = false := by
+    by_contra h
+    rcases hcf r (by simpa using h) with e | ⟨a, b⟩
+    · subst e; simp [roJ] at hr
+    · have key : ∀ r : Fin 64, 35 ≤ r.val → r.val ≤ 40 → roJ r = false := by decide
+      rw [key r a b] at hr; exact absurd hr (by simp)
+  have h2 : ∀ r : Fin 64, roJ r = true → (jBodyK .nop).writes r = false := by decide
+  have := h2 r hr
+  simp only [jBodyK, Code.writes, Bool.or_eq_false_iff] at this ⊢
+  exact ⟨h1, this.2⟩
+
+theorem ChainIn.of_roJ {w w' : St} {g b : ℕ} {Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K}
+    {Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K} (h : ChainIn w g b Hf Hi Aa)
+    (hw : ∀ r : Fin 64, roJ r = true → w' r = w r) : ChainIn w' g b Hf Hi Aa :=
+  ⟨by rw [hw _ (by decide)]; exact h.kc, by rw [hw _ (by decide)]; exact h.aw,
+   by rw [hw _ (by decide)]; exact h.hw, by rw [hw _ (by decide)]; exact h.bit1,
+   by rw [hw _ (by decide)]; exact h.tb, by rw [hw _ (by decide)]; exact h.blk,
+   h.tm.of_writes fun r hr => hw r (by simp [roJ, hr])⟩
+
+/-- A code that never writes the registers of `roJ` keeps them. -/
+theorem roJ_frame (c : Code) (hc : ∀ r : Fin 64, roJ r = true → c.writes r = false) {w w0 : St}
+    (h : ∀ r : Fin 64, roJ r = true → w r = w0 r) :
+    ∀ r : Fin 64, roJ r = true → exec N K c w r = w0 r :=
+  fun r hr => by rw [exec_writes _ _ _ (hc r hr), h r hr]
+
+theorem CoefW.frame {cf : Code} (hcf : CoefW cf) (w : St) (r : Fin 64) (h1 : r ≠ rAl)
+    (h2 : r.val < 35 ∨ 40 < r.val) : exec N K cf w r = w r := by
+  refine exec_writes _ _ _ ?_
+  by_contra h
+  rcases hcf r (by simpa using h) with e | ⟨a, b⟩
+  · exact h1 e
+  · omega
+
+theorem CoefW.ro {cf : Code} (hcf : CoefW cf) : ∀ r : Fin 64, roJ r = true → cf.writes r = false := by
+  intro r hr
+  by_contra h
+  rcases hcf r (by simpa using h) with e | ⟨a, b⟩
+  · subst e; simp [roJ] at hr
+  · have key : ∀ r : Fin 64, 35 ≤ r.val → r.val ≤ 40 → roJ r = false := by decide
+    rw [key r a b] at hr; exact absurd hr (by simp)
+
+/-- The table after `n` values of `j`: `Σ_{j<n} A_j G⁻¹(α_j G)`, `α_j = cv(σ_g^{j}(μ₀))`. -/
+def accM (cv : Rq N K → Rq N K) (g : ℕ) (Hf : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (b : ℕ)
+    (B : Fin 2 → Fin 2 × Fin K → Rq N K) (μ0 : Rq N K) (n : ℕ) : Fin 2 → Fin 2 × Fin K → Rq N K :=
+  ∑ j ∈ Finset.range n, ginvMulm (chainM g Hf Aa b j B) (gM (cv ((aut N g)^[j] μ0)))
+
+theorem jBodyK_writes_rCj2 (cf : Code) (hcf : CoefW cf) : (jBodyK cf).writes rCj2 = false := by
+  have h1 : cf.writes rCj2 = false := by
+    cases hw : cf.writes rCj2
+    · rfl
+    · rcases hcf _ hw with e | ⟨a, b⟩
+      · exact absurd e (by decide)
+      · simp at a
+  have h2 : (jBodyK .nop).writes rCj2 = false := by decide
+  simp only [jBodyK, Code.writes, Bool.or_eq_false_iff] at h2 ⊢
+  exact ⟨h1, h2.2⟩
+
+/-- **The loop over `j`**: `rAcc := Σ_{j<n} A_j G⁻¹(α_j G)`. -/
+theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
+    (cv : Rq N K → Rq N K) (w : St)
+    (hcf : ∀ w' : St, (∀ r : Fin 64, roJ r = true → w' r = w r) → ∀ μ : Rq N K,
+      w' rMu = encRM N K μ → exec N K cf w' rAl = encRM N K (cv μ))
+    (g b n : ℕ) (hg : 0 < g) (hn : n ≤ 2 ^ K - 1) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (B : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (μ0 : Rq N K) (hin : ChainIn w g b Hf Hi Aa) (hB : w rB = encL N K (matL B))
+    (hO : w rOne = encRM N K 1) (h4K : w rT4K = List.replicate (4 * K) false)
+    (hAcc : w rAcc = encL N K (matL (fun _ _ => 0))) (hJ : w rJ = encRM N K 0)
+    (hMu : w rMu = encRM N K μ0) (hC : w rCj2 = List.replicate n false) :
+    exec N K (.rep rCj2 (jBodyK cf)) w rAcc = encL N K (matL (accM cv g Hf Aa b B μ0 n)) := by
+  have key := exec_rep_inv2 (N := N) (K := K) rCj2 (jBodyK cf) (jBodyK_writes_rCj2 cf hcfw)
+    (fun j w' => w' rAcc = encL N K (matL (accM cv g Hf Aa b B μ0 j)) ∧
+      w' rJ = encRM N K (j : Rq N K) ∧ w' rMu = encRM N K ((aut N g)^[j] μ0)) w
+    ⟨by simp only [accM, Finset.sum_range_zero]; exact hAcc, by simpa using hJ,
+      by simpa using hMu⟩ ?_
+  · rw [hC, List.length_replicate] at key
+    exact key.1
+  · intro j w' hj hP _ hfr
+    rw [hC, List.length_replicate] at hj
+    obtain ⟨p1, p2, p3⟩ := hP
+    generalize hW0 : Function.update w' rCj2 (w' rCj2).tail = W0
+    have f0 : ∀ r : Fin 64, roJ r = true → W0 r = w r := fun r hr => by
+      have hr' : r ≠ rCj2 := by intro e; subst e; simp [roJ] at hr
+      rw [← hW0, Function.update_of_ne hr', hfr r (jBodyK_writes cf hcfw r hr) hr']
+    have q1 : W0 rAcc = encL N K (matL (accM cv g Hf Aa b B μ0 j)) := by
+      rw [← hW0, Function.update_of_ne (by decide), p1]
+    have q2 : W0 rJ = encRM N K (j : Rq N K) := by rw [← hW0, Function.update_of_ne (by decide), p2]
+    have q3 : W0 rMu = encRM N K ((aut N g)^[j] μ0) := by
+      rw [← hW0, Function.update_of_ne (by decide), p3]
+    unfold jBodyK
+    simp only [exec_seq]
+    -- the coefficient
+    generalize hW1 : exec N K cf W0 = W1
+    have c1 : W1 rAl = encRM N K (cv ((aut N g)^[j] μ0)) := hW1 ▸ hcf W0 f0 _ q3
+    have g1 : ∀ r : Fin 64, roJ r = true → W1 r = w r :=
+      hW1 ▸ roJ_frame (N := N) (K := K) cf hcfw.ro f0
+    have a1 : W1 rAcc = W0 rAcc := hW1 ▸ hcfw.frame _ _ (by decide) (by decide)
+    have j1 : W1 rJ = W0 rJ := hW1 ▸ hcfw.frame _ _ (by decide) (by decide)
+    have m1 : W1 rMu = W0 rMu := hW1 ▸ hcfw.frame _ _ (by decide) (by decide)
+    -- `A_j`
+    generalize hW2 : exec N K (.cp rMA rB) W1 = W2
+    have g2 : ∀ r : Fin 64, roJ r = true → W2 r = w r :=
+      hW2 ▸ roJ_frame (N := N) (K := K) (.cp rMA rB) (by decide) g1
+    have c2 : W2 rMA = encL N K (matL B) := by rw [← hW2]; vm_simp; simp [g1 rB (by decide), hB]
+    have j2 : W2 rJ = encRM N K (j : Rq N K) := by rw [← hW2]; vm_simp; simp [j1, q2]
+    have w2 : ∀ r : Fin 64, (r = rAl ∨ r = rAcc ∨ r = rJ ∨ r = rMu) → W2 r = W1 r := by
+      intro r hr
+      rw [← hW2, exec_cp, Function.update_of_ne (by rcases hr with rfl | rfl | rfl | rfl <;> decide)]
+    generalize hW3 : exec N K chainC W2 = W3
+    have c3 : W3 rMA = encL N K (matL (chainM g Hf Aa b j B)) :=
+      hW3 ▸ exec_chainC hN hK W2 g b j hg (by omega) Hf Hi Aa B (hin.of_roJ g2) j2 c2
+    have g3 : ∀ r : Fin 64, roJ r = true → W3 r = w r :=
+      hW3 ▸ roJ_frame (N := N) (K := K) chainC (by decide) g2
+    have w3 : ∀ r : Fin 64, (r = rAl ∨ r = rAcc ∨ r = rJ ∨ r = rMu) → W3 r = W1 r := by
+      intro r hr
+      rw [← hW3, exec_writes _ _ _ (by rcases hr with rfl | rfl | rfl | rfl <;> decide), w2 r hr]
+    -- `α G`, `A_j G⁻¹(α G)`
+    generalize hW4 : exec N K (.cp rGX rMA) W3 = W4
+    have g4 : ∀ r : Fin 64, roJ r = true → W4 r = w r :=
+      hW4 ▸ roJ_frame (N := N) (K := K) (.cp rGX rMA) (by decide) g3
+    have w4 : ∀ r : Fin 64, (r = rAl ∨ r = rAcc ∨ r = rJ ∨ r = rMu) → W4 r = W1 r := by
+      intro r hr
+      rw [← hW4, exec_cp, Function.update_of_ne (by rcases hr with rfl | rfl | rfl | rfl <;> decide),
+        w3 r hr]
+    have x4 : W4 rGX = encL N K (matL (chainM g Hf Aa b j B)) := by
+      rw [← hW4]; vm_simp; simp [c3]
+    generalize hW5 : exec N K agC W4 = W5
+    have c5 : W5 rMA = encL N K (matL (gM (cv ((aut N g)^[j] μ0)))) :=
+      hW5 ▸ exec_agC hK W4 _ (by rw [w4 rAl (by decide), c1])
+        (hin.tm.of_writes fun r hr => g4 r (by simp [roJ, hr]))
+    have g5 : ∀ r : Fin 64, roJ r = true → W5 r = w r :=
+      hW5 ▸ roJ_frame (N := N) (K := K) agC (by decide) g4
+    have x5 : W5 rGX = encL N K (matL (chainM g Hf Aa b j B)) := by
+      rw [← hW5, exec_writes _ _ _ (by decide), x4]
+    have w5 : ∀ r : Fin 64, (r = rAcc ∨ r = rJ ∨ r = rMu) → W5 r = W1 r := by
+      intro r hr
+      rw [← hW5, exec_writes _ _ _ (by rcases hr with rfl | rfl | rfl <;> decide),
+        w4 r (by tauto)]
+    generalize hW6 : exec N K ginvMulC W5 = W6
+    have c6 : W6 rMOut = encL N K (matL (ginvMulm (chainM g Hf Aa b j B)
+        (gM (cv ((aut N g)^[j] μ0))))) :=
+      hW6 ▸ exec_ginvMulC hK W5 _ _ x5 c5 (hin.tm.of_writes fun r hr => g5 r (by simp [roJ, hr]))
+    have g6 : ∀ r : Fin 64, roJ r = true → W6 r = w r :=
+      hW6 ▸ roJ_frame (N := N) (K := K) ginvMulC (by decide) g5
+    have w6 : ∀ r : Fin 64, (r = rAcc ∨ r = rJ ∨ r = rMu) → W6 r = W1 r := by
+      intro r hr
+      rw [← hW6, exec_writes _ _ _ (by rcases hr with rfl | rfl | rfl <;> decide), w5 r hr]
+    -- `rAcc += …`
+    generalize hW7 : exec N K matAddC W6 = W7
+    have c7 := exec_matAddC hK W6 (matL (accM cv g Hf Aa b B μ0 j))
+      (matL (ginvMulm (chainM g Hf Aa b j B) (gM (cv ((aut N g)^[j] μ0))))) (4 * K)
+      (by simp) (by simp)
+      (by rw [w6 _ (by decide), a1, q1]) c6
+      (by rw [g6 _ (by decide), h4K]) (by rw [g6 _ (by decide), hin.tm.z])
+    rw [hW7] at c7
+    have w7 : ∀ r : Fin 64, (r = rJ ∨ r = rMu) → W7 r = W1 r := by
+      intro r hr
+      rw [← hW7, exec_writes _ _ _ (by rcases hr with rfl | rfl <;> decide), w6 r (by tauto)]
+    have g7 : ∀ r : Fin 64, roJ r = true → W7 r = w r :=
+      hW7 ▸ roJ_frame (N := N) (K := K) matAddC (by decide) g6
+    vm_simp
+    refine ⟨?_, ?_, ?_⟩
+    · simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte]
+      rw [c7, ← matL_add hK]
+      congr 2
+      funext a c
+      simp [accM, Finset.sum_range_succ]
+    · simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, w7 rJ (by decide), j1, q2,
+        g7 rOne (by decide), hO, takeD_encRM, canonW_add hK, Nat.cast_succ]
+    · simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, w7 rMu (by decide), m1, q3,
+        takeD_encRM, g7 rKc (by decide), hin.kc, List.length_replicate]
+      rw [canonW_aut hK hN hg, Function.iterate_succ_apply']
 
 end AdvancedEncryption.ExpLUT.Prog
