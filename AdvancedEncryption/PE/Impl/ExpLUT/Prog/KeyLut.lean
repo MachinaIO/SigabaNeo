@@ -887,4 +887,294 @@ theorem exec_jLoopK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
         takeD_encRM, g7 rKc (by decide), hin.kc, List.length_replicate]
       rw [canonW_aut hK hN hg, Function.iterate_succ_apply']
 
+/-! ### One step: `Mul` by `A^in_i`, then the table -/
+
+theorem matL_zero : matL (fun _ _ => (0 : Rq N K)) = List.replicate (2 * (2 * K)) 0 := by
+  rw [matL, enum_fin2]
+  simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, List.map_const',
+    length_enum_col, List.replicate_append_replicate]
+  congr 1; ring
+
+/-- The registers a coefficient routine reads. -/
+def roC (r : Fin 64) : Bool := ([3, 18, 20, 21, 22, 23, 24, 63] : List ℕ).contains r.val
+
+theorem roJ_of_roC : ∀ r : Fin 64, roC r = true → roJ r = true := by decide
+
+/-- Before the loop over `j`: `rB := mulPK(rA, A^in_i)`, the accumulator, `j`, `μ`. -/
+def stepPre : Code :=
+  .seq (.cp rMA rA) <| .seq (.cp rMAd rAinS) <| .seq mulPKC <| .seq (.cp rAinS rMAd) <|
+  .seq (.cp rB rMOut) <| .seq (.cp rAcc rT4KNK) <| .seq (.cp rJ rZ) <| .seq (.cp rMu rMu0)
+    (.cp rCj2 rTW)
+
+/-- **One step** with the coefficient routine `cf`: `rA := LUT(mulPK(rA, A^in_i))`, the table
+stream advanced by `|rTtab|` bits. -/
+def stepK (cf : Code) : Code :=
+  .seq stepPre <| .seq (.rep rCj2 (jBodyK cf)) <| .seq (.cp rA rAcc) (.drop rCs rTtab)
+
+/-- The registers of a step (read only). -/
+structure StepIn (w : St) (g b n tl : ℕ) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (μ0 : Rq N K) : Prop where
+  ch : ChainIn w g b Hf Hi Aa
+  one : w rOne = encRM N K 1
+  mu0 : w rMu0 = encRM N K μ0
+  t4K : w rT4K = List.replicate (4 * K) false
+  tw : w rTW = List.replicate n false
+  ttab : w rTtab = List.replicate tl false
+
+/-- The registers no step writes. -/
+def roS (r : Fin 64) : Bool := ([1, 2, 10, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31,
+  57, 58, 59, 60, 61, 62, 63] : List ℕ).contains r.val
+
+theorem StepIn.of_roS {w w' : St} {g b n tl : ℕ} {Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K}
+    {Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K} {μ0 : Rq N K}
+    (h : StepIn w g b n tl Hf Hi Aa μ0) (hw : ∀ r : Fin 64, roS r = true → r ≠ rCst → w' r = w r) :
+    StepIn w' g b n tl Hf Hi Aa μ0 :=
+  ⟨⟨by rw [hw _ (by decide) (by decide)]; exact h.ch.kc,
+    by rw [hw _ (by decide) (by decide)]; exact h.ch.aw,
+    by rw [hw _ (by decide) (by decide)]; exact h.ch.hw,
+    by rw [hw _ (by decide) (by decide)]; exact h.ch.bit1,
+    by rw [hw _ (by decide) (by decide)]; exact h.ch.tb,
+    by rw [hw _ (by decide) (by decide)]; exact h.ch.blk,
+    h.ch.tm.of_writes fun r hr => hw r (by revert r; decide) (by intro e; subst e; simp at hr)⟩,
+   by rw [hw _ (by decide) (by decide)]; exact h.one, by rw [hw _ (by decide) (by decide)]; exact h.mu0,
+   by rw [hw _ (by decide) (by decide)]; exact h.t4K, by rw [hw _ (by decide) (by decide)]; exact h.tw,
+   by rw [hw _ (by decide) (by decide)]; exact h.ttab⟩
+
+theorem stepK_writes (cf : Code) (hcf : CoefW cf) : ∀ r : Fin 64, roS r = true →
+    (stepK cf).writes r = false := by
+  intro r hr
+  have h1 : cf.writes r = false := by
+    cases hw : cf.writes r
+    · rfl
+    · rcases hcf r hw with e | ⟨a, b⟩
+      · subst e; exact absurd hr (by decide)
+      · have key : ∀ r : Fin 64, 35 ≤ r.val → r.val ≤ 40 → roS r = false := by decide
+        rw [key r a b] at hr; exact absurd hr (by simp)
+  have h2 : ∀ r : Fin 64, roS r = true → (stepK .nop).writes r = false := by decide
+  have := h2 r hr
+  simp only [stepK, jBodyK, Code.writes, Bool.or_eq_false_iff] at this ⊢
+  exact ⟨this.1, ⟨⟨this.2.1.1, h1, this.2.1.2.2⟩, this.2.2⟩⟩
+
+/-- **One step**: `rA := Σ_{j<n} A_j G⁻¹(α_j G)` for `B = mulPK(rA, A^in_i)`. -/
+theorem exec_stepK (hN : 0 < N) (hK : 0 < K) (cf : Code) (hcfw : CoefW cf)
+    (cv : Rq N K → Rq N K) (w : St)
+    (hcf : ∀ w' : St, (∀ r : Fin 64, roC r = true → w' r = w r) → ∀ μ : Rq N K,
+      w' rMu = encRM N K μ → exec N K cf w' rAl = encRM N K (cv μ))
+    (g b n tl : ℕ) (hg : 0 < g) (hn : n ≤ 2 ^ K - 1) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (μ0 : Rq N K)
+    (hin : StepIn w g b n tl Hf Hi Aa μ0) (A : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Ad : DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (rest : List (Rq N K))
+    (hA : w rA = encL N K (matL A)) (hS : w rAinS = encL N K (adL Ad ++ rest)) :
+    exec N K (stepK cf) w rA = encL N K (matL (accM cv g Hf Aa b (mulPKm A Ad) μ0 n)) ∧
+    exec N K (stepK cf) w rAinS = encL N K rest ∧
+    exec N K (stepK cf) w rCs = (w rCs).drop tl := by
+  unfold stepK
+  simp only [exec_seq]
+  generalize hW1 : exec N K stepPre w = W1
+  have r1 : ∀ r : Fin 64, (roS r = true ∨ r = rCs) → W1 r = w r := by
+    intro r hr
+    have hw : stepPre.writes r = false := by
+      rcases hr with hr | rfl
+      · exact (by decide : ∀ r : Fin 64, roS r = true → stepPre.writes r = false) r hr
+      · decide
+    rw [← hW1, exec_writes _ _ _ hw]
+  have hT := hin.ch.tm
+  -- `mulPK`
+  have hm : W1 rB = encL N K (matL (mulPKm A Ad)) ∧ W1 rAinS = encL N K rest ∧
+      W1 rAcc = encL N K (matL (fun _ _ => 0)) ∧ W1 rJ = encRM N K 0 ∧
+      W1 rMu = encRM N K μ0 ∧ W1 rCj2 = List.replicate n false := by
+    rw [← hW1]
+    unfold stepPre
+    simp only [exec_seq]
+    generalize hV : exec N K (.cp rMAd rAinS) (exec N K (.cp rMA rA) w) = V
+    have hVMA : V rMA = encL N K (matL A) := by rw [← hV]; vm_simp; simp [hA]
+    have hVMAd : V rMAd = encL N K (adL Ad ++ rest) := by rw [← hV]; vm_simp; simp [hS]
+    have hVT : MulTmpl N K V := hT.of_writes fun r hr => by
+      rw [← hV]; vm_simp
+      rw [Function.update_of_ne (by intro e; subst e; simp at hr),
+        Function.update_of_ne (by intro e; subst e; simp at hr)]
+    obtain ⟨m1, m2⟩ := exec_mulPKC hK V A Ad rest hVMA hVMAd hVT
+    have mT : MulTmpl N K (exec N K mulPKC V) :=
+      hVT.of_writes fun r hr => exec_writes _ _ _ (mulPKC_writes_ge r hr)
+    have m0 : exec N K mulPKC V rMu0 = encRM N K μ0 := by
+      rw [exec_writes _ _ _ (by decide), ← hV]; vm_simp; simp [hin.mu0]
+    have mW : exec N K mulPKC V rTW = List.replicate n false := by
+      rw [exec_writes _ _ _ (by decide), ← hV]; vm_simp; simp [hin.tw]
+    vm_simp
+    simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, m1, m2, mT.t4KNK, mT.z, m0, mW,
+      true_and]
+    rw [matL_zero]; exact ⟨rfl, trivial⟩
+  obtain ⟨b1, b2, b3, b4, b5, b6⟩ := hm
+  have hin1 : StepIn W1 g b n tl Hf Hi Aa μ0 := hin.of_roS fun r hr _ => r1 r (Or.inl hr)
+  -- the loop over `j`
+  generalize hW2 : exec N K (.rep rCj2 (jBodyK cf)) W1 = W2
+  have l2 := exec_jLoopK hN hK cf hcfw cv W1
+    (fun w' hw' μ hμ => hcf w' (fun r hr => by rw [hw' r (roJ_of_roC r hr),
+      r1 r (by revert r; decide)]) μ hμ)
+    g b n hg hn Hf Hi Aa (mulPKm A Ad) μ0 hin1.ch b1 hin1.one hin1.t4K b3 b4 b5 b6
+  rw [hW2] at l2
+  have s2 : W2 rAinS = encL N K rest := by
+    rw [← hW2, exec_writes _ _ _ (by have := jBodyK_writes cf hcfw rAinS (by decide); simp [Code.writes, this]), b2]
+  have c2 : W2 rCs = w rCs := by
+    rw [← hW2, exec_writes _ _ _ (by have := jBodyK_writes cf hcfw rCs (by decide); simp [Code.writes, this]), r1 _ (Or.inr rfl)]
+  have t2 : W2 rTtab = List.replicate tl false := by
+    rw [← hW2, exec_writes _ _ _ (by have := jBodyK_writes cf hcfw rTtab (by decide); simp [Code.writes, this]), hin1.ttab]
+  vm_simp
+  refine ⟨?_, ?_, ?_⟩
+  · simp [l2]
+  · simp [s2]
+  · simp [c2, t2]
+
+/-! ### The coefficient routines of the steps -/
+
+/-- The coefficient routine of an `α`-step (the table at the head of `rCs`). -/
+def cfA : Code := .seq (.cp rCp rCs) coefAC
+
+/-- The coefficient routine of the `v`-step. -/
+def cfV : Code := .seq (.cp rCp rCs) coefVC
+
+theorem coefW_cfA : CoefW cfA := by unfold CoefW; decide
+theorem coefW_cfV : CoefW cfV := by unfold CoefW; decide
+
+/-- The coefficient of an `α`-table `Cs` (entries of `e` bits, `n` entries). -/
+noncomputable def cvA (e n b : ℕ) (xc : Rq N K) (Cs : List Bool) (μ : Rq N K) : Rq N K :=
+  (2 : ZMod (2 ^ K - 1)) ^ (K - b) • (sumA Cs e n μ * xc)
+
+/-- The coefficient of a `v`-table `Cs`. -/
+noncomputable def cvV (n b : ℕ) (Cs : List Bool) (μ : Rq N K) : Rq N K :=
+  (2 : ZMod (2 ^ K - 1)) ^ (K - b) • sumV Cs n μ
+
+/-- The templates of the coefficient routines. -/
+structure CoefIn (w : St) (e n b : ℕ) (xc : Rq N K) : Prop where
+  one : w rOne = encRM N K 1
+  xc : w rXc = encRM N K xc
+  bit1 : w rBit1 = [false]
+  te : w rTe = List.replicate e false
+  tw : w rTW = List.replicate n false
+  tb : w rTb = List.replicate b false
+  z : w rZ = encRM N K 0
+
+theorem hcf_cfA (hN : 0 < N) (hK : 0 < K) (w : St) (e n b : ℕ) (hb : b ≤ K) (xc : Rq N K)
+    (hw : CoefIn w e n b xc) :
+    ∀ w' : St, (∀ r : Fin 64, roC r = true → w' r = w r) → ∀ μ : Rq N K,
+      w' rMu = encRM N K μ → exec N K cfA w' rAl = encRM N K (cvA e n b xc (w rCs) μ) := by
+  intro w' hw' μ hμ
+  rw [cfA, exec_seq]
+  exact (exec_coefAC hN hK _ e n b hb (w rCs) μ xc (by vm_simp; simp [hw' rCs (by decide)])
+    (by vm_simp; simp [hμ]) (by vm_simp; simp [hw' rOne (by decide), hw.one])
+    (by vm_simp; simp [hw' rXc (by decide), hw.xc]) (by vm_simp; simp [hw' rBit1 (by decide), hw.bit1])
+    (by vm_simp; simp [hw' rTe (by decide), hw.te]) (by vm_simp; simp [hw' rTW (by decide), hw.tw])
+    (by vm_simp; simp [hw' rTb (by decide), hw.tb]) (by vm_simp; simp [hw' rZ (by decide), hw.z])).1
+
+theorem hcf_cfV (hK : 0 < K) (w : St) (e n b : ℕ) (hb : b ≤ K) (xc : Rq N K)
+    (hw : CoefIn w e n b xc) :
+    ∀ w' : St, (∀ r : Fin 64, roC r = true → w' r = w r) → ∀ μ : Rq N K,
+      w' rMu = encRM N K μ → exec N K cfV w' rAl = encRM N K (cvV n b (w rCs) μ) := by
+  intro w' hw' μ hμ
+  rw [cfV, exec_seq]
+  exact (exec_coefVC hK _ n b hb (w rCs) μ (by vm_simp; simp [hw' rCs (by decide)])
+    (by vm_simp; simp [hμ]) (by vm_simp; simp [hw' rOne (by decide), hw.one])
+    (by vm_simp; simp [hw' rTW (by decide), hw.tw]) (by vm_simp; simp [hw' rTb (by decide), hw.tb])
+    (by vm_simp; simp [hw' rZ (by decide), hw.z])).1
+
+/-! ### `EvalPK` -/
+
+/-- **`EvalPK` of the VM**: `A_0`, then `T − 1` steps with `α`-tables (the tables of `tl` bits of
+`C`, in order) and the last step with the `v`-table. -/
+def evalC : Code := .seq (.cp rCst rT15) <| .seq (.rep rCst (stepK cfA)) (stepK cfV)
+
+/-- The public matrices of `EvalPK` as computed by the VM (`cvs i` the coefficients of step `i`). -/
+def evalVM (cvs : ℕ → Rq N K → Rq N K) (g : ℕ) (Hf : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (b : ℕ) (μ0 : Rq N K) (n : ℕ)
+    (Ain : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (A0 : Fin 2 → Fin 2 × Fin K → Rq N K) :
+    ℕ → Fin 2 → Fin 2 × Fin K → Rq N K
+  | 0 => A0
+  | i + 1 => accM (cvs i) g Hf Aa b (mulPKm (evalVM cvs g Hf Aa b μ0 n Ain A0 i) (Ain i)) μ0 n
+
+/-- The stream of the digit matrices `A^in_i`, `i ∈ l`. -/
+def ainL (Ain : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (l : List ℕ) : List (Rq N K) :=
+  l.flatMap fun i => adL (Ain i)
+
+theorem stepK_writes_roC (cf : Code) (hcf : CoefW cf) : ∀ r : Fin 64, roC r = true → r ≠ rCs →
+    (stepK cf).writes r = false := by
+  intro r hr hrc
+  exact stepK_writes cf hcf r (by revert r; decide)
+
+/-- **`evalC` computes `EvalPK`** (`T = 16`: 15 `α`-steps and the `v`-step). -/
+theorem exec_evalC (hN : 0 < N) (hK : 0 < K) (w : St) (g b n tl e : ℕ) (hg : 0 < g)
+    (hb : b ≤ K) (hn : n ≤ 2 ^ K - 1) (Hf Hi : ℕ → Fin 2 → Fin 2 × Fin K → Rq N K)
+    (Aa : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (μ0 xc : Rq N K)
+    (hin : StepIn w g b n tl Hf Hi Aa μ0) (hco : CoefIn w e n b xc)
+    (Ain : ℕ → DigI K → Fin 2 → Fin 2 × Fin K → Rq N K) (A0 : Fin 2 → Fin 2 × Fin K → Rq N K)
+    (C : List Bool) (hA : w rA = encL N K (matL A0))
+    (hS : w rAinS = encL N K (ainL Ain (List.range 16))) (hC : w rCs = C)
+    (h15 : w rT15 = List.replicate 15 false) :
+    exec N K evalC w rA = encL N K (matL (evalVM (fun i => if i < 15 then
+      cvA e n b xc (C.drop (tl * i)) else cvV n b (C.drop (tl * 15))) g Hf Aa b μ0 n Ain A0 16)) := by
+  set cvs : ℕ → Rq N K → Rq N K := fun i => if i < 15 then
+      cvA e n b xc (C.drop (tl * i)) else cvV n b (C.drop (tl * 15)) with hcvs
+  unfold evalC
+  simp only [exec_seq]
+  generalize hW1 : exec N K (.cp rCst rT15) w = W1
+  have r1 : ∀ r : Fin 64, r ≠ rCst → W1 r = w r := fun r hr => by
+    rw [← hW1, exec_cp, Function.update_of_ne hr]
+  have key := exec_rep_inv2 (N := N) (K := K) rCst (stepK cfA)
+    (stepK_writes cfA coefW_cfA rCst (by decide))
+    (fun i w' => w' rA = encL N K (matL (evalVM cvs g Hf Aa b μ0 n Ain A0 i)) ∧
+      w' rAinS = encL N K (ainL Ain ((List.range 16).drop i)) ∧ w' rCs = C.drop (tl * i)) W1
+    ⟨by rw [r1 _ (by decide), hA]; rfl, by rw [r1 _ (by decide), hS]; rfl,
+      by rw [r1 _ (by decide), hC]; simp⟩ ?_
+  · have hc : (W1 rCst).length = 15 := by rw [← hW1]; vm_simp; simp [h15]
+    rw [hc] at key
+    obtain ⟨k1, k2, k3⟩ := key
+    generalize hW2 : exec N K (.rep rCst (stepK cfA)) W1 = W2
+    rw [hW2] at k1 k2 k3
+    have f2 : ∀ r : Fin 64, roS r = true → r ≠ rCst → W2 r = w r := fun r hr hrc => by
+      have hw : (Code.rep rCst (stepK cfA)).writes r = false := by
+        simp only [Code.writes, stepK_writes cfA coefW_cfA r hr, Bool.or_false,
+          beq_eq_false_iff_ne]
+        exact Ne.symm hrc
+      rw [← hW2, exec_writes _ _ _ hw, r1 r hrc]
+    have hin2 := hin.of_roS f2
+    rw [drop_range_succ (by norm_num : 15 < 16)] at k2
+    simp only [ainL, List.flatMap_cons] at k2
+    have hco2 : CoefIn W2 e n b xc :=
+      ⟨by rw [f2 _ (by decide) (by decide), hco.one], by rw [f2 _ (by decide) (by decide), hco.xc],
+        by rw [f2 _ (by decide) (by decide), hco.bit1], by rw [f2 _ (by decide) (by decide), hco.te],
+        by rw [f2 _ (by decide) (by decide), hco.tw], by rw [f2 _ (by decide) (by decide), hco.tb],
+        by rw [f2 _ (by decide) (by decide), hco.z]⟩
+    have := (exec_stepK hN hK cfV coefW_cfV (cvV n b (W2 rCs)) W2 (hcf_cfV hK W2 e n b hb xc hco2)
+      g b n tl hg hn Hf Hi Aa μ0 hin2 _ (Ain 15) _ k1 k2).1
+    rw [this, k3]
+    rfl
+  · intro i w' hi hP _ hfr
+    have hc : (W1 rCst).length = 15 := by rw [← hW1]; vm_simp; simp [h15]
+    rw [hc] at hi
+    obtain ⟨p1, p2, p3⟩ := hP
+    generalize hW0 : Function.update w' rCst (w' rCst).tail = W0
+    have f0 : ∀ r : Fin 64, roS r = true → r ≠ rCst → W0 r = w r := fun r hr hr' => by
+      rw [← hW0, Function.update_of_ne hr', hfr r (stepK_writes cfA coefW_cfA r hr) hr',
+        r1 r hr']
+    have hin0 := hin.of_roS f0
+    have hco0 : CoefIn W0 e n b xc :=
+      ⟨by rw [f0 _ (by decide) (by decide), hco.one], by rw [f0 _ (by decide) (by decide), hco.xc],
+        by rw [f0 _ (by decide) (by decide), hco.bit1], by rw [f0 _ (by decide) (by decide), hco.te],
+        by rw [f0 _ (by decide) (by decide), hco.tw], by rw [f0 _ (by decide) (by decide), hco.tb],
+        by rw [f0 _ (by decide) (by decide), hco.z]⟩
+    have q1 : W0 rA = encL N K (matL (evalVM cvs g Hf Aa b μ0 n Ain A0 i)) := by
+      rw [← hW0, Function.update_of_ne (by decide), p1]
+    have q2 : W0 rAinS = encL N K (adL (Ain i) ++ ainL Ain ((List.range 16).drop (i + 1))) := by
+      rw [← hW0, Function.update_of_ne (by decide), p2, drop_range_succ (by omega)]
+      simp [ainL]
+    have q3 : W0 rCs = C.drop (tl * i) := by rw [← hW0, Function.update_of_ne (by decide), p3]
+    obtain ⟨s1, s2, s3⟩ := exec_stepK hN hK cfA coefW_cfA (cvA e n b xc (W0 rCs)) W0
+      (hcf_cfA hN hK W0 e n b hb xc hco0) g b n tl hg hn Hf Hi Aa μ0 hin0 _ (Ain i) _ q1 q2
+    refine ⟨?_, s2, ?_⟩
+    · rw [s1, q3]
+      show _ = encL N K (matL (accM (cvs i) g Hf Aa b _ μ0 n))
+      rw [hcvs]
+      simp only [if_pos (show i < 15 by omega)]
+    · rw [s3, q3, List.drop_drop]
+      congr 1
+
 end AdvancedEncryption.ExpLUT.Prog
