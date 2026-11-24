@@ -1,5 +1,18 @@
 # Remaining completion and history obligations after the all-rank cover
 
+The [Fourier density extension](wall1_fourier_density_extension.md) reconciles
+Parts 474–476 with the stronger existing Parts 215/217 count. Density above
+10^16 at radius squared 1.21g²−2 permits a second-moment sufficient target;
+the actual selected-history collision bound remains open.
+The [full-family formulation](wall1_full_family_variance.md) removes the
+thinning choice and charges a crossing to its 100 necessary long winners,
+relaxing the aggregate moment requirement without assuming independence.
+The [collision route screen](wall1_collision_route_screen.md) quantifies two
+remaining losses: enclosing-ball lens counts lose a factor above 27.95 even
+under ideal density, and independent deletion masks incur at least q^120
+at the late cut under the conservative rank gate. Exact axial geometry or
+agreement-preserving centered estimates are needed to avoid these losses.
+
 The all-rank D32 cover has been integrated and its complete numerical pipeline
 checked. Parts420–442 below subsequently close the size18–24 cumulant
 transfer target; the selected-history law remains open. The following deductions narrow the missing mathematics; none
@@ -839,3 +852,66 @@ checker path, its SHA-256 digest and exit code. `git diff --check` passes.
 These runs validate the stated finite identities and script certificates;
 they do not constitute a full-repository Lean build, an axiom audit, or a
 proof of the unresolved production selected-history estimate.
+
+## Part 472: eliminate the fresh mark; exact geometric first moment
+
+[The old-quotient reduction](wall1_shared_mark_elimination.md) integrates the
+single fresh mark with one factor 1/h and retains all remaining old selected
+collision constraints. Every pivot gives the same joint mass; 106 assignments
+and 270 anchor comparisons, including a nontrivial image S, pass exactly.
+On the necessary old-minimum gate, nonzero geometric candidates of radius
+below c have nonzero labels. Thus M_1=M_0*L*J/(h-1) exactly, eliminating the
+first reference-moment error. Independent proof review and a genuine graph-
+lattice short-vector enumeration verify the deduction. The candidate count
+and selected moments of order two and higher still need production bounds.
+
+## Part 473: a high-order cluster survives the old-minimum gate
+
+[The explicit q3329 lattice pair](wall1_minimum_gate_collision_cluster.md)
+has 24 candidates in one nonzero quotient class, real affine rank seven,
+minimum squared18 and candidate radius squared below14. The strict height-one
+margin holds. Its first reference moment matches, but the order-j moment
+ratio is (h-1)^(j-1). Exact rational verification passes. This rules out
+small relative higher-moment errors from the minimum gate alone, not from
+additional production density or reachability conditions. Real affine rank
+is not identified with the production finite-field input rank.
+
+## Part 474: actual candidate-density normalization through freeze 246
+
+[The intrinsic-cover application](wall1_intrinsic_cover_density.md) reuses an
+existing covering lemma and the unconditional Hermite determinant floors.
+For the next-winner cutoff c=1.1g and candidate radius squared c^2-2, it
+proves L/(h-1)>58 through freeze 246, uniformly over actual states with
+nontrivial quotient. On the necessary old-minimum gate one can therefore
+choose 58(h-1) nonzero candidates and obtain exact reference mean 58.
+All 407 interval comparisons and 160 rational rounding checks pass. This
+removes a candidate-count premise for that next-winner route; higher selected
+moments and its connection to capped-history transport remain unproved.
+The original covering lemma is not claimed as new, and no probability
+horizon is extended by the density horizon.
+
+## Part 475: averaged rounding and a sixth-moment target
+
+[The projected-coset rounding integral](wall1_averaged_rounding_density.md)
+gives a quadratic-radius lower count. Using the existing determinant floors,
+its uniform candidate-density lower bound exceeds751871 throughout all
+freezes0..406. All407 endpoint checks and256 exact rounding/Markov checks
+pass; independent review verifies the count and nonmonotone endpoint argument.
+On the necessary old-minimum gate, select750000(h-1) candidates to obtain
+exact conditional mean750000. A gated sixth-central-moment bound
+T_f<=2000*(750000)^3 would imply a390-transition long-winner probability
+below1.848889e-12. That moment inequality remains unproved, as does the
+connection from long-winner events to the required capped-history failure.
+This closes the candidate-density premise, not the BKZ theorem.
+
+## Part 476: five one-sided joint correction targets
+
+[The sixth centered-factorial expansion](wall1_sixth_centered_factorial.md)
+expresses the actual sixth moment as its exact reference term plus five
+nonnegatively weighted signed corrections. Explicit one-sided caps imply
+T<1986a*mu^3<2000a*mu^3 atmu750000 without dividing by selected mass.
+Independent review and exact polynomial checks pass; these caps remain
+unproved production obligations. A paired full/quotient exclusion evaluator
+also passes160 incidence and36 pointwise checks, retaining the old-minimum
+quotient gate separately from full chronological selection. Signed correction
+polynomials cannot individually inherit nonnegative Bonferroni bounds.

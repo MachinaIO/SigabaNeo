@@ -1,0 +1,118 @@
+{
+  "scope": "New selected-history and lens research checkers; no production probability theorem or Lean build",
+  "base_commit": "b5fa123da0db44d64a3d41cea807f86f261d77d8",
+  "checks": [
+    {
+      "path": "docs/research/scripts/wall1_averaged_rounding_density.py",
+      "sha256": "a80cf3c7d88fc20d172f949489d7512eb578b1203f02400838018505f52faac5",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_averaged_rounding_density.log",
+      "log_sha256": "9c3cd7e9818f1171b2bd364804f651c7acb7f87c9d17b882b41f4a31d5d122de",
+      "output": "Exact rounding and Markov checks: (64, 192)\nCertified derivative numerator: -x^2+65149*x-129789.\ngmax endpoint Favg: [8473074111536129.78897121812594000131515937959, 8473074111536129.78897121812594000132790850758]\nStrict global minimum endpoint interval over freezes0..406: [751871.042969899546526918239767304435010964171, 751871.042969899546526918239767304469868851717] attained at freeze 406\nThreshold 1 passed freezes: 407 largest: 406\nThreshold 58 passed freezes: 407 largest: 406\nThreshold 1000000 passed freezes: 406 largest: 405\nfreeze 0 floor endpoint Favg: [8473074111536129.78897121812594000131515937959, 8473074111536129.78897121812594000132790850758] uniform interval minimum: [8473074111536129.78897121812594000131515937959, 8473074111536129.78897121812594000132790850758]\nfreeze 14 floor endpoint Favg: [10590172173867866.3053287538221886379385115246, 10590172173867866.3053287538221886379624135288] uniform interval minimum: [8473074111536129.78897121812594000131515937959, 8473074111536129.78897121812594000132790850758]\nfreeze 100 floor endpoint Favg: [36494086758272475.2424891715359451730600624005, 36494086758272475.2424891715359451738305232385] uniform interval minimum: [8473074111536129.78897121812594000131515937959, 8473074111536129.78897121812594000132790850758]\nfreeze 200 floor endpoint Favg: [73602297636882621.4766126818855075087108411903, 73602297636882621.4766126818855075114033190472] uniform interval minimum: [8473074111536129.78897121812594000131515937959, 8473074111536129.78897121812594000132790850758]\nfreeze 246 floor endpoint Favg: [44532853951913263.2946738706606921353640262879, 44532853951913263.2946738706606921371124553195] uniform interval minimum: [8473074111536129.78897121812594000131515937959, 8473074111536129.78897121812594000132790850758]\nfreeze 255 floor endpoint Favg: [35452042692590657.0161742927520620752991317348, 35452042692590657.0161742927520620767160375302] uniform interval minimum: [8473074111536129.78897121812594000131515937959, 8473074111536129.78897121812594000132790850758]\nfreeze 300 floor endpoint Favg: [3848154005254558.98182991707187389497086720197, 3848154005254558.98182991707187389513443648124] uniform interval minimum: [3848154005254558.98182991707187389497086720197, 3848154005254558.98182991707187389513443648124]\nfreeze 400 floor endpoint Favg: [8943636.00646095015055391788686755879062182294, 8943636.0064609501505539178868675592044215456] uniform interval minimum: [8943636.00646095015055391788686755879062182294, 8943636.0064609501505539178868675592044215456]\nfreeze 405 floor endpoint Favg: [1153887.81624372747773567677809759956882109826, 1153887.81624372747773567677809759962234423216] uniform interval minimum: [1153887.81624372747773567677809759956882109826, 1153887.81624372747773567677809759962234423216]\nfreeze 406 floor endpoint Favg: [751871.042969899546526918239767304435010964171, 751871.042969899546526918239767304469868851717] uniform interval minimum: [751871.042969899546526918239767304435010964171, 751871.042969899546526918239767304469868851717]\nConditional sixth-moment target total: 13/7031250000000 < remaining comparison budget 19515491/10000000000000000000\nIndependent-Bernoulli comparison coefficient <15.0001; no actual moment bound claimed.\nEndpoint minima certify the actual-g interval; global monotonicity was not assumed.\nNo probability or selected-history incidence estimate is asserted.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_collision_route_screen.py",
+      "sha256": "41d067a4e15389fc1b2725eed720de6490a892bd5db4a9f94a1c4d6db94e03cb",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_collision_route_screen.log",
+      "log_sha256": "49510adf11c705994257dfea047a9755883fccc097f015eab8a49997eece7007",
+      "output": "Enclosing-ball convolution inflation: [28.1786786705898720107844058965177157266029478354008292680555168394390509889, 28.178678670589872010784405896517715726602947835400829268055516839442186717]\nOld-minimum-gated inflation lower bound: [27.9545804331924635585320883861393224348094855097045354004782799744551237092, 27.9545804331924635585320883861393224348094855097045354004782799744582348059]\nAssociated continuum benchmark void certificate lower bound: [0.964227687037197352975551437830839144309884910923432962152421752977458892769, 0.964227687037197352975551437830839144309884910923432962152421752977462877268]\nIndependent-mask finite counts: 30\nConservative q^120 cost log10: [422.677655418800085783904908046915226961561240205273648303675042322378429971, 422.677655418800085783904908046915226961561240205273648303675042322378453153]\nNo actual collision energy or failure probability is inferred.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_fourier_density_extension.py",
+      "sha256": "e7c8f4fe21d6213063e56df284e4c0d38e49c191434df1277161bd1c3fd638b1",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_fourier_density_extension.log",
+      "log_sha256": "832ac1a2432de5f8ad2ce60a7f3be714f5b8ec7d23140ee1853e69cce9339936",
+      "output": "Fourier band 0 1 error: [0.00000004192930567936836852540830635402833198542545790767927120385057441151109594420379692696, 0.00000004192930567936836852540830635402833198542545790767927120385057441151109701107422878189]\nFourier band 1 2 error: [7.278673347433616990728598667901928841742184068742815051574205507581552898485930019344e-40, 7.278673347433616990728598667901928841742184068742815051574205507581552898486608210875e-40]\nFourier band 2 4 error: [4.36657922514206225808293207803869737580176472828206438606430331389012503934246305865e-64, 4.366579225142062258082932078038697375801764728282064386064303313890125039347717799618e-64]\ng interval endpoints: [31.94571189866833083373585245703265055378824822768336437596553313064632211666105771576, 31.94571189866833083373585245703265055378824822768336437596553313064632211666118331129] [3337.639980362230112746433600498564776790415155960594340116949241653623942971023364568, 3337.639980362230112746433600498564776790415155960594340116949241653623942971023593427]\nUniform nonzero cell count / h lower bound: [16786646102249696.79055066129679706248628924266178982546319497392904180833996149536676, 16786646102249696.79055066129679706248628924266178982546319497392904180833996338008503]\nConditional 405-draw union charge if variance targets hold: 81/50000000000000 1.62e-12\nSelected-history variance targets and complete BKZ remain unproved.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_full_family_variance.py",
+      "sha256": "4879e967e1b6e520a9da87a067919b262a7e2c662b9921498de8083403c1f0f3",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_full_family_variance.log",
+      "log_sha256": "5e5edaac872b3d0f536a063d213ac2299d60ace0ec601189ecd3514b537b6d56",
+      "output": "Exact thinning identities: 2637\nExact occupancy void bounds: 474\nActual selected-history full-family variance remains unproved.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_geometric_first_moment.py",
+      "sha256": "e74d35ecb902ac9744843ae49d3706f76f289a1db26aeb506daf7c2903e00106",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_geometric_first_moment.log",
+      "log_sha256": "8961e88dcbeb5d77f69eed1e7078da998445fb7e0e6108a8004b71bd02bb4293",
+      "output": "Complete old and next short-vector lists: 18 32\nEligible old maps: 4 out of 9; all 81 old/fresh pairs covered by gate and enumeration.\nM0,M1: 32/81 8/27 first reference error: 0\nExact joint next tail for this small fixture: 8/81\nGeometric nonzero-label and exact first-moment checks passed; production history remains open.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_integer_pair_bound.py",
+      "sha256": "f25d2446f1747905873e3b52da6a2ecf22b64071814f23cacf0ae4a9f31f86bf",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_integer_pair_bound.log",
+      "log_sha256": "dfb026c07ea0c32c78139acb3b5c342812db0aa07c6decf181212891db78b996",
+      "output": "Exact distribution/optimality checks: 728\nFixture exact void: 128/625 k: 1\nMaximum integer correction for mean >=1e16, mass <=1: 2.5e-33\nProduction selected collision bound remains unproved.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_intrinsic_cover_density.py",
+      "sha256": "53f2d033e0f92eb436341eadf00636df7624d1024167701a6f6ae532d27f2258",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_intrinsic_cover_density.log",
+      "log_sha256": "593f9a786e449767e62c7ac485c8a2f8808e16d11ae301838421dd5855f7aa79",
+      "output": "Exact independent-rounding projection checks: 160\nUniform monotonicity certified: 1.1*gmax < 506*rho_intrinsic.\ngmax: [3337.63998036223011274643360049856477678901616, 3337.63998036223011274643360049856477679155523] intrinsic cover radius: [11.2361025271221159322990702227453397149808116, 11.2361025271221159322990702227453397149809952]\nintrinsic largest freeze with density floor > 58 : 246\nintrinsic largest freeze with density floor > 1 : 255\nambient largest freeze with density floor > 58 : 228\nambient largest freeze with density floor > 1 : 236\nfreeze 14 intrinsic F: [387985037747160925.242470160160731058054333402, 387985037747160925.242470160160731058893524677] ambient F: [377750716441652451.113244239640182281872782421, 377750716441652451.113244239640182282689838343]\nfreeze 100 intrinsic F: [8647245556818992.31911881044446250716372192169, 8647245556818992.31911881044446250734587515758] ambient F: [4428839167710724.33267944301912019801008591548, 4428839167710724.33267944301912019810379539762]\nfreeze 200 intrinsic F: [597524860.057041581055108191854751765186822592, 597524860.057041581055108191854751787410377821] ambient F: [5856753.46004516784129467885414955825371727057, 5856753.46004516784129467885414955847264716441]\nfreeze 227 intrinsic F: [121573.407598439448121609555595728884460229746, 121573.407598439448121609555595728889239104417] ambient F: [98.1974490559367624615723157817281788319371549, 98.1974490559367624615723157817281827242693142]\nfreeze 228 intrinsic F: [84766.8065817297018287466905822843054065430921, 84766.8065817297018287466905822843087386050213] ambient F: [61.2581227756679702409410468815891546606888239, 61.2581227756679702409410468815891570859511361]\nfreeze 229 intrinsic F: [58895.4447410329685055752540563495443680908774, 58895.444741032968505575254056349546683185812] ambient F: [38.0224916272196491290128043926052741623235825, 38.0224916272196491290128043926052756676719338]\nfreeze 235 intrinsic F: [6142.94941053873414997779643205994067530226091, 6142.94941053873414997779643205994091966120538] ambient F: [1.9507458227229647546023768792089553837071149, 1.95074582272296475460237687920895546195947537]\nfreeze 236 intrinsic F: [4160.74062911875343736639037904148548671626516, 4160.74062911875343736639037904148565242109586] ambient F: [1.16723552809259227185445344417265586006937955, 1.1672355280925922718544534441726559069516988]\nfreeze 237 intrinsic F: [2807.59200773420961668450571056828899772484182, 2807.59200773420961668450571056828910993546368] ambient F: [0.694597275003328936248321638721686952784588948, 0.694597275003328936248321638721686980818843518]\nfreeze 245 intrinsic F: [105.049301409379650172050333702844469383207469, 105.049301409379650172050333702844473640980251] ambient F: [0.00864926423070536026648246798948674548072285765, 0.00864926423070536026648246798948674584683223773]\nfreeze 246 intrinsic F: [68.4377895594994796937277804423602729279350288, 68.4377895594994796937277804423602757018048844] ambient F: [0.00476118704189721346983773249653081263895240417, 0.00476118704189721346983773249653081284648726271]\nfreeze 247 intrinsic F: [44.4054091051744966352785189639284496806924025, 44.4054091051744966352785189639284514867674735] ambient F: [0.00254528128526839494431301189951572928208684962, 0.00254528128526839494431301189951572939903433172]\nfreeze 254 intrinsic F: [1.91353481010792009211824811977435362634628956, 1.91353481010792009211824811977435370526590378] ambient F: [-0.000257889799350515836024356453553351248753516376, -0.000257889799350515836024356453553351246975178942]\nfreeze 255 intrinsic F: [1.20041655281195649345088466748886082387616459, 1.20041655281195649345088466748886087355875475] ambient F: [-0.000277692012731322388915887962131911636287535574, -0.000277692012731322388915887962131911635332797299]\nfreeze 256 intrinsic F: [0.749743098529253880707007721485186186261858322, 0.749743098529253880707007721485186217296734414] ambient F: [-0.000288365791826908750512602003035141723814249044, -0.000288365791826908750512602003035141723307253654]\nfreeze 300 intrinsic F: [-0.00030048076337356632767599809282259216145698122, -0.00030048076337356632767599809282259216145697001] ambient F: [-0.000300480769230769224574889894054790795105023708, -0.000300480769230769224574889894054790795105012497]\nfreeze 400 intrinsic F: [-0.000300480769230769230769230769230769230769231632, -0.000300480769230769230769230769230769230769220421] ambient F: [-0.000300480769230769230769230769230769230769231632, -0.000300480769230769230769230769230769230769220421]\nfreeze 406 intrinsic F: [-0.000300480769230769230769230769230769230769231632, -0.000300480769230769230769230769230769230769220421] ambient F: [-0.000300480769230769230769230769230769230769231632, -0.000300480769230769230769230769230769230769220421]\nUniform degree-11 reference norm <1.301e-12; selected higher errors are not bounded.\nEvery reported floor is uniform for g between its Hermite floor and gmax, when R>rho.\nNo failure-probability bound or selected-history incidence estimate is asserted.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_lens_shell_identity.py",
+      "sha256": "cbe795a5b37f8fb6ed4c25ce5acc39c35e105babbc73833e202e0a88354a37cd",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_lens_shell_identity.log",
+      "log_sha256": "0387cbb283297c41a7c72cdd8b9265c06bc89b2e3782d2684d1ce4613956b154",
+      "output": "Exact lattice decomposition checks: 80\nPositive/negative aggregate lens errors: 28 20\nContinuum convolution normalization checked at dimensions1,3,505.\nUpper kernel weight below the old-minimum cutoff: 1.7035907718489096e-33\nProduction radial and discrete lens errors remain unbounded.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_minimum_gate_collision_cluster.py",
+      "sha256": "e7cb296503404b41a533dd5f74030461d751fa061a4d8b9787e3d526e7087a17",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_minimum_gate_collision_cluster.log",
+      "log_sha256": "745d8c311e825c6403bcbb1e9445eccff10847838cd0d7e63434a57c4ddefff7",
+      "output": "Candidates:24; real affine rank:7; quotient order:3329^7\nMinimum M squared:18; maximum candidate squared: 149700150/11082241\nUniform radius squared14 plus height squared1 is strictly below18.\nAll 276 pair differences lie in M; all 24 labels coincide and are nonzero.\nAll orders1..24: actual/reference factorial moment ratio=(h-1)^(order-1).\nThis excludes a minimum-only moment argument, not the production BKZ theorem.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_mixed_exclusion_gates.py",
+      "sha256": "30062e743994654929d8d208cae165fe0b873ea72f65abc8e7dd48af9437a1c8",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_mixed_exclusion_gates.log",
+      "log_sha256": "63691079599c66d7e9bc0338e5a3510f5790e59a6fd36d9ff5bffbd875528c92",
+      "output": "Prefix state counts: [1, 2, 3, 5]\nPrefix gate masses: [Fraction(1, 1), Fraction(8, 9), Fraction(7, 9), Fraction(5, 9)]\nFull-only versus quotient-only exclusion: 8/9 2/3\nPASS: 160 joint incidence checks; 36 pointwise grouped-expansion checks\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_partial_pair_certificate.py",
+      "sha256": "82bfc0c0707dbd107bb36d460ff40ca6f251b3ba8b810e0873c647c6078bdd0d",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_partial_pair_certificate.log",
+      "log_sha256": "7a11cafb617e483bca9c4a71fbc27d36d5a0c4810c651471b3a9898987946464",
+      "output": "prefix 0 upper (Fraction(24, 25), Fraction(88, 125), Fraction(8, 25), Fraction(127, 250)) lower [Fraction(336, 625), Fraction(252, 625), Fraction(64, 625), Fraction(127, 625)] void upper 448/625\nprefix 15 upper (Fraction(72, 125), Fraction(54, 125), Fraction(76, 625), Fraction(287, 1250)) lower [Fraction(72, 125), Fraction(54, 125), Fraction(76, 625), Fraction(287, 1250)] void upper 128/625\nPrefixes certified: 16 first strict void improvement: 0\nActual fixture joint void: 128/625 certified bound: 128/625\nPASS; production remainder and selected-history bounds remain open.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_selected_pair_collision.py",
+      "sha256": "130cf2cd66c65a8f6b22939691e8f152ccd25388e32127b30e2af1b4b76c4f8d",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_selected_pair_collision.log",
+      "log_sha256": "13cba53a190277f527bc60fc52774c1367d016c0db77884d9bcba423c699a68e",
+      "output": "image dimension 0 gate mass 3/5 moments (Fraction(72, 125), Fraction(54, 125), Fraction(76, 625), Fraction(287, 1250)) ordered pairs 306 grouped constraints 31 biased constraints 25\nConstraints whose incidence increases after the gate: 15\nIncorrect gate-independent second factorial moment: 126/625 actual minus incorrect: -2/25\nimage dimension 1 gate mass 79/125 moments (Fraction(1896, 3125), Fraction(1422, 3125), Fraction(396, 3125), Fraction(1503, 6250)) ordered pairs 306 grouped constraints 31 biased constraints 25\nConstraints whose incidence increases after the gate: 16\nIncorrect gate-independent second factorial moment: 3318/15625 actual minus incorrect: -1338/15625\nNontrivial-image, positive-constraint, zero/repeated-residue checks: 48\nPASS: mixed gates and selected pair moments match complete map/mark enumeration.\nProduction selected-history collision bounds remain unproved.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_shared_mark_elimination.py",
+      "sha256": "304f74b1532ee289d00e04806877b83e480d4484e2a5446449a95e337c5ab64b",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_shared_mark_elimination.log",
+      "log_sha256": "7285d429adc1be262c2c97856d32fc48374efbee57d42864c7b106b0fad1e9c6",
+      "output": "Original fixture M0..M4: (Fraction(64, 81), Fraction(64, 81), Fraction(8, 27), Fraction(0, 1), Fraction(0, 1))\nNontrivial image S fixture M0..M3: (Fraction(16, 27), Fraction(38, 27), Fraction(56, 27), Fraction(4, 3))\nOriginal nonempty height assignments: 80 anchor checks: 216\nNontrivial S height assignments: 26 anchor checks: 54\nTotal assignment comparisons: 106 all-anchor comparisons: 270\nM0 handled separately; full gates and quotient collisions kept distinct.\nAll shared-mark elimination and augmented evaluator checks passed.\n"
+    },
+    {
+      "path": "docs/research/scripts/wall1_sixth_centered_factorial.py",
+      "sha256": "d886f0c3260481d4e24237285e0afc1502c96e187a23e626081bf0e4adb98484",
+      "exit_code": 0,
+      "log": "/tmp/wall1_checkpoint_sixth_centered_factorial.log",
+      "log_sha256": "85d4a3e2ba575d15c66e8a94c10517d1ddd710274559f1b9abdd76118b09c2eb",
+      "output": "w_0 coefficients in ascending powers of mu: (0, 1, 25, 15)\nw_1 coefficients in ascending powers of mu: (1, 56, 105)\nw_2 coefficients in ascending powers of mu: (31, 180, 45)\nw_3 coefficients in ascending powers of mu: (90, 110)\nw_4 coefficients in ascending powers of mu: (65, 15)\nw_5 coefficients in ascending powers of mu: (15,)\nw_6 coefficients in ascending powers of mu: (1,)\nPointwise identities: 130 arbitrary selected transfers: 20 conditional-mean/C1=0 checks: 15\nCombined cap coefficients: (0, 296, 4660, 1875)\nAt mu750000: cap <1876*a*mu^3 <2000*a*mu^3 for a>0 (equality0 if a=0).\nRelaxed C3<=a*mu^2 combined coefficients: (0, 206, 4640, 1985)\n390-step conditional bound: 13/7031250000000 display: 1.8488888888888887e-12 target: 19515491/10000000000000000000\nAll exact polynomial and sufficient-cap arithmetic checks passed.\nThe selected Charlier caps remain assumptions; no production moment estimate is proved.\n"
+    }
+  ]
+}

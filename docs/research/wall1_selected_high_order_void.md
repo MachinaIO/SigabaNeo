@@ -126,3 +126,10 @@ S-component and nonzero-mark subtraction. The flag must be chronological
 and contain no lookahead into the new column. The parent reran both checkers.
 No production moment-error envelope, later
 history charge bound, or Lean proof is supplied by these finite checks.
+
+
+Part 472's [fresh-mark elimination](wall1_shared_mark_elimination.md) rewrites
+the joint hit terms using only old quotient collisions. On the necessary old
+minimum gate, geometrically nonzero candidates of radius less than c cannot
+have zero labels. This makes the first factorial-moment error exactly zero
+for p=J/(h-1); higher-order selected errors remain unproved.

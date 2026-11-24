@@ -4648,6 +4648,48 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Exact reference-kernel and shared-column incidence checks pass; actual
   selected-history moment errors, geometric candidate counts and aggregate
   tail bounds remain unproved.
+* **Part 472 (exact first moment on the old-minimum gate).**
+  [Fresh-mark elimination](research/wall1_shared_mark_elimination.md) reduces
+  higher hit moments to old selected quotient collisions. Nonzero candidates
+  below the old minimum give an exact first-moment match; the higher-order
+  errors and production candidate counts remain unbounded.
+* **Part 473 (minimum-gate high-order collision example).**
+  [A q3329 same-coset cluster](research/wall1_minimum_gate_collision_cluster.md)
+  satisfies the old-minimum and strict witness-margin conditions but has
+  large relative higher-moment errors. This limits a minimum-only argument;
+  production reachability and density hypotheses are not tested by the example.
+* **Part 474 (deterministic candidate-density horizon).**
+  [Existing covering and determinant bounds](research/wall1_intrinsic_cover_density.md)
+  give candidate density above58 through freeze246 for the specified
+  next-winner cutoff. On the old-minimum gate this realizes exact mean58.
+  Higher moments and the capped-history connection remain open; the density
+  horizon is not a certified probability horizon.
+* **Part 475 (all-stage candidate density via averaged rounding).**
+  [The quadratic-radius count](research/wall1_averaged_rounding_density.md)
+  guarantees candidate density above750000 through all406 freezes. It yields
+  an explicit sufficient sixth-central-moment target for next-winner tails.
+  That moment bound and the complete history-failure connection remain open;
+  the numerical probability comparison is conditional.
+* **Part 476 (sixth-moment correction targets and mixed gates).**
+  [The exact centered-factorial expansion](research/wall1_sixth_centered_factorial.md)
+  yields five one-sided joint targets sufficient for the conditional sixth-
+  moment budget. Full chronological exclusions and quotient minimum-gate
+  exclusions remain distinct. Identities and finite checks pass; the actual
+  production correction bounds are still unproved.
+* **Selected-history checkpoint after Part 476 (no new probability bound).**
+  Latest selected-history checkpoint: the
+  [Fourier count extension](research/wall1_fourier_density_extension.md)
+  gives density above10^16 over the current radius and all scalar floors.
+  [Full-family variance](research/wall1_full_family_variance.md) retains the
+  100-long-winner crossing implication. The
+  [selected pair evaluator](research/wall1_selected_pair_collision.md) and
+  [partial-gate certificates](research/wall1_partial_pair_certificate.md)
+  preserve mixed gates and zero-anchor corrections. Integer moment bounds
+  are sharp but improve the large-mean bound by at most about2.5e-33.
+  [Route screening](research/wall1_collision_route_screen.md) and the
+  [exact lens decomposition](research/wall1_lens_shell_identity.md) expose
+  the remaining radial and discrete-grid errors. Production collision
+  bounds, selected-history transport, and complete BKZ remain unproved.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its
