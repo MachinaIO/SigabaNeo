@@ -25,7 +25,9 @@ is ever evaluated):
 * **the correctness condition** (`corrBound_le`, `four_corrBound_lt`): for keys within
   `2^{Bk−1}` (the small box and the binary decompositions),
   `corrBound ≤ 16 + 2^{36361}` and `4 · corrBound + 2 < q = 2^{2^16} − 1`; hence decoding is exact
-  (`decode_ok`).
+  (`decode_ok`);
+* **the flooding budget** (`flood_budget`): at most `2^81` flooded coefficients, shifts at most
+  `m_B n B_χ ≤ 2^70`, so `Σ|δ| / 2^eFl ≤ 2^{−249}`.
 -/
 
 namespace AdvancedEncryption.ExpLUT
@@ -277,5 +279,26 @@ theorem decode_ok {T : ℕ} (hT : T ≤ 16) (M : Bool) (e : Rc)
     decodeBit hnc (half * msgR M + e) = M := by
   rw [half_mul_msgR]
   exact decodeBit_ok hnc M e _ he (four_corrBound_lt hT)
+
+/-! ### The flooding budget (for hybrid H2) -/
+
+/-- The flooded ring elements: `e₀` (`2τ`), the `e_t` (`16 · 2τ`), the errors of the digit
+encodings of `C^in_t` and `C_{g_t}` (`(16 + 22) · 4τ² · 2τ`); `lhlCols` counts one more. Their
+coefficients number at most `2^81`. -/
+theorem floodCoefs_le : lhlCols * 2 ^ en ≤ 2 ^ 81 :=
+  pow_mul_le' lhlCols_le (le_refl _) rfl
+
+/-- The shift that flooding must hide, per coefficient: a product of a base error row (`m_B = m̄ + τ`
+entries within `B_χ`) with a binary programming column, `m_B · n · B_χ ≤ 2^70` (the factor `n`
+covers products of ring elements). -/
+theorem floodShift_le : (mbar + Kc) * 2 ^ en * Bχ ≤ 2 ^ 70 :=
+  pow_mul_le' (pow_mul_le' mbar_le (le_refl _) rfl) (le_of_eq rfl : Bχ ≤ 2 ^ 4) rfl
+
+/-- **The flooding budget**: `#coefficients · shift / 2^eFl ≤ 2^{−249}` (`closeTo_floodLaw_add`
+bounds the statistical distance of flooding by `Σ |δ| / W`). -/
+theorem flood_budget : lhlCols * 2 ^ en * ((mbar + Kc) * 2 ^ en * Bχ) * 2 ^ 249 ≤ 2 ^ eFl := by
+  refine (Nat.mul_le_mul_right _ (pow_mul_le' floodCoefs_le floodShift_le rfl)).trans ?_
+  rw [← pow_add]
+  exact pow_le_pow' (by rw [eFl_def])
 
 end AdvancedEncryption.ExpLUT.Params
