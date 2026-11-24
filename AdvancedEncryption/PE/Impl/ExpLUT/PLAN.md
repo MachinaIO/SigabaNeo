@@ -390,7 +390,10 @@ pure function, and every routine is proved once at the level of lists of ring el
     (`m = |rP|` applications of `σ_g`).
 * `ExpLUT/Prog/KeyVM.lean` — the bridge to the scheme at the dimensions `D`: `matE_enc`,
   `digE_enc` (the words of `Words.lean` are the queues of the routines), `mulPK_eq_mulPKm`,
-  `mul_ginv_eq`, `autMat_eq`, `aut_iterate` (`σ_g^{m} = σ_{g^m}`), **`autPK_eq`**.
+  `mul_ginv_eq`, `autMat_eq`, `aut_iterate` (`σ_g^{m} = σ_{g^m}`), **`autPK_eq`**;
+  **`roundsPK_eq_bitChain`** (`A_j` after `t` rounds = `Aut_{g_s}` applied for the set bits `s` of `j`,
+  increasing; the basis of item 1 below) and **`lutCoef_pow`** (`α_{k,L} = W⁻¹ Σ_u c_u μ^u`,
+  `μ = σ_k(X^{2n−1})`; the basis of item 2).
   Axioms of all of these: `[propext, Classical.choice, Quot.sound]`.
 
 **Plan for the rest of `KeyGen`** (not done):

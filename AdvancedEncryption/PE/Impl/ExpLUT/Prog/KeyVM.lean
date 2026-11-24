@@ -124,6 +124,31 @@ end Chain
 
 variable {R : Type*} [CommRing R] {S : Setting R}
 
+/-! ### The table coefficients as powers -/
+
+theorem X_pow_two_n_sub (E : ExpRing R) {u : ℕ} (hu : u ≤ 2 * E.n) :
+    E.X ^ (2 * E.n - u) = (E.X ^ (2 * E.n - 1)) ^ u := by
+  rcases Nat.eq_zero_or_pos u with rfl | hu0
+  · simp [E.X_pow_two_n]
+  · rw [← pow_mul]
+    have hn := E.n_pos
+    have e : (2 * E.n - 1) * u = (2 * E.n - u) + 2 * E.n * (u - 1) := by
+      have : (2 * E.n - 1) * u + u = 2 * E.n * u := by
+        rw [← Nat.succ_mul, Nat.succ_eq_add_one, Nat.sub_add_cancel (by omega)]
+      have h2 : 2 * E.n * u = 2 * E.n * (u - 1) + 2 * E.n := by
+        rw [← Nat.mul_succ, Nat.succ_eq_add_one, Nat.sub_add_cancel hu0]
+      omega
+    rw [e, pow_add, pow_mul, E.X_pow_two_n, one_pow, mul_one]
+
+/-- **A table coefficient is a power sum**: `W⁻¹ Σ_{u<W} c_u σ_k(X^{2n−1})^u`. -/
+theorem lutCoef_pow (E : ExpRing R) (c : ℕ → R) (k : ℕ) :
+    E.lutCoef c k = E.Winv * ∑ u ∈ Finset.range E.W, c u * (E.σ k (E.X ^ (2 * E.n - 1))) ^ u := by
+  rw [ExpRing.lutCoef, ExpRing.lutCoefOf]
+  congr 1
+  refine Finset.sum_congr rfl fun u hu => ?_
+  have hW := E.W_lt
+  rw [X_pow_two_n_sub E (by have := Finset.mem_range.mp hu; omega), map_pow]
+
 /-- **The rounds are chains**: `A_j` after `t` rounds applies `Aut_{g_s}` for the set bits `s` of
 `j`, in increasing order (`j < 2^t`). -/
 theorem roundsPK_eq_bitChain (P : AutPub S) (A : Matrix (Fin 2) (Col S.τ) R) :
