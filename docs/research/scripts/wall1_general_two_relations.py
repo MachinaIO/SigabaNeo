@@ -185,6 +185,7 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
         return scale**power/q*(theta(a*power/q**2)**(1/power)
                               +I(q)**(1/power)*delta)**power
     anchors = {}
+    theta_anchors = {}
     for c in range(3, 24):
         for t in range(1, 25-c):
             union = c+t
@@ -244,6 +245,10 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                 if plane.b < chosen_gaussian.b:
                     chosen_gaussian = plane
                 power_bound = chosen_gaussian**n
+                # Keep a common-beta theta bound separately: later minima
+                # may use direct ball counts or anisotropic Gaussian weights.
+                theta_anchors[c,t,overlap] = (
+                    iv.exp(union*beta*radius**2)*power_bound/q**(m*(union-2)))
                 if c <= 4:
                     # Split codes by the number of independent norm-four words.
                     coefficient_count = q**(c+t+overlap-4)
@@ -796,6 +801,14 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         # Only the first circuit can carry a norm-four word.
                         # Preserve its exact pair energy while Fourier/Holder
                         # bounds only the new positions of the second circuit.
+                        if union==13:
+                            # Audited H13 path: both parts are common-beta
+                            # theta powers; no anisotropic branch is active.
+                            assert c==4 and t==9 and bad_count==0
+                            common_theta = (iv.exp(union*beta*radius**2)
+                                            *(one_power+none_power)/q**(m*(union-2)))
+                            theta_anchors[c,t,overlap] = min(
+                                (theta_anchors[c,t,overlap],common_theta),key=lambda v:v.b)
                         direct_one = (I(3)/q**2*four_ball*new_groups[t]
                                       /iv.exp(union*beta*radius**2))
                         s['first_ball_ratios'][t, overlap] = direct_one/one_power
@@ -1142,6 +1155,21 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
     s['size17_stratum_candidates'] = {}
     from wall1_ball_slice_completion import completion_bound
     completions={r:completion_bound(s,r-1) for r in range(2,23)}
+    from wall1_anchored_dual_completion import completion_bound as dual_completion_bound
+    dual_completions={(h,r):dual_completion_bound(s,r,h)
+                      for h in range(4,25) for r in range(2,h-1)}
+    extended_dual_completions={(h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0)
+                              for h in range(4,25) for r in range(2,h-1)
+                              for H0 in range(4,r+3)}
+    free_beta=I(n)/(2*radius**2)
+    optimized_gaussian_free=iv.exp(free_beta*radius**2)*theta(free_beta)**n/q**m
+    anisotropic_dual_completions={
+        (h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0,free_beta=free_beta)
+        for h in range(4,25) for r in range(2,h-1) for H0 in range(4,r+3)}
+    gaussian_free={}
+    for H0 in range(4,25):
+        original_beta=I((H0-2)*n)/(2*H0*radius**2)
+        gaussian_free[H0]=(iv.exp(original_beta*radius**2)*theta(original_beta)**n/q**m)
     for h in range(4, 25):
         for r in range(2, h-1):
             for c in range(3, r+2):
@@ -1164,6 +1192,14 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             choices = 1
                         charge = (choices*q**(c+t+a-4)*anchors[c, t, a]*mu**(r-c-t+2)
                                   *completions[r]**(h-r-2)/(r-c-t+3))
+                        free_basis=r-c-t+2
+                        theta_charge=(choices*q**(c+t+a-4)*theta_anchors[c,t,a]
+                                      *gaussian_free[c+t]**free_basis
+                                      *extended_dual_completions[h,r,c+t]/(free_basis+1))
+                        anisotropic_charge=(choices*q**(c+t+a-4)*theta_anchors[c,t,a]
+                                            *optimized_gaussian_free**free_basis
+                                            *anisotropic_dual_completions[h,r,c+t]/(free_basis+1))
+                        charge=min((charge,theta_charge,anisotropic_charge),key=lambda v:v.b)
                         if c == 4 and t == 2 and a == 2:
                             charge /= 2  # Either four-circuit can be the first witness.
                         if h == 14:

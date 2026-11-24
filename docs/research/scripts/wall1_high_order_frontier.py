@@ -82,7 +82,13 @@ def main():
     def capture_draw(value,state):
         assert isinstance(value,tuple) and len(value)==3
         draws[id(value[2])]={'anchors':state['anchors'],'s':state['s'],
-                            'completions':state.get('completions')}
+                            'completions':state.get('completions'),
+                            'theta_anchors':state['theta_anchors'],
+                            'dual_completions':state['dual_completions'],
+                            'extended_dual_completions':state['extended_dual_completions'],
+                            'gaussian_free':state['gaussian_free'],
+                            'optimized_gaussian_free':state['optimized_gaussian_free'],
+                            'anisotropic_dual_completions':state['anisotropic_dual_completions']}
     instrumented_draw=_capture_copy(draw14_bounds,capture_draw)
     instrumented_actual=_capture_copy(actual_parameters,
         lambda value,state:captured.update(state),
@@ -154,6 +160,14 @@ def main():
                     choices0=comb(h,c)*comb(h-c,t)*comb(c,a)*comb(h-c-t,r-c-t+2)
                     if c==r+1:choices0=1
                     charge=choices0*q**(c+t+a-4)*anchors[c,t,a]*mu**(r-c-t+2)*M**(h-r-2)/(r-c-t+3)
+                    free_basis=r-c-t+2
+                    theta_charge=(choices0*q**(c+t+a-4)*dd['theta_anchors'][c,t,a]
+                                  *dd['gaussian_free'][c+t]**free_basis
+                                  *dd['extended_dual_completions'][h,r,c+t]/(free_basis+1))
+                    anisotropic_charge=(choices0*q**(c+t+a-4)*dd['theta_anchors'][c,t,a]
+                                        *dd['optimized_gaussian_free']**free_basis
+                                        *dd['anisotropic_dual_completions'][h,r,c+t]/(free_basis+1))
+                    charge=min((charge,theta_charge,anisotropic_charge),key=lambda x:x.b)
                     if c==4 and t==2 and a==2:charge/=2
                     terms.append((charge.b,t,a,charge))
             two=sum((x[3] for x in terms),I(0))
@@ -162,6 +176,7 @@ def main():
             assert chosen.a<=target.b and target.a<=chosen.b
             print(' REMAINDER_MIN','two' if two.b<one.b else 'one','one-log',iv.log10(factor*one),'two-log',iv.log10(factor*two))
             print(' TWO_COMPLETION_Q_EXP',(r-1)*(h-r-2),'LOG',iv.log10(I(q))*((r-1)*(h-r-2)))
+            print(' FULL_ANCHOR_DUAL_CAP_LOG',iv.log10(dd['dual_completions'][h,r]))
             print(' TWO_COMPLETION_ACTUAL_LOG',iv.log10(M)*(h-r-2),'LOG_RATIO_TO_Q',iv.log10(M/I(q**(r-1)))*(h-r-2))
             for _,t,a,x in sorted(terms,reverse=True)[:3]:
                 print(' TWO_TERM',t,a,'LOG',iv.log10(factor*x),'free_basis',r-c-t+2)

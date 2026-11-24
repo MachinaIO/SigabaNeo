@@ -4180,6 +4180,64 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   kernel bound; ordinary19-point joint-ball estimates would undercount.
   Sixty exact identities/majorants pass. This is a reduction, not a
   numerical improvement to the remaining global residual or a Lean proof.
+* **Part 419 (mixed-kernel coefficient and alias accounting).**
+  [Shared charts](research/wall1_mixed_chart_sum.md) keep the same affine
+  completion coefficients in all118 input rows; interchanging their sum
+  with the coordinate power can undercount. Fixed-matrix coordinate
+  multiplicities give a conditional weighted-ball improvement, with no
+  estimate of those multiplicities under the actual anchor law.
+  [Gram kernels](research/wall1_mixed_gram_kernel.md) separate a discrete
+  Gram theta factor from modular aliases via a Schur complement;1337
+  exact algebra checks and432 joint-dual inverse checks pass. The joint
+  dual prefactor is coefficient-invariant; its nonzero terms retain the
+  modular dependence. Dropping the aliases is not justified.
+  [Completion temperature](research/wall1_mixed_completion_temperature.md)
+  certifies the globally optimal universal pivot-Gaussian bound at the
+  actual radius; it remains weaker than the existing volume cap.
+  [Finite mixed fixture](research/wall1_mixed_kernel_fixture.md) verifies120
+  fixed-chart majorants and shows the temperature derivative can change
+  sign with anchor weighting. No production residual is improved here;
+  the coupled coefficient sum with aliases remains the substantive target.
+* **Part 420 (anchored dual completion, integrated full-anchor cases).**
+  [Coefficient rank](research/wall1_dual_coefficient_rank.md) gives exact
+  fibers of the shared affine coefficient map. [Gaussian rank tails](research/wall1_dual_frequency_rank.md)
+  retain the actual dual temperature, not a uniform residue model.
+  [Weighted pivots](research/wall1_dual_rank_pivot_bound.md) and its
+  [anchored strengthening](research/wall1_anchored_dual_completion.md)
+  keep the same anchor theta on nonpivot coordinate rows. The resulting
+  multiplier includes every rank stratum and infinite Gaussian tail.
+  Production now minimizes a separate common-theta completed candidate
+  against the old completed bound, only when no free basis points remain.
+  Direct-ball and anisotropic anchor minima are not multiplied by it.
+  All2106 cumulant checks and frontier reconstructions pass. Through17
+  is below6.143e-13; through24 is about4.2321e208, still ineffective.
+  Free-basis terms and selected histories remain open. No new Lean
+  formalization or completed BKZ guarantee is claimed.
+* **Part 421 (independent-basis extension of anchored completion).**
+  [Extended completion](research/wall1_extended_dual_completion.md)
+  retains the original anchor beta on added independent basis points,
+  with exact factor exp(beta R^2)theta(beta)^518/q^400 per point.
+  The extended code theta factors, and the coloop-free contraction
+  preserves the f+1 witness division. The original beta is included
+  in cache keys; theta-only completed candidates are minimized against
+  the existing completed bounds. Independent implementation audit,
+  all2106 exact cumulant checks and all18 reconstructions pass.
+  Through17 is below2.752e-13. Through24 is about2.5742e194 and remains
+  ineffective. The size24 leader is now rank12/girth3 with9 free basis
+  points. Different temperatures for those points need a further
+  anisotropic proof. Actual selected histories and the BKZ theorem remain open.
+* **Part 422 (separate Gaussian weights for independent points).**
+  [Anisotropic extension](research/wall1_anisotropic_dual_completion.md)
+  retains the original anchor weight while giving independent basis
+  points their own positive weight. Fourier positivity and coordinate
+  hyperplane sums yield two drop-coordinate eta candidates. The exact
+  extended theta factorization preserves all input/output normalizers;
+  every rank tail is retained. The old and same-weight candidates remain.
+  Independent proof/implementation review,81 exact anisotropic coefficient
+  sums,2106 cumulant checks and18 frontier reconstructions pass.
+  Through17 is below2.666e-13; through24 is about1.96044e153, still an
+  ineffective envelope. The size24 leader is rank9/girth3 with a six-point
+  anchor and5 free basis points. The selected-history law remains open.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

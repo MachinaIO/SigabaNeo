@@ -198,3 +198,17 @@ all2106 exact regressions and evaluates through17 at6.143361028426690e-13
 and through24 at6.573520003e212. No probability interpretation is assigned
 to the latter ineffective envelope. Higher-rank D32 extensions under
 investigation are not part of this snapshot.
+
+## Part422: anisotropic anchored completion checkpoint
+
+The common-theta completed candidates now include separate free-point weights.
+All18 selected-cover/remainder interval reconstructions pass in
+`/tmp/wall1_anisotropic_dual_frontier.log`. Size24 has a rank9/girth3 leader,
+with crossing t3/overlap2 and5 independent extension points. The dominant
+cover is now original rather than an excluded-anchor addback cover.
+
+The matching cumulant run `/tmp/wall1_anisotropic_dual_cumulants.log` passes
+all2106 exact checks. Through17 is2.66530650507442e-13 (below2.666e-13);
+through24 is1.96043337689968e153. The latter remains an ineffective upper
+envelope, not an actual probability. The earlier Part414/420/421 snapshots
+remain historical records; this checkpoint supersedes their current frontier.

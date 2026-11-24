@@ -78,3 +78,42 @@ The latter stays within twenty-four input positions, but its asymmetric
 input/output Gaussian kernel and coefficient charts remain to be bounded.
 The exact finite checks and independent audits validate these reductions;
 they do not establish their high-dimensional selected-history premises.
+
+## Concrete mixed-kernel accounting (Part 419)
+
+The coefficient sum must stay outside the118th coordinate power. Exact
+small examples refute normalized independent-coordinate replacements.
+A universal Gaussian pivot bound can be globally optimized at the actual
+radius, but still loses to the existing volume cap. Thus it is not
+integrated. Matrix-dependent coordinate multiplicities can improve a
+fixed span; their distribution under actual anchor weights is unknown.
+
+The Gram-kernel formulation now retains both integer theta corrections
+and modular aliases through an explicit Schur complement. This avoids
+the false suppression obtained by treating a large integer lift of a
+modular coefficient as a genuinely long coefficient. The remaining task
+is a sufficiently sharp bound on the coupled coefficient sum, including
+these alias factors, or a justified restriction on actual anchor geometry.
+See `wall1_mixed_chart_sum.md`, `wall1_mixed_gram_kernel.md`,
+`wall1_mixed_completion_temperature.md` and `wall1_mixed_kernel_fixture.md`.
+
+## Integrated anchored candidates (Parts 420–421)
+
+The anchor-preserving dual pivot bound now supplies an additional completed
+common-Gaussian candidate. It covers both full anchors and independent basis
+extensions at the original anchor temperature. All2106 exact checks and18
+frontier reconstructions pass. The through24 envelope is still ineffective.
+The dominant size24 term has a small girth-three anchor and9 free basis
+points; optimizing their weight separately needs a new anisotropic argument.
+The selected direct-ball/anisotropic anchor minima are still used only in
+the old completed candidate. See `wall1_anchored_dual_completion.md` and
+`wall1_extended_dual_completion.md` for the proof and precise scope.
+
+## Separate free-point weights (Part 422)
+
+The explicitly anisotropic extension is now proved, implemented and independently
+audited. It retains the original anchor kernel, uses a separate Gaussian
+weight for free basis points, and adjusts the hyperplane eta bound accordingly.
+All2106 exact cumulant checks and18 reconstructions pass. The remaining size24
+leader is rank9/girth3 with a six-point anchor and5 free basis points. The
+upper envelope remains ineffective; see `wall1_anisotropic_dual_completion.md`.
