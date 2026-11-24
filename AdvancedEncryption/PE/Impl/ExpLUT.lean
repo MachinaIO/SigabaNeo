@@ -20,6 +20,7 @@ import PE.Impl.ExpLUT.Params.Conf
 import PE.Impl.ExpLUT.Params.Noise
 import PE.Impl.ExpLUT.Params.Correct
 import PE.Impl.ExpLUT.BPBridge
+import PE.Impl.ExpLUT.AH.Final
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
@@ -51,4 +52,5 @@ The proof of Theorem 2 (Appendix A):
   key boxes and their cover bound); `Params/Noise`: the noise certificate (Lemma 9, Lemma 11's
   shift, `corrBound < q/4`); `Params/Correct`: correctness at the concrete parameters.
 * `BPBridge`: the universe's programs of width `w8` as branching programs; correctness for them.
+* `AH/*` (package G): attribute hiding of the implementation (`AH/Final.attributeHiding_Dc`).
 -/
