@@ -92,3 +92,31 @@ the next frontier. More snapshots of larger anchors alone cannot remove
 that term. A sharper complete two-four theta bound or a stronger cover
 that includes its addback is required. Selected-history estimates and
 full BKZ remain open; no new Lean theorem is claimed.
+
+## Complete c3 common-theta snapshot scope
+
+Independent read-only audit extends the final-power snapshot to every
+c3 family with8<=H<=24. H9's counted-six/eight term uses only the original
+common beta, and H12 onward uses the same isotropic minimum classification.
+Weighted/direct replacements occur only in other branches. H7 retains its
+separate reconstruction; it is not replaced by its selected weighted minimum.
+The implementation now covers the entire audited range, including H9.
+All existing completed candidates remain available. Numerical results are
+recorded after the corresponding full runs complete.
+
+## Part 433 checkpoint
+
+Both full runs exited0: `/tmp/wall1_all_c3_theta_cumulants.log` and
+`/tmp/wall1_all_c3_theta_frontier.log`. All2106 exact cumulant checks and18
+frontier interval comparisons pass. Through17 remains below3.219e-17;
+through24 is below1.438e27, still ineffective against the3.01e-12 target.
+The size24 leader is now rank9/girth4, t2/overlap2 (six points), with5
+independent extensions. Its t4/overlap3 eight-point term is also significant.
+The original cover wins. This supersedes Part432's girth-three H9 leader.
+
+The canonical two-four normalizer is the next candidate for the six-point
+family, but it must be applied to its own triangle/square theta masses,
+leaving the one/no-four remainder under the generic cap. The design has
+been independently audited and is recorded in `wall1_two_four_normalizer.md`;
+it is not included in these numerical results. Selected histories and
+full BKZ remain open.

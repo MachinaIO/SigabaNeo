@@ -44,7 +44,7 @@ def factor_checks():
         g={x:F((x+seed)%5,4) for x in range(q)}
         eta0=max(sum((f0[x] for x in old if sum(x)%q==c),F(0))/q for c in range(q))
         for free in (1,2):
-            for L in (2,3,4):
+            for L in (2,3,4,10,16,32):
                 rho=sum((v**L for v in g.values()),F(0))/q
                 for c in range(q):
                     total=F(0)

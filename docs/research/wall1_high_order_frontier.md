@@ -277,3 +277,81 @@ leader is now rank12/girth4 with a six-point t2/overlap2 anchor and8 free
 extensions, superseding the rank8 leader. The former rank8 rank-tail
 obstruction is no longer dominant in its local diagnostic. The new
 rank12 leader needs separate diagnosis. See `wall1_generating_row_rank_tail.md`.
+
+## Part 431: full-coordinate joint-incidence candidate
+
+The new candidate retains all518 coordinates directly in F_h; the old
+input-only mixed relaxation is not its target. Independent scope and
+implementation audits,12 exact fixtures,5 scalar checks,2106 cumulant checks
+and18 frontier comparisons pass. Through17 is below3.219e-17; through24
+is below1.336e37, still ineffective. The size24 leader is now rank10/girth4,
+six-point t2/overlap2 with6 free extensions, with nearby rank8/9 strata.
+This supersedes Part430. See `wall1_full_coordinate_completion.md`.
+
+## Part 432: extended Holder grid
+
+The larger finite Holder/gamma grid passes all2106 cumulant checks and18
+frontier comparisons. Through17 is below3.219e-17; through24 is below1.913e31,
+still ineffective. The size24 leader is rank8/girth3, H9 t6/overlap2 with
+one free extension, superseding Part431. Its common-theta snapshot needs
+branch audit. A separate canonical two-four normalizer lemma is recorded
+in `wall1_two_four_normalizer.md` but has not entered production.
+
+## Part 433: complete c3 common-theta snapshots
+
+All c3 final common-beta snapshots with8<=H<=24 are now retained after
+independent branch audit. All2106 cumulant checks and18 comparisons pass.
+Through17 stays below3.219e-17; through24 is below1.438e27, still ineffective.
+The size24 leader is rank9/girth4, t2/overlap2 with5 free extensions, with
+a significant eight-point t4/overlap3 term. This supersedes Part432. The
+next six-point normalizer candidate must split triangle/square/remainder;
+its audited design is in `wall1_two_four_normalizer.md` and is not yet used.
+
+## Part 434: canonical two-four split completion
+
+The D12/D16 family-specific normalizers are integrated with a generic
+one/no-four remainder. Independent audit,2106 cumulant checks and18 frontier
+reconstructions pass. Through17 stays below3.219e-17; through24 is below
+5.931e25, still ineffective. The size24 leader is rank8/girth4, H8 t4/overlap3
+with2 free extensions, superseding Part433. The next H8/H9 isotropic
+counterparts have a read-only branch audit but are not yet integrated.
+See `wall1_two_four_normalizer.md` for the implemented and pending scopes.
+
+## Part 435: complete audited theta snapshot catalogue
+
+The c4 H8..24 and c>=5 common-theta reconstructions pass independent audits,
+2106 cumulant checks and18 frontier comparisons. Through17 remains below
+3.219e-17; through24 is below2.170e16, still ineffective. The size24 leader
+is rank9/girth4, H7 t3/overlap1,3 with4 free extensions. It supersedes
+Part434's H8 leader. This shared-four family requires a separate chart and
+normalizer proof; the H6 boost is not applicable as currently certified.
+See `wall1_eight_nine_theta_bridge.md` for the complete checkpoint.
+
+## Part 436: general hyperplane convolution
+
+The mixed-weight affine convolution candidate passes independent audits,
+2106 cumulant checks and18 frontier comparisons. Through17 remains below
+3.219e-17; through24 is below2.981e10, still ineffective. The rank9/girth4
+H7 shared-four leader persists. Its D15 chart normalizer has a separate
+proof audit and18 exact checks, but is not in production yet. See
+`wall1_general_hyperplane_convolution.md` and `wall1_shared_four_normalizer.md`.
+
+## Part 437: H7 shared-four split
+
+The D15 canonical H7 split passes independent audit,2106 cumulant checks
+and18 frontier comparisons. Through17 stays below3.219e-17; through24 is
+below5.627e5, still ineffective. The size24 leader is rank10/girth4 H6
+t2/overlap2 with6 free extensions, superseding the H7 leader. Higher moments
+of the canonical anchor itself, rather than only its free factors, are a
+candidate for further improvement. See `wall1_shared_four_normalizer.md`.
+
+## Part 438: canonical anchor higher moments
+
+Completion-square cancellation and spectral majorants are documented in
+[canonical anchor moments](wall1_canonical_anchor_moments.md). Both independent
+audits passed. Full cumulant/frontier runs exited successfully, with 2106 exact
+cumulant checks and 18 interval reconstruction checks. Through17 remains below
+3.219e-17; through24 is below0.666 (envelope0.6654023307944522). The size24
+leader is rank11/girth4, log10 envelope −0.2900398457. The 3.01e-12 target,
+selected-history transport, and full BKZ proof remain open. Logs:
+`/tmp/wall1_spectral_cumulants.log`, `/tmp/wall1_spectral_frontier.log`.

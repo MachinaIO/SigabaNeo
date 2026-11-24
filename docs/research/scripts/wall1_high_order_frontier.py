@@ -84,6 +84,10 @@ def main():
         draws[id(value[2])]={'anchors':state['anchors'],'s':state['s'],
                             'completions':state.get('completions'),
                             'theta_anchors':state['theta_anchors'],
+                            'two_four_theta_parts':state['two_four_theta_parts'],
+                            'shared_four_theta_parts':state['shared_four_theta_parts'],
+                            'shared_four_dual_completions':state['shared_four_dual_completions'],
+                            'two_four_dual_completions':state['two_four_dual_completions'],
                             'dual_completions':state['dual_completions'],
                             'extended_dual_completions':state['extended_dual_completions'],
                             'gaussian_free':state['gaussian_free'],
@@ -168,7 +172,25 @@ def main():
                                         *dd['optimized_gaussian_free']**free_basis
                                         *dd['anisotropic_dual_completions'][h,r,c+t]/(free_basis+1))
                     charge=min((charge,theta_charge,anisotropic_charge),key=lambda x:x.b)
-                    if c==4 and t==2 and a==2:charge/=2
+                    if c==4 and t==3 and a in (1,3):
+                        for mode,free_cost,generic in (
+                            ('same',dd['gaussian_free'][7],dd['extended_dual_completions'][h,r,7]),
+                            ('free',dd['optimized_gaussian_free'],dd['anisotropic_dual_completions'][h,r,7])):
+                            parts=dd['shared_four_theta_parts'][a]
+                            split_completed=(parts[None]*generic
+                                +parts[15]*dd['shared_four_dual_completions'][h,r,mode])
+                            split_charge=choices0*q**(3+a)*free_cost**free_basis*split_completed/(free_basis+1)
+                            charge=min((charge,split_charge),key=lambda x:x.b)
+                    if c==4 and t==2 and a==2:
+                        for mode,free_cost,generic in (
+                            ('same',dd['gaussian_free'][6],dd['extended_dual_completions'][h,r,6]),
+                            ('free',dd['optimized_gaussian_free'],dd['anisotropic_dual_completions'][h,r,6])):
+                            split_completed=dd['two_four_theta_parts'][None]*generic
+                            split_completed+=sum((dd['two_four_theta_parts'][D]
+                                *dd['two_four_dual_completions'][h,r,D,mode] for D in (12,16)),I(0))
+                            split_charge=choices0*q**4*free_cost**free_basis*split_completed/(free_basis+1)
+                            charge=min((charge,split_charge),key=lambda x:x.b)
+                        charge/=2
                     terms.append((charge.b,t,a,charge))
             two=sum((x[3] for x in terms),I(0))
             chosen=min((one,two),key=lambda x:x.b)

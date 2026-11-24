@@ -4314,6 +4314,85 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   still ineffective against the full target. The size24 leader is now
   rank12/girth4, six-point t2/overlap2 with8 independent extensions.
   All rank tails remain; selected histories and full BKZ remain unproved.
+* **Part 431 (full-coordinate joint completion).**
+  [Full coordinates](research/wall1_full_coordinate_completion.md) derive
+  a separate candidate directly from F_h, retaining dependent output-ball
+  constraints as well as input constraints. The dual frequency matrix has
+  518 columns, with one completion Chernoff factor and the original q^(-400r).
+  This does not upper-bound the input-only mixed relaxation. Two scope
+  audits, implementation review,12 exact fixtures,5 scalar checks,2106
+  cumulant checks and18 frontier comparisons pass. Through17 is below
+  3.219e-17; through24 is below1.336e37 and still ineffective. The size24
+  leader is rank10/girth4, six-point t2/overlap2 with6 free extensions;
+  several rank8/9 strata are nearby. Selected histories and full BKZ are open.
+* **Part 432 (higher Holder orders and canonical normalizer research).**
+  The518-coordinate candidate retains additional Holder orders through32
+  and intermediate gamma choices, with all old candidates preserved.
+  144 exact factor tests,48 Holder tests,2106 cumulant checks and18 frontier
+  comparisons pass. Through17 is below3.219e-17; through24 below1.913e31
+  remains ineffective. The size24 leader is now rank8/girth3, H9 t6/overlap2
+  with one free extension. Separately, the [two-four normalizer lemma](research/wall1_two_four_normalizer.md) supplies canonical unit-minor charts
+  and an improved dual normalizer for five triangular/four orthogonal codes;
+  all9 charts pass exact checks. This family-specific lemma is not yet
+  integrated and cannot be applied to an unsplit general anchor envelope.
+* **Part 433 (complete girth-three theta snapshot scope).**
+  Independent branch audit permits final common-beta snapshots for all
+  c3 anchors with8<=H<=24; the H7 special reconstruction is retained.
+  [Integration checkpoint](research/wall1_seven_point_theta_bridge.md):
+  2106 exact cumulant checks and18 interval comparisons pass. Through17
+  stays below3.219e-17; through24 is below1.438e27 and remains ineffective.
+  Size24 is led by rank9/girth4, six-point t2/overlap2 with5 free extensions.
+  The canonical two-four normalizer design is audited but not integrated;
+  its4 exact hyperplane/convolution tests and9 unit-minor chart tests pass.
+  The full transfer target and selected-history law remain unproved.
+* **Part 434 (integrated canonical two-four normalizer).**
+  [Family-specific completion](research/wall1_two_four_normalizer.md)
+  separates five triangle/four square theta masses from the one/no-four
+  remainder, applying D12/D16 normalizers only to their certified charts.
+  Independent audit,9 chart tests,4 convolution identities,6 scalar cases,
+  2106 cumulant checks and18 frontier reconstructions pass. Through17 is
+  below3.219e-17; through24 below5.931e25 remains ineffective. Size24 is
+  now led by rank8/girth4, H8 t4/overlap3 with2 free extensions. The exact
+  hyperplane convolution refinement remains unused. Full BKZ is unproved.
+* **Part 435 (complete audited theta snapshot catalogue).**
+  [Common-weight reconstruction](research/wall1_eight_nine_theta_bridge.md)
+  covers c4 H8..24 and all c>=5, separately reconstructing weighted c4
+  H8..11 and c6 H10 branches. All prior candidates and exclusion flags
+  remain. Independent branch/implementation audits,2106 cumulant checks
+  and18 frontier comparisons pass. Through17 stays below3.219e-17;
+  through24 is below2.170e16 and still ineffective. Size24 is now led by
+  rank9/girth4 H7 t3/overlap1,3 with4 free extensions. This shared-four
+  family needs its own normalizer proof; the H6-specific boost cannot be
+  reused silently. Selected histories and full BKZ remain unproved.
+* **Part 436 (general Gaussian hyperplane convolution).**
+  [Affine convolution](research/wall1_general_hyperplane_convolution.md)
+  retains the exact coordinate-sum constraint across all r+2 dual Gaussian
+  factors, using a mixed-weight Fourier/theta upper bound with full aliases.
+  Independent audits,4 exact mixed-weight identities,12 interval cases,
+  2106 cumulant checks and18 frontier comparisons pass. Through17 remains
+  below3.219e-17; through24 is below2.981e10 and still ineffective. The
+  rank9/girth4 H7 leader persists. A separate [D15 chart proof](research/wall1_shared_four_normalizer.md) passes18 exact chart checks
+  but is not integrated. Selected histories and full BKZ remain open.
+* **Part 437 (integrated H7 shared-four normalizer).**
+  [D15 split](research/wall1_shared_four_normalizer.md) applies the certified
+  canonical normalizer only to the nine shared-four codes for overlaps1/3,
+  keeping the isotropic remainder under the generic cap. Independent audit,
+  18 chart tests,6 scalar cases,2106 cumulant checks and18 frontier comparisons
+  pass. Through17 stays below3.219e-17; through24 is below5.627e5 and remains
+  ineffective. Size24 is now led by rank10/girth4 H6 t2/overlap2 with6 free
+  extensions. Higher moments of the canonical anchor are the next candidate;
+  actual selected histories and full BKZ remain open.
+* **Part 438 (canonical anchor higher moments).**
+  [Completion-square spectral moments](research/wall1_canonical_anchor_moments.md)
+  retain anchor correlations using certified H6/H7 charts. Raw Gaussian moments
+  are not clipped; no extra normalizer boost is used. Independent mathematical
+  and implementation audits,3645 exact identities,raw/normalized regression,
+  existing Holder and normalizer tests,2106 cumulant checks and18 frontier
+  reconstructions pass. Through17 is below3.219e-17; through24 is below0.666
+  (computed envelope0.6654023307944522), still above the3.01e-12 target.
+  The size24 leader is rank11/girth4. These are upper envelopes, not measured
+  probabilities. Selected-history transport and full BKZ remain unproved;
+  no new Lean theorem is claimed.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

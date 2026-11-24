@@ -167,3 +167,21 @@ rank-tail contribution. Sharper auxiliary rank tails, or a moment bound
 that also exploits multiple bases within deficient-rank strata, is the
 next necessary direction. No selected-history law or complete BKZ proof
 follows from this checkpoint.
+
+## Part 432: extended full-coordinate Holder search
+
+For the518-coordinate candidate, the finite Holder grid now also includes
+10,12,14,16,20,24,32, always requiring Lk<=518. Additional gamma candidates
+.55,.6,.65,.7,.8,.9 times1e-6 retain the entire previous grid. The118 branch
+is unchanged. These choices are independent upper bounds under the same
+proved lemmas; no global parameter optimality is claimed. The cache includes
+the actual order tuple and gamma tuple.
+
+The higher-order finite factor tests now pass144 cases, in addition to48
+Holder checks. Both full runs exit0 with2106 cumulant checks and18 frontier
+comparisons: `/tmp/wall1_holder_extended_cumulants.log` and
+`/tmp/wall1_holder_extended_frontier.log`. Through17 is below3.219e-17;
+through24 is below1.913e31, still ineffective. The size24 leader is now
+rank8/girth3, H9 t6/overlap2, with only one free extension. Its theta snapshot
+needs a separate branch audit. The two-four normalizer research concerns
+a different residual family and is not included in this numerical bound.

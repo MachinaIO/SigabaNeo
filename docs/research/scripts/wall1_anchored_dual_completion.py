@@ -10,8 +10,9 @@ from wall1_dual_frequency_rank import gauss_binomial
 GAMMA_GRID=('.5e-6','.75e-6','1e-6','1.25e-6','1.5e-6','1.75e-6',
             '2e-6','2.25e-6','2.5e-6','3e-6','4e-6','5e-6','6.85e-6')
 _theta_cache={};_tail_cache={};_cap_cache={}
-_packing_cache={};_free_moment_cache={}
+_packing_cache={};_raw_moment_cache={};_hyperplane_cache={}
 HOLDER_ORDERS=(2,3,4,5,6,8)
+FULL_HOLDER_ORDERS=HOLDER_ORDERS+(10,12,14,16,20,24,32)
 
 
 def theta(t):
@@ -41,16 +42,39 @@ def rank_tails(q,n,k,gamma_text):
     return _tail_cache[key]
 
 
-def free_moment(q,beta,L):
-    """Upper bound on the normalized one-coordinate periodized L-moment."""
+def raw_moment(q,beta,L):
+    """Upper bound on the unnormalized wrapped Gaussian L-moment."""
     key=(iv.dps,q,beta._mpi_,L)
-    if key not in _free_moment_cache:
+    if key not in _raw_moment_cache:
         a=iv.pi**2/beta
         delta=2*iv.exp(-a/4)/(1-iv.exp(-2*a))
         value=delta**L+sum((comb(L,j)*delta**(L-j)
               *theta(j*a/(q*q))/q for j in range(1,L+1)),iv.mpf(0))
-        _free_moment_cache[key]=min((iv.mpf(1),value),key=lambda x:x.b)
-    return _free_moment_cache[key]
+        _raw_moment_cache[key]=value
+    return _raw_moment_cache[key]
+
+
+def free_moment(q,beta,L):
+    """Normalized moment: its normalizer is at least one and its maximum is one."""
+    return min((iv.mpf(1),raw_moment(q,beta,L)),key=lambda x:x.b)
+
+
+def hyperplane_sum_bound(q,alpha,beta_free,r0,f):
+    """Unnormalized hyperplane sum via all r+2 affine Gaussian factors."""
+    key=(iv.dps,q,alpha._mpi_,beta_free._mpi_,r0,f)
+    if key not in _hyperplane_cache:
+        m=r0+2;a=q*q*alpha;b=q*q*beta_free
+        da=2*iv.exp(-a/4)/(1-iv.exp(-2*a))
+        db=2*iv.exp(-b/4)/(1-iv.exp(-2*b))
+        raw=iv.mpf(0)
+        for j in range(m+1):
+            for ell in range(f+1):
+                term=comb(m,j)*comb(f,ell)*da**(m-j)*db**(f-ell)
+                if j or ell:term*=theta((j*a+ell*b)/(q*q))/q
+                raw+=term
+        scale=(q*iv.sqrt(alpha/iv.pi))**m*(q*iv.sqrt(beta_free/iv.pi))**f
+        _hyperplane_cache[key]=scale*raw
+    return _hyperplane_cache[key]
 
 
 def packing_tail(q,n,k,L,gs):
@@ -72,7 +96,7 @@ def packing_tail(q,n,k,L,gs):
     return _packing_cache[key]
 
 
-def completion_details(s,r,h,*,anchor_size=None,free_beta=None):
+def completion_details(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=118,anchor_gram_det=None):
     """Return (cap, chosen_gamma_text) for k=h-r-2 dependent positions.
 
     q=3329 and N=518 are the audited parameter domain. s['radius'] is the
@@ -81,38 +105,67 @@ def completion_details(s,r,h,*,anchor_size=None,free_beta=None):
     free_beta optionally changes only the independent extension weights.
     Free-point Gaussian costs are NOT included in this completion cap.
     No anchor Chernoff prefactor or output normalization is included.
+    coordinate_count=518 requires a full joint-incidence target; it cannot
+    bound the input-only mixed-fiber relaxation. The input candidate is retained.
+    anchor_gram_det requires a certified canonical chart: H6 two-four with
+    determinant12/16, or H7 shared-four with determinant15. Not a general family.
     """
     assert s['iv'] is iv
-    q=s['q'];N=s['N'];n=118;k=h-r-2;I=iv.mpf
-    assert q==3329 and N==518 and 2<=r and 0<=k<=n
+    q=s['q'];N=s['N'];n=coordinate_count;k=h-r-2;I=iv.mpf
+    assert n in (118,518)
+    assert q==3329 and N==518 and 2<=r and 0<=k<=118
     H0=r+2 if anchor_size is None else anchor_size
     assert 4<=H0<=r+2
+    assert anchor_gram_det is None or (H0==6 and anchor_gram_det in (12,16)) or (H0==7 and anchor_gram_det==15)
     if k==0:return I(1),'none'
     R2=s['radius']**2
     alpha=I((H0-2)*N)/(2*H0*R2)
     r0=H0-2;f=r-r0
     beta_free=alpha if free_beta is None or f==0 else I(free_beta)
     assert beta_free>0
-    key=(iv.dps,q,N,n,r,k,H0,R2._mpi_,alpha._mpi_,beta_free._mpi_,GAMMA_GRID,HOLDER_ORDERS)
+    gamma_grid=(('.2e-6','.25e-6','.3e-6','.35e-6','.4e-6',
+                 '.55e-6','.6e-6','.65e-6','.7e-6','.8e-6','.9e-6')+GAMMA_GRID
+                if n==518 else GAMMA_GRID)
+    holder_orders=FULL_HOLDER_ORDERS if n==518 else HOLDER_ORDERS
+    key=(iv.dps,q,N,n,r,k,H0,R2._mpi_,alpha._mpi_,beta_free._mpi_,gamma_grid,holder_orders,anchor_gram_det)
     if key in _cap_cache:return _cap_cache[key]
     base_h=theta(iv.pi**2/alpha);Q=theta(iv.pi**2/(alpha*q*q));d=r-1
     rho_old=Q/(q*base_h)
+    boost=I(1)
+    if anchor_gram_det is not None:
+        # Caller certifies the canonical short-relation chart, not a general anchor.
+        boost=max((I(1),q*q*alpha/(iv.pi*iv.sqrt(anchor_gram_det)*base_h**r0)),
+                  key=lambda x:x.a)
     if f:
         free_h=theta(iv.pi**2/beta_free)
         rho_free=theta(iv.pi**2/(beta_free*q*q))/(q*free_h)
-    else:rho_free=I(1)
-    eta_candidates=[I(1),Q**2*rho_old**(r0-1)*rho_free**f]
-    if f:eta_candidates.append(Q**2*rho_old**r0*rho_free**(f-1))
+    else:rho_free=I(1);free_h=I(1)
+    eta_candidates=[I(1),Q**2*rho_old**(r0-1)*rho_free**f/boost]
+    if f:eta_candidates.append(Q**2*rho_old**r0*rho_free**(f-1)/boost)
+    eta_candidates.append(hyperplane_sum_bound(q,alpha,beta_free,r0,f)
+                          /(q**d*base_h**r0*free_h**f*boost))
     eta=min(eta_candidates,key=lambda x:x.b)
     assert 0<eta<=1
     holder_etas={}
-    if f:
-        old_eta=min((I(1),Q**2*rho_old**(r0-1)),key=lambda x:x.b)
-        for L in HOLDER_ORDERS:
-            if L*k<=n:
-                holder_etas[L]=min((eta,old_eta*free_moment(q,beta_free,L)**f),key=lambda x:x.b)
+    if f or anchor_gram_det is not None:
+        old_eta=min((I(1),Q**2*rho_old**(r0-1)/boost,
+            hyperplane_sum_bound(q,alpha,alpha,r0,0)/(q**(r0-1)*base_h**r0*boost)),key=lambda x:x.b)
+        for L in holder_orders:
+            if L*k>n:continue
+            free_L=free_moment(q,beta_free,L) if f else I(1)
+            candidates=[eta]
+            if f:candidates.append(old_eta*free_L**f)
+            if anchor_gram_det is not None:
+                # Completion-square theta cancels against the exact normalizer.
+                # These raw spectral moments must not be clipped or divided by boost.
+                spectral_beta={12:6,16:4,15:5}[anchor_gram_det]*alpha
+                raw_L=raw_moment(q,spectral_beta,L)
+                spectral_h=theta(iv.pi**2/spectral_beta)
+                candidates.append(spectral_h**L*raw_L**(r0-1)*free_L**f)
+                if f:candidates.append(raw_L**r0*free_L**(f-1))
+            holder_etas[L]=min(candidates,key=lambda x:x.b)
     best=None
-    for gs in GAMMA_GRID:
+    for gs in gamma_grid:
         gamma=I(gs);tails=rank_tails(q,n,k,gs)
         # Upper bound in rank's exact tail identity; never assume full rank.
         rank_remainder=(1-eta)*sum((eta**t*tails[t] for t in range(k)),I(0))
@@ -122,12 +175,19 @@ def completion_details(s,r,h,*,anchor_size=None,free_beta=None):
             moment=min((moment,candidate),key=lambda x:x.b)
         logcap=d*k*iv.log(q)+k*gamma*R2+k*n*iv.log(theta(q*q*gamma))+iv.log(moment)
         if best is None or logcap.b<best[0].b:best=(logcap,gs)
-    answer=(iv.exp(best[0]),best[1]);_cap_cache[key]=answer
+    answer=(iv.exp(best[0]),best[1])
+    if n==518:
+        # This branch is authorized only for full joint-incidence targets.
+        old=completion_details(s,r,h,anchor_size=H0,free_beta=free_beta,
+                               anchor_gram_det=anchor_gram_det)
+        answer=min((answer,old),key=lambda x:x[0].b)
+    _cap_cache[key]=answer
     return answer
 
 
-def completion_bound(s,r,h,*,anchor_size=None,free_beta=None):
-    return completion_details(s,r,h,anchor_size=anchor_size,free_beta=free_beta)[0]
+def completion_bound(s,r,h,*,anchor_size=None,free_beta=None,coordinate_count=118,anchor_gram_det=None):
+    return completion_details(s,r,h,anchor_size=anchor_size,free_beta=free_beta,
+                              coordinate_count=coordinate_count,anchor_gram_det=anchor_gram_det)[0]
 
 
 def main():

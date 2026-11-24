@@ -186,6 +186,8 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                               +I(q)**(1/power)*delta)**power
     anchors = {}
     theta_anchors = {}
+    two_four_theta_parts = {}
+    shared_four_theta_parts = {}
     for c in range(3, 24):
         for t in range(1, 25-c):
             union = c+t
@@ -646,6 +648,7 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         if four_six_split.b<one_power.b:
                             one_power=four_six_split
                     if c == 4 and t >= 4:
+                        theta_one=one_power
                         # The first circuit is the unique norm-four line.
                         # Enumerate rare independent norm-six/eight witnesses;
                         # all other codes have second squared minimum >=10.
@@ -662,6 +665,7 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             +I(min(one_count, eight_pair_count))/coefficient_count
                             *fixed_four_plane(7)**n
                             +I(one_count)/coefficient_count*fixed_four_plane(9)**n)
+                        theta_one=min((theta_one,rare_split),key=lambda v:v.b)
                         if union in (8,9,10,11):
                             # A unit old/new minor makes each short pair a
                             # primitive plane basis. Its second height is D/4.
@@ -689,6 +693,12 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                 determinant_counts=tuple((det,count) for det,count in determinant_counts if det!=28)
                             if union==11 and exclude_eleven_thirty_one:
                                 determinant_counts=tuple((det,count) for det,count in determinant_counts if det!=31)
+                            if union in (8,9,10,11):
+                                iso_short=sum((I(count)/coefficient_count
+                                    *fixed_four_plane(I(det)/4)**n
+                                    for det,count in determinant_counts),I(0))
+                                theta_one=min((theta_one,iso_short
+                                    +I(one_count)/coefficient_count*fixed_four_plane(9)**n),key=lambda v:v.b)
                             if union==8:
                                 scaled_alpha=alpha*I(16)/21
                                 scaled_a=a*I(16)/21
@@ -755,6 +765,7 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                 ten_part=I(min(one_count,ten_witnesses))/coefficient_count*fixed_four_plane(9)**n
                                 remainder=I(one_count)/coefficient_count*fixed_four_plane(11)**n
                                 ten_split=short_part+ten_part+remainder
+                                theta_one=min((theta_one,iso_short+ten_part+remainder),key=lambda v:v.b)
                                 rare_split=min((rare_split,ten_split),key=lambda v:v.b)
                                 s['nine_position_rare_parts'][overlap].update({
                                     'norm-ten':ten_part,'higher':remainder,'new-split':ten_split})
@@ -766,6 +777,11 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                     for det,count in determinant_counts+ten_counts[overlap]),I(0))
                                     +I(one_count)/coefficient_count*fixed_four_plane(11)**n)
                                 rare_split=min((rare_split,ten_split),key=lambda v:v.b)
+                                iso_ten=(sum((I(count)/coefficient_count
+                                    *fixed_four_plane(I(det)/4)**n
+                                    for det,count in determinant_counts+ten_counts[overlap]),I(0))
+                                    +I(one_count)/coefficient_count*fixed_four_plane(11)**n)
+                                theta_one=min((theta_one,iso_ten),key=lambda v:v.b)
                                 s['ten_position_rare_parts'][overlap]={
                                     'norm-eight':sum((I(count)/coefficient_count*short_pair_kernel(det)**n
                                                      for det,count in determinant_counts),I(0)),
@@ -796,6 +812,9 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                          for det,count in determinant_counts),I(0))
                                     +I(1512)/coefficient_count*fixed_four_plane(I(39)/4)**n
                                     +I(one_count)/coefficient_count*fixed_four_plane(11)**n)
+                                theta_one=min((theta_one,iso_short
+                                    +I(1512)/coefficient_count*fixed_four_plane(I(39)/4)**n
+                                    +I(one_count)/coefficient_count*fixed_four_plane(11)**n),key=lambda v:v.b)
                                 if ten_split.b<rare_split.b:
                                     rare_split=ten_split
                         if union==13:
@@ -832,6 +851,14 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                             *(one_power+none_power)/q**(m*(union-2)))
                             theta_anchors[c,t,overlap] = min(
                                 (theta_anchors[c,t,overlap],common_theta),key=lambda v:v.b)
+                        if union in (8,9):
+                            assert bad_count==0
+                            common_theta=(iv.exp(union*beta*radius**2)
+                                *(theta_one+none_power)/q**(m*(union-2)))
+                            theta_anchors[c,t,overlap]=min(
+                                (theta_anchors[c,t,overlap],common_theta),key=lambda v:v.b)
+                        if union>=12:
+                            theta_one=one_power
                         direct_one = (I(3)/q**2*four_ball*new_groups[t]
                                       /iv.exp(union*beta*radius**2))
                         s['first_ball_ratios'][t, overlap] = direct_one/one_power
@@ -855,8 +882,19 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             +fifteen_no_four(14,I(25)/2)**n
                             +fifteen_no_four(16,12)**n)
                         none_power=min((none_power,long_no_four),key=lambda v:v.b)
+                    if c==4 and union>=8:
+                        # Include the later H14/H15 isotropic no-four refinements.
+                        assert bad_count==0
+                        common_theta=(iv.exp(union*beta*radius**2)
+                            *(theta_one+none_power)/q**(m*(union-2)))
+                        theta_anchors[c,t,overlap]=min(
+                            (theta_anchors[c,t,overlap],common_theta),key=lambda v:v.b)
                     if c==4 and union==7:
                         # Snapshot before any shared-four direct-ball minimum.
+                        shared_prefactor=iv.exp(7*beta*radius**2)/q**(5*m)
+                        shared_four_theta_parts[overlap]={
+                            15:shared_prefactor*I(bad_count)/coefficient_count*bad_bound**n,
+                            None:shared_prefactor*(four_seven_theta_one+none_power)}
                         common_seven=(I(bad_count)/coefficient_count*bad_bound**n
                                       +four_seven_theta_one+none_power)
                         common_anchor=(iv.exp(union*beta*radius**2)*common_seven
@@ -1052,6 +1090,12 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                 (theta(I(3288)/539*alpha)*theta(I(35712)/6713*alpha)
                                  +iv.exp(-648*scaled_alpha)*theta(power*scaled_alpha/2)**2)/q**2
                                 +wperiodic)
+                        if union==10:
+                            theta_two=min((I(two_count)/coefficient_count*two**n,
+                                sum((I(count)/coefficient_count
+                                    *six_plane(6,I(det)/6,long_tail)**n
+                                    for det,count in LARGE_COUNTS[union][overlap]
+                                    if not(exclude_six_ten_thirty_two and det==32)),I(0))),key=lambda v:v.b)
                         def large_six_kernel(det):
                             old=six_plane(6,I(det)/6,long_tail)
                             return min((old,weighted_d32),key=lambda v:v.b) if union==10 and det==32 else old
@@ -1195,13 +1239,26 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                       /q**(m*(union-2)))
                     theta_anchors[c,t,overlap]=min(
                         (theta_anchors[c,t,overlap],six_theta_anchor),key=lambda v:v.b)
-                if c==3 and union in (7,8,10,11):
+                if c==4 and t==2 and overlap==2:
+                    prefactor=iv.exp(6*beta*radius**2)/q**(4*m)
+                    two_four_theta_parts={
+                        12:prefactor*theta_triangles*bad_bound**n/coefficient_count,
+                        16:prefactor*theta_squares*min((bad_bound**n,square_bound**n),key=lambda v:v.b)/coefficient_count,
+                        None:prefactor*(four_six_theta_power+none_power)}
+                if c==3 and 7<=union<=24:
                     if union==7:
                         common_power=(I(bad_count)/coefficient_count*bad_bound**n
                                       +one_power+seven_theta_none)
                     else:
                         # These final branches use common-beta kernels only.
                         common_power=power_bound
+                    common_anchor=(iv.exp(union*beta*radius**2)*common_power
+                                   /q**(m*(union-2)))
+                    theta_anchors[c,t,overlap]=min(
+                        (theta_anchors[c,t,overlap],common_anchor),key=lambda v:v.b)
+                if c>=5:
+                    common_power=(one_term+theta_two+none_term
+                                  if c==6 and union==10 else power_bound)
                     common_anchor=(iv.exp(union*beta*radius**2)*common_power
                                    /q**(m*(union-2)))
                     theta_anchors[c,t,overlap]=min(
@@ -1218,16 +1275,28 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
     from wall1_ball_slice_completion import completion_bound
     completions={r:completion_bound(s,r-1) for r in range(2,23)}
     from wall1_anchored_dual_completion import completion_bound as dual_completion_bound
-    dual_completions={(h,r):dual_completion_bound(s,r,h)
+    dual_completions={(h,r):dual_completion_bound(s,r,h,coordinate_count=518)
                       for h in range(4,25) for r in range(2,h-1)}
-    extended_dual_completions={(h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0)
+    extended_dual_completions={(h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0,coordinate_count=518)
                               for h in range(4,25) for r in range(2,h-1)
                               for H0 in range(4,r+3)}
     free_beta=I(n)/(2*radius**2)
     optimized_gaussian_free=iv.exp(free_beta*radius**2)*theta(free_beta)**n/q**m
     anisotropic_dual_completions={
-        (h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0,free_beta=free_beta)
+        (h,r,H0):dual_completion_bound(s,r,h,anchor_size=H0,free_beta=free_beta,coordinate_count=518)
         for h in range(4,25) for r in range(2,h-1) for H0 in range(4,r+3)}
+    two_four_dual_completions={
+        (h,r,D,mode):dual_completion_bound(s,r,h,anchor_size=6,
+            free_beta=free_beta if mode=='free' else None,
+            coordinate_count=518,anchor_gram_det=D)
+        for h in range(6,25) for r in range(4,h-1)
+        for D in (12,16) for mode in ('same','free')}
+    shared_four_dual_completions={
+        (h,r,mode):dual_completion_bound(s,r,h,anchor_size=7,
+            free_beta=free_beta if mode=='free' else None,
+            coordinate_count=518,anchor_gram_det=15)
+        for h in range(7,25) for r in range(5,h-1)
+        for mode in ('same','free')}
     gaussian_free={}
     for H0 in range(4,25):
         original_beta=I((H0-2)*n)/(2*H0*radius**2)
@@ -1262,7 +1331,24 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                             *optimized_gaussian_free**free_basis
                                             *anisotropic_dual_completions[h,r,c+t]/(free_basis+1))
                         charge=min((charge,theta_charge,anisotropic_charge),key=lambda v:v.b)
+                        if c==4 and t==3 and a in (1,3):
+                            for mode,free_cost,generic in (
+                                ('same',gaussian_free[7],extended_dual_completions[h,r,7]),
+                                ('free',optimized_gaussian_free,anisotropic_dual_completions[h,r,7])):
+                                parts=shared_four_theta_parts[a]
+                                split_completed=(parts[None]*generic
+                                    +parts[15]*shared_four_dual_completions[h,r,mode])
+                                split_charge=choices*q**(3+a)*free_cost**free_basis*split_completed/(free_basis+1)
+                                charge=min((charge,split_charge),key=lambda v:v.b)
                         if c == 4 and t == 2 and a == 2:
+                            for mode,free_cost,generic in (
+                                ('same',gaussian_free[6],extended_dual_completions[h,r,6]),
+                                ('free',optimized_gaussian_free,anisotropic_dual_completions[h,r,6])):
+                                split_completed=two_four_theta_parts[None]*generic
+                                split_completed+=sum((two_four_theta_parts[D]
+                                    *two_four_dual_completions[h,r,D,mode] for D in (12,16)),I(0))
+                                split_charge=choices*q**4*free_cost**free_basis*split_completed/(free_basis+1)
+                                charge=min((charge,split_charge),key=lambda v:v.b)
                             charge /= 2  # Either four-circuit can be the first witness.
                         if h == 14:
                             s['size14_two_relation_terms'][r, c, t, a] = charge
