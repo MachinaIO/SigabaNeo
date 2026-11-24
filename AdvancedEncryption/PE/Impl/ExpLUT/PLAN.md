@@ -239,8 +239,13 @@ Done (axioms `[propext, Classical.choice, Quot.sound]`):
   `setupSpec_setupMP`** — the `Setup` machine realizes `setupLawW D χT` exactly, for any explicit
   sampler `X : RingSampler D χT` (7-tape program appending the canonical word of a `χT` sample).
 
+* `Prog/Samplers.lean`: `χbin D` (`0`/`1` with probability `1/2`), `binSampler D : RingSampler`.
+* `Prog/SetupSize.lean`: `size_setupP_le`, **`descLen_setupMP_le`** (`≤ 6 B 3^128 (516 + B)`,
+  `B = X.P.size + 34 (195 m + 36) + 2·10^6 + 4` when every field count `n` has `n N K < 2^m`;
+  at `N = 2^24`, `K = 2^16`, `b = 22`, `m = 100`: `≈ 2^249`), `time_setupMP` (`totalTimeT`).
+
 Remaining for F:
-* clocks of `setupMP` (per-tape, as `DualUse/Prog/TightSetup`: `vb_smp` for `repF`, `VB.natP`,
+* closed clock of `setupMP` (per-tape, as `DualUse/Prog/TightSetup`: `vb_smp` for `repF`, `VB.natP`,
   `VB.checkMap` with the certificates above, `vb_appendTapeP`/`vb_frameApP`), its `descLen`, numerics;
 * concrete `RingSampler`s (binary `χT`: one fair bit then zeros; CBD/box coefficient samplers with
   negatives as one's complement NOT);
