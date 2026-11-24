@@ -19,6 +19,7 @@ import SigabaNeo.Lib.Lattices.LeftoverHash
 import SigabaNeo.Lib.Lattices.BoxSampler
 import SigabaNeo.Lib.Lattices.Boxes
 import SigabaNeo.Lib.Lattices.Flood
+import SigabaNeo.Lib.Lattices.FloodRing
 import SigabaNeo.Lib.Lattices.RingLWEInst
 import SigabaNeo.Lib.Lattices.CoinMaps
 import SigabaNeo.Lib.Lattices.BitLaw
@@ -117,6 +118,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   not depend on the trapdoor (`boxSample_eq`).
 * `Flood`: noise flooding over `ℤ_q[X]/(X^N + 1)`: wide uniform errors hide a fixed shift
   (`closeTo_floodLaw_add`).
+* `FloodRing`: the same for one ring element (`floodRing`, `closeTo_floodRing_add`) and for
+  independent families shifted by elements of bounded norm (`closeTo_pi_floodRing_add_le`).
 * `RingLWEInst`: the registry's Ring-LWE laws as laws on ring elements (`ringReal`,
   `ringLWE_realLaw_eq`, `ringLWE_idealLaw_eq`).
 * `CoinMaps`: samples from fair coins (`bitsToZMod`, `uniform_bitsToZMod`).
