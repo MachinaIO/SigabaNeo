@@ -545,3 +545,60 @@ pure function, and every routine is proved once at the level of lists of ring el
    `MersenneT` bounds), loops by `timeBoundT_loop_le`; estimate at `Conf`: the `Aaut_t` stream passes
    dominate, `16 · 2^22 · 11 · 2^184 ≈ 2^214` steps; `descLen` from `XProg.size` of the compiled code
    (a few thousand instructions, `105` tapes).
+
+### Package G2 (the reduction machine) — status (branch `t3/explut-g2`)
+
+**Correction of G's `RedMachine`.** A fair-coin machine with a bounded clock only produces dyadic
+probabilities, and `2^K − 1` is odd, so no machine can draw `redSec`'s uniform `B̄⁽²⁾`, `H⁽²⁾`, `d₂`
+exactly: `RedMachine` with `rAcc`/`uAcc` was not realizable. Now (`AH/RedGame`, `AH/Assembly`,
+`AH/Stat`): `redSecW` (the same with independent `unifW` entries), `epsRed = (|BCol| + |Jh||Col| +
+1) ε_U`, `closeTo_redGame` (the secret is drawn once: `closeTo_runWith_setup_one`), `rAccW`/`uAccW`
+(acceptances of `redGameW`), **`RedMachine` asks for `rAccW`/`uAccW`**, `statW = statW0 + 2 epsRed`
+(`advantage_le0` with `rAcc`, `advantage_le` with `rAccW`), `epsRed_le : epsRed Dc ≤ 2^{−150}`,
+`statW_le` unchanged (`≤ 2^{−140}`). `attributeHiding_Dc'` keeps its statement.
+
+**Plumbing (done, `AH/RedChain`, `AH/RedConst`).**
+* `w8Codes` (codes of `univ w8`; `encAttribute_onto`), `redM8 = P ⨾ (inlined A ⨾ Post) ⨾guard Dm`,
+  `acceptProb_redM8` (as `DualUse.acceptProb_reductionP`, with `postG`/`DcB`).
+* The handlers' secret is **any finite type `Sig` with a map `f : Sig → RSec D`** (`RSec D` contains
+  `Pos → ℕ`, so it has no fixed-length encoding) and a law `setupS i x` with
+  `(setupS i x).map f = redSecW D χfl x i`; the handlers serve `spS = (specRedW …).comap f setupS`
+  with `setupR D setupS instOf w = setupS (instOf w)` (`obs_oracleW_red`, via
+  `Generic.runWith_comap`); `longKeys_red` (`predLen ≤ L`).
+* **`RedComps D kb L impl χfl`**: `Sig`, `f`, `setupS`, `map_setupS`, `senc : FixedEnc Sig nS`,
+  `IW`, `Ok`, `W`, `instOf`, the components `cs : Generic.Comps R (w8Codes senc) (spS …)
+  (setupR …) IW Ok`, their bounds `cb : CompBoundsP cs L W`, the decoder `P` with
+  `run_P : P.run (enc D i) = pure (dw (enc D i))`, `instOf_dw`, `iw`, the answer bound `La`
+  (`≥` the lengths of `mpkEnc`, `skEnc`, `ctEnc`).
+* **`redMachine_of_comps`**: `RedComps` ⟹ `RedMachine D kb L (circParamsD D) impl (χcbd D)
+  (χcbd D) χfl C A Dm` for all `A`, `Dm`, `C ≥ rc.const` (`chainConst` of the chain).
+* `RedComps.const_le`: `rc.const ≤ compBoundG 128 1 515 sP tP p R Sz2 L (11 Tc + 2^26 X²) t`
+  (decoder states/time/tapes, components' sizes `Sz2`, components' time `Tc`, every length `≤ X`).
+* **`attributeHiding_Dc_comps`**: `AttributeHiding (univ w8) params impl` from
+  `CircularRingLWE.decision.Holds`, `ImplSpec Dc kb L impl χc χc χfl`, `KbCover kb coverBound`,
+  `predLen ≤ L` and a `RedComps Dc kb L impl χfl` with `64 · 2^256 · const ≤ 2^1155`.
+
+**Decoder (done, `Prog/RedDecode`).** The frame parser `decodeMX false K (2 · rows · N K) n` on the
+registry's words modulo `2^K − 1` (generic `decodeW_encodeRingQ` for any `q ≤ 2^K`,
+`coefW_eq_encRM`): `decR D n`, **`run_decR`** (`n ≥ encLen rows N K`), the state word
+**`dwR_enc : dwR D (enc D i) = true :: wordsOf (toPair i).1 ++ wordsOf (toPair i).2`** (canonical
+ring words, rows in the registry's order `ρ D`), `instR` (`decRM` of the blocks), **`instR_dwR`**,
+`rowsD_eq : rows = mCirc D + K (2b)`, 14 tapes.
+
+**Remaining for G2** (the components of `RedComps` at `Dc` and their bounds):
+1. `Sig`/`senc`/`setupS` — planned: the raw secret `Sig = Attribute w8 × CInst D × B̄⁽²⁾ × H⁽²⁾ × d₂ ×
+   FloodV × zr`, `f` = (`attrN x`, `redPub`, `zr`, `redCore`, `fl`), `setupS` = `redSecW`'s draws
+   (then `map_setupS` is `rfl`-level), `senc` = attribute bits ++ the instance part of the state word
+   ++ canonical coin words ++ `zr` bits.
+2. `setupP`: copy the instance words, sample with `unifCanonP` (package F), a `floodRing` sampler
+   (`400` fair bits per coefficient, zero-padded: canonical), fair bits for `zr`.
+3. `authP` = `authW impl` (`C.length = predLen ∧ (progOf C).output x = false`): adapt
+   `DualUse/Prog/AuthBP` (same `211 · 2^22` layout; index `u = z + 2^14 a` = `numB (a ++ z_msb)`,
+   table entries LSB first, so the 14 read bits are prepended (`consHead`) instead of appended).
+4. `pubP`, `chalP`: `mpkEnc`/`ctEnc` of `view2 …` (programming `a_t = B⁽¹⁾ Z_t + X^{w x_t} G`,
+   `A₀`, `A^in`, `A^aut`, the shifted challenge) — VM code (`law_compile`) behind a front end.
+5. `keyP` = `KGsim`: EvalPK over `bpOf (progOf C)` (F3b's routines), `simKey` (`R̂_F` by
+   simulation-form propagation: `simMul`, `simAut`/`simPerm`, `simLut`), `simX`/`simTrap`
+   (Lemma 11: `vRounds`, `ginvTop`), one box try with `kb` and the encoding `skEnc` — on the VM.
+6. Bounds: times/lengths/sizes of all components (`CompBoundsP`, `compTimeP`), the decoder at `Dc`
+   (`time_decodeMX_le`, `states_decodeMX_le`), then `64 · 2^256 · compBoundG … ≤ 2^1155`.

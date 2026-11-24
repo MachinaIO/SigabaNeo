@@ -148,9 +148,8 @@ noncomputable def spS (impl : Impl sig) (χfl : PMF (Rg D)) (i₀ : CInst D) : S
 
 /-- **The secret of the selection for the state word `w`**: `setupS` of the instance
 `instOf w`. -/
-noncomputable def setupR (instOf : List Bool → CInst D) (w : List Bool) (x : Attribute w8) :
-    PMF Sig :=
-  setupS (instOf w) x
+noncomputable def setupR (instOf : List Bool → CInst D) (w : List Bool) : (univ w8).Attr → PMF Sig :=
+  setupS (instOf w)
 
 /-- **The handlers' oracle has the observations of the machines' reduction experiment** of the
 instance of the state word, when `setupS` represents the machines' reduction secret through `f`. -/
