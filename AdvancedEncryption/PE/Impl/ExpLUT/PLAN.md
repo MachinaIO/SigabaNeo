@@ -381,6 +381,13 @@ programs:
   `2N − 2^{b'}` (`X^{2^{b'}}`), 58–73 the parsed inputs, 80–89 ddot, 90–119 vector/G⁻¹ blocks,
   140–159 LUT coefficients, 180–199 final sums.
 * Decoding: for canonical `v < 2^K`, `2^{K−2} ≤ v < 3·2^{K−2}` iff bit `K−1` ≠ bit `K−2`.
+* **Duplication with F3** (branch `t3/explut-f3`, head 16b80df4): F3 built its own ring-word VM
+  for KeyGen **under the same paths** (`Mersenne/VM.lean`, `VMRing.lean`, plus `VMMat.lean`,
+  `ExpLUT/Prog/KeyVM.lean`) with a different instruction set. The two cannot both be merged as is:
+  before merging both into `t3/pe-exp-lut`, rename one family (e.g. F4's to `Mersenne/DVM*.lean`,
+  namespace `RingVM` → `DRingVM`, or F3's to `KVM*`), or port F3's routines (`mulPKC`,
+  `ginvMulC`, `autPKC`) onto F4's `RingVM` (F4's `mulAccC`/`matGinvC`/`vecAutC` already cover
+  EvalPK of Mul/Aut, see below).
 * EvalPK is computed inside Dec alongside EvalCT (the same `bitRounds` loop carries the pair
   (public matrix, encoding)); F3 has no shared `EvalPK.lean` yet — a separate PK-only program for
   KeyGen can reuse `RingVM` and the blocks (`mulAcc`, `matGinv`, `bitRounds`) unchanged.
