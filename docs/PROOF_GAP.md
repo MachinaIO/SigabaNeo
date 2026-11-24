@@ -4238,6 +4238,82 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   Through17 is below2.666e-13; through24 is about1.96044e153, still an
   ineffective envelope. The size24 leader is rank9/girth3 with a six-point
   anchor and5 free basis points. The selected-history law remains open.
+* **Part 423 (six-point common-theta snapshots).**
+  [Six-point bridge](research/wall1_six_point_theta_bridge.md) retains
+  refined common-beta envelopes separately from selected weighted/direct-ball
+  minima. Unsafe six-point branches use a complete isotropic bad/one/none
+  decomposition. Independent integration audit, 2106 exact cumulant checks
+  and 18 frontier interval comparisons pass. Through17 stays below2.666e-13;
+  through24 is below1.034e140, still ineffective against the3.01e-12 target.
+  The size24 leader is rank9/girth3, now a seven-point t4/overlap2 anchor
+  with4 independent extensions. Selected histories and full BKZ remain open.
+* **Part 424 (girth-three common-theta extension).**
+  [Seven-point bridge](research/wall1_seven_point_theta_bridge.md) replaces
+  the weighted D27 contribution by a separately retained isotropic counterpart
+  for theta completion; H8/H10/H11 final common-beta bounds are also retained.
+  Independent branch audit,2106 exact cumulant checks and18 frontier interval
+  comparisons pass. Through17 stays below2.666e-13; through24 is below2.258e136,
+  still ineffective. The size24 leader is now rank8/girth4 with a seven-point
+  t3/overlap3 anchor and3 independent extensions. The full transfer target,
+  selected-history law and BKZ theorem remain open.
+* **Part 425 (four-circuit seven-point theta bridge).**
+  [Seven-point bridge](research/wall1_seven_point_theta_bridge.md) retains
+  an isotropic D28 counterpart and the complete bad/one/none decomposition
+  before shared-four direct-ball replacements. Independent audit,2106 exact
+  cumulant checks and18 frontier comparisons pass. Through17 is below2.665e-13;
+  through24 is below8.203e133 and still ineffective. The size24 leader is
+  rank8/girth4, now t2/overlap2 with4 independent extensions. The six-point
+  two-four family needs a sharper complete bound or a stronger cover with
+  its addback; larger-anchor snapshots alone do not remove this term.
+  The full transfer target, selected histories and BKZ remain unproved.
+* **Part 426 (two-four common-theta determinant split).**
+  [Six-point bridge](research/wall1_six_point_theta_bridge.md) preserves
+  the orthogonal Gaussian before its direct-ball replacement, charging five
+  triangular and four orthogonal codes separately with all exclusions.
+  Independent audit,2106 exact checks and18 interval comparisons pass.
+  Through17 is below1.526e-14; through24 is below4.557e133, still ineffective.
+  The rank8/girth4 six-point leader persists. A Poisson zero-layer lower
+  bound on the triangular Gaussian explains why anchor-only tightening
+  cannot remove its leading term. Joint completion constraints remain open.
+* **Part 427 (joint completion via disjoint frequency bases).**
+  [Holder lemma](research/wall1_disjoint_basis_holder.md): if a rank-t
+  dual-frequency matrix contains L disjoint column bases, the normalized
+  coefficient average is at most eta_L^t, where eta_L is the maximal
+  hyperplane average of (psi/psi(0))^L. Constant fibers and Holder prove
+  the bound including fixed offsets;48 exact finite checks pass. To use
+  it numerically requires an anchor-specific eta_L bound and a certified
+  distribution of base packing under the auxiliary Gaussian law. Rank
+  alone is insufficient. No production improvement or actual-history
+  independence is asserted from this lemma.
+* **Part 428 (auxiliary Gaussian basis-packing tail).**
+  [Sequential exposure](research/wall1_disjoint_basis_holder.md) bounds
+  failure to obtain L disjoint k-bases by a binomial lower tail: every
+  fresh column escapes the current proper span with probability at least
+  1-M, where M is the maximal residue atom. Independent audit and2688
+  exact finite checks pass. An interval diagnostic at q3329,n118,k14,L2,
+  gamma1.25e-6 gives packing failure below5.40e-11. This is an auxiliary
+  event only. The rank-deficient contribution is retained explicitly when
+  joining this bound to the Holder moment. Anchor-specific eta_L bounds
+  remain open; the production completion envelope is unchanged.
+* **Part 429 (free-coordinate Holder moment integration).**
+  [Disjoint-basis extension](research/wall1_disjoint_basis_holder.md) bounds
+  higher moments of the independent free-coordinate factors, including
+  Gaussian aliases, and joins them to packing and rank tails. Mathematical
+  and implementation audits,48 Holder checks,72 factorization checks,
+  2688 packing cases,2106 cumulant checks and18 frontier comparisons pass.
+  Through17 remains below1.526e-14 and through24 below4.557e133: the main
+  residual does not improve substantially. The rank8/girth4 diagnostic is
+  dominated by rank-tail t11 rather than its full-rank term. Sharper rank
+  tails or deficient-rank joint moments are required; full BKZ remains open.
+* **Part 430 (actual generating-row rank tail).**
+  [Generating rows](research/wall1_generating_row_rank_tail.md) replace
+  ambient-subspace counting by a union over actual t-row generators,
+  yielding Pr(rank<=t)<=binom(k,t)M^((n-t)(k-t)). Independent audits,
+  28 finite rank cases,154 helper cases,2106 cumulant checks and18 frontier
+  comparisons pass. Through17 is below3.389e-17; through24 is below7.427e73,
+  still ineffective against the full target. The size24 leader is now
+  rank12/girth4, six-point t2/overlap2 with8 independent extensions.
+  All rank tails remain; selected histories and full BKZ remain unproved.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

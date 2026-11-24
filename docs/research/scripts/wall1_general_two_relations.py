@@ -436,6 +436,11 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             two_six_term=min((two_six_term,exact_two_six),key=lambda v:v.b)
                         if c==3 and union==7:
                             six_pairs={1:((32,4),),2:((27,18),(32,4),(35,24),(36,18))}
+                            # Keep a common-beta counterpart before D27 weighting.
+                            seven_theta_two=min((two_six_term,sum((
+                                I(count)/coefficient_count
+                                *no_four_plane(6,I(det)/6,six_tail)**n
+                                for det,count in six_pairs[overlap]),I(0))),key=lambda v:v.b)
                             # Weight1/8 on the coefficient-two old entry,
                             # 23/16 on the other old entries, and1 on new ones.
                             scaled_alpha=alpha*I(16)/23
@@ -479,6 +484,9 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                                 +I(six_count)/coefficient_count
                                     *no_four_plane(6,I(17)/2,six_tail)**n)
                             one_six_term=min((one_six_term,exact_eight),key=lambda v:v.b)
+                        if c==3 and union==7:
+                            seven_theta_none=min((none_power,
+                                one_six_term+seven_theta_two+no_six_power),key=lambda v:v.b)
                         refined_none = (one_six_term
                                         +two_six_term
                                         +no_six_power)
@@ -525,6 +533,16 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         # a unique four-support direction, necessarily C.
                         seven_counts={1:(),2:((28,18),(31,10),(32,18)),
                                       3:((31,30),(32,54))}[overlap]
+                        # Preserve a complete isotropic one-four bound before
+                        # the D28 weighted replacement enters seven_split.
+                        four_seven_theta_one=min((one_power,
+                            I(rare_six_count)/coefficient_count
+                            *fixed_four_plane(I(23)/4)**n
+                            +sum((I(count)/coefficient_count
+                                  *fixed_four_plane(I(det)/4)**n
+                                  for det,count in seven_counts),I(0))
+                            +I(one_count)/coefficient_count*fixed_four_plane(9)**n),
+                            key=lambda v:v.b)
                         scaled_alpha=alpha*I(5)/7
                         scaled_a=a*I(5)/7
                         wdelta=2*iv.exp(-scaled_a/4)/(1-iv.exp(-2*scaled_a))
@@ -617,6 +635,11 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         def six_position_kernel(det):
                             old=fixed_four_plane(I(det)/4)
                             return min((old,weighted_d24),key=lambda v:v.b) if det==24 else old
+                        # Uniform-weight counterpart, kept apart from the
+                        # weighted D24 and direct double-four ball branches.
+                        four_six_theta_power=(sum((I(count)/coefficient_count
+                            *fixed_four_plane(I(det)/4)**n for det,count in counts),I(0))
+                            +I(one_count)/coefficient_count*fixed_four_plane(9)**n)
                         four_six_split=(sum((I(count)/coefficient_count
                             *six_position_kernel(det)**n for det,count in counts),I(0))
                             +I(one_count)/coefficient_count*fixed_four_plane(9)**n)
@@ -832,6 +855,14 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                             +fifteen_no_four(14,I(25)/2)**n
                             +fifteen_no_four(16,12)**n)
                         none_power=min((none_power,long_no_four),key=lambda v:v.b)
+                    if c==4 and union==7:
+                        # Snapshot before any shared-four direct-ball minimum.
+                        common_seven=(I(bad_count)/coefficient_count*bad_bound**n
+                                      +four_seven_theta_one+none_power)
+                        common_anchor=(iv.exp(union*beta*radius**2)*common_seven
+                                       /q**(m*(union-2)))
+                        theta_anchors[c,t,overlap]=min(
+                            (theta_anchors[c,t,overlap],common_anchor),key=lambda v:v.b)
                     split = (I(bad_count)/coefficient_count*bad_bound**n
                              +one_power+none_power)
                     if c==4 and union==11:
@@ -865,6 +896,13 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         square_bound = (iv.pi/beta)**3*(
                             (square_short+square_tail)/q**2+periodic_plane)
                         square_power = square_bound**n
+                        # Common-beta snapshot: orthogonal and triangular
+                        # codes have different Gram determinants. Preserve the
+                        # square Gaussian before the direct-ball replacement.
+                        theta_triangles = 0 if (exclude_triangular_anchors or exclude_double_short_anchors) else 5
+                        theta_squares = 0 if exclude_double_short_anchors else 4
+                        six_theta_bad = (theta_triangles*bad_bound**n
+                            +theta_squares*min((bad_bound**n,square_power),key=lambda v:v.b))
                         direct_square = (orthogonal_pair_ball_bound(radius**2, n)
                                          +orthogonal_pair_alias_bound(radius**2, n, q))
                         direct_square /= iv.exp(6*beta*radius**2)
@@ -1144,6 +1182,30 @@ def draw14_bounds(*, exclude_triangular_anchors=False, exclude_double_short_anch
                         +twelve_eight_plane(10,I(19)/2)**n
                         +twelve_eight_plane(12,9)**n)
                     power_bound=min((power_bound,rare_eight),key=lambda v:v.b)
+                if union==6 and c in (3,4):
+                    if c==3 or overlap==3 or (exclude_six_d24 and exclude_double_short_anchors):
+                        # Audited branches have no active anisotropic or
+                        # direct-ball replacement: final power is theta-safe.
+                        six_theta_power=power_bound
+                    else:
+                        assert c==4 and overlap==2
+                        six_theta_power=(six_theta_bad/coefficient_count
+                                         +four_six_theta_power+none_power)
+                    six_theta_anchor=(iv.exp(union*beta*radius**2)*six_theta_power
+                                      /q**(m*(union-2)))
+                    theta_anchors[c,t,overlap]=min(
+                        (theta_anchors[c,t,overlap],six_theta_anchor),key=lambda v:v.b)
+                if c==3 and union in (7,8,10,11):
+                    if union==7:
+                        common_power=(I(bad_count)/coefficient_count*bad_bound**n
+                                      +one_power+seven_theta_none)
+                    else:
+                        # These final branches use common-beta kernels only.
+                        common_power=power_bound
+                    common_anchor=(iv.exp(union*beta*radius**2)*common_power
+                                   /q**(m*(union-2)))
+                    theta_anchors[c,t,overlap]=min(
+                        (theta_anchors[c,t,overlap],common_anchor),key=lambda v:v.b)
                 anchors[c, t, overlap] = (iv.exp(union*beta*radius**2)
                     *power_bound/q**(m*(union-2)))
     full = {h: s['epsilon'][h] for h in range(3, 25)}

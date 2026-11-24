@@ -1,5 +1,6 @@
 """Exact finite rank checks and interval discrete-Gaussian residue bounds."""
 from fractions import Fraction as F
+from math import comb
 from itertools import product
 from mpmath import iv
 
@@ -42,6 +43,8 @@ def main():
                 assert sum(masses)==1
                 for t in range(k):
                     assert sum(masses[:t+1])<=gauss_binomial(k,t,q)*max(law)**(n*(k-t))
+                    if t<=n:
+                        assert sum(masses[:t+1])<=comb(k,t)*max(law)**((n-t)*(k-t))
                     checks+=1
     iv.dps=60; I=iv.mpf;q=3329;k=6;n=118
     def theta_bounds(t):
