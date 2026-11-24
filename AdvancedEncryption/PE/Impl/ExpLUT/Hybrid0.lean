@@ -98,7 +98,7 @@ theorem view1_split (P : PubData S Wb J) (x : Pos → ℕ) (r : EncCoins S Wb J 
   unfold view1 mkV
   rw [hm]
 
-omit [DecidableEq R] [DecidableEq Wb] [Nonempty Wb] [Fintype J] [DecidableEq J] in
+omit [DecidableEq R] [Fintype Wb] [DecidableEq Wb] [Nonempty Wb] [Fintype J] [DecidableEq J] in
 /-- **Uniform programming values give the real public key**: for fixed other coins, the
 programmed matrices from uniform hash values are uniform and independent. -/
 theorem progLaw_eq (P : PubData S Wb J) (x : Pos → ℕ) (r : EncCoins S Wb J Pos) :
@@ -208,7 +208,7 @@ def rowsEquiv (Wb : Type) : (Wb → R) × (Wb → R) ≃ Matrix (Fin 2) Wb R whe
   left_inv _ := rfl
   right_inv B := by ext i j; fin_cases i <;> rfl
 
-omit [DecidableEq R] [Fintype J] [DecidableEq J] [Fintype Pos] [DecidableEq Pos] in
+omit [DecidableEq R] [Nonempty Wb] [Fintype J] [DecidableEq J] [Fintype Pos] [DecidableEq Pos] in
 theorem uniform_rows_bind {β : Type} (g : Matrix (Fin 2) Wb R → PMF β) :
     (PMF.uniformOfFintype (Matrix (Fin 2) Wb R)).bind g =
       (PMF.uniformOfFintype (Wb → R)).bind fun Ab =>
@@ -216,6 +216,7 @@ theorem uniform_rows_bind {β : Type} (g : Matrix (Fin 2) Wb R → PMF β) :
   rw [← bind_uniform_equiv (rowsEquiv Wb) g, uniform_prod_bind]
   rfl
 
+omit [DecidableEq R] in
 theorem hyb1u_eq_NF (x : Pos → ℕ) :
     hyb1u (Wb := Wb) M w half χs χ χfl x = hyb0NF M w half χs χ χfl x := by
   unfold hyb1u hyb0NF
@@ -232,5 +233,39 @@ theorem hyb1u_eq_NF (x : Pos → ℕ) :
   refine congrArg (PMF.bind _) (funext fun H => congrArg (PMF.bind _) (funext fun d => ?_))
   refine congrArg (PMF.bind _) (funext fun r => ?_)
   congr
+
+omit [DecidableEq R] [Nonempty Wb] in
+theorem hyb0_eq_NF (x : Pos → ℕ) :
+    hyb0 (Wb := Wb) M w half χs χ χfl x = hyb0NF M w half χs χ χfl x := by
+  unfold hyb0 hyb0NF setupLaw setupCoinsLaw encLaw
+  simp only [PMF.bind_bind, PMF.map_bind, PMF.bind_map, PMF.map_comp, Function.comp_def,
+    PMF.pure_bind, iidFam_bitLaw]
+  refine congrArg (PMF.bind _) (funext fun Ab => ?_)
+  simp only [uniform_sum_bind, PMF.map]
+  rw [PMF.bind_comm]
+  -- `d` before `a, A₀, A^in, A^aut`
+  conv_lhs => enter [2, B2b, 2, xs, 2, B2g, 2, H, 2, a, 2, A0, 2, Ain]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, B2b, 2, xs, 2, B2g, 2, H, 2, a, 2, A0]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, B2b, 2, xs, 2, B2g, 2, H, 2, a]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, B2b, 2, xs, 2, B2g, 2, H]; rw [PMF.bind_comm]
+  -- `Enc`'s coins before `a, A₀, A^in, A^aut`
+  conv_lhs => enter [2, B2b, 2, xs, 2, B2g, 2, H, 2, d, 2, a, 2, A0, 2, Ain]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, B2b, 2, xs, 2, B2g, 2, H, 2, d, 2, a, 2, A0]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, B2b, 2, xs, 2, B2g, 2, H, 2, d, 2, a]; rw [PMF.bind_comm]
+  conv_lhs => enter [2, B2b, 2, xs, 2, B2g, 2, H, 2, d]; rw [PMF.bind_comm]
+  rfl
+
+omit [DecidableEq R] in
+/-- **H0 = H1u**: the real experiment is H1 with uniform values in place of the programming
+hashes. -/
+theorem hyb0_eq_hyb1u (x : Pos → ℕ) :
+    hyb0 (Wb := Wb) M w half χs χ χfl x = hyb1u M w half χs χ χfl x :=
+  (hyb0_eq_NF M w half χs χ χfl x).trans (hyb1u_eq_NF M w half χs χ χfl x).symm
+
+/-- **H0 ≈ H1** (programming), within `|PrI| · √(|R|² 2^{−m̄})/2`. -/
+theorem hybrid01_close (x : Pos → ℕ) :
+    CloseTo (hyb0 (Wb := Wb) M w half χs χ χfl x) (hyb1 M w half χs χ χfl x) (delta1 S Wb Pos) := by
+  rw [hyb0_eq_hyb1u]
+  exact (hybrid1_close M w half χs χ χfl x).symm
 
 end AdvancedEncryption.ExpLUT
