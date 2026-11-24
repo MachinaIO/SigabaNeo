@@ -25,6 +25,7 @@ import PE.Impl.ExpLUT.FloodBound
 import PE.Impl.ExpLUT.AH.Flood
 import PE.Impl.ExpLUT.AH.CircBridge
 import PE.Impl.ExpLUT.AH.RedChain
+import PE.Impl.ExpLUT.Prog.RedDecode
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
