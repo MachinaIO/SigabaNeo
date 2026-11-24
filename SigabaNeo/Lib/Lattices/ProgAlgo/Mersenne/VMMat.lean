@@ -592,6 +592,79 @@ theorem exec_rPart (hK : 0 < K) (r : Fin 2) (w : St) (A : Fin 2 → Fin 2 × Fin
   refine ⟨k1, ?_⟩
   rw [Function.update_of_ne (by decide), k2]
 
+/-! ### The transposition and `mulPKC` -/
+
+/-- Move the sums of `(t, 0)` and `(t, 1)` to the row queues. -/
+def tBody : Code :=
+  .seq (.cp rAc0 rZ) <| .seq (.mvR rAc0 rS) <| .seq (.mvR rCo0 rAc0) <|
+  .seq (.cp rAc1 rZ) <| .seq (.mvR rAc1 rS) (.mvR rCo1 rAc1)
+
+/-- The templates of the transposition. -/
+def tPre : Code := .seq (.cp rCo0 rT2KNK) <| .seq (.cp rCo1 rT2KNK) (.cp rCj rT2K)
+
+/-- The transposition loop. -/
+def tLoop : Code := .seq tPre (.rep rCj tBody)
+
+/-- The output: row `0`, then row `1`. -/
+def tOut : Code := .seq (.cp rMOut rT4KNK) <| .seq (.mv rMOut rCo0 rT2KNK) (.mv rMOut rCo1 rT2KNK)
+
+/-- **`EvalPK` of `Mul`** with binary digits: `rMOut := mulPKm A Ad` from `A` (`rMA`) and the
+stream of the digit matrices `Ad` (`rMAd`, consumed). -/
+def mulPKC : Code :=
+  .seq (.cp rS rT4KNK) <| .seq (rPart 0) <| .seq (rPart 1) <| .seq tLoop tOut
+
+theorem tBody_writes_rCj : tBody.writes rCj = false := by decide
+
+theorem exec_tLoop (w : St) (R : ℕ → Fin 2 → Rq N K) (hT : MulTmpl N K w)
+    (hS : w rS = encL N K ((List.range (2 * K)).flatMap fun t => [R t 0, R t 1])) :
+    exec N K tLoop w rCo0 = encL N K ((List.range (2 * K)).map fun t => R t 0) ∧
+    exec N K tLoop w rCo1 = encL N K ((List.range (2 * K)).map fun t => R t 1) := by
+  show exec N K (.rep rCj tBody) (exec N K tPre w) rCo0 = _ ∧
+    exec N K (.rep rCj tBody) (exec N K tPre w) rCo1 = _
+  set W1 := exec N K tPre w with hW1
+  have f : W1 rS = w rS ∧ W1 rCo0 = encL N K (List.replicate (2 * K) 0) ∧
+      W1 rCo1 = encL N K (List.replicate (2 * K) 0) ∧ W1 rZ = encRM N K 0 ∧
+      W1 rCj = List.replicate (2 * K) false := by
+    rw [hW1]; unfold tPre; vm_simp; simp [hT.t2KNK, hT.z, hT.t2K]
+  have key := exec_rep_inv (N := N) (K := K) rCj tBody tBody_writes_rCj
+    (fun m w' => w' rS = encL N K (((List.range (2 * K)).drop m).flatMap fun t => [R t 0, R t 1]) ∧
+      w' rCo0 = encL N K (List.replicate (2 * K - m) 0 ++ (List.range m).map fun t => R t 0) ∧
+      w' rCo1 = encL N K (List.replicate (2 * K - m) 0 ++ (List.range m).map fun t => R t 1) ∧
+      w' rZ = encRM N K 0) W1
+    ⟨by simp [f.1, hS], by simp [f.2.1], by simp [f.2.2.1], f.2.2.2.1⟩ ?_
+  · have hl : (W1 rCj).length = 2 * K := by simp [f.2.2.2.2]
+    rw [hl] at key
+    exact ⟨by rw [key.2.1]; simp, by rw [key.2.2.1]; simp⟩
+  · intro m w' hm hP _
+    have hl : (W1 rCj).length = 2 * K := by simp [f.2.2.2.2]
+    rw [hl] at hm
+    obtain ⟨h1, h2, h3, h4⟩ := hP
+    rw [drop_range_cons hm, List.flatMap_cons] at h1
+    have e : 2 * K - m = (2 * K - (m + 1)) + 1 := by omega
+    rw [e, List.replicate_succ] at h2 h3
+    unfold tBody
+    vm_step; vm_step; vm_step; vm_step; vm_step
+    refine ⟨by simp [h1, h4], by simp [h1, h2, h4, List.range_succ], by simp [h1, h3, h4,
+      List.range_succ], by simp [h4]⟩
+
+theorem shiftIn_encL_gen (l l' x : List (Rq N K)) {c : ℕ} (hl : l.length = c) (hx : x.length = c) :
+    ValVM.shiftIn (c * (N * K)) (encL N K (l ++ l')) (encL N K x) = encL N K (l' ++ x) := by
+  unfold ValVM.shiftIn
+  rw [takeD_encL'' x hx, encL_append, List.append_assoc, ← hl, ← length_encL, List.drop_left,
+    encL_append]
+
+theorem exec_tOut (w : St) (x y : List (Rq N K)) (hx : x.length = 2 * K) (hy : y.length = 2 * K)
+    (hT : MulTmpl N K w) (h0 : w rCo0 = encL N K x) (h1 : w rCo1 = encL N K y) :
+    exec N K tOut w rMOut = encL N K (x ++ y) := by
+  unfold tOut
+  vm_step; vm_step
+  simp only [exec_mv, vmreg, Fin.reduceEq, ite_false, or_self, Function.update_self]
+  simp only [Function.update_apply, Fin.reduceEq, ite_false, if_true, hT.t2KNK, hT.t4KNK, h0, h1,
+    length_encL, List.length_replicate]
+  rw [show 2 * (2 * K) = 2 * K + 2 * K by ring, List.replicate_add,
+    shiftIn_encL_gen _ _ _ (List.length_replicate ..) hx,
+    shiftIn_encL_gen _ x _ (List.length_replicate ..) hy]
+
 end MVM
 
 end SigabaNeo.Tape
