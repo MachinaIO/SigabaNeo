@@ -883,6 +883,79 @@ theorem exec_decC (hN : 0 < N) (hK : 2 ≤ K) (w : St) (hc : Consts N K w) (h15 
     simp only [Function.update_apply, Fin.reduceEq, ↓reduceIte, b2] <;>
     cases h2 : (coefG a 0).val.testBit (K - 1) <;> simp [hc.one, h75]
 
+/-! ### The key sums assembled -/
+
+/-- Part `β`: `acc := Σ_{i<W} Σ_{c ∈ BCol} σ^i(b − B⁽²⁾)_c k`. -/
+def finBC : Code := ofList [.cp 192 66, .cp 193 58, .cp 194 2, .cp 195 2, subVecC 17 16,
+  .cp 180 2, .cp 182 65, .cp 183 2, .cp 184 2, conjC 17 16]
+
+/-- The inputs of the key sums. -/
+structure FinIn (N K : ℕ) (w : St) (bs B2s ks : List (List Bool)) : Prop where
+  c : Consts N K w
+  r16 : (w 16).length = (w 17).length * (N * K)
+  b : w 66 = bs.flatten
+  B2 : w 58 = B2s.flatten
+  key : w 65 = ks.flatten
+  bsl : bs.length = (w 17).length
+  B2l : B2s.length = (w 17).length
+  ksl : (w 12).length * (w 17).length ≤ ks.length
+  bsw : ∀ x ∈ bs, x.length = N * K
+  B2w : ∀ x ∈ B2s, x.length = N * K
+  ksw : ∀ x ∈ ks, x.length = N * K
+
+theorem exec_finBC (hN : 0 < N) (w : St) {bs B2s ks : List (List Bool)} (h : FinIn N K w bs B2s ks) :
+    (exec N K finBC w) 182 = (ks.drop ((w 12).length * (w 17).length)).flatten ∧
+      ((exec N K finBC w) 180).length = N * K ∧
+      decRM N K ((exec N K finBC w) 180) =
+        conjL (autMW N K (w 20).length) (List.zipWith (subRMW N K) bs B2s) ks (w 17).length
+          (w 12).length ∧
+      ∀ j : Fin 200, j.val < 180 → (exec N K finBC w) j = w j := by
+  have hc := h.c
+  set s1 := Function.update (Function.update (Function.update (Function.update w 192 (w 66)) 193
+    (w 58)) 194 (w 2)) 195 (w 2) with hs1
+  have hs1lo : ∀ j : Fin 200, j.val < 180 → s1 j = w j := fun j hj => by
+    rw [hs1, Function.update_of_ne (lo_ne hj 195), Function.update_of_ne (lo_ne hj 194),
+      Function.update_of_ne (lo_ne hj 193), Function.update_of_ne (lo_ne hj 192)]
+  have hc1 : Consts N K s1 := consts_of_agree hc fun j hj => hs1lo j (by omega)
+  obtain ⟨a188, -, -, -, -, af⟩ := exec_subVecC s1 hc1 17 16 (by decide) (by decide)
+    (La := []) (Lb := []) h.bsw h.B2w (by rw [hs1lo 17 (by decide)]; exact h.bsl)
+    (by rw [hs1lo 17 (by decide)]; exact h.B2l)
+    (by rw [hs1lo 17 (by decide), hs1lo 16 (by decide)]; exact h.r16)
+    (by simp [hs1, h.b]) (by simp [hs1, h.B2]) (by simp [hs1, hc.zero]) (by simp [hs1, hc.zero])
+  set s2 := exec N K (subVecC 17 16) s1
+  have hs2lo : ∀ j : Fin 200, j.val < 180 → s2 j = w j := fun j hj => by
+    rw [af j (not_mem_hi hj rfl), hs1lo j hj]
+  set s3 := Function.update (Function.update (Function.update (Function.update s2 180 (s2 2)) 182
+    (s2 65)) 183 (s2 2)) 184 (s2 2) with hs3
+  have hs3lo : ∀ j : Fin 200, j.val < 180 → s3 j = w j := fun j hj => by
+    rw [hs3, Function.update_of_ne (lo_ne hj 184), Function.update_of_ne (lo_ne hj 183),
+      Function.update_of_ne (lo_ne hj 182), Function.update_of_ne (lo_ne hj 180), hs2lo j hj]
+  have hc3 : Consts N K s3 := consts_of_agree hc fun j hj => hs3lo j (by omega)
+  have hxs : ∀ x ∈ List.zipWith (subRMW N K) bs B2s, x.length = N * K := fun x hx => by
+    obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hx
+    rw [List.getElem_zipWith]
+    exact length_subRMW N K (h.bsw _ (List.getElem_mem _)) _
+  have e : exec N K finBC w = exec N K (conjC 17 16) s3 := rfl
+  obtain ⟨c182, c180, cd, cf⟩ := exec_conjC hN s3 hc3 17 16 (by decide) (by decide) (L' := [])
+    hxs h.ksw (by rw [hs3lo 17 (by decide)]; simp [h.bsl, h.B2l])
+    (by rw [hs3lo 17 (by decide), hs3lo 12 (by decide)]; exact h.ksl)
+    (by rw [hs3lo 17 (by decide), hs3lo 16 (by decide)]; exact h.r16)
+    (by simp only [hs3, Function.update_apply, Fin.reduceEq, ↓reduceIte]; exact a188)
+    (by simp only [hs3, Function.update_apply, Fin.reduceEq, ↓reduceIte]
+        rw [hs2lo 65 (by decide), h.key, List.append_nil])
+    (by simp only [hs3, Function.update_apply, Fin.reduceEq, ↓reduceIte]
+        rw [hs2lo 2 (by decide), hc.zero, List.length_replicate])
+    (by simp only [hs3, Function.update_apply, Fin.reduceEq, ↓reduceIte]
+        rw [hs2lo 2 (by decide), hc.zero, List.length_replicate])
+    (by simp only [hs3, Function.update_apply, Fin.reduceEq, ↓reduceIte]
+        rw [hs2lo 2 (by decide), hc.zero, List.length_replicate])
+  rw [hs3lo 12 (by decide), hs3lo 17 (by decide), hs3lo 20 (by decide)] at *
+  refine ⟨by rw [e, c182, List.append_nil], by rw [e]; exact c180, ?_, ?_⟩
+  · rw [e, cd]
+    simp only [hs3, Function.update_apply, Fin.reduceEq, ↓reduceIte]
+    rw [hs2lo 2 (by decide), hc.zero, decRM_replicate, zero_add]
+  · intro j hj; rw [e, cf j (not_mem_hi hj rfl), hs3lo j hj]
+
 end RingVM
 
 end SigabaNeo.Tape
