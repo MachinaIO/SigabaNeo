@@ -50,6 +50,14 @@ dual bound or exact solution is needed for a numerical application.
 Differences of two upper tail bounds do not bound an individual bin mass:
 alpha_j<=T_(j-1)-T_j is not justified without additional lower-tail data.
 
+When projection of the designated old shortest vector has a kernel of order q,
+the [parallel-phase tail bound](wall1_phase_winner_tails.md) supplies another
+upper tail. It certifies fractions of aliases with a competitor strictly below
+each cutoff and therefore bounds Pr(s_U>=c), which also bounds the strict
+tail in (2). Use the minimum of this tail and the height-one tail, retaining
+the shared convolution constraints below. Neither tail is independent of
+the other, and the selected-history distance profiles are still required.
+
 This combines event probabilities with convolution without multiplying two
 dependent probabilities. In particular replacing b_j by alpha_j*b_j would
 be unjustified. With one bin it reduces to the capped two-height bound.

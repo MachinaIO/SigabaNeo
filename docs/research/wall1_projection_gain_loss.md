@@ -48,6 +48,53 @@ That causes no error in (2), since B_u is contained in the full pulled-back
 true hit set. Do not divide |B_u| by the kernel size or treat B_u as a quotient
 subset unless fiber saturation has separately been established.
 
+### Crediting all labels with the same projected image
+
+There is a deterministic improvement available before computing losses and
+gains. Put N_u=ker(f_u), B_u^sat=B_u+N_u, and
+
+    H_u^sat=1−|B_u^sat|/h,  a_u=|B_u^sat minus B_u|/h.
+
+Every label in B_u^sat has the same outgoing coset as an existing hit, so
+
+    P'_u <= H_u^sat=H_u−a_u <= H_u.
+
+Equivalently, H_u^sat=1−|f_u(B_u)|/|H'_u|. Count distinct images first;
+dividing the unsaturated witness count by |N_u| is not valid. The gain/loss
+identity and all increasing-potential bounds apply with B_u^sat in place
+of B_u. In particular the exact linear-cap numerator becomes
+
+    E(ell_u−g_u−a_u) − E(H_u−a_u−delta)_+.
+
+The correction is nonnegative and needs no independence assumption, but
+there is no production lower bound on its size. The planar checker in
+`scripts/wall1_winner_coupled_replicas.py` verifies the inclusions on all270
+branches; all these planar witnesses are already saturated, so none improves.
+An independently audited [two-dimensional retained fixture](wall1_fiber_saturation_fixture.md)
+does improve strictly: at q5 an actual horizontal shortest winner and J={0}
+give24 of25 witness hits, while saturation covers all25 marks. Its exact
+rational checker exhausts all nearest representatives using a proved
+coordinate bound. The fixture has ties and an arbitrary toy radius; it
+establishes strictness of the deterministic correction, not a production gain.
+
+For prime q the kernel has order either1 or q. Indeed set Lambda=K×Z and
+write the primitive winner in W_u as w=t*w0 with w0 primitive in Lambda.
+The kernel is (Lambda intersect Rw)/(W_u intersect Rw), of order t. It is
+a subgroup of Lambda/W_u, which has exponent q, hence t is1 or q. If t=q
+and the winner has nonzero vertical height, that height has magnitude at
+least q. Since (0,q) belongs to W_u, shortestness gives ||w||<=q and forces
+w=(0,+/-q). Thus every rank drop with ||w||<q is horizontal. This explains
+the existing coprime-height results in [inverse branches](wall1_inverse_branch.md)
+and the height-q endpoint in [subspace voids](wall1_subspace_void.md); it
+does not bound the probability of horizontal winners. The content/kernel
+identity is also checked on all270 planar branches.
+
+Consequently a_u=0 for every nonhorizontal shortest winner of length
+strictly below q. The correction cannot improve a transport proof restricted
+entirely to those branches; its possible benefit is in the horizontal
+branches (or the length-q endpoint). It does not replace the outstanding
+geometric estimate on the rank-preserving branches.
+
 ## A loss-minus-gain increment envelope
 
 For delta>0 and real k>=1, let Phi(P)=min(1,(P/delta)^k), for 0<=P<=1.
@@ -104,8 +151,9 @@ potential. Moreover
 The first inequality is generally strict: branches with a net gain can
 compensate branches with a net loss after applying the nonlinear potential.
 One must average the signed potential increments, not replace them by
-Phi(P+E[ell−g])−Phi(P). The capped function is neither globally convex nor
-globally concave. Nor does E[ell−g]<=0 alone imply nonpositive potential drift.
+Phi(P+E[ell−g])−Phi(P). For k>1 and0<delta<1 the capped function on[0,1]
+is neither convex nor concave, and E[ell−g]<=0 alone does not imply
+nonpositive potential drift. The k=1 case is different and is treated below.
 
 For a precise scalar separation, set P=delta/2, k=24. Let the witness void be
 delta with probability2^(−24), and zero otherwise. Then its expected capped
@@ -149,3 +197,42 @@ cap. All39762 increment checks pass. It also checks a true-hit superset,
 the signed-cancellation fixture, and equal fibers in a nontrivial quotient.
 These checks validate the identities and inequalities, not the outstanding
 small-charge premise in (8).
+
+## Exact signed accounting for the linear capped potential
+
+The first-moment seed permits k=1, as established in
+[linear capped transport](wall1_linear_capped_transport.md). In this case
+Phi_1(x)=min(1,x/delta) is concave. The general warning above about a
+nonconcave cap must not be applied to this case.
+
+Before exit, P<delta, and H_u=P+ell_u-g_u lies in[0,1]. The identity
+Phi_1(x)=(x-(x-delta)_+)/delta gives exactly
+
+    E Phi_1(H_U)-Phi_1(P)
+      = [E(ell_U-g_U)-E(H_U-delta)_+]/delta.              (9)
+
+All expectations use the same correct conditional law of the next mark
+given the entire incoming history. No independence of losses and gains,
+or of either from the winner, is assumed. Since P'_u<=H_u,
+
+    E Phi_1(P'_U)-Phi_1(P)
+      <= [E(ell_U-g_U)-E(H_U-delta)_+]/delta.
+
+Thus a sufficient nonnegative charge is the positive part of the right
+side, and it is at most [E(ell_U-g_U)]_+/delta. In particular nonpositive
+mean net loss does suffice for k=1. One can also prove nonpositive drift
+when the mean net loss is positive, if the overshoot term compensates it.
+
+For example delta=7/25, P=delta/2, H=3delta with probability1/4 and
+H=0 otherwise gives mean net loss7/100, mean overshoot7/50, and potential
+drift-1/4. These values are realizable as fractions of finite hit subsets;
+the example is an algebraic check, not a selected-lattice transition.
+The checker verifies (9) pointwise for the finite subset fixtures and
+this exact rational mixture.
+
+To use the overshoot term subtractively, its expectation needs a lower
+bound under the same law. Replacing witness H by actual P' in only that
+term is not an equality; using a valid lower bound for the witness term
+is safe. This specialization avoids unnecessary high-power conditions,
+but neither the required mean net loss nor the overshoot correction has
+been bounded at the production selected histories.

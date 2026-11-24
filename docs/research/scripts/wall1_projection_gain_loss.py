@@ -11,6 +11,7 @@ def bound(p,loss,gain,delta,k):
 
 def main():
     checks=0
+    linear_checks=0
     for h in range(1,8):
         full=set(range(h))
         sets=[{j for j in range(h) if mask>>j&1} for mask in range(1<<h)]
@@ -20,6 +21,11 @@ def main():
                 loss=F(len(a-b),h);gain=F(len(b-a),h)
                 witness=F(h-len(b),h)
                 assert witness==p+loss-gain
+                linear_delta=F(7,25)
+                if p<linear_delta:
+                    exact=(loss-gain-max(F(0),witness-linear_delta))/linear_delta
+                    assert phi(witness,linear_delta,1)-phi(p,linear_delta,1)==exact
+                    linear_checks+=1
                 for delta,k in ((F(7,25),24),(F(2,3),2),(F(1),1)):
                     if p>=delta:continue
                     incr=phi(witness,delta,k)-phi(p,delta,k)
@@ -37,6 +43,15 @@ def main():
     signed=weight*increments[0]+(1-weight)*increments[1]
     positive=weight*max(F(0),increments[0])+(1-weight)*max(F(0),increments[1])
     assert signed==0 and positive>0
+    # For k=1, clipping can offset even a positive mean net loss.
+    p=delta/2
+    branches=((F(1,4),3*delta),(F(3,4),F(0)))
+    mean_loss=sum(weight*(value-p) for weight,value in branches)
+    mean_overshoot=sum(weight*max(F(0),value-delta) for weight,value in branches)
+    linear_drift=sum(weight*phi(value,delta,1) for weight,value in branches)-phi(p,delta,1)
+    assert mean_loss==F(7,100)>0
+    assert mean_overshoot==F(7,50)
+    assert linear_drift==(mean_loss-mean_overshoot)/delta==-F(1,4)
     # Quotient example: fiber size2, quotient hits {0,2}; pullback fraction exact.
     raw=range(6);mapping=lambda x:x%3;hits={0,2}
     pulled={v for v in raw if mapping(v) in hits}
@@ -44,5 +59,6 @@ def main():
     assert all(sum(mapping(v)==c for v in raw)==2 for c in range(3))
     print('Passed exhaustive gain/loss increment checks:',checks)
     print('Signed cancellation and quotient-fiber fixtures passed.')
+    print('Linear capped identity checks:',linear_checks,'; positive-mean-loss clipping fixture passed.')
 
 if __name__=='__main__':main()

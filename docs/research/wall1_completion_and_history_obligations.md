@@ -541,3 +541,301 @@ factorial moments but has void probability>.0168, ruling out a shortcut
 based on those two moments alone. The rational diagnostic passes and was
 independently reproduced; neither the count-law example nor the reference
 mean is asserted to be production.
+
+## Part 457: zero-preserving transport fails at q3329 and width506
+
+[A product-code construction](wall1_q3329_zero_void.md) gives K=Z^505
+and a quotient of rank25 whose incoming and selected-projected covering
+squared radii are exactly80. The actual dimension-dependent thresholds
+straddle80, so incoming void is zero and outgoing void is positive on a
+specified fresh-mark branch. All scalar3329-residue distances are computed
+by exact integer dynamic programming; rational pi bounds certify the
+threshold crossing. Independent recomputation and geometric audit passed.
+This removes the small-modulus and wrong-width limitations of Part453
+for an all-state transport claim. It is not a counterexample to the actual
+selected-history probability budget. A rank400 raw-graph static embedding
+exists, but its proposed frozen axes are not established as selected
+shortest vectors. A subsequent deterministic reachability audit is stronger:
+Minkowski's cube bound and the exact determinant update imply D_f>q^57
+for all f<=406 from D_0=q^400. Thus this D=q^25 example is unreachable
+throughout the prescribed restart. Exact integer comparisons and independent
+audit passed. This leaves the multiplier on reachable histories open;
+it does not improve their actual void-probability bound.
+
+## Part 458: exclude all exactly cubic retained grids after freeze20
+
+[Cubic-history exclusion](wall1_cubic_history_exclusion.md) combines the
+existing unconditional Hermite/period determinant recurrence with a union
+over coordinate-rank deficiencies. An orthonormal integer projected grid
+forces the frozen space to be coordinate, so every such selected state at
+freezes21..406 is included in that union. Its probability is less than
+10^(-1152), certified by386 interval thresholds and exact integer bounds;
+independent proof and interval audits passed. This charges a broader class
+than Part457's individually unreachable example. It gives no bound on
+the noncubic complement, no new all-history multiplier, and no full BKZ
+completion. The sharper late coordinate-minor event is not assumed here.
+
+## Part 459: all-stage integer-section volume profile
+
+[The selected volume profile](wall1_selected_volume_profile.md) applies
+the existing minor lemma with optimized stage-dependent coordinate-rank
+thresholds. Off one event of probability below3.86e-28, every selected
+section at freezes21..406 satisfies a certified volume floor. At freeze404,
+p_F=(det S_F)^2>=2^109 and quotient rank>=116; at freeze300 the volume
+floor is2^68. All386 probability comparisons are exact integer checks,
+and incompatible quotient ranks are excluded by outward intervals.
+This strengthens and extends the volume restriction at a larger exception
+budget than the old late-only10^(-748) event. It does not replace that
+event for uncapped counts, nor supply the missing nonexceptional void bound.
+
+Part459 Gaussian-count check: two coordinate bases of the retained integer
+dual, sharing505-h coordinates, yield theta(t)^(505-h)*theta(2t)^h by
+Cauchy--Schwarz. This uses the same rank information and passes independent
+proof review. The volume prefactor cancels against mark-group normalization.
+At h109,R30.5 the remaining relative theta saving is only3.52366e-14;
+outward-interval checks cover three radii. Thus the correct direct Gaussian
+application gives no substantial improvement to the outstanding budget.
+
+## Part 460: correct the linear-cap gain/loss specialization
+
+[Gain/loss accounting](wall1_projection_gain_loss.md) now distinguishes
+k=1 from the nonconcave high-power cases. Before exit the exact witness
+drift is[E(ell-g)-E(H-delta)_+]/delta. Nonpositive mean net loss therefore
+suffices for k=1; clipping can even compensate positive mean net loss.
+This repairs an overbroad warning in the earlier note. Independent proof
+review approved the identity, and1758 additional exact subset checks plus
+a rational mixture pass alongside the39762 existing checks. No bound on
+either required expectation in the actual selected ensemble is supplied.
+
+## Part 461: saturating the witness set under the projection kernel
+
+[Gain/loss accounting](wall1_projection_gain_loss.md) now credits all input
+labels sharing a projected image with a hit witness. The resulting void
+majorant is H-a, where a is the newly credited fraction. The exact linear-cap
+drift numerator is E(ell-g-a)-E(H-a-delta)_+. Independent review confirms
+both identities and the primitive-content characterization of rank loss:
+the kernel has order1 or q, and a rank-dropping shortest winner of length
+strictly below q must be horizontal. All270 existing planar checks pass;
+they show no strict improvement. This is a deterministic correction, not a
+bound on its expected size in width506 selected histories.
+The [q5 rational fixture](wall1_fiber_saturation_fixture.md) separately gives
+a strict improvement1/25 to0 with J={0}, canonical nearest representatives,
+and an actual horizontal shortest winner. All25 marks are exactly enumerated
+with proved bounds and independent review. Ties and the arbitrary toy radius
+are explicit; no production or reachability conclusion follows.
+
+## Part 462: selected horizontal convolution and parallel-phase exclusion
+
+[Horizontal selected convolution](wall1_horizontal_selected_convolution.md)
+applies the existing two-height identity after projecting the fixed old
+shortest line. It retains rho(u)=Pr(actual horizontal selection | projected
+mark u) and clipping. Rounding along the old winner excludes every mark
+with a projected height-j competitor below3s^2/4. For a kernel of order q,
+equally spaced parallel phases refine this to rho<=1-m/q via strict rational
+thresholds. Both geometric arguments passed independent proof review.
+
+The checker covers929 actual winner branches and40 radius settings, including
+116 selected branch/radius pairs with positive actual void. Weighting strictly
+improves the coarse bound in6 settings; binary support improves the unweighted
+capped convolution in14. The fractional bound is valid but provides no further
+strict improvement in this grid. The remaining task is still the production
+history average, together with the nonhorizontal contribution. No improvement
+to the certified full-history probability bound or full BKZ completion follows.
+
+## Part 463: phase tails for the complete winner distribution
+
+[Parallel-phase winner tails](wall1_phase_winner_tails.md) extends the
+horizontal exclusion to every threshold c<=s. With a kernel of order q,
+the strict comparison e_j<c^2-k^2*s^2/(4*q^2) guarantees at least k aliases
+with an actual winner below c. This supplies upper tails for all winners,
+which can enter the shared-budget winner-bin program by taking their minimum
+with the height-one tails. It also explains why an upper horizontal-selection
+probability alone cannot be subtracted from an unconditional convolution bound.
+
+Independent proof/code review and exact checks cover929 actual branches,
+110 cutoffs and776 fibers. Phase tails improve the height-one bound in15
+finite cases, while height-one tails improve phase tails in24. No claim of
+uniform superiority is made. The production distribution of the projected
+profiles remains unknown, so neither a numerical history-budget improvement
+nor the full BKZ theorem is established.
+
+Part463 radial audit: expanding each fixed-height phase count into nested
+radial probabilities shows that replacing E(max_j m_j) by max_j E(m_j)
+retains only height1. Replacing its projected distances by old distances
+then gives a bound no better than the existing height-one tail. This is
+proved for that explicit relaxation, not every radial method. Independent
+review and152 exact fixed-height checks pass. In the tested grid all15
+phase improvements require the multiheight maximum. The exact threshold
+orbit identity, a restatement of the earlier projective-line count, also
+matches actual graph winners at every tested branch and cutoff. The next
+missing input is control of shared scalar-orbit correlations or projected
+profiles under selected histories, not just the existing one-radius seed.
+
+## Part 464: scalar-orbit expansion with line concentration retained
+
+[Finite-group scalar expansion](wall1_scalar_orbit_expansion.md) lower-bounds
+the union of height1..J witnesses on the same fresh mark. For nonzero marks,
+coverage is at least mu^2/[r*mu+(1-r)*nu], where mu and nu are the first and
+second moments of short-mark density across projective lines, and r bounds
+the squared nonconstant Fourier multipliers on F_q^*/{+1,-1}. The q3329
+constants are certified by interval arithmetic, including r<=.33130614
+for J32. The radius condition R^2+J^2<c^2 must still be respected.
+
+Independent proof review and312 exact subset checks plus15552 exact
+line-pair checks pass. The global count alone does not give an improvement:
+full/empty lines have nu=mu and recover only trivial coverage. Controlling
+nu under actual selected histories is unresolved. These operator constants
+are not production failure probabilities or a completed BKZ proof.
+
+## Part 465: multiplicity-aware scalar collision certificate
+
+[The scalar collision certificate](wall1_scalar_collision_certificate.md)
+applies the sign-averaged operator directly to candidate multiplicities.
+Coverage is at least (q-1)N^2/[(h-1)(r(q-1)J+(1-r)C_sc)], with ordinary
+and scalar-collinearity collision counts J and C_sc. This is invariant under
+uniform candidate duplication and dominates ordinary occupancy. It avoids
+random reciprocal-multiplicity weights. Sign averaging is necessary for
+asymmetric candidate sets, and zero labels are excluded explicitly.
+
+The fixed residual-map scalar-collision probability is the difference of
+a one-system probability and its joint zero-label system probability.
+Independent proof review and1638 exact residual-system checks pass, with
+256 subset/multiplicity checks and64 additional q7 spectral tests. These
+formulas apply to the actual marked quotient, not automatically to its raw
+syndromes after rank loss. Neither fixing the selected geometry nor replacing
+random ratios by ratios of expectations is justified. Production closure
+remains open.
+
+## Part 466: exact quotient-map disintegration
+
+[Fixing the frozen kernel and syndrome image](wall1_fixed_quotient_law.md)
+splits the uniform raw map into independent image and quotient components.
+Inside each positive-probability (E,F,S) stratum the quotient component is
+uniform subject to its frozen-space equations. For e=dim E, f=dim F,
+t=dim(input projection E), s=e-f=dim S, the stratum weight is
+q^(-((m-s)t+s*f))*product_(l=1)^(t-f)(1-q^(-l)). Summing admissible S
+recovers the existing fixed-kernel saturation law.
+
+Independent proof review and complete enumeration of212 F3^4 subspaces
+and81 maps per subspace verify2709 strata and1629 fixed-kernel image sums.
+This provides the correct output dimension m-s for quotient collisions
+after rank loss. It does not preserve uniformity after additional shortest
+selection, nor bound the full selected-history sum. No full BKZ completion
+or new production failure estimate is claimed.
+
+Part466 shortest-selection audit: the fixed-quotient note now gives a
+genuine width9,q3 shortest-selection example with the same kernel and
+syndrome image for every input. Exactly256 of6561 columns select -3e1.
+The selected quotient column is uniform on the128 fully nonzero values,
+instead of all2187 values, with TV distance2059/2187. Independent review
+and complete enumeration pass. The correct quotient-statistic contribution
+retains alpha(T)=Pr(selection | T,stratum); replacing alpha by its average
+is refuted even inside a single fixed stratum. This does not refute the
+width506 target, but closes the invalid shortcut of applying the uniform
+quotient law after shortest selection without its likelihood.
+
+Part466 collision-sign audit: two fixed retained candidates of squared
+norms3 and5 have quotient labels b,d+T on the same actual-selection example.
+Both ordinary and scalar collision means increase after selection, and
+the complete per-state multiplicity certificate has a smaller selected
+mean. Independent review confirms the nontrivial witness margin
+R^2+1=6<c^2=7<s_old^2=8; all6561 raw inputs are checked. This rules out
+a blanket favorable-covariance assumption for the selected collision counts.
+It does not compare the actual full-ball failure probabilities or resolve
+the width506 history estimate.
+
+Selected-moment connection for Parts465–466: weighted Cauchy--Schwarz gives
+E[alpha*B]>=(q-1)(E[alpha*N])^2/[(h-1)E[alpha*D]], with
+D=r(q-1)J+(1-r)C_sc. This is a proved lower bound, not an exchange of
+expectation and ratio. The correct next-tail contribution also retains
+selection mass, the exact outer stratum weight, and full-history uniformity
+of the next mark. Independent proof review and the existing6561-column
+example validate the inequality, including three spectral relaxations.
+The actual selected mixed moments remain unbounded at width506.
+
+## Part 467: full/quotient selected-incidence evaluator
+
+[The two-component evaluator](wall1_quotient_selected_incidence.md) combines
+saturated S-component incidence with ordinary quotient-component incidence.
+Full competitor events constrain both; quotient collisions constrain only
+the latter. It computes unconditional joint terms and the exact nonzero-label
+subtraction for the selected mixed-moment expansion. Actual quotient labels
+also give quadratic lift-multiplicity factors that cancel from the certificate.
+
+Independent proof review and478 base strata,3346 joint incidences,956 scalar
+collisions and a complete two-competitor avoidance expansion pass. Algebraic
+q3329,m400,d117,s12 checks distinguish q^-400 full incidence from q^-388
+quotient incidence. Odd/even truncation directions and zero-output cases are
+explicit. The geometric competitor lists, effective truncation order, and
+aggregate selected-history bound are still unproved; the BKZ goal is not complete.
+
+Part467 end-to-end verification: the width9,q3 actual shortest-selection
+example has6305 mutually exclusive competitor events. Evaluating their
+complete exclusion through FixedQuotientGraphSpace gives selected moments
+(a,n,j,c_sc)=(256,512,516,520)/6561, exactly matching all6561 direct winner
+decisions and counts. The selected mixed-moment coverage bound128/71045
+is also reproduced. Independent review confirms the complete competitor
+compression and tie treatment. This closes the evaluation pipeline in the
+finite example, not the width506 proof: general competitor intersections
+are not mutually exclusive and their aggregate remains uncontrolled.
+
+## Part 468: actual selection with compatible competitor intersections
+
+The [overlapping-selection check](wall1_quotient_selected_incidence.md)
+uses q3,m=d3 and twenty complete forbidden events. All 729 contained
+matrices are checked against all 232 integer candidates of squared norm
+at most three. Full inclusion-exclusion grouped by canonical constraint
+span uses 102 states and matches the direct selected moments
+(a,n,j,c_sc)=(288,1728,1728,1728)/19683 exactly. Compatible intersections
+have nonzero mass; the calculation therefore tests higher-order terms.
+Grouping is exact for the full expansion, not a degree-truncation rule.
+The production geometric list, state-count control, and selected-history
+probability bound remain open. This is a finite pipeline validation.
+
+## Part 469: certified partial exclusion
+
+[Arbitrary-subset exclusion](wall1_quotient_selected_incidence.md) bounds
+selected nonnegative moments between M_W and max(0,M_W-R_W), where R_W
+is the weighted union of unprocessed competitor events inside the exact
+processed avoidance event. Independent review verifies the inequalities
+and their substitution into the selected mixed-moment certificate.
+All 21 prefixes and four moments in the overlapping fixture pass exact
+checks. Even the empty processed set gives a positive candidate-count
+lower bound; the terminal witness-only miss bound is 448/59049.
+This permits rigorous partial computation, but does not make the residual
+small at width 506. The full geometric tail and history aggregate remain open.
+
+## Part 470: resolution audit of the second-moment route
+
+[The exact comparison model](wall1_second_moment_resolution.md) shows that
+computing the scalar-collision moments exactly need not make their aggregate
+coverage certificate sharp. For independent nonzero labels and even ideal
+r=0, its miss bound tends to 1/(1+(q-1)*mu). At q3329 and benchmark means
+58,119 this is on the order of 1e-6, despite a much smaller true model miss.
+Exact finite-field checks and independent proof review pass. This does not
+model the selected history or refute the desired BKZ bound. It directs main
+history work toward higher moments or signed drift, while retaining the
+second-moment evaluator for exceptional strata and subsidiary estimates.
+
+## Part 471: high-order shared-mark void certificate
+
+[Binomial reference kernels](wall1_selected_high_order_void.md) replace
+second-moment coverage by a nonnegative polynomial of degree 2t. The exact
+selected factorial-moment transfer preserves the single fresh mark and
+full competitor constraints. General identities received independent review;
+126 kernel cases, 1224 polynomial checks, 1008 selected transfers, and 81
+shared-mark rank assignments pass. The single-height reference reaches the
+comparison tolerance with moments through 22, but its absolute transfer
+requires very small moment errors. Multi-height reference gains cannot be
+used without paying their geometric radius cost. Actual selected-history
+moment errors and the production tail aggregate remain unproved.
+
+## Checkpoint validation through Part 471
+
+All 20 changed executable research checkers were rerun successfully; the
+21 changed Python sources, including the reusable evaluator, parse cleanly.
+[The validation manifest](wall1_checkpoint_471_checks.json) records each
+checker path, its SHA-256 digest and exit code. `git diff --check` passes.
+These runs validate the stated finite identities and script certificates;
+they do not constitute a full-repository Lean build, an axiom audit, or a
+proof of the unresolved production selected-history estimate.

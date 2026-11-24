@@ -4532,6 +4532,122 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   formalization. Matrix reformulation and low-moment shortcuts do not
   supply the missing selected-history moments. No improvement to the
   later-history probability bound or full BKZ completion is claimed.
+* **Part 457 (same-modulus, same-width all-state transport obstruction).**
+  [The q3329 product code](research/wall1_q3329_zero_void.md) has width506
+  and exact squared covering radius80 before and after one actual shortest
+  projection, while the required radii straddle80. Incoming void0 therefore
+  becomes positive. Integer DP and rational comparisons pass, independently
+  audited. Its quotient rank is25. A deterministic determinant recurrence
+  proves D_f>q^57 through406 freezes from D_0=q^400, so this D=q^25
+  state is unreachable in the actual restart despite its static rank400
+  raw-graph embedding. This rules out a generic
+  zero-preserving multiplier from the algebraic state conditions alone,
+  not the actual production probability budget or the full BKZ claim.
+* **Part 458 (an unconditional exceptional-state class).**
+  [Exactly cubic projected grids](research/wall1_cubic_history_exclusion.md)
+  at any freeze21..406 have joint probability below10^(-1152), by the
+  existing determinant recurrence and a union over all coordinate subsets.
+  All386 interval thresholds and integer probability comparisons pass;
+  independent review confirms the selector-independent argument. This
+  excludes only this geometric class. The noncubic selected-history void
+  estimate and full BKZ proof remain open.
+* **Part 459 (all-stage volume restriction).**
+  [Stage-dependent coordinate-rank thresholds](research/wall1_selected_volume_profile.md)
+  and the existing minor lemma give simultaneous section-volume floors at
+  freezes21..406 outside an event below3.86e-28. For example p_F>=2^109
+  at freeze404. All386 rank-union bounds and interval exclusions pass.
+  This is a restriction on the states remaining to analyze, not a void
+  bound on their complement. The larger exception cannot replace the old
+  late-only bound in uncapped-moment calculations without further control.
+* **Parts 460–461 (linear-cap correction and quotient-fiber witnesses).**
+  [Gain/loss accounting](research/wall1_projection_gain_loss.md) corrects the
+  k=1 specialization: nonpositive mean net loss suffices, and clipping can
+  offset positive mean loss. Saturating the witness hit set under the
+  projection kernel further decreases its void majorant. Independent review,
+  1758 linear-cap checks, and270 planar saturation/content checks pass.
+  A [q5 rational fixture](research/wall1_fiber_saturation_fixture.md) proves
+  strict witness-bound improvement1/25 to0 on an actual shortest branch,
+  with all25 marks checked exactly; it uses ties and an arbitrary toy radius.
+  No bound on the required expectations for production histories is proved;
+  the full BKZ theorem remains open.
+* **Part 462 (selected horizontal contribution).**
+  [Projected convolution with the actual selection weight](research/wall1_horizontal_selected_convolution.md)
+  and a parallel-phase exclusion bound retain information discarded by
+  conditioning as if the winning mark were uniform. The geometric proofs
+  received independent review;929 actual winner branches and40 toy-radius
+  settings pass exact checks, including positive-void horizontal branches.
+  Strict finite improvements do not supply the required width506 history
+  average or control the nonhorizontal contribution. The full proof remains open.
+* **Part 463 (complete winner tails from parallel phases).**
+  [Threshold phase bounds](research/wall1_phase_winner_tails.md) apply to
+  all winners when the old shortest projection kills one mark direction.
+  They enter the existing winner-bin certificate without double-counting
+  horizontal branches. Independent review and929 actual-branch checks,
+  110 cutoffs and776 fiber checks pass. Neither of the phase and height-one
+  bounds uniformly dominates the other. Their production history inputs
+  remain unproved, and no new full-history probability bound is claimed.
+  A subsequent radial audit proves that relaxing the phase count to the
+  old radial profile loses its improvement over height1;152 fixed-height
+  identities and the exact shared-mark orbit formula are checked. This
+  isolates the remaining correlation information rather than supplying it.
+* **Part 464 (scalar-orbit expansion).**
+  [A multiple-height coverage bound](research/wall1_scalar_orbit_expansion.md)
+  retains the second moment of density across projective lines. Its operator
+  constants are interval-certified at q3329; independent proof review,
+  312 subset checks and15552 line-pair checks pass. The needed line
+  concentration under selected histories and the radius loss remain
+  unresolved. This is not a production failure bound or full BKZ completion.
+* **Part 465 (multiplicity-aware scalar collision certificate).**
+  [Unweighted candidate counts](research/wall1_scalar_collision_certificate.md)
+  now give a scalar-orbit coverage certificate without reciprocal multiplicity
+  weights. Sign averaging and nonzero-label subtraction are explicit.
+  Independent proof review,1638 residual-system checks,256 subset/multiplicity
+  checks and64 q7 spectral tests pass. Actual quotient identification and
+  selected-history count bounds remain unproved; no production failure
+  estimate or full BKZ completion is claimed.
+* **Part 466 (exact quotient law after rank loss).**
+  [Fixed kernel/image disintegration](research/wall1_fixed_quotient_law.md)
+  gives a uniform quotient map under explicit linear conditions and an exact
+  outer probability weight. Independent review and2709 finite strata checks
+  pass;1629 image sums recover the previous saturation law. Additional
+  shortest-selection conditions remain unbounded, so this does not complete
+  the selected-history estimate or the BKZ theorem.
+  A complete6561-column shortest-selection check inside one fixed stratum
+  demonstrates that the quotient law can change after selection. The
+  correct expectation retains its selection likelihood; this finite
+  counterexample is not a production failure bound.
+* **Part 467 (full/quotient selected-incidence evaluator).**
+  [Exact joint terms](research/wall1_quotient_selected_incidence.md) distinguish
+  full competitor membership from quotient-only collisions, including
+  saturation and zero-label subtraction. Independent review and exhaustive
+  small-field comparisons pass; algebraic q3329 fixtures verify the distinct
+  output-rank exponents. The complete competitor and flag sums are not
+  evaluated, so the full BKZ proof remains open.
+* **Part 468 (compatible intersections in actual selection).**
+  [Full grouped exclusion](research/wall1_quotient_selected_incidence.md)
+  for twenty overlapping competitor events agrees with complete shortest
+  selection on all 729 contained matrices. Its 102 constraint spans give
+  exact joint moments (288,1728,1728,1728)/19683. This validates compatible
+  higher-order terms in a finite example; no production state-count or
+  selected-history probability bound follows.
+* **Part 469 (certified partial competitor exclusion).**
+  [Residual union bounds](research/wall1_quotient_selected_incidence.md)
+  give valid moment intervals for an arbitrary processed subset. All 21
+  prefixes of the overlapping fixture pass exact checks, including the
+  mixed-moment witness bound. Production use still requires a small
+  weighted residual and the complete selected-history aggregate.
+* **Part 470 (second-moment resolution diagnostic).**
+  [An independent-label benchmark](research/wall1_second_moment_resolution.md)
+  gives a best spectral-limit miss certificate near 1/(1+(q-1)*mu),
+  about 1e-6 at the tested q3329 means. Exact moments alone therefore need
+  not close the main history bound. This is a limitation of that certificate
+  in a comparison model, not a production failure lower bound.
+* **Part 471 (high-order shared-mark void certificate).**
+  [Finite polynomial transfer](research/wall1_selected_high_order_void.md)
+  gives a higher-order replacement for the scalar second-moment bound.
+  Exact reference-kernel and shared-column incidence checks pass; actual
+  selected-history moment errors, geometric candidate counts and aggregate
+  tail bounds remain unproved.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

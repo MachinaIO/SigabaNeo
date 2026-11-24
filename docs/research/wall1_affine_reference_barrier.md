@@ -82,3 +82,44 @@ No distributional estimate for that statistic is proved by this note.
 Run `python3 docs/research/scripts/wall1_affine_reference_barrier.py`.
 It checks the interval inequalities and 81 exact finite product-law examples.
 The general inequalities above are paper proofs, not Lean formalizations.
+
+## Screening an improved early determinant floor
+
+One possible repair is to bootstrap a better determinant floor from short
+early winners. Even a fairly strong such hypothesis does not suffice for
+this particular raw-reference comparison. Assume hypothetically that all
+first15 winners satisfy s_i<=c*g_i, where
+g_i=(D_(i-1)/V_506)^(1/506), in addition to the actual bound s_i<=q.
+The resulting deterministic lower recurrence is
+
+    L_0=400 log q,
+    L_i=max(L_(i-1)-log q,
+            (505/506)L_(i-1)-log c+log(V_506)/506).
+
+Use precisely the preceding conservative raw-radius convention, replacing
+q^(400-i) by exp(L_i), and keep N=504+i. This defines a fixed candidate
+ball; it is not an assertion that this radius equals the actual projected
+radius. At i=15, the interval checker gives:
+
+| Hypothetical cap c | Gain in determinant floor over q^385 | Reference mean upper | Normalized reference void lower |
+|---|---:|---:|---:|
+|1.1|1.751758...|16.504778|2.4260e-7|
+|1.05|2.759465...|26.304356|1.3458e-11|
+
+Both normalized lower bounds exceed3.922e-12. The calculation retains
+the maximum-fiber correction eta in exp(-M/(1-eta)), rather than replacing
+it by exp(-M) with the wrong inequality direction. Therefore merely proving
+these early caps, using the resulting deterministic raw ball, and increasing
+the degree of a nonnegative independent-reference witness cannot close
+draw15 by this method.
+
+The caps themselves are not proved here. Conditioning on all of them
+would change the graph law and is not licensed by this calculation.
+Actual determinants may be larger than these floors; adaptive radii,
+projection-aware counts and signed corrections are not excluded. This is
+a method-specific diagnostic, not a failure lower bound for the reducer.
+Run `scripts/wall1_draw15_bootstrap_screen.py` for the70-digit outward
+interval checks.
+Independent interval recomputation confirmed both rows, the monotone
+recurrence, and the distinction between the reference radius and the actual
+draw radius.

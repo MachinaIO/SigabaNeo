@@ -73,3 +73,25 @@ q-ary structure, determinant normalization and shortest selection. This
 does not refute the required production q3329,width506 estimate, but that
 estimate must use further ensemble-specific information or exceptional
 charges. The sufficient conditional calculation(2) remains valid.
+
+## Mean gain/loss formulation specific to k=1
+
+For the common-space witness H=P+ell-g, the
+[gain/loss note](wall1_projection_gain_loss.md) now retains clipping exactly:
+
+    E Phi_1(H)-Phi_1(P)
+      =[E(ell-g)-E(H-delta)_+]/delta,   P<delta.
+
+Hence E(ell-g)<=0 is sufficient for nonpositive drift at k=1, and a
+lower bound on the overshoot term may weaken that condition further.
+The warning for k>1 about nonconcavity does not apply to this linear cap.
+The identity does not establish either geometric expectation for actual
+selected histories.
+
+For the horizontal contribution, [selected projected convolution](wall1_horizontal_selected_convolution.md)
+keeps the exact selection weight rho on the projected mark group. A rounding
+criterion excludes marks with a projected height-j competitor below3s^2/4;
+if one mark direction is lost, equally spaced parallel phases give the
+fractional upper bound rho<=1-m/q. These replace a uniformity assumption
+after selection. Their weighted average and the nonhorizontal contribution
+still need bounds relative to the incoming potential before (2) can be used.

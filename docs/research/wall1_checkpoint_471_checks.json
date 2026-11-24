@@ -1,0 +1,105 @@
+{
+  "scope": "Executable research checks changed in Parts 457-471; not a full repository build, Lean audit, or completed BKZ proof.",
+  "checks": [
+    {
+      "script": "docs/research/scripts/wall1_actual_selected_incidence.py",
+      "sha256": "9ccbc1aaa66d2cfb86e7531949ce6a379b3d25f549306de8743f99df337a8daf",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_binomial_void_kernel.py",
+      "sha256": "57f032e7d53bf0b346f4cea6b7d71779268f74c96c9540a6bf7be307392b2388",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_cubic_history_exclusion.py",
+      "sha256": "f1687ac518914c2e8a3a0fb12f055da02b2f7a25baca6341019a6057cf811919",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_draw15_bootstrap_screen.py",
+      "sha256": "c1ac0284d976d08f2193a06a76d9b86251bbf645f56de5769a2a855dd549b650",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_fiber_saturation_fixture.py",
+      "sha256": "6b68afd7707de9504dc8c18ea056885373aacc424383389fdafddf22e6fe8af3",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_fixed_quotient_incidence.py",
+      "sha256": "e4e039bb044755128f479fbaf000612a8c389880d6f176ca9c29a8909e710c25",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_fixed_quotient_law.py",
+      "sha256": "b2cccbb6924e99f1cea5b759f0290f152593dd5241d6291c1de874d161f4695f",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_fixed_quotient_selection.py",
+      "sha256": "5d9267521e05248cb443c296a345a21996c4377426671aea7c22e5fa040d3aac",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_horizontal_selected_convolution.py",
+      "sha256": "5ac84bfd363bb5b0b98b6a659f0c8d729c7cdb2e34bd03c1161531e419b082f2",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_overlapping_selected_incidence.py",
+      "sha256": "757a8fb75ee04cbb34d069a81f80497adfab9e73661fec0c546d57238e23093a",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_partial_exclusion_certificate.py",
+      "sha256": "0d325862d4f4cb4bda6525937b36f61d1af21d4ce525d6e39a93388294bf4427",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_phase_winner_tails.py",
+      "sha256": "c69fea63de07e74c28ae0412141447e7451c453cc27fa9755fe224f3ff920673",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_projection_gain_loss.py",
+      "sha256": "24ffbf7df40d7e0fb0fbe789e356270ed593167dfed762ea04f644170babee42",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_q3329_zero_void.py",
+      "sha256": "13955cb0952ecda21fbabe2dfffcceca59b9803501fd20f53d20f036a632cd5d",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_scalar_line_collisions.py",
+      "sha256": "ec242ec0f7339f3e8cef0d30a02747fee3f93043eeea44b777a4c7876cd42334",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_scalar_orbit_spectrum.py",
+      "sha256": "7f044e25cef6de7a93db65ab24fa5c618ee0e6ab040c438f43feaf65441caac5",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_second_moment_resolution.py",
+      "sha256": "3d223e93e301bc4c448af4fe7091840774025bbda17901fe18f9026fac79ec1c",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_selected_volume_profile.py",
+      "sha256": "9dc00a750887da3f9e256a60e1b24bf769a223592c917504d1470753ebf21f05",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_shared_mark_factorial.py",
+      "sha256": "464e13a57834bed4f727dfda486e2f1b68738c9f42ad01c0e87267b4aebfd7b7",
+      "exit_code": 0
+    },
+    {
+      "script": "docs/research/scripts/wall1_winner_coupled_replicas.py",
+      "sha256": "bf5711402d972ac9fba1dc1331ec58078c5dd32a9230ab6be7cdcee73dfe9a93",
+      "exit_code": 0
+    }
+  ]
+}

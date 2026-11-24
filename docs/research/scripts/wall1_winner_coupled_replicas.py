@@ -23,6 +23,7 @@ def shortest(q,u,scale):
 
 def main():
     branches=0;replica_checks=0;strict_example=None;kernel_cases=0
+    saturation_checks=0;strict_saturations=0
     for q,scale in product((3,5,7),(F(1),F(1,4))):
         for heights in ((0,),(-1,0,1),(-2,-1,0,1,2)):
             for radius in ('quarter','one','moving'):
@@ -49,6 +50,17 @@ def main():
                     image={wj*v%q for v in range(q)}
                     kernel=q//len(image)
                     assert all(sum(wj*v%q==a for v in range(q))==kernel for a in image)
+                    # Credit every input label whose image has a hit witness.
+                    hit_images={wj*v%q for v in range(q) if v not in witnesses}
+                    saturated_misses={v for v in range(q) if wj*v%q not in hit_images}
+                    assert actual<=saturated_misses<=witnesses
+                    strict_saturations+=len(saturated_misses)<len(witnesses)
+                    saturation_checks+=1
+                    # Ambient content equals the order of the projection kernel.
+                    content=gcd(abs(int(wx/scale)),abs(wj))
+                    assert content==kernel and content in (1,q)
+                    if content==q and wj:
+                        assert wx==0 and abs(wj)==q and s2==q*q
                     image_misses={a for a in image if scale**2*centered(a,q)**2/s2>b2}
                     assert F(len(actual),q)==F(len(image_misses),len(image))
                     kernel_cases+=kernel>1
@@ -71,6 +83,7 @@ def main():
     print('Actual shortest-winner branches:',branches)
     print('Exact replica moment checks:',replica_checks)
     print('Nontrivial quotient-kernel cases:',kernel_cases)
+    print('Fiber-saturation checks / strict improvements:',saturation_checks,strict_saturations)
     print('Independent-column error fixture q/heights/radius/counts:',q,scale,hs,rad,counts)
     print('Shared-U 24th moment:',shared)
     print('Independent-U substitution:',independent)
