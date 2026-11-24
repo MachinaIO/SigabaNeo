@@ -889,3 +889,27 @@ re-prove them at confA).
   `KeyDecCost`: `(keyMachineP hkp confP bfC cfP).time ≤ 2^700`, `(decMachineP hkp confP cfC).time
   ≤ 2^700`, both `descLen ≤ 2^1000` (Setup/Enc are proved: `2^387`, `2^452`, `2^300`).
 
+
+## 13. 14-bit states (relaxed problem, branch `t3/dualuse-14`)
+
+The problem now asks for 14-bit states with a width chosen by the submission. DualUse takes `w8`.
+
+* **Circuit** (`Gates/BP14`, `BPCircuit`, `BPWord`): the programs on 14-bit states natively (the
+  `univ w8` tables; `Relaxed.ofProgram` is the identity on tables). Trees of 22 levels, 93 registers
+  (`< 222` slots), `633 · 2^21 − 266` instructions, **depth `≤ 478`** (`max (δ + 29) 43` per step),
+  predicate words of `211 · 2^22` bits. Compiler (`BpComp*`) and authorization (`AuthBP`) re-derived
+  (14-bit entries, 20 tree counters); their envelopes (`2^126`, `2^108` steps) unchanged.
+* **Parameters** (`Params/Sizes`): `K = 2^26`, `N = 2^34`, `d = 2^62`, `Dmax = 478`,
+  `Eτ = 21138808`, `B = 21139048`; noise `< 2^42278725 ≤ q/4` (margin 37 % of `K`). Ring-LWE at
+  `N/K = 2^8`: **certified 1158 bits** (`Params/Strength`, both instances; fails at 1159), against
+  `965` asked (`kb_confA`, the earlier envelope).
+* **Cost**: `N = 2^677` (Setup `2^371`, KeyGen `2^629`, Enc `2^452`, Dec `2^629` — the KeyGen, Enc,
+  Dec clocks are the earlier envelopes, still valid; description lengths `2^300`, `2^615`,
+  `2^300`, `2^676`). Also: the description length of KeyGen now uses `Nat.size` of the state count
+  (it used the state count itself: `2^817` at the old parameters).
+* What dominates: Dec's description length, `≈ 6 · S · 3^256 · 1286` with `S ≈ 2^257` states,
+  linear in the largest SimData offset read (`≈ 2^245`, `getAt`/`prefP` unrolled per bit). Loops
+  over `natP` counters there would bring `S` down to the loader (`≈ 2^186`), i.e. `≈ 2^605`, and
+  then the clocks (to be re-certified at the tight `Lb`, `Mall`, `Ic = 2^31`) dominate.
+* Other widths (estimates): `w16` (depth 262) allows `K = 2^25`, `N = 2^33` (`≈ 2^668`); `w32`
+  (depth 178, `≈ 2^52` instructions, 44 tree counters: more tapes) `K = 2^24`, `N = 2^32` (`≈ 2^660`).
