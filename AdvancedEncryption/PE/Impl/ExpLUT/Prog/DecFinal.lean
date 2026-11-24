@@ -1272,6 +1272,112 @@ theorem exec_outC (hN : 0 < N) (hK : 2 ≤ K) (w : St) (hc : Consts N K w)
     (by simp only [Function.update_self]; rw [canonW_eq hK0 hs2])]
   rw [decRM_subRMW hs1 h180, decRM_subRMW h72 hd1]
 
+/-! ### The end of decryption -/
+
+/-- **The end of decryption**: the three key sums, `μ'`, its decoded bit on register `179`. -/
+def finC : Code := ofList [finBC, finHC, finFC, outC]
+
+/-- The inputs of the end of decryption (on the registers below `180`). -/
+structure FinAll (N K : ℕ) (w : St) (bs B2s : List (List Bool))
+    (Hps : List (List (List Bool) × List (List Bool))) (hs cFs AF0s AF1s ks : List (List Bool))
+    (d0 d1 : List Bool) : Prop where
+  fin : FinIn N K w bs B2s ks
+  r3 : (w 3).length = N * K
+  r5 : (w 5).length = K - 1
+  r6 : w 6 = List.replicate (2 * K * (N * K)) false
+  r8 : (w 8).length = 2 * K
+  r15 : (w 15).length = K - 2
+  r18 : (w 18).length = (w 74).length * (2 * K)
+  r19 : (w 19).length = (w 18).length * (N * K)
+  r75 : w 75 = [true]
+  H : w 59 = (Hps.map fun p => p.1.flatten ++ p.2.flatten).flatten
+  Hl : Hps.length = (w 74).length
+  Hw : ∀ p ∈ Hps, p.1.length = 2 * K ∧ p.2.length = 2 * K ∧ (∀ x ∈ p.1, x.length = N * K) ∧
+    ∀ x ∈ p.2, x.length = N * K
+  h : w 67 = hs.flatten
+  hl : hs.length = (w 18).length
+  hw : ∀ x ∈ hs, x.length = N * K
+  ksl : (w 12).length * (w 17).length + (w 12).length * (w 18).length + 2 * K ≤ ks.length
+  cF : w 176 = cFs.flatten
+  AF : w 177 = AF0s.flatten ++ AF1s.flatten
+  cFl : cFs.length = 2 * K
+  A0l : AF0s.length = 2 * K
+  A1l : AF1s.length = 2 * K
+  cFw : ∀ x ∈ cFs, x.length = N * K
+  A0w : ∀ x ∈ AF0s, x.length = N * K
+  A1w : ∀ x ∈ AF1s, x.length = N * K
+  d : w 64 = d0 ++ d1
+  d0l : d0.length = N * K
+  d1l : d1.length = N * K
+  cm : (w 72).length = N * K
+
+/-- The value of `μ'` the end of decryption decodes. -/
+noncomputable def finVal (N K : ℕ) (w : St) (bs B2s : List (List Bool))
+    (Hps : List (List (List Bool) × List (List Bool))) (hs cFs AF1s ks : List (List Bool))
+    (d1 : List Bool) : RM N K :=
+  decRM N K (w 72) - decRM N K d1 -
+    (conjL (autMW N K (w 20).length) (List.zipWith (subRMW N K) bs B2s) ks (w 17).length
+        (w 12).length +
+      conjL (autMW N K (w 20).length)
+          (List.zipWith (subRMW N K) hs (List.zipWith (subRMW N K) (Hps.map Prod.snd).flatten
+            (List.replicate (w 74).length (g1W N K (w 3))).flatten))
+          (ks.drop ((w 12).length * (w 17).length)) (w 18).length (w 12).length +
+      dotL (List.zipWith (subRMW N K) cFs AF1s)
+          ((ks.drop ((w 12).length * (w 17).length)).drop ((w 12).length * (w 18).length)) (2 * K))
+
+/-- **The end of decryption.** -/
+theorem exec_finC (hN : 0 < N) (hK : 2 ≤ K) (w : St) {bs B2s : List (List Bool)}
+    {Hps : List (List (List Bool) × List (List Bool))} {hs cFs AF0s AF1s ks : List (List Bool)}
+    {d0 d1 : List Bool} (h : FinAll N K w bs B2s Hps hs cFs AF0s AF1s ks d0 d1) :
+    (exec N K finC w) 179 = [decide (2 ^ (K - 2) ≤ (coefG (finVal N K w bs B2s Hps hs cFs AF1s ks d1)
+        0).val ∧ (coefG (finVal N K w bs B2s Hps hs cFs AF1s ks d1) 0).val < 3 * 2 ^ (K - 2))] := by
+  have hc := h.fin.c
+  obtain ⟨b182, b180, bd, bf⟩ := exec_finBC hN w h.fin
+  set w1 := exec N K finBC w
+  have hk1 : w1 182 = (ks.drop ((w 12).length * (w 17).length)).flatten := b182
+  have hH : FinHIn N K w1 Hps hs (ks.drop ((w 12).length * (w 17).length)) :=
+    { c := consts_of_agree hc fun j hj => bf j (by omega)
+      r3 := by rw [bf 3 (by decide)]; exact h.r3
+      r5 := by rw [bf 5 (by decide)]; exact h.r5
+      r6 := by rw [bf 6 (by decide)]; exact h.r6
+      r8 := by rw [bf 8 (by decide)]; exact h.r8
+      r18 := by rw [bf 18 (by decide), bf 74 (by decide)]; exact h.r18
+      r19 := by rw [bf 19 (by decide), bf 18 (by decide)]; exact h.r19
+      H := by rw [bf 59 (by decide)]; exact h.H
+      Hl := by rw [bf 74 (by decide)]; exact h.Hl
+      Hw := h.Hw
+      h := by rw [bf 67 (by decide)]; exact h.h
+      hl := by rw [bf 18 (by decide)]; exact h.hl
+      hw := h.hw
+      key := hk1
+      ksl := by rw [bf 12 (by decide), bf 18 (by decide), List.length_drop]; have := h.ksl; omega
+      ksw := fun x hx => h.fin.ksw x (List.mem_of_mem_drop hx)
+      acc := b180 }
+  obtain ⟨c182, c180, cd, cf⟩ := exec_finHC hN (by omega) w1 hH
+  set w2 := exec N K finHC w1
+  have w2lo : ∀ j : Fin 200, j.val < 180 → w2 j = w j := fun j hj => by rw [cf j hj, bf j hj]
+  have hc2 : Consts N K w2 := consts_of_agree hc fun j hj => w2lo j (by omega)
+  obtain ⟨f180, fd, ff⟩ := exec_finFC w2 hc2 (cFs := cFs) (AF0s := AF0s) (AF1s := AF1s)
+    (by rw [w2lo 6 (by decide)]; exact h.r6) (by rw [w2lo 8 (by decide)]; exact h.r8)
+    (by rw [w2lo 176 (by decide)]; exact h.cF) (by rw [w2lo 177 (by decide)]; exact h.AF)
+    h.cFl h.A0l h.A1l h.cFw h.A0w h.A1w c182
+    (by rw [List.length_drop, List.length_drop, bf 12 (by decide), bf 18 (by decide)]
+        have := h.ksl; omega)
+    (fun x hx => h.fin.ksw x (List.mem_of_mem_drop (List.mem_of_mem_drop hx))) c180
+  set w3 := exec N K finFC w2
+  have w3lo : ∀ j : Fin 200, j.val < 180 → w3 j = w j := fun j hj => by rw [ff j hj, w2lo j hj]
+  have hc3 : Consts N K w3 := consts_of_agree hc fun j hj => w3lo j (by omega)
+  have e : exec N K finC w = exec N K outC w3 := rfl
+  have hval : decRM N K (w3 72) - decRM N K d1 - decRM N K (w3 180) =
+      finVal N K w bs B2s Hps hs cFs AF1s ks d1 := by
+    rw [fd, cd, bd, w3lo 72 (by decide)]
+    rw [bf 20 (by decide), bf 12 (by decide), bf 18 (by decide), bf 74 (by decide),
+      bf 3 (by decide)]
+    simp only [finVal]
+  rw [e, exec_outC hN hK w3 hc3 (by rw [w3lo 15 (by decide)]; exact h.r15)
+    (by rw [w3lo 75 (by decide)]; exact h.r75) h.d0l h.d1l (by rw [w3lo 64 (by decide)]; exact h.d)
+    (by rw [w3lo 72 (by decide)]; exact h.cm) f180, hval]
+
 end RingVM
 
 end SigabaNeo.Tape
