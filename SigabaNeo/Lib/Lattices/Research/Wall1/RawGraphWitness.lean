@@ -142,6 +142,79 @@ theorem winner_le_of_raw_vector (A : Sample) {j : ℕ} (hj : j < 406) {r : ℝ} 
   rw [eqn]
   exact hmin.trans ((sq_le_sq₀ (norm_nonneg _) hr).mp (hn.trans hs))
 
+/-- A short raw affine-coset witness remains a short representative in the actual
+retained quotient after all preceding selected projections. Unlike a shortest-vector
+witness, a coset representative may be zero and needs no nonzero newest coordinate. -/
+theorem retained_coset_representative (A : Sample) {j : ℕ} (hj : j ≤ 406)
+    (o : Fin 400 → ℤ) (v : Fin (105+j) → ℤ) (b : Fin 400 → ℤ)
+    (hc : ∀ i, (o i : ZMod 3329) = (b i : ZMod 3329) +
+      ∑ k, (v k : ZMod 3329) * A i (k.castLE (by omega)))
+    {r : ℝ} (hr : 0 ≤ r) (hs : sqLength o + sqLength v ≤ r^2) :
+    ∃ z : CoordSpace 505, ‖z‖ ≤ r ∧
+      (retained (history A) j).M.mkQ z =
+        (retained (history A) j).M.mkQ (∑ i, b i • (retained (history A) j).g i) := by
+  have comp : compatible (history A) o v b := by
+    intro i
+    rw [hc i]
+    congr 1
+    apply sum_congr rfl
+    intro k _
+    simp only [past, dite_eq_left (show k.val < 511 by omega), history]
+    rfl
+  obtain ⟨w, hw, hn⟩ := retained_realizes (history A) j o v b comp
+  refine ⟨w + shift (retained (history A) j) b, ?_, ?_⟩
+  · exact (sq_le_sq₀ (norm_nonneg _) hr).mp (hn.trans hs)
+  · have hz : (retained (history A) j).M.mkQ w = 0 := (Quotient.mk_eq_zero _).2 hw
+    rw [map_add, hz, zero_add]
+    rfl
+
+/-- Embed an integer prefix by setting all later input coordinates to zero. -/
+def prefixZeroExtend {k n : ℕ} (h : k ≤ n) (v : Fin k → ℤ) : Fin n → ℤ :=
+  Function.extend (Fin.castLEEmb h) v (fun _ ↦ 0)
+
+private theorem sum_prefixZeroExtend {k n : ℕ} (h : k ≤ n) (v : Fin k → ℤ)
+    {M : Type*} [AddCommMonoid M] (f : Fin n → ℤ → M) (hzero : ∀ i, f i 0 = 0) :
+    (∑ i, f i (prefixZeroExtend h v i)) = ∑ i, f (i.castLE h) (v i) := by
+  let e := Fin.castLEEmb h
+  have hs : (∑ i ∈ univ.map e, f i (prefixZeroExtend h v i)) =
+      ∑ i, f i (prefixZeroExtend h v i) := by
+    apply sum_subset (subset_univ _)
+    intro i _ hi
+    have hn : ¬ ∃ a, e a = i := by simpa using hi
+    exact (congrArg (f i) (Function.extend_apply' v (fun _ ↦ (0 : ℤ)) i hn)).trans
+      (hzero i)
+  rw [← hs, sum_map]
+  apply sum_congr rfl
+  intro i _
+  exact congrArg (f (e i)) (e.injective.extend_apply v (fun _ ↦ (0 : ℤ)) i)
+
+/-- Zero extension preserves the raw squared length exactly. -/
+theorem sqLength_prefixZeroExtend {k n : ℕ} (h : k ≤ n) (v : Fin k → ℤ) :
+    sqLength (prefixZeroExtend h v) = sqLength v := by
+  exact sum_prefixZeroExtend h v (fun _ z ↦ (z : ℝ)^2) (by intro i; simp)
+
+/-- A witness from any shorter fixed prefix survives in every later retained state.
+The original affine equations and length bound need only refer to the shorter prefix. -/
+theorem retained_coset_representative_of_prefix (A : Sample) {j k : ℕ}
+    (hj : j ≤ 406) (hk : k ≤ 105+j)
+    (o : Fin 400 → ℤ) (v : Fin k → ℤ) (b : Fin 400 → ℤ)
+    (hc : ∀ i, (o i : ZMod 3329) = (b i : ZMod 3329) +
+      ∑ t, (v t : ZMod 3329) * A i (t.castLE (by omega)))
+    {r : ℝ} (hr : 0 ≤ r) (hs : sqLength o + sqLength v ≤ r^2) :
+    ∃ z : CoordSpace 505, ‖z‖ ≤ r ∧
+      (retained (history A) j).M.mkQ z =
+        (retained (history A) j).M.mkQ (∑ i, b i • (retained (history A) j).g i) := by
+  refine retained_coset_representative A hj o (prefixZeroExtend hk v) b ?_ hr ?_
+  · intro i
+    have he := sum_prefixZeroExtend hk v
+      (fun t z ↦ (z : ZMod 3329) * A i (t.castLE (by omega))) (by intro t; simp)
+    rw [he]
+    exact hc i
+  · simpa only [sqLength_prefixZeroExtend] using hs
+
 end SigabaNeo.Wall1.LongWinner.FourthMoment
 
 #print axioms SigabaNeo.Wall1.LongWinner.FourthMoment.winner_le_of_raw_vector
+#print axioms SigabaNeo.Wall1.LongWinner.FourthMoment.retained_coset_representative
+#print axioms SigabaNeo.Wall1.LongWinner.FourthMoment.sqLength_prefixZeroExtend
+#print axioms SigabaNeo.Wall1.LongWinner.FourthMoment.retained_coset_representative_of_prefix

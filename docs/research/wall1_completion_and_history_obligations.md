@@ -119,6 +119,41 @@ mean interval to(4.5740608,9.287185), and840 additional exact Bernstein
 coefficients improve the raw-square upper certificate to0.015595758
 (more than64 times smaller). This also bounds the unnormalized gated raw
 term at that geometry, but does not estimate either selected mixed term.
+The[determinant-slack gate](wall1_draw15_determinant_slack.md) now gives a
+separate actual-law result at a larger fixed radius: for
+C15=prod_(j=1)^14(q/s_j), the complete order24 calculation proves
+E[1_(C15>=12) min(1,b15/.280)]<1.074e-12, hence the same bound on the
+joint gated draw15 exit. It uses original-law raw counts and pointwise
+projection domination, without conditioning them on the selected flag.
+The complement C15<12 and later draws remain unbounded; this is not a
+completed later-history probability estimate.
+The same fixed119-input candidate set persists by zero extension through
+draw404. Its raw-miss fraction pointwise bounds every projected void with
+B_i>=R(12), simultaneously. Thus the expectation of the maximum gated
+capped potential, and the probability of any such gated exit on draws15..404,
+are also below1.074e-12 without a union factor. A sufficient region is
+D_(i-1)>=12*q^386, equivalently g_i>=2679.889801018402... . This does not
+assume monotone determinants or bound the lower-radius complement.
+`CommonRawWitness.lean` formalizes the finite counting bridge from a common
+raw hit-preservation premise to all gated exits and their first-moment
+bound, without an index-count factor. File-level compilation and standard
+axiom audits passed. The quotient/geometric premises and numerical input
+remain paper/interval results; the low-radius history law remains open.
+The subsequent Lean extension proves uniform fibers of surjective additive
+homomorphisms, exact empty-count scaling under pullback, and the same
+history first-moment inequality with entry/input-dependent quotient types.
+All eight declarations pass the standard axiom audit. Constructing the
+actual lattice maps and their geometric hit-preservation proof is still
+outside this formalized counting bridge.
+`RawGraphWitness.retained_coset_representative` now exports the actual
+restart's short affine-coset representative after selected projections,
+using the existing inductive realization proof. It needs no nonzero newest
+coordinate. Compilation and standard axiom audit passed. The subsequent
+`retained_coset_representative_of_prefix` now proves exact zero-extension
+of both length and affine syndrome from any k<=105+j, including the fixed
+119-input prefix. Its compilation and standard axiom audit also passed.
+The finite marked-group occupancy instantiation still separates these
+results from the complete numerical history certificate.
 
 The [height-one covariance screen](wall1_height_one_covariance_screen.md)
 gives a valid selected-sector PSD lower bound, but shows why even ideal
