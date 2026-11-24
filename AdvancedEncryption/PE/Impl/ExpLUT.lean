@@ -69,6 +69,9 @@ import PE.Impl.ExpLUT.Prog.AuthWX
 import PE.Impl.ExpLUT.AH.RedSecret
 import PE.Impl.ExpLUT.AH.RedCompsR
 import PE.Impl.ExpLUT.Prog.RedSetup
+import PE.Impl.ExpLUT.Prog.EncWordMath
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncPhases
+import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncCb
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
