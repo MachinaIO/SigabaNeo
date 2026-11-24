@@ -385,9 +385,20 @@ programs:
   (public matrix, encoding)); F3 has no shared `EvalPK.lean` yet — a separate PK-only program for
   KeyGen can reuse `RingVM` and the blocks (`mulAcc`, `matGinv`, `bitRounds`) unchanged.
 
-**Remaining for F4** (see the final report of the session for the exact state): the vector/G⁻¹
-blocks (`vecGinv`, `matGinv`, `mulAcc`, de-interleave), the LUT coefficient block (α/v from the
-predicate table, `σ` along bits, `X^{L(u)}` by bits, the binary counter), `autStep`/LUT/Mul/step
-loops with their link to `evalPK`/`evalCT`, the final assembly (`finC`, decode), the front end
+* `Mersenne/VMVec`, `VMGinv`, `VMFam` (Lib): `vecAddC`/`vecSubC`/`vecAutC`, **`vecGinvC`**
+  (`v G⁻¹(M)`), **`matGinvC`**, `deintC` (rows of a matrix family), **`mulAccC`** (the Mul sum
+  `Σ_{r,i'} ddot(F(r,j,i'), A(·,(r,i')))`), `ddotV_eq` (to `Σ_c v_c · binaryDigit`).
+* `ExpLUT/Prog/DecCoef`, `DecCoefMath`: `coefC` (α_{g^j,L_i} resp. v_{g^j,L_15} from the table
+  stream of `C`: `σ_{g^j}` along the bits of `j` with the templates `κ_t`, `X^{L(u)}` by the 14
+  bits, `W⁻¹` by `rotB`), **`exec_coefC_alpha`/`exec_coefC_vcoef`** (`= alphaCoef`/`vCoef` of
+  `bpOf (progOf C)` at `setting D`, `D.b = 22`), `gadC` (the words of `α • G`,
+  `decRM_gadMatWords`), `incC` (`J := J + 1` in binary).
+* `ExpLUT/Prog/DecFinal`: **`exec_finC`** — the whole end of decryption (the three key sums,
+  `μ' = c_m − d₂ − …`, canonical word, decoded bit on register 179) from `c_F` (reg 176) and `A_F`
+  (reg 177).
+
+**Remaining for F4** (see the final report of the session for the exact state):
+`autStep`/LUT/Mul/step loops with their link to `evalPK`/`evalCT`, the link of `exec_finC` to
+`decryptRaw` at `setting D`, the front end
 (parsing `encodeTuple [pw, sk, C, ct]` into registers, templates by `natP`, length guard,
 `ValidC`), `DecSpec`, and the clock/descLen bounds (generic, then at `Params/Conf`).
