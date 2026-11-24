@@ -10,6 +10,12 @@ import PE.Impl.ExpLUT.Correctness
 import PE.Impl.ExpLUT.KeyGen
 import PE.Impl.ExpLUT.CorrectBound
 import PE.Impl.ExpLUT.Laws
+import PE.Impl.ExpLUT.SimForm
+import PE.Impl.ExpLUT.SimEval
+import PE.Impl.ExpLUT.SimBound
+import PE.Impl.ExpLUT.SimTrap
+import PE.Impl.ExpLUT.SimKeys
+import PE.Impl.ExpLUT.GameChain
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
@@ -28,4 +34,13 @@ The algebra of §4 and the scheme and correctness of §5, over an abstract ring 
 * `Correctness`: eq. (4) and Theorem 1 exactly; `CorrectBound`: at the norm level.
 * `KeyGen`: keys by box rejection, with a trapdoor-independent law.
 * `Laws`: the laws of the coins; Theorem 1 in probability.
+
+The proof of Theorem 2 (Appendix A):
+
+* `SimForm`, `SimEval`, `SimBound`: simulation forms (Definition 3), Lemma 10, Corollary 1 and the
+  coefficient bound `B_R̂`.
+* `SimTrap`, `SimKeys`: Lemma 11 (the gadget trapdoor `X` and `T_sim`), the key laws.
+* `HybLaws`, `HybView`, `Hybrid0`, `Hybrid12`, `Hybrid3`, `Reduction`, `Hybrid5`, `Hybrid5U`,
+  `Hybrid6`: the hybrids H0–H6 and the reduction to circular Ring-LWE.
+* `GameChain`: the chain over the generic attribute-hiding game.
 -/
