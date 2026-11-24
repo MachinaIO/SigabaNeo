@@ -352,3 +352,65 @@ input frames (`ufChunk`/`dropChunk` of `DualUse/Prog/EncP`), sample the coins in
 doublings) used for `b` (`z = 0`), `h_k` (`z = (s_k, 1)`), `c^aut_{t,d}`
 (`z = digit_d(C_t)·(σ_t s, 1)`), `C^in_t` bottom rows (`A = (−a_t ; 0)`-style, `z = −X^{w x_t}(s,1)`),
 `c^in_{t,d}`, `c₀` (`z = (s, 1)`); `c_m = s d₁ + d₂ + e_m + 2^{K−1} μ`.
+
+### Package G (attribute hiding of the implementation) — branch `t3/explut-g`
+
+Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the aggregator) and
+`PE/Impl/Game/OneSetup.lean`. Axioms `[propext, Classical.choice, Quot.sound]`.
+
+**Main results.**
+* `AH/Final.attributeHiding_Dc`: `AttributeHiding (univ w8) params impl` for every `impl` with
+  `ImplSpec Dc kb L impl χc χc χfl` (`Setup` meets `SetupSpec Dc (χbin Dc)`, `Enc` meets
+  `EncSpec Dc χc χc χfl`, `KeyGen` meets `KeySpec Dc kb L` **and `KeyLongSpec Dc L`** (empty word on
+  predicate words longer than `L`, as DualUse's `key_long`), `Eval = evalMachineX`), from
+  `CircularRingLWE.decision.HardAt (circParamsD Dc) kb'` with `64 · 2^256 · C ≤ 2^kb'`, given
+  `KbCover kb 2^18500`, the flooding hypothesis `hflood` at some `ε_fl ≤ 2^{−148}`, and the
+  reduction machines `RedMachine … C A Dm` (below). Simulator: `simMachine Dc` (`AH/Sim`: the
+  encoding of `ctUW`, independent `unifW` entries; existence via `Machine.exists_finiteAlg'`, cost
+  not bounded — it does not enter the definition).
+* `attributeHiding_Dc_registry`: the same from `CircularRingLWE.decision.Holds`, with
+  `strength_Dc : 1155 ≤ CircularRingLWE.decision.H (circParamsD Dc)` (`m = m_B + 1 + τ|J| ≤ 2^50`).
+  **Required strength**: `kb' ≥ 262 + log₂ C`; `1155` bits cover `log₂ C ≤ 893`.
+* Generic: `AH/Assembly.attributeHiding_of_reduction` (any `D`, `kb`, coverage, statistical
+  hypotheses), `advantage_le` (`|adv| ≤ statW ε_fl + |rAcc − uAcc|`).
+
+**Pieces.**
+* `AH/Unif`: `unifW` is within `ε_U = N 2^{−K}` of uniform (`closeTo_unif_unifW`, every element has
+  probability `≥ 2^{−NK}`, Bernoulli); `closeTo_setupLaw` (`epsSetup`), `ctUW` and `closeTo_ctU_ctUW`
+  (`epsCT`), `mem_support_setupLawW`.
+* `AH/Games`: `real_eq_gameV` (real experiment = `gameV` of `realVW`, keys `KGiW` = ideal key law
+  on `Setup`'s support under `RealCovW`), `realVW_close` (to D's `hyb0`, `χbin = bitLaw`),
+  `ideal_eq_gameV0` (unshifted challenge), `idealVW_close`, `gameV0_idealView_eq` (`ctU_shift`).
+* `AH/RedGame`: the reduction's experiment `redGame` (secret `redSec`, view `view2`, keys `KGsim`
+  = `redKeyLaw` with `T_sim`); `accept_red`: equal to the hybrid's for continuations rejecting
+  `bad` (`KGsim_eq_KGiW` under `SimCovW`, `22 ≤ b`).
+* `Game/OneSetup` + `AH/Chain1`: **a statistical change of the secret costs its distance once**
+  (`closeTo_runWith_setup_one`; D's `chain` pays `|Attr| = 2^128` per step, which with P's
+  `m̄ = 3NK + 408` would give only `2^{−20}`); `chain1`.
+* `AH/Conf`: `Dc` (`setting Dc = confS` by `rfl`), coverage `realCovW_of`, `simCovW_of` from
+  `KbCover kb coverBound`: real shift `≤ τn = 2^40`; `T_sim` shift `≤ W τ n D^b (B_R̂ + 2)` with
+  `B_R̂ = (stepBound 1 1 1)^[16] 1` (`matBnd_simKey`, `progBnd_progOf`, `rowBnd_simTrap`,
+  `vBound_iterate_le`, `simShift_rhat_le`). **The cover bound `2^18500` suffices.**
+* `AH/Stat`: `delta1, delta5 ≤ 2^{−148}`, `deltaT ≤ 2^{−189}`, `epsSetup, epsCT ≤ 2^{−150}`,
+  `statW Dc ε_fl ≤ 2^{−140}` for `ε_fl ≤ 2^{−148}`, `hstat_Dc`.
+
+**Open (hypotheses of `attributeHiding_Dc`).**
+1. `hflood` at `χfl` (P's `flood_budget` gives `Σ|shift|/2^eFl ≤ 2^{−249}`; remaining: D's
+   `floodLaw` as `Lattices.floodLaw` over the flooded index type, the coefficient bound of
+   `floodShift eb zr` (`≤ m_B B_χ`), then `closeTo_floodLaw_add`).
+2. `KbCover kb 2^18500` for the KeyGen machine's `KeyBoxes` (P's `famBig`/`famBall` boxes over
+   `PIdx (Wb Dc) (Jh Dc) …` have it by `add_mem_of_eq`; `Big` must be the image of fair bits).
+3. **The reduction machine** (`RedMachine Dc kb L (circParamsD Dc) impl χc χc χfl C A Dm`): for every
+   admissible `A` and distinguisher `Dm`, a machine `R` with
+   `R.acceptProb (realLaw (circParamsD Dc)) = rAcc …`, `R.acceptProb (idealLaw …) = uAcc …` and
+   `cost R ≤ C (cost A + cost Dm)²`. `rAcc`/`uAcc` = probability over `circReal`/`circUnif` that
+   `redGame` followed by `DcB Dm` accepts. `R` must: decode the instance word (B's rows: plain rows
+   = the columns of `B`, `d`, and the helper columns `(k, (1, i))`; key row `(i, j)` = helper
+   `k = equivFin.symm j` column `(0, i)`, automorphism index `jList`; **the law bridge
+   `realLaw (circParamsD D) = circReal.map enc`, `idealLaw = circUnif.map enc` is not yet proved**);
+   draw `B̄⁽²⁾`, gadget columns of `B⁽²⁾`, `H⁽²⁾`, `d₂`, the flooding errors, `zr` (`redSec`); run
+   `A` (`Lib/Machines/Inline`) answering select with `mpkEnc (view2 …).1`, key queries with
+   `KGsim` (`EvalPK` over `bpOf (progOf C)` for `R̂_F` via `simKey` (Corollary 1 propagation),
+   `simX`/`simTrap` (Lemma 11), one box try with `kb`, encoding `skEnc`), the challenge with
+   `ctEnc (shiftCT ⌊q/2⌉ μ (view2 …).2)`; track `bad` (`authW`: `|C| = predLen ∧ output x = false`);
+   output `Dm`'s verdict on `viewObs8` if not `bad`, `[false]` otherwise.
