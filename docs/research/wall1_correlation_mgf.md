@@ -160,3 +160,8 @@ Consequently the first sufficient target above reduces to
 Pr(max_{13<=i<=404} b_i > 0.280) <= 6.354e-12. That latter probability remains open;
 the moment argument here still uses all 398 stopped variables and charges the
 initial exception once.
+
+The [sharp two-moment exponential refinement](wall1_sharp_correlation_mgf.md)
+reduces the rho=.280 remainder to below 1.047e-12 at lambda=3.020, using
+the same Fourier information. Its resulting 6.553e-12 exit allowance remains
+a sufficient target, not a proved selected-history estimate.

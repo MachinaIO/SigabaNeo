@@ -8,6 +8,7 @@ from fractions import Fraction as F
 from functools import lru_cache
 from itertools import product
 from math import gcd,isqrt
+from mpmath import iv
 from fixed_quotient_graph_space import FixedQuotientGraphSpace
 from wall1_mixed_exclusion_gates import exclude
 from wall1_selected_height_geometry import ball
@@ -22,6 +23,7 @@ def positive(x):return next((t>0 for t in x if t),False)
 @lru_cache(None)
 def projected_ball(v,radius_squared):
     """One integer representative per P_v Z^d point, with a half-open strip."""
+    if radius_squared<0:return ()
     n=norm(v)
     # In the strip, ||x||²=||Px||²+<x,v>²/n <=R²+n/4.
     cutoff=(radius_squared+F(n,4)).__floor__()
@@ -30,8 +32,34 @@ def projected_ball(v,radius_squared):
                  and F(n*norm(x)-dot(x,v)**2,n)<=radius_squared)
 
 
+
+def determinant_radius(q,v):
+    """Certified rational enclosure of (1.1*(det M/V_d)^(1/d))²."""
+    iv.dps=60
+    I=iv.mpf
+    d=len(v)
+    volume=iv.pi**(I(d)/2)/iv.gamma(I(d)/2+1)
+    determinant=I(q*q)/iv.sqrt(norm(v))
+    squared=(I(121)/100)*iv.exp((I(2)/d)*iv.ln(determinant/volume))
+    # Floating midpoint is only a proposal. Exact interval comparisons below
+    # certify both rational endpoints, independently of that proposal.
+    scale=10**10
+    k=int(float(squared.mid)*scale)
+    lower,upper=F(k-2,scale),F(k+3,scale)
+    assert (I(lower.numerator)/lower.denominator).b<squared.a
+    assert squared.b<(I(upper.numerator)/upper.denominator).a
+    assert 1<lower<upper<9
+    # Equal endpoint sets certify every intervening irrational radius.
+    for j in (0,1,2):
+        assert projected_ball(v,lower-j*j)==projected_ball(v,upper-j*j)
+    return lower,upper
+
+
 def run(q,inputs=1,radius=F(11,2)):
     dimension=2+inputs
+    variable_radius=radius is None
+    fixed_radius=radius
+    radius_ranges=[]
     ordered=sorted((x for x in ball(dimension,q*q) if positive(x)),key=lambda x:(norm(x),x))
     strata=defaultdict(list)
     def get_label(a,x):
@@ -47,6 +75,10 @@ def run(q,inputs=1,radius=F(11,2)):
     mixed=0
     survivor_sizes=[]
     for v,maps in strata.items():
+        if variable_radius:
+            lower,radius=determinant_radius(q,v)
+            radius_ranges.append((lower,radius))
+        else:radius=fixed_radius
         model=FixedQuotientGraphSpace(q,2,inputs,0,(v,),(v,))
         old=tuple(x for x in projected_ball(v,radius) if any(x))
         families=tuple((j,projected_ball(v,radius-j*j)) for j in (1,2))
@@ -97,7 +129,12 @@ def run(q,inputs=1,radius=F(11,2)):
         assert actual/denominator<=bound<=single
         total_actual+=actual/denominator;total_bound+=bound;one_bound+=single
         improved+=bound<single
-    assert surviving>0 and improved>0
+    assert surviving>0
+    if not variable_radius:assert improved>0
+    else:
+        assert total_bound==one_bound and all(hi<4 for lo,hi in radius_ranges)
+        print("Certified squared-radius outer range:",min(lo for lo,hi in radius_ranges),
+              max(hi for lo,hi in radius_ranges))
     print('q=',q,'inputs=',inputs,'first-winner strata=',len(strata),'old-gate histories=',surviving,
           'fresh columns checked=',checked,'improved strata=',improved,
           'surviving nonsingleton strata=',mixed)
@@ -116,6 +153,8 @@ if __name__=='__main__':
     import argparse
     parser=argparse.ArgumentParser()
     parser.add_argument("--residual",action="store_true")
+    parser.add_argument("--production-radius",action="store_true")
     args=parser.parse_args()
-    if args.residual:run(5,2,F(9,2))
+    if args.production_radius:run(5,2,None)
+    elif args.residual:run(5,2,F(9,2))
     else:run(7)

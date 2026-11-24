@@ -95,3 +95,15 @@ if one mark direction is lost, equally spaced parallel phases give the
 fractional upper bound rho<=1-m/q. These replace a uniformity assumption
 after selection. Their weighted average and the nonhorizontal contribution
 still need bounds relative to the incoming potential before (2) can be used.
+
+The [reconciled sharper-MGF allocation](wall1_sharp_correlation_mgf.md) allows
+4.049e-12 for this same later-history exit. Under that allocation, the
+conditional choice C_i=1.00184 gives D*(1.00184)^390<4.035794e-12.
+This relaxes the sufficient multiplier but does not establish it on any
+production history; the zero-state warning above still applies.
+
+The subsequent early-block MGF refinement in the same note keeps rho=.280
+and increases the sufficient later-history allowance to5.0075e-12.
+It permits the conditional multiplier1.00239 over390steps, or normalized
+additive drift3.0370491e-12 after the seed. These are sufficient targets;
+the corresponding selected-history transport inequality remains unproved.

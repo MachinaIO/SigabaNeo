@@ -159,3 +159,19 @@ The seed comparison(2) holds for every k>=1, including k=1.
 choice to the existing two-height bound and a multiplicative stopped
 budget. It needs only a conditional first-moment sufficient criterion,
 which is still unproved on actual selected histories.
+
+## Updated sufficient allocation from the sharper compensator remainder
+
+The [sharp correlation MGF accounting](wall1_sharp_correlation_mgf.md) retains
+the same early events and draw14..404 observable, but reduces its proved
+compensator remainder. It permits a later-history allocation of4.049e-12,
+so the corresponding sufficient additive charge in(6) is2.0785491e-12.
+The old3.922e-12 allocation and1.9515491e-12 subtraction above remain valid
+conservative choices. Neither charge estimate is proved. This update does
+not count draw14 twice or absorb uncharged gate failures.
+
+The further early-block refinement in that same note keeps delta=.280
+and reduces the compensator remainder below8.850e-14. Its corresponding
+later-history allowance is5.0075e-12, leaving3.0370491e-12 after the seed.
+This is the sharper same-threshold sufficient allocation; its actual drift
+premise remains unproved.

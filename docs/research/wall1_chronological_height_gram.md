@@ -172,3 +172,57 @@ Independent review checked containment normalization, the residual selection
 law and projected enumeration, and separately enumerated the 625 old maps
 to verify all surviving stratum sizes. The parent run completed the 9000
 fresh-mark cases and all exact moment comparisons successfully.
+
+## Determinant-dependent radius in the residual experiment
+
+The `--production-radius` mode replaces the fixed test radius in the
+width-four residual experiment by the same dimension-dependent formula used
+in the production long-winner criterion. This name denotes the radius rule,
+not a production-sized computation.
+
+For a primitive first winner v with n=||v||², projection gives
+D=det(P_v L_A)=q²/sqrt(n). The next unit-height append preserves this
+determinant. In appended dimension d=4, let
+
+    V_4=pi²/2, g=(D/V_4)^(1/4), r=1.1g,
+    r²=(121/100)*(D/V_4)^(1/2).
+
+The checker recomputes r² for every winner stratum. Sixty-digit outward
+interval arithmetic certifies strict rational lower and upper endpoints.
+A floating midpoint merely proposes these endpoints; the strict interval
+comparisons certify them independently. For j=0,1,2, the complete projected
+point sets at squared radii lower-j² and upper-j² are compared exactly.
+Their equality guarantees that the intervening true irrational radius has
+exactly the same old-minimum gate and candidate families. Thus the rational
+upper endpoint used by direct enumeration does not add boundary witnesses.
+
+All 46 winner strata have squared radius strictly between
+3642570737/2000000000 and 13617284283/5000000000. In particular, 1<r²<4:
+the unit witness at zero mark is valid, while height two cannot contribute.
+The absence of multiple-height improvement in this mode is a geometric
+restriction of this tiny experiment, not a claim about the width506 regime.
+
+Exactly 600 of the 625 old matrices pass the projected old-minimum gate,
+spread across all 46 nonsingleton strata. The 15000 surviving old/fresh
+pairs are enumerated, and the selected rank-based moments and optimized
+square agree with direct evaluation. The remaining 25 old histories have
+a short horizontal witness and zero contribution to the next strict-long
+event. With denominator 5^6 retaining all old histories and fresh marks,
+
+    Pr(next shortest length >1.1g) = 10432/15625.
+
+In this finite experiment the optimized affine-square upper certificate
+also equals 10432/15625. This equality is checked against the exact event,
+not inferred from general moment optimality. It does not imply equality
+or concentration in higher dimension.
+
+Run `python3 docs/research/scripts/wall1_chronological_height_gram.py --production-radius`.
+Independent review verified the determinant identity, interval endpoints,
+set-equality argument, and dimension convention. The parent run completed
+all exact moment/event comparisons. This connects chronological selection,
+residual old-matrix uncertainty and the determinant-based radius in one finite
+step. Repeated selections and the width506 quantitative bounds remain open.
+
+The [repeated marked-transition checker](wall1_repeated_marked_transition.md)
+tracks exact rational basis metrics and quotient rank changes across several
+fresh-column transitions. It verifies mechanics, not the unresolved tail bound.

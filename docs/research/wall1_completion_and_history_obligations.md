@@ -1,5 +1,44 @@
 # Remaining completion and history obligations after the all-rank cover
 
+
+## Current completion audit: chronological finite checks do not close the tail
+
+The [chronological checkpoint](wall1_chronological_checkpoint.md) and later
+[determinant-radius experiment](wall1_chronological_height_gram.md) now verify
+actual shortest selection, rational projection, residual old-matrix uncertainty,
+fresh-column sampling and the dimension-dependent radius rule in small finite
+models. The [repeated transition checker](wall1_repeated_marked_transition.md)
+tracks several steps and handles rank-changing quotient labels. These are
+verified transition mechanics and finite distributions, not estimates of the
+production selected-state law.
+
+The following distinctions determine what still counts as completion work:
+
+- The full-family candidate count and exact first moment are established in
+  the stated production corridors. The selected collision energy or a stronger
+  selected polynomial moment is not bounded by the needed constants.
+- The [multiple-height Gram method](wall1_selected_height_gram.md) gives exact
+  cross moments from supplied selected incidences and optimizes an affine
+  square. It cannot certify those incidences by PSD or optimization alone.
+- Existing [compensator](wall1_fresh_review.md) and
+  [exponential-moment](wall1_long_winner_routes.md) reductions already permit
+  dependence across draws. Re-deriving these reductions, or merely applying
+  them to the finite test chain, does not establish their production premises.
+- The [Gaussian-polynomial candidate](wall1_primal_dual_auxiliary.md) is valid
+  under its stated dual premise but gives an ineffective upper certificate.
+  Its large value is neither a true moment lower bound nor evidence against
+  the desired BKZ behavior. It leaves the discrete lens discrepancy open.
+- The small-g crossing and capped-void exit are different events. Neither a
+  finite next-winner estimate nor a sufficient crossing criterion establishes
+  the remaining capped-potential charge without the required event connection.
+
+Thus the new finite checks have not reduced the proved production failure
+bound or paid the previously allocated 1.9515491e-12 selected-history charge. The full BKZ
+claim must remain unproved. A substantive next advance must control actual
+high-dimensional selected incidences, their geometric energy, or the actual
+winner/projection drift; an additional transition fixture is not such a bound.
+
+
 The [Fourier density extension](wall1_fourier_density_extension.md) reconciles
 Parts 474–476 with the stronger existing Parts 215/217 count. Density above
 10^16 at radius squared 1.21g²−2 permits a second-moment sufficient target;
@@ -17,6 +56,38 @@ The all-rank D32 cover has been integrated and its complete numerical pipeline
 checked. Parts420–442 below subsequently close the size18–24 cumulant
 transfer target; the selected-history law remains open. The following deductions narrow the missing mathematics; none
 is a lower bound on BKZ failure or an impossibility theorem for the goal.
+
+## Same-moment MGF improvement and a directional attempt
+
+The [sharp correlation MGF](wall1_sharp_correlation_mgf.md) applies the existing
+two-moment extremal-quadratic method to the exponential. Fractional filling
+of the miss indicator fixes its mean without replacing the finite mark group.
+At q3329,rho=.280,lambda3.020 the 398-step compensator remainder is below
+1.047e-12, improving the earlier rounded 1.174e-12. The corresponding exit
+allowance is 6.553e-12 instead of 6.426e-12. This is a genuine improvement to
+that auxiliary bound, but its selected-history exit premise remains unproved.
+The subsequent event/time reconciliation in that note permits4.049e-12
+for draws14..404 and2.0785491e-12 for the residual normalized drift after
+the seed. These are relaxed sufficient allowances; the residual is not paid.
+A further refinement retains the proved initial eight first moments inside
+the MGF, reducing the same-.280 remainder below8.850e-14. The resulting
+stronger sufficient allocations are5.0075e-12 for the later exit and
+3.0370491e-12 for normalized drift after the seed; both remain unproved
+as actual-history estimates.
+
+A parallel projection attempt retained symmetric nearest representatives y(v)
+and their covariance C=E_v[y(v)y(v)^T]. For fixed fresh mark u, write its
+actual winner as w_u=(a_u,k_u), s_u²=||a_u||²+k_u². For a fixed layer j,
+translation invariance and E_v y(v)=0 give the exact mean projected squared
+representative length
+
+    E_v T_j(u,v)=tr(C)-a_u^T C a_u/s_u²+j²||a_u||²/s_u².
+
+This does not justify an isotropic replacement of a_u^T C a_u. Height zero
+minimizes this single-layer mean, and the calculation discards the joint
+coverage benefit of different heights. No lower bound for the selected
+directional covariance, or sufficiently sharp near-boundary drift estimate,
+was obtained. This attempt does not close the capped-potential charge.
 
 ## Connected-incidence completion
 

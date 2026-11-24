@@ -2,6 +2,22 @@
 
 **Finding.** I found a rigorous bulk Gram–Schmidt profile for Haar quasi-HKZ reduction, an average-case all-coordinate bound for slide reduction on a random knapsack construction, and effective equidistribution for the precise Smith type of the unplanted q-ary lattice. None gives a 99% lower bound for the minimum of the quotient selected by width-406 BKZ or slide at rank 1023. The closest result about actual finite-width outputs is Joux–Węgrzycki, Appendix A. Its proof identifies exactly where the input ensemble enters.
 
+## Selected projection laws: additional primary-source check
+
+Shapira–Weiss, *Geometric and arithmetic aspects of approximation vectors*,
+v3 (2025), Theorem1.1 and Section3.2, treat asymptotic projection statistics
+along best Diophantine approximants. For dimension greater than one, the
+projected-lattice marginal is equivalent to Haar but is not Haar; the real
+joint distribution is not a product. Their epsilon-approximation sampling
+has a different law. [Primary text](https://arxiv.org/html/2206.05329v3)
+
+This is evidence that an explicit selection rule matters even in a related
+equidistribution problem, not a theorem about the BKZ selector. Applying it
+here would require a correspondence of processes and a finite quantitative
+comparison for the actual marked pair K,M and its fresh-column history.
+Neither is established by this source check. No production tail bound is
+imported, and this is not an exhaustive literature nonexistence claim.
+
 ## Which probability needs bounding?
 
 ### Primary-source applicability recheck, 24 November 2026
