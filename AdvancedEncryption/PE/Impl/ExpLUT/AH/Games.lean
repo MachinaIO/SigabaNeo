@@ -6,6 +6,7 @@ import PE.Impl.ExpLUT.Prog.Samplers
 import PE.Impl.Game.Bridge
 import PE.Impl.Game.Coins
 import PE.Impl.Game.UntilBad
+import PE.Impl.Game.OneSetup
 
 /-!
 # The experiments of the implementation as experiments of the hybrids (package G)
@@ -401,6 +402,14 @@ theorem gameV0_close {impl : Impl sig} (A : Machine 3) {V V' : Attribute w8 → 
     (A.machine.runOracle A.time (paramsWord (univ w8) params)) V' (fun _ => ε) h
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at this
   exact this.map _
+
+/-- A statistical step of the unshifted experiment costs its distance once. -/
+theorem gameV0_close_one {impl : Impl sig} (A : Machine 3)
+    {V V' : Attribute w8 → PMF (MPKt D × CTt D)} {ε : ℝ≥0∞} (h : ∀ x, CloseTo (V x) (V' x) ε) :
+    CloseTo (GV0 D kb L impl A V) (GV0 D kb L impl A V') ε := by
+  unfold GV0
+  exact (Generic.closeTo_runWith_setup_one (specV0 D kb L impl V) V' h
+    (A.machine.runOracle A.time (paramsWord (univ w8) params)) {}).map _
 
 /-- **The ideal secret law is close to package D's ideal view.** -/
 theorem idealVW_close (x : Attribute w8) :

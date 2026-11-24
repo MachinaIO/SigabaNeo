@@ -1,4 +1,5 @@
 import PE.Impl.ExpLUT.AH.RedGame
+import PE.Impl.ExpLUT.AH.Chain1
 import PE.Impl.Game.Assembly
 import SigabaNeo.Lib.Crypto.QuadLoss
 import SigabaNeo.Lib.Lattices.CircularRingLWE
@@ -12,6 +13,7 @@ boxes covering the real trapdoor and `T_sim` (`RealCovW`, `SimCovW`) and the flo
 
 * `advantage_le`: for every admissible adversary `A` and distinguisher `Dm`, the advantage
   `|Pr[Dm accepts real] − Pr[Dm accepts ideal]|` is at most the statistical terms `statW ε_fl`
+  (each paid once, not `|Attr| = 2^128` times: `chain1`, `Generic.closeTo_runWith_setup_one`)
   (the near-uniform public matrices on both sides, H1, H2, H3′, H5, H6) plus `|r − u|`, where
   `r`, `u` are the probabilities that the reduction's experiment (`redGame`: keys from `T_sim`),
   followed by `Dm` rejecting the runs whose flag is up (`DcB`), accepts on a real and on a uniform
@@ -84,12 +86,8 @@ variable (D : Dims) (kb : KeyBoxes D) (L : ℕ)
 /-- **The statistical terms**: the machines' public matrices (real side), H1, H2 (flooding), H3′,
 H5, H6, and the machines' public matrices and the simulator's ciphertext (ideal side). -/
 noncomputable def statW (εfl : ℝ≥0∞) : ℝ≥0∞ :=
-  Fintype.card (Attribute w8) * epsSetup D +
-  (Fintype.card (Attribute w8) * delta1 (setting D) (Wb D) Pos +
-    Fintype.card (Attribute w8) * εfl + Fintype.card (Attribute w8) * deltaT (setting D) (Wb D) +
-    Fintype.card (Attribute w8) * delta5 (setting D) (Wb D) Pos +
-    Fintype.card (Attribute w8) * deltaT (setting D) (Wb D)) +
-  Fintype.card (Attribute w8) * (epsSetup D + epsCT D)
+  epsSetup D + (delta1 (setting D) (Wb D) Pos + εfl + deltaT (setting D) (Wb D) +
+    delta5 (setting D) (Wb D) Pos + deltaT (setting D) (Wb D)) + (epsSetup D + epsCT D)
 
 /-- The circular instances: real. -/
 noncomputable abbrev circR (χs χ : PMF (Rg D)) : PMF (CInst D) :=
@@ -157,8 +155,8 @@ theorem advantage_le [Nonempty (Wb D)] {impl : Impl sig} {χs χ χfl : PMF (Rg 
   have g0 : CloseTo ((GV D kb L impl A (realVW D χs χ χfl)).bind (DcB Dm))
       ((GV D kb L impl A fun x =>
         hyb0 (Wb := Wb D) (helperMap D) wSt (half D) χs χ χfl (attrN x)).bind (DcB Dm))
-      (Fintype.card (Attribute w8) * epsSetup D) :=
-    (gameV_close (univ w8) (half D) (msgR D) (mpkEnc D).enc (ctEnc D).enc (KGiW D kb L)
+      (epsSetup D) :=
+    (gameV_close_one (univ w8) (half D) (msgR D) (mpkEnc D).enc (ctEnc D).enc (KGiW D kb L)
       (authW impl) _ fun x => realVW_close χs χ χfl x).bind_left (DcB Dm)
   -- the reduction's step
   have hr : ∀ inst : CInst D,
@@ -179,28 +177,23 @@ theorem advantage_le [Nonempty (Wb D)] {impl : Impl sig} {χs χ χfl : PMF (Rg 
       ((circU D).bind fun i => (redGame D kb L impl χfl A i).bind (DcB Dm)) true := by
     rw [PMF.bind_apply, PMF.bind_apply]; exact tsum_congr fun i => by rw [hr i]
   rw [er, eu] at h4
-  have hc := chain (univ w8) (half D) (msgR D) (mpkEnc D).enc (ctEnc D).enc (KGiW D kb L)
+  have hc := chain1 (univ w8) (half D) (msgR D) (mpkEnc D).enc (ctEnc D).enc (KGiW D kb L)
     (authW impl) (helperMap D) wSt χs χ χfl (fun x => attrN x)
     (A.machine.runOracle A.time (paramsWord (univ w8) params)) (DcB Dm) hflood h4
   -- ideal side
   have gI : CloseTo ((GV D kb L impl A fun _ =>
         idealView (S := setting D) (Wb := Wb D) (J := Jh D) (Pos := Pos)).bind (DcB Dm))
       ((GV0 D kb L impl A (idealVW D)).bind (DcB Dm))
-      (Fintype.card (Attribute w8) * (epsSetup D + epsCT D)) := by
+      (epsSetup D + epsCT D) := by
     rw [← gameV0_idealView_eq]
-    exact ((gameV0_close A fun x => idealVW_close x).symm).bind_left (DcB Dm)
+    exact ((gameV0_close_one A fun x => idealVW_close x).symm).bind_left (DcB Dm)
   have htot := (g0.trans hc).trans gI
-  have hfin : Fintype.card (Attribute w8) * epsSetup D +
-      (Fintype.card (Attribute w8) * delta1 (setting D) (Wb D) Pos +
-        Fintype.card (Attribute w8) * εfl + Fintype.card (Attribute w8) * deltaT (setting D) (Wb D) +
+  have hfin : epsSetup D +
+      (delta1 (setting D) (Wb D) Pos + εfl + deltaT (setting D) (Wb D) +
         ENNReal.ofReal |rAcc D kb L impl χs χ χfl A Dm - uAcc D kb L impl χfl A Dm| +
-        Fintype.card (Attribute w8) * delta5 (setting D) (Wb D) Pos +
-        Fintype.card (Attribute w8) * deltaT (setting D) (Wb D)) +
-      Fintype.card (Attribute w8) * (epsSetup D + epsCT D) =
+        delta5 (setting D) (Wb D) Pos + deltaT (setting D) (Wb D)) + (epsSetup D + epsCT D) =
       statW D εfl + ENNReal.ofReal |rAcc D kb L impl χs χ χfl A Dm - uAcc D kb L impl χfl A Dm| := by
     unfold statW; ring
-  have hcard : Fintype.card (univ w8).Attr = Fintype.card (Attribute w8) := rfl
-  simp only [hcard] at htot
   unfold rAcc uAcc at hfin
   rw [hfin] at htot
   have hne : statW D εfl + ENNReal.ofReal |rAcc D kb L impl χs χ χfl A Dm -
