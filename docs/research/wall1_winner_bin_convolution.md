@@ -59,3 +59,36 @@ improvement for production histories or stopped-budget closure is claimed.
 The finite checker exhausts nested miss sets and all branch events on
 cyclic groups of orders1 through5. These algebraic fixtures test selection
 dependence; they do not assert realizability as BKZ states.
+
+## Shared convolution budgets across ordered bins
+
+For increasing winner cutoffs, B_j is decreasing. On the prefix of bins
+where B_j>=1, both miss sets increase with j, hence h_j(u)<=h_l(u)
+pointwise whenever j<=l. Define the event-restricted first moments
+
+    m_j=E[1_(E_j) h_j(U)].
+
+Disjointness of the branch events gives the additional constraints
+
+    0<=m_j<=alpha_j*p_j,
+    sum_(j<=l) m_j <= E h_l(U)=p_l*r_l,                  (3)
+    0<=x_j<=alpha_j*f_j,    x_j<=a_j*m_j.
+
+For the middle inequality, replace each h_j by h_l on E_j, then drop
+the indicator of the union of those disjoint events. It does not require
+independence between that union and h_l. Maximize sum x_j with these
+constraints and the previous winner-tail constraints. Trivial suffix bins
+retain only0<=x_j<=alpha_j; no undefined convolution is used for them.
+This strengthened feasible region projects into the old one, since
+m_j<=sum_(i<=j)m_i<=p_j*r_j. Its optimum therefore cannot be larger.
+
+The improvement can be strict even with exact bin masses. In H=Z/4 take
+identical miss sets A=C={0} for two bins, delta=1/4, k=24, and two equally
+likely branch events. Each p=r=1/4 and a=4. The separate-bin bound is1/2.
+The shared constraint m_1+m_2<=1/16 gives x_1+x_2<=1/4, exactly the
+true capped convolution mean: only U=0 has overlap1/4. This is an algebraic
+fixture, not a claimed reachable BKZ state or a production probability gain.
+
+The checker additionally passes11110 exact nested-set/branch-partition
+checks. This strengthens the certificate available when radial inputs are
+known; it does not supply the outstanding radial inputs themselves.

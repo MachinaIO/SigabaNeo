@@ -4502,6 +4502,21 @@ overestimate. `H` keeps the estimator's model, and this file records the distanc
   claiming any actual failure lower bound. Independent audits and exact or
   outward-interval certificates support these statements. No new later-history
   failure bound, full BKZ proof, or Lean formalization is claimed.
+* **Parts 451–453 (transport refinement and genuine q-ary toy obstruction; paper only).**
+  [Shared winner-bin budgets](research/wall1_winner_bin_convolution.md)
+  prevent repeated use of the same convolution moment, with11110 additional
+  exact checks. [Linear capped transport](research/wall1_linear_capped_transport.md)
+  uses the existing draw14 first-moment seed without a24th-power requirement:
+  a conditional multiplier1.0017 for390 steps would give total<3.821716e-12.
+  The multiplier is not proved for production histories. The
+  [Hamming-type construction](research/wall1_hamming_zero_void.md) shows why
+  it cannot follow from generic q-ary structure and shortest selection alone.
+  Correctly normalized cubic-grid states at(q,width)=(2,16),(3,14),(5,13)
+  have zero initial void but positive outgoing void on every nonzero fresh
+  mark. All68 winner branches are exactly checked and independently audited.
+  These examples do not refute the q3329,width506 claim; their unit-cover
+  construction cannot fit that width. The central selected-history estimate
+  and the full BKZ theorem remain unproved. No new Lean result is claimed.
 * **Coset-exit audit note (no new probability bound).**
   [coset_ideas](research/wall1_coset_ideas.md) distinguishes the reachable draw-2 exceptional
   family from the full exit event. Bounding that family's probability does not bound its

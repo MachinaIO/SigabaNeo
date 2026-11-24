@@ -124,8 +124,17 @@ exact SVP in 2^{1.669n+o(n)} time and 2^{0.5n+o(n)} space (Thm 1.4), which is wo
 * *(Removed after audit: an "integral termination" claim for BKZ via the LLL potential was false; see Audit item 1. No polynomial tour bound is known for original BKZ.)*
 * **Li–Nguyen**, "A complete analysis of the BKZ lattice reduction algorithm", JoC 2024 (ePrint 2020/1237):
   Thm 2 bounds every normalized prefix determinant after O((d/β)² log d) GBKZ tours, for exact or approximate
-  oracles. Its use in this repository is in [wall1_literature2.md](wall1_literature2.md). The PDF was
-  unreachable this session (403), so the theorem was not re-read.
+  oracles. Its use in this repository is in [wall1_literature2.md](wall1_literature2.md).
+  Source refresh (2026-11-24): the [institutional 2020 manuscript](https://pure.royalholloway.ac.uk/ws/portalfiles/portal/39276060/BKZ2020.10.10.pdf)
+  is accessible. Its Theorem2 and proof concern worst-case prefix-determinant
+  quality after bounded tours; this is distinct from termination at a fully
+  reduced basis. Section4.2 and Theorem5 explicitly assume the improved
+  shortest-vector bound for every encountered projected block. They do not
+  establish that premise for the selected discrete graph ensemble or bound
+  missed marked cosets. Thus they cannot discharge our selected-history
+  obligation. This verifies the accessible 2020 version, not equality with
+  every theorem number or detail of the 2024 journal version. The ePrint PDF
+  remained inaccessible (HTTP403).
 * **Li–Walter 2023** (generalized slide): Thm 7 gives N = O((k/b)² log(k/t)) inner tours, with constants hidden
   in the O. [wall1_li_walter.md](wall1_li_walter.md) records that the algorithm provably terminates.
 

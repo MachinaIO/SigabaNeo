@@ -151,3 +151,11 @@ the insufficiency of a tail-only seed, sharpness of (2) using a mixture on
 {0,delta}, and the budget subtraction. The trees use nonuniform transition
 probabilities and charges conditioned at each node; they do not assume a
 uniform selected-history law. They validate the algebra, not premise (9).
+
+## Choice of exponent after the first-moment seed
+
+The seed comparison(2) holds for every k>=1, including k=1.
+[Linear capped transport](wall1_linear_capped_transport.md) connects this
+choice to the existing two-height bound and a multiplicative stopped
+budget. It needs only a conditional first-moment sufficient criterion,
+which is still unproved on actual selected histories.

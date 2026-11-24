@@ -430,3 +430,48 @@ lower bound and does not exclude sharper counts or higher degrees. The
 existing raw-ball obstruction at draw16 independently requires retaining
 projection gain or obtaining a stronger radius floor. No new actual-history
 probability bound has been certified.
+
+## Part 451: convolution budgets shared across winner bins
+
+The [winner-bin bound](wall1_winner_bin_convolution.md) now retains prefix
+constraints sum_(j<=l) E[1_Ej h_j]<=p_l*r_l, using the nesting of miss
+sets as the radius decreases. These strengthen the finite optimization
+without assuming conditional uniformity inside a bin. In an exact Z/4
+fixture they reduce the bound from1/2 to the exact1/4;11110 additional
+nested-set checks pass. This is a genuine improvement to that conditional
+certificate, not a production history bound: the actual radial inputs and
+the stopped total remain unproved.
+
+## Part 452: first-moment seed permits linear capped transport
+
+[Linear capped transport](wall1_linear_capped_transport.md) initializes
+Phi_1=min(1,P/.280) with the same draw14 ceiling D14. In the shrinking-radius
+regime it minimizes the relative-drift multiplier certified by the current
+two-height bound among k>=1. A sufficient condition becomes p0*p1<=C*P,
+instead of p0^24*p1<=C*P^24. With deterministic C=1.0017 for390 steps,
+exact rational arithmetic gives total<3.821716e-12, inside3.922e-12.
+1595 rational exponent comparisons pass. This is a less restrictive target
+for the remaining geometric proof, not a verified production multiplier.
+High powers may still give smaller positive additive charges; they are not
+universally dominated for actual potential drifts.
+
+## Part 453: zero preservation fails in a genuine q-ary toy
+
+[The binary Hamming construction](wall1_hamming_zero_void.md) has K=Z^15,
+M of index16, width16 with its actual exponent and determinant normalization.
+All incoming marks are covered, but after a nonzero fresh mark the actual
+shortest projection covers only0 and that mark. Hence P'=7/8 on15 of16
+branches and E Phi(P')=15/16 from initial Phi(P)=0. Rational radius bounds
+and a complete integer-lift cutoff certify all branches; independent audit
+approves the example. This removes the artificial-dimension and non-unit-
+generation limitations of earlier toy counterexamples. It does not refute
+the production ensemble or its allowed exceptional budget. It does show
+that Part452's multiplicative premise needs production-specific information
+beyond the generic q-ary/shortest/determinant properties.
+
+Part453 extension: the same zero-to-positive phenomenon holds at odd primes
+q3,width14 and q5,width13, with all52 extra branches checked and audited.
+Their expected capped potentials are26/27 and24/25. The exact signed-unit
+cover construction needs(q^r−1)/2 coordinates, excluding its direct use
+at q3329,width506 even at rank1. Thus the obstruction is not merely binary,
+but remains distinct from the production selected-history question.
