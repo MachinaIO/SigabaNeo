@@ -1,3 +1,11 @@
+import PE.Impl.ExpLUT.Prog.KeyVM
+import PE.Impl.ExpLUT.Prog.KeyTryVM
+import PE.Impl.ExpLUT.Prog.KeyTryMath
+import PE.Impl.ExpLUT.Prog.KeyLut
+import PE.Impl.ExpLUT.Prog.KeyEval
+import PE.Impl.ExpLUT.Prog.KeyBoxW
+import PE.Impl.ExpLUT.Prog.AuthWCost
+import PE.Impl.ExpLUT.Prog.AuthW
 import PE.Impl.ExpLUT.Prog.Words
 import PE.Impl.ExpLUT.Prog.UnifCanon
 import PE.Impl.ExpLUT.Prog.SetupTime

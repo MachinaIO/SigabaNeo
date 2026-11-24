@@ -2,6 +2,8 @@ import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Canon
 import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Aut
 import SigabaNeo.Lib.Lattices.ProgAlgo.Digits
 import SigabaNeo.Lib.Machines.Prog.ValVM
+import SigabaNeo.Lib.Machines.Prog.AppendW
+import SigabaNeo.Lib.Machines.Prog.CoinFreeX
 
 /-!
 # A register machine on ring words modulo `2^K − 1`
@@ -17,6 +19,8 @@ of `ℤ_{2^K − 1}[X]/(X^N + 1)` on words of `N` blocks of `K` bits (`SigabaNeo
   operations are those of the ring (`canonW_eq`: `canonW (·) = encRM (decRM ·)`);
 * word moves: `mv d s c` (shift `|c|` bits of the stream `s` into the register `d`), `mvR d s`
   (shift `N K` bits), `cp`, `drop t c` (drop `|c|` bits of `t`), `clr`, `tl`;
+* `app d s` (`d := d ++ s`, so `app d d` doubles `d`) and `eqb f a b` (`f := [a = b]`, for
+  pairwise distinct registers);
 * control: `rep c body` (`|c|` rounds, each after dropping the first bit of `c`), `seq`, `ifb t p q`
   (on the first bit of `t`), `nop`.
 
@@ -26,7 +30,7 @@ only its own words): the operands are loaded into the work tapes `X1`, `X2` (cut
 `ValVM.inP`), the operation writes `X0`, `canonRP` writes `canonW X0` into `X1`, and the result is
 copied into `d`. **`run_flat_compile`**: on `enc N K w` (templates of `K`, `N`, `N K` zeros and
 `N K` ones, blank work tapes, the registers), the flattened program ends in `enc N K (exec N K c w)`;
-**`law_compile`**: its law is the point mass there. `wf_compile`: the compiled program is well
+**`law_compile`**: its law is the point mass there (the compiled program is coin free). `wf_compile`: the compiled program is well
 formed when no `rep` body writes its counter (`Code.WFc`).
 -/
 
@@ -160,6 +164,10 @@ inductive Code where
   | clr (t : Fin 64)
   /-- `t := t.tail`. -/
   | tl (t : Fin 64)
+  /-- `d := d ++ s` (`app d d` doubles `d`). -/
+  | app (d s : Fin 64)
+  /-- `f := [decide (a = b)]` (pairwise distinct). -/
+  | eqb (f a b : Fin 64)
   /-- `|c|` rounds of the body, each after dropping the first bit of `c`. -/
   | rep (c : Fin 64) (body : Code)
   | seq (p q : Code)
@@ -187,6 +195,8 @@ def exec (N K : ℕ) : Code → St → St
   | .drop t c, w => if t = c then w else Function.update w t ((w t).drop (w c).length)
   | .clr t, w => Function.update w t []
   | .tl t, w => Function.update w t (w t).tail
+  | .app d s, w => Function.update w d (w d ++ w s)
+  | .eqb f a b, w => if f = a ∨ f = b ∨ a = b then w else Function.update w f [decide (w a = w b)]
   | .rep c body, w =>
     (fun w' => exec N K body (Function.update w' c (w' c).tail))^[(w c).length] w
   | .seq p q, w => exec N K q (exec N K p w)
@@ -202,6 +212,8 @@ def Code.writes : Code → Fin 64 → Bool
   | .drop t _, r => t == r
   | .clr t, r => t == r
   | .tl t, r => t == r
+  | .app d _, r => d == r
+  | .eqb f _ _, r => f == r
   | .rep c body, r => c == r || body.writes r
   | .seq p q, r => p.writes r || q.writes r
   | .ifb _ p q, r => p.writes r || q.writes r
@@ -338,6 +350,43 @@ theorem fDr_inj {t c : Fin 64} (h : t ≠ c) : Function.Injective (fDr t c) := b
   have := t.isLt; have := c.isLt
   (try simp only at e); split_ifs at e <;> omega
 
+/-- `appT` on `[d, s, H1, H2]`. -/
+def fAp (d s : Fin 64) : Fin 4 → Fin 105 :=
+  ofV (fun j => if j = 0 then 41 + d.val else if j = 1 then 41 + s.val else if j = 2 then 39 else 40)
+    (by intro j hj; have := d.isLt; have := s.isLt; split_ifs <;> omega)
+
+theorem fAp_inj {d s : Fin 64} (h : d ≠ s) : Function.Injective (fAp d s) := by
+  have hds : d.val ≠ s.val := fun e => h (Fin.ext e)
+  refine ofV_inj ?_
+  intro p q hp hq e
+  have := d.isLt; have := s.isLt
+  (try simp only at e); split_ifs at e <;> omega
+
+/-- `appT` (doubling) on `[d, H1, H2]`. -/
+def fAp1 (d : Fin 64) : Fin 3 → Fin 105 :=
+  ofV (fun j => if j = 0 then 41 + d.val else if j = 1 then 39 else 40)
+    (by intro j hj; have := d.isLt; split_ifs <;> omega)
+
+theorem fAp1_inj (d : Fin 64) : Function.Injective (fAp1 d) := by
+  refine ofV_inj ?_
+  intro p q hp hq e
+  have := d.isLt
+  (try simp only at e); split_ifs at e <;> omega
+
+/-- `eq` on `[a, b, f]`. -/
+def fEq (f a b : Fin 64) : Fin 3 → Fin 105 :=
+  ofV (fun j => if j = 0 then 41 + a.val else if j = 1 then 41 + b.val else 41 + f.val)
+    (by intro j hj; have := a.isLt; have := b.isLt; have := f.isLt; split_ifs <;> omega)
+
+theorem fEq_inj {f a b : Fin 64} (h : ¬(f = a ∨ f = b ∨ a = b)) : Function.Injective (fEq f a b) := by
+  have h1 : f.val ≠ a.val := fun e => h (Or.inl (Fin.ext e))
+  have h2 : f.val ≠ b.val := fun e => h (Or.inr (Or.inl (Fin.ext e)))
+  have h3 : a.val ≠ b.val := fun e => h (Or.inr (Or.inr (Fin.ext e)))
+  refine ofV_inj ?_
+  intro p q hp hq e
+  have := a.isLt; have := b.isLt; have := f.isLt
+  (try simp only at e); split_ifs at e <;> omega
+
 /-- One tape. -/
 def f1 (t : Fin 105) : Fin 1 → Fin 105 := fun _ => t
 
@@ -381,6 +430,10 @@ def compile : Code → XProg 105
   | .drop t c => if h : t = c then nopX else .frame (mkE (fDr t c) (fDr_inj h)) (.prog ValVM.dropPc)
   | .clr t => .frame (mkE (f1 (tR t)) (f1_inj _)) (.prog (Prog.clr 0))
   | .tl t => .frame (mkE (f1 (tR t)) (f1_inj _)) (.prog (Prog.tl 0))
+  | .app d s => if h : d = s then .frame (mkE (fAp1 d) (fAp1_inj d)) (.prog (appT 0 0 1 2)) else
+      .frame (mkE (fAp d s) (fAp_inj h)) (.prog (appT 0 1 2 3))
+  | .eqb f a b => if h : f = a ∨ f = b ∨ a = b then nopX else
+      .frame (mkE (fEq f a b) (fEq_inj h)) (.prog (.prim (.eq 0 1 2)))
   | .rep c body => .loop (tR c) (compile body)
   | .seq p q => .seq (compile p) (compile q)
   | .ifb t p q => .ifBit (tR t) (compile p) (compile q)
@@ -674,48 +727,118 @@ theorem run_flat_compile (hN : 0 < N) (hK : 0 < K) :
     split_ifs
     · exact run_flat_compile hN hK p w
     · exact run_flat_compile hN hK q w
+  | .app d s', w => by
+    by_cases h : d = s'
+    · subst h
+      simp only [compile, dif_pos rfl, exec]
+      show run (map (fAp1 d) (appT 0 0 1 2)) _ = _
+      rw [run_map_eq_update (fAp1_inj d) _ _ 0 _ (run_appT_blank (by decide) (by decide)
+        (by decide) _ (by simp only [Function.comp_apply]; exact encX_at _ 39 rfl)
+        (by simp only [Function.comp_apply]; exact encX_at _ 40 rfl))]
+      rw [show fAp1 d 0 = tR d from Fin.ext rfl, Function.comp_apply,
+        show fAp1 d 0 = tR d from Fin.ext rfl, enc, encX_tR, update_tR]; rfl
+    · simp only [compile, dif_neg h, exec]
+      show run (map (fAp d s') (appT 0 1 2 3)) _ = _
+      rw [run_map_eq_update (fAp_inj h) _ _ 0 _ (run_appT_blank (by decide) (by decide)
+        (by decide) _ (by simp only [Function.comp_apply]; exact encX_at _ 39 rfl)
+        (by simp only [Function.comp_apply]; exact encX_at _ 40 rfl))]
+      rw [show fAp d s' 0 = tR d from Fin.ext rfl, Function.comp_apply, Function.comp_apply,
+        show fAp d s' 0 = tR d from Fin.ext rfl, show fAp d s' 1 = tR s' from Fin.ext rfl, enc,
+        encX_tR, encX_tR, update_tR]; rfl
+  | .eqb f a b, w => by
+    by_cases h : f = a ∨ f = b ∨ a = b
+    · simp only [compile, dif_pos h, exec, if_pos h]; exact run_nopX _
+    · simp only [compile, dif_neg h, exec, if_neg h]
+      show run (map (fEq f a b) (.prim (.eq 0 1 2))) _ = _
+      rw [run_map_eq_update (fEq_inj h) _ _ 2 _ (run_prim _ _)]
+      rw [show fEq f a b 2 = tR f from Fin.ext rfl, Function.comp_apply, Function.comp_apply,
+        show fEq f a b 0 = tR a from Fin.ext rfl, show fEq f a b 1 = tR b from Fin.ext rfl, enc,
+        encX_tR, encX_tR, update_tR]; rfl
   | .nop, w => run_nopX _
 
 theorem noGrow_nopX : (XProg.flat nopX).NoGrow := by
   show (map _ (nop 0)).noGrowB = true; rw [noGrowB_map]; rfl
 
-theorem noGrow_flat_compile : ∀ c : Code, (XProg.flat (compile c)).NoGrow
+theorem coinFree_flat_compile : ∀ c : Code, (XProg.flat (compile c)).CoinFree
   | .op o d a b => by
     show (map _ ValVM.inP ⨾ (map _ ValVM.inP ⨾ (map _ o.prog ⨾ (map _ canonRP ⨾
-      map _ outQ)))).noGrowB = true
-    simp only [noGrowB, noGrowB_map, Bool.and_eq_true]
-    exact ⟨rfl, rfl, noGrow_op o, rfl, rfl⟩
+      map _ outQ)))).coinFreeB = true
+    simp only [coinFreeB, coinFreeB_mapP, Bool.and_eq_true]
+    refine ⟨rfl, rfl, ?_, rfl, rfl⟩
+    cases o <;> first | rfl | (show (map _ _).coinFreeB = true; rw [coinFreeB_mapP]; rfl)
   | .mv d s c => by
     unfold compile; split_ifs
-    · exact noGrow_nopX
-    · show (map _ ValVM.mvPc).noGrowB = true; rw [noGrowB_map]; rfl
+    · rfl
+    · show (map _ ValVM.mvPc).coinFreeB = true; rw [coinFreeB_mapP]; rfl
   | .mvR d s => by
     unfold compile; split_ifs
-    · exact noGrow_nopX
-    · show (map _ ValVM.mvPc).noGrowB = true; rw [noGrowB_map]; rfl
+    · rfl
+    · show (map _ ValVM.mvPc).coinFreeB = true; rw [coinFreeB_mapP]; rfl
   | .cp d s => by
     unfold compile; split_ifs
-    · exact noGrow_nopX
-    · show (map _ (Prog.cp 0 1)).noGrowB = true; rw [noGrowB_map]; rfl
+    · rfl
+    · rfl
   | .drop t c => by
     unfold compile; split_ifs
-    · exact noGrow_nopX
-    · show (map _ ValVM.dropPc).noGrowB = true; rw [noGrowB_map]; rfl
-  | .clr t => by show (map _ (Prog.clr 0)).noGrowB = true; rw [noGrowB_map]; rfl
-  | .tl t => by show (map _ (Prog.tl 0)).noGrowB = true; rw [noGrowB_map]; rfl
-  | .rep c body => noGrow_flat_compile body
+    · rfl
+    · show (map _ ValVM.dropPc).coinFreeB = true; rw [coinFreeB_mapP]; rfl
+  | .clr t => rfl
+  | .tl t => rfl
+  | .app d s => by
+    unfold compile; split_ifs
+    · show (map _ (appT 0 0 1 2)).coinFreeB = true; rw [coinFreeB_mapP]; rfl
+    · show (map _ (appT 0 1 2 3)).coinFreeB = true; rw [coinFreeB_mapP]; rfl
+  | .eqb f a b => by
+    unfold compile; split_ifs
+    · rfl
+    · rfl
+  | .rep c body => coinFree_flat_compile body
   | .seq p q => by
-    show (XProg.flat (compile p)).noGrowB && (XProg.flat (compile q)).noGrowB = true
-    rw [noGrow_flat_compile p, noGrow_flat_compile q]; rfl
+    show (XProg.flat (compile p)).coinFreeB && (XProg.flat (compile q)).coinFreeB = true
+    rw [coinFree_flat_compile p, coinFree_flat_compile q]; rfl
   | .ifb t p q => by
-    show (XProg.flat (compile p)).noGrowB && (XProg.flat (compile q)).noGrowB = true
-    rw [noGrow_flat_compile p, noGrow_flat_compile q]; rfl
-  | .nop => noGrow_nopX
+    show (XProg.flat (compile p)).coinFreeB && (XProg.flat (compile q)).coinFreeB = true
+    rw [coinFree_flat_compile p, coinFree_flat_compile q]; rfl
+  | .nop => rfl
+
+/-- A framed program whose flattening is coin free denotes the run of its flattening. -/
+theorem denote_eq_run_flat_cf : ∀ {k : ℕ} (p : XProg k), (XProg.flat p).CoinFree →
+    ∀ s, p.denote s = pure (Prog.run (XProg.flat p) s)
+  | _, .prog p, h, s => denote_eq_run_of_coinFree p h s
+  | _, .frame e p, h, s => by
+    have hp : (XProg.flat p).CoinFree := by
+      have := h; simp only [XProg.flat, CoinFree] at this; rwa [coinFreeB_mapP] at this
+    rw [XProg.denote, denote_eq_run_flat_cf p hp, map_pure, XProg.flat, run_map e.injective,
+      XProg.embedF_eq_extend]
+    rfl
+  | _, .seq p q, h, s => by
+    simp only [XProg.flat, CoinFree, coinFreeB, Bool.and_eq_true] at h
+    rw [XProg.denote, denote_eq_run_flat_cf p h.1, pure_bind, denote_eq_run_flat_cf q h.2]; rfl
+  | _, .ifBlank i p q, h, s => by
+    simp only [XProg.flat, CoinFree, coinFreeB, Bool.and_eq_true] at h
+    rw [XProg.denote, XProg.flat, run_ifBlank, denote_eq_run_flat_cf p h.1,
+      denote_eq_run_flat_cf q h.2]
+    split_ifs <;> rfl
+  | _, .ifBit i p q, h, s => by
+    simp only [XProg.flat, CoinFree, coinFreeB, Bool.and_eq_true] at h
+    rw [XProg.denote, XProg.flat, run_ifBit, denote_eq_run_flat_cf p h.1,
+      denote_eq_run_flat_cf q h.2]
+    simp only [head?_eq_some_true]
+    split_ifs <;> rfl
+  | _, .loop i b, h, s => by
+    have hb : (XProg.flat b).CoinFree := h
+    rw [XProg.denote, XProg.flat, run_loop]
+    have : (fun t => XProg.denote b (tailAt i t)) =
+        fun t => pure (Prog.run (XProg.flat b) (tailAt i t)) :=
+      funext fun t => denote_eq_run_flat_cf b hb _
+    rw [this]
+    exact iterate_pure (fun t => Prog.run (XProg.flat b) (tailAt i t)) _ s
 
 /-- **The law of a compiled code**: the point mass at the encoding of its semantics. -/
 theorem law_compile (hN : 0 < N) (hK : 0 < K) (c : Code) (w : St) :
     (compile c).law (enc N K w) = PMF.pure (enc N K (exec N K c w)) := by
-  rw [XProg.law_eq_run_flat _ (noGrow_flat_compile c), run_flat_compile hN hK c w]
+  rw [XProg.law, denote_eq_run_flat_cf _ (coinFree_flat_compile c), Cslib.ProbComp.eval_pure,
+    run_flat_compile hN hK c w]
 
 /-! ### Well-formedness -/
 
@@ -792,6 +915,23 @@ theorem preserves_compile : ∀ (c : Code) (r : Fin 64), c.writes r = false →
   | .tl t, r, h => by
     simp only [Code.writes, beq_eq_false_iff_ne, ne_eq] at h
     intro j hj; exact absurd (tR_inj ((show f1 (tR t) j = tR t from rfl).symm.trans hj)) h
+  | .app d s, r, h => by
+    simp only [Code.writes, beq_eq_false_iff_ne, ne_eq] at h
+    have hd : d.val ≠ r.val := fun e => h (Fin.ext e)
+    unfold compile; split_ifs
+    · intro j hj; have hv := congrArg Fin.val hj
+      fin_cases j <;> (simp [mkE, fAp1, ofV, tR_val] at hv; omega)
+    · intro j hj; have hv := congrArg Fin.val hj
+      fin_cases j <;> first | exact preserves_of_preservesB (by decide) |
+        (simp [mkE, fAp, ofV, tR_val] at hv; omega)
+  | .eqb f a b, r, h => by
+    simp only [Code.writes, beq_eq_false_iff_ne, ne_eq] at h
+    have hf : f.val ≠ r.val := fun e => h (Fin.ext e)
+    unfold compile; split_ifs
+    · exact preserves_nopX r
+    · intro j hj; have hv := congrArg Fin.val hj
+      fin_cases j <;> first | exact preserves_of_preservesB (by decide) |
+        (simp [mkE, fEq, ofV, tR_val] at hv; omega)
   | .rep c body, r, h => by
     simp only [Code.writes, Bool.or_eq_false_iff, beq_eq_false_iff_ne, ne_eq] at h
     exact ⟨fun e => h.1 (tR_inj e), preserves_compile body r h.2⟩
@@ -824,6 +964,14 @@ theorem wf_compile : ∀ c : Code, c.WFc → (compile c).WF
     · exact wf_of_wfB (by decide)
   | .clr t, _ => trivial
   | .tl t, _ => trivial
+  | .app d s, _ => by
+    unfold compile; split_ifs
+    · exact wf_of_wfB (by decide)
+    · exact wf_of_wfB (by decide)
+  | .eqb f a b, _ => by
+    unfold compile; split_ifs
+    · exact trivial
+    · exact trivial
   | .rep c body, h => ⟨wf_compile body h.2, preserves_compile body c h.1⟩
   | .seq p q, h => ⟨wf_compile p h.1, wf_compile q h.2⟩
   | .ifb t p q, h => ⟨wf_compile p h.1, wf_compile q h.2⟩

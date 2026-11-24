@@ -418,6 +418,124 @@ Remaining for `Enc` (design fixed; each block a `Prog` with a run lemma and a ce
 6. the law (`EncSpec D (cbdR D 16) (cbdR D 16) (floodR D eFl)`, i.e. `χc χc χfl` at `Dc`) and the
    costs (`VB` chain as `SetupTime`; dominated by `c^aut`: `b · 4K² · 2K` rows of `2K` products,
    about `2^{56}` products of `22 N² K²` sweeps each, top `≈ 2^{98}`: clock `≈ 2^{240}`).
+### Package F3 (the `KeyGen` machine) — status (branch `t3/explut-f3`)
+
+**Design: a register machine on ring words.** `KeyGen` is far too large for hand-plumbed tape
+programs (nested loops five deep over `16` steps, `W = 2^22` coefficients, `b = 22` rounds,
+`16K³` digit products per `Mul`), so it is written as code of a small VM whose semantics is a
+pure function, and every routine is proved once at the level of lists of ring elements.
+
+* `Lib/Lattices/ProgAlgo/Mersenne/VM.lean` — **`MVM.Code`**: `64` word registers;
+  `op o d a b` for `o ∈ {add, sub, mul, neg, aut, rho, rot, dig}` (the Mersenne programs `addRMP`,
+  `subRMP`, `mulRMP`, `notP`, `autMP` (`σ_{|b|}`), `rhoJP` (`X^{−|b|}`), `rotBP` (`2^{K−|b|}`),
+  `digitRWP` (digit `|b|`)), each result **canonicalized** (`canonRP`); word moves `mv` (shift `|c|`
+  bits), `mvR` (shift `N K` bits), `cp`, `drop`, `clr`, `tl`; `rep c body`, `seq`, `ifb`, `nop`.
+  `compile : Code → XProg 105`, every instruction in a frame of its own tapes (operands loaded into
+  work tapes cut to `N K` bits, so the semantics `exec N K` is **total and exact**).
+  **`law_compile`**: the law of the compiled program on `enc N K w` is the point mass at
+  `enc N K (exec N K c w)`; **`wf_compile`** (no `rep` body writes its counter, `Code.WFc`).
+* `Mersenne/VMRing.lean` — reasoning tools: registers as **queues** `encL l` of canonical words
+  (`mvR d s` moves the head of `s` to the tail of `d`); every `op` on canonical words is the ring
+  operation (`canonW_add/sub/mul/neg/aut/rho/rot/dig`); `exec_writes` (footprints);
+  `exec_rep_inv` (loops by invariants); one-instruction `exec_*` lemmas and the tactics `vm_step`
+  (execute the head instruction of a `seq`) / `vm_simp`, which symbolically execute straight-line
+  code (register names are `@[vmreg]` abbrevs, equalities decided by `Fin.reduceEq`). Routines clear
+  their scratch registers so their effect is an exact update chain and composes by `rw`.
+* `Mersenne/VMMat.lean` — **routines with exact specifications** (all on fixed registers
+  `29 … 63`; callers use `0 … 28`):
+  * `digAccC` (`exec_digAccC`): `acc += Σ_{i<K} e_i · digit_i(x)` over the next `K` stream elements;
+  * **`mulPKC`** (`exec_mulPKC`): `EvalPK` of `Mul` with binary digits,
+    `A'_{a,j} = Σ_{(r,i)} Σ_c Ad_{(r,j,i)}[a,c] · digit_{c.2}(A_{c.1,(r,i)})` (`mulPKm`), streaming
+    the digit matrices once in the order of their word (`adL`), `(r, j, i, a, c)`; structure:
+    `iBody` (four digit accumulations), the `ι` loop, the `j` loop (partial sums as a queue),
+    the two `r` parts, a transposition (`tLoop`, `tOut`);
+  * **`ginvMulC`** (`exec_ginvMulC`): `X · G⁻¹(Y)` (`ginvMulm`);
+  * **`autMatC`** (`exec_autMatC`): `σ_k` on every entry, `k = |rKc|`;
+  * **`autPKC`** (`exec_autPKC`): `EvalPK` of `Aut`: `H · G⁻¹(mulPK(σ_g^{m}(A), Aaut))`
+    (`m = |rP|` applications of `σ_g`).
+* `ExpLUT/Prog/KeyVM.lean` — the bridge to the scheme at the dimensions `D`: `matE_enc`,
+  `digE_enc` (the words of `Words.lean` are the queues of the routines), `mulPK_eq_mulPKm`,
+  `mul_ginv_eq`, `autMat_eq`, `aut_iterate` (`σ_g^{m} = σ_{g^m}`), **`autPK_eq`**;
+  **`roundsPK_eq_bitChain`** (`A_j` after `t` rounds = `Aut_{g_s}` applied for the set bits `s` of `j`,
+  increasing; the basis of item 1 below) and **`lutCoef_pow`** (`α_{k,L} = W⁻¹ Σ_u c_u μ^u`,
+  `μ = σ_k(X^{2n−1})`; the basis of item 2).
+  Axioms of all of these: `[propext, Classical.choice, Quot.sound]`.
+
+**Done on `t3/explut-f3b`** (axioms `[propext, Classical.choice, Quot.sound]`):
+
+* VM extension (`Mersenne/VM.lean`, `VMRing.lean`): `app d s` (`d := d ++ s`; `app d d` doubles)
+  and `eqb f a b` (`f := [a = b]`); `law_compile` now via `coinFree_flat_compile` (the compiled
+  code is coin free; `app`/`eq` lengthen words, so not `NoGrow`). `exec_app`, `exec_eqb` are in
+  `vm_step`/`vm_simp`.
+* `ExpLUT/Prog/KeyLut.lean` — the VM code of `EvalPK`, generic in `N`, `K` (caller registers
+  `rAinS … rT15` = `0 … 28`; scratch `35 … 46` of the library between routine calls):
+  `exec_matAddC` (`rAccL += rMOut`), `exec_agC` (`α G` as `gM α`), `exec_bitLoop`/`exec_coefAC`
+  (`α = 2^{K−b}(Σ_{u<n} X^{−c_u} μ^u · X_c)`, `c_u` the complement of the `e` bits of entry `u`,
+  `sumA`), `exec_coefVC` (`v = 2^{K−b} Σ_u [C_u] μ^u`, `sumV`), `exec_chainLoop`/`exec_chainC`
+  (`A_j = chainM`: for `t < b`, digit `t` of the constant `j` (`hd_dig_natCast`) selects `autPKC`
+  with `|rP| = 2^t` (doubled by `app`) and `H_{(t,0)}` from the `H` stream, or skips the block of
+  `A^aut_t`), `exec_jLoopK` (`rAccL = accM = Σ_{j<n} A_j G⁻¹(α_j G)`, `μ_{j+1} = σ_g(μ_j)`,
+  `j := j + 1` as a ring constant), `exec_stepK` (`mulPKC` with the `A^in` stream, then the
+  table; `rCs` advanced by `|rTtab|`), **`exec_evalC`** (15 `α`-steps and the `v`-step:
+  `rA = evalVM … 16`). Read-only register sets `roJ`, `roC`, `roS`; input structures `ChainIn`,
+  `StepIn`, `CoefIn`.
+* `ExpLUT/Prog/KeyEval.lean` — **`keyPK_eq_evalVM`** (`D.b = 22`): `(fun a c => keyPK (helperMap D)
+  mpk (bpOf (progOf C)) a c) = evalVM (cvsK D C) (gD D) (HfK D mpk) (AaK D mpk) D.b X⁻¹ (2^b)
+  (AinK D mpk) A₀ 16`, with `xInvG_mul_monoX`, `monoX_pow_two_n_sub_one`, `val_take_add_cmpl`
+  (`L(u) + c_u = 2^{14} − 1`), `table_bpOf`/`table15_bpOf`, `coefs_eq`, `roundsPK_eq_chainM`,
+  `lutPK_eq`, `evalPKAt_eq`.
+* `ExpLUT/Prog/KeyBoxW.lean` — the key boxes: `kbOf D B hB r` (`Big` = image of
+  `|PIdx| N B` coins, `kbOf_Big : Big = famBig B` whatever order a machine reads the coins;
+  `Small = famBall r`), `kbCover_of`, `kbCover_of_eq`; **`kbDc`** (`Bk = 18750`,
+  `r = 2^{Bk−1} − 1 − 2^{18500}`, opaque) and **`kbCover_Dc : KbCover kbDc coverBound`**.
+  (Pitfall: `KbCover (kbOf Dc …)` makes the elaborator enumerate the ball — keep `kbDc` opaque.)
+* `Lib/Lattices/BallTest.lean` — `zabs_le_iff_val` (`|x| ≤ r ⟺ val(x+r) < 2^B ∧ val(r−x) < 2^B`
+  for `2r < 2^B`, `2^{B+1} ≤ q`), `cnorm_le_iff_digits` (digits `[B, K)` of `v + allC r`,
+  `allC r − v` vanish), `sum_binaryDigit_eq_zero_iff` (fewer than `q` digits).
+* `ExpLUT/Prog/KeyTryMath.lean` — `pubShort_apply` (row `i'` of `M_F(p, 0)`: the `Ā` columns, the
+  `η_{i',k}`, `− Σ_{i,k} [i' = i·k] Σ_c G_{0,c} p_{i,k,c}`, `[i' = 0] Σ_c A_F[0,c] p_c`),
+  `HelperMap.backRow`, `mulRow_eq_iff`, `sum_mulRow` (`Σ_i [i' = i·k] f_i = f_{backRow i' k}`).
+* `ExpLUT/Prog/KeyTryVM.lean` — queue routines (registers `29 … 55`, free after `EvalPK`):
+  `exec_ipC` (`rIa += Σ a_t b_t`), `exec_autQC` (`σ_k` on a queue), `exec_gadRecC`
+  (`Σ_j 2^j a_j`), `exec_tstC` (`rFa += Σ_{m<n} (digit_{B+m}(x + R) + digit_{B+m}(R − x))`),
+  `exec_decC` (one element from `N·B` coins: coefficient `j` = `val(chunk_j) − c₂`),
+  `exec_decQC` (`n` elements, `decList`), `exec_digQC` (the digits `0 … n−1` of `rY` as a queue).
+* `Lib/Lattices/CoinsUniform.lean` — `map_uniformList_eq_uniformOfFinset` (coins decoded
+  injectively onto `S` have the law `uniformOfFinset S`; for `S = kbDc.Big = famBig` via
+  `kbOf_Big`, with `c₂ = 2^{Bk−1}` so that `val(chunk) − c₂ = cenEmb chunk`).
+
+**Remaining for `KeyGen`** (design fixed by the code above; the next agent should start with 3,
+whose routines exist, then 1–2, 4, 5):
+
+1. *Parsing (VM)*: from the `msk` word, by a stream and length templates: `B` (row 0: `m̄ + K`
+   words, row 1), `H` word (`rHW`), `a`, `A₀` (`rA`), `A^in` (`rAinS`), `A^aut` (`rAautW`),
+   `d`, `T`; bridge lemmas: `matE_enc`/`digE_enc` + `FixedEnc.fun` over `Jh`/`Pos`/`Fin b` as
+   `hL`/`ainL`/`aautL` (with `HfK`/`HiK`/`AaK`/`AinK`).
+2. *Constants (VM)*: `rOne` (`[true] ++ 0^{NK−1}`), `rMu0 = X⁻¹` (`rho` of `1` by `[false]`),
+   `rXc = X^{2^{14}−1}` (`rho` of `1` by a template of `2N − 2^{14} + 1`), templates of the
+   `StepIn`/`CoefIn`/`ChainIn`/`MulTmpl` structures (outer program, `natP`).
+3. *Box try (VM)*, per row `i' < W` (math: `boxSample` with `p ← Big`):
+   `y(i') = [i'=0](d₁ − Σ_c A_F[0,c] p_last,c) − Σ_w σ_{i'}(B_{0,w}) p_{i',w}
+   − Σ_{k,c} σ_{i'}(H_k[0,c]) p_{i',k,c} + Σ_k Σ_j 2^j p_{(i'−je k) mod W, k, (0,j)}`
+   (`pubShort`; the last term from `PE ++ PE` with the offset `(i' + W − je k)` rows, `je (t,0) = 2^t`
+   by doubling, `je (t,1) = W − 2^t`); `z = digits of y(i')` (`dig`); `x_{i',w} = p_{i',w} +
+   Σ_c σ_{i'}(T_{w,c}) z_c` (`realTrap`); `σ_{i'}` kept by one `σ_g` per row on the queues of
+   `B₀`, `H_k[0,·]`, `T`. Coins: `p_last`, the `η` part, then the rows (`Bk` bits per
+   coefficient, `val − 2^{Bk−1}` via `sub` of the constant with all coefficients `2^{Bk−1}`);
+   their decoding is a bijection onto `famBig` (so the law is `uniformOfFinset Big` by
+   `kbOf_Big`). Test `x ∈ famBall r`: `zabs c ≤ r ⟺ val(c + r) < 2^{Bk} ∧ val(r − c) < 2^{Bk}`
+   (`2^{Bk+1} < q`), i.e. the digits `≥ Bk` of `x + R`, `R − x` vanish (`R` the element with all
+   coefficients `r`); accumulate them in one register and test `= 0` with `eqb` (no wrap: fewer
+   than `q` terms). Output `mpk ++ assemble x z` or `mpk ++ 0`; `|C| ≠ predLen` by two `drop`s and
+   `eqb` with a blank register → `mpk ++ 0`.
+4. *The machine*: an `XProg` (as `DualUse/Prog/KeyGenP.keyGenF`): `leP n` guard (`n` = length of
+   the input with `|C| = L`; longer → `encodeTuple []`, **`KeyLongSpec`**), parse
+   `encodeTuple [pw, msk, C]`, `natP`/`appendLaw_bits` templates, `coinsP` (`mB` coins), the VM
+   code in a frame of `105` tapes (`MVM.law_compile`), output `frP`; **`KeySpec kbDc L`**.
+5. *Costs*: a clock for compiled VM code (per instruction from `XProg.timeBoundT_frame` and the
+   Mersenne `MersenneT` bounds; `rep` by `timeBoundT_loop_le_of_inv` with register-length
+   invariants), `descLen` from `XProg.size`; estimate `≈ 2^214` steps at `Conf` (the `A^aut`
+   stream passes of `autPKC`, `16 · 2^22 · 11` calls).
 
 ### Package G (attribute hiding of the implementation) — branch `t3/explut-g`
 

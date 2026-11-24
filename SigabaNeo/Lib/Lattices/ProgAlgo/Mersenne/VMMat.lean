@@ -20,6 +20,7 @@ variable {N K : ℕ}
 /-- **One step of a VM code**: the head instruction of a `seq` is executed (registers named by
 `vmreg`, instruction lemmas, decided register equalities). -/
 macro "vm_step" : tactic => `(tactic| (rw [exec_seq]; simp only [vmreg, exec_cp, exec_clr, exec_tl,
+  exec_app, exec_eqb,
   exec_mvR, exec_mv, exec_drop, exec_add, exec_sub, exec_mul, exec_neg, exec_aut, exec_rho, exec_rot,
   exec_dig, exec_nop, Fin.reduceEq, ite_false, ite_true, false_or, or_false, or_self]))
 
@@ -349,6 +350,7 @@ def jBody : Code := .seq jPre (.seq (.rep rCi iBody) jPost)
 
 /-- The `simp` set of straight-line VM code. -/
 macro "vm_simp" : tactic => `(tactic| simp only [vmreg, exec_seq, exec_cp, exec_clr, exec_tl,
+  exec_app, exec_eqb,
   exec_mvR, exec_mv, exec_drop, exec_add, exec_sub, exec_mul, exec_neg, exec_aut, exec_rho, exec_rot,
   exec_dig, exec_nop, Fin.reduceEq, ite_false, ite_true, false_or, or_false, or_self])
 
