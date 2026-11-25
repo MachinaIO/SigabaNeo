@@ -53,7 +53,9 @@ ACCEPTED = ("ACCEPTED", "SKETCH_ACCEPTED")
 STATUSES = ("OK", "ACCEPTED", "SKETCH_ACCEPTED", "CE", "WA", "SORRY", "FAILED", "DUPLICATE",
             "LINT", "ERROR")
 
-LIMITS = {"files": 200, "file_bytes": 256 * 1024, "total_bytes": 2 * 1024 * 1024}
+# One pull request may register a large batch of nodes at once (for example a whole library
+# moved into the DAG). The gate's run time is the practical bound.
+LIMITS = {"files": 5000, "file_bytes": 4 * 1024 * 1024, "total_bytes": 96 * 1024 * 1024}
 
 
 def slug(name: str) -> str:

@@ -5,7 +5,6 @@ import SigabaNeoStd.Lattices.Gadget
 import SigabaNeoStd.Lattices.Gaussian.Facts
 import SigabaNeoStd.Lattices.Stat
 import SigabaNeoStd.Lattices.Hardness
-import SigabaNeoStd.Lattices.Reduction.BKZ
 import SigabaNeoStd.Lattices.LWE
 import SigabaNeoStd.Lattices.RingLWE
 import SigabaNeoStd.Lattices.ModuleLWE
@@ -98,12 +97,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   concrete, with Ring-LWE's security function; at `J = []` it is decision Ring-LWE.
 * `CircularRingLWEInst`: its laws as laws on ring-level pairs (`circRing`, `realLaw_eq_circRing`,
   `idealLaw_eq_uniform`); independent products split along sums, units and products.
-* `Reduction/`: lattice reduction and SVP tools shared by the attacks — `LLL`, `BKZ` (GSA-free bound on the first
-  vector of a BKZ-reduced basis, `docs/PROOF_GAP.md`), `Hermite2`, `AvgBKZ`, `Slide`, `Sieve`, `SieveWide`,
-  `QArySieve`, `Search`, `Rogers`.
-* `Attacks/` (entry point `Attacks.lean`): proofs of LWE attacks — `Primal`, `Dual`, `Bkw`, `Guess`, `AroraGe`, `Mitm`
-  (`docs/ATTACK_PROOFS.md`).
-* `Research/`: the open walls and recorded obstructions — `Wall1`, `Wall2`, `Wall1Rej`, `PolyQ`, `Rerand`, `RevMink`.
+* Lattice reduction, the attack proofs and the open research on them are not in the standard
+  library. They are kept in the DAG (`DAG_REPO_URL`), tagged `lattice-attack`.
 * `Estimator/`: the lattice estimator's attack cost models; `estimatorBits` is the `H` of the
   concrete assumptions (`docs/LWE_ESTIMATOR.md`). `Estimator/Bound/Cbd`, `Estimator/Bound/CbdQ`:
   certified lower bounds at `CBD(16)` laws (`q = 2^e`, one sample count; any `q ≥ 2^1024` given

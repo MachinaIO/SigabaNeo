@@ -56,6 +56,61 @@ def api(path: str, token: str | None, accept: str = "application/vnd.github+json
         return json.loads(r.read())
 
 
+# The compare API lists at most this many files; above it, `fetch` diffs the trees itself.
+COMPARE_FILES = 300
+# Above this many added files, contents come from one archive of `head` instead of one API call
+# per blob (the token's rate limit would not allow thousands of calls).
+BLOB_CALLS = 50
+
+
+def tree_diff(repo: str, token: str | None, old: str, new: str) -> list[dict]:
+    """The files that differ between commits `old` and `new`, as the compare API reports them
+    (`filename`, `status` in added / removed / modified), from the commits' recursive trees."""
+    def flat(sha: str) -> dict[str, dict]:
+        root = api(f"/repos/{repo}/git/commits/{sha}", token)["tree"]["sha"]
+        t = api(f"/repos/{repo}/git/trees/{root}?recursive=1", token)
+        if t.get("truncated"):
+            raise SystemExit("the commit's tree is too large to list")
+        return {e["path"]: e for e in t.get("tree", []) if e.get("type") != "tree"}
+    a, b = flat(old), flat(new)
+    rows = []
+    for path in sorted(set(a) | set(b)):
+        if path not in a:
+            rows.append({"filename": path, "status": "added"})
+        elif path not in b:
+            rows.append({"filename": path, "status": "removed"})
+        elif (a[path]["sha"], a[path].get("mode")) != (b[path]["sha"], b[path].get("mode")):
+            rows.append({"filename": path, "status": "modified"})
+    return rows
+
+
+def head_archive(repo: str, token: str | None, head: str) -> dict[str, bytes]:
+    """The regular files of commit `head`, by path, read from its tarball (one request). Only
+    regular members are read: links and other members are skipped, never followed. Contents are
+    data."""
+    import io
+    import tarfile
+    req = urllib.request.Request(f"https://api.github.com/repos/{repo}/tarball/{head}")
+    req.add_header("Accept", "application/vnd.github+json")
+    req.add_header("User-Agent", "sigaba-neo-dag-tools")
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(req, timeout=600) as r:
+        raw = r.read()
+    files: dict[str, bytes] = {}
+    with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:
+        for m in tar:
+            if not m.isreg() or "/" not in m.name:
+                continue
+            path = m.name.split("/", 1)[1]      # drop the archive's top directory
+            if not D.classify(path):
+                continue
+            fh = tar.extractfile(m)
+            if fh is not None:
+                files[path] = fh.read()
+    return files
+
+
 def fetch(repo: str, out: Path, token: str | None, base: str, head: str) -> list[dict]:
     """The files that commit `head` changes against `base` (the event's commits, which do not
     move), with the content of the added ones under `out/files/<path>`, and the list in
@@ -65,9 +120,15 @@ def fetch(repo: str, out: Path, token: str | None, base: str, head: str) -> list
     for sha in (base, head):
         if not re.fullmatch(r"[0-9a-f]{40}", sha or ""):
             raise SystemExit(f"not a commit: {sha!r}")
-    files = api(f"/repos/{repo}/compare/{base}...{head}", token).get("files", [])
-    if len(files) >= 300:
-        raise SystemExit("too many changed files to list (the API lists at most 300)")
+    cmp = api(f"/repos/{repo}/compare/{base}...{head}", token)
+    files = cmp.get("files", [])
+    if len(files) >= COMPARE_FILES:
+        # The compare API lists at most 300 files. A large pull request is listed from the full
+        # trees of the merge base and of `head` instead (the same three-dot comparison).
+        merge_base = (cmp.get("merge_base_commit") or {}).get("sha", "")
+        if not re.fullmatch(r"[0-9a-f]{40}", merge_base):
+            raise SystemExit("too many changed files, and no merge base to list them from")
+        files = tree_diff(repo, token, merge_base, head)
     trees: dict[str, dict] = {}
 
     def tree(sha: str) -> dict:
@@ -89,6 +150,8 @@ def fetch(repo: str, out: Path, token: str | None, base: str, head: str) -> list
         return node
 
     out.mkdir(parents=True, exist_ok=True)
+    wanted = [f["filename"] for f in files if f["status"] == "added" and D.classify(f["filename"])]
+    archive = head_archive(repo, token, head) if len(wanted) > BLOB_CALLS else None
     rows = []
     for f in files:
         row = {"filename": f["filename"], "status": f["status"]}
@@ -98,9 +161,15 @@ def fetch(repo: str, out: Path, token: str | None, base: str, head: str) -> list
             if e is None or e["type"] != "blob" or e["mode"] not in ("100644", "100755"):
                 rows.append(row)
                 continue
-            blob = api(f"/repos/{repo}/git/blobs/{e['sha']}", token)
-            data = base64.b64decode(blob["content"]) if blob.get("encoding") == "base64" \
-                else blob["content"].encode()
+            if archive is not None:
+                data = archive.get(f["filename"])
+                if data is None:
+                    rows.append(row)
+                    continue
+            else:
+                blob = api(f"/repos/{repo}/git/blobs/{e['sha']}", token)
+                data = base64.b64decode(blob["content"]) if blob.get("encoding") == "base64" \
+                    else blob["content"].encode()
             row["size"] = len(data)
             if len(data) <= D.LIMITS["file_bytes"]:
                 dst = out / "files" / f["filename"]

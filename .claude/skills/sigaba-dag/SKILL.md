@@ -141,7 +141,9 @@ text already exists; the path is given), `ERROR`.
 ## Pull request
 
 One pull request per coherent unit (for example: a sketch together with its new child theorems and
-a note). Branch from the DAG's latest `main`.
+a note). A unit may be large: one pull request can register many definitions, theorems, solutions
+and notes together (up to 5000 files, 4 MiB per file, 96 MiB in all), as long as the gate checks
+them within its six-hour limit. Branch from the DAG's latest `main`.
 
 ```bash
 cd "$HOME/sigaba-dag"
