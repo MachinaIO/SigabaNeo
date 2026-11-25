@@ -1,4 +1,11 @@
 import PE.Impl.ExpLUT.Prog.EncTimeConf
+import PE.Impl.ExpLUT.Prog.EncTightBase
+import PE.Impl.ExpLUT.Prog.EncTightInit
+import PE.Impl.ExpLUT.Prog.EncTightCert
+import PE.Impl.ExpLUT.Prog.EncTightCore
+import PE.Impl.ExpLUT.Prog.EncTimeTight
+import PE.Impl.ExpLUT.Prog.EncTightPrep
+import PE.Impl.ExpLUT.Prog.EncTightFront
 import PE.Impl.ExpLUT.Prog.EncSamplerTimeConf
 import PE.Impl.ExpLUT.Prog.DecSteps
 import PE.Impl.ExpLUT.Prog.DecSplit

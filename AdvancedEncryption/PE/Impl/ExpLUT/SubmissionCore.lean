@@ -1,5 +1,6 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeFront
 import PE.Impl.ExpLUT.Prog.EncTimeConf
+import PE.Impl.ExpLUT.Prog.EncTightFront
 import PE.Impl.ExpLUT.Prog.SetupConf
 import PE.Impl.ExpLUT.Prog.KeyBoxW
 import PE.Impl.ExpLUT.AH.Correct
@@ -12,7 +13,8 @@ import SigabaNeo.Trusted.Submission
 
 The implementation `implE decM` uses the finished machines `setupMP (binSampler Dc)`
 (`SetupSpec`, clock `≤ 2^242`, description `≤ 2^249`), `keyMachine` (`KeySpec`, `KeyLongSpec`,
-clock `≤ 2^508`, description `≤ 2^620`), `EncConf.encMachine` (`EncSpec`, cost `< 2^818`) and
+clock `≤ 2^508`, description `≤ 2^620`), `EncConf.encMachine` (`EncSpec`, clock `≤ 2^253` by `EncConf.time_encMachine_tight`,
+description `≤ 2^744`) and
 `evalMachineX`, with a deterministic `Dec` machine `decM`.
 
 * `registry`: decision circular Ring-LWE (`CircularRingLWE.decision`);
@@ -129,7 +131,7 @@ theorem attributeHiding_implE (rc : RawComps Dc kbDc predLen (implE decM hdet) �
 /-- The cost from the four clocks and description lengths. -/
 theorem cost_implE_le {T S : ℕ} (hT : decM.time ≤ T) (hS : decM.descLen ≤ S) :
     PE.cost params (implE decM hdet) ≤
-      2 ^ 242 + 1 * 2 ^ 508 + 1 * (2 ^ 817 + T) + (2 ^ 249 + 2 ^ 620 + 2 ^ 744 + S) := by
+      2 ^ 242 + 1 * 2 ^ 508 + 1 * (2 ^ 253 + T) + (2 ^ 249 + 2 ^ 620 + 2 ^ 744 + S) := by
   have hmb : Dc.mb = 3 * 2 ^ 40 + 408 := by
     show mbar = _
     rw [mbar_def, Kc_def]; norm_num [en]
@@ -142,8 +144,8 @@ theorem cost_implE_le {T S : ℕ} (hT : decM.time ≤ T) (hS : decM.descLen ≤ 
     rw [implE_key]; exact KeyCore.time_keyMachine
   have hkd : ((implE decM hdet).machine .keyGen).descLen ≤ 2 ^ 620 := by
     rw [implE_key]; exact KeyCore.descLen_keyMachine
-  have he : ((implE decM hdet).machine .enc).time ≤ 2 ^ 817 := by
-    rw [implE_enc]; exact EncConf.time_encMachine
+  have he : ((implE decM hdet).machine .enc).time ≤ 2 ^ 253 := by
+    rw [implE_enc]; exact EncConf.time_encMachine_tight
   have hed : ((implE decM hdet).machine .enc).descLen ≤ 2 ^ 744 := by
     rw [implE_enc]; exact EncConf.descLen_encMachine
   have hd : ((implE decM hdet).machine .dec).time ≤ T := by rw [implE_dec]; exact hT

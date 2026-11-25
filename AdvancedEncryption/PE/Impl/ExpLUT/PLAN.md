@@ -1981,3 +1981,25 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
 
 - `RedKeyC3M*` (M3 certificate, `m3_h3`, time ≤ 2^303), `RedKeyCW`/`RedKeyCWPk` (code weights `cw_pkOf`, `cw_m4`), `RedKeyC.c3_spec_closed`.
 - **`ExpLUT/Submission.lean`**: `submission := submissionOf decMachine _ (2^818)`; **`spec_submission : Spec (BranchingProgram.primitive w8) registry submission`** (unconditional) and **`valid_submission`** (1155 ≤ H(circParamsD Dc)). `#print axioms`: propext, Classical.choice, Quot.sound only. Aggregate builds (10190 jobs).
+
+### Tight Enc clock (2026-11-25)
+
+- **`EncConf.time_encMachine_tight : encMachine.time ≤ 2^253`** (was `time_encMachine ≤ 2^817`, kept). Files
+  `Prog/EncTight{Base,Init,Cert,Core,Prep,Front}`, `Prog/EncTimeTight`:
+  * `EncTightBase`: `TB p ρ σ σ' T` (the `Sym.Sound` summary of `AbsBound` evaluated at one value `ρ` of the
+    variables: placed by any injective `u`, per-tape bounds, clock `T`), `TB.of_check`, **`checkAt`/`TB.of_checkAt`**
+    (abstract run checked *numerically* at `ρ`; claims capped by the top), `TB.seq/mono/putW/clr/cpSelf`, and the
+    generic sequencing equations `timeBoundT_seqL/R`, `xtime_seqL`, … (rewrite with these, never `show`/`change` a
+    `timeBoundT`/`lenBoundT` of a concrete program: a non-syntactic match unfolds the structural recursion into the
+    whole program, 25+ GB).
+  * `EncTightCert`: `checkAt` certificates (`decide +kernel`) of the four phases at `ρE = [2^99, 2^24, 2^16, 9, 2^22, 2^42]`
+    (`top, N, K, g, W, C`), streams/output/scratch at the top: `mrowP` (b row) ≤ 2^228, `hBlkP` ≤ 2^203,
+    `autBlkP` ≤ 2^236, `tailP` ≤ 2^240 (the last two need `maxHeartbeats 0`).
+  * `EncTightCore`: rounds (`tb_round`: templates of ≤ W bits, block restores its inputs), `core_tight` (disjoint slots).
+  * `EncTightInit`: loader per-tape bounds (`initB_spec`, `mvP` charged its counter via `check_mvP_enc`), `initB_le`.
+  * `EncTimeTight`: core box `Bstar`, `opOK_encInit` (82 loader ops; only `decide +kernel` on closed numerals),
+    `cleanCore_tight`, **`suffix_tight` ≤ 2^242**.
+  * `EncTightPrep`/`EncTightFront`: per-tape parser bounds (`lenBoundT_unfr_le`, `lenBoundT_parse_le`), sampler at
+    `T(2^100, 2^102) ≤ 2^252` (was `T(2^104,2^104) ≤ 2^300`), **`total_encProgram_tight`**, `time_encMachine_tight`.
+- Cost chain: `Sub.cost_implE_le` uses 2^253 for Enc; `Sub.Ncost = 2^745` (`cost_implX_le` from `time_decMachine ≤ 2^727`);
+  total is dominated by the Enc description `2^744`.

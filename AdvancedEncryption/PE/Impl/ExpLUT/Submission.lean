@@ -8,7 +8,7 @@ import PE.Impl.ExpLUT.Prog.RedKeyCWPk
 `submission`: the ExpLUT implementation (`Setup` `setupMP (binSampler Dc)`, `Enc` `encMachine`,
 `KeyGen` `keyMachine`, `Dec` `decMachine`, `Eval` `evalMachineX`) at the concrete dimensions `Dc`,
 with attribute hiding resting on **decision circular Ring-LWE with automorphism keys** at
-`1155` bits (`circParamsD Dc`), correctness and expressiveness on nothing, claimed cost `2^818`.
+`1155` bits (`circParamsD Dc`), correctness and expressiveness on nothing, claimed cost `2^745`.
 
 * **`spec_submission`**: the final statement `Spec`;
 * **`valid_submission`**: the premise is valid at the initial strengths of the registry.
