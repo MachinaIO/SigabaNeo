@@ -2,6 +2,8 @@ import PE.Impl.ExpLUT.Prog.KeyTimeFront
 import PE.Impl.ExpLUT.Prog.EncTimeConf
 import PE.Impl.ExpLUT.Prog.EncTightFront
 import PE.Impl.ExpLUT.Prog.SetupConf
+import PE.Impl.ExpLUT.Prog.SetupTight
+import PE.Impl.ExpLUT.Prog.DescTightEnc
 import PE.Impl.ExpLUT.Prog.KeyBoxW
 import PE.Impl.ExpLUT.AH.Correct
 import PE.Impl.ExpLUT.AH.RedCompsR
@@ -131,23 +133,23 @@ theorem attributeHiding_implE (rc : RawComps Dc kbDc predLen (implE decM hdet) �
 /-- The cost from the four clocks and description lengths. -/
 theorem cost_implE_le {T S : ℕ} (hT : decM.time ≤ T) (hS : decM.descLen ≤ S) :
     PE.cost params (implE decM hdet) ≤
-      2 ^ 242 + 1 * 2 ^ 508 + 1 * (2 ^ 253 + T) + (2 ^ 249 + 2 ^ 620 + 2 ^ 744 + S) := by
+      2 ^ 241 + 1 * 2 ^ 508 + 1 * (2 ^ 253 + T) + (2 ^ 233 + 2 ^ 620 + 2 ^ 635 + S) := by
   have hmb : Dc.mb = 3 * 2 ^ 40 + 408 := by
     show mbar = _
     rw [mbar_def, Kc_def]; norm_num [en]
   have hK : Dc.K = 2 ^ 16 := by show Kc = _; rw [Kc_def]
-  have hs : ((implE decM hdet).machine .setup).time ≤ 2 ^ 242 := by
-    rw [implE_setup]; exact time_setupMP_conf Dc rfl hK rfl hmb
-  have hsd : ((implE decM hdet).machine .setup).descLen ≤ 2 ^ 249 := by
-    rw [implE_setup]; exact descLen_setupMP_conf Dc rfl hK rfl hmb
+  have hs : ((implE decM hdet).machine .setup).time ≤ 2 ^ 241 := by
+    rw [implE_setup]; exact time_setupMP_conf_tight Dc rfl hK rfl hmb
+  have hsd : ((implE decM hdet).machine .setup).descLen ≤ 2 ^ 233 := by
+    rw [implE_setup]; exact descLen_setupMP_conf_tight Dc rfl hK rfl hmb
   have hk : ((implE decM hdet).machine .keyGen).time ≤ 2 ^ 508 := by
     rw [implE_key]; exact KeyCore.time_keyMachine
   have hkd : ((implE decM hdet).machine .keyGen).descLen ≤ 2 ^ 620 := by
     rw [implE_key]; exact KeyCore.descLen_keyMachine
   have he : ((implE decM hdet).machine .enc).time ≤ 2 ^ 253 := by
     rw [implE_enc]; exact EncConf.time_encMachine_tight
-  have hed : ((implE decM hdet).machine .enc).descLen ≤ 2 ^ 744 := by
-    rw [implE_enc]; exact EncConf.descLen_encMachine
+  have hed : ((implE decM hdet).machine .enc).descLen ≤ 2 ^ 635 := by
+    rw [implE_enc]; exact EncConf.descLen_encMachine_tight
   have hd : ((implE decM hdet).machine .dec).time ≤ T := by rw [implE_dec]; exact hT
   have hdd : ((implE decM hdet).machine .dec).descLen ≤ S := by rw [implE_dec]; exact hS
   exact cost_le_parts hs hk he hd hsd hkd hed hdd

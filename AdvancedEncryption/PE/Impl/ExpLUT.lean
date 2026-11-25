@@ -252,6 +252,7 @@ import PE.Impl.ExpLUT.Prog.RedKeyC3M
 import PE.Impl.ExpLUT.Prog.RedKeyCW
 import PE.Impl.ExpLUT.Prog.RedKeyCWPk
 import PE.Impl.ExpLUT.Submission
+import PE.Impl.ExpLUT.Prog.DecTight
 
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
