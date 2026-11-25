@@ -47,7 +47,8 @@ The workflows assume these settings. Without them the gate is not a boundary.
    force pushes and deletions. Allow auto-merge in the repository's settings.
 5. **Ruleset of `records`.** Only GitHub Actions may push; block force pushes and deletions.
 6. **Pages.** Source: GitHub Actions.
-7. **Pin the actions** of `.github/workflows/` by commit SHA before going public.
+7. **Pinned actions.** The workflows pin every action by commit SHA (the version is in a comment),
+   and the core pins the image's base by digest. Update a pin deliberately, never to a moving tag.
 
 ## Environments and std
 

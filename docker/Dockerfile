@@ -11,8 +11,8 @@
 # 1000 apart from the verifier. The default user (1000) suits agents running it locally.
 #
 # Build from the repository root: docker build -f docker/Dockerfile -t sigaba-neo-env .
-# Pin the base image by digest when publishing (the `image` workflow does not change it).
-FROM ubuntu:24.04
+# The base image is pinned by digest; update the digest deliberately.
+FROM ubuntu:24.04@sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl git python3 \
@@ -22,7 +22,7 @@ RUN apt-get update \
 
 ENV ELAN_HOME=/opt/elan PATH=/opt/elan/bin:$PATH HOME=/tmp
 COPY lean-toolchain /core/lean-toolchain
-RUN curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh \
+RUN curl -sSfL https://raw.githubusercontent.com/leanprover/elan/v4.4.0/elan-init.sh -o /tmp/elan-init.sh \
  && sh /tmp/elan-init.sh -y --no-modify-path --default-toolchain "$(cat /core/lean-toolchain)" \
  && rm /tmp/elan-init.sh
 

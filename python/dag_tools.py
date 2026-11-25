@@ -548,8 +548,12 @@ def init(d: Path, core_url: str, core_rev: str, image: str, owner: str, env_id: 
     """A new DAG repository at `d`."""
     if (d / "dag").exists():
         raise SystemExit(f"{d} already has a DAG")
-    pins = {p["name"]: p["rev"] for p in json.loads((core / "lake-manifest.json").read_text())
-            ["packages"] if p.get("type") == "git"}
+    # Lake writes names that are not identifiers in guillemets (`«cslib-frontier»`).
+    pins = {p["name"].strip("«»"): p["rev"] for p in
+            json.loads((core / "lake-manifest.json").read_text())["packages"]
+            if p.get("type") == "git"}
+    if missing := [n for n in ("mathlib", "cslib-frontier") if not pins.get(n)]:
+        raise SystemExit(f"the core's lake-manifest.json does not pin {', '.join(missing)}")
     toolchain = (core / "lean-toolchain").read_text().strip()
     repo = re.sub(r"^https://github\.com/|\.git$", "", core_url)
     values = {"CORE_URL": core_url, "CORE_REPO": repo, "CORE_REV": core_rev, "OWNER": owner,

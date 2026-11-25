@@ -25,7 +25,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           path: dag
           persist-credentials: false
@@ -38,7 +38,7 @@ jobs:
                    if e["state"] == "default")
           print(f"core_repo={re.sub(r'^https://github.com/|[.]git$', '', e['core_url'])}\ncore_rev={e['core']}")
           PY
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ steps.env.outputs.core_repo }}
           ref: ${{ steps.env.outputs.core_rev }}
@@ -55,7 +55,7 @@ jobs:
           [ -d new/dag ] && echo "files=1" >> "$GITHUB_OUTPUT" || true
       - id: app
         if: steps.convert.outputs.files == '1'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
         with:
           app-id: ${{ vars.GATE_APP_ID }}
           private-key: ${{ secrets.GATE_APP_KEY }}
