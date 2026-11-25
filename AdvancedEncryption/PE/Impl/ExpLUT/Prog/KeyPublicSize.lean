@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyCoefficientSize
-
 /-! Uniform state-count bounds for all public-map rows of the actual KeyGen code. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.MVM Cslib

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncReady
 import PE.Impl.ExpLUT.Prog.EncOutputState
-
 /-! # Scheme outputs of the initialized encryption phases -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

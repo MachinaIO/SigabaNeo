@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedChalCode
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # Parsing the raw secret (package G2, `chalP`)
 
@@ -15,7 +15,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedChal
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 variable {D : Dims}
 

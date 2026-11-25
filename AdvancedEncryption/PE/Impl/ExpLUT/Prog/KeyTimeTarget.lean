@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeDecompose
-
 /-! Runtime of the actual public-key target-vector loader and zero tail. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

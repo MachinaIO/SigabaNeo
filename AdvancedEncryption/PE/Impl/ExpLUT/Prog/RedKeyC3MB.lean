@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.Prog.RedKeyC3MT
 import PE.Impl.ExpLUT.Prog.RedKeyC4
 import PE.Impl.ExpLUT.Prog.RedKeyTInv
 import PE.Impl.ExpLUT.Prog.RedChalDc
-
 /-!
 # Cost certificate of `mid`, phase M3 (part 3): the mirrors describe the codes
 

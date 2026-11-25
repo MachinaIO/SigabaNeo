@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.KeyTryVM
 import PE.Impl.ExpLUT.Prog.KeyBoxW
 import SigabaNeoStd.Lattices.BallTest
-
 /-! The VM's accumulated high-digit test is exactly small-box membership. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 

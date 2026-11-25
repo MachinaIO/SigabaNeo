@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTGuard
 import PE.Impl.ExpLUT.SubmissionAssembly
-
 /-!
 # Module 9: the input bound, `pubP` and the invalid/long branches of `rkKeyPT`
 

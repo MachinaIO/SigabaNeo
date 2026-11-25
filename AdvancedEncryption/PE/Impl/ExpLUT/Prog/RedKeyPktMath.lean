@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyPktSkel
-
 /-!
 # The packet stream, part 2: the slab segments of the programmed key (at `D`)
 

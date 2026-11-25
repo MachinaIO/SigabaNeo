@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyCWPk
-
 /-!
 # The weights of the M4 codes (`≤ 2^160`, hypothesis `hw4` of `c3_spec`), and `c3_spec` without
 its weight hypotheses

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeScratch
-
 /-! Counted movement certificates tolerate the static scratch bounds of initialization. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

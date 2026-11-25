@@ -5,7 +5,6 @@ import PE.Impl.ExpLUT.Prog.DecTight
 import PE.Impl.ExpLUT.Prog.TapeDecTime
 import PE.Impl.ExpLUT.Prog.DecTimeConf
 import PE.Impl.ExpLUT.AH.RedConstDc
-
 /-!
 # The ExpLUT submission with the concrete `Dec` machine
 

@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.AH.Stat
-
+open SigabaNeo.Lattices.Estimator.CircularMersenne
 /-!
 # Attribute hiding of the ExpLUT implementation at the concrete parameters (package G)
 

@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedChalHWords
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # The blocks `autC`, `cinC`, `cmC` of the challenge code (package G2, `chalP`)
 -/
@@ -11,7 +11,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedChal
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo Matrix AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 variable {D : Dims}
 

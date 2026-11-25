@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeArithmetic
-
 /-!
 # Cost certificate of `mid` (ninth session): a static bound analyzer for MVM codes (exploration)
 

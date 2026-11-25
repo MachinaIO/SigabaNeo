@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedChalTime
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # The register bounds of the challenge code (package G2, `chalP`)
 
@@ -14,7 +14,7 @@ set_option linter.unusedSimpArgs false
 
 namespace AdvancedEncryption.ExpLUT.Prog.RedChal
 
-open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Tape.RingVM.Hash
 
 /-- The loop counters. -/
 def ctrRegs : List (Fin 200) := [cnt, cK, c2b, cntJ, cAut, cIn, cCol, xCm, xCc, xCnt]
@@ -220,7 +220,7 @@ theorem bounds_chalP (D : Dims) {Mo Bc Mb La Lb : ℕ} (hNK : D.N * D.K ≤ Mo) 
   have hrb : Bf Mo Bc Mb rb = Mb := rfl
   have hr1' : Bf Mo Bc Mb r1 = Mb := rfl
   have hro : Bf Mo Bc Mb xOut = Mb := rfl
-  obtain ⟨hl, ht⟩ := RedIO.bounds_ringIO1 hNK hK hN (ra := ra) (rb := rb) (by decide) xOut r1
+  obtain ⟨hl, ht⟩ := SigabaNeo.Tape.RingVM.Handler.bounds_ringIO1 hNK hK hN (ra := ra) (rb := rb) (by decide) xOut r1
     (by decide) (by decide)
     (tm D) (chalC D) (Bf Mo Bc Mb) hC La Lb Mb (by rw [hra]; exact hLa) (by rw [hrb]; exact hLb)
     (fun r _ _ _ => htm r) (by rw [hr1']; show D.N * D.K - 1 + 1 ≤ Mb; omega)
@@ -228,7 +228,7 @@ theorem bounds_chalP (D : Dims) {Mo Bc Mb La Lb : ℕ} (hNK : D.N * D.K ≤ Mo) 
   rw [hro] at hl
   refine ⟨hl, ht.trans ?_⟩
   have hsup : supB (encB Mo D.N D.K (Bf Mo Bc Mb)) ≤ Mb :=
-    XProg.supB_le_of (RedIO.encB_le Mo D.N D.K _ Mb (h1.trans h2) hK hN hNK hBf)
+    XProg.supB_le_of (SigabaNeo.Tape.RingVM.Handler.encB_le Mo D.N D.K _ Mb (h1.trans h2) hK hN hNK hBf)
   have hv := vmTime_le Mo D.N D.K (Bf Mo Bc Mb) (2 * Mb + 4) (IB Mb Mo) Bc (by omega) (by omega)
     hBc (chalC D) (leafLe_of hNK hK hN (h1.trans h2) hBf (chalC D) hT) hR
   rw [vmCount_chalC] at hv

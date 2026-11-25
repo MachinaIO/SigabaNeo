@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC3MT
 import PE.Impl.ExpLUT.Prog.RedKeyC4X
-
 /-!
 # Phase M3 (exploration): loop hints and boxes for the checks of `RedKeyC3MH`
 

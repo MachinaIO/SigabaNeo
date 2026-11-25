@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeBH
-
 /-! Common length envelopes for composing the actual public-row generators. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

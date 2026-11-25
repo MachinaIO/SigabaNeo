@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncReady
-
 /-! # Data conditions of the initialized encryption tail -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

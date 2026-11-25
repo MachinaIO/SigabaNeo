@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeFront
 import PE.Impl.ExpLUT.Prog.RedKeyTSize
-
 /-!
 # KeyGen: a tight state count and description length
 

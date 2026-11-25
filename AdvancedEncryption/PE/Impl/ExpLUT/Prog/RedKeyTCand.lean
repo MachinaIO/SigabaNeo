@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTAcc
-
 /-!
 # Module 9: coins and the candidate decoder at a large tape cap (tight)
 

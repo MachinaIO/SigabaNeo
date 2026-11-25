@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeNegativeReady
-
 /-! Actual prefix extraction and the evaluator-matrix suffix of a positive coefficient row. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

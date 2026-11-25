@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.EncSamplers
 import PE.Impl.ExpLUT.Prog.SetupConf
 import PE.Impl.ExpLUT.AH.Conf
-
 /-!
 # The samplers of `Enc` and the cost of `Setup` at `Dc`
 

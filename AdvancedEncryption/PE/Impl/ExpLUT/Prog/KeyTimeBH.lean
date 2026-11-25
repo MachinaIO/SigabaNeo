@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeGatherAut
-
 /-! Actual public-key prefix loading and B/H coefficient generation. -/
 set_option exponentiation.threshold 1000
 

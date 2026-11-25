@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncTightCert
-
 /-!
 # The encryption core on its actual counters (tight encryption clock, part 4)
 

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.AH.CircBridge
 import PE.Impl.ExpLUT.Prog.Eval
-
 /-!
 # The secret of the reduction's handlers (package G2)
 

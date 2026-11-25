@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC2Eval
 import PE.Impl.ExpLUT.Prog.KeyTimePrepare
 import PE.Impl.ExpLUT.Prog.RedKeyMidCode
-
 /-!
 # Cost certificate of `mid`, phase M2: `m2C = natC 6 rB1 nT ; cp 0 2 ; app 0 6 ; keyPrepareC Dc`
 

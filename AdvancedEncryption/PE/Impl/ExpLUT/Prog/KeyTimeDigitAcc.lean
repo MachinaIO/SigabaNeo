@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeMatAddExact
-
 /-! Asymmetric runtime bounds for the actual digit-accumulation kernel. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

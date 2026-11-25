@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTK
-
 /-!
 # Cost certificate of `mid`, phase M4 (part 1): a **verified** static bound analyzer for MVM codes
 

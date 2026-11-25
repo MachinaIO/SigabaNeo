@@ -1,5 +1,4 @@
 import PE.Impl.RingBTVW.Prog.Decode
-
 /-!
 # The law of the decoded instances
 

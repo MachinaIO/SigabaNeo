@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyGatherSize
-
 /-! State bounds for the complete actual trapdoor-correction traversal. -/
 set_option backward.isDefEq.respectTransparency false
 set_option backward.isDefEq.respectTransparency.types false

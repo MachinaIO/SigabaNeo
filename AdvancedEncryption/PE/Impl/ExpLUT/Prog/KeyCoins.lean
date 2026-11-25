@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.KeyTryVM
 import PE.Impl.ExpLUT.Prog.KeyBoxW
 import SigabaNeoStd.Lattices.CoinsUniform
-
 /-!
 # KeyGen (package F3): the coins of the box try
 

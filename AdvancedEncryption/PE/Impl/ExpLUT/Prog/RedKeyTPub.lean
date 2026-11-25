@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTMv
-
 /-!
 # Module 9: the public rows of `keyDigitsC` at the tape cap `2^150` (tight)
 

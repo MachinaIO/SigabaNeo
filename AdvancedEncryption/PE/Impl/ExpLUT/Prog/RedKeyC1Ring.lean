@@ -1,7 +1,7 @@
-import PE.Impl.ExpLUT.Prog.RedKeyMidRing
-import PE.Impl.ExpLUT.Prog.RedKeyC1Un
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMHandlerStash
+import SigabaNeoStd.Machines.Prog.AvoidTapes
 import PE.Impl.ExpLUT.Prog.KeyTimeBasic
-
+open SigabaNeo.Tape.RingVM.Handler SigabaNeo.Tape.XProg.Avoid
 /-!
 # Cost certificate of `mid`, phase M1 (generic): the bounds of the stash handler `ringIOS`
 
@@ -24,7 +24,7 @@ set_option linter.unusedSimpArgs false
 namespace AdvancedEncryption.ExpLUT.Prog.RedKeyC
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM
-open AdvancedEncryption.ExpLUT.Prog.RedIO AdvancedEncryption.ExpLUT.Prog.RedKeyMid
+open SigabaNeo.Tape.RingVM.Handler
 open AdvancedEncryption.ExpLUT.Prog.KeyTime (Cert)
 open scoped SigabaNeo.Tape.Prog
 

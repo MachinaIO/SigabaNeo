@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncCoins
 import PE.Impl.RingBTVW.Prog.SetupTime3
-
 /-! # Compositional length and clock bounds for the complete encryption sampler -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg

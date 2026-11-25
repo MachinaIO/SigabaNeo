@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.AH.Conf
-
 /-!
 # The statistical terms at the concrete parameters (package G)
 

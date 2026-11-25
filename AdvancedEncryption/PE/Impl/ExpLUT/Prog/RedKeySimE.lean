@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeySimEB
 import PE.Impl.ExpLUT.Prog.RedKeySimEP
 import PE.Impl.ExpLUT.Prog.RedKeySimTD
-
 /-!
 # `KGsim` on the VM (module 6b, part 9): `R̂_F = simKey …` into `rxRh` (at `D`)
 

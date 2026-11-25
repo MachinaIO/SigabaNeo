@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTIn
 import PE.Impl.ExpLUT.Prog.RedKeyMTail
-
 /-!
 # Module 9: tight per-instruction certificates (the back end at a `2^150` tape cap)
 

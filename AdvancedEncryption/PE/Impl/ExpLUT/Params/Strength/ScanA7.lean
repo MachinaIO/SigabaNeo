@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Params.Strength.Check
-
 /-! Block sizes `[14336, 16386)` of the strength check `chkA` (`N = 2^24`, `Params/Strength.lean`),
 by kernel evaluation, in pieces of at most 256 (each piece is checked separately, which bounds
 the memory of the kernel). -/

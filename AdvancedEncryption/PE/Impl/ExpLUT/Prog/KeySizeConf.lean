@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyProgramSize
-
 /-! Concrete scalar bounds for the complete KeyGen state count. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedPubPDc
 import PE.Impl.ExpLUT.AH.RedChain
-
 /-!
 # The `pub` fields of `Generic.Comps` (package G2, P7)
 

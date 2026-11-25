@@ -20,8 +20,7 @@ of `b`. Here this word is the shape read by the parser `SigabaNeo.Tape.Prog.deco
 * `length_encodeRing_le`: the words are at most `encLen m N K` bits.
 -/
 
-namespace AdvancedEncryption.RingBTVW.Prog
-
+namespace SigabaNeo.Lattices.RingLWEWord
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape Cslib
 open Turing.MultiTapeTM (frame encList encNat encPair encBits)
 
@@ -260,4 +259,4 @@ theorem length_encodeRing_le : (encodeRing v).length ≤ encLen m N K := by
   rw [length_ringNums] at h2
   omega
 
-end AdvancedEncryption.RingBTVW.Prog
+end SigabaNeo.Lattices.RingLWEWord

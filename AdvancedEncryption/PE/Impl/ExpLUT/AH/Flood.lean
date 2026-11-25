@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.AH.Final
 import PE.Impl.ExpLUT.FloodBound
-
 /-!
 # The flooding hypothesis at the concrete parameters (package G3)
 

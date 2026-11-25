@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeOpInvariant
-
 /-! Remaining control and counted-move primitive certificates. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

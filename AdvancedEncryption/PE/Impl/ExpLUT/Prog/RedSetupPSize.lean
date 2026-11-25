@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.Prog.RedSetupPDc
 import PE.Impl.ExpLUT.Prog.SetupSize
 import PE.Impl.ExpLUT.Prog.EncSizeConf
 import SigabaNeoStd.Machines.Prog.AppendWCost
-
 /-! # The state count of the reduction's setup component at `Dc`: `|setupRX| ≤ 2^20`. -/
 
 set_option linter.unusedSectionVars false

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeTemplates
-
 /-! Runtime of the actual EvalPK constant initialization. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

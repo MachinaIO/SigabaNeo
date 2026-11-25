@@ -1,12 +1,12 @@
-import PE.Impl.ExpLUT.Prog.RedPubPKit
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMBuf
 import PE.Impl.ExpLUT.Prog.RedPubPMath
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # A gadget row of hashes (package G2, `pubP`)
 
 Every hashed matrix row of the public key has the shape
 `c ↦ ψ (f ⬝ᵥ bv (g c)) + u · G_{ρ c} + e c` over `c ∈ Col` (`a_t`, `cb_t`, `A₀`, `A^in`, `A^aut`).
-`rowC m ρ` computes it with two hash phases (`RedVM.hashPhase`) of `K` rounds each, one per half
+`rowC m ρ` computes it with two hash phases (`SigabaNeo.Tape.RingVM.Hash.hashPhase`) of `K` rounds each, one per half
 `Col = {0, 1} × Fin K`: the post-map `m` (`xH := ψ xAcc`), and on the half `ρ` the gadget post
 `gpost m`, which also adds the scratch word `xP` and doubles it (`2^i u` in round `i`).
 
@@ -21,7 +21,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedPubP
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo Matrix AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 variable {D : Dims}
 
@@ -37,9 +37,9 @@ theorem psum_map_enum {α M : Type} [Enum α] [Fintype α] [AddCommMonoid M] (g 
 /-- **The hash of enumerated words is the binary hash.** -/
 theorem phashV (vs : Wb D → List Bool) (f : Wb D → Rg D) (hf : ∀ v, decRM D.N D.K (vs v) = f v)
     (z : Wb D → Bool) :
-    RedVM.hashV (N := D.N) (K := D.K) ((Enum.list (α := Wb D)).map vs)
+    SigabaNeo.Tape.RingVM.Hash.hashV (N := D.N) (K := D.K) ((Enum.list (α := Wb D)).map vs)
         ((Enum.list (α := Wb D)).map z) = f ⬝ᵥ bv z := by
-  rw [RedVM.hashV, List.zipWith_map, List.zipWith_self, psum_map_enum]
+  rw [SigabaNeo.Tape.RingVM.Hash.hashV, List.zipWith_map, List.zipWith_self, psum_map_enum]
   simp only [dotProduct, bv, bitVal, hf]
   refine Finset.sum_congr rfl fun v _ => ?_
   split_ifs <;> simp_all

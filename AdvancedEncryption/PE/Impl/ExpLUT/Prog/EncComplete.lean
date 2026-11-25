@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncRun
 import PE.Impl.ExpLUT.Prog.EncReadyTail
-
 /-! # Complete deterministic encryption from encoded inputs -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

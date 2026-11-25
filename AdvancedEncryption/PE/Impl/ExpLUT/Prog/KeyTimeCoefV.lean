@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeLayout
-
 /-! Runtime of the actual final-table coefficient loop. -/
 set_option exponentiation.threshold 1000
 

@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedChalBound
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # The challenge component at the concrete dimensions (package G2, `chalP`)
 
@@ -19,7 +19,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedChal
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM AdvancedEncryption.PE
   AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.ExpLUT.Params AdvancedEncryption.PE.Generic
 open scoped SigabaNeo.Tape.Prog
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 theorem len_sum' (α β : Type) [Enum α] [Enum β] :
     (Enum.list (α := α ⊕ β)).length = (Enum.list (α := α)).length + (Enum.list (α := β)).length := by
@@ -109,10 +109,10 @@ theorem bounds_chalP_Dc :
 
 theorem size_clr (t : Fin 247) : (Prog.clr t).size = 36 := rfl
 
-theorem size_clrL : ∀ l : List (Fin 247), (RedIO.clrL l).size = 36 * l.length + 36
+theorem size_clrL : ∀ l : List (Fin 247), (SigabaNeo.Tape.RingVM.Handler.clrL l).size = 36 * l.length + 36
   | [] => rfl
   | t :: l => by
-    show (Prog.clr t).size + (RedIO.clrL l).size = _
+    show (Prog.clr t).size + (SigabaNeo.Tape.RingVM.Handler.clrL l).size = _
     rw [size_clr, size_clrL l, List.length_cons]; ring
 
 theorem size_tmplsP (c : Fin 247) (m : ℕ) : ∀ l : List (Fin 247 × ℕ), (∀ p ∈ l, p.2 < 2 ^ m) →
@@ -125,28 +125,28 @@ theorem size_tmplsP (c : Fin 247) (m : ℕ) : ∀ l : List (Fin 247 × ℕ), (�
     rw [List.length_cons]
     nlinarith
 
-theorem length_tList (D : Dims) : (RedIO.tList D.N D.K ra rb (tm D)).length = 201 := by
-  simp only [RedIO.tList, List.length_cons, List.length_map]
+theorem length_tList (D : Dims) : (SigabaNeo.Tape.RingVM.Handler.tList D.N D.K ra rb (tm D)).length = 201 := by
+  simp only [SigabaNeo.Tape.RingVM.Handler.tList, List.length_cons, List.length_map]
   rfl
 
 set_option maxRecDepth 100000 in
-theorem length_postTapes : RedIO.postTapes.length = 246 := by
-  rw [RedIO.postTapes]; rfl
+theorem length_postTapes : SigabaNeo.Tape.RingVM.Handler.postTapes.length = 246 := by
+  rw [SigabaNeo.Tape.RingVM.Handler.postTapes]; rfl
 
 set_option maxRecDepth 100000 in
 /-- **The state count of the challenge component**, for template lengths below `2^m`. -/
 theorem size_chalP (D : Dims) (m : ℕ) (hK : D.K < 2 ^ m) (hN : D.N < 2 ^ m)
     (hNK : D.N * D.K < 2 ^ m) (htm : ∀ r, tm D r < 2 ^ m) :
     (chalP D).size ≤ 201 * (195 * m + 36) + 20000 + 15000 * (1205 + 16 * D.b) := by
-  have h1 : (RedIO.inP ra rb).size = 144 := rfl
-  have h2 : (RedIO.onesP ⨾ Prog.clr RedIO.cT).size ≤ 1000 := by decide
-  have h3 : (RedIO.postP xOut).size = 36 + (36 * RedIO.postTapes.length + 36) := by
-    show (Prog.cp _ _).size + (RedIO.clrL _).size = _
+  have h1 : (SigabaNeo.Tape.RingVM.Handler.inP ra rb).size = 144 := rfl
+  have h2 : (SigabaNeo.Tape.RingVM.Handler.onesP ⨾ Prog.clr SigabaNeo.Tape.RingVM.Handler.cT).size ≤ 1000 := by decide
+  have h3 : (SigabaNeo.Tape.RingVM.Handler.postP xOut).size = 36 + (36 * SigabaNeo.Tape.RingVM.Handler.postTapes.length + 36) := by
+    show (Prog.cp _ _).size + (SigabaNeo.Tape.RingVM.Handler.clrL _).size = _
     rw [size_clrL]; rfl
-  have h4 : RedIO.postTapes.length = 246 := length_postTapes
-  have h5 := size_tmplsP RedIO.cT m (RedIO.tList D.N D.K ra rb (tm D)) (by
+  have h4 : SigabaNeo.Tape.RingVM.Handler.postTapes.length = 246 := length_postTapes
+  have h5 := size_tmplsP SigabaNeo.Tape.RingVM.Handler.cT m (SigabaNeo.Tape.RingVM.Handler.tList D.N D.K ra rb (tm D)) (by
     intro p hp
-    rcases RedIO.mem_tList.mp hp with rfl | rfl | rfl | ⟨r, -, -, rfl⟩
+    rcases SigabaNeo.Tape.RingVM.Handler.mem_tList.mp hp with rfl | rfl | rfl | ⟨r, -, -, rfl⟩
     · exact hK
     · exact hN
     · exact hNK
@@ -154,9 +154,9 @@ theorem size_chalP (D : Dims) (m : ℕ) (hK : D.K < 2 ^ m) (hN : D.N < 2 ^ m)
   rw [length_tList] at h5
   have h6 : (compile (chalC D)).size ≤ 15000 * (1205 + 16 * D.b) := by
     rw [size_compile, ← vmCount_chalC]; exact vmSize_le _
-  show (RedIO.inP ra rb).size + ((tmplsP RedIO.cT (RedIO.tList D.N D.K ra rb (tm D))).size +
-    (RedIO.onesP ⨾ Prog.clr RedIO.cT).size) + ((Prog.prim (.cons (tWd r1) true)).size +
-    ((compile (chalC D)).size + (RedIO.postP xOut).size)) ≤ _
+  show (SigabaNeo.Tape.RingVM.Handler.inP ra rb).size + ((tmplsP SigabaNeo.Tape.RingVM.Handler.cT (SigabaNeo.Tape.RingVM.Handler.tList D.N D.K ra rb (tm D))).size +
+    (SigabaNeo.Tape.RingVM.Handler.onesP ⨾ Prog.clr SigabaNeo.Tape.RingVM.Handler.cT).size) + ((Prog.prim (.cons (tWd r1) true)).size +
+    ((compile (chalC D)).size + (SigabaNeo.Tape.RingVM.Handler.postP xOut).size)) ≤ _
   have h7 : (Prog.prim (.cons (tWd r1) true) : SigabaNeo.Tape.Prog 247).size = 60 := rfl
   rw [h1, h3, h4, h7]
   omega

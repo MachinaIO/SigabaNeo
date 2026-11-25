@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncMachine
 import PE.Impl.ExpLUT.Prog.EncSamplersConf
-
 /-! # The concrete package-P encryption machine -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncConf
 open SigabaNeo AdvancedEncryption.ExpLUT.Params

@@ -1,6 +1,6 @@
-import PE.Impl.ExpLUT.Prog.DecTimeVM
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMFlowClock
 import PE.Impl.ExpLUT.Prog.DecMachineCode
-
+open SigabaNeo.Tape.RingVM.Flow
 /-!
 # A uniform clock of the compiled `Dec` code (package F4)
 

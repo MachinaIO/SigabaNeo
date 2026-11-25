@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.TapeDecVM
-
+open SigabaNeo.Tape.RingVM.Flow
 /-!
 # The clock of the packed decryption machine
 
@@ -20,7 +20,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.TapeDec
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Pack SigabaNeo.Tape.RingVM Function
 open AdvancedEncryption.ExpLUT.Params
-open AdvancedEncryption.ExpLUT.Prog.DecT (toB)
+open SigabaNeo.Tape.RingVM.Flow (toB)
 open AdvancedEncryption.ExpLUT.Prog.DecTight
 
 /-- The identity placement. -/

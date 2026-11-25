@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeBinary
-
 /-! Preservation properties needed to iterate actual compiled binary operations. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

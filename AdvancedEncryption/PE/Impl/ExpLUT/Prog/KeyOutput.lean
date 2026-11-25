@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyCore
-
 /-! Preservation and assembly of the complete secret-key output. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

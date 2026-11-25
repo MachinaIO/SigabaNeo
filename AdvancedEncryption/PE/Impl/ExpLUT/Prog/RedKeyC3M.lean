@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC3MB
 import PE.Impl.ExpLUT.Prog.RedKeyC3MH
 import PE.Impl.ExpLUT.Prog.RedKeyC3Fin
-
 /-!
 # Cost certificate of `mid`, phase M3: `pkOf pkt`, and the closed final statement
 

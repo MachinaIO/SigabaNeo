@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTTop
-
 /-!
 # Module 9: the input envelope of the back end `rkTailP` (`RkTailIn`)
 

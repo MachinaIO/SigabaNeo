@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncCoreTime
-
 /-! # Time and length bounds for the actual encryption initializer -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog

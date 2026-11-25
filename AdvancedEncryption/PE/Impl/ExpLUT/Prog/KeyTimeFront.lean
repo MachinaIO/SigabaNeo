@@ -4,7 +4,6 @@ import PE.Impl.ExpLUT.Prog.EncTimeConf
 import PE.Impl.ExpLUT.AH.Games
 import SigabaNeoStd.Machines.Prog.LoadB
 import SigabaNeoStd.Machines.Prog.AppendWCost
-
 /-!
 # The guarded KeyGen machine: specification, long predicates, clock and cost
 

@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.AH.Assembly
 import PE.Impl.ExpLUT.AH.Sim
 import PE.Impl.ExpLUT.Params.Noise
 import PE.Impl.ExpLUT.Params.Strength
-
 /-!
 # Package G at the concrete parameters
 

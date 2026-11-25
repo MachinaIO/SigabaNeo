@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeRadius
-
 /-! Full radius, counter and queue initialization before the family acceptance test. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.MVM Cslib

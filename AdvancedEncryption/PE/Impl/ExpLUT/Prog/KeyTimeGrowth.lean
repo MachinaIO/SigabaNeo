@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCoefV
-
 /-! Exact register-cap changes for growing queues and binary counters. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.EncCoins
 import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMIO
 import SigabaNeoStd.Machines.Prog.FrameIO
-
 /-! # Encryption input parsing, random tape generation, and VM execution -/
 
 namespace AdvancedEncryption.ExpLUT.Prog.EncIO

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeArithmetic
-
 /-! Invariants for all ring instructions, including direct counter-register reads. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

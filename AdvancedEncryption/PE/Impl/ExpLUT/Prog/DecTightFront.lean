@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.DecTimeConf
 import PE.Impl.ExpLUT.Prog.DecTightVM
-
+open SigabaNeo.Tape.RingVM.Flow
 /-!
 # Tight clock of the `Dec` machine: the program around the code (part 5)
 
@@ -24,7 +24,7 @@ set_option linter.deprecated false
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM AdvancedEncryption.ExpLUT.Params
 open DecM
 open SigabaNeo.Tape.XProg
-open AdvancedEncryption.ExpLUT.Prog.DecT (toB)
+open SigabaNeo.Tape.RingVM.Flow (toB)
 
 /-! ### The shape -/
 

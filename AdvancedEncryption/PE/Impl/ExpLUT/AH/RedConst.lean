@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.AH.RedChain
 import PE.Impl.RingBTVW.ReductionCompsBound
 import PE.Impl.ExpLUT.AH.Flood
-
 /-!
 # The constant of the reduction from components, explicitly (package G2)
 

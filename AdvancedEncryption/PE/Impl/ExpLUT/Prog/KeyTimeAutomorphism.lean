@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeMatrix
-
 /-! Actual automorphism matrix evaluation, including both matrix multiplications. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

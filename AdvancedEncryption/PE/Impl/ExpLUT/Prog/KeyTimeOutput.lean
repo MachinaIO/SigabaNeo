@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCore
-
 /-! Packing the secret-key word and erasing the VM workspace. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

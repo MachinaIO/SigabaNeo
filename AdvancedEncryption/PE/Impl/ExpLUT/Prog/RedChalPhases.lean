@@ -1,11 +1,11 @@
 import PE.Impl.ExpLUT.Prog.RedChalMath
 import PE.Impl.ExpLUT.Prog.DecCoefMath
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # The hash phases of the reduction's challenge (package G2, `chalP`)
 
 The fields `c^aut`, `c^in`, `c₀` of the challenge of `view2` are hash phases
-(`RedVM.hashPhase`): for every index `a` (in the order of `Enum`), the word of
+(`SigabaNeo.Tape.RingVM.Hash.hashPhase`): for every index `a` (in the order of `Enum`), the word of
 `ψ (b̄ ⬝ᵥ bv (zr (ι a))) + e a`, with `ψ = id` (`c^in`, `c₀`) or `ψ = σ_{g_t}` (`c^aut`, the
 template `κ_t`):
 
@@ -22,7 +22,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo Matrix AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 variable {D : Dims}
 

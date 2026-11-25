@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncTimeConf
 import SigabaNeoStd.Machines.Prog.XAbs
-
 /-!
 # Placed per-tape bounds at fixed variable values (tight encryption clock, part 1)
 

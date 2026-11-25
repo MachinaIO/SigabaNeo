@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTInv
 import PE.Impl.ExpLUT.Prog.RedKeyMComp
 import PE.Impl.ExpLUT.Prog.KeyTimeOutput
-
 /-!
 # Module 9 (top): the certificates of `rkKeyPT mid` and the `KeyComp` record
 

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTIn
-
 /-!
 # Module 9: `KeyComp` and the final statement from a back-end package (generic form)
 

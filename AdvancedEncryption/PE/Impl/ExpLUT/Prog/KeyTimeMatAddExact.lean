@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeGadget
-
 /-! Asymmetric matrix-add bounds, including initial values in the loop supremum. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

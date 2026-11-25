@@ -1,7 +1,7 @@
-import PE.Impl.ExpLUT.Prog.RedKeyMidRing
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMHandlerStash
 import PE.Impl.ExpLUT.Prog.RedPubPDc
 import PE.Impl.ExpLUT.Prog.RedChalLaw
-
+open SigabaNeo.Tape.RingVM.Handler
 /-!
 # `mid` of the key component, phase M1 at `Dc`: the words of `mpk` and `ct`, with a stash
 
@@ -22,7 +22,7 @@ set_option linter.unusedSimpArgs false
 namespace AdvancedEncryption.ExpLUT.Prog.RedKeyMid
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM Cslib
-open AdvancedEncryption.ExpLUT.Prog.RedIO
+open SigabaNeo.Tape.RingVM.Handler
 open scoped SigabaNeo.Tape.Prog
 
 /-! ### The storage tapes -/
@@ -66,7 +66,7 @@ noncomputable def m1P : XProg 247 :=
   .seq (ringIOS Dc.N Dc.K RedPubP.ra RedPubP.rb RedPubP.rOut RedPubP.r1 (RedPubP.tm Dc)
     (RedPubP.pubC Dc)) <|
   .seq (.prog m1MidP) <|
-  .seq (ringIOS Dc.N Dc.K RedChal.ra RedChal.rb RedVM.xOut RedChal.r1 (RedChal.tm Dc)
+  .seq (ringIOS Dc.N Dc.K RedChal.ra RedChal.rb SigabaNeo.Tape.RingVM.Hash.xOut RedChal.r1 (RedChal.tm Dc)
     (RedChal.chalC Dc)) <|
   .prog m1OutP
 
@@ -127,7 +127,7 @@ theorem law_m1P (σ : RawSec Dc) (C : List Bool) :
     law_ringIOS Dc.N_pos Dc.K_pos (by decide) _ _ (by decide) (by decide) (by decide) (by decide)
       (by decide) _ _ chal_uses1 chal_uses2 chal_uses3, PMF.pure_bind]
   have hc := RedChal.exec_chalC hb1 hb32' hN' σ false
-  rw [show RedIO.initW1 RedChal.ra RedChal.rb RedChal.r1 (RedChal.tm Dc) ((rawEnc Dc).enc σ)
+  rw [show SigabaNeo.Tape.RingVM.Handler.initW1 RedChal.ra RedChal.rb RedChal.r1 (RedChal.tm Dc) ((rawEnc Dc).enc σ)
     [false] = RedChal.w0 σ false from rfl, hc, chalCT_false, XProg.law_prog,
     Prog.law_eq_run_of_coinFree _ (by rfl), run_m1OutP]
   rfl

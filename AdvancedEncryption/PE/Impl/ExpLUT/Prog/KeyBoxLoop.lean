@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyBoxTest
-
 /-! Streaming small-box checks with a persistent rejection latch. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 

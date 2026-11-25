@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.TapeDec
-
+open SigabaNeo.Tape.RingVM.Flow
 /-!
 # The packed clock of the ring-word machine code of `Dec`
 
@@ -20,7 +20,7 @@ tapes `0 … 246` (`fxa_vm`).
 namespace AdvancedEncryption.ExpLUT.Prog.TapeDec
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Pack SigabaNeo.Tape.RingVM Function
-open AdvancedEncryption.ExpLUT.Prog.DecT (CodeOK toB absRun loopFix ble bmax lmax)
+open SigabaNeo.Tape.RingVM.Flow (CodeOK toB absRun loopFix ble bmax lmax)
 open AdvancedEncryption.ExpLUT.Prog.DecTight
 
 /-- The cap of every logical tape. -/
@@ -132,7 +132,7 @@ def PB (B : Fin 200 → ℕ) (L : Fin 256 → ℕ) : Prop :=
   Le TD L ∧ ∀ j, L (σv j) ≤ encB (2 ^ 40) (2 ^ 24) (2 ^ 16) B j
 
 theorem PB.mono {B B' : Fin 200 → ℕ} (h : B ≤ B') {L : Fin 256 → ℕ} (hL : PB B L) : PB B' L :=
-  ⟨hL.1, fun j => (hL.2 j).trans (DecT.encB_mono _ _ _ h j)⟩
+  ⟨hL.1, fun j => (hL.2 j).trans (SigabaNeo.Tape.RingVM.Flow.encB_mono _ _ _ h j)⟩
 
 /-- **The packed clock of a code**: `fD · T` from `B` to `B'`. -/
 def CodeOKP (c : Code) (B B' : Fin 200 → ℕ) (T : ℕ) : Prop :=
@@ -200,8 +200,8 @@ theorem codeOKP_ifb (x : Fin 200) {p q : Code} {B B1 B2 B' : Fin 200 → ℕ} {T
     refine ⟨fun t => by rw [e]; exact max_le (a2 t) (b2 t), fun t => by rw [e]; exact max_le (a2 t) (b2 t),
       fun j => ?_⟩
     rw [e]
-    exact max_le ((a3.2 j).trans (DecT.encB_mono _ _ _ hB1 j))
-      ((b3.2 j).trans (DecT.encB_mono _ _ _ hB2 j))
+    exact max_le ((a3.2 j).trans (SigabaNeo.Tape.RingVM.Flow.encB_mono _ _ _ hB1 j))
+      ((b3.2 j).trans (SigabaNeo.Tape.RingVM.Flow.encB_mono _ _ _ hB2 j))
 
 /-- **A loop**, analysed at the invariant `X`. -/
 theorem codeOKP_rep (t : Fin 200) {b : Code} {B X Y : Fin 200 → ℕ} {Tb : ℕ} (R : ℕ)
@@ -255,8 +255,8 @@ theorem absRun_soundP : ∀ (c : Code) (B B' T : ℕ), absRun dtP 8 c B = some (
       rcases hq : absRun dtP 8 q B with _ | ⟨B2, T2⟩ <;> simp [hp, hq] at h
     obtain ⟨rfl, rfl⟩ := h
     exact codeOKP_ifb x (ihp B B1 T1 hp) (ihq B B2 T2 hq)
-      (fun y => by rw [DecT.toB_bmax]; exact le_max_left _ _)
-      (fun y => by rw [DecT.toB_bmax]; exact le_max_right _ _)
+      (fun y => by rw [SigabaNeo.Tape.RingVM.Flow.toB_bmax]; exact le_max_left _ _)
+      (fun y => by rw [SigabaNeo.Tape.RingVM.Flow.toB_bmax]; exact le_max_right _ _)
   case rep t b ih =>
     intro B B' T h
     simp only [absRun] at h
@@ -264,12 +264,12 @@ theorem absRun_soundP : ∀ (c : Code) (B B' T : ℕ), absRun dtP 8 c B = some (
     · simp [hl] at h
     simp only [hl, Option.some.injEq, Prod.mk.injEq] at h
     obtain ⟨rfl, rfl⟩ := h
-    obtain ⟨hBX, Y, hY, hYX⟩ := DecT.loopFix_spec _ 8 B X Tb hl
+    obtain ⟨hBX, Y, hY, hYX⟩ := SigabaNeo.Tape.RingVM.Flow.loopFix_spec _ 8 B X Tb hl
     have := codeOKP_rep t (2 * max dtP.Mo (lmax X) + 3) (ih X Y Tb hY) hBX
-      (DecT.toB_le_of_ble hYX)
+      (SigabaNeo.Tape.RingVM.Flow.toB_le_of_ble hYX)
     exact this
   all_goals exact fun B B' T h =>
-    codeOKP_instr rfl (DecT.absRun_sound dtP_valid 8 _ B B' T h)
+    codeOKP_instr rfl (SigabaNeo.Tape.RingVM.Flow.absRun_sound dtP_valid 8 _ B B' T h)
 
 /-- **A checked block.** -/
 theorem dtChk_okP {c : Code} {Bin Bout T : ℕ} (h : dtChk dtP c Bin Bout T = true) :
@@ -279,7 +279,7 @@ theorem dtChk_okP {c : Code} {Bin Bout T : ℕ} (h : dtChk dtP c Bin Bout T = tr
   · rw [hr] at h; simp at h
   rw [hr] at h
   simp only [Bool.and_eq_true] at h
-  exact codeOKP_mono (absRun_soundP c Bin B' T' hr) le_rfl (DecT.toB_le_of_ble h.1)
+  exact codeOKP_mono (absRun_soundP c Bin B' T' hr) le_rfl (SigabaNeo.Tape.RingVM.Flow.toB_le_of_ble h.1)
     (Nat.le_of_ble_eq_true h.2)
 
 theorem codeOKP_nop (B : Fin 200 → ℕ) : CodeOKP .nop B B 3 :=

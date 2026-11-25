@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.EncComplete
 import PE.Impl.ExpLUT.Prog.EncFront
 import PE.Impl.ExpLUT.Prog.EncNormalize
-
 /-! # Input parsing, sampling, concrete encryption, and output cleanup -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

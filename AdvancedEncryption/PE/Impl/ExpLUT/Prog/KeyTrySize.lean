@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyDigitsSize
 import PE.Impl.ExpLUT.Prog.KeyAcceptSize
-
 /-! State-count composition for a complete deterministic KeyGen attempt. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

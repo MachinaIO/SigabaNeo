@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeAcceptInit
-
 /-! The actual high-digit range test, with its increasing digit-position counter. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncPipeline
 import SigabaNeoStd.Machines.Prog.FrameOut
-
 /-! # A compiled encryption machine satisfying EncSpec -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

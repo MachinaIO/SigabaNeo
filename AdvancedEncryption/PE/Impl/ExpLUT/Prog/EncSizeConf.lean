@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.EncSize
 import PE.Impl.ExpLUT.Prog.SetupConf
 import PE.Impl.ExpLUT.Prog.EncMachineConf
-
 /-! # Concrete encryption sampler state budget -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncConf
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Lattices

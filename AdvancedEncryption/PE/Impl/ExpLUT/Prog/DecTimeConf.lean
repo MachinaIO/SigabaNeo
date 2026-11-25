@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.DecDescConf
 import PE.Impl.ExpLUT.Prog.DecTimeUni
-
 /-!
 # The clock of the concrete `Dec` machine (package F4)
 

@@ -1,11 +1,10 @@
 import PE.Impl.ExpLUT.AH.RedCompsR
 import PE.Impl.ExpLUT.Prog.DecMachineCode
-import PE.Impl.ExpLUT.Prog.RedChalVM
-
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMHash
 /-!
 # The words of the reduction's public data (package G2, `pubP`/`chalP`)
 
-Bridges between the `RingVM` kernels (`RedVM.hashC`, `RedVM.hashPhase`) and the encodings of
+Bridges between the `RingVM` kernels (`SigabaNeo.Tape.RingVM.Hash.hashC`, `SigabaNeo.Tape.RingVM.Hash.hashPhase`) and the encodings of
 the reduction's secret (`rawEnc`) and outputs (`mpkEnc`, `ctEnc`):
 
 * **`hashV_enum`**: the hash of the words of `f : Wb → Rg` with the bits of `z : Wb → Bool` (in the
@@ -37,10 +36,10 @@ theorem sum_map_enum {α M : Type} [Enum α] [Fintype α] [AddCommMonoid M] (g :
 
 /-- **The hash of enumerated words is the binary hash.** -/
 theorem hashV_enum (f : Wb D → Rg D) (z : Wb D → Bool) :
-    RedVM.hashV (N := D.N) (K := D.K)
+    SigabaNeo.Tape.RingVM.Hash.hashV (N := D.N) (K := D.K)
         ((Enum.list (α := Wb D)).map fun v => encRM D.N D.K (f v))
         ((Enum.list (α := Wb D)).map z) = f ⬝ᵥ bv z := by
-  rw [RedVM.hashV, List.zipWith_map, List.zipWith_self, sum_map_enum]
+  rw [SigabaNeo.Tape.RingVM.Hash.hashV, List.zipWith_map, List.zipWith_self, sum_map_enum]
   simp only [dotProduct, bv, bitVal, decRM_encRM D.K_pos]
   refine Finset.sum_congr rfl fun v _ => ?_
   split_ifs <;> simp_all
@@ -58,7 +57,7 @@ round). -/
 theorem phase_words {α : Type} [Enum α] (ψ : Rg D → Rg D) (f : Wb D → Rg D)
     (g : α → Wb D → Bool) (e : α → Rg D) :
     (List.range (Enum.list (α := α)).length).map (fun j =>
-        encRM D.N D.K (ψ (RedVM.hashV (N := D.N) (K := D.K)
+        encRM D.N D.K (ψ (SigabaNeo.Tape.RingVM.Hash.hashV (N := D.N) (K := D.K)
           ((Enum.list (α := Wb D)).map fun v => encRM D.N D.K (f v))
           (((Enum.list (α := α)).map fun a => (Enum.list (α := Wb D)).map (g a)).getD j [])) +
           decRM D.N D.K (((Enum.list (α := α)).map fun a => encRM D.N D.K (e a)).getD j []))) =

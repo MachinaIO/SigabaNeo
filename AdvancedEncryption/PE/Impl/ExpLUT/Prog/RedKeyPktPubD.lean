@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyPktPubLoop
-
 /-!
 # The packet stream, part 13: the public words at `D`
 

@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyURow
 import PE.Impl.ExpLUT.Prog.RedKeyTry
 import PE.Impl.ExpLUT.Prog.KeyBHCodec
-
 /-!
 # `KGsim` on the VM (package G2, item 5): the vector `u` of the simulated correction
 

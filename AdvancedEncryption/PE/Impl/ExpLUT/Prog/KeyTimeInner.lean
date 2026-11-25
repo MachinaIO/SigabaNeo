@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeDigitAcc
-
 /-! Four digit accumulations inside the actual matrix-product inner body. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

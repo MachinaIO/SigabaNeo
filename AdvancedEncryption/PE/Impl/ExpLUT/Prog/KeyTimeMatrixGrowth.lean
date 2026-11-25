@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCoefA
-
 /-! Linear queue growth for actual matrix construction loops. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyAccept
 import PE.Impl.ExpLUT.Prog.KeySample
-
 /-! Distributional specification of the executable deterministic KeyGen attempt. -/
 -- Permit the definitionally equal concrete and setting-indexed coordinate types at PMF boundaries.
 set_option backward.isDefEq.respectTransparency false

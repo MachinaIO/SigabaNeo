@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeGather
-
 /-! Runtime of the actual queue automorphism and automorphic correction dot product. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

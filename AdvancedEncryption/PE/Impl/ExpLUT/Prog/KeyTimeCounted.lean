@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeInvariant
-
 /-! Count-dependent arithmetic on the actual 37-tape MVM operation layout. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTFront
 import SigabaNeoStd.Machines.Prog.AppendWCost
-
 /-!
 # Module 9: bounds of the tests of `rkKeyPT`
 

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncSamplerTime
 import PE.Impl.ExpLUT.Prog.EncSizeConf
-
 /-! # Concrete numerical budgets of the encryption coin sampler -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncConf
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg

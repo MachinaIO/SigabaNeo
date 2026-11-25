@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncDescConf
-
 /-! # Uniform time bounds for non-lengthening encryption phases -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog

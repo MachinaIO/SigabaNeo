@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCounted
-
 /-! A common explicit polynomial bound for all actual MVM ring instructions. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

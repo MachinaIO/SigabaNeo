@@ -1,7 +1,6 @@
 import SigabaNeoStd.Machines.Pack.Leaves
 import PE.Impl.ExpLUT.Prog.EncTightFront
 import PE.Impl.ExpLUT.Prog.DescTightEnc
-
 /-!
 # The packed encryption machine (fewer physical tapes)
 

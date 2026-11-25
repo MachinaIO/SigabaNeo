@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyMFront
 import PE.Impl.ExpLUT.SubmissionAssembly
-
 /-!
 # `KGsim` on the VM (module 8): the `KeyComp` record from the middle phases
 

@@ -23,8 +23,7 @@ The checks depend on `K` (through `log₂ q`), on `N`, `M₀`, `kb` and `W`, not
 (`SigabaNeoStd/Lattices/Estimator/Bound/CbdQ.lean`).
 -/
 
-namespace AdvancedEncryption.ExpLUT.Params
-
+namespace SigabaNeo.Lattices.Estimator.CircularMersenne
 open SigabaNeo.Lattices SigabaNeo.Lattices.Estimator Fx
 
 theorem two_pow_sub_one_pos {K : ℕ} (hK : 1 ≤ K) : 0 < 2 ^ K - 1 := by
@@ -82,4 +81,4 @@ theorem circularRingLWE_H_ge {N K m M₀ kb W ZA K₀ R : ℕ} (hK : 1025 ≤ K)
     kb ≤ CircularRingLWE.H (circParams N K m (by omega) J τ) :=
   ringLWE_H_ge hK hN hm hM₀ hMlo hMhi hf hc
 
-end AdvancedEncryption.ExpLUT.Params
+end SigabaNeo.Lattices.Estimator.CircularMersenne

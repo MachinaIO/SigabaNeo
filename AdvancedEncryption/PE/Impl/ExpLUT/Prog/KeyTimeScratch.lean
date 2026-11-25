@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeInit
-
 /-! Full arithmetic certificates accepting the static scratch bounds left by initializers. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

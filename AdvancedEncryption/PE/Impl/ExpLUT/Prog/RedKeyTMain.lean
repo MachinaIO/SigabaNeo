@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTTail
-
 /-!
 # Module 9: **`rkTailCert_of`** — the back-end certificate from the interface `RkTailIn`
 

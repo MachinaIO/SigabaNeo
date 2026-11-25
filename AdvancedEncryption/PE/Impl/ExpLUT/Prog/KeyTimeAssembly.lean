@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeProposal
-
 /-! Runtime of key assembly and the complete proposal-key program. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

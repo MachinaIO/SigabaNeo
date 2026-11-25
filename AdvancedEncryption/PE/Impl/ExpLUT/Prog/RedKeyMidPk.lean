@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyMidM
 import PE.Impl.ExpLUT.Prog.KeyEvalInit
-
 /-!
 # `mid`, phase M3 (part): constants, the coefficient word, the slab counter
 

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncTightInit
-
 /-!
 # Certificates of the four encryption phases (tight encryption clock, part 3)
 

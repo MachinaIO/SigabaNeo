@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.Prog.DecMachineConf
 import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMSize
 import SigabaNeoStd.Machines.Prog.VecBound
 import SigabaNeoStd.Machines.Prog.AppendWCost
-
 /-!
 # Description length of the concrete `Dec` machine (package F4)
 

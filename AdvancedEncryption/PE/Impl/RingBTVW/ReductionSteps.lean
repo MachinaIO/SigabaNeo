@@ -3,7 +3,6 @@ import PE.Impl.RingBTVW.SimGame3
 import PE.Impl.RingBTVW.SimGame5
 import PE.Impl.RingBTVW.Prog.Decode
 import PE.Impl.RingBTVW.Prog.DecodeLaw
-
 /-!
 # The three reductions from their components
 

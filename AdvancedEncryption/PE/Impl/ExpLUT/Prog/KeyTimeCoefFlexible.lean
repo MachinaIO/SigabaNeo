@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeChain
-
 /-! Coefficient certificates that use actual resets of shared matrix scratch registers. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

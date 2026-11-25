@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyOutput
-
 /-! Both KeyGen branches from the two decoded interface words. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

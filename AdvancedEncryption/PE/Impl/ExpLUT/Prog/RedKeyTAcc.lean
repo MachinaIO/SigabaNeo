@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTK
-
 /-!
 # Module 9: the acceptance test at a large tape cap (tight)
 

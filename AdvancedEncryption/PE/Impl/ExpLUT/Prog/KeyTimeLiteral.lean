@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeOutput
-
 /-! Exact length certificates for physical literal initialization. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

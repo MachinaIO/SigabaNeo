@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.AH.Games
 import PE.Impl.ExpLUT.AH.Conf
 import PE.Impl.ExpLUT.Prog.KeyBoxW
 import PE.Impl.ExpLUT.Params.Correct
-
 /-!
 # Correctness of the ExpLUT implementation from the machines' specifications
 

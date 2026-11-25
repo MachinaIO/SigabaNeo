@@ -228,11 +228,11 @@ import PE.Impl.ExpLUT.Prog.RedKeySimTD
 import PE.Impl.ExpLUT.Prog.RedKeySimES
 import PE.Impl.ExpLUT.Prog.RedKeySimEMath
 import PE.Impl.ExpLUT.Prog.RedKeySimE
-import PE.Impl.ExpLUT.Prog.RedPubFront
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMHandler
 import PE.Impl.ExpLUT.Prog.RedPubPMath
 import PE.Impl.ExpLUT.Prog.RedPubPInst
 import PE.Impl.ExpLUT.Prog.DecDescConf
-import PE.Impl.ExpLUT.Prog.DecTimeVM
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMFlowClock
 import PE.Impl.ExpLUT.Prog.RedChalPhases
 import PE.Impl.ExpLUT.Prog.RedChalDc
 import PE.Impl.ExpLUT.Prog.RedPubPComps
@@ -253,7 +253,6 @@ import PE.Impl.ExpLUT.Prog.RedKeyCW
 import PE.Impl.ExpLUT.Prog.RedKeyCWPk
 import PE.Impl.ExpLUT.Submission
 import PE.Impl.ExpLUT.Prog.DecTight
-
 /-!
 # Predicate encryption from lookup tables over exponents (ePrint 2026/2539 §4–§5)
 

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedPubPCode
-
 /-!
 # The fields of the raw secret as words (package G2, `pubP`)
 

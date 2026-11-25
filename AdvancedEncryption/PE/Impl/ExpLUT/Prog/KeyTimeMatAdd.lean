@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeMatrixGrowth
-
 /-! Linear output growth in the actual entrywise matrix-adder. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

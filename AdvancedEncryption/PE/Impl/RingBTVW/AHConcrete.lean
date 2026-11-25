@@ -8,7 +8,6 @@ import PE.Impl.RingBTVW.Prog.ShellsBP
 import PE.Impl.RingBTVW.Params.Advantage
 import PE.Impl.RingBTVW.Params.Strength
 import PE.Impl.RingBTVW.ImplBP
-
 /-!
 # Attribute hiding of the concrete scheme at `confA`
 

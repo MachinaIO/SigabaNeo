@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.KeyCoinVM
 import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMIO
 import PE.Impl.RingBTVW.Prog.Setup5
-
 /-! Executable initialization and fair-coin sampling for one key-box candidate. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeySample
 

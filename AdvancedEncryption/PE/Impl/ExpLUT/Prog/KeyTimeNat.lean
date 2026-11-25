@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeLoadScratch
-
 /-! Runtime and length certificates for the actual binary-doubling unary initializer. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncInitSpec
-
 /-! # Phase invariants survive replacing the ciphertext output register -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

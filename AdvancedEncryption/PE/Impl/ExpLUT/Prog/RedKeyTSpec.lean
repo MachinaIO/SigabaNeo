@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTMain
 import PE.Impl.ExpLUT.Prog.RedKeyTSpecG
 import PE.Impl.ExpLUT.Prog.RedKeyTSize
-
 /-!
 # Module 9: the key component and the final statement from the middle phases
 

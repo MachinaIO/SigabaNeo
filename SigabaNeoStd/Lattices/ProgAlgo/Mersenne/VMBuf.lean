@@ -1,4 +1,4 @@
-import PE.Impl.ExpLUT.Prog.RedChalVM
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMHash
 
 /-!
 # Generic `RingVM` kernels of `pubP` (package G2)
@@ -14,8 +14,7 @@ import PE.Impl.ExpLUT.Prog.RedChalVM
 
 set_option linter.unusedSectionVars false
 
-namespace AdvancedEncryption.ExpLUT.Prog.RedPubP
-
+namespace SigabaNeo.Tape.RingVM.Buf
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices.Algo
 
 variable {N K : ℕ}
@@ -150,4 +149,4 @@ theorem exec_strided {d s c k cnt : Fin 200} (hds : d ≠ s) (hdc : d ≠ c) (hs
   rw [hn] at key
   exact key
 
-end AdvancedEncryption.ExpLUT.Prog.RedPubP
+end SigabaNeo.Tape.RingVM.Buf

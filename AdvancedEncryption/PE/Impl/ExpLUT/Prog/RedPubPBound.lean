@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedPubPTime
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # The register bounds of the public-key code (package G2, `pubP`)
 
@@ -16,7 +16,7 @@ set_option linter.unusedSimpArgs false
 
 namespace AdvancedEncryption.ExpLUT.Prog.RedPubP
 
-open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Tape.RingVM.Hash
 
 /-- The loop counters. -/
 def pctrRegs : List (Fin 200) := [cnt, cntJ, cntP, cntC, cntI, cJ, cPos, cCol, xCm, xCc, xCnt]
@@ -229,7 +229,7 @@ theorem bounds_pubP (D : Dims) {Mo Bc Mb La Lb : ℕ} (hNK : D.N * D.K ≤ Mo) (
   have hrb : pBf Mo Bc Mb rb = Mb := rfl
   have hr1' : pBf Mo Bc Mb r1 = Mb := rfl
   have hro : pBf Mo Bc Mb rOut = Mb := rfl
-  obtain ⟨hl, ht⟩ := RedIO.bounds_ringIO1 hNK hK hN (ra := ra) (rb := rb) (by decide) rOut r1
+  obtain ⟨hl, ht⟩ := SigabaNeo.Tape.RingVM.Handler.bounds_ringIO1 hNK hK hN (ra := ra) (rb := rb) (by decide) rOut r1
     (by decide) (by decide)
     (tm D) (pubC D) (pBf Mo Bc Mb) hC La Lb Mb (by rw [hra]; exact hLa) (by rw [hrb]; exact hLb)
     (fun r _ _ _ => htm r) (by rw [hr1']; show D.N * D.K - 1 + 1 ≤ Mb; omega)
@@ -238,7 +238,7 @@ theorem bounds_pubP (D : Dims) {Mo Bc Mb La Lb : ℕ} (hNK : D.N * D.K ≤ Mo) (
   refine ⟨hl.trans (fun i => ?_), ht.trans ?_⟩
   · simp only [io2]; split_ifs <;> simp
   have hsup : supB (encB Mo D.N D.K (pBf Mo Bc Mb)) ≤ Mb :=
-    XProg.supB_le_of (RedIO.encB_le Mo D.N D.K _ Mb (h1.trans h2) hK hN hNK hBf)
+    XProg.supB_le_of (SigabaNeo.Tape.RingVM.Handler.encB_le Mo D.N D.K _ Mb (h1.trans h2) hK hN hNK hBf)
   have hv := pvmTime_le Mo D.N D.K (pBf Mo Bc Mb) (2 * Mb + 4) (pIB Mb Mo) Bc (by omega) (by omega)
     hBc (pubC D) (pleafLe_of hNK hK hN (h1.trans h2) hBf (pubC D) hT) hR
   rw [vmCount_pubC] at hv

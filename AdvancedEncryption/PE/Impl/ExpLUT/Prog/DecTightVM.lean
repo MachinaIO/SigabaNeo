@@ -1,7 +1,7 @@
 import PE.Impl.ExpLUT.Prog.DecTightLutF
 import PE.Impl.ExpLUT.Prog.DecTightLutT
 import PE.Impl.ExpLUT.Prog.DecTightPre
-
+open SigabaNeo.Tape.RingVM.Flow
 /-!
 # Tight clock of the `Dec` code: the whole code (part 4)
 
@@ -19,7 +19,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.DecTight
 set_option autoImplicit false
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM
-open AdvancedEncryption.ExpLUT.Prog.DecT
+open SigabaNeo.Tape.RingVM.Flow
 
 /-- The clock of a non-final step. -/
 def dtTstepF : ℕ := dtTmul + (dtTtbl + (dtTlutF + dtTtailF))

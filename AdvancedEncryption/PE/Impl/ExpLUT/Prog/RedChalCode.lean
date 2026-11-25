@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedChalPhases
-import PE.Impl.ExpLUT.Prog.RedPubFront
-
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMHandler
+open SigabaNeo.Tape.RingVM.Handler SigabaNeo.Tape.RingVM.Hash
 /-!
 # The code of the reduction's challenge (package G2, `chalP`)
 
@@ -24,7 +24,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedChal
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 /-! ### Registers -/
 
@@ -205,7 +205,7 @@ def cmC : Code :=
 def chalC : Code := ofList [parseC, bC, hC, autC D, cbC, cinC, cmC]
 
 /-- **The challenge component.** -/
-noncomputable def chalP : XProg 247 := RedIO.ringIO1 D.N D.K ra rb xOut r1 (tm D) (chalC D)
+noncomputable def chalP : XProg 247 := SigabaNeo.Tape.RingVM.Handler.ringIO1 D.N D.K ra rb xOut r1 (tm D) (chalC D)
 
 theorem loopOkB_ofList : ∀ l : List Code, loopOkB (ofList l) = l.all loopOkB
   | [] => rfl

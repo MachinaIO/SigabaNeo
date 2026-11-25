@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncInit
 import PE.Impl.ExpLUT.Prog.EncCoins
-
 /-! # Fixed-length normalization of the encryption input queues -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog

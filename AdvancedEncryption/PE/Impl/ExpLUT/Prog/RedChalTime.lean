@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedChalLaw
 import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMSize
-
 /-!
 # The clock of the challenge component (package G2, `chalP`)
 

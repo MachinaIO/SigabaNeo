@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.SubmissionAssembly
 import PE.Impl.ExpLUT.Prog.RedKeyTTop
 import PE.Impl.ExpLUT.Prog.RedKeyTIn
 import PE.Impl.ExpLUT.Prog.RedKeyPktOk
-
 /-!
 # The final statement, up to the two cost certificates of the key component
 

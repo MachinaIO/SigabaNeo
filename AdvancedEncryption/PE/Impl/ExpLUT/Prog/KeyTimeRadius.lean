@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeAssembly
-
 /-! Literal radius generation on the actual acceptance initialization path. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.MVM Cslib

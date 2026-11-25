@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedChalAut
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # The bottom rows of `C^in` in the challenge (package G2, `chalP`)
 
@@ -17,7 +17,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedChal
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo SigabaNeo.Lattices.Algo.NegaG Matrix AdvancedEncryption.PE
   AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 /-! ### The exponent of the attribute bits -/
 

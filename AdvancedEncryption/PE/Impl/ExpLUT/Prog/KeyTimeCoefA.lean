@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeBitLoop
-
 /-! Runtime of the actual nested alpha-table coefficient loops. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

@@ -10,7 +10,6 @@ import PE.Impl.ExpLUT.AH.Correct
 import PE.Impl.ExpLUT.AH.RedCompsR
 import PE.Impl.ExpLUT.AH.Flood
 import SigabaNeo.Trusted.Submission
-
 /-!
 # Assembling the ExpLUT submission from its parts
 

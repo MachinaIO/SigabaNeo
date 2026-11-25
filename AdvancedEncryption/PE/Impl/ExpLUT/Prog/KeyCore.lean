@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyInput
-
 /-! The compiled KeyGen core with actual fair-coin generation after public evaluation. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyCore
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

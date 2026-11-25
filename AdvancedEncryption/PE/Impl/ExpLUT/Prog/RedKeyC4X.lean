@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC4A
 import PE.Impl.ExpLUT.Prog.RedKeyCAX
-
 /-!
 # Phase M4 (exploration): finding the loop hints of `RedKeyC4A.an`
 

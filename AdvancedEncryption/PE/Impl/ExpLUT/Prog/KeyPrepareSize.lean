@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTrySize
-
 /-! State-count bounds for master-key input and EvalPK initialization. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.MVM Cslib

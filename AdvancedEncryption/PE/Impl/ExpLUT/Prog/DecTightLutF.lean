@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.DecTightData
-
 /-!
 # Tight clock of the `Dec` code: the table of a non-final step (part 3a)
 

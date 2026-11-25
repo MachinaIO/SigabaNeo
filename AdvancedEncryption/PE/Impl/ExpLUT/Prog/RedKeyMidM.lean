@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyMidCode
 import PE.Impl.ExpLUT.Prog.RedKeyMFront
-
+open SigabaNeo.Tape.RingVM.Handler
 /-!
 # `mid` of the key component: the tape-level assembly
 

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyPktMath
-
 /-!
 # The packet stream, part 3: rows of bits read column-wise (generic `N K`)
 

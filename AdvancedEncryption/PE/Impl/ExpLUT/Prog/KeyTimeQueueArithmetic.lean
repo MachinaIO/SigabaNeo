@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCoins
-
 /-! Actual inner-product and gadget-recomposition kernels used by key proposals. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

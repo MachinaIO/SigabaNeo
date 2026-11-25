@@ -20,8 +20,7 @@ bound charges the long length to the loop counters. Here the bounds follow the c
 `absRun` is computable, so the clock of a concrete code is checked by kernel evaluation.
 -/
 
-namespace AdvancedEncryption.ExpLUT.Prog.DecT
-
+namespace SigabaNeo.Tape.RingVM.Flow
 set_option autoImplicit false
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Tape.Sym SigabaNeo.Tape.Prog.MersenneT
@@ -526,4 +525,4 @@ theorem absRun_sound (hP : P.Valid) (fuel : ℕ) : ∀ (c : Code) (B B' : ℕ) (
 
 end Sound
 
-end AdvancedEncryption.ExpLUT.Prog.DecT
+end SigabaNeo.Tape.RingVM.Flow

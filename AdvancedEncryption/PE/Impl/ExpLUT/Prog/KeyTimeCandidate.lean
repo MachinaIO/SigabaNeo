@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeDecodeQueue
-
 /-! Actual candidate initialization, decoding and delivery to the proposal register. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Lattices.Algo

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyTightTailY
 import PE.Impl.ExpLUT.Prog.KeyTightEval2
-
 /-!
 # KeyGen: the tight clock of the machine
 

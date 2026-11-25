@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedPubPParse
-
+open SigabaNeo.Tape.RingVM.Buf SigabaNeo.Tape.RingVM.Hash
 /-!
 # The outputs `B` and `H` (package G2, `pubP`)
 
@@ -17,7 +17,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedPubP
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 variable {D : Dims}
 

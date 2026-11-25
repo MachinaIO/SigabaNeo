@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeMatAdd
-
 /-! Asymmetric gadget-construction bounds: overwritten scratch caps may shrink. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

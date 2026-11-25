@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedSetup
 import PE.Impl.ExpLUT.Prog.RedSetupPUC
 import PE.Impl.RingBTVW.Prog.Blocks
-
 /-!
 # The setup component of the reduction with its bounds (package G2, item 2)
 

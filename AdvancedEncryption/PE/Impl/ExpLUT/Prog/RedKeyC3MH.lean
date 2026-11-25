@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC3MT
 import PE.Impl.ExpLUT.Prog.RedKeyC4H
-
 /-!
 # Cost certificate of `mid`, phase M3 (part 4): the checked analyses (`decide +kernel`)
 

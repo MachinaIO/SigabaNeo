@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC4H
 import PE.Impl.ExpLUT.Prog.RedKeyTIn
 import PE.Impl.ExpLUT.Prog.KeyPrepareSize
-
 /-!
 # Cost certificate of `mid`, phase M4: `simKeyC ; midLd14 ; setXC ; simXC ; midFin`
 

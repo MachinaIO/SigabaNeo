@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyCandidate
-
 /-! Load the master secret key codec into the actual KeyGen evaluator. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

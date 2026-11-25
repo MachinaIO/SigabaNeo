@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.DecDescConf
 import PE.Impl.ExpLUT.Prog.DescTightBase
-
 /-!
 # Tight description length of the concrete `Dec` machine
 

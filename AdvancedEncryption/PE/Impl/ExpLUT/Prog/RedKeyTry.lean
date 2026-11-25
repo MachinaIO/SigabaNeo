@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyMatVec
 import PE.Impl.ExpLUT.Prog.RedKeyMath
 import PE.Impl.ExpLUT.Prog.KeyTryLaw
-
 /-!
 # `KGsim` on the VM (package G2, item 5): one box try with the simulated trapdoor
 

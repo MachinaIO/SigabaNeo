@@ -3,7 +3,6 @@ import PE.Impl.ExpLUT.Prog.RedSetupPSize
 import PE.Impl.ExpLUT.Prog.RedPubPComps
 import PE.Impl.ExpLUT.Prog.RedChalDc
 import PE.Impl.ExpLUT.Prog.AuthWX
-
 /-!
 # The reduction's components at `Dc`, with the key component as the only input
 

@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.Decode
 import PE.Impl.RingBTVW.Params.Conf
-
+open SigabaNeo.Lattices.RingLWEWord
 /-!
 # The decoders of the reductions at `confA`
 

@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.Prog.RedKeyMidPub
 import PE.Impl.ExpLUT.Prog.RedKeySimE
 import PE.Impl.ExpLUT.Prog.RedKeyMTail
 import PE.Impl.ExpLUT.Prog.KeyMachine
-
 /-!
 # `mid` of the key component: the MVM phases M2, M3 (contract), M4
 

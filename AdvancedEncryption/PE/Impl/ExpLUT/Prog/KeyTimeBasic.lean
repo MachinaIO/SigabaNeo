@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeySizeConf
-
 /-! Compositional runtime certificates for the actual 105-tape KeyGen compiler.
 The loop rule allows growing output queues; a fixed length invariant would not suffice.
 -/

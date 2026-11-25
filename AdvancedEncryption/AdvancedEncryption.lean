@@ -105,7 +105,7 @@ import PE.Impl.RingBTVW.Prog.SetupLaws
 import PE.Impl.RingBTVW.Prog.Setup5
 import PE.Impl.RingBTVW.Prog.Setup3
 import PE.Impl.RingBTVW.Prog.SetupI
-import PE.Impl.RingBTVW.Prog.DecodeWord
+import SigabaNeoStd.Lattices.RingLWEWord
 import PE.Impl.RingBTVW.Prog.Decode
 import PE.Impl.RingBTVW.Prog.RedDecodeA
 import PE.Impl.RingBTVW.Prog.DecodeLaw

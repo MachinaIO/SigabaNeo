@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncPhaseTime
-
 /-! # Length-preserving bounds for the repeated encryption phases -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog

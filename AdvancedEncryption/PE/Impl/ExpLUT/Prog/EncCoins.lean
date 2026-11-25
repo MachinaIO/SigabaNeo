@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedSetup
-
 /-!
 # The complete random tape for encryption
 

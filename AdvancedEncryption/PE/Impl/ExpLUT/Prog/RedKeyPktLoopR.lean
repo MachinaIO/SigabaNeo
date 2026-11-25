@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyPktLoop
-
 /-!
 # The packet stream, part 7: the loop over the `η` slabs (generic `N K`)
 

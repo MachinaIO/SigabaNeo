@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncInitSpec
-
 /-! # Phase invariants of the initialized encryption store -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

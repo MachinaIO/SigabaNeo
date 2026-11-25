@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.AH.RedCompsR
 import PE.Impl.ExpLUT.Prog.UnifCanon
 import PE.Impl.ExpLUT.Prog.EncSamplers
 import PE.Impl.RingBTVW.Prog.SetupTime
-
 /-!
 # The setup component of the reduction (package G2b)
 

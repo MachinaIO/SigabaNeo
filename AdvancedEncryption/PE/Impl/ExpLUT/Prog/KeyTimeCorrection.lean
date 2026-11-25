@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCorrectionCoord
-
 /-! Runtime of the complete correction traversal with linear output accumulation. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

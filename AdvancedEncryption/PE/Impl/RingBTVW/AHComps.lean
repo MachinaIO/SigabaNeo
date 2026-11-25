@@ -1,6 +1,5 @@
 import PE.Impl.RingBTVW.ReductionSteps
 import PE.Impl.RingBTVW.AHAssembly
-
 /-!
 # Attribute hiding from the component programs
 

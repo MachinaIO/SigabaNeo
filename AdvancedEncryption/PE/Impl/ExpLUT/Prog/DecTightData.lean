@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.DecTightBase
-
 /-!
 # Tight clock of the `Dec` code: the bound vectors at the block boundaries (part 2)
 

@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeySizeBasic
 import PE.Impl.ExpLUT.Prog.SetupConf
-
 /-! State-count bounds for the actual indexed gather and key assembly code. -/
 set_option backward.isDefEq.respectTransparency false
 set_option backward.isDefEq.respectTransparency.types false

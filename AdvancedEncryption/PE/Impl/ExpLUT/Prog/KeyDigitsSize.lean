@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyPublicSize
 import PE.Impl.ExpLUT.Prog.KeyCorrectionSize
-
 /-! State-count bounds for the complete public-map and gadget-decomposition stage. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.MVM Cslib

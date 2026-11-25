@@ -1,7 +1,6 @@
 import PE.Impl.RingBTVW.Prog.KeyTrySimConf
 import PE.Impl.RingBTVW.Prog.KeySize
 import PE.Impl.RingBTVW.AHConcrete
-
 /-!
 # The key component of the reductions at `confA`, per tape
 

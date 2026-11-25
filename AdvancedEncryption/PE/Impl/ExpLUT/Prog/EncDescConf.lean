@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncInitSize
-
 /-! # Description length of the concrete package-P encryption machine -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncConf
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape

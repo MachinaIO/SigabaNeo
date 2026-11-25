@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedPubPMath
-
 /-!
 # The words of the instance in the raw secret (package G2, `pubP`)
 

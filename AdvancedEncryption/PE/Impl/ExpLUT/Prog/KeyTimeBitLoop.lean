@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeGrowth
-
 /-! Growing counter bounds for the actual complement-bit loop in alpha coefficients. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

@@ -2,7 +2,7 @@ import PE.Impl.ExpLUT.Prog.RedKeyC1Ring
 import PE.Impl.ExpLUT.Prog.RedKeyMidPub
 import PE.Impl.ExpLUT.Prog.RedChalDc
 import PE.Impl.ExpLUT.Prog.RedKeyTTop
-
+open SigabaNeo.Tape.RingVM.Handler
 /-!
 # Cost certificate of `mid`, phase M1: `m1P` from the input `rkIn`
 
@@ -29,7 +29,7 @@ set_option linter.unusedSimpArgs false
 namespace AdvancedEncryption.ExpLUT.Prog.RedKeyC
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM
-open AdvancedEncryption.ExpLUT.Prog.RedIO AdvancedEncryption.ExpLUT.Prog.RedKeyMid
+open SigabaNeo.Tape.RingVM.Handler AdvancedEncryption.ExpLUT.Prog.RedKeyMid
 open AdvancedEncryption.ExpLUT.Prog.KeyTime (Cert)
 open scoped SigabaNeo.Tape.Prog
 
@@ -65,7 +65,7 @@ theorem c1_cert_pub (La v1 v2 v3 : ℕ) (hLa : La ≤ 2 ^ 102) (hv1 : v1 ≤ 2 ^
   rw [show RedPubP.pBf (2 ^ 41) (2 ^ 42) (2 ^ 102) RedPubP.rOut = 2 ^ 102 from rfl] at c
   refine c.mono le_rfl le_rfl ?_
   have hsup : supB (encB (2 ^ 41) Dc.N Dc.K (RedPubP.pBf (2 ^ 41) (2 ^ 42) (2 ^ 102))) ≤ 2 ^ 102 :=
-    XProg.supB_le_of (RedIO.encB_le (2 ^ 41) Dc.N Dc.K _ (2 ^ 102) (h1.trans h2) hK hN hNK' hBf)
+    XProg.supB_le_of (SigabaNeo.Tape.RingVM.Handler.encB_le (2 ^ 41) Dc.N Dc.K _ (2 ^ 102) (h1.trans h2) hK hN hNK' hBf)
   have hv := RedPubP.pvmTime_le (2 ^ 41) Dc.N Dc.K (RedPubP.pBf (2 ^ 41) (2 ^ 42) (2 ^ 102))
     (2 * 2 ^ 102 + 4) (RedPubP.pIB (2 ^ 102) (2 ^ 41)) (2 ^ 42) (by omega) (by omega)
     (by norm_num) (RedPubP.pubC Dc)
@@ -90,7 +90,7 @@ theorem c1_cert_pub (La v1 v2 v3 : ℕ) (hLa : La ≤ 2 ^ 102) (hv1 : v1 ≤ 2 ^
 set_option exponentiation.threshold 2000 in
 theorem c1_cert_chal (La Lb v1 v2 v3 : ℕ) (hLa : La ≤ 2 ^ 110) (hLb : Lb ≤ 2 ^ 110)
     (hv1 : v1 ≤ 2 ^ 110) (hv2 : v2 ≤ 2 ^ 110) (hv3 : v3 ≤ 2 ^ 110) :
-    Cert (ringIOS Dc.N Dc.K RedChal.ra RedChal.rb RedVM.xOut RedChal.r1 (RedChal.tm Dc)
+    Cert (ringIOS Dc.N Dc.K RedChal.ra RedChal.rb SigabaNeo.Tape.RingVM.Hash.xOut RedChal.r1 (RedChal.tm Dc)
       (RedChal.chalC Dc)) (c1St (io2 (R := 245) La Lb 0) v1 v2 v3)
       (c1St (io2 (R := 245) (2 ^ 110) 0 0) v1 v2 v3) (2 ^ 351) := by
   have hNK : Dc.N * Dc.K = 2 ^ 40 := by rw [RedChal.Dc_N, RedChal.Dc_K]; norm_num
@@ -106,7 +106,7 @@ theorem c1_cert_chal (La Lb v1 v2 v3 : ℕ) (hLa : La ≤ 2 ^ 110) (hLb : Lb ≤
   have htm := RedChal.tm_le_Bf Dc (Mo := 2 ^ 40) (Bc := 2 ^ 56) (Mb := 2 ^ 110)
     (by rw [RedChal.Dc_N]; norm_num) (by norm_num) RedChal.ctr_Dc RedChal.tmBase_Dc_le
   have c := c1_bounds_ringIOS hNK.le hK hN (ra := RedChal.ra) (rb := RedChal.rb) (by decide)
-    RedVM.xOut RedChal.r1 (by decide) (by decide) (RedChal.tm Dc) (RedChal.chalC Dc)
+    SigabaNeo.Tape.RingVM.Hash.xOut RedChal.r1 (by decide) (by decide) (RedChal.tm Dc) (RedChal.chalC Dc)
     (RedChal.Bf (2 ^ 40) (2 ^ 56) (2 ^ 110)) hC La Lb (2 ^ 110)
     (by rw [show RedChal.Bf (2 ^ 40) (2 ^ 56) (2 ^ 110) RedChal.ra = 2 ^ 110 from rfl]; exact hLa)
     (by rw [show RedChal.Bf (2 ^ 40) (2 ^ 56) (2 ^ 110) RedChal.rb = 2 ^ 110 from rfl]; exact hLb)
@@ -116,10 +116,10 @@ theorem c1_cert_chal (La Lb v1 v2 v3 : ℕ) (hLa : La ≤ 2 ^ 110) (hLb : Lb ≤
     (h1.trans h2) hBf v1 v2 v3 (by rw [hS sR1 (Or.inl rfl)]; exact hv1)
     (by rw [hS sR2 (Or.inr (Or.inl rfl))]; exact hv2) (by rw [hS sR3 (Or.inr (Or.inr rfl))]; exact hv3)
     chal_uses1 chal_uses2 chal_uses3 (by decide) (by decide) (by decide)
-  rw [show RedChal.Bf (2 ^ 40) (2 ^ 56) (2 ^ 110) RedVM.xOut = 2 ^ 110 from rfl] at c
+  rw [show RedChal.Bf (2 ^ 40) (2 ^ 56) (2 ^ 110) SigabaNeo.Tape.RingVM.Hash.xOut = 2 ^ 110 from rfl] at c
   refine c.mono le_rfl le_rfl ?_
   have hsup : supB (encB (2 ^ 40) Dc.N Dc.K (RedChal.Bf (2 ^ 40) (2 ^ 56) (2 ^ 110))) ≤ 2 ^ 110 :=
-    XProg.supB_le_of (RedIO.encB_le (2 ^ 40) Dc.N Dc.K _ (2 ^ 110) (h1.trans h2) hK hN hNK.le hBf)
+    XProg.supB_le_of (SigabaNeo.Tape.RingVM.Handler.encB_le (2 ^ 40) Dc.N Dc.K _ (2 ^ 110) (h1.trans h2) hK hN hNK.le hBf)
   have hv := RedChal.vmTime_le (2 ^ 40) Dc.N Dc.K (RedChal.Bf (2 ^ 40) (2 ^ 56) (2 ^ 110))
     (2 * 2 ^ 110 + 4) (RedChal.IB (2 ^ 110) (2 ^ 40)) (2 ^ 56) (by omega) (by omega)
     (by norm_num) (RedChal.chalC Dc)

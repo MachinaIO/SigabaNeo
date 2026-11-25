@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimePrefix
-
 /-! Actual coefficient gathering with counter setup and queue automorphisms. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

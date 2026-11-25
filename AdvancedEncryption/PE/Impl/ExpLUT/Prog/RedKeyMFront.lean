@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyMTail
 import PE.Impl.ExpLUT.Prog.RedPubPDc
 import SigabaNeoStd.Machines.Prog.LenEq
-
 /-!
 # `KGsim` on the VM (module 8, top level): the reduction's key component on `247` tapes
 

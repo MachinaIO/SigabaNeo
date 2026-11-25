@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncTightPrep
 import PE.Impl.ExpLUT.Prog.EncTimeTight
-
 /-!
 # The tight clock of the concrete encryption machine (tight encryption clock, part 7)
 

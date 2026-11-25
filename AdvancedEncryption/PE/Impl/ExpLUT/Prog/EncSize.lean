@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.Prog.SetupSize
 import PE.Impl.ExpLUT.Prog.EncMachine
 import PE.Impl.RingBTVW.Prog.SetupEncDescA
 import SigabaNeoStd.Machines.Prog.FrameSize
-
 /-! # State counts and description length of the concrete encryption machine -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog

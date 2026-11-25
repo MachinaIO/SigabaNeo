@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC3MA
 import PE.Impl.ExpLUT.Prog.RedKeyPktOk
-
 /-!
 # Cost certificate of `mid`, phase M3 (part 2): the `AD` mirrors of the phases of `pkOf pkt`
 

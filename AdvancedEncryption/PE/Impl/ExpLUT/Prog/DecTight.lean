@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.DecTightFront
-
 /-!
 # The tight clock of the concrete `Dec` machine (part 6)
 

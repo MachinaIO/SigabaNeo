@@ -1,8 +1,8 @@
-import PE.Impl.RingBTVW.Prog.DecodeWord
+import SigabaNeoStd.Lattices.RingLWEWord
 import SigabaNeoStd.Machines.Prog.FrameParseX
 import PE.Impl.RingBTVW.Prog.Layout
 import PE.Impl.RingBTVW.Registry
-
+open SigabaNeo.Lattices.RingLWEWord
 /-!
 # The decoding machines of the reductions
 

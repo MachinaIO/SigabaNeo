@@ -1,7 +1,6 @@
-import PE.Impl.RingBTVW.Prog.DecodeWord
+import SigabaNeoStd.Lattices.RingLWEWord
 import PE.Impl.ExpLUT.AH.CircBridge
 import SigabaNeoStd.Machines.Prog.FrameParseX
-
 /-!
 # The decoder of the reduction machine (package G2)
 
@@ -28,7 +27,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape Cslib
 open Turing.MultiTapeTM (frame encList encNat encPair encBits)
-open AdvancedEncryption.RingBTVW.Prog (lowBits length_bits_le padK_bits headD_ofFn flatMap_ofFn_mul
+open SigabaNeo.Lattices.RingLWEWord (lowBits length_bits_le padK_bits headD_ofFn flatMap_ofFn_mul
   length_frame length_flatMap_le encLen)
 
 section Generic
@@ -153,7 +152,7 @@ end Generic
 theorem lowBits_eq_toBits : ∀ (K n : ℕ), lowBits K n = toBits K n
   | 0, _ => rfl
   | K + 1, n => by
-    rw [AdvancedEncryption.RingBTVW.Prog.lowBits_succ, toBits, lowBits_eq_toBits K (n / 2),
+    rw [SigabaNeo.Lattices.RingLWEWord.lowBits_succ, toBits, lowBits_eq_toBits K (n / 2),
       Nat.testBit_zero]
 
 theorem flatMap_finRange_concatN : ∀ {m : ℕ} (g : Fin m → List Bool),

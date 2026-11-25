@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCorrection
-
 /-! Runtime and exact output lengths for actual gadget digit generation. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC3Glue
 import PE.Impl.ExpLUT.Prog.KeyPrepareSize
-
+open SigabaNeo.Tape.RingVM.Handler
 /-!
 # The state count of `mid` (`≤ 2^190`), modulo the weights of the M3/M4 codes
 
@@ -20,7 +20,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedKeyC
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM
 open AdvancedEncryption.ExpLUT.Prog AdvancedEncryption.ExpLUT.Prog.RedKeyM
-open AdvancedEncryption.ExpLUT.Prog.RedKeyMid AdvancedEncryption.ExpLUT.Prog.RedIO
+open AdvancedEncryption.ExpLUT.Prog.RedKeyMid SigabaNeo.Tape.RingVM.Handler
 open AdvancedEncryption.ExpLUT.Params
 open scoped SigabaNeo.Tape.Prog
 
@@ -63,9 +63,9 @@ theorem cs_pubS : (ringIOS Dc.N Dc.K RedPubP.ra RedPubP.rb RedPubP.rOut RedPubP.
   rw [e] at h
   exact (cs_ringIOS_le _ _ _ _ _ _ _ _).trans (Nat.add_le_add_right h _)
 
-theorem cs_chalS : (ringIOS Dc.N Dc.K RedChal.ra RedChal.rb RedVM.xOut RedChal.r1
+theorem cs_chalS : (ringIOS Dc.N Dc.K RedChal.ra RedChal.rb SigabaNeo.Tape.RingVM.Hash.xOut RedChal.r1
     (RedChal.tm Dc) (RedChal.chalC Dc)).size ≤ 2 ^ 30 + 12000 := by
-  have e : RedChal.chalP Dc = ringIO1 Dc.N Dc.K RedChal.ra RedChal.rb RedVM.xOut RedChal.r1
+  have e : RedChal.chalP Dc = ringIO1 Dc.N Dc.K RedChal.ra RedChal.rb SigabaNeo.Tape.RingVM.Hash.xOut RedChal.r1
     (RedChal.tm Dc) (RedChal.chalC Dc) := rfl
   have h := cs_chalP
   rw [e] at h
@@ -82,7 +82,7 @@ theorem cs_m1_gen (P C : XProg 247) :
 
 theorem cs_m1P : m1P.size ≤ 2 ^ 32 := by
   have e := cs_m1_gen (ringIOS Dc.N Dc.K RedPubP.ra RedPubP.rb RedPubP.rOut RedPubP.r1
-    (RedPubP.tm Dc) (RedPubP.pubC Dc)) (ringIOS Dc.N Dc.K RedChal.ra RedChal.rb RedVM.xOut
+    (RedPubP.tm Dc) (RedPubP.pubC Dc)) (ringIOS Dc.N Dc.K RedChal.ra RedChal.rb SigabaNeo.Tape.RingVM.Hash.xOut
     RedChal.r1 (RedChal.tm Dc) (RedChal.chalC Dc))
   have hn : 312 + (2 ^ 30 + 12000) + (2 ^ 30 + 12000) ≤ 2 ^ 32 := by norm_num
   exact (e.trans_le (Nat.add_le_add (Nat.add_le_add_left cs_pubS _) cs_chalS)).trans hn

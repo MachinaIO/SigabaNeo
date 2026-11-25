@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyCA
 import PE.Impl.ExpLUT.Prog.RedKeyPktOk
 import PE.Impl.ExpLUT.Prog.RedKeyMidM
-
 /-!
 # Exploration mirrors of the MVM phases of `mid (pkOf pkt)` (ninth session)
 

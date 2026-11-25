@@ -1,4 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedPubPWords
+open SigabaNeo.Tape.RingVM.Buf SigabaNeo.Tape.RingVM.Hash
 set_option linter.unusedSimpArgs false
 
 /-!
@@ -17,7 +18,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedPubP
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 /-! ### Templates -/
 
@@ -42,12 +43,12 @@ theorem TmplOK.len {w : St} (h : TmplOK D w) (r : Fin 200) (hr : isT r = true :=
     (hr1 : r ≠ r1 := by decide) : (w r).length = tm D r := by rw [h.get r hr hr1, List.length_replicate]
 
 theorem tmplOK_initW1 (a b : List Bool) :
-    TmplOK D (RedIO.initW1 ra rb r1 (tm D) a b) := by
+    TmplOK D (SigabaNeo.Tape.RingVM.Handler.initW1 ra rb r1 (tm D) a b) := by
   refine ⟨fun r hr hr1 => ?_, ?_⟩
   · have ha : r ≠ ra := fun h => by subst h; revert hr; decide
     have hb : r ≠ rb := fun h => by subst h; revert hr; decide
-    simp [RedIO.initW1, RedIO.initW, Function.update_of_ne hr1, ha, hb]
-  · simp [RedIO.initW1]; rfl
+    simp [SigabaNeo.Tape.RingVM.Handler.initW1, SigabaNeo.Tape.RingVM.Handler.initW, Function.update_of_ne hr1, ha, hb]
+  · simp [SigabaNeo.Tape.RingVM.Handler.initW1]; rfl
 
 theorem tmplOK_exec (c : Code) (hc : (wr c).all (fun r => !isT r) = true) {w : St}
     (h : TmplOK D w) : TmplOK D (exec D.N D.K c w) := by

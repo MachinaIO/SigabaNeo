@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeBoxFamily
-
 /-! Runtime of actual acceptance, including rejection, and the full deterministic try. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

@@ -10,7 +10,6 @@ import PE.Impl.RingBTVW.Prog.DecSize
 import PE.Impl.RingBTVW.Prog.KeyCostV
 import PE.Impl.RingBTVW.Params.Strength
 import SigabaNeo.Trusted.Submission
-
 /-!
 # The submission for predicate encryption for branching programs
 

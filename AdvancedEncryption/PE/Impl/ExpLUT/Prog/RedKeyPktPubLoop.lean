@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyPktPub
-
 /-!
 # The packet stream, part 12: the loops of the public words (generic `N K`)
 

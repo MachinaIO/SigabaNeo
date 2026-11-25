@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyCoins
-
 /-! The actual queue decoder, initialized from fair coins, has the key-box law. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 

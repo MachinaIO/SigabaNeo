@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.AH.Final
 import SigabaNeoStd.Lattices.CircularRingLWEInst
-
 /-!
 # D's circular instances as the registry's circular Ring-LWE words (package G3)
 

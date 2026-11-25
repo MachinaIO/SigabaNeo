@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeDigitsTail
-
 /-! Actual gadget-power generation and repeated coefficient-row concatenation. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

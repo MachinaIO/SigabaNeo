@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeRing
-
 /-! End-to-end runtime certificate for compiled binary ring instructions. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

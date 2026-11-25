@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncSizeConf
-
 /-! # Literal initialization and deterministic core state budgets -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncConf
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Lattices SigabaNeo.Lattices.Algo

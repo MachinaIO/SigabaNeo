@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyMidPk
-
 /-!
 # The packet stream (phase M3, `PktOk`), part 1: the skeleton of one packet
 

@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedPubPAutT
-
+open SigabaNeo.Tape.RingVM.Buf SigabaNeo.Tape.RingVM.Hash
 /-!
 # The public-key component of the reduction (package G2, `pubP`)
 
@@ -21,7 +21,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedPubP
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 variable {D : Dims}
 
@@ -42,11 +42,11 @@ theorem exec_outDC (σ : RawSec D) (w : St) (hT : TmplOK D w) (b₀ acc : List B
 
 /-- The initial registers. -/
 noncomputable def w0P (D : Dims) (σ : RawSec D) : St :=
-  RedIO.initW1 ra rb r1 (tm D) ((rawEnc D).enc σ) []
+  SigabaNeo.Tape.RingVM.Handler.initW1 ra rb r1 (tm D) ((rawEnc D).enc σ) []
 
 theorem w0P_tm (σ : RawSec D) (r : Fin 200) (h0 : r ≠ ra) (h1 : r ≠ rb) (h2 : r ≠ r1) :
     w0P D σ r = List.replicate (tm D r) false := by
-  simp [w0P, RedIO.initW1, RedIO.initW, Function.update_of_ne h2, h0, h1]
+  simp [w0P, SigabaNeo.Tape.RingVM.Handler.initW1, SigabaNeo.Tape.RingVM.Handler.initW, Function.update_of_ne h2, h0, h1]
 
 theorem length_pubWord (σ : RawSec D) :
     (wB σ ++ (wH σ ++ (wa σ ++ ((wA0row σ 0 ++ wA0row σ 1) ++ (wAin σ ++ (wAaut σ ++ wd σ)))))).length =
@@ -65,7 +65,7 @@ theorem exec_pubC (hN : 2 ≤ D.N) (hW : wSt * 2 ^ 7 ≤ 2 * D.N) (hb32 : D.b �
     (by decide)
   -- parse
   obtain ⟨c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17⟩ :=
-    exec_parseC σ w hT (by simp [w, w0P, RedIO.initW1, RedIO.initW])
+    exec_parseC σ w hT (by simp [w, w0P, SigabaNeo.Tape.RingVM.Handler.initW1, SigabaNeo.Tape.RingVM.Handler.initW])
       (fun r hr => hI r (fun h => by subst h; revert hr; decide)
         (fun h => by subst h; revert hr; decide) (fun h => by subst h; revert hr; decide))
   set w1 := exec D.N D.K parseC w
@@ -149,7 +149,7 @@ theorem exec_pubC (hN : 2 ≤ D.N) (hW : wSt * 2 ^ 7 ≤ 2 * D.N) (hb32 : D.b �
 theorem law_pubP (hN : 2 ≤ D.N) (hW : wSt * 2 ^ 7 ≤ 2 * D.N) (hb32 : D.b ≤ 32) (σ : RawSec D) :
     XProg.law (pubP D) (io2 (R := 245) ((rawEnc D).enc σ) [] []) =
       PMF.pure (io2 (R := 245) ((mpkEnc D).enc (redView D (rawF D σ)).1) [] []) := by
-  rw [pubP, RedIO.law_ringIO1 D.N_pos D.K_pos (by decide) rOut r1 (by decide) (by decide)]
+  rw [pubP, SigabaNeo.Tape.RingVM.Handler.law_ringIO1 D.N_pos D.K_pos (by decide) rOut r1 (by decide) (by decide)]
   have := exec_pubC hN hW hb32 σ
   rw [w0P] at this
   rw [this]
@@ -157,6 +157,6 @@ theorem law_pubP (hN : 2 ≤ D.N) (hW : wSt * 2 ^ 7 ≤ 2 * D.N) (hb32 : D.b ≤
 
 /-- **The public-key component is well formed.** -/
 theorem wf_pubP : (pubP D).WF :=
-  RedIO.wf_ringIO1 D.N D.K ra rb rOut r1 (tm D) (pubC D) (loopOkB_pubC D)
+  SigabaNeo.Tape.RingVM.Handler.wf_ringIO1 D.N D.K ra rb rOut r1 (tm D) (pubC D) (loopOkB_pubC D)
 
 end AdvancedEncryption.ExpLUT.Prog.RedPubP

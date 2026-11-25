@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimePowers
-
 /-! Actual ring-one initialization and the complete negative-coefficient generator. -/
 set_option exponentiation.threshold 1000
 

@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedPubPAin
-
+open SigabaNeo.Tape.RingVM.Buf SigabaNeo.Tape.RingVM.Hash
 /-!
 # The matrices `C_{g_t}` of `A^aut` (package G2, `pubP`)
 
@@ -17,7 +17,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedPubP
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo SigabaNeo.Lattices.Algo.NegaG AdvancedEncryption.PE
   AdvancedEncryption.PE.BranchingProgram Matrix
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 variable {D : Dims}
 

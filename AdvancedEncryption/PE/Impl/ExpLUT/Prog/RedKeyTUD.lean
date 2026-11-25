@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTUc
 import PE.Impl.ExpLUT.Prog.RedKeyTDig
-
 /-!
 # Module 9: the `u` routine at `Dc` (cap `2^150`)
 

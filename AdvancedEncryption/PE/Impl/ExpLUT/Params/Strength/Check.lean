@@ -1,5 +1,4 @@
-import PE.Impl.ExpLUT.Params.Strength.Generic
-
+import SigabaNeoStd.Lattices.Estimator.CircularMersenne
 /-! The per-block-size checks of `Params/Strength.lean`, at ExpLUT's parameters: `q = 2^K − 1`
 with `K = 2^16` (`log₂ q = K · 2^P − 1` in fixed point), every sample count `≥ M₀ = N`, and
 

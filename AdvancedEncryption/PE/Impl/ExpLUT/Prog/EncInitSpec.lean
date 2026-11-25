@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncInit
 import PE.Impl.ExpLUT.Prog.EncCoins
-
 /-! # Scheme input words and the concrete encryption loader -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 

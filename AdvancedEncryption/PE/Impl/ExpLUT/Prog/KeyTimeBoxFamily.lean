@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeBoxDigits
-
 /-! Complete streaming range test and rejection latch, on the actual family program. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

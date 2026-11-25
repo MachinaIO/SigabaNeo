@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeQueueArithmetic
-
 /-! Exact fetched words and linear accumulation for statically selected key coordinates. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

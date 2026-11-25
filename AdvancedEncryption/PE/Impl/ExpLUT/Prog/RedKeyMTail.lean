@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyU
 import PE.Impl.ExpLUT.Prog.KeyOutput
-
 /-!
 # `KGsim` on the VM (module 8, back end): sample, simulated try, output
 

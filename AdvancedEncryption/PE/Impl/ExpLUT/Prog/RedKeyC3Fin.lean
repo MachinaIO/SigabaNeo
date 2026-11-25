@@ -3,7 +3,6 @@ import PE.Impl.ExpLUT.Prog.RedKeyCSize
 import PE.Impl.ExpLUT.Prog.RedKeyC4
 import PE.Impl.ExpLUT.Prog.RedKeyPktOk
 import PE.Impl.ExpLUT.Prog.RedKeyTSpec
-
 /-!
 # Cost certificate of `mid`: the assembly M1–M2 (+ glue) + M3 + M4
 

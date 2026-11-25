@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.KeyPrepareSize
 import PE.Impl.ExpLUT.Prog.SetupSize
 import SigabaNeoStd.Machines.Prog.AppendWCost
-
 /-! State-count bound for the complete framed KeyGen program, including both branches. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.MVM Cslib

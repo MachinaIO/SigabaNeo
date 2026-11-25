@@ -1,7 +1,7 @@
 import PE.Impl.ExpLUT.Prog.RedPubPRow
 import PE.Impl.ExpLUT.Prog.RedPubPInst
-import PE.Impl.ExpLUT.Prog.RedPubFront
-
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMHandler
+open SigabaNeo.Tape.RingVM.Buf SigabaNeo.Tape.RingVM.Handler SigabaNeo.Tape.RingVM.Hash
 /-!
 # The code of the reduction's public key (package G2, `pubP`)
 
@@ -30,7 +30,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedPubP
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 /-! ### Registers -/
 
@@ -278,7 +278,7 @@ def outDC : Code := ofList [.mv rOut rAd xCNK, .mv rOut rD2 xCNK]
 def pubC : Code := ofList [parseC, outBC, outHC, prepC, aPhC, a0C, ainC, autC D, outDC]
 
 /-- **The public-key component.** -/
-noncomputable def pubP : XProg 247 := RedIO.ringIO1 D.N D.K ra rb rOut r1 (tm D) (pubC D)
+noncomputable def pubP : XProg 247 := SigabaNeo.Tape.RingVM.Handler.ringIO1 D.N D.K ra rb rOut r1 (tm D) (pubC D)
 
 /-! ### Loops -/
 

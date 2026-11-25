@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC1
 import PE.Impl.ExpLUT.Prog.RedKeyC2
 import PE.Impl.ExpLUT.Prog.RedKeyMidM
-
 /-!
 # Cost certificate of `mid`: the glue steps and phases M1–M2 on the `247` tapes
 

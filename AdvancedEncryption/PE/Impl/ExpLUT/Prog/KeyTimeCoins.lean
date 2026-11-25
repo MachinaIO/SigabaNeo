@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCandidate
 import PE.Impl.RingBTVW.Prog.TightApp
-
 /-! Runtime of the actual framed fair-coin sampler and candidate generation. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog SigabaNeo.Tape.XProg

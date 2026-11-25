@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.DecMachineProg
 import PE.Impl.ExpLUT.AH.Conf
-
 /-!
 # The concrete `Dec` machine (package F4)
 

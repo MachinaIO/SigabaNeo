@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyPktStateD
-
 /-!
 # The packet stream, part 11: the public words (generic `N K`)
 

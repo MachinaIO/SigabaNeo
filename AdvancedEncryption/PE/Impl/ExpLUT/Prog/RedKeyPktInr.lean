@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyPktInl
-
 /-!
 # The packet stream, part 5: the slab codes of an `η` slab `inr (k, c')` (generic `N K`)
 

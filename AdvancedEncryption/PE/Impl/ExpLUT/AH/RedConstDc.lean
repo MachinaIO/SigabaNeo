@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.AH.RedCompsR
 import PE.Impl.ExpLUT.Prog.KeySizeConf
-
 /-!
 # The reduction's constant at `Dc` from coarse component bounds (package G2)
 
@@ -18,7 +17,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Generic
 open AdvancedEncryption.RingBTVW (compStatesG compBoundG postStatesG glue3)
-open AdvancedEncryption.RingBTVW.Prog (encLen)
+open SigabaNeo.Lattices.RingLWEWord (encLen)
 
 set_option exponentiation.threshold 2000 in
 theorem compStatesG_le_Dc {sP Sz2 Lc t : ℕ} (hsP : sP ≤ 2 ^ 16) (hSz : Sz2 ≤ 2 ^ 240)

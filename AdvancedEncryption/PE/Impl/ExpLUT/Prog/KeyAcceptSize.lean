@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyGatherSize
-
 /-! Syntax-size bounds for the actual radius initializer and acceptance branch. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo

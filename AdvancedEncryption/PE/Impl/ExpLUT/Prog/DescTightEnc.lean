@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncDescConf
 import PE.Impl.ExpLUT.Prog.DescTightBase
-
 /-!
 # Tight description length of the concrete encryption machine
 

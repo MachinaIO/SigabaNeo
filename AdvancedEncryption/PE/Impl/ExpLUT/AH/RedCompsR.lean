@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.AH.RedConst
 import PE.Impl.ExpLUT.AH.RedSecret
 import PE.Impl.ExpLUT.Prog.RedDecode
-
 /-!
 # The reduction's data with the decoder and the raw secret fixed (package G2)
 
@@ -21,7 +20,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape Cslib Cslib.Probability
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Generic
-open AdvancedEncryption.RingBTVW.Prog (encLen)
+open SigabaNeo.Lattices.RingLWEWord (encLen)
 
 variable (D : Dims) (kb : KeyBoxes D) (L : ℕ)
 

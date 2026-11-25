@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeEnter
-
 /-! The invalid-predicate branch: load the public key, emit a zero key, pack and erase. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

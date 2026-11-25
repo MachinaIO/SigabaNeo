@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncOutputTime
-
 /-! # The clock and total cost of the concrete package-P encryption machine -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncConf
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog

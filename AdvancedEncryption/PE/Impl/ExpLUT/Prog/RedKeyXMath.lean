@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeyXDrive
 import PE.Impl.ExpLUT.Prog.RedKeyMath
 import PE.Impl.ExpLUT.Prog.RedKeyTry
-
 /-!
 # `KGsim` on the VM (module 5b): the rows of `V_j` are the rows of the VM kernel
 

@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedChalTail
-
+open SigabaNeo.Tape.RingVM.Hash
 /-!
 # The law of the challenge component (package G2, `chalP`)
 
@@ -16,7 +16,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedChal
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices
   SigabaNeo.Lattices.Algo Matrix AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.ExpLUT.Prog.RedVM
+open SigabaNeo.Tape.RingVM.Hash
 
 variable {D : Dims}
 
@@ -133,21 +133,21 @@ theorem tm_kR (t : ℕ) (ht : t < 32) : tm D (kR t) = κD D t := by
 
 /-- The registers at the start of the code. -/
 noncomputable def w0 (σ : RawSec D) (μ : Bool) : St :=
-  RedIO.initW1 ra rb r1 (tm D) ((rawEnc D).enc σ) [μ]
+  SigabaNeo.Tape.RingVM.Handler.initW1 ra rb r1 (tm D) ((rawEnc D).enc σ) [μ]
 
 theorem w0_tmpl (σ : RawSec D) (μ : Bool) (r : Fin 200) (h0 : r ≠ ra) (h1 : r ≠ rb)
     (h2 : r ≠ r1) : w0 σ μ r = List.replicate (tm D r) false := by
-  simp [w0, RedIO.initW1, RedIO.initW, Function.update_apply, h0, h1, h2]
+  simp [w0, SigabaNeo.Tape.RingVM.Handler.initW1, SigabaNeo.Tape.RingVM.Handler.initW, Function.update_apply, h0, h1, h2]
 
 theorem w0_ra (σ : RawSec D) (μ : Bool) : w0 σ μ ra = (rawEnc D).enc σ := by
-  simp [w0, RedIO.initW1, RedIO.initW, Function.update_apply]
+  simp [w0, SigabaNeo.Tape.RingVM.Handler.initW1, SigabaNeo.Tape.RingVM.Handler.initW, Function.update_apply]
 
 theorem w0_rb (σ : RawSec D) (μ : Bool) : w0 σ μ rb = [μ] := by
-  simp [w0, RedIO.initW1, RedIO.initW, Function.update_apply]
+  simp [w0, SigabaNeo.Tape.RingVM.Handler.initW1, SigabaNeo.Tape.RingVM.Handler.initW, Function.update_apply]
 
 theorem w0_r1 (σ : RawSec D) (μ : Bool) :
     w0 σ μ r1 = true :: List.replicate (D.N * D.K - 1) false := by
-  simp [w0, RedIO.initW1, Function.update_apply]
+  simp [w0, SigabaNeo.Tape.RingVM.Handler.initW1, Function.update_apply]
   rfl
 
 theorem kR_notin (L : List (Fin 200)) (hL : ∀ j ∈ L, j.val < 48 ∨ 80 ≤ j.val) (t : ℕ) :
@@ -381,13 +381,13 @@ theorem law_chalP (hb : 1 ≤ D.b) (hb32 : D.b ≤ 32) (hN : wSt * 2 ^ 7 ≤ 2 *
     (σ : RawSec D) (μ : Bool) :
     XProg.law (chalP D) (io2 (R := 245) ((rawEnc D).enc σ) [μ] []) =
       PMF.pure (io2 (R := 245) ((ctEnc D).enc (chalCT D σ μ)) [] []) := by
-  rw [chalP, RedIO.law_ringIO1 D.N_pos D.K_pos (by decide) xOut r1 (by decide) (by decide)]
-  rw [show RedIO.initW1 ra rb r1 (tm D) ((rawEnc D).enc σ) [μ] = w0 σ μ from rfl,
+  rw [chalP, SigabaNeo.Tape.RingVM.Handler.law_ringIO1 D.N_pos D.K_pos (by decide) xOut r1 (by decide) (by decide)]
+  rw [show SigabaNeo.Tape.RingVM.Handler.initW1 ra rb r1 (tm D) ((rawEnc D).enc σ) [μ] = w0 σ μ from rfl,
     exec_chalC hb hb32 hN σ μ]
 
 /-- **The challenge component is well formed.** -/
 theorem wf_chalP : (chalP D).WF :=
-  RedIO.wf_ringIO1 _ _ _ _ _ _ _ _ (loopOkB_chalC D)
+  SigabaNeo.Tape.RingVM.Handler.wf_ringIO1 _ _ _ _ _ _ _ _ (loopOkB_chalC D)
 
 open AdvancedEncryption.PE.Generic in
 /-- **The `law_chal` field of `Generic.Comps`** for the reduction's challenger `spS` (any

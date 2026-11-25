@@ -12,8 +12,7 @@ import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMLib
   **`exec_push`**.
 -/
 
-namespace AdvancedEncryption.ExpLUT.Prog.RedVM
-
+namespace SigabaNeo.Tape.RingVM.Hash
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Lattices SigabaNeo.Lattices.Algo
 
 variable {N K : ℕ}
@@ -400,4 +399,4 @@ theorem exec_hashPhase (hK : 0 < K) (post : Code) (φ : ℕ → RM N K → RM N 
   · show exec N K (.rep xCnt (phaseBody post)) w xF = restF
     rw [hFf, List.drop_of_length_le (by omega)]; rfl
 
-end AdvancedEncryption.ExpLUT.Prog.RedVM
+end SigabaNeo.Tape.RingVM.Hash

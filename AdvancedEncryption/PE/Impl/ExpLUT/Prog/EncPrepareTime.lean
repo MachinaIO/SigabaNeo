@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncNormalizeTime
 import PE.Impl.ExpLUT.Prog.EncSamplerTimeConf
-
 /-! # Parser and sampler clock bounds before normalization -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog

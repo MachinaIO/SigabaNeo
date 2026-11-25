@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC4A
 import PE.Impl.ExpLUT.Prog.RedKeyMidM
-
 /-!
 # Phase M4 (part 2): the checked analyses of the MVM codes of M4 (`decide +kernel`)
 

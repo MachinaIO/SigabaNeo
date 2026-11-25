@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeNat
-
 /-! Actual constant-word initialization, including literal bits and unary templates. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

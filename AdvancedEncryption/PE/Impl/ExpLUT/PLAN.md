@@ -2003,3 +2003,7 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
     `T(2^100, 2^102) ≤ 2^252` (was `T(2^104,2^104) ≤ 2^300`), **`total_encProgram_tight`**, `time_encMachine_tight`.
 - Cost chain: `Sub.cost_implE_le` uses 2^253 for Enc; `Sub.Ncost = 2^745` (`cost_implX_le` from `time_decMachine ≤ 2^727`);
   total is dominated by the Enc description `2^744`.
+
+### Promotion to SigabaNeoStd (2026-11-25)
+
+Application-independent modules (import closure in Std only) moved to `SigabaNeoStd`, with `SigabaNeo.*` namespaces: `Params/Strength/Generic` → `Lattices/Estimator/CircularMersenne`; `Prog/DecTimeVM` → `Lattices/ProgAlgo/Mersenne/VMFlowClock` (`SigabaNeo.Tape.RingVM.Flow`); `Prog/RedChalVM` → `…/VMHash` (`RingVM.Hash`); `Prog/RedPubPKit` → `…/VMBuf` (`RingVM.Buf`); `Prog/RedPubFront` → `…/VMHandler` and `Prog/RedKeyMidRing` → `…/VMHandlerStash` (`RingVM.Handler`); `RingBTVW/Prog/DecodeWord` → `Lattices/RingLWEWord`; `Prog/RedKeyC1Un` → `Machines/Prog/AvoidTapes` (`SigabaNeo.Tape.XProg.Avoid`). Older notes above refer to the old paths.

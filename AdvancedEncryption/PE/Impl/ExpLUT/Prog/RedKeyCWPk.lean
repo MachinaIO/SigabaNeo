@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC3Fin
 import PE.Impl.ExpLUT.Prog.RedDecode
-
 /-!
 # The weight of the M3 code `pkOf RedKeyPkt.pkt` (`≤ 2^160`, hypothesis `hw3` of `c3_spec`)
 

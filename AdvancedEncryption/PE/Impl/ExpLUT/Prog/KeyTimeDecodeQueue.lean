@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeDecode
-
 /-! Linear candidate-queue growth using the actual decoder's exact ring-word output. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

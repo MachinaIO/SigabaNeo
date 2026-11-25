@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyXMath
-
 /-!
 # `KGsim` on the VM (module 5): `X = simX M (h1Of mpk) A_F R̂` into register `16`
 

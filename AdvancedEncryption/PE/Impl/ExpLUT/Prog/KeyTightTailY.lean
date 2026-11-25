@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTightPubY
-
 /-!
 # KeyGen: the deterministic attempt at the cap `2^121` (tight)
 

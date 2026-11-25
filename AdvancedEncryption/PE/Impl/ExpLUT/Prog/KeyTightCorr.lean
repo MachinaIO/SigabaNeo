@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTMain
 import PE.Impl.ExpLUT.Prog.KeyTimeCorrection
-
 /-!
 # KeyGen: a tight certificate for the real-trapdoor correction `correctionC`
 

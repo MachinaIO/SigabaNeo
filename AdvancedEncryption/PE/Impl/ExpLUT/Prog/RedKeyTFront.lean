@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTNeg
-
 /-!
 # Module 9: the key component with its scratch tapes cleared (`rkKeyPT`)
 

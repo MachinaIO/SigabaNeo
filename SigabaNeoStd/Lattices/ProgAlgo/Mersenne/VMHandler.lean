@@ -25,8 +25,7 @@ tapes):
 **`wf_ringIO`**, and the clock **`time_ringIO`**/**`len_ringIO`** from `RingVM.compile_time`.
 -/
 
-namespace AdvancedEncryption.ExpLUT.Prog.RedIO
-
+namespace SigabaNeo.Tape.RingVM.Handler
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM Cslib
 open SigabaNeo.Tape.XProg (natP law_natP natP_bounds natB)
 open scoped SigabaNeo.Tape.Prog
@@ -825,4 +824,4 @@ theorem bounds_ringIO1 {N K Mo : ℕ} (hNK : N * K ≤ Mo) (hK : K ≤ Mo) (hN :
     nlinarith
   omega
 
-end AdvancedEncryption.ExpLUT.Prog.RedIO
+end SigabaNeo.Tape.RingVM.Handler

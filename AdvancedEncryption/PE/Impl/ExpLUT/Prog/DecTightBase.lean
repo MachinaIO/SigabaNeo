@@ -1,13 +1,13 @@
-import PE.Impl.ExpLUT.Prog.DecTimeVM
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMFlowClock
 import PE.Impl.ExpLUT.Prog.DecMachineCode
-
+open SigabaNeo.Tape.RingVM.Flow
 /-!
 # Tight clock of the `Dec` code: certificates of blocks (part 1)
 
-The flow-sensitive abstract run `DecT.absRun` (`DecTimeVM`) is sound but too slow to run on the
+The flow-sensitive abstract run `SigabaNeo.Tape.RingVM.Flow.absRun` (`DecTimeVM`) is sound but too slow to run on the
 whole compiled `Dec` code at once in the kernel. Here it is run **block by block**, with the bound
 vectors at the block boundaries given as literals, and the blocks are glued with generic lemmas on
-`DecT.CodeOK` (no concrete code is unfolded by the glue):
+`SigabaNeo.Tape.RingVM.Flow.CodeOK` (no concrete code is unfolded by the glue):
 
 * `dtChk P c Bin Bout T`: the abstract run of `c` from `Bin` succeeds, ends below `Bout`
   (pointwise) and takes at most `T` steps; **`dtChk_sound`** gives `CodeOK`;
@@ -24,7 +24,7 @@ set_option autoImplicit false
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM SigabaNeo.Tape.Sym SigabaNeo.Tape.Prog.MersenneT
   SigabaNeo.Tape.Prog.SpecT
-open AdvancedEncryption.ExpLUT.Prog.DecT
+open SigabaNeo.Tape.RingVM.Flow
 
 /-! ### Packed literals -/
 

@@ -14,8 +14,8 @@ import PE.Impl.ExpLUT.Params.Strength.ScanB4
 import PE.Impl.ExpLUT.Params.Strength.ScanB5
 import PE.Impl.ExpLUT.Params.Strength.ScanB6
 import PE.Impl.ExpLUT.Params.Strength.ScanB7
-import PE.Impl.ExpLUT.Params.Strength.Generic
-
+import SigabaNeoStd.Lattices.Estimator.CircularMersenne
+open SigabaNeo.Lattices.Estimator.CircularMersenne
 /-!
 # The strength of ExpLUT's circular Ring-LWE assumption (`q = 2^(2^16) − 1`)
 

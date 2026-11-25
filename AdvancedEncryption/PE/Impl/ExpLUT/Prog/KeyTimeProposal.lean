@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimePublicKernels
-
 /-! Runtime composition of the actual digit and correction proposal. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

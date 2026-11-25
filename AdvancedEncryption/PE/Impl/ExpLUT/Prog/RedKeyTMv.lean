@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.RedKeyTCand
-
 /-!
 # Module 9: the clock of `mvSubC` (`18 := p − X u`, tight)
 

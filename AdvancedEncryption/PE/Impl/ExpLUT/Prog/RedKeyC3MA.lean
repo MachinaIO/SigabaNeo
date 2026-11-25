@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyC4A
 import PE.Impl.ExpLUT.Prog.KeyTimeTemplates
-
 /-!
 # Cost certificate of `mid`, phase M3 (part 1): the verified analyzer with **template leaves**
 

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncTightBase
-
 /-!
 # Per-tape bounds of the encryption parser (tight encryption clock, part 6)
 

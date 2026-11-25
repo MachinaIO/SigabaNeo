@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedSetupP
 import PE.Impl.ExpLUT.Prog.EncSamplersConf
-
 /-!
 # The setup component of the reduction at the concrete parameters (package G2, item 2)
 

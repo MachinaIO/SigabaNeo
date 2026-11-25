@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyGatherSize
-
 /-! Size bounds for the coefficient-stream builders in actual KeyGen public rows. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM

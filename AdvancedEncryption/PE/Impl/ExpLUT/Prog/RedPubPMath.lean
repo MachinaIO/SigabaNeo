@@ -2,7 +2,6 @@ import PE.Impl.ExpLUT.AH.RedSecret
 import PE.Impl.ExpLUT.AH.RedGame
 import PE.Impl.ExpLUT.Prog.DecCoefMath
 import PE.Impl.ExpLUT.Prog.DecFinalD
-
 /-!
 # The public key of the reduction, as words (package G2, `pubP`)
 

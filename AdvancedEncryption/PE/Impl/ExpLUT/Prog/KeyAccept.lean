@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyProposal
 import PE.Impl.ExpLUT.Prog.KeyBoxLoop
-
 /-! Constant initialization and single-try acceptance of an assembled key proposal. -/
 namespace AdvancedEncryption.ExpLUT.Prog
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.MVM Cslib

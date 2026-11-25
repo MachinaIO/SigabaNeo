@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncInitTime
-
 /-! # Normalization resets conservative parser/sampler bounds before the encryption core -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog

@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeEvalReady
-
 /-!
 # Cost certificate of `mid`, phase M2 (part 1): F3's public evaluator at the tape cap `2^104`
 

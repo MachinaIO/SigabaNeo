@@ -1,4 +1,4 @@
-import PE.Impl.ExpLUT.Prog.RedPubFront
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMHandler
 
 /-!
 # `mid` of the key component, phase M1 (generic part): a `RingVM` handler with a stash
@@ -22,10 +22,9 @@ pure (stash3 (io2 (exec c (initW1 …) ro) [] []) v₁ v₂ v₃)`; **`wf_ringIO
 set_option linter.unusedSectionVars false
 set_option linter.unusedSimpArgs false
 
-namespace AdvancedEncryption.ExpLUT.Prog.RedKeyMid
-
+namespace SigabaNeo.Tape.RingVM.Handler
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.RingVM Cslib
-open AdvancedEncryption.ExpLUT.Prog.RedIO
+open SigabaNeo.Tape.RingVM.Handler
 open scoped SigabaNeo.Tape.Prog
 
 /-! ### Codes that never mention a register -/
@@ -427,4 +426,4 @@ theorem wf_ringIOS (N K : ℕ) (ra rb ro r1 : Fin 200) (tm : Fin 200 → ℕ) (c
   ⟨⟨trivial, trivial, trivial, trivial, trivial, trivial⟩, wf_preP N K ra rb tm, trivial,
     ⟨trivial, trivial, trivial, trivial, trivial, trivial⟩, wf_compile c hc, trivial, wf_clrL _⟩
 
-end AdvancedEncryption.ExpLUT.Prog.RedKeyMid
+end SigabaNeo.Tape.RingVM.Handler

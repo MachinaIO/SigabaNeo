@@ -1,7 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeySimT
 import PE.Impl.ExpLUT.Prog.RedKeyX
 import PE.Impl.ExpLUT.Prog.RedKeySimSlab
-
 /-!
 # `KGsim` on the VM (module 6c at `D`): the rows of `R̂` from its slabs
 

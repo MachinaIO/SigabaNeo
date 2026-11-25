@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedKeyMTail
 import PE.Impl.ExpLUT.Prog.KeySizeConf
-
 /-!
 # Module 9: the state count of the back end `rkTailP` (`≤ 2^195`)
 

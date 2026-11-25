@@ -16,8 +16,7 @@ where `c1Mix S ℓ g` is `g` on `S` and `ℓ` elsewhere. Used for the parked sta
 
 set_option linter.unusedSectionVars false
 
-namespace AdvancedEncryption.ExpLUT.Prog.RedKeyC
-
+namespace SigabaNeo.Tape.XProg.Avoid
 open SigabaNeo SigabaNeo.Tape
 
 variable {k : ℕ}
@@ -358,4 +357,4 @@ theorem c1X_time : ∀ {k : ℕ} (S : Fin k → Prop) [DecidablePred S] (V : ℕ
       Nat.mul_le_mul_left _ (by nlinarith)
     nlinarith
 
-end AdvancedEncryption.ExpLUT.Prog.RedKeyC
+end SigabaNeo.Tape.XProg.Avoid

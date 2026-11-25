@@ -1,6 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyTightChain
 import PE.Impl.ExpLUT.Prog.KeyTightEval
-
 /-!
 # KeyGen: the public evaluator with the tight chain (Stage 2d)
 

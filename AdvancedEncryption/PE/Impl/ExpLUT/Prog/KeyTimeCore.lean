@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeAccept
-
 /-! Candidate certificates that retain the constants needed by the real key attempt. -/
 set_option exponentiation.threshold 1000
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

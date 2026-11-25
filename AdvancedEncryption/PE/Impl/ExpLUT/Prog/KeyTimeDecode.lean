@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.KeyTimePrepare
-
 /-! Exact output lengths and linear coefficient growth in candidate decoding. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog

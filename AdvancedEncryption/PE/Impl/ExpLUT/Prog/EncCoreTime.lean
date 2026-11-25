@@ -1,5 +1,4 @@
 import PE.Impl.ExpLUT.Prog.EncLoopTime
-
 /-! # Clock of the complete deterministic encryption core in any tape bank -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog
