@@ -629,7 +629,13 @@ class WorkflowTest(unittest.TestCase):
         step = next(s["run"] for s in decide["steps"] if s.get("name") == "Decide")
         for flag in ("--exit-code result/exit", '--env "$ENV_ID"', '--revision "$REVISION"'):
             self.assertIn(flag, step)
-        report = next(s["run"] for s in decide["steps"] if s.get("name") == "Report on the pull request")
+        self.assertEqual(decide["permissions"], {"contents": "read"})
+        rep = gate["jobs"]["report"]
+        self.assertIn("pull_request_target", rep["if"])
+        self.assertEqual(set(rep["permissions"]), {"contents", "pull-requests", "issues"})
+        self.assertNotIn("GATE_APP", yaml.dump(gate))               # no long-lived key
+        self.assertNotIn("environment", rep)
+        report = next(s["run"] for s in rep["steps"] if s.get("name") == "Report on the pull request")
         self.assertIn('--match-head-commit "$REVISION"', report)
         self.assertIn("gh label create", report)
         self.assertNotIn("|| true", report)                 # labelling never fails silently
@@ -682,7 +688,8 @@ class GateScriptTest(Tmp):
         self.assertEqual(T.label_changes(["bug", "rejected"], ["needs-maintainer"]),
                          [("add", "needs-maintainer"), ("remove", "rejected")])
         gate = yaml.safe_load((D.CORE / "templates/dag/.github/workflows/gate.yml").read_text())
-        steps = {s.get("name"): s["run"] for s in gate["jobs"]["decide"]["steps"] if "run" in s}
+        steps = {s.get("name"): s["run"] for job in ("decide", "report")
+                 for s in gate["jobs"][job]["steps"] if "run" in s}
         decide = steps["Decide"]
         prepare = decide[decide.index("python3 - <<'PY'"):]
         work = self.tmp / "job"

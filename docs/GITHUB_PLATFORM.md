@@ -300,7 +300,7 @@ Nothing the container can write is mounted; the result is the verifier's standar
 the exit status is recorded outside (section 6, `gate.yml`).
 
 **`gate.yml`** runs on `pull_request_target` and `merge_group`. Its workflow file always comes from
-the base branch. It has three jobs:
+the base branch. It has four jobs:
 
 1. **precheck.** Permissions: `contents: read`, `pull-requests: read`. It never checks out the pull
    request. It reads the default environment from the base and checks out the core's tools at the
@@ -343,14 +343,16 @@ the base branch. It has three jobs:
    - its `ok` and its exit status agree with the items;
    - its revision is the commit the precheck read.
 
-   The conclusion is derived from the items' statuses. For `pull_request_target`, it takes a GitHub App token
-   from the `gate` Environment (which only `main` may use), comments the verdict, labels the pull
-   request with the gate's labels of the latest decision (`not-accepted` if the author is not
-   accepted, `rejected`, or `needs-maintainer`; earlier gate labels are removed, others left
-   alone; a missing label is created, and a failure to label fails the step), and enables
-   auto-merge for
-   `automerge`
-   authors, for the verified commit only (`--match-head-commit`). Its conclusion is the required check.
+   The conclusion is derived from the items' statuses, and is the required check. This job is
+   read only.
+4. **report** (for `pull_request_target` only). The only job with write access, through the
+   workflow's own token (`contents`, `pull-requests` and `issues: write`), which expires with the
+   job; there is no long-lived key. It runs no pull request code and reads only `decide`'s
+   decision. It comments the verdict, labels the pull request with the gate's labels of the latest
+   decision (`not-accepted` if the author is not accepted, `rejected`, or `needs-maintainer`;
+   earlier gate labels are removed, others left alone; a missing label is created, and a failure
+   to label fails the step), and enables auto-merge for `automerge` authors, for the verified
+   commit only (`--match-head-commit`).
 
 For a `merge_group`, the same jobs run against the merge group's head (the latest `main` with the
 pull request), which catches pull requests that depend on each other. The precheck has already
@@ -358,11 +360,12 @@ guaranteed that the merge group's workflow files are the base's.
 
 The other workflows:
 
-- **`records.yml`** runs on push to `main`. It downloads the merge group run's result for the commit,
-  checks its shape and its exit status, appends the records (`dag_tools.py records`) and pushes
-  `records`. The environment, and with it the file written, comes from the workflow; the result
-  must be about it. It runs no Lean.
-- **`index.yml`** runs on push to `main`, after `records` and `reverify`, and by hand. It publishes
+- **`records.yml`** runs on push to `main`, every 10 minutes, and by hand. For each of the recent
+  commits of `main` that no record names yet, it downloads the result of the commit's merge group
+  run, checks its shape and its exit status, appends the records (`dag_tools.py records`) and
+  pushes `records`; then it starts `index`. The environment, and with it the file written, comes
+  from the workflow; the result must be about it. It runs no Lean.
+- **`index.yml`** runs on push to `main`, when `records` starts it, after `reverify`, and by hand. It publishes
   `index.json` and `INDEX.md` to GitHub Pages: statuses per environment, claims with their metadata
   and refutation sketches, open leaves, `needs_port`, stale solutions, notes, std modules and std
   candidates. It parses files only and runs no Lean.
@@ -378,14 +381,16 @@ The other workflows:
   replaced). Each writer appends to the latest tip and starts again from it if a push is rejected.
   Appending is idempotent per run and node.
 - **`formalpedia.yml`** runs weekly. It converts Formalpedia's new items into DAG files
-  (`dag_tools.py formalpedia`) and opens a pull request with the App's token. That pull request goes
-  through the same gate. Nothing is taken on trust: each item is checked in this environment.
+  (`dag_tools.py formalpedia`) and opens a pull request with a GitHub App's token (it is optional,
+  and the only workflow that needs an App: a pull request opened with the workflow's own token
+  would not start the gate). That pull request goes through the same gate. Nothing is taken on trust: each item is checked in this environment.
 - In the core, **`image.yml`** builds the image on a tag, pushes it to GHCR, and attaches the std
   manifest, the fingerprint and the image digest to the release (`environment.json`). **`ci.yml`**
   runs the tests that need no Lean.
 
-`GITHUB_TOKEN` pushes and merges do not trigger other workflows. That is why merges use the App's
-token and `index.yml` listens to `workflow_run`.
+`GITHUB_TOKEN` pushes and merges do not trigger other workflows (dispatches do). That is why
+`records.yml` also runs on a schedule, and starts `index.yml` with a dispatch, and why `index.yml`
+listens to `workflow_run` of `reverify`.
 
 ### Defense in depth
 
@@ -415,7 +420,7 @@ kernel replay of the solution. No self-hosted runners are used.
 | Threat | Countermeasure |
 | --- | --- |
 | A pull request edits the workflow so that it passes | the workflow comes from the base branch (`pull_request_target`); precheck rejects any file outside `dag/` |
-| Lean code steals a token or secret | Lean runs only in the container, which has no token, no secret and no network; the App key is in a `main`-only Environment used by `decide`, which runs no pull request code |
+| Lean code steals a token or secret | Lean runs only in the container, which has no token, no secret and no network; the only write token is the `report` job's own, which runs no pull request code and expires with the job |
 | Lean code tampers with later steps or the verdict | the container is separate; the steps outside read one JSON file and check it against its schema |
 | Cache poisoning | the image is pinned by digest; no job saves a cache |
 | A forged status check | the ruleset requires `decide` from the GitHub Actions app; fork tokens are read only |
@@ -473,7 +478,7 @@ kernel replay of the solution. No self-hosted runners are used.
    `python3 python/dag_tools.py import-server <server-data> --out ../dag`.
 3. Apply the GitHub settings listed in the new repository's `README.md`:
    - permissions, with forks only;
-   - the gate's App and the `gate` Environment;
+   - the labels;
    - the rulesets of `main` (the required check `decide`, the merge queue, code owners) and of
      `records`;
    - Pages;
