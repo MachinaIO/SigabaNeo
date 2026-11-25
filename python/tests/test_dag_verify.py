@@ -97,6 +97,21 @@ PR = {
            "theorem solution : T.two = 2 := rfl\n", "platform"),
     **node("solution", "T.two_pos", "import Definitions.Def_Two\nimport Theorems.Thm_T_two_pos\n\n"
            "theorem solution : 0 < T.two := T.two_pos\n", "self"),
+    # Recursion and inductive types: Lean's compiler code for them (`f._unsafe_rec`, `T.ctorIdx`,
+    # `T.ctorIdx._impl`) is allowed; `partial`, `unsafe` and `implemented_by` are not, also under
+    # those names (the syntactic filter rejects them first).
+    **node("definition", "Rec", "inductive Tree | leaf | node (l r : Tree)\n\n"
+           "def Tree.size : Tree → Nat\n  | .leaf => 1\n  | .node l r => l.size + r.size + 1\n\n"
+           "def halve : Nat → Nat\n  | 0 => 0\n  | n+1 => halve ((n+1) / 2) + 1\ndecreasing_by omega\n\n"
+           "class inductive Two | a | b\n"),
+    **node("definition", "Partial", "partial def loop (n : Nat) : Nat := loop n\n"),
+    **node("definition", "ImplBy", "def impl (n : Nat) : Nat := n\n\n"
+           "@[implemented_by impl] def f (n : Nat) : Nat := 0\n"),
+    **node("definition", "FakeRec", "def g (n : Nat) : Nat := n\n\n"
+           "unsafe def g._unsafe_rec (n : Nat) : Nat := 0\n"),
+    **node("definition", "FakeCtorIdx", "inductive P : Prop | a | b\n\n"
+           "unsafe def P.ctorIdx._impl : P → Nat := fun _ => 0\n\n"
+           "@[implemented_by P.ctorIdx._impl] def P.ctorIdx : P → Nat := fun _ => 0\n"),
     **node("definition", "Sorry", "def sorryNat : Nat := sorry\n"),
     **node("theorem", "T.extra", "import Definitions.Def_Two\n\ndef helper : Nat := 1\n\n"
            "theorem T.extra : T.two = 2 := by sorry\n"),
@@ -125,6 +140,11 @@ EXPECTED = {
     "dag/Solutions/T_two_eq/Sub_skip.lean": "LINT",
     "dag/Solutions/T_two_eq/Sub_platform.lean": "FAILED",
     "dag/Solutions/T_two_pos/Sub_self.lean": "FAILED",
+    "dag/Definitions/Def_Rec.lean": "OK",
+    "dag/Definitions/Def_Partial.lean": "LINT",
+    "dag/Definitions/Def_ImplBy.lean": "LINT",
+    "dag/Definitions/Def_FakeRec.lean": "LINT",
+    "dag/Definitions/Def_FakeCtorIdx.lean": "LINT",
     "dag/Definitions/Def_Sorry.lean": "FAILED",
     "dag/Theorems/Thm_T_extra.lean": "FAILED",
 }
@@ -189,6 +209,9 @@ class VerifyTest(unittest.TestCase):
         self.assertIn("debug.skipKernelTC", items["dag/Solutions/T_two_eq/Sub_skip.lean"]["message"])
         self.assertIn("SigabaNeo.Platform", items["dag/Solutions/T_two_eq/Sub_platform.lean"]["message"])
         self.assertIn("its own target", items["dag/Solutions/T_two_pos/Sub_self.lean"]["message"])
+        for name, why in [("Partial", "`partial`"), ("ImplBy", "`implemented_by`"),
+                          ("FakeRec", "`unsafe`"), ("FakeCtorIdx", "`unsafe`")]:
+            self.assertIn(why, items[f"dag/Definitions/Def_{name}.lean"]["message"])
 
     def test_decision(self):
         pre = {"ok": True, "accepted": True, "automerge": True, "problems": [], "added": sorted(PR)}
