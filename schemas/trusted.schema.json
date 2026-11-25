@@ -12,8 +12,10 @@
   "mode": {
    "enum": [
     "allowlist",
+    "collaborators",
     "open"
-   ]
+   ],
+   "description": "allowlist: only `accept`; collaborators: whoever has write access to the repository, and `accept`; open: everyone. Those with write access in `collaborators` mode, and those in `automerge`, are merged automatically when they pass."
   },
   "accept": {
    "type": "array",

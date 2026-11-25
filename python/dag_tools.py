@@ -114,16 +114,26 @@ def fetch(repo: str, out: Path, token: str | None, base: str, head: str) -> list
 # -- precheck ------------------------------------------------------------------------------------
 
 
+WRITERS = ("admin", "maintain", "write")
+
+
 def precheck(base: D.Dag, rows: list[dict], content: Path, author: str,
-             revision: str | None = None) -> dict:
+             revision: str | None = None, permission: str | None = None) -> dict:
     """Everything that can be decided without Lean: the author, the paths (only additions under
-    `dag/`), sizes, metadata, notes and imports."""
+    `dag/`), sizes, metadata, notes and imports. `permission` is the author's permission on the
+    repository as GitHub reports it (`admin`, `write`, `read`, `none`), which the `collaborators`
+    mode needs."""
     trusted = base.trusted()
     problems: list[str] = []
-    accepted = trusted.get("mode") == "open" or author in trusted.get("accept", [])
+    mode = trusted.get("mode")
+    # `collaborators`: whoever has write access to the repository, and those listed.
+    writer = mode == "collaborators" and permission in WRITERS
+    accepted = mode == "open" or writer or author in trusted.get("accept", [])
     if not accepted:
-        problems.append(f"@{author} may not submit to this DAG yet (meta/trusted.json); "
-                        "nothing of the pull request was run")
+        why = (f"@{author} has no write access to this repository (permission "
+               f"{permission or 'unknown'})" if mode == "collaborators"
+               else f"@{author} may not submit to this DAG yet")
+        problems.append(f"{why} (meta/trusted.json); nothing of the pull request was run")
         return {"ok": False, "accepted": False, "automerge": False, "problems": problems,
                 "added": [], "revision": revision}
     if not rows:
@@ -224,7 +234,7 @@ def precheck(base: D.Dag, rows: list[dict], content: Path, author: str,
         sup = meta.get("supersedes")
         if isinstance(sup, str) and not ref_exists(base, f"note:{sup}", added, in_pr):
             problems.append(f"{f}: supersedes: no note {sup}")
-    automerge = author in trusted.get("automerge", [])
+    automerge = writer or author in trusted.get("automerge", [])
     return {"ok": not problems, "accepted": True, "automerge": automerge,
             "problems": problems, "added": sorted(added), "revision": revision}
 
@@ -789,6 +799,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dag", type=Path, required=True)
     p.add_argument("--fetched", type=Path, required=True, help="the output of `fetch`")
     p.add_argument("--author", required=True)
+    p.add_argument("--permission", help="the author's permission on the repository (GitHub's "
+                   "`admin`, `write`, `read` or `none`), for the `collaborators` mode")
     p.add_argument("--out", type=Path, required=True)
     c = sub.add_parser("check-result")
     c.add_argument("result", type=Path)
@@ -855,7 +867,7 @@ def main(argv: list[str] | None = None) -> int:
     elif a.action == "precheck":
         fetched = json.loads((a.fetched / "files.json").read_text())
         out = precheck(D.Dag(a.dag), fetched["files"], a.fetched / "files", a.author,
-                       fetched.get("revision"))
+                       fetched.get("revision"), a.permission)
         a.out.write_text(json.dumps(out, indent=1) + "\n")
         for line in out["problems"]:
             print(line)

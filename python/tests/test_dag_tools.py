@@ -187,6 +187,37 @@ class PrecheckTest(Tmp):
         self.assertEqual((d["conclusion"], d["labels"]), ("failure", ["not-accepted"]))
         self.assertNotIn("close", d)                      # a decision never closes a PR
 
+    def test_collaborators_mode(self):
+        """`collaborators`: those with write access (GitHub's admin, maintain or write) are
+        accepted and merged automatically; those listed in `accept` too; nobody else, and an
+        unknown permission accepts nobody unlisted."""
+        (self.base / "meta/trusted.json").write_text(json.dumps(
+            {"mode": "collaborators", "accept": ["bot[bot]"], "automerge": []}))
+        self.dag = D.Dag(self.base)
+        files = sol("A.b", "x1")
+        content = self.tmp / "fetched"
+        write(content, files)
+        rows = [{"filename": f, "status": "added", "type": "blob", "mode": "100644",
+                 "size": len(x.encode())} for f, x in files.items()]
+        for perm in ("admin", "maintain", "write"):
+            r = T.precheck(self.dag, rows, content, "carol", permission=perm)
+            self.assertTrue(r["accepted"] and r["ok"] and r["automerge"], perm)
+        for perm in ("read", "triage", "none", None):
+            r = T.precheck(self.dag, rows, content, "mallory", permission=perm)
+            self.assertFalse(r["accepted"], perm)
+            self.assertIn("no write access", r["problems"][0])
+        r = T.precheck(self.dag, rows, content, "bot[bot]", permission="none")
+        self.assertTrue(r["accepted"] and r["ok"])
+        self.assertFalse(r["automerge"])
+        self.assertEqual(D.validate({"mode": "collaborators", "accept": [], "automerge": []},
+                                    D.schema("trusted")), [])
+        # The permission matters only in `collaborators` mode.
+        (self.base / "meta/trusted.json").write_text(json.dumps(
+            {"mode": "allowlist", "accept": [], "automerge": []}))
+        self.dag = D.Dag(self.base)
+        self.assertFalse(T.precheck(self.dag, rows, content, "carol", permission="admin")
+                         ["accepted"])
+
     def test_commented_import(self):
         """A trailing comment on an import line is not an import."""
         files = thm("A.c", "two = 2", "import Definitions.Def_Two -- the number two")
