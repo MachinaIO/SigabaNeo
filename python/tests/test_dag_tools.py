@@ -639,7 +639,7 @@ class WorkflowTest(unittest.TestCase):
         self.assertIn('--match-head-commit "$REVISION"', report)
         self.assertIn("gh label create", report)
         self.assertNotIn("|| true", report)                 # labelling never fails silently
-        readme = (D.CORE / "templates/dag/README.md").read_text()
+        readme = (D.CORE / "docs/GITHUB_PLATFORM.md").read_text()
         for label in ("not-accepted", "rejected", "needs-maintainer"):
             self.assertIn(label, readme)
         fetch = next(s for s in gate["jobs"]["precheck"]["steps"]
