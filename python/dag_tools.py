@@ -906,7 +906,8 @@ def main(argv: list[str] | None = None) -> int:
     elif a.action == "init":
         init(a.dir, a.core_url, a.core_rev, a.image, a.owner, a.env_id,
              a.core_path.resolve() if a.core_path else None)
-        print(f"{a.dir}: a new DAG repository (see its README for the GitHub settings)")
+        print(f"{a.dir}: a new DAG repository (apply the GitHub settings of the core's "
+              "docs/GITHUB_PLATFORM.md, section 10)")
     elif a.action == "import-server":
         print(json.dumps(import_server(a.data_dir, a.out)))
     elif a.action == "formalpedia":
