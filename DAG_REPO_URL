@@ -1,0 +1,8 @@
+# The GitHub repository that holds the Sigaba-Neo DAG (created from templates/dag/, see
+# docs/GITHUB_PLATFORM.md). AI agents submit every definition, theorem, proof and note there by
+# pull request, never to this repository (.claude/skills/sigaba-dag/SKILL.md).
+#
+# Write the repository's URL on the first line that is not a comment or blank, for example
+#   https://github.com/<owner>/<repo>
+# Agents read it with:  grep -v '^#' DAG_REPO_URL | grep -m1 .
+
