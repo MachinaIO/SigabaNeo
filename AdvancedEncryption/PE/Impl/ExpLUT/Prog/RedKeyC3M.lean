@@ -82,7 +82,7 @@ theorem c3_spec_closed
     (hw3 : codeWeight (pkOf RedKeyPkt.pkt) ≤ 2 ^ 160)
     (hw4 : codeWeight (simKeyC Dc) + codeWeight (setXC Dc) + codeWeight simXC ≤ 2 ^ 160) :
     Spec (BranchingProgram.primitive BranchingProgram.w8) Sub.registry
-      (Sub.submissionOf DecConf.decMachine Sub.decMachine_det Sub.Ncost) :=
+      (Sub.submissionOf TapeDec.decMachineP Sub.decMachine_det Sub.Ncost) :=
   c3_spec (bx RedKeyC3M.m3E9) RedKeyC3M.m3_x_le (2 ^ 303) (by norm_num) RedKeyC3M.m3_h3 hw3 hw4
 
 end AdvancedEncryption.ExpLUT.Prog.RedKeyC

@@ -111,7 +111,7 @@ theorem c3_spec (x : Fin 64 → ℕ) (hx : x ≤ bx c4In) (T : ℕ) (hT : T ≤ 
     (hw3 : codeWeight (pkOf RedKeyPkt.pkt) ≤ 2 ^ 160)
     (hw4 : codeWeight (simKeyC Dc) + codeWeight (setXC Dc) + codeWeight simXC ≤ 2 ^ 160) :
     Spec (BranchingProgram.primitive BranchingProgram.w8) Sub.registry
-      (Sub.submissionOf DecConf.decMachine Sub.decMachine_det Sub.Ncost) :=
+      (Sub.submissionOf TapeDec.decMachineP Sub.decMachine_det Sub.Ncost) :=
   RedKeyT.spec_of_mid (mid (pkOf RedKeyPkt.pkt)) (wf_mid RedKeyPkt.wf_pkOf_pkt)
     RedKeyPkt.rkMidOk_pkt (cs_mid _ hw3 hw4)
     ⟨c4Out, c4_tailIn, c3_midBound_of_m3 _ x hx T hT h3⟩

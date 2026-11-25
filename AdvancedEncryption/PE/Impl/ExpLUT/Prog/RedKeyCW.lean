@@ -80,7 +80,7 @@ theorem cw_m4 : codeWeight (simKeyC Dc) + codeWeight (setXC Dc) + codeWeight sim
 theorem c3_spec_w (x : Fin 64 → ℕ) (hx : x ≤ bx c4In) (T : ℕ) (hT : T ≤ 2 ^ 438)
     (h3 : Cert (MVM.compile (pkOf RedKeyPkt.pkt)) c3In (c4L x) T) :
     Spec (BranchingProgram.primitive BranchingProgram.w8) Sub.registry
-      (Sub.submissionOf DecConf.decMachine Sub.decMachine_det Sub.Ncost) :=
+      (Sub.submissionOf TapeDec.decMachineP Sub.decMachine_det Sub.Ncost) :=
   c3_spec x hx T hT h3 cw_pkOf cw_m4
 
 end AdvancedEncryption.ExpLUT.Prog.RedKeyC

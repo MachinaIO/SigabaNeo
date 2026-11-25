@@ -40,7 +40,7 @@ theorem spec_of_mid_pkg {Lt Tt : ℕ} (pk : RkTailPkg Lt Tt) (mid : XProg 247)
     (hwf : mid.WF) (hm : RkMidOk mid) (hsm : mid.size ≤ 2 ^ 190)
     (hb : ∃ a, RkTailIn a ∧ RkMidBound mid a) :
     Spec (BranchingProgram.primitive BranchingProgram.w8) Sub.registry
-      (Sub.submissionOf DecConf.decMachine Sub.decMachine_det Sub.Ncost) :=
+      (Sub.submissionOf TapeDec.decMachineP Sub.decMachine_det Sub.Ncost) :=
   Sub.spec_of_keyComp (keyCompOfIn pk mid hwf hm hsm hb)
 
 end AdvancedEncryption.ExpLUT.Prog.RedKeyT

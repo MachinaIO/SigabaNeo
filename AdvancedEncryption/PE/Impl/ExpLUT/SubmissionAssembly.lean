@@ -113,7 +113,7 @@ set_option exponentiation.threshold 2000 in
 /-- **The final statement from the key component.** -/
 theorem spec_of_keyComp (kc : KeyComp) :
     Spec (BranchingProgram.primitive BranchingProgram.w8) registry
-      (submissionOf DecConf.decMachine decMachine_det Ncost) :=
+      (submissionOf TapeDec.decMachineP decMachine_det Ncost) :=
   spec_of_rawComps (rawCompsOf kc) (by norm_num [rawCompsOf]) (size_le kc) (compTime_le kc)
     (show (2 : ℕ) ^ 101 ≤ 2 ^ 125 from Nat.pow_le_pow_right (by norm_num) (by norm_num))
     (show (2 : ℕ) ^ 102 ≤ 2 ^ 125 from Nat.pow_le_pow_right (by norm_num) (by norm_num)) kc.hLk

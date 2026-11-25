@@ -4,6 +4,7 @@ import PE.Impl.ExpLUT.Prog.EncTightFront
 import PE.Impl.ExpLUT.Prog.SetupConf
 import PE.Impl.ExpLUT.Prog.SetupTight
 import PE.Impl.ExpLUT.Prog.DescTightEnc
+import PE.Impl.ExpLUT.Prog.TapeEncTime
 import PE.Impl.ExpLUT.Prog.KeyBoxW
 import PE.Impl.ExpLUT.AH.Correct
 import PE.Impl.ExpLUT.AH.RedCompsR
@@ -64,7 +65,7 @@ noncomputable def deps : PropIndex → List (Premise registry)
 noncomputable def implE (decM : Machine) (hdet : decM.Deterministic) : Impl PE.sig where
   machine
     | .setup => setupMP (binSampler Dc)
-    | .enc => EncConf.encMachine
+    | .enc => TapeEnc.encMachineP
     | .keyGen => KeyCore.keyMachine
     | .dec => decM
     | .eval => evalMachineX
@@ -90,7 +91,7 @@ section
 variable (decM : Machine) (hdet : decM.Deterministic)
 
 theorem implE_setup : (implE decM hdet).machine .setup = setupMP (binSampler Dc) := rfl
-theorem implE_enc : (implE decM hdet).machine .enc = EncConf.encMachine := rfl
+theorem implE_enc : (implE decM hdet).machine .enc = TapeEnc.encMachineP := rfl
 theorem implE_key : (implE decM hdet).machine .keyGen = KeyCore.keyMachine := rfl
 theorem implE_dec : (implE decM hdet).machine .dec = decM := rfl
 theorem implE_eval : (implE decM hdet).machine .eval = evalMachineX := rfl
@@ -101,7 +102,7 @@ theorem setupSpec_Dc : SetupSpec Dc (χbin Dc) (setupMP (binSampler Dc)) :=
 theorem implSpec_implE :
     ImplSpec Dc kbDc predLen (implE decM hdet) χc χc χfl where
   setup := setupSpec_Dc
-  enc := EncConf.encSpec_encMachine
+  enc := TapeEnc.encSpec_encMachineP
   key := KeyCore.keySpec_keyMachine
   keyLong := KeyCore.keyLongSpec_keyMachine
   eval := rfl
@@ -109,7 +110,7 @@ theorem implSpec_implE :
 /-- **Correctness** given the `Dec` specification. -/
 theorem correct_implE (hD : DecSpec Dc predLen decM) :
     Correct (univ w8) params (implE decM hdet) :=
-  correct_of_specs (L := predLen) setupSpec_Dc EncConf.encSpec_encMachine KeyCore.keySpec_keyMachine hD
+  correct_of_specs (L := predLen) setupSpec_Dc TapeEnc.encSpec_encMachineP KeyCore.keySpec_keyMachine hD
     rfl le_rfl
 
 /-- **Expressiveness.** -/
@@ -133,7 +134,7 @@ theorem attributeHiding_implE (rc : RawComps Dc kbDc predLen (implE decM hdet) �
 /-- The cost from the four clocks and description lengths. -/
 theorem cost_implE_le {T S : ℕ} (hT : decM.time ≤ T) (hS : decM.descLen ≤ S) :
     PE.cost params (implE decM hdet) ≤
-      2 ^ 241 + 1 * 2 ^ 508 + 1 * (2 ^ 253 + T) + (2 ^ 233 + 2 ^ 620 + 2 ^ 635 + S) := by
+      2 ^ 241 + 1 * 2 ^ 508 + 1 * (2 ^ 253 + T) + (2 ^ 233 + 2 ^ 620 + 2 ^ 325 + S) := by
   have hmb : Dc.mb = 3 * 2 ^ 40 + 408 := by
     show mbar = _
     rw [mbar_def, Kc_def]; norm_num [en]
@@ -147,9 +148,9 @@ theorem cost_implE_le {T S : ℕ} (hT : decM.time ≤ T) (hS : decM.descLen ≤ 
   have hkd : ((implE decM hdet).machine .keyGen).descLen ≤ 2 ^ 620 := by
     rw [implE_key]; exact KeyCore.descLen_keyMachine
   have he : ((implE decM hdet).machine .enc).time ≤ 2 ^ 253 := by
-    rw [implE_enc]; exact EncConf.time_encMachine_tight
-  have hed : ((implE decM hdet).machine .enc).descLen ≤ 2 ^ 635 := by
-    rw [implE_enc]; exact EncConf.descLen_encMachine_tight
+    rw [implE_enc]; exact TapeEnc.time_encMachineP
+  have hed : ((implE decM hdet).machine .enc).descLen ≤ 2 ^ 325 := by
+    rw [implE_enc]; exact TapeEnc.descLen_encMachineP
   have hd : ((implE decM hdet).machine .dec).time ≤ T := by rw [implE_dec]; exact hT
   have hdd : ((implE decM hdet).machine .dec).descLen ≤ S := by rw [implE_dec]; exact hS
   exact cost_le_parts hs hk he hd hsd hkd hed hdd

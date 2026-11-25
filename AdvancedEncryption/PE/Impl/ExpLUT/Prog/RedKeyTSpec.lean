@@ -31,7 +31,7 @@ noncomputable def keyCompOfMid (mid : XProg 247) (hwf : mid.WF) (hm : RkMidOk mi
 theorem spec_of_mid (mid : XProg 247) (hwf : mid.WF) (hm : RkMidOk mid)
     (hsm : mid.size ≤ 2 ^ 190) (hb : ∃ a, RkTailIn a ∧ RkMidBound mid a) :
     Spec (BranchingProgram.primitive BranchingProgram.w8) Sub.registry
-      (Sub.submissionOf DecConf.decMachine Sub.decMachine_det Sub.Ncost) :=
+      (Sub.submissionOf TapeDec.decMachineP Sub.decMachine_det Sub.Ncost) :=
   spec_of_mid_pkg rkTailPkg mid hwf hm hsm hb
 
 end AdvancedEncryption.ExpLUT.Prog.RedKeyT

@@ -24,7 +24,7 @@ theorem spec_of_costs (a : Fin 105 → ℕ) (hb : RedKeyT.RkMidBound midK a) (Lt
     (ht : RedKeyT.RkTailCert a Lt Tt) (hLt : Lt ≤ 2 ^ 125) (hTt : Tt ≤ 2 ^ 449)
     (hsm : midK.size ≤ 2 ^ 190) (hst : (rkTailP Dc Bk rSmall).size ≤ 2 ^ 195) :
     Spec (BranchingProgram.primitive BranchingProgram.w8) registry
-      (submissionOf DecConf.decMachine decMachine_det Ncost) :=
+      (submissionOf TapeDec.decMachineP decMachine_det Ncost) :=
   spec_of_keyComp (RedKeyT.keyCompOfT midK (RedKeyMid.wf_mid RedKeyPkt.wf_pkOf_pkt) RedKeyPkt.rkMidOk_pkt a hb Lt Tt
     ht hLt hTt hsm hst)
 
