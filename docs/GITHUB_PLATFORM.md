@@ -76,10 +76,11 @@ Rules:
   `SigabaNeoStd`, `Definitions.Def_*`, `Theorems.Thm_*`. Also `SigabaNeo.Trusted.*` and
   `SigabaNeo.Assemble`. Never `Solutions.*` (every solution declares `solution`), and never
   `SigabaNeo.Platform*` (its commands write files).
-- **Status is derived, never stored.** `Open`, `Proved`, `Disproved` and `Drifted` are computed from
-  the DAG and the records, per environment (section 5).
-- **Failed attempts** are recorded only as closed pull requests. The gate leaves its verdict and the
-  log's errors as a comment on them.
+- **Status is derived, never stored.** `Open`, `Proved`, `Disproved`, `Drifted` and `Unchecked`
+  are computed from the DAG and the records, per environment (section 5).
+- **Failed attempts** remain as closed pull requests, on which the gate leaves its verdict and the
+  log's errors as a comment, and as failed records (re-verifications record failures too, as
+  attempts; only `OK` and accepted records count).
 
 The gate's statuses: `OK` (definitions, theorems, notes); `ACCEPTED` (a complete proof: every
 theorem it uses is `Proved` in the environment, or a disproof); `SKETCH_ACCEPTED`; `CE`, `WA`,
@@ -476,7 +477,8 @@ kernel replay of the solution. No self-hosted runners are used.
    - the rulesets of `main` (the required check `decide`, the merge queue, code owners) and of
      `records`;
    - Pages;
-   - actions pinned by commit SHA.
+   - actions pinned by commit SHA (the templates already pin them, and the image's base is
+     pinned by digest).
 4. For a new environment, add an entry to `env/environments.json` and its std release
    (`dag_tools.py std-manifest --dag . --tag <tag> --core <core>`), then run `reverify`.
 
@@ -485,5 +487,3 @@ kernel replay of the solution. No self-hosted runners are used.
 - Hash semantic IDs up to constant names, so that Mathlib renames do not cause drift?
 - How many environments stay `active`, and when one is frozen.
 - Whether the records stay a branch, or move to releases.
-- Pin the image's base (`ubuntu:24.04`) by digest and the actions by commit SHA before the
-  repository is public.

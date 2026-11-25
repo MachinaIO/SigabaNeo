@@ -44,7 +44,7 @@ jobs:
       revision: ${{ steps.precheck.outputs.revision }}
     steps:
       - name: Check out the base branch (never the pull request)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
           path: base
@@ -62,7 +62,7 @@ jobs:
           print(f"env_id={e['id']}\nimage={e['image']}\ncore_repo={repo}\ncore_rev={e['core']}")
           PY
       - name: Check out the core's tools at the pinned revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ steps.env.outputs.core_repo }}
           ref: ${{ steps.env.outputs.core_rev }}
@@ -100,7 +100,7 @@ jobs:
         env:
           AUTHOR: ${{ steps.who.outputs.author }}
         run: python3 core/python/dag_tools.py precheck --dag base --fetched fetched --author "$AUTHOR" --out fetched/precheck.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: fetched
@@ -116,19 +116,19 @@ jobs:
       contents: read
     steps:
       - name: Check out the base branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
           path: base
           persist-credentials: false
       - name: Check out the records (hints only)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         continue-on-error: true
         with:
           ref: records
           path: records
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: fetched
           path: fetched
@@ -155,7 +155,7 @@ jobs:
               --records /records --workdir /work/ws > out/result.json 2> out/log.txt
           echo $? > out/exit
           tail -c 20000 out/log.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: result
           path: out/
@@ -174,18 +174,18 @@ jobs:
       contents: read
     steps:
       - name: Check out the core's tools at the pinned revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ needs.precheck.outputs.core_repo }}
           ref: ${{ needs.precheck.outputs.core_rev }}
           path: core
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         continue-on-error: true
         with:
           name: fetched
           path: fetched
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         continue-on-error: true
         with:
           name: result
@@ -213,7 +213,7 @@ jobs:
       - name: A token of the gate's GitHub App
         id: app
         if: github.event_name == 'pull_request_target'
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
         with:
           app-id: ${{ vars.GATE_APP_ID }}
           private-key: ${{ secrets.GATE_APP_KEY }}

@@ -26,7 +26,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Check out main
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           path: dag
           persist-credentials: false
@@ -40,7 +40,7 @@ jobs:
           print(f"core_repo={re.sub(r'^https://github.com/|[.]git$', '', e['core_url'])}\ncore_rev={e['core']}\nenv_id={e['id']}")
           PY
       - name: Check out the core's tools
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ steps.env.outputs.core_repo }}
           ref: ${{ steps.env.outputs.core_rev }}

@@ -482,7 +482,12 @@ class InitTest(Tmp):
                         ("promotions", "meta/promotions.json")):
             self.assertEqual(D.validate(json.loads((d / f).read_text()), D.schema(name)), [], f)
         self.assertIn('rev = "v1"', (d / "lakefile.toml").read_text())
-        self.assertEqual(D.Dag(d).environment()["id"], "e1")
+        env = D.Dag(d).environment()
+        self.assertEqual(env["id"], "e1")
+        pins = {p["name"].strip("«»"): p["rev"]
+                for p in json.loads((D.CORE / "lake-manifest.json").read_text())["packages"]}
+        self.assertEqual(env["mathlib"], pins["mathlib"])
+        self.assertEqual(env["cslib_frontier"], pins["cslib-frontier"])
 
 
 class ImportServerTest(Tmp):

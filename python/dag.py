@@ -50,8 +50,8 @@ IMPORT_ROOTS = {"Init", "Std", "Lean", "Mathlib", "Batteries", "Aesop", "Qq", "P
 IMPORT_CORE = ("SigabaNeo.Trusted", "SigabaNeo.Assemble")
 
 ACCEPTED = ("ACCEPTED", "SKETCH_ACCEPTED")
-STATUSES = ("ACCEPTED", "SKETCH_ACCEPTED", "CE", "WA", "SORRY", "FAILED", "DUPLICATE", "LINT",
-            "ERROR")
+STATUSES = ("OK", "ACCEPTED", "SKETCH_ACCEPTED", "CE", "WA", "SORRY", "FAILED", "DUPLICATE",
+            "LINT", "ERROR")
 
 LIMITS = {"files": 200, "file_bytes": 256 * 1024, "total_bytes": 2 * 1024 * 1024}
 
