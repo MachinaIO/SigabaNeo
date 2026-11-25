@@ -35,13 +35,45 @@ def constantsOf (env : Environment) (mod : Name) : Array ConstantInfo :=
   env.constants.map₁.toList.toArray.filterMap fun (n, ci) =>
     if moduleOf? env n == some mod then some ci else none
 
+/-- Compiler code Lean generates beside an ordinary declaration, in the same module:
+* `f._unsafe_rec`, a `partial` copy of a safe recursive definition `f`;
+* `T.ctorIdx`, implemented by the `unsafe` `T.ctorIdx._impl`, for an inductive type `T` in a
+  universe that is never `Prop` (Lean makes neither for an inductive proposition).
+The kernel forbids a safe declaration to use a `partial` or `unsafe` one, so no theorem or
+definition can use `f._unsafe_rec` or `T.ctorIdx._impl`; `T.ctorIdx` itself is checked by the
+kernel like any definition. A declaration with such a name that is not of this form (another
+safety, another implementation, or `T` a proposition or in another module) is not skipped. -/
+def compilerAux (env : Environment) (mod : Name) : Name → Bool
+  | n@(.str f "_unsafe_rec") => match env.find? n, env.find? f with
+    | some (.defnInfo d), some (.defnInfo g) =>
+      d.safety == .partial && g.safety == .safe && moduleOf? env f == some mod
+    | _, _ => false
+  | n@(.str (.str t "ctorIdx") "_impl") => match env.find? n with
+    | some (.defnInfo d) => d.safety == .unsafe && dataType t
+    | _ => false
+  | n@(.str t "ctorIdx") => match env.find? n with
+    | some (.defnInfo d) => d.safety == .safe && dataType t &&
+      Compiler.getImplementedBy? env n == some (n ++ `_impl)
+    | _ => false
+  | _ => false
+where
+  /-- An inductive type of this module whose universe is never `Prop`. -/
+  dataType (t : Name) : Bool := match env.find? t with
+    | some (.inductInfo i) => moduleOf? env t == some mod && resultSort i.type
+    | _ => false
+  resultSort : Expr → Bool
+    | .forallE _ _ b _ => resultSort b
+    | .sort l => l.isNeverZero
+    | _ => false
+
 /-- Declarations a platform module may not contain. -/
 def forbidden (env : Environment) (mod : Name) : Array String :=
   (constantsOf env mod).filterMap fun ci =>
     let why := match ci with
       | .axiomInfo _ => some "an axiom"
       | .opaqueInfo _ => some "opaque"
-      | _ => if ci.isUnsafe then some "unsafe"
+      | _ => if compilerAux env mod ci.name then none
+        else if ci.isUnsafe then some "unsafe"
         else if ci.isPartial then some "partial"
         else if ci.name.isInternal then none
         else if (Compiler.getImplementedBy? env ci.name).isSome then some "implemented_by"
