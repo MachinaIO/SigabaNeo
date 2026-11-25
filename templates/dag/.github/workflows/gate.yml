@@ -135,7 +135,7 @@ jobs:
     needs: precheck
     if: needs.precheck.outputs.ok == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 360   # GitHub-hosted maximum; a pull request may register many nodes
     permissions:
       contents: read
     steps:

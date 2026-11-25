@@ -44,11 +44,11 @@ files, and a result counts only after it builds in the core and passes an indepe
 ## What is registered
 
 * **Proved results** (statement = the type of a core theorem, proof = the theorem): the attack
-  theorems of [ATTACK_PROOFS.md](ATTACK_PROOFS.md) (exhaustive search, MITM, Arora–Ge, XL counts,
-  BKW, coded BKW, dual tests, LLL primal), LLL/slide/BKZ reduction results, planted uniqueness, the
-  conditional sieve T1, the pair and triple Gram laws, Haar right invariance, and `H_le`/`H_tight`.
+  theorems (exhaustive search, MITM, Arora–Ge, XL counts, BKW, coded BKW, dual tests, LLL primal),
+  LLL/slide/BKZ reduction results, planted uniqueness, the conditional sieve T1, the pair and triple
+  Gram laws, Haar right invariance, and `H_le`/`H_tight`. The attack and reduction theorems now live
+  in the DAG (tag `lattice-attack`), not in the standard library.
 * **Open Lean statements**: the general spherical Gram formula and the finite Haar mass of the
   arithmetic fundamental domain (Siegel), tagged `open`.
-* **Research results on walls 1 and 2** are paper results, not Lean statements; they are indexed in
-  [PROOF_GAP.md](PROOF_GAP.md) (Wall 1 parts 1–19, Wall 2) with their audits under
-  [research/](research/).
+* **Research results on walls 1 and 2** are paper results, not Lean statements. They are notes in the
+  DAG (tag `lattice-attack`).

@@ -41,9 +41,8 @@ notes, with the hypothesis they need; they show where a proof would pay off.
    machine compilation, and the final inequality.
 4. **Build the machine**: write the algorithm as a tape program and compile it with
    `Prog.toMachine` (`run_toMachine` gives its output law, `cost_toMachine` its exact cost);
-   compose with `SigabaNeoStd/Machines/Compose`. Reuse the algorithmic analyses in
-   `SigabaNeoStd/Lattices/Attacks` (see [docs/ATTACK_PROOFS.md](../../../docs/ATTACK_PROOFS.md)),
-   but note they count abstract operations: you must still bound the machine's steps on the
+   compose with `SigabaNeoStd/Machines/Compose`. Reuse the algorithmic analyses already in the DAG
+   (definitions, theorems and notes tagged `lattice-attack`), but note they count abstract operations: you must still bound the machine's steps on the
    assumption's actual instance encoding.
 5. **Submit** the proof with a note: the assumption, `p`, `c`, the current `H p`, the submissions
    whose premises the attack invalidates, and the attack's idea.

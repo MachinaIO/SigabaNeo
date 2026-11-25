@@ -560,6 +560,50 @@ INSERT INTO assumption_meta VALUES ('t1','["well-established"]',2005,'paper');
 
 
 class FetchTest(Tmp):
+    def test_fetch_large(self):
+        """A pull request with more files than the compare API lists is listed from the full trees
+        of the merge base and the head, and its contents come from one archive of the head."""
+        base, head, mb = "b" * 40, "c" * 40, "d" * 40
+        n = 400
+        head_tree = [{"path": f"dag/Notes/n{i}.md", "type": "blob", "mode": "100644",
+                      "sha": f"h{i}"} for i in range(n)]
+        head_tree += [{"path": "README.md", "type": "blob", "mode": "100644", "sha": "r2"}]
+        base_tree = [{"path": "README.md", "type": "blob", "mode": "100644", "sha": "r1"}]
+        calls = []
+
+        def fake_api(path, token, accept=None):
+            calls.append(path)
+            if path == f"/repos/o/r/compare/{base}...{head}":
+                return {"files": [{"filename": "x", "status": "added"}] * 300,
+                        "merge_base_commit": {"sha": mb}}
+            if path.startswith("/repos/o/r/git/commits/"):
+                return {"tree": {"sha": "T" + path.rsplit("/", 1)[1]}}
+            if path == f"/repos/o/r/git/trees/T{mb}?recursive=1":
+                return {"tree": base_tree}
+            if path == f"/repos/o/r/git/trees/T{head}?recursive=1":
+                return {"tree": head_tree}
+            if path.startswith("/repos/o/r/git/trees/T" + head):
+                return {"tree": [{"path": "dag", "type": "tree", "sha": "t-dag"}]}
+            if path == "/repos/o/r/git/trees/t-dag":
+                return {"tree": [{"path": "Notes", "type": "tree", "sha": "t-notes"}]}
+            if path == "/repos/o/r/git/trees/t-notes":
+                return {"tree": [{"path": f"n{i}.md", "type": "blob", "mode": "100644",
+                                  "sha": f"h{i}"} for i in range(n)]}
+            raise AssertionError(path)
+
+        old_api, old_arch = T.api, T.head_archive
+        T.api = fake_api
+        T.head_archive = lambda repo, token, sha: {f"dag/Notes/n{i}.md": b"note" for i in range(n)}
+        try:
+            rows = T.fetch("o/r", self.tmp / "f", "token", base, head)
+        finally:
+            T.api, T.head_archive = old_api, old_arch
+        added = [r for r in rows if r["status"] == "added"]
+        self.assertEqual(len(added), n)
+        self.assertEqual([r["status"] for r in rows if r["filename"] == "README.md"], ["modified"])
+        self.assertEqual((self.tmp / "f/files/dag/Notes/n7.md").read_bytes(), b"note")
+        self.assertFalse(any("/git/blobs/" in c for c in calls))
+
     def test_fetch(self):
         """The event's commits are read, never a moving head. Only added regular files of the
         layout are downloaded, as data; their mode and blob come from the head commit's tree, so
