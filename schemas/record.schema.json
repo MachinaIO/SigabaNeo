@@ -1,0 +1,83 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A verification record (the records branch, <env>.jsonl)",
+ "type": "object",
+ "required": [
+  "kind",
+  "path",
+  "name",
+  "env",
+  "status"
+ ],
+ "additionalProperties": true,
+ "properties": {
+  "kind": {
+   "enum": [
+    "definition",
+    "theorem",
+    "solution"
+   ]
+  },
+  "path": {
+   "type": "string"
+  },
+  "name": {
+   "type": "string"
+  },
+  "env": {
+   "type": "string",
+   "pattern": "[a-z0-9][a-z0-9.-]{0,63}"
+  },
+  "status": {
+   "type": "string"
+  },
+  "id": {
+   "type": "string",
+   "pattern": "[0-9a-f]{64}"
+  },
+  "hash": {
+   "type": "string",
+   "pattern": "[0-9a-f]{64}"
+  },
+  "theorem": {
+   "type": "string"
+  },
+  "proof_type": {
+   "enum": [
+    "prove",
+    "disprove"
+   ]
+  },
+  "uses": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "std": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string",
+    "pattern": "[0-9a-f]{64}"
+   }
+  },
+  "author": {
+   "type": "string"
+  },
+  "pr": {
+   "type": [
+    "integer",
+    "null"
+   ]
+  },
+  "commit": {
+   "type": "string"
+  },
+  "run": {
+   "type": "string"
+  },
+  "time": {
+   "type": "string"
+  }
+ }
+}

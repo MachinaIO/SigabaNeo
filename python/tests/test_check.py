@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -97,16 +98,114 @@ class Negative(unittest.TestCase):
 
     def test_tampered_definitions(self):
         """The workspace's copies of the claim's definitions must be the claim's files."""
-        d = state["tmp"] / "tampered"
-        r = run("tampered", VACUOUS, vac("theorem refutation : ¬ TestCase.Vacuous.target := "
-                                         "fun h => h"))
+        r = verify(state["tmp"] / "tampered", VACUOUS, vac(
+            "theorem refutation : ¬ TestCase.Vacuous.target := fun h => h"), "Solution",
+            "TestCase.Vacuous.refutation", keep=True)
         self.assertEqual(r["verdict"], "verified", r)
+        d = Path(r["workspace"])
         copy = d / "Definitions" / "Def_Vacuous.lean"
         copy.write_text(copy.read_text() + "\n-- changed\n")
         out = subprocess.run(["lake", "env", "lean", "--stdin"], cwd=d, text=True,
                              capture_output=True, input="import SigabaNeo.Trusted.Check\n"
                              f'#sigaba_neo_check "{VACUOUS.dir}" "Solution" "TestCase.Vacuous.refutation"\n')
         self.assertIn("is not the claim's", out.stdout)
+
+    def test_build_cannot_tamper(self):
+        """Building runs the proof's code, in a sandbox: it cannot change the claim's files, nor the
+        build outputs of the claim's definitions, which the check reads afterwards."""
+        claim = other(VACUOUS, "TestCase.Vacuous.target")
+        before = {p: p.read_bytes() for p in claim.dir.rglob("*") if p.is_file()}
+        target = claim.dir / "Definitions" / "Def_Vacuous.lean"
+        for name, path in (("tamper-claim", str(target)),
+                           ("tamper-olean", ".lake/build/lib/lean/Definitions/Def_Vacuous.olean")):
+            with self.subTest(name):
+                r = run(name, claim, vac("theorem refutation : ¬ TestCase.Vacuous.target := fun h => h",
+                                         header=f"run_cmd IO.FS.writeFile {json.dumps(path)} \"x\""))
+                self.assertEqual(r["verdict"], "rejected", r)
+                self.assertIn("build failed", r["report"])
+                # The claim is not even visible in the sandbox; the outputs are read only.
+                self.assertRegex(r["report"], "no such file|read-only file system")
+        self.assertEqual({p: p.read_bytes() for p in claim.dir.rglob("*") if p.is_file()}, before)
+
+    def test_check_ignores_workspace_configuration(self):
+        """The check uses only copies of the workspace's own modules, with the core's Lean and
+        search path: an .olean the build plants for a trusted module is never read, and the
+        workspace's Lake configuration cannot be changed."""
+        claim = other(VACUOUS, "TestCase.Vacuous.target")
+        plant = ('run_cmd do\n'
+                 '  IO.FS.createDirAll ".lake/build/lib/lean/SigabaNeo/Trusted"\n'
+                 '  IO.FS.writeFile ".lake/build/lib/lean/SigabaNeo/Trusted/Check.olean" "x"\n'
+                 '  IO.FS.writeFile ".lake/build/lib/lean/Mathlib.olean" "x"\n')
+        r = run("plant", claim, vac("theorem refutation : ¬ TestCase.Vacuous.target := fun h => h",
+                                    header=plant))
+        self.assertEqual(r["verdict"], "verified", r)
+        r = run("config", claim, vac("theorem refutation : ¬ TestCase.Vacuous.target := fun h => h",
+                                     header='run_cmd IO.FS.writeFile "lakefile.toml" "x"'))
+        self.assertEqual(r["verdict"], "rejected", r)
+        self.assertRegex(r["report"], "read-only file system")
+
+    def test_fresh_directories(self):
+        """Each check builds and checks in new directories under the work directory and removes
+        them: two checks in a row both pass, and nothing else there is touched."""
+        parent = state["tmp"] / "fresh"
+        (parent / "fresh-check").mkdir(parents=True)
+        (parent / "fresh-check" / "mine.txt").write_text("keep")
+        (parent / "notes.txt").write_text("keep")
+        proof = vac("theorem refutation : ¬ TestCase.Vacuous.target := fun h => h")
+        for _ in range(2):
+            r = verify(parent, VACUOUS, proof, "Solution", "TestCase.Vacuous.refutation")
+            self.assertEqual(r["verdict"], "verified", r)
+        self.assertEqual(sorted(p.name for p in parent.iterdir()), ["fresh-check", "notes.txt"])
+        self.assertEqual((parent / "fresh-check" / "mine.txt").read_text(), "keep")
+
+    def test_sandbox_hides_the_host(self):
+        """The build sees nothing of the host but what it needs: not a file or a Unix socket in
+        the home directory (as a Docker socket would be), nor /run."""
+        import socket
+        home = Path(tempfile.mkdtemp(prefix=".sigaba-neo-host-", dir=Path.home()))
+        try:
+            (home / "secret.txt").write_text("secret")
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.bind(str(home / "daemon.sock"))
+            sock.listen(1)
+            probes = [str(home / "secret.txt"), str(home / "daemon.sock"), "/run/user", str(home)]
+            body = "".join(f"  if ← System.FilePath.pathExists {json.dumps(p)} then "
+                           f"throwError {json.dumps('visible: ' + p)}\n" for p in probes)
+            claim = other(VACUOUS, "TestCase.Vacuous.target")
+            r = run("hidden", claim, vac("theorem refutation : ¬ TestCase.Vacuous.target := "
+                                         "fun h => h", header="run_cmd do\n" + body))
+            self.assertEqual(r["verdict"], "verified", r)
+            sock.close()
+        finally:
+            shutil.rmtree(home, ignore_errors=True)
+
+    def test_definitions_taken_before_the_proof_builds(self):
+        """The proof's build moves the directory of the claim's built definitions away and puts
+        a corrupt one in its place: the check uses the definitions taken after the first step."""
+        claim = other(VACUOUS, "TestCase.Vacuous.target")
+        lib = ".lake/build/lib/lean"
+        swap = ('run_cmd do\n'                      # it succeeds in the sandbox
+                f'  IO.FS.rename "{lib}/Definitions" "{lib}/Moved"\n'
+                f'  IO.FS.createDirAll "{lib}/Definitions"\n'
+                f'  IO.FS.writeFile "{lib}/Definitions/Def_Vacuous.olean" "corrupt"\n')
+        r = run("swap", claim, vac("theorem refutation : ¬ TestCase.Vacuous.target := fun h => h",
+                                   header=swap))
+        self.assertEqual(r["verdict"], "verified", r)
+
+    def test_symlinked_output_path(self):
+        """The build leaves a symbolic link on the path of its outputs (here to a directory beside
+        it, so that Lake still writes through it; a background process could point it at a host
+        path once Lake is done). The host follows nothing on that path and rejects."""
+        claim = other(VACUOUS, "TestCase.Vacuous.target")
+        plant = ('run_cmd do\n'
+                 '  IO.FS.rename ".lake/build/lib/lean" ".lake/build/lib/moved"\n'
+                 '  let _ ← IO.Process.run { cmd := "ln", args := #["-s", "moved", '
+                 '".lake/build/lib/lean"] }\n'
+                 '  pure ()\n')
+        r = run("symlink-path", claim, vac("theorem refutation : ¬ TestCase.Vacuous.target := "
+                                            "fun h => h", header=plant))
+        self.assertEqual(r["verdict"], "rejected", r)
+        self.assertIn("not plain directories", r["report"])
 
     def test_missing(self):
         self.rejected("missing", vac("theorem refutation' : ¬ TestCase.Vacuous.target := "

@@ -1,7 +1,7 @@
-import SigabaNeo.Lib.Lattices.Stat
-import SigabaNeo.Lib.Lattices.Prob
+import SigabaNeoStd.Lattices.Stat
+import SigabaNeoStd.Lattices.Prob
 import Solution.RandSide
-import SigabaNeo.Lib.Lattices.Gaussian.Smooth
+import SigabaNeoStd.Lattices.Gaussian.Smooth
 
 /-!
 # Uniform matrices

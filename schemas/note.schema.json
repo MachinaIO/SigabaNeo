@@ -1,0 +1,35 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A note's front matter (dag/Notes/<slug>.md)",
+ "type": "object",
+ "required": [
+  "title"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "title": {
+   "type": "string",
+   "maxLength": 200
+  },
+  "refs": {
+   "type": "array",
+   "maxItems": 100,
+   "items": {
+    "type": "string",
+    "maxLength": 300
+   }
+  },
+  "supersedes": {
+   "type": "string",
+   "pattern": "[a-z0-9][a-z0-9-]{0,79}"
+  },
+  "tags": {
+   "type": "array",
+   "maxItems": 20,
+   "items": {
+    "type": "string",
+    "pattern": "[a-z0-9][a-z0-9-]{0,39}"
+   }
+  }
+ }
+}

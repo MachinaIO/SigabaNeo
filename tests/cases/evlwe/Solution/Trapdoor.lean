@@ -1,5 +1,5 @@
 import Definitions.Def_EvLWE
-import SigabaNeo.Lib.Lattices.Trapdoor.Family
+import SigabaNeoStd.Lattices.Trapdoor.Family
 
 /-!
 # `K` can be sampled with a trapdoor

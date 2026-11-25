@@ -1,0 +1,871 @@
+import SigabaNeoStd.Lattices.ProgAlgo.ValWF
+import SigabaNeoStd.Machines.Prog.PhaseB
+
+/-!
+# The cost of compiled codes
+
+Per-tape time bounds of `compileA cert c` from **static word bounds**: every word `x` stays below
+`B x` during the run (the machine never lengthens a word except by `cp` into a word of a larger
+bound and the result of a `gate`), the step's tapes below `bs`, the template `TV` at `V`, the
+scratch blank between instructions. Each instruction is charged only its own frame
+(`frame_of_check` with certificates of `inP`, `outP`, `mvPc`, `dropPc`, …); a loop round is charged
+a sweep of the whole store (`2 M + 3`, `M` the longest bound).
+-/
+
+namespace SigabaNeo.Tape
+
+namespace ValVM
+
+open Sym Prog
+
+/-! ### The certificates of the instruction programs -/
+
+/-- The variable `i`. -/
+def pX (i : ℕ) : Poly := [((List.replicate i 0) ++ [1], 1)]
+
+theorem mEval_X : ∀ (ρ : List ℕ) (i : ℕ), mEval ρ ((List.replicate i 0) ++ [1]) = ρ.getD i 0
+  | ρ, 0 => by cases ρ <;> simp [mEval]
+  | ρ, i + 1 => by
+    rw [List.replicate_succ, List.cons_append, mEval, pow_zero, one_mul, mEval_X ρ.tail i]
+    cases ρ <;> simp
+
+@[simp] theorem pEval_X (ρ : List ℕ) (i : ℕ) : pEval ρ (pX i) = ρ.getD i 0 := by
+  simp [pX, pEval, mEval_X]
+
+/-- The abstract store of the variables `1 … n` on the tapes `0 … n − 1`. -/
+def xs (n : ℕ) : Asg := (List.range n).map fun j => pX (j + 1)
+
+theorem check_inP : check 8 inP (xs 6) [pX 2, pX 2, pX 3, [], [], []] [([], 7), ([0, 0, 1], 6)] = true := by
+  decide +kernel
+theorem check_mvPc : check 8 mvPc (xs 5) [pX 1, pX 2, [], [], pX 5] [([], 4), ([0, 0, 0, 0, 0, 1], 6)] = true := by
+  decide +kernel
+theorem check_dropPc : check 8 dropPc (xs 3) [pX 1, [], pX 3] [([], 3), ([0, 0, 0, 1], 3)] = true := by
+  decide +kernel
+theorem check_outP : check 8 outP (xs 4) [[], [], [], pX 1] [([], 4)] = true := by decide +kernel
+theorem check_cp : check 8 (Prog.cp 0 1 : Prog 2) (xs 2) [pX 2, pX 2] [([], 1)] = true := by
+  decide +kernel
+theorem check_clr : check 8 (Prog.clr 0 : Prog 1) (xs 1) [[]] [([], 1)] = true := by decide +kernel
+theorem check_tl : check 8 (Prog.tl 0 : Prog 1) (xs 1) [pX 1] [([], 1)] = true := by decide +kernel
+theorem check_nop : check 8 (Prog.nop 0 : Prog 1) (xs 1) [pX 1] [([], 1)] = true := by
+  decide +kernel
+
+/-- The values `top, ℓ (e 0), …` of the variables of a frame. -/
+def rhoF {n : ℕ} (top : ℕ) (e : Fin n ↪ Fin 256) (ℓ : Fin 256 → ℕ) : List ℕ :=
+  top :: List.ofFn fun j => ℓ (e j)
+
+theorem bnd_xs {n : ℕ} (top : ℕ) (e : Fin n ↪ Fin 256) (ℓ : Fin 256 → ℕ) :
+    bnd (rhoF top e ℓ) (xs n) = fun j => ℓ (e j) := by
+  funext j
+  simp [bnd, aGet, xs, rhoF, List.getD_eq_getElem?_getD]
+
+theorem rhoF_get {n : ℕ} (top : ℕ) (e : Fin n ↪ Fin 256) (ℓ : Fin 256 → ℕ) (j : Fin n) :
+    (rhoF top e ℓ).getD (j.val + 1) 0 = ℓ (e j) := by
+  simp [rhoF, List.getD_eq_getElem?_getD]
+
+/-- **A framed instruction**, from its certificate. -/
+theorem frame_inst {n : ℕ} {p : Prog n} {claim : Asg} {w : Poly}
+    (h : check 8 p (xs n) claim w = true) (e : Fin n ↪ Fin 256) (ℓ : Fin 256 → ℕ) (top : ℕ)
+    (htop : ∀ j, ℓ (e j) ≤ top) :
+    XProg.timeBoundT (.frame e (.prog p)) ℓ ≤ (2 * top + 3) * pEval (rhoF top e ℓ) w ∧
+      (∀ j : Fin n, j.val < claim.length →
+        XProg.lenBoundT (.frame e (.prog p)) ℓ (e j) ≤ pEval (rhoF top e ℓ) (aGet claim j.val)) ∧
+      ∀ t, (∀ j, e j ≠ t) → XProg.lenBoundT (.frame e (.prog p)) ℓ t = ℓ t :=
+  frame_of_check h (rhoF top e ℓ) e (by rw [bnd_xs]) htop
+
+/-! ### Invariant bounds -/
+
+/-- From every per-tape bound below `β`, at most `T` steps, and the bounds stay below `β`. -/
+def Inv (X : XProg 256) (β : Fin 256 → ℕ) (T : ℕ) : Prop :=
+  ∀ ℓ ≤ β, XProg.timeBoundT X ℓ ≤ T ∧ XProg.lenBoundT X ℓ ≤ β
+
+theorem Inv.mono {X : XProg 256} {β : Fin 256 → ℕ} {T T' : ℕ} (h : Inv X β T) (hT : T ≤ T') :
+    Inv X β T' := fun ℓ hℓ => ⟨(h ℓ hℓ).1.trans hT, (h ℓ hℓ).2⟩
+
+theorem Inv.seq {X Y : XProg 256} {β : Fin 256 → ℕ} {T U : ℕ} (hX : Inv X β T) (hY : Inv Y β U) :
+    Inv (.seq X Y) β (T + U) := fun ℓ hℓ =>
+  ⟨Nat.add_le_add (hX ℓ hℓ).1 (hY _ (hX ℓ hℓ).2).1, (hY _ (hX ℓ hℓ).2).2⟩
+
+theorem Inv.ifBit {X Y : XProg 256} {β : Fin 256 → ℕ} {T U : ℕ} (i : Fin 256) (hX : Inv X β T)
+    (hY : Inv Y β U) : Inv (.ifBit i X Y) β (max T U + 1) := fun ℓ hℓ =>
+  ⟨Nat.add_le_add_right (max_le_max (hX ℓ hℓ).1 (hY ℓ hℓ).1) 1,
+    fun t => max_le ((hX ℓ hℓ).2 t) ((hY ℓ hℓ).2 t)⟩
+
+theorem Inv.loop {X : XProg 256} {β : Fin 256 → ℕ} {T : ℕ} (i : Fin 256) (hX : Inv X β T) :
+    Inv (.loop i X) β (β i * (2 * supB β + 3 + T + 1) + 2) := fun ℓ hℓ => by
+  have hinv : XProg.loopStepT i X β ≤ β := (hX _ (tailB_le i β)).2
+  refine ⟨(XProg.timeBoundT_loop_le_of_inv i X hℓ hinv).trans ?_,
+    XProg.lenBoundT_loop_le_of_inv i X hℓ hinv⟩
+  have := (hX _ (tailB_le i β)).1
+  have h1 : Prog.roundTimeT (XProg.timeBoundT X) i β ≤ 2 * supB β + 3 + T := by
+    simp only [Prog.roundTimeT]; omega
+  exact Nat.add_le_add_right (Nat.mul_le_mul (hℓ i) (by omega)) 2
+
+/-- **A framed instruction** keeps the bounds `β` and takes at most `T` steps. -/
+theorem inv_frame {n : ℕ} {p : Prog n} {claim : Asg} {w : Poly}
+    (h : check 8 p (xs n) claim w = true) (e : Fin n ↪ Fin 256) (β : Fin 256 → ℕ) (top : ℕ)
+    (htop : ∀ j, β (e j) ≤ top) (T : ℕ)
+    (hT : ∀ ℓ ≤ β, (2 * top + 3) * pEval (rhoF top e ℓ) w ≤ T)
+    (hc : ∀ ℓ ≤ β, ∀ j : Fin n, pEval (rhoF top e ℓ) (aGet claim j.val) ≤ β (e j))
+    (hl : claim.length = n) : Inv (.frame e (.prog p)) β T := fun ℓ hℓ => by
+  obtain ⟨t1, t2, t3⟩ := frame_inst h e ℓ top (fun j => (hℓ _).trans (htop j))
+  refine ⟨t1.trans (hT ℓ hℓ), fun t => ?_⟩
+  by_cases ht : ∃ j, e j = t
+  · obtain ⟨j, rfl⟩ := ht
+    exact (t2 j (by rw [hl]; exact j.isLt)).trans (hc ℓ hℓ j)
+  · push_neg at ht
+    rw [t3 t ht]; exact hℓ t
+
+/-! ### The bounds of the machine's store -/
+
+/-- The bounds of a state: the step's tapes `bs`, the template `V`, the words `B`, blank scratch. -/
+def encB (bs : Fin 132 → ℕ) (V : ℕ) (B : Fin 120 → ℕ) : Fin 256 → ℕ := fun t =>
+  if h : t.val < 132 then bs ⟨t.val, h⟩ else if t.val = 132 then V
+  else if h' : t.val < 253 then B ⟨t.val - 133, by omega⟩ else 0
+
+section EncB
+
+variable (bs : Fin 132 → ℕ) (V : ℕ) (B : Fin 120 → ℕ)
+
+@[simp] theorem encB_tS (j : Fin 132) : encB bs V B (tS j) = bs j := by
+  simp [encB, tS]
+
+@[simp] theorem encB_tTV : encB bs V B tTV = V := by simp [encB, tTV]
+
+@[simp] theorem encB_tWd (x : Fin 120) : encB bs V B (tWd x) = B x := by
+  have h1 : ¬ (tWd x).val < 132 := by show ¬ (133 + x.val < 132); omega
+  have h2 : (tWd x).val ≠ 132 := by show 133 + x.val ≠ 132; omega
+  have h3 : (tWd x).val < 253 := by show 133 + x.val < 253; have := x.isLt; omega
+  simp only [encB, dif_neg h1, if_neg h2, dif_pos h3]
+  exact congrArg B (Fin.ext (by show 133 + x.val - 133 = x.val; omega))
+
+theorem encB_hi (t : Fin 256) (h : 253 ≤ t.val) : encB bs V B t = 0 := by
+  simp only [encB]; rw [dif_neg (by omega), if_neg (by omega), dif_neg (by omega)]
+
+end EncB
+
+theorem pEval_lin (ρ : List ℕ) (c c' i : ℕ) :
+    pEval ρ [([], c), (List.replicate i 0 ++ [1], c')] = c + c' * ρ.getD i 0 := by
+  simp [pEval, mEval, mEval_X]
+
+theorem pEval_const (ρ : List ℕ) (c : ℕ) : pEval ρ [([], c)] = c := by simp [pEval, mEval]
+
+theorem pEval_aGet_X (ρ : List ℕ) (σ : Asg) (j i : ℕ) (h : aGet σ j = pX i) :
+    pEval ρ (aGet σ j) = ρ.getD i 0 := by rw [h, pEval_X]
+
+theorem pEval_aGet_nil (ρ : List ℕ) (σ : Asg) (j : ℕ) (h : aGet σ j = []) :
+    pEval ρ (aGet σ j) = 0 := by rw [h]; rfl
+
+theorem rhoF_getD {n : ℕ} (top : ℕ) (e : Fin n ↪ Fin 256) (ℓ : Fin 256 → ℕ) (i : ℕ) (hi : i < n) :
+    (rhoF top e ℓ).getD (i + 1) 0 = ℓ (e ⟨i, hi⟩) := rhoF_get top e ℓ ⟨i, hi⟩
+
+/-! ### The instructions -/
+
+section Inst
+
+variable (bs : Fin 132 → ℕ) (V : ℕ) (B : Fin 120 → ℕ)
+
+theorem fIn_vals (i : Fin 132) (a : Fin 120) :
+    fIn i a 0 = tS i ∧ fIn i a 1 = tTV ∧ fIn i a 2 = tWd a ∧ 253 ≤ (fIn i a 3).val ∧
+      253 ≤ (fIn i a 4).val ∧ 253 ≤ (fIn i a 5).val := by
+  refine ⟨Fin.ext ?_, Fin.ext ?_, Fin.ext ?_, ?_, ?_, ?_⟩ <;> simp [fIn, ofV, tS, tTV, tWd]
+
+/-- An operand in. -/
+theorem inv_inP (i : Fin 132) (a : Fin 120) (hV : V ≤ bs i) :
+    Inv (.frame (mkE (fIn i a) (fIn_inj i a)) (.prog inP)) (encB bs V B)
+      ((2 * max (bs i) (max V (B a)) + 3) * (7 + 6 * V)) := by
+  obtain ⟨f0, f1, f2, f3, f4, f5⟩ := fIn_vals i a
+  have hb : ∀ j : Fin 6, encB bs V B (mkE (fIn i a) (fIn_inj i a) j) =
+      ![bs i, V, B a, 0, 0, 0] j := by
+    intro j
+    show encB bs V B (fIn i a j) = _
+    fin_cases j
+    · simp [f0]
+    · simp [f1]
+    · simp [f2]
+    · simp [encB_hi _ _ _ _ f3]
+    · simp [encB_hi _ _ _ _ f4]
+    · simp [encB_hi _ _ _ _ f5]
+  refine inv_frame check_inP _ _ (max (bs i) (max V (B a))) (fun j => ?_) _ (fun ℓ hℓ => ?_)
+    (fun ℓ hℓ j => ?_) rfl
+  · rw [hb]; fin_cases j <;> simp
+  · have h1 : ℓ (mkE (fIn i a) (fIn_inj i a) ⟨1, by decide⟩) ≤ V := by
+      have := hℓ (mkE (fIn i a) (fIn_inj i a) ⟨1, by decide⟩); rw [hb] at this; exact this
+    rw [show ([([], 7), ([0, 0, 1], 6)] : Poly) = [([], 7), (List.replicate 2 0 ++ [1], 6)] from rfl,
+      pEval_lin, rhoF_getD _ _ _ 1 (by decide)]
+    exact Nat.mul_le_mul_left _ (by omega)
+  · have h1 : ℓ (mkE (fIn i a) (fIn_inj i a) ⟨1, by decide⟩) ≤ V := by
+      have := hℓ (mkE (fIn i a) (fIn_inj i a) ⟨1, by decide⟩); rw [hb] at this; exact this
+    have h2 : ℓ (mkE (fIn i a) (fIn_inj i a) ⟨2, by decide⟩) ≤ B a := by
+      have := hℓ (mkE (fIn i a) (fIn_inj i a) ⟨2, by decide⟩); rw [hb] at this; exact this
+    rw [hb]
+    fin_cases j
+    · rw [pEval_aGet_X _ _ _ 2 rfl, rhoF_getD _ _ _ 1 (by decide)]; exact h1.trans hV
+    · rw [pEval_aGet_X _ _ _ 2 rfl, rhoF_getD _ _ _ 1 (by decide)]; exact h1
+    · rw [pEval_aGet_X _ _ _ 3 rfl, rhoF_getD _ _ _ 2 (by decide)]; exact h2
+    all_goals rw [pEval_aGet_nil _ _ _ rfl]; simp
+
+end Inst
+
+/-- A framed instruction, from the bounds `v` of its tapes. -/
+theorem inv_frame' {n : ℕ} {p : Prog n} {claim : Asg} {w : Poly}
+    (h : check 8 p (xs n) claim w = true) (e : Fin n ↪ Fin 256) (β : Fin 256 → ℕ) (v : Fin n → ℕ)
+    (hv : ∀ j, β (e j) = v j) (top : ℕ) (htop : ∀ j, v j ≤ top) (T : ℕ)
+    (hT : ∀ ℓ' : Fin n → ℕ, ℓ' ≤ v → (2 * top + 3) * pEval (top :: List.ofFn ℓ') w ≤ T)
+    (hc : ∀ ℓ' : Fin n → ℕ, ℓ' ≤ v → ∀ j : Fin n, pEval (top :: List.ofFn ℓ') (aGet claim j.val) ≤ v j)
+    (hl : claim.length = n) : Inv (.frame e (.prog p)) β T :=
+  inv_frame h e β top (fun j => (hv j).symm ▸ htop j) T
+    (fun ℓ hℓ => hT (fun j => ℓ (e j)) (fun j => (hv j) ▸ hℓ (e j)))
+    (fun ℓ hℓ j => (hv j).symm ▸ hc (fun j => ℓ (e j)) (fun j => (hv j) ▸ hℓ (e j)) j) hl
+
+theorem getD_ofFn_succ {n : ℕ} (top : ℕ) (ℓ' : Fin n → ℕ) (i : ℕ) (hi : i < n) :
+    (top :: List.ofFn ℓ').getD (i + 1) 0 = ℓ' ⟨i, hi⟩ := by
+  simp [List.getD_eq_getElem?_getD, hi]
+
+section Inst2
+
+variable (bs : Fin 132 → ℕ) (V : ℕ) (B : Fin 120 → ℕ)
+
+theorem fOut_vals (d : Fin 120) : fOut d 0 = tS 0 ∧ fOut d 1 = tS 1 ∧ fOut d 2 = tS 2 ∧
+    fOut d 3 = tWd d := by
+  refine ⟨Fin.ext ?_, Fin.ext ?_, Fin.ext ?_, Fin.ext ?_⟩ <;> simp [fOut, ofV, tS, tWd]
+
+/-- A result out. -/
+theorem inv_outP (d : Fin 120) (hd : bs 0 ≤ B d) :
+    Inv (.frame (mkE (fOut d) (fOut_inj d)) (.prog outP)) (encB bs V B)
+      ((2 * max (max (bs 0) (bs 1)) (max (bs 2) (B d)) + 3) * 4) := by
+  obtain ⟨f0, f1, f2, f3⟩ := fOut_vals d
+  refine inv_frame' check_outP _ _ ![bs 0, bs 1, bs 2, B d] (fun j => ?_)
+    (max (max (bs 0) (bs 1)) (max (bs 2) (B d))) (fun j => ?_) _
+    (fun ℓ' _ => ?_) (fun ℓ' hℓ j => ?_) rfl
+  · show encB bs V B (fOut d j) = _
+    fin_cases j <;> simp [f0, f1, f2, f3]
+  · fin_cases j <;> simp
+  · rw [pEval_const]
+  · fin_cases j
+    all_goals first
+      | (rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _)
+      | (rw [pEval_aGet_X _ _ _ 1 rfl, getD_ofFn_succ _ _ 0 (by decide)]
+         exact (hℓ 0).trans (by simpa using hd))
+
+theorem fMv_vals (d s : Fin 120) (c : Fin 256) : fMv d s c 0 = tWd s ∧ fMv d s c 1 = tWd d ∧
+    253 ≤ (fMv d s c 2).val ∧ 253 ≤ (fMv d s c 3).val ∧ fMv d s c 4 = c := by
+  refine ⟨Fin.ext ?_, Fin.ext ?_, ?_, ?_, Fin.ext ?_⟩ <;> simp [fMv, ofV, tWd]
+
+/-- A move of `|c|` bits from the word `s` into the word `d` (`c` a word or `TV`). -/
+theorem inv_mvPc (d s : Fin 120) (c : Fin 256) (hi : Function.Injective (fMv d s c)) (vc : ℕ)
+    (hc : encB bs V B c = vc) :
+    Inv (.frame (mkE (fMv d s c) hi) (.prog mvPc)) (encB bs V B)
+      ((2 * max (max (B s) (B d)) vc + 3) * (4 + 6 * vc)) := by
+  obtain ⟨f0, f1, f2, f3, f4⟩ := fMv_vals d s c
+  refine inv_frame' check_mvPc _ _ ![B s, B d, 0, 0, vc] (fun j => ?_)
+    (max (max (B s) (B d)) vc) (fun j => ?_) _
+    (fun ℓ' hℓ => ?_) (fun ℓ' hℓ j => ?_) rfl
+  · show encB bs V B (fMv d s c j) = _
+    fin_cases j
+    · simp [f0]
+    · simp [f1]
+    · simp [encB_hi _ _ _ _ f2]
+    · simp [encB_hi _ _ _ _ f3]
+    · simp [f4, hc]
+  · fin_cases j <;> simp
+  · rw [show ([([], 4), ([0, 0, 0, 0, 0, 1], 6)] : Poly) =
+      [([], 4), (List.replicate 5 0 ++ [1], 6)] from rfl, pEval_lin,
+      getD_ofFn_succ _ _ 4 (by decide)]
+    have : ℓ' ⟨4, by decide⟩ ≤ vc := by have := hℓ ⟨4, by decide⟩; exact this
+    exact Nat.mul_le_mul_left _ (by omega)
+  · fin_cases j
+    · rw [pEval_aGet_X _ _ _ 1 rfl, getD_ofFn_succ _ _ 0 (by decide)]; exact hℓ 0
+    · rw [pEval_aGet_X _ _ _ 2 rfl, getD_ofFn_succ _ _ 1 (by decide)]; exact hℓ 1
+    · rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _
+    · rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _
+    · rw [pEval_aGet_X _ _ _ 5 rfl, getD_ofFn_succ _ _ 4 (by decide)]; exact hℓ 4
+
+theorem fDr_vals (t c : Fin 120) : fDr t c 0 = tWd t ∧ 253 ≤ (fDr t c 1).val ∧ fDr t c 2 = tWd c := by
+  refine ⟨Fin.ext ?_, ?_, Fin.ext ?_⟩ <;> simp [fDr, ofV, tWd]
+
+/-- A drop of `|c|` bits of the word `t`. -/
+theorem inv_dropPc (t c : Fin 120) (hi : Function.Injective (fDr t c)) :
+    Inv (.frame (mkE (fDr t c) hi) (.prog dropPc)) (encB bs V B)
+      ((2 * max (B t) (B c) + 3) * (3 + 3 * B c)) := by
+  obtain ⟨f0, f1, f2⟩ := fDr_vals t c
+  refine inv_frame' check_dropPc _ _ ![B t, 0, B c] (fun j => ?_) (max (B t) (B c))
+    (fun j => ?_) _
+    (fun ℓ' hℓ => ?_) (fun ℓ' hℓ j => ?_) rfl
+  · show encB bs V B (fDr t c j) = _
+    fin_cases j
+    · simp [f0]
+    · simp [encB_hi _ _ _ _ f1]
+    · simp [f2]
+  · fin_cases j <;> simp
+  · rw [show ([([], 3), ([0, 0, 0, 1], 3)] : Poly) =
+      [([], 3), (List.replicate 3 0 ++ [1], 3)] from rfl, pEval_lin,
+      getD_ofFn_succ _ _ 2 (by decide)]
+    have : ℓ' ⟨2, by decide⟩ ≤ B c := by have := hℓ ⟨2, by decide⟩; exact this
+    exact Nat.mul_le_mul_left _ (by omega)
+  · fin_cases j
+    · rw [pEval_aGet_X _ _ _ 1 rfl, getD_ofFn_succ _ _ 0 (by decide)]; exact hℓ 0
+    · rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _
+    · rw [pEval_aGet_X _ _ _ 3 rfl, getD_ofFn_succ _ _ 2 (by decide)]; exact hℓ 2
+
+theorem fCp_vals (d s : Fin 120) : fCp d s 0 = tWd d ∧ fCp d s 1 = tWd s := by
+  refine ⟨Fin.ext ?_, Fin.ext ?_⟩ <;> simp [fCp, ofV, tWd]
+
+/-- A copy of the word `s` into the word `d`. -/
+theorem inv_cp (d s : Fin 120) (hi : Function.Injective (fCp d s)) (hds : B s ≤ B d) :
+    Inv (.frame (mkE (fCp d s) hi) (.prog (Prog.cp 0 1))) (encB bs V B)
+      ((2 * max (B d) (B s) + 3) * 1) := by
+  obtain ⟨f0, f1⟩ := fCp_vals d s
+  refine inv_frame' check_cp _ _ ![B d, B s] (fun j => ?_) (max (B d) (B s)) (fun j => ?_) _
+    (fun ℓ' _ => ?_) (fun ℓ' hℓ j => ?_) rfl
+  · show encB bs V B (fCp d s j) = _
+    fin_cases j
+    · simp [f0]
+    · simp [f1]
+  · fin_cases j <;> simp
+  · rw [pEval_const]
+  · fin_cases j
+    · rw [pEval_aGet_X _ _ _ 2 rfl, getD_ofFn_succ _ _ 1 (by decide)]
+      exact (hℓ 1).trans (by simpa using hds)
+    · rw [pEval_aGet_X _ _ _ 2 rfl, getD_ofFn_succ _ _ 1 (by decide)]; exact hℓ 1
+
+/-- An instruction on one tape. -/
+theorem inv_one {p : Prog 1} {claim : Asg} (h : check 8 p (xs 1) claim [([], 1)] = true)
+    (hl : claim.length = 1) (hcl : claim = [[]] ∨ claim = [pX 1]) (t : Fin 256) :
+    Inv (.frame (mkE (f1 t) (f1_inj t)) (.prog p)) (encB bs V B) ((2 * encB bs V B t + 3) * 1) := by
+  refine inv_frame' h _ _ ![encB bs V B t] (fun j => ?_) (encB bs V B t) (fun j => ?_) _
+    (fun ℓ' _ => ?_) (fun ℓ' hℓ j => ?_) hl
+  · fin_cases j; rfl
+  · fin_cases j; simp
+  · rw [pEval_const]
+  · fin_cases j
+    rcases hcl with rfl | rfl
+    · rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _
+    · rw [pEval_aGet_X _ _ _ 1 rfl, getD_ofFn_succ _ _ 0 (by decide)]; exact hℓ 0
+
+/-- **The step**, framed on the step's tapes. -/
+theorem inv_step {P : Prog 132} {Tst : ℕ} (htime : ∀ ℓ ≤ bs, Prog.timeBoundT P ℓ ≤ Tst)
+    (hlen : ∀ ℓ ≤ bs, Prog.lenBoundT P ℓ ≤ bs) :
+    Inv (.frame eS (.prog P)) (encB bs V B) Tst := fun ℓ hℓ => by
+  have h0 : (fun j => ℓ (eS j)) ≤ bs := fun j => by
+    have := hℓ (eS j); rwa [show eS j = tS j from rfl, encB_tS] at this
+  refine ⟨htime _ h0, fun t => ?_⟩
+  show embedF eS ℓ (Prog.lenBoundT P fun j => ℓ (eS j)) t ≤ _
+  rcases embedF_cases eS ℓ (Prog.lenBoundT P fun j => ℓ (eS j)) t with ⟨_, h⟩ | ⟨j, hj, h⟩
+  · rw [h]; exact hℓ t
+  · rw [h, ← hj, show eS j = tS j from rfl, encB_tS]; exact hlen _ h0 j
+
+end Inst2
+
+/-! ### The cost of a code -/
+
+/-- **The cost of a code** from the bounds `bs` of the step's tapes, `V`, the step's steps `Tst`,
+the longest bound `M` and the word bounds `B`. -/
+def costC (bs : Fin 132 → ℕ) (V Tst M : ℕ) (B : Fin 120 → ℕ) : Code → ℕ
+  | .gate d a b => (2 * max (bs 1) (max V (B a)) + 3) * (7 + 6 * V) +
+      ((2 * max (bs 2) (max V (B b)) + 3) * (7 + 6 * V) +
+        (Tst + (2 * max (max (bs 0) (bs 1)) (max (bs 2) (B d)) + 3) * 4))
+  | .mvV d s => if d = s then 3 else (2 * max (max (B s) (B d)) V + 3) * (4 + 6 * V)
+  | .mv d s c => if d = s ∨ d = c ∨ s = c then 3 else
+      (2 * max (max (B s) (B d)) (B c) + 3) * (4 + 6 * B c)
+  | .cp d s => if d = s then 3 else (2 * max (B d) (B s) + 3) * 1
+  | .drop t c => if t = c then 3 else (2 * max (B t) (B c) + 3) * (3 + 3 * B c)
+  | .clr t => (2 * B t + 3) * 1
+  | .tl t => (2 * B t + 3) * 1
+  | .rep c b => B c * (2 * M + 3 + costC bs V Tst M B b + 1) + 2
+  | .seq p q => costC bs V Tst M B p + costC bs V Tst M B q
+  | .ifb _ p q => max (costC bs V Tst M B p) (costC bs V Tst M B q) + 1
+  | .nop => 3
+
+/-- **The static bounds are respected**: the result of a `gate` fits its word, a `cp` copies into a
+word of a larger bound. -/
+def validB (bs0 : ℕ) (B : Fin 120 → ℕ) : Code → Bool
+  | .gate d _ _ => decide (bs0 ≤ B d)
+  | .cp d s => decide (B s ≤ B d)
+  | .rep _ b => validB bs0 B b
+  | .seq p q => validB bs0 B p && validB bs0 B q
+  | .ifb _ p q => validB bs0 B p && validB bs0 B q
+  | _ => true
+
+section Main
+
+variable {H : List ℕ → Prop} {P : Prog 132} (cert : StepCert H P) (bs : Fin 132 → ℕ) (V Tst M : ℕ)
+  (B : Fin 120 → ℕ)
+
+theorem encB_tX0 : encB bs V B tX0 = 0 := encB_hi _ _ _ _ (by decide)
+
+theorem inv_nopX : Inv (.frame (mkE (f1 tX0) (f1_inj _)) (.prog (Prog.nop 0))) (encB bs V B) 3 := by
+  have := inv_one bs V B check_nop rfl (Or.inr rfl) tX0
+  rwa [encB_tX0] at this
+
+/-- **The cost of a compiled code**: from bounds below `encB bs V B`, a valid code takes at most
+`costC` steps and keeps the bounds. -/
+theorem inv_compileA (hV1 : V ≤ bs 1) (hV2 : V ≤ bs 2)
+    (htime : ∀ ℓ ≤ bs, Prog.timeBoundT P ℓ ≤ Tst) (hlen : ∀ ℓ ≤ bs, Prog.lenBoundT P ℓ ≤ bs)
+    (hM : supB (encB bs V B) ≤ M) :
+    ∀ c : Code, validB (bs 0) B c = true →
+      Inv (compileA cert c).toX (encB bs V B) (costC bs V Tst M B c)
+  | .gate d a b, h => by
+    simp only [validB, decide_eq_true_eq] at h
+    exact (inv_inP bs V B 1 a hV1).seq ((inv_inP bs V B 2 b hV2).seq
+      ((inv_step bs V B htime hlen).seq (inv_outP bs V B d h)))
+  | .mvV d s, _ => by
+    simp only [compileA, costC]
+    split_ifs with hds
+    · exact inv_nopX bs V B
+    · exact inv_mvPc bs V B d s tTV _ V (encB_tTV _ _ _)
+  | .mv d s c, _ => by
+    simp only [compileA, costC]
+    split_ifs with hds
+    · exact inv_nopX bs V B
+    · exact inv_mvPc bs V B d s (tWd c) _ (B c) (encB_tWd _ _ _ c)
+  | .cp d s, h => by
+    simp only [validB, decide_eq_true_eq] at h
+    simp only [compileA, costC]
+    split_ifs with hds
+    · exact inv_nopX bs V B
+    · exact inv_cp bs V B d s _ h
+  | .drop t c, _ => by
+    simp only [compileA, costC]
+    split_ifs with hds
+    · exact inv_nopX bs V B
+    · exact inv_dropPc bs V B t c _
+  | .clr t, _ => by
+    have := inv_one bs V B check_clr rfl (Or.inl rfl) (tWd t)
+    rwa [encB_tWd] at this
+  | .tl t, _ => by
+    have := inv_one bs V B check_tl rfl (Or.inr rfl) (tWd t)
+    rwa [encB_tWd] at this
+  | .rep c b, h => by
+    simp only [validB] at h
+    have := Inv.loop (tWd c) (inv_compileA hV1 hV2 htime hlen hM b h)
+    rw [encB_tWd] at this
+    refine this.mono ?_
+    simp only [costC]
+    exact Nat.add_le_add_right (Nat.mul_le_mul_left _ (by omega)) 2
+  | .seq p q, h => by
+    simp only [validB, Bool.and_eq_true] at h
+    exact (inv_compileA hV1 hV2 htime hlen hM p h.1).seq (inv_compileA hV1 hV2 htime hlen hM q h.2)
+  | .ifb t p q, h => by
+    simp only [validB, Bool.and_eq_true] at h
+    exact Inv.ifBit (tWd t) (inv_compileA hV1 hV2 htime hlen hM p h.1)
+      (inv_compileA hV1 hV2 htime hlen hM q h.2)
+  | .nop, _ => inv_nopX bs V B
+
+end Main
+
+/-! ### Phases of the instructions (strong updates) -/
+
+section PhInst
+
+variable (bs : Fin 132 → ℕ) (V : ℕ) (B : Fin 120 → ℕ)
+
+theorem Inv.ph {X : XProg 256} {β : Fin 256 → ℕ} {T : ℕ} (h : Inv X β T) : XProg.Ph X β T β := h
+
+/-- A framed instruction as a phase, from the bounds `v` of its tapes. -/
+theorem ph_frame' {n : ℕ} {p : Prog n} {claim : Asg} {w : Poly}
+    (h : check 8 p (xs n) claim w = true) (e : Fin n ↪ Fin 256) (β βo : Fin 256 → ℕ)
+    (v : Fin n → ℕ) (hv : ∀ j, β (e j) = v j) (top : ℕ) (htop : ∀ j, v j ≤ top) (T : ℕ)
+    (hT : ∀ ℓ' : Fin n → ℕ, ℓ' ≤ v → (2 * top + 3) * pEval (top :: List.ofFn ℓ') w ≤ T)
+    (hc : ∀ ℓ' : Fin n → ℕ, ℓ' ≤ v → ∀ j : Fin n,
+      pEval (top :: List.ofFn ℓ') (aGet claim j.val) ≤ βo (e j))
+    (hr : ∀ t, (∀ j, e j ≠ t) → β t ≤ βo t)
+    (hl : claim.length = n) : XProg.Ph (.frame e (.prog p)) β T βo := fun ℓ hℓ => by
+  have hv' : ∀ j, ℓ (e j) ≤ v j := fun j => (hv j) ▸ hℓ (e j)
+  obtain ⟨t1, t2, t3⟩ := frame_inst h e ℓ top (fun j => (hv' j).trans (htop j))
+  refine ⟨t1.trans (hT (fun j => ℓ (e j)) hv'), fun t => ?_⟩
+  by_cases ht : ∃ j, e j = t
+  · obtain ⟨j, rfl⟩ := ht
+    exact (t2 j (by rw [hl]; exact j.isLt)).trans (hc (fun j => ℓ (e j)) hv' j)
+  · push_neg at ht
+    rw [t3 t ht]; exact (hℓ t).trans (hr t ht)
+
+/-- A result out, its word getting the bound of the step's output. -/
+theorem ph_outP (d : Fin 120) :
+    XProg.Ph (.frame (mkE (fOut d) (fOut_inj d)) (.prog outP)) (encB bs V B)
+      ((2 * max (max (bs 0) (bs 1)) (max (bs 2) (B d)) + 3) * 4)
+      (Function.update (encB bs V B) (tWd d) (bs 0)) := by
+  obtain ⟨f0, f1, f2, f3⟩ := fOut_vals d
+  refine ph_frame' check_outP _ _ _ ![bs 0, bs 1, bs 2, B d] (fun j => ?_)
+    (max (max (bs 0) (bs 1)) (max (bs 2) (B d))) (fun j => ?_) _ (fun ℓ' _ => ?_)
+    (fun ℓ' hℓ j => ?_) (fun t ht => ?_) rfl
+  · show encB bs V B (fOut d j) = _
+    fin_cases j <;> simp [f0, f1, f2, f3]
+  · fin_cases j <;> simp
+  · rw [pEval_const]
+  · show _ ≤ Function.update (encB bs V B) (tWd d) (bs 0) (fOut d j)
+    fin_cases j
+    · rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _
+    · rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _
+    · rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _
+    · rw [pEval_aGet_X _ _ _ 1 rfl, getD_ofFn_succ _ _ 0 (by decide)]
+      simp only [Fin.reduceFinMk, Fin.isValue]
+      rw [f3, Function.update_self]; exact hℓ 0
+  · have : t ≠ tWd d := fun e => ht 3 (by show fOut d 3 = t; rw [f3, e])
+    rw [Function.update_of_ne this]
+
+/-- A copy, the target getting the bound of the source. -/
+theorem ph_cp (d s : Fin 120) (hi : Function.Injective (fCp d s)) (hds : d ≠ s) :
+    XProg.Ph (.frame (mkE (fCp d s) hi) (.prog (Prog.cp 0 1))) (encB bs V B)
+      ((2 * max (B d) (B s) + 3) * 1) (Function.update (encB bs V B) (tWd d) (B s)) := by
+  obtain ⟨f0, f1⟩ := fCp_vals d s
+  have hsd : tWd s ≠ tWd d := fun e => hds (tWd_inj e).symm
+  refine ph_frame' check_cp _ _ _ ![B d, B s] (fun j => ?_) (max (B d) (B s)) (fun j => ?_) _
+    (fun ℓ' _ => ?_) (fun ℓ' hℓ j => ?_) (fun t ht => ?_) rfl
+  · show encB bs V B (fCp d s j) = _
+    fin_cases j
+    · simp [f0]
+    · simp [f1]
+  · fin_cases j <;> simp
+  · rw [pEval_const]
+  · show _ ≤ Function.update (encB bs V B) (tWd d) (B s) (fCp d s j)
+    fin_cases j
+    · rw [pEval_aGet_X _ _ _ 2 rfl, getD_ofFn_succ _ _ 1 (by decide)]
+      simp only [Fin.reduceFinMk, Fin.isValue]
+      rw [f0, Function.update_self]; exact hℓ 1
+    · rw [pEval_aGet_X _ _ _ 2 rfl, getD_ofFn_succ _ _ 1 (by decide)]
+      simp only [Fin.reduceFinMk, Fin.isValue]
+      rw [f1, Function.update_of_ne hsd, encB_tWd]; exact hℓ 1
+  · have : t ≠ tWd d := fun e => ht 0 (by show fCp d s 0 = t; rw [f0, e])
+    rw [Function.update_of_ne this]
+
+/-- A clear. -/
+theorem ph_clr (t : Fin 120) :
+    XProg.Ph (.frame (mkE (f1 (tWd t)) (f1_inj _)) (.prog (Prog.clr 0))) (encB bs V B)
+      ((2 * B t + 3) * 1) (Function.update (encB bs V B) (tWd t) 0) := by
+  refine ph_frame' check_clr _ _ _ ![B t] (fun j => ?_) (B t) (fun j => ?_) _
+    (fun ℓ' _ => ?_) (fun ℓ' hℓ j => ?_) (fun u hu => ?_) rfl
+  · fin_cases j; simp [mkE, f1]
+  · fin_cases j; simp
+  · rw [pEval_const]
+  · fin_cases j; rw [pEval_aGet_nil _ _ _ rfl]; exact Nat.zero_le _
+  · have : u ≠ tWd t := fun e => hu 0 (by rw [e]; rfl)
+    rw [Function.update_of_ne this]
+
+end PhInst
+
+/-! ### Flow-sensitive word bounds -/
+
+/-- The bound of a word in a list of bounds. -/
+def gB (L : List ℕ) (x : Fin 120) : ℕ := L.getD x.val 0
+
+/-- Pointwise order of two lists of bounds. -/
+def leB (L L' : List ℕ) : Bool := (List.finRange 120).all fun x => decide (gB L x ≤ gB L' x)
+
+/-- Pointwise maximum. -/
+def jB (L L' : List ℕ) : List ℕ := List.zipWith max L L'
+
+/-- The largest bound. -/
+def mxB (L : List ℕ) : ℕ := L.foldl max 0
+
+theorem le_of_leB {L L' : List ℕ} (h : leB L L' = true) (x : Fin 120) : gB L x ≤ gB L' x := by
+  simp only [leB, List.all_eq_true, List.mem_finRange, decide_eq_true_eq, true_implies] at h
+  exact h x
+
+theorem gB_set {L : List ℕ} (hL : L.length = 120) (x : Fin 120) (v : ℕ) (y : Fin 120) :
+    gB (L.set x.val v) y = if y = x then v else gB L y := by
+  simp only [gB, List.getD_eq_getElem?_getD, List.getElem?_set]
+  by_cases h : y = x
+  · subst h; simp [hL]
+  · have : x.val ≠ y.val := fun e => h (Fin.ext e).symm
+    simp [this, h]
+
+theorem gB_jB {L L' : List ℕ} (hL : L.length = 120) (hL' : L'.length = 120) (x : Fin 120) :
+    gB (jB L L') x = max (gB L x) (gB L' x) := by
+  simp only [gB, jB, List.getD_eq_getElem?_getD, List.getElem?_zipWith]
+  have h1 : x.val < L.length := by rw [hL]; exact x.isLt
+  have h2 : x.val < L'.length := by rw [hL']; exact x.isLt
+  simp [List.getElem?_eq_getElem h1, List.getElem?_eq_getElem h2]
+
+theorem le_mxB_aux : ∀ (L : List ℕ) (a : ℕ) (i : ℕ), L.getD i 0 ≤ L.foldl max a ∧ a ≤ L.foldl max a
+  | [], a, i => by simp
+  | b :: L, a, i => by
+    have h2 := fun j => (le_mxB_aux L (max a b) j).2
+    cases i with
+    | zero => exact ⟨by simp only [List.getD_cons_zero, List.foldl_cons]; exact
+        (le_max_right a b).trans (h2 0), (le_max_left a b).trans (h2 0)⟩
+    | succ i => exact ⟨by simpa using (le_mxB_aux L (max a b) i).1,
+        (le_max_left a b).trans (h2 0)⟩
+
+theorem gB_le_mxB (L : List ℕ) (x : Fin 120) : gB L x ≤ mxB L := (le_mxB_aux L 0 x.val).1
+
+theorem supB_encB_le (bs : Fin 132 → ℕ) (V : ℕ) (L : List ℕ) (Ms : ℕ) (hbs : ∀ t, bs t ≤ Ms)
+    (hV : V ≤ Ms) : supB (encB bs V (gB L)) ≤ max Ms (mxB L) := by
+  refine XProg.supB_le_of fun t => ?_
+  simp only [encB]
+  split_ifs
+  · exact (hbs _).trans (le_max_left _ _)
+  · exact hV.trans (le_max_left _ _)
+  · exact (gB_le_mxB L _).trans (le_max_right _ _)
+  · exact Nat.zero_le _
+
+theorem encB_mono (bs : Fin 132 → ℕ) (V : ℕ) {B B' : Fin 120 → ℕ} (h : ∀ x, B x ≤ B' x) :
+    encB bs V B ≤ encB bs V B' := fun t => by
+  simp only [encB]; split_ifs <;> first | exact le_rfl | exact h _
+
+theorem encB_update (bs : Fin 132 → ℕ) (V : ℕ) {L : List ℕ} (hL : L.length = 120) (x : Fin 120)
+    (v : ℕ) : Function.update (encB bs V (gB L)) (tWd x) v = encB bs V (gB (L.set x.val v)) := by
+  funext t
+  by_cases h : t = tWd x
+  · subst h; rw [Function.update_self, encB_tWd, gB_set hL, if_pos rfl]
+  · rw [Function.update_of_ne h]
+    simp only [encB]
+    split_ifs with h1 h2 h3
+    · rfl
+    · rfl
+    · rw [gB_set hL, if_neg]
+      intro e; apply h; ext; simp only [tWd]; rw [← e]; simp; omega
+    · rfl
+
+/-- A loop invariant of the bounds, by joining the rounds (at most `n` times). -/
+def findInv (f : List ℕ → Option (List ℕ × ℕ)) : ℕ → List ℕ → Option (List ℕ)
+  | 0, _ => none
+  | n + 1, I => match f I with
+    | some (I', _) => if leB I' I then some I else findInv f n (jB I I')
+    | none => none
+
+theorem findInv_spec (f : List ℕ → Option (List ℕ × ℕ))
+    (hf : ∀ I I' T, I.length = 120 → f I = some (I', T) → I'.length = 120) :
+    ∀ (n : ℕ) (L I : List ℕ), L.length = 120 → findInv f n L = some I →
+      I.length = 120 ∧ (∀ x, gB L x ≤ gB I x) ∧ ∃ I' T, f I = some (I', T) ∧ leB I' I = true
+  | 0, _, _, _, h => by simp [findInv] at h
+  | n + 1, L, I, hL, h => by
+    simp only [findInv] at h
+    rcases hfL : f L with _ | ⟨I', T⟩
+    · rw [hfL] at h; simp at h
+    rw [hfL] at h
+    simp only at h
+    split_ifs at h with hle
+    · cases h; exact ⟨hL, fun x => le_rfl, I', T, hfL, hle⟩
+    · have hI' := hf L I' T hL hfL
+      have hJ : (jB L I').length = 120 := by simp [jB, hL, hI']
+      obtain ⟨a, b, c⟩ := findInv_spec f hf n _ I hJ h
+      exact ⟨a, fun x => (by rw [gB_jB hL hI']; exact le_max_left _ _ : gB L x ≤ gB (jB L I') x).trans
+        (b x), c⟩
+
+section Abs
+
+variable (bs : Fin 132 → ℕ) (V Tst Ms : ℕ)
+
+/-- **The abstract interpreter of codes**: the bounds of the words afterwards (copies and results
+as strong updates, loops at a joined invariant) and the steps. -/
+def absC (fuel : ℕ) : Code → List ℕ → Option (List ℕ × ℕ)
+  | .gate d a b, L => some (L.set d.val (bs 0),
+      (2 * max (bs 1) (max V (gB L a)) + 3) * (7 + 6 * V) +
+      ((2 * max (bs 2) (max V (gB L b)) + 3) * (7 + 6 * V) +
+        (Tst + (2 * max (max (bs 0) (bs 1)) (max (bs 2) (gB L d)) + 3) * 4)))
+  | .mvV d s, L => some (L, if d = s then 3 else
+      (2 * max (max (gB L s) (gB L d)) V + 3) * (4 + 6 * V))
+  | .mv d s c, L => some (L, if d = s ∨ d = c ∨ s = c then 3 else
+      (2 * max (max (gB L s) (gB L d)) (gB L c) + 3) * (4 + 6 * gB L c))
+  | .cp d s, L => some (if d = s then L else L.set d.val (gB L s),
+      if d = s then 3 else (2 * max (gB L d) (gB L s) + 3) * 1)
+  | .drop t c, L => some (L, if t = c then 3 else
+      (2 * max (gB L t) (gB L c) + 3) * (3 + 3 * gB L c))
+  | .clr t, L => some (L.set t.val 0, (2 * gB L t + 3) * 1)
+  | .tl t, L => some (L, (2 * gB L t + 3) * 1)
+  | .rep c b, L => match findInv (absC fuel b) fuel L with
+    | some I => match absC fuel b I with
+      | some (_, T) => some (I, gB L c * (2 * max Ms (mxB I) + 3 + T + 1) + 2)
+      | none => none
+    | none => none
+  | .seq p q, L => match absC fuel p L with
+    | some (L1, T1) => match absC fuel q L1 with
+      | some (L2, T2) => some (L2, T1 + T2)
+      | none => none
+    | none => none
+  | .ifb _ p q, L => match absC fuel p L, absC fuel q L with
+    | some (L1, T1), some (L2, T2) => some (jB L1 L2, max T1 T2 + 1)
+    | _, _ => none
+  | .nop, L => some (L, 3)
+
+theorem absC_len (fuel : ℕ) : ∀ (c : Code) (L L' : List ℕ) (T : ℕ), L.length = 120 →
+    absC bs V Tst Ms fuel c L = some (L', T) → L'.length = 120
+  | .gate _ _ _, L, L', T, hL, h => by simp only [absC, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; simp [hL]
+  | .mvV _ _, L, L', T, hL, h => by simp only [absC, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; exact hL
+  | .mv _ _ _, L, L', T, hL, h => by simp only [absC, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; exact hL
+  | .cp d s, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; split_ifs <;> simp [hL]
+  | .drop _ _, L, L', T, hL, h => by simp only [absC, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; exact hL
+  | .clr _, L, L', T, hL, h => by simp only [absC, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; simp [hL]
+  | .tl _, L, L', T, hL, h => by simp only [absC, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; exact hL
+  | .rep c b, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hI : findInv (absC bs V Tst Ms fuel b) fuel L with _ | I
+    · rw [hI] at h; simp at h
+    rw [hI] at h
+    simp only at h
+    rcases hb : absC bs V Tst Ms fuel b I with _ | ⟨I', T'⟩
+    · rw [hb] at h; simp at h
+    rw [hb] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.1]
+    exact (findInv_spec _ (fun I I' T hI h => absC_len fuel b I I' T hI h) fuel L I hL hI).1
+  | .seq p q, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hp : absC bs V Tst Ms fuel p L with _ | ⟨L1, T1⟩
+    · rw [hp] at h; simp at h
+    rw [hp] at h
+    simp only at h
+    rcases hq : absC bs V Tst Ms fuel q L1 with _ | ⟨L2, T2⟩
+    · rw [hq] at h; simp at h
+    rw [hq] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.1]
+    exact absC_len fuel q L1 L2 T2 (absC_len fuel p L L1 T1 hL hp) hq
+  | .ifb _ p q, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hp : absC bs V Tst Ms fuel p L with _ | ⟨L1, T1⟩
+    · rw [hp] at h; simp at h
+    rcases hq : absC bs V Tst Ms fuel q L with _ | ⟨L2, T2⟩
+    · rw [hp, hq] at h; simp at h
+    rw [hp, hq] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.1]
+    simp [jB, absC_len fuel p L L1 T1 hL hp, absC_len fuel q L L2 T2 hL hq]
+  | .nop, L, L', T, hL, h => by simp only [absC, Option.some.injEq, Prod.mk.injEq] at h; rw [← h.1]; exact hL
+
+end Abs
+
+/-! ### Soundness of `absC` -/
+
+theorem ph_loop {X : XProg 256} {β0 β : Fin 256 → ℕ} {T : ℕ} (i : Fin 256) (h0 : β0 ≤ β)
+    (hX : Inv X β T) :
+    XProg.Ph (.loop i X) β0 (β0 i * (2 * supB β + 3 + T + 1) + 2) β := fun ℓ hℓ => by
+  have hinv : XProg.loopStepT i X β ≤ β := (hX _ (tailB_le i β)).2
+  refine ⟨(XProg.timeBoundT_loop_le_of_inv i X (hℓ.trans h0) hinv).trans ?_,
+    XProg.lenBoundT_loop_le_of_inv i X (hℓ.trans h0) hinv⟩
+  have := (hX _ (tailB_le i β)).1
+  have h1 : Prog.roundTimeT (XProg.timeBoundT X) i β ≤ 2 * supB β + 3 + T := by
+    simp only [Prog.roundTimeT]; omega
+  exact Nat.add_le_add_right (Nat.mul_le_mul (hℓ i) (by omega)) 2
+
+theorem ph_ifBit {X Y : XProg 256} {β β1 β2 : Fin 256 → ℕ} {T U : ℕ} (i : Fin 256)
+    (hX : XProg.Ph X β T β1) (hY : XProg.Ph Y β U β2) :
+    XProg.Ph (.ifBit i X Y) β (max T U + 1) (fun t => max (β1 t) (β2 t)) := fun ℓ hℓ =>
+  ⟨Nat.add_le_add_right (max_le_max (hX ℓ hℓ).1 (hY ℓ hℓ).1) 1,
+    fun t => max_le_max ((hX ℓ hℓ).2 t) ((hY ℓ hℓ).2 t)⟩
+
+section AbsSound
+
+variable {H : List ℕ → Prop} {P : Prog 132} (cert : StepCert H P) (bs : Fin 132 → ℕ) (V Tst Ms : ℕ)
+
+/-- **Soundness of the abstract interpreter**: from bounds below `encB bs V (gB L)`, the compiled
+code takes at most the steps found and leaves the bounds found. -/
+theorem absC_sound (hV1 : V ≤ bs 1) (hV2 : V ≤ bs 2)
+    (htime : ∀ ℓ ≤ bs, Prog.timeBoundT P ℓ ≤ Tst) (hlen : ∀ ℓ ≤ bs, Prog.lenBoundT P ℓ ≤ bs)
+    (hbs : ∀ t, bs t ≤ Ms) (hVM : V ≤ Ms) (fuel : ℕ) :
+    ∀ (c : Code) (L L' : List ℕ) (T : ℕ), L.length = 120 →
+      absC bs V Tst Ms fuel c L = some (L', T) →
+      XProg.Ph (compileA cert c).toX (encB bs V (gB L)) T (encB bs V (gB L'))
+  | .gate d a b, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    rw [← encB_update bs V hL]
+    exact ((inv_inP bs V (gB L) 1 a hV1).ph.seq ((inv_inP bs V (gB L) 2 b hV2).ph.seq
+      ((inv_step bs V (gB L) htime hlen).ph.seq (ph_outP bs V (gB L) d))))
+  | .mvV d s, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp only [compileA]
+    split_ifs with hds
+    · exact (inv_nopX bs V (gB L)).ph
+    · exact (inv_mvPc bs V (gB L) d s tTV _ V (encB_tTV _ _ _)).ph
+  | .mv d s c, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp only [compileA]
+    split_ifs with hds
+    · exact (inv_nopX bs V (gB L)).ph
+    · exact (inv_mvPc bs V (gB L) d s (tWd c) _ (gB L c) (encB_tWd _ _ _ c)).ph
+  | .cp d s, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp only [compileA]
+    split_ifs with hds
+    · exact (inv_nopX bs V (gB L)).ph
+    · rw [← encB_update bs V hL]
+      exact ph_cp bs V (gB L) d s _ hds
+  | .drop t c, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    simp only [compileA]
+    split_ifs with hds
+    · exact (inv_nopX bs V (gB L)).ph
+    · exact (inv_dropPc bs V (gB L) t c _).ph
+  | .clr t, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    rw [← encB_update bs V hL]
+    exact ph_clr bs V (gB L) t
+  | .tl t, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have := inv_one bs V (gB L) check_tl rfl (Or.inr rfl) (tWd t)
+    rw [encB_tWd] at this
+    exact this.ph
+  | .rep c b, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hI : findInv (absC bs V Tst Ms fuel b) fuel L with _ | I
+    · rw [hI] at h; simp at h
+    rw [hI] at h
+    simp only at h
+    rcases hb : absC bs V Tst Ms fuel b I with _ | ⟨I', T'⟩
+    · rw [hb] at h; simp at h
+    rw [hb] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    obtain ⟨hIl, hLI, I'', T'', hb', hle⟩ := findInv_spec _
+      (fun I I' T hI h => absC_len bs V Tst Ms fuel b I I' T hI h) fuel L I hL hI
+    rw [hb] at hb'
+    cases hb'
+    have hX := absC_sound hV1 hV2 htime hlen hbs hVM fuel b I I' T' hIl hb
+    have hinv : Inv (compileA cert b).toX (encB bs V (gB I)) T' := fun ℓ hℓ =>
+      ⟨(hX ℓ hℓ).1, (hX ℓ hℓ).2.trans (encB_mono bs V (le_of_leB hle))⟩
+    refine (ph_loop (tWd c) (encB_mono bs V hLI) hinv).mono le_rfl ?_ le_rfl
+    rw [encB_tWd]
+    have := supB_encB_le bs V I Ms hbs hVM
+    exact Nat.add_le_add_right (Nat.mul_le_mul_left _ (by omega)) 2
+  | .seq p q, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hp : absC bs V Tst Ms fuel p L with _ | ⟨L1, T1⟩
+    · rw [hp] at h; simp at h
+    rw [hp] at h
+    simp only at h
+    rcases hq : absC bs V Tst Ms fuel q L1 with _ | ⟨L2, T2⟩
+    · rw [hq] at h; simp at h
+    rw [hq] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact (absC_sound hV1 hV2 htime hlen hbs hVM fuel p L L1 T1 hL hp).seq
+      (absC_sound hV1 hV2 htime hlen hbs hVM fuel q L1 L2 T2
+        (absC_len bs V Tst Ms fuel p L L1 T1 hL hp) hq)
+  | .ifb t p q, L, L', T, hL, h => by
+    simp only [absC] at h
+    rcases hp : absC bs V Tst Ms fuel p L with _ | ⟨L1, T1⟩
+    · rw [hp] at h; simp at h
+    rcases hq : absC bs V Tst Ms fuel q L with _ | ⟨L2, T2⟩
+    · rw [hp, hq] at h; simp at h
+    rw [hp, hq] at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have h1 := absC_len bs V Tst Ms fuel p L L1 T1 hL hp
+    have h2 := absC_len bs V Tst Ms fuel q L L2 T2 hL hq
+    refine (ph_ifBit (tWd t) (absC_sound hV1 hV2 htime hlen hbs hVM fuel p L L1 T1 hL hp)
+      (absC_sound hV1 hV2 htime hlen hbs hVM fuel q L L2 T2 hL hq)).mono le_rfl le_rfl
+      (fun u => ?_)
+    simp only [encB]
+    split_ifs
+    · exact max_le le_rfl le_rfl
+    · exact max_le le_rfl le_rfl
+    · rw [gB_jB h1 h2]
+    · exact max_le le_rfl le_rfl
+  | .nop, L, L', T, hL, h => by
+    simp only [absC, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact (inv_nopX bs V (gB L)).ph
+
+end AbsSound
+
+end ValVM
+
+end SigabaNeo.Tape
