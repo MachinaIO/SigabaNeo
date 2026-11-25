@@ -632,11 +632,23 @@ class WorkflowTest(unittest.TestCase):
         self.assertEqual(decide["permissions"], {"contents": "read"})
         rep = gate["jobs"]["report"]
         self.assertIn("pull_request_target", rep["if"])
-        self.assertEqual(set(rep["permissions"]), {"contents", "pull-requests", "issues"})
-        self.assertNotIn("GATE_APP", yaml.dump(gate))               # no long-lived key
+        self.assertEqual(set(rep["permissions"]), {"pull-requests", "issues"})
+        self.assertNotIn("GATE_APP", yaml.dump(rep))
         self.assertNotIn("environment", rep)
         report = next(s["run"] for s in rep["steps"] if s.get("name") == "Report on the pull request")
-        self.assertIn('--match-head-commit "$REVISION"', report)
+        # Only the merge job holds the App's key, only for passing pull requests of automerge
+        # authors; it runs no step but the token's and the merge.
+        merge = gate["jobs"]["merge"]
+        self.assertEqual(merge["environment"], "gate")
+        self.assertEqual(merge["permissions"], {})
+        self.assertIn("pull_request_target", merge["if"])
+        self.assertIn("needs.decide.outputs.automerge == '1'", merge["if"])
+        self.assertEqual([j for j, job in gate["jobs"].items() if "GATE_APP" in yaml.dump(job)],
+                         ["merge"])
+        self.assertFalse(any("checkout" in str(s.get("uses", "")) for s in merge["steps"]))
+        merge_run = next(s["run"] for s in merge["steps"] if "run" in s)
+        self.assertIn('--match-head-commit "$REVISION"', merge_run)
+        self.assertNotIn("gh pr merge", report)
         self.assertIn("gh label create", report)
         self.assertNotIn("|| true", report)                 # labelling never fails silently
         readme = (D.CORE / "docs/GITHUB_PLATFORM.md").read_text()
@@ -726,6 +738,9 @@ elif a[:2] == ["pr", "edit"]:
             subprocess.run(["bash", "-e", "-c", steps["Report on the pull request"]], cwd=work,
                            env=env, check=True)
             self.assertEqual(json.loads(state.read_text()), expect, conclusion)
+        self.assertNotIn("pr merge", log.read_text())        # the merge job's, not report's
+        merge = next(s["run"] for s in gate["jobs"]["merge"]["steps"] if "run" in s)
+        subprocess.run(["bash", "-e", "-c", merge], cwd=work, env=env, check=True)
         self.assertIn(f"--match-head-commit {'e' * 40}", log.read_text())
         self.assertEqual(log.read_text().count("pr merge"), 1)
 
