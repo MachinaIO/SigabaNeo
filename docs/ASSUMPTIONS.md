@@ -56,6 +56,27 @@ stored in the control states, so it is paid for in `descLen`.
 `Attack.not_hardAt` justifies the update rule: once an attack at `c` is proven, `H p` may be
 lowered to `c` and no true claim is lost.
 
+## Lowerings
+
+Every update of a strength is a whole new security function, not a value at one parameter. An
+attack that works on a region of parameters is written as a function with that region lowered,
+typically `H' p = if region p then min (f p) (H p) else H p`.
+
+```lean
+def Assumption.Lowering (a : Assumption) (H H' : a.Params → ℕ) : Prop :=
+  ∀ p, H' p ≤ H p ∧ (H' p < H p → a.Attack p (H' p))
+```
+
+| Theorem | Statement |
+| --- | --- |
+| `Lowering.refl` | `a.Lowering H H` |
+| `Lowering.trans` | lowerings compose |
+| `Lowering.not_hardAt` | where `H' p < H p`, every claim above `H' p` is false |
+| `Lowering.hardAt` | `HardAt a p (H p) → HardAt a p (H' p)`: no true claim is lost |
+
+A function that only rewrites `H` (equal everywhere, but faster to evaluate) is a lowering with no
+attack at all.
+
 ## The registry and premises
 
 The strength of an assumption changes; its problem does not. The harness therefore keeps the two
@@ -68,6 +89,12 @@ apart:
 * `R.Holds H n`: assumption `n` has `H n p` bits at every `p`.
 * `Premise R`: a submission's premise `(n, p₀, k)`, naming a registered assumption.
   `Premise.Valid H`: `k ≤ H n p₀`.
+
+`Registry.univ` names every assumption by itself (`Name := Assumption`). A submission over it may
+use any assumption, but only the registered ones count: the harness gives an unregistered
+assumption strength `0`, so a premise on it can ask only for `0` bits, which always hold. Problem
+authors use `Registry.univ`, so that an assumption registered after the problem can still be a
+premise.
 
 | Theorem | Statement |
 | --- | --- |
@@ -95,3 +122,25 @@ proved from certified lower bounds on each attack instead (`Estimator.estimatorB
 `Estimator.cbd16_estimatorBits_ge`; [LWE_ESTIMATOR.md](LWE_ESTIMATOR.md#large-parameters)). For
 example `2650 ≤ RingLWE.H` at ring degree `2^34`, `q = 2^(2^25)`
 (`AdvancedEncryption/PE/Impl/DualUse/Params/Strength.lean`).
+
+## Assumptions and strengths in the DAG
+
+Anyone may register an assumption in the DAG repository, AI agents included; Cryptanalysis AI
+lowers the strength of the ones that claim too much. The layout and the gate's checks are in
+[GITHUB_PLATFORM.md](GITHUB_PLATFORM.md), section 2.
+
+* **Registration**: `dag/Assumptions/<slug>/Asm.json` names a constant of type
+  `SigabaNeo.Assumption` (in a definition node or in std) and gives the rationale of its `H`. An
+  assumption is identified by its parameter set and its problem, not by `H`: registering an
+  existing problem again, with another `H`, is a `DUPLICATE`, so a problem cannot escape its
+  lowered strength by being registered again.
+* **Strength versions**: `dag/Assumptions/<slug>/H_v<n>.json` gives a new security function `H` and
+  a proved theorem node `lowering` with the statement `Lowering <assumption> <previous> <H>`, where
+  `<previous>` is the assumption's own `H` for `H_v1` and the function of `H_v(n-1)` after that.
+* **The current strength is the latest version.** It is stored, not recomputed: since every version
+  lowers the one before (and lowerings compose), the latest is the lowest, and finding it reads one
+  directory. Versions are numbered in order and paths are first come, so two lowerings from the
+  same version cannot both be merged; the second is restated from the new latest version.
+* A conservative reading is always safe for whoever relies on a submission: checking premises
+  against a lower `H` can only reject more. What must not happen is a version that is higher than
+  its predecessor, and the gate rejects it unless its lowering is proved.

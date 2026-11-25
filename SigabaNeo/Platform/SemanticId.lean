@@ -199,4 +199,19 @@ def nodeData (kind : String) (decls : List Name) : MetaM Json := do
     ("root", Json.mkObj [("form", Json.str rootForm), ("refs", Json.arr (rootRefs.map Json.str))]),
     ("units", Json.mkObj unitJson)]
 
+/-- The semantic data of a node identified by expressions rather than by a declaration (an
+assumption: its parameter set and its problem, not its security function). -/
+def exprNodeData (kind : String) (es : List (String × Expr)) : MetaM Json := do
+  let env ← getEnv
+  let (rootForm, rootConsts) ← serAll [] s!"{kind}-node" es
+  let units ← closure rootConsts
+  let rootRefs := rootConsts.toList.filter (· != proofMark) |>.map (unitOf env) |>.eraseDups
+    |>.toArray.qsort (· < ·)
+  let unitJson := units.toList.map fun (k, (f, r)) =>
+    (k, Json.mkObj [("form", Json.str f), ("refs", Json.arr (r.map Json.str))])
+  return Json.mkObj [
+    ("kind", Json.str kind),
+    ("root", Json.mkObj [("form", Json.str rootForm), ("refs", Json.arr (rootRefs.map Json.str))]),
+    ("units", Json.mkObj unitJson)]
+
 end SigabaNeo.Platform.Semantic

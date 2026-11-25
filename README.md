@@ -105,8 +105,8 @@ literature.
 
 | | |
 | --- | --- |
-| **Implemented** | primitives, submissions and `Spec`; assumptions, the registry, premises and `Submission.Valid`; attacks and the update rule as theorems; the trusted check; the DAG repository with its gate, records and index; the standard library (lattices and LWE, the lattice estimator and attacks, machines and programs) |
-| **Planned** | the harness updating strengths itself from proven attacks; warnings about assumptions with pending, unproven attacks; **Phase 2** (CPU/GPU binaries proven equivalent to the Turing machines); conditional attacks from explicit heuristic conjectures, with a criterion for adopting them (an open problem) |
+| **Implemented** | primitives, submissions and `Spec`; assumptions, the registry (`Registry.univ`), premises and `Submission.Valid`; attacks and lowerings of a security function (`Assumption.Lowering`) as theorems; assumptions registered in the DAG and their strengths stored as versions, each a proved lowering of the one before; the trusted check; the DAG repository with its gate, records and index; the standard library (lattices and LWE, the lattice estimator and attacks, machines and programs) |
+| **Planned** | checking submissions' premises against the current strengths (and flagging the ones a new version invalidates); the client re-checking the version chain locally; warnings about assumptions with pending, unproven attacks; **Phase 2** (CPU/GPU binaries proven equivalent to the Turing machines); conditional attacks from explicit heuristic conjectures, with a criterion for adopting them (an open problem) |
 
 ## Use
 

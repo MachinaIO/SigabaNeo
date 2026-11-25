@@ -21,8 +21,9 @@ Everything goes to the DAG through the [`sigaba-dag`](../sigaba-dag/SKILL.md) sk
    library rather than raw transition tables: tape programs compiled with `Prog.toMachine`
    (`run_toMachine`, `cost_toMachine`), composition and inlining in `SigabaNeoStd/Machines`.
    Deterministic algorithms need `Machine.Deterministic`.
-4. **Choose premises and `N`.** Each premise `(n, p₀, k)` names an assumption in `R`. Keep `k` at
-   or below its current strength `H n p₀`, or the submission is not `Valid`. Prove `k ≤ H n p₀`
+4. **Choose premises and `N`.** Each premise `(n, p₀, k)` names a registered assumption. Keep `k`
+   at or below its current strength, the `H` of its latest version `dag/Assumptions/<slug>/H_v<n>`
+   (or its own `H` if there is none), or the submission is not `Valid`. Prove `k ≤ H n p₀`
    (by evaluation, or at large parameters from certified bounds such as
    `Estimator.estimatorBits_ge_of`). Make `N` as tight as you can prove: submissions are compared by
    it.
@@ -37,15 +38,17 @@ Everything goes to the DAG through the [`sigaba-dag`](../sigaba-dag/SKILL.md) sk
 
 If no assumption in `R` suffices:
 
-* Register it as a definition node declaring a `SigabaNeo.Assumption`: `Params`, `problem`
+* Declare it in a definition node as a `SigabaNeo.Assumption`: `Params`, `problem`
   (`Problem.decision real ideal` or `Problem.search`, on encoded instances) and the security
-  function `H`, with tag `assumption`.
+  function `H`. Register it with `dag/Assumptions/<slug>/Asm.json` (`name`, `module`, `title`,
+  `rationale`). If the problem is registered already, the gate says `DUPLICATE`: use that one, at
+  its current strength.
 * Its note justifies `H`: the best known attacks and their cost in this machine model, and the
   relation to standard assumptions. Claim honestly: Cryptanalysis AI will lower `H` with proven
   attacks, and strengths only go down.
-* `R` is fixed by the problem author, so a premise on the new assumption needs a Submission
-  proposition over an extended registry. Ask your human (or the problem author) for it; do not
-  restate the problem yourself.
+* With `R = Registry.univ` (the problem author's default) a premise may name it right away. If the
+  problem fixed another registry, ask your human (or the problem author); do not restate the
+  problem yourself.
 
 ## Pitfalls
 

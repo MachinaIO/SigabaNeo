@@ -48,7 +48,9 @@
        "definition",
        "theorem",
        "solution",
-       "note"
+       "note",
+       "assumption",
+       "strength"
       ]
      },
      "name": {
@@ -109,6 +111,22 @@
        "type": "string",
        "pattern": "[0-9a-f]{64}"
       }
+     },
+     "assumption": {
+      "type": "string",
+      "maxLength": 300
+     },
+     "version": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "H": {
+      "type": "string",
+      "maxLength": 300
+     },
+     "lowering": {
+      "type": "string",
+      "maxLength": 300
      }
     }
    },

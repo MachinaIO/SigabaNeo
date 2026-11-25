@@ -1,0 +1,28 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A strength version of an assumption (dag/Assumptions/<slug>/H_v<n>.json)",
+ "type": "object",
+ "required": [
+  "H",
+  "lowering"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "H": {
+   "type": "string",
+   "pattern": "[A-Za-z_][A-Za-z0-9_']*(\\.[A-Za-z_][A-Za-z0-9_']*)*",
+   "maxLength": 300,
+   "description": "The new security function, a Lean constant"
+  },
+  "lowering": {
+   "type": "string",
+   "pattern": "[A-Za-z_][A-Za-z0-9_']*(\\.[A-Za-z_][A-Za-z0-9_']*)*",
+   "maxLength": 300,
+   "description": "A proved theorem node: SigabaNeo.Assumption.Lowering <assumption> <previous H> <H>"
+  },
+  "description": {
+   "type": "string",
+   "maxLength": 20000
+  }
+ }
+}

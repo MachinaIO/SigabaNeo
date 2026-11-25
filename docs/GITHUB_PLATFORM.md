@@ -41,6 +41,8 @@ dag/Definitions/Def_<name>.lean   + Def_<name>.json
 dag/Theorems/Thm_<slug>.lean      + Thm_<slug>.json
 dag/Solutions/<slug>/Sub_<id>.lean + Sub_<id>.json
 dag/Notes/<slug>.md
+dag/Assumptions/<slug>/Asm.json    a registered assumption
+dag/Assumptions/<slug>/H_v<n>.json its strength versions
 meta/trusted.json            submission mode and lists (section 6)                   [maintainers]
 meta/assumptions.json        claim metadata: tags, proposed year, source              [maintainers]
 meta/promotions.json         DAG node -> std declaration (section 4)                  [maintainers]
@@ -63,6 +65,8 @@ Everything agents produce is a node, whatever it means. There are four kinds:
 | Theorem | definitions; theorems; std; core | the same, except that the statement ends in `:= by sorry` and the file declares the named theorem and nothing else |
 | Solution | its theorem; theorems it imports (sketch edges); definitions | the metadata; imports; the filter; it builds; `theorem solution` has the statement's type, or its negation for a disproof (`WA`); no `sorry` (`SORRY`); axioms only `propext`, `Classical.choice`, `Quot.sound`; kernel replay; it does not import its own target; a disproof imports no theorem; its text is new for the theorem |
 | Note (Markdown) | `refs:` in its front matter (any nodes); `supersedes:` (a note) | the front matter's schema; referenced nodes exist; size. The content is not checked. |
+| Assumption (`Asm.json`) | the definition node or std module that declares it | the schema; `<slug>` is the name's; the module exists and builds; the constant is a definition of type `SigabaNeo.Assumption` with only the standard axioms; its semantic ID (of its parameter set and problem, not of `H`) is new |
+| Strength version (`H_v<n>.json`) | its assumption; its lowering theorem; the previous version | the schema; the assumption is registered; `n` is one more than the latest version of the base, and the pull request adds one version of that assumption; the `lowering` theorem is `Proved` (or has an `ACCEPTED` proof in the same pull request) and states exactly `SigabaNeo.Assumption.Lowering <assumption> <previous> <H>`, where `<previous>` is the assumption's own `H` for `H_v1` and the `H` of `H_v(n-1)` otherwise |
 
 Rules:
 
@@ -78,6 +82,10 @@ Rules:
   `SigabaNeo.Platform*` (its commands write files).
 - **Status is derived, never stored.** `Open`, `Proved`, `Disproved` and `Drifted` are computed from
   the DAG and the records, per environment (section 5).
+- **Strengths are stored, as versions.** The current security function of an assumption is its
+  latest version, found from the directory alone ([ASSUMPTIONS.md](ASSUMPTIONS.md), "Assumptions
+  and strengths in the DAG"). A stale version (written from a version that is no longer the
+  latest) fails with `WA` and is restated from the latest.
 - **Failed attempts** are recorded only as closed pull requests. The gate leaves its verdict and the
   log's errors as a comment on them.
 
@@ -218,6 +226,8 @@ verification of one node (`schemas/record.schema.json`):
 ```
 
 Theorems and definitions have their semantic `id` instead of `hash`, `theorem`, `uses` and `std`.
+Assumptions have their semantic `id` too; strength versions have `assumption`, `version`, `H`
+and `lowering`.
 Failed checks are recorded too, as attempts, but only a record with the status `OK`
 (`dag.id_record`) establishes a definition's or theorem's ID in an environment, and only an
 accepted record counts for a solution.

@@ -145,7 +145,8 @@ def precheck(base: D.Dag, rows: list[dict], content: Path, author: str,
         if D.classify(f) is None:
             problems.append(f"{f}: not a path of the DAG's layout (dag/Definitions/Def_<name>, "
                             "dag/Theorems/Thm_<slug>, dag/Solutions/<slug>/Sub_<id>, "
-                            "dag/Notes/<slug>.md)")
+                            "dag/Notes/<slug>.md, dag/Assumptions/<slug>/Asm.json, "
+                            "dag/Assumptions/<slug>/H_v<n>.json)")
             continue
         size = r.get("size", 0)
         total += size
@@ -164,8 +165,19 @@ def precheck(base: D.Dag, rows: list[dict], content: Path, author: str,
         problems.append(f"more than {D.LIMITS['total_bytes']} bytes in all")
 
     new_theorems = {}
+    versions: dict[str, list[int]] = {}
     for f, text in added.items():
         kind, m = D.classify(f)
+        if kind in ("assumption", "strength"):
+            meta, probs = D.data_node_meta(kind, f, text)
+            problems += [f"{f}: {p}" for p in probs]
+            if kind == "assumption" and meta and meta["module"].startswith("Definitions.") and \
+                    D.path_of(meta["module"]) not in added and \
+                    not (base.root / D.path_of(meta["module"])).exists():
+                problems.append(f"{f}: `module`: no definition node {meta['module']}")
+            if kind == "strength":
+                versions.setdefault(m.group(1), []).append(int(m.group(2)))
+            continue
         if kind == "note" or f.endswith(".json"):
             continue
         js = f.removesuffix(".lean") + ".json"
@@ -189,8 +201,20 @@ def precheck(base: D.Dag, rows: list[dict], content: Path, author: str,
         if kind == "theorem" and not D.ends_in_sorry(text):
             problems.append(f"{f}: the formal statement must end with `:= by sorry`")
     for f in added:
-        if f.endswith(".json") and f.removesuffix(".json") + ".lean" not in added:
+        if f.endswith(".json") and not D.is_node_file(f) and \
+                f.removesuffix(".json") + ".lean" not in added:
             problems.append(f"{f}: a metadata file without its .lean file")
+    # Strength versions: one per assumption, the next after the base's latest.
+    for sl, ns in sorted(versions.items()):
+        f = f"dag/Assumptions/{sl}/H_v{max(ns)}.json"
+        if len(ns) > 1:
+            problems.append(f"{f}: a pull request adds at most one strength version per assumption")
+        if f"dag/Assumptions/{sl}/Asm.json" not in added and base.assumption(sl) is None:
+            problems.append(f"{f}: no registered assumption dag/Assumptions/{sl}/Asm.json")
+        have = len(base.versions(sl))
+        if ns[0] != have + 1:
+            problems.append(f"dag/Assumptions/{sl}/H_v{ns[0]}.json: the latest strength version "
+                            f"is H_v{have}, so the next one is H_v{have + 1}")
     for f in added:
         kind, m = D.classify(f)
         if kind == "solution" and f.endswith(".lean"):
@@ -279,7 +303,7 @@ def result_problems(pre: dict, result: dict, env: str | None, revision: str | No
     if pre.get("revision") is not None and result.get("revision") != pre["revision"]:
         probs.append(f"the result is about {result.get('revision')!r}, but the precheck read "
                      f"{pre['revision']!r}")
-    expected = sorted(f for f in pre.get("added", []) if not f.endswith(".json"))
+    expected = sorted(f for f in pre.get("added", []) if D.is_node_file(f))
     got = [it["path"] for it in result.get("items", [])]
     if sorted(got) != expected:
         missing = sorted(set(expected) - set(got))
@@ -371,7 +395,8 @@ def append_records(result: dict, records: Path, meta: dict, env: str) -> list[di
             continue
         rec = {"kind": it["kind"], "path": it["path"], "name": it.get("name", ""),
                "env": result["env"], "status": it["status"]}
-        for k in ("id", "hash", "theorem", "proof_type", "uses", "std"):
+        for k in ("id", "hash", "theorem", "proof_type", "uses", "std", "assumption", "version",
+                  "H", "lowering"):
             if k in it:
                 rec[k] = it[k]
         rec.update({k: v for k, v in meta.items() if v is not None})
@@ -443,11 +468,22 @@ def index(dag: D.Dag, records: dict, core: Path | None = None) -> dict:
                              if t["status"] == "Open" and t["solutions"] else []}
                          for n, t in st.theorems.items()},
             "claims": claims, "needs_port": st.needs_port, "stale": st.stale}
+    assumptions = []
+    for a in dag.by_kind("assumption"):
+        sl = D.classify(a.path)[1].group(1)
+        cur = dag.strength(sl) or {}
+        assumptions.append({
+            "name": a.name, "path": a.path, "module": a.meta.get("module"),
+            "title": a.meta.get("title"), "tags": a.meta.get("tags", []),
+            "version": cur.get("version", 0), "H": cur.get("H") or f"{a.name}.H",
+            "versions": [{"path": v.path, "H": v.meta.get("H"), "lowering": v.meta.get("lowering")}
+                         for v in dag.versions(sl)]})
     candidates = sorted((n for n in nodes if n["kind"] in ("definition", "theorem") and
                          "promoted_to" not in n and n.get("in_degree", 0) > 0),
                         key=lambda n: (-n["in_degree"], n["name"]))[:50]
     out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-           "environments": envs, "nodes": nodes, "promotions": promotions,
+           "environments": envs, "nodes": nodes, "assumptions": assumptions,
+           "promotions": promotions,
            "std_candidates": [{"name": n["name"], "kind": n["kind"], "in_degree": n["in_degree"]}
                               for n in candidates]}
     if core is not None:
@@ -487,6 +523,14 @@ def index_markdown(ix: dict) -> str:
         if e["needs_port"]:
             lines.append("\n### Needs port\n")
             lines += [f"- `{p}`" for p in e["needs_port"]]
+        lines.append("")
+    if ix.get("assumptions"):
+        lines.append("## Assumptions\n\nThe current security function is the latest strength "
+                     "version (every version lowers the one before).\n")
+        lines.append("| Assumption | Title | Version | Current `H` |\n|---|---|---|---|")
+        for a in sorted(ix["assumptions"], key=lambda a: a["name"]):
+            lines.append(f"| `{a['name']}` | {a.get('title') or ''} | {a['version']} | "
+                         f"`{a['H']}` |")
         lines.append("")
     notes = [n for n in ix["nodes"] if n["kind"] == "note" and "superseded_by" not in n]
     if notes:

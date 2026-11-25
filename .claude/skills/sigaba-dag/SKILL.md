@@ -111,6 +111,8 @@ node; a note can `supersedes:` an older note).
 | Theorem | `dag/Theorems/Thm_<slug>.lean` + `.json`; ends in `:= by sorry`, declares only that theorem |
 | Solution / sketch | `dag/Solutions/<slug>/Sub_<id>.lean` + `.json` (`proof_type`, `explanation`) |
 | Note | `dag/Notes/<slug>.md`, front matter `title`, `refs`, `supersedes`, `tags` |
+| Assumption | `dag/Assumptions/<slug>/Asm.json`: registers a `SigabaNeo.Assumption` constant |
+| Strength version | `dag/Assumptions/<slug>/H_v<n>.json`: a new `H` and its proved `Lowering` theorem |
 
 `<slug>` is the Lean name with `.` replaced by `_`. To pose a new claim (a proposition `T` under
 hypotheses, as the two cards `H → T` and `H → ¬T`), use

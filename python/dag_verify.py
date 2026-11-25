@@ -51,6 +51,8 @@ from pathlib import Path
 import dag as D
 
 LIBS = ("Definitions", "Theorems", "Solutions")
+# Nodes identified by a semantic ID (duplicates of one another are decided by it).
+ID_KINDS = ("definition", "theorem", "assumption")
 
 
 def errors(log: str, n: int = 40) -> str:
@@ -168,7 +170,8 @@ def lean_str(s: str) -> str:
 def topo(items: list[dict]) -> list[dict]:
     """Added items in dependency order: definitions, theorems, solutions; within a kind, each
     after the added modules it imports."""
-    rank = {"definition": 0, "theorem": 1, "solution": 2, "note": 3}
+    rank = {"definition": 0, "theorem": 1, "solution": 2, "assumption": 3, "strength": 4,
+            "note": 5}
     by_mod = {D.module_of(i["path"]): i for i in items if i["path"].endswith(".lean")}
     out, seen = [], set()
 
@@ -218,11 +221,11 @@ def verify(base: Path, new: Path | None, env_id: str | None, records_dir: Path |
     # one whose check does not finish (ERROR) leaves duplicates undecidable.
     shadows = []
     for n in dag.nodes():
-        if n.kind not in ("definition", "theorem") or n.path in recorded or \
-                n.path in (reverify or []):
+        if n.kind not in ID_KINDS or n.path in recorded or n.path in (reverify or []):
             continue
+        imports = n.imports if n.kind != "assumption" else [n.meta.get("module", "")]
         shadows.append({"path": n.path, "kind": n.kind, "text": n.text, "meta": n.meta or None,
-                        "match": D.classify(n.path)[1], "imports": n.imports, "shadow": True})
+                        "match": D.classify(n.path)[1], "imports": imports, "shadow": True})
 
     items: list[dict] = []
     results: list[dict] = []
@@ -232,13 +235,13 @@ def verify(base: Path, new: Path | None, env_id: str | None, records_dir: Path |
                             if (base / f).is_file()})
     else:
         new_files = sorted(str(p.relative_to(new)) for p in new.rglob("*") if p.is_file())
-    leans = [f for f in new_files if not f.endswith(".json")]
+    leans = [f for f in new_files if D.is_node_file(f)]
     for f in new_files:
         c = D.classify(f)
         if c is None:
             results.append({"path": f, "kind": "note", "status": "ERROR",
                             "message": "not a path of the DAG's layout"})
-        elif f.endswith(".json") and f.removesuffix(".json") + ".lean" not in leans:
+        elif not D.is_node_file(f) and f.removesuffix(".json") + ".lean" not in leans:
             results.append({"path": f, "kind": c[0], "status": "ERROR",
                             "message": "a metadata file without its .lean file"})
     for f in leans:
@@ -249,6 +252,15 @@ def verify(base: Path, new: Path | None, env_id: str | None, records_dir: Path |
         text = (src / f).read_text()
         if kind == "note":
             items.append({"path": f, "kind": kind, "name": m.group(1), "text": text})
+            continue
+        if kind in ("assumption", "strength"):
+            if reverify is None and (base / f).exists():
+                results.append({"path": f, "kind": kind, "status": "ERROR",
+                                "message": "the node already exists; nodes are never changed"})
+                continue
+            meta, _ = D.data_node_meta(kind, f, text)
+            items.append({"path": f, "kind": kind, "text": text, "meta": meta, "match": m,
+                          "imports": [meta["module"]] if kind == "assumption" and meta else []})
             continue
         js = src / (f.removesuffix(".lean") + ".json")
         meta = json.loads(js.read_text()) if js.exists() else None
@@ -266,7 +278,11 @@ def verify(base: Path, new: Path | None, env_id: str | None, records_dir: Path |
     failed_modules: set[str] = set()
     base_errors: list[str] = []
     scanned_ids: dict[str, list[str]] = {}   # shadows' IDs: computed, not established by a record
+    strengths = []
     for it in topo(items + shadows):
+        if it["kind"] == "strength":     # after every other item: it reads their statuses
+            strengths.append(it)
+            continue
         if it.get("shadow"):
             r = check_item(it, ws, dag, base, proved, known_ids, {}, failed_modules, manifest,
                            core)
@@ -289,14 +305,22 @@ def verify(base: Path, new: Path | None, env_id: str | None, records_dir: Path |
         if res["status"] not in ("OK", "ACCEPTED", "SKETCH_ACCEPTED") and it["kind"] != "note":
             failed_modules.add(D.module_of(it["path"]))
         results.append(res)
+    proved_now = set(proved) | {r["theorem"] for r in results if r["kind"] == "solution" and
+                                r["status"] == "ACCEPTED" and r.get("proof_type") == "prove"}
+    added_asms = {r["path"]: r.get("name") for r in results
+                  if r["kind"] == "assumption" and r["status"] == "OK"}
+    seen_versions: set[str] = set()
+    for it in strengths:
+        results.append(check_strength(it, ws, dag, proved_now, added_asms, seen_versions,
+                                      reverify is not None))
     if reverify is not None:             # checked nodes are the base's too: an undecided one
         for r in results:                  # leaves ownership undecided, as a shadow would
-            if r["kind"] in ("definition", "theorem") and r["status"] == "ERROR":
+            if r["kind"] in ID_KINDS and r["status"] == "ERROR":
                 base_errors.append(f"{r['path']}: its check did not finish: "
                                    f"{r.get('message', '')[:500]}")
     if base_errors:                      # ownership is undecidable for the checked IDs
         for r in results:
-            if r["kind"] in ("definition", "theorem") and r["status"] == "OK":
+            if r["kind"] in ID_KINDS and r["status"] == "OK":
                 r.update(status="ERROR", message="whether it duplicates a node of the base cannot "
                          "be decided:\n" + "\n".join(base_errors[:20]))
     assign_owners(results, known_ids, scanned_ids, reverify is not None)
@@ -317,11 +341,11 @@ def assign_owners(results: list[dict], known: dict[str, str], scanned: dict[str,
     order the nodes were built in nor how they are split into batches."""
     checked: dict[str, list[str]] = {}
     for r in results:
-        if r["kind"] in ("definition", "theorem") and r["status"] == "OK" and r.get("id"):
+        if r["kind"] in ID_KINDS and r["status"] == "OK" and r.get("id"):
             checked.setdefault(r["id"], []).append(r["path"])
     for r in results:
         sid = r.get("id")
-        if r["kind"] not in ("definition", "theorem") or r["status"] != "OK" or not sid:
+        if r["kind"] not in ID_KINDS or r["status"] != "OK" or not sid:
             continue
         owner = known.get(sid)
         if owner is None:
@@ -351,6 +375,9 @@ def check_item(it: dict, ws: Workspace, dag: D.Dag, base: Path, proved: set[str]
             return done("FAILED", str(e))
         probs = D.validate(meta, D.schema("note"), "front matter")
         return done("FAILED", "\n".join(probs)) if probs else done("OK")
+
+    if kind == "assumption":
+        return check_assumption(it, ws, failed, res, done)
 
     meta, m = it["meta"], it["match"]
     probs = D.node_meta_problems(kind, path, meta, m)
@@ -465,6 +492,90 @@ def check_item(it: dict, ws: Workspace, dag: D.Dag, base: Path, proved: set[str]
     status = "ACCEPTED" if disproof or all(u in proved for u in uses) else "SKETCH_ACCEPTED"
     added_ids[same] = path
     return done(status, uses=uses, std=std)
+
+
+def check_assumption(it: dict, ws: Workspace, failed: set[str], res: dict, done) -> dict:
+    """A registered assumption: a constant of type `SigabaNeo.Assumption` in an existing definition
+    node or std module, identified by its parameter set and problem (not its security function)."""
+    meta, probs = D.data_node_meta("assumption", it["path"], it["text"])
+    if probs:
+        return done("FAILED", "\n".join(probs))
+    res["name"] = meta["name"]
+    mod = meta["module"]
+    if mod.startswith("Theorems."):
+        return done("FAILED", "an assumption is declared by a definition node or std, "
+                    "not by a theorem")
+    if mod.startswith("Definitions.") and not (ws.dir / D.path_of(mod)).exists():
+        return done("FAILED", f"`module`: no definition node {mod}")
+    if mod in failed:
+        return done("FAILED", f"`module`: {mod} fails its checks here")
+    b = ws.build([mod])
+    if b.returncode != 0:
+        return done("CE" if b.returncode == 1 else "ERROR",
+                    f"{mod} does not build:\n" + errors(b.stdout + b.stderr))
+    r = ws.platform(f'#sigaba_neo_platform_assumption {lean_str(mod)} {lean_str(meta["name"])}')
+    if r.get("status") != "OK":
+        return done("ERROR" if r.get("status") == "ERROR" else "FAILED",
+                    r.get("message", "not an assumption"))
+    res["id"] = D.semantic_id(r)
+    return done("OK")
+
+
+def check_strength(it: dict, ws: Workspace, dag: D.Dag, proved: set[str],
+                   added_asms: dict[str, str], seen: set[str], reverify: bool) -> dict:
+    """A strength version `H_v<n>` of an assumption: the next version after the base's latest, whose
+    `lowering` is a proved theorem stating `Lowering <assumption> <previous H> <H>`."""
+    path = it["path"]
+    res: dict = {"path": path, "kind": "strength"}
+
+    def done(status: str, msg: str = "") -> dict:
+        res.update(status=status, **({"message": msg[:20000]} if msg else {}))
+        return res
+
+    meta, probs = D.data_node_meta("strength", path, it["text"])
+    if probs:
+        return done("FAILED", "\n".join(probs))
+    m = it["match"]
+    s, n = m.group(1), int(m.group(2))
+    res.update(name=f"{s}/H_v{n}", version=n, H=meta["H"], lowering=meta["lowering"])
+    asm = dag.assumption(s)
+    asm_path = f"dag/Assumptions/{s}/Asm.json"
+    name = asm.meta.get("name") if asm else added_asms.get(asm_path)
+    if name is None:
+        return done("FAILED", f"no registered assumption {asm_path}")
+    res["assumption"] = name
+    versions = [v for v in dag.versions(s) if not (reverify and v.path == path)]
+    if reverify:
+        versions = [v for v in versions if int(D.classify(v.path)[1].group(2)) < n]
+    if s in seen:
+        return done("FAILED", "a pull request adds at most one strength version per assumption")
+    seen.add(s)
+    if n != len(versions) + 1:
+        return done("FAILED", f"the latest strength version of {name} is H_v{len(versions)}, so "
+                    f"the next one is H_v{len(versions) + 1}, not H_v{n}; restate the lowering "
+                    "from the latest version")
+    prev = versions[-1].meta.get("H") if versions else None
+    thm = meta["lowering"]
+    if not (ws.dir / D.path_of(f"Theorems.Thm_{D.slug(thm)}")).exists():
+        return done("FAILED", f"`lowering`: no theorem node {thm}")
+    if thm not in proved:
+        return done("FAILED", f"`lowering`: {thm} is not proved (it needs a complete proof, "
+                    "ACCEPTED, in this environment)")
+    b = ws.build([f"Theorems.Thm_{D.slug(thm)}"])
+    if b.returncode != 0:
+        return done("CE" if b.returncode == 1 else "ERROR",
+                    "the lowering theorem does not build:\n" + errors(b.stdout + b.stderr))
+    r = ws.platform(f'#sigaba_neo_platform_lowering {lean_str(thm)}')
+    if r.get("status") != "OK":
+        return done("ERROR" if r.get("status") == "ERROR" else "FAILED",
+                    r.get("message", "not a lowering"))
+    want = {"assumption": name, "from": prev, "to": meta["H"]}
+    got = {k: r.get(k) for k in want}
+    if got != want:
+        show = lambda d: (f"Lowering {d['assumption']} "   # noqa: E731
+                          f"{d['from'] or d['assumption'] + '.H'} {d['to']}")
+        return done("WA", f"{thm} states `{show(got)}`, but this version needs `{show(want)}`")
+    return done("OK")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -18,9 +18,11 @@ Submissions and their final statement `Spec` of the Sigaba Neo concept (Section 
 
 namespace SigabaNeo
 
+universe u
+
 /-- What Design AI hands over: an implementation, the premises of each proposition, and the
 claimed cost. -/
-structure Submission (P : Primitive) (R : Registry) where
+structure Submission (P : Primitive) (R : Registry.{u}) where
   /-- A machine for each algorithm. -/
   impl : Impl P.sig
   /-- The premises of each proposition. -/
@@ -28,11 +30,11 @@ structure Submission (P : Primitive) (R : Registry) where
   /-- The claimed cost. -/
   N : ℕ
 
-variable {P : Primitive} {R : Registry}
+variable {P : Primitive} {R : Registry.{u}}
 
 /-- The final statement: each proposition holds when its premises do, and the cost of the
 implementation is at most `N`. -/
-def Spec (P : Primitive) (R : Registry) (u : Submission P R) : Prop :=
+def Spec (P : Primitive) (R : Registry.{u}) (u : Submission P R) : Prop :=
   (∀ i, (∀ d ∈ u.deps i, d.Holds) → P.prop i P.params u.impl) ∧ P.cost P.params u.impl ≤ u.N
 
 /-- Every premise asks for at most the current strength of its assumption. -/

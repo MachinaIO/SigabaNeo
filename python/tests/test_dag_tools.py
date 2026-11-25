@@ -227,6 +227,41 @@ class PrecheckTest(Tmp):
                 self.assertFalse(r["ok"], label)
                 self.assertTrue(any(expect in p for p in r["problems"]), (label, r["problems"]))
 
+    def test_assumptions(self):
+        """Registrations and strength versions: JSON nodes, checked here as far as files go."""
+        asm = lambda n, mod="Definitions.Def_Two": json.dumps(  # noqa: E731
+            {"name": n, "module": mod, "title": n, "rationale": "r"})
+        ver = json.dumps({"H": "X.H1", "lowering": "X.lower1"})
+        ok = {"dag/Assumptions/X_a/Asm.json": asm("X.a"), "dag/Assumptions/X_a/H_v1.json": ver}
+        self.assertEqual(self.run_pre(ok)["problems"], [])
+        write(self.base, {"dag/Assumptions/Y_a/Asm.json": asm("Y.a"),
+                          "dag/Assumptions/Y_a/H_v1.json": ver})
+        self.dag = D.Dag(self.base)
+        self.assertEqual(self.run_pre({"dag/Assumptions/Y_a/H_v2.json": ver})["problems"], [])
+        cases = {
+            "slug": ({"dag/Assumptions/X_b/Asm.json": asm("X.a")}, "has the slug"),
+            "module": ({"dag/Assumptions/X_a/Asm.json": asm("X.a", "Definitions.Def_Nope")},
+                       "no definition node"),
+            "module root": ({"dag/Assumptions/X_a/Asm.json": asm("X.a", "SigabaNeo.Platform")},
+                            "not allowed"),
+            "schema": ({"dag/Assumptions/X_a/Asm.json": json.dumps({"name": "X.a"})}, "missing"),
+            "no assumption": ({"dag/Assumptions/Z_a/H_v1.json": ver}, "no registered assumption"),
+            "skips": ({"dag/Assumptions/Y_a/H_v3.json": ver}, "the next one is H_v2"),
+            "again": ({"dag/Assumptions/Y_a/H_v1.json": ver}, "the next one is H_v2"),
+            "two": ({"dag/Assumptions/Y_a/H_v2.json": ver, "dag/Assumptions/Y_a/H_v3.json": ver},
+                    "at most one strength version"),
+            "bad name": ({"dag/Assumptions/X_a/H_v0.json": ver}, "not a path"),
+        }
+        for label, (files, expect) in cases.items():
+            with self.subTest(label):
+                r = self.run_pre(files)
+                self.assertFalse(r["ok"], label)
+                self.assertTrue(any(expect in p for p in r["problems"]), (label, r["problems"]))
+        d = D.Dag(self.base)
+        self.assertEqual(d.strength("Y_a"), {"assumption": "Y.a", "version": 1, "H": "X.H1",
+                                             "lowering": "X.lower1"})
+        self.assertIsNone(d.strength("X_a"))
+
     def test_size(self):
         big = "-- " + "x" * (D.LIMITS["file_bytes"] + 10) + "\n"
         r = self.run_pre({"dag/Definitions/Def_Big.lean": big,

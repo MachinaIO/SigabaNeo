@@ -15,7 +15,9 @@
    "enum": [
     "definition",
     "theorem",
-    "solution"
+    "solution",
+    "assumption",
+    "strength"
    ]
   },
   "path": {
@@ -77,6 +79,19 @@
    "type": "string"
   },
   "time": {
+   "type": "string"
+  },
+  "assumption": {
+   "type": "string"
+  },
+  "version": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "H": {
+   "type": "string"
+  },
+  "lowering": {
    "type": "string"
   }
  }
