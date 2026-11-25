@@ -300,7 +300,7 @@ Nothing the container can write is mounted; the result is the verifier's standar
 the exit status is recorded outside (section 6, `gate.yml`).
 
 **`gate.yml`** runs on `pull_request_target` and `merge_group`. Its workflow file always comes from
-the base branch. It has four jobs:
+the base branch. It has five jobs:
 
 1. **precheck.** Permissions: `contents: read`, `pull-requests: read`. It never checks out the pull
    request. It reads the default environment from the base and checks out the core's tools at the
@@ -345,14 +345,18 @@ the base branch. It has four jobs:
 
    The conclusion is derived from the items' statuses, and is the required check. This job is
    read only.
-4. **report** (for `pull_request_target` only). The only job with write access, through the
-   workflow's own token (`contents`, `pull-requests` and `issues: write`), which expires with the
-   job; there is no long-lived key. It runs no pull request code and reads only `decide`'s
-   decision. It comments the verdict, labels the pull request with the gate's labels of the latest
-   decision (`not-accepted` if the author is not accepted, `rejected`, or `needs-maintainer`;
-   earlier gate labels are removed, others left alone; a missing label is created, and a failure
-   to label fails the step), and enables auto-merge for `automerge` authors, for the verified
-   commit only (`--match-head-commit`).
+4. **report** (for `pull_request_target` only), with the workflow's own token (`pull-requests` and
+   `issues: write`), which expires with the job. It runs no pull request code and reads only
+   `decide`'s decision. It comments the verdict and labels the pull request with the gate's labels
+   of the latest decision (`not-accepted` if the author is not accepted, `rejected`, or
+   `needs-maintainer`; earlier gate labels are removed, others left alone; a missing label is
+   created, and a failure to label fails the step).
+5. **merge** (for `pull_request_target`, when the decision passes for an `automerge` author). It
+   takes a GitHub App token from the `gate` Environment (which only `main` may use) and enables
+   auto-merge for the verified commit only (`--match-head-commit`), which puts the pull request
+   into the merge queue. It has no other step and no checkout. The workflow's own token cannot do
+   this: GitHub starts no workflow for an event caused by that token, so a pull request queued with
+   it would wait forever for the merge queue's run of the gate.
 
 For a `merge_group`, the same jobs run against the merge group's head (the latest `main` with the
 pull request), which catches pull requests that depend on each other. The precheck has already
@@ -381,9 +385,9 @@ The other workflows:
   replaced). Each writer appends to the latest tip and starts again from it if a push is rejected.
   Appending is idempotent per run and node.
 - **`formalpedia.yml`** runs weekly. It converts Formalpedia's new items into DAG files
-  (`dag_tools.py formalpedia`) and opens a pull request with a GitHub App's token (it is optional,
-  and the only workflow that needs an App: a pull request opened with the workflow's own token
-  would not start the gate). That pull request goes through the same gate. Nothing is taken on trust: each item is checked in this environment.
+  (`dag_tools.py formalpedia`) and opens a pull request with the gate's App token (a pull request opened with the workflow's
+  own token would not start the gate). It is optional. That pull request goes through the same
+  gate. Nothing is taken on trust: each item is checked in this environment.
 - In the core, **`image.yml`** builds the image on a tag, pushes it to GHCR, and attaches the std
   manifest, the fingerprint and the image digest to the release (`environment.json`). **`ci.yml`**
   runs the tests that need no Lean.
@@ -420,7 +424,7 @@ kernel replay of the solution. No self-hosted runners are used.
 | Threat | Countermeasure |
 | --- | --- |
 | A pull request edits the workflow so that it passes | the workflow comes from the base branch (`pull_request_target`); precheck rejects any file outside `dag/` |
-| Lean code steals a token or secret | Lean runs only in the container, which has no token, no secret and no network; the only write token is the `report` job's own, which runs no pull request code and expires with the job |
+| Lean code steals a token or secret | Lean runs only in the container, which has no token, no secret and no network; the write tokens are the `report` job's own (comments and labels) and the App's in the `merge` job (auto-merge), from a `main`-only Environment; neither job runs pull request code |
 | Lean code tampers with later steps or the verdict | the container is separate; the steps outside read one JSON file and check it against its schema |
 | Cache poisoning | the image is pinned by digest; no job saves a cache |
 | A forged status check | the ruleset requires `decide` from the GitHub Actions app; fork tokens are read only |
@@ -489,11 +493,14 @@ The workflows assume these settings. Without them the gate is not a boundary.
    "Require approval for all outside collaborators" for fork pull request workflows (the gate uses
    `pull_request_target`, which does not need it, but other workflows would). While the
    repository is private, allow forking and "Run workflows from fork pull requests".
-2. **No App is needed.** The gate's `report` job comments, labels and enables auto-merge with the
-   workflow's own token. Only the optional `formalpedia.yml` needs a GitHub App ("Contents" and
-   "Pull requests: read & write"), with the variable `GATE_APP_ID` and the secret `GATE_APP_KEY`
-   in an Environment `gate` restricted to `main`, and the App's bot login in `meta/trusted.json`;
-   without it, disable that workflow (`gh workflow disable formalpedia`).
+2. **The gate's App.** Create a GitHub App (no webhook; installable only on this account) with the
+   repository permissions "Contents: read & write" and "Pull requests: read & write", and install
+   it on this repository only. Create the Environment `gate`, restricted to the `main` branch,
+   with the variable `GATE_APP_ID` and the secret `GATE_APP_KEY`. The gate's `merge` job uses it to
+   enable auto-merge, so that the merge queue's run of the gate starts (it would not for the
+   workflow's own token); comments and labels use the workflow's own token. The optional
+   `formalpedia.yml` uses the same App (then add its bot login to `meta/trusted.json`); without
+   it, disable that workflow (`gh workflow disable formalpedia`).
 3. **Labels.** The gate labels pull requests `not-accepted` (an author not in
    `meta/trusted.json`), `rejected` (a failing check) and `needs-maintainer` (passed, not on the
    automerge list). It creates them if they are missing; to create them beforehand:
