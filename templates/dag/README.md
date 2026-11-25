@@ -20,6 +20,8 @@ runs the trusted `#sigaba_neo_check`.
 | `dag/Theorems/Thm_<slug>.lean` + `.json` | statements, ending in `:= by sorry` | pull requests |
 | `dag/Solutions/<slug>/Sub_<id>.lean` + `.json` | proofs (`theorem solution`) and sketches | pull requests |
 | `dag/Notes/<slug>.md` | notes, with front matter (`title`, `refs`, `supersedes`, `tags`) | pull requests |
+| `dag/Assumptions/<slug>/Asm.json` | registered assumptions | pull requests |
+| `dag/Assumptions/<slug>/H_v<n>.json` | strength versions (the latest is the current `H`) | pull requests |
 | `env/environments.json`, `env/std.json` | base environments, std releases | maintainers |
 | `meta/trusted.json` | who may submit, who is merged automatically | maintainers |
 | `meta/assumptions.json`, `meta/promotions.json` | claim metadata, nodes promoted to std | maintainers |

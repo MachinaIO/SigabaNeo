@@ -13,6 +13,13 @@ checks every proof itself with the trusted `#sigaba_neo_check`.
 * `#sigaba_neo_platform_semantic "M" "definition"|"theorem" "<theorem name>" "out.json"`: the
   semantic data of a built node (`SigabaNeo.Platform.Semantic`), which `python/dag.py` hashes into
   its semantic ID.
+* `#sigaba_neo_platform_assumption "M" "<name>" "out.json"`: may the constant `<name>` of the built
+  module `M` be registered as an assumption (a definition of type `SigabaNeo.Assumption`, without
+  `sorry` or other axioms), and the semantic data of its parameter set and problem (not of its
+  security function, so re-registering a problem with another `H` is a duplicate).
+* `#sigaba_neo_platform_lowering "<theorem>" "out.json"`: whether the statement of a theorem node
+  is `SigabaNeo.Assumption.Lowering a H H'` with `a` and `H'` constants and `H` either `a.H` or a
+  constant, and which ones (a strength version, docs/ASSUMPTIONS.md).
 -/
 import SigabaNeo.Trusted.Check
 import SigabaNeo.Platform.Lint
@@ -166,5 +173,70 @@ elab_rules : command
   | `(#sigaba_neo_platform_semantic $m:str $k:str $t:str $o:str) => do
     write o.getString (← liftCoreM (liftM (semantic m.getString.toName k.getString
       t.getString.toName : IO Json)))
+
+/-! ### Assumptions and strength versions -/
+
+def assumptionCheck (mod decl : Name) : IO Json := do
+  let env ← try importModules #[{ module := mod }] {} catch e =>
+    return result "FAILED" s!"cannot load {mod}: {e}"
+  let some ci := env.find? decl | return result "FAILED" s!"{mod} does not declare {decl}"
+  unless moduleOf? env decl == some mod do
+    return result "FAILED" s!"{decl} is not declared by {mod}"
+  let .defnInfo v := ci | return result "FAILED" s!"{decl} is not a definition"
+  unless v.levelParams.isEmpty && v.type == mkConst `SigabaNeo.Assumption do
+    return result "FAILED" s!"the type of {decl} is not `SigabaNeo.Assumption`"
+  let axs ← runCore env (collectAxioms decl)
+  let odd := axs.filter (!standardAxioms.contains ·)
+  unless odd.isEmpty do return result "FAILED" s!"{decl} depends on the axioms {odd.toList}"
+  try
+    let j ← runCore env <| Meta.MetaM.run' do
+      -- The fields of the structure the definition unfolds to; the security function is left out.
+      let w ← Meta.whnf (mkConst decl)
+      let (params, problem) :=
+        if w.isAppOfArity `SigabaNeo.Assumption.mk 3 then (w.getArg! 0, w.getArg! 1)
+        else (mkApp (mkConst `SigabaNeo.Assumption.Params) (mkConst decl),
+          mkApp (mkConst `SigabaNeo.Assumption.problem) (mkConst decl))
+      Semantic.exprNodeData "assumption" [("params", params), ("problem", problem)]
+    return j.setObjVal! "status" (Json.str "OK")
+  catch e => return result "FAILED" s!"semantic ID: {e}"
+
+/-- `a.H` (the assumption's own security function), as a projection or its function. -/
+def ownH? (e : Expr) : Option Name :=
+  match e.consumeMData with
+  | .proj `SigabaNeo.Assumption 2 (.const a []) => some a
+  | e => if e.isAppOfArity `SigabaNeo.Assumption.H 1 then e.getArg! 0 |>.consumeMData.constName?
+    else none
+
+def loweringCheck (thm : Name) : IO Json := do
+  let mod := thmModuleOf thm
+  let env ← try importModules #[{ module := mod }] {} catch e =>
+    return result "FAILED" s!"cannot load {mod}: {e}"
+  let some (.thmInfo v) := env.find? thm | return result "FAILED" s!"{mod} does not declare {thm}"
+  let t := v.type.consumeMData
+  unless v.levelParams.isEmpty && t.isAppOfArity `SigabaNeo.Assumption.Lowering 3 do
+    return result "FAILED" s!"the statement of {thm} is not `SigabaNeo.Assumption.Lowering a H H'`"
+  let some a := (t.getArg! 0).consumeMData.constName?
+    | return result "FAILED" "the assumption of the lowering is not a constant"
+  let src := t.getArg! 1
+  let fromJ ← match ownH? src, src.consumeMData.constName? with
+    | some a', _ =>
+      if a' == a then pure Json.null
+      else return result "FAILED" s!"the lowered function is the security function of {a'}, not {a}"
+    | none, some h => pure (Json.str h.toString)
+    | none, none => return result "FAILED" "the lowered function is neither `a.H` nor a constant"
+  let some h' := (t.getArg! 2).consumeMData.constName?
+    | return result "FAILED" "the new security function is not a constant"
+  return result "OK" "" [("assumption", Json.str a.toString), ("from", fromJ),
+    ("to", Json.str h'.toString)]
+
+syntax (name := platformAssumption) "#sigaba_neo_platform_assumption " str str str : command
+syntax (name := platformLowering) "#sigaba_neo_platform_lowering " str str : command
+
+elab_rules : command
+  | `(#sigaba_neo_platform_assumption $m:str $d:str $o:str) => do
+    write o.getString (← liftCoreM (liftM (assumptionCheck m.getString.toName
+      d.getString.toName : IO Json)))
+  | `(#sigaba_neo_platform_lowering $t:str $o:str) => do
+    write o.getString (← liftCoreM (liftM (loweringCheck t.getString.toName : IO Json)))
 
 end SigabaNeo.Platform

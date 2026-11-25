@@ -11,6 +11,8 @@ A DAG checkout has this layout:
     dag/Theorems/Thm_<slug>.lean    (+ .json)
     dag/Solutions/<slug>/Sub_<id>.lean (+ .json)
     dag/Notes/<slug>.md
+    dag/Assumptions/<slug>/Asm.json     a registered assumption (data: a Lean constant)
+    dag/Assumptions/<slug>/H_v<n>.json  its strength, version n (data: a lowering theorem)
 
 and verification records live on the `records` branch, one JSON object per line in
 `<env id>.jsonl`.
@@ -39,7 +41,12 @@ PATHS = {
     "theorem": re.compile(rf"dag/Theorems/Thm_({SLUG})\.(lean|json)"),
     "solution": re.compile(rf"dag/Solutions/({SLUG})/Sub_({SUB_ID})\.(lean|json)"),
     "note": re.compile(rf"dag/Notes/({NOTE_SLUG})\.md"),
+    "assumption": re.compile(rf"dag/Assumptions/({SLUG})/Asm\.json"),
+    "strength": re.compile(rf"dag/Assumptions/({SLUG})/H_v([1-9][0-9]{{0,5}})\.json"),
 }
+# Nodes that are a file of their own, not a Lean file with its metadata.
+DATA_KINDS = ("note", "assumption", "strength")
+
 
 # Modules a DAG file may import, by root (and the core's trusted definitions). Anything else is
 # rejected, in particular `Solutions.*`, `SigabaNeo.Platform*` (its commands write files) and
@@ -144,6 +151,13 @@ def ends_in_sorry(text: str) -> bool:
     """A theorem node's statement ends in `:= by sorry` (whitespace between the tokens allowed, as
     the assembler's `p2m_apply%` rewriting allows it)."""
     return re.search(r":=\s*by\s+sorry\s*$", text) is not None
+
+
+def is_node_file(path: str) -> bool:
+    """A file that is a node by itself: a Lean file (whose `.json` is its metadata), a note, or an
+    assumption's or strength version's JSON."""
+    c = classify(path)
+    return c is not None and (path.endswith(".lean") or c[0] in DATA_KINDS)
 
 
 def module_of(path: str) -> str:
@@ -400,7 +414,23 @@ def node_meta_problems(kind: str, path: str, meta: dict | None, m) -> list[str]:
     if kind == "solution" and slug(meta["theorem"]) != m.group(1):
         return [f"metadata: `theorem` {meta['theorem']} has the slug {slug(meta['theorem'])}, "
                 f"but the directory is {m.group(1)}"]
+    if kind == "assumption" and slug(meta["name"]) != m.group(1):
+        return [f"`name` {meta['name']} has the slug {slug(meta['name'])}, but the directory is "
+                f"{m.group(1)}"]
+    if kind == "assumption" and (p := import_problem(meta["module"])):
+        return [f"`module`: {p}"]
     return []
+
+
+def data_node_meta(kind: str, path: str, text: str) -> tuple[dict | None, list[str]]:
+    """The content of an assumption or strength node (a JSON file), and its problems."""
+    try:
+        meta = json.loads(text)
+    except json.JSONDecodeError as e:
+        return None, [f"not JSON: {e}"]
+    m = classify(path)[1]
+    probs = node_meta_problems(kind, path, meta, m)
+    return (meta if not probs else None), probs
 
 
 # -- a DAG checkout ------------------------------------------------------------------------------
@@ -442,12 +472,19 @@ class Dag:
             for p in files:
                 rel = str(p.relative_to(self.root))
                 c = classify(rel)
-                if c is None or rel.endswith(".json"):
+                if c is None or not is_node_file(rel):
                     continue
                 kind, m = c
                 text = p.read_text()
                 meta = {}
-                if kind == "note":
+                if kind in ("assumption", "strength"):
+                    try:
+                        meta = json.loads(text)
+                    except json.JSONDecodeError:
+                        meta = {}
+                    name = meta.get("name", m.group(1)) if kind == "assumption" else \
+                        f"{m.group(1)}/H_v{m.group(2)}"
+                elif kind == "note":
                     try:
                         meta = front_matter(text)[0]
                     except ValueError:
@@ -496,6 +533,28 @@ class Dag:
             return next((n for n in self.by_kind("solution") if n.path == p), None)
         return next((n for n in self.by_kind("note") if n.name == m.group(5)), None)
 
+    def assumption(self, s: str) -> Node | None:
+        """The registered assumption whose directory is `dag/Assumptions/<s>/`."""
+        return next((n for n in self.by_kind("assumption")
+                     if n.path == f"dag/Assumptions/{s}/Asm.json"), None)
+
+    def versions(self, s: str) -> list[Node]:
+        """The strength versions of the assumption `s`, in order (`H_v1`, `H_v2`, …)."""
+        vs = [n for n in self.by_kind("strength") if n.path.startswith(f"dag/Assumptions/{s}/")]
+        return sorted(vs, key=lambda n: int(classify(n.path)[1].group(2)))
+
+    def strength(self, s: str) -> dict | None:
+        """The current strength of the assumption `s`: its latest version (the lowest security
+        function, since every version lowers the one before), or its own `H`."""
+        a = self.assumption(s)
+        if a is None:
+            return None
+        vs = self.versions(s)
+        if not vs:
+            return {"assumption": a.name, "version": 0, "H": None}
+        return {"assumption": a.name, "version": len(vs), "H": vs[-1].meta.get("H"),
+                "lowering": vs[-1].meta.get("lowering")}
+
     def environments(self) -> list[dict]:
         return self.read_json("env/environments.json", {"environments": []})["environments"]
 
@@ -527,9 +586,10 @@ def read_records(d: Path | None) -> dict[str, list[dict]]:
     return out
 
 
-def id_record(r: dict, kind: tuple[str, ...] = ("definition", "theorem")) -> bool:
-    """A record that establishes a node's semantic ID: a definition or theorem that passed (`OK`).
-    A failed attempt (a `DUPLICATE`, say) may carry an ID, but establishes nothing."""
+def id_record(r: dict,
+              kind: tuple[str, ...] = ("definition", "theorem", "assumption")) -> bool:
+    """A record that establishes a node's semantic ID: a definition, theorem or assumption that
+    passed (`OK`). A failed attempt (a `DUPLICATE`, say) may carry an ID, but establishes nothing."""
     return r.get("kind") in kind and bool(r.get("id")) and r.get("status") == "OK"
 
 

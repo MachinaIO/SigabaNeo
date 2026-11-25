@@ -21,17 +21,27 @@ The form of assumptions of the Sigaba Neo concept (Section 3.3), described in
 * `Assumption.Attack a p c`: an explicit attacker with `cost ≤ 2^c · gain` and a positive gain.
   It refutes `HardAt a p k` for every `k > c` (`Assumption.Attack.not_hardAt`), which is what
   justifies lowering `H p` to `c`.
+* `Assumption.Lowering a H H'`: `H'` lowers the security function `H` (`H' ≤ H` everywhere, and an
+  attack at `H' p` wherever it is strictly lower). This is the form of every update of a strength
+  in the DAG (`docs/ASSUMPTIONS.md`, "Lowerings"): an attack on a region of parameters is a
+  new security function with that region lowered. Lowerings compose (`Lowering.trans`), and one
+  refutes every claim above the new value (`Lowering.not_hardAt`).
 * `Registry`: the assumptions the harness admits, by name: the parameter set and the problem of
   each, which never change. Their current strengths are kept apart (`Registry.Strength`), because
   the harness lowers them when attacks are proven. `Registry.of` registers `Assumption`s, with
-  their `H` as the initial strengths (`Registry.initial`). `Registry.Holds R H n`: assumption `n`
-  has the strength `H n p` at every `p`; lowering `H` keeps it (`Registry.Holds.mono`).
+  their `H` as the initial strengths (`Registry.initial`). `Registry.univ` names every assumption
+  by itself; which ones are registered, and at which strength, is the harness's (the DAG's), so a
+  submission over it may use any assumption registered at any time. `Registry.Holds R H n`:
+  assumption `n` has the strength `H n p` at every `p`; lowering `H` keeps it
+  (`Registry.Holds.mono`).
 * `Premise R`: a triple `(n, p₀, k)`, "the registered assumption `n` has `k` bits at `p₀`", as a
   submission lists them. `Premise.Valid H`: `k ≤ H n p₀` for the harness's current strengths `H`,
   the numerical check; with `R.Holds H n` it gives `HardAt` (`Premise.hardAt`).
 -/
 
 namespace SigabaNeo
+
+universe u
 
 open Cslib
 
@@ -127,6 +137,36 @@ theorem Attack.le {a : Assumption} {p : a.Params} {c k : ℕ} (h : a.Attack p c)
   by_contra hk
   exact h.not_hardAt (Nat.lt_of_not_le hk) hh
 
+/-- `H'` lowers the security function `H`: it is nowhere higher, and wherever it is strictly lower
+an explicit attack reaches it. -/
+def Lowering (a : Assumption) (H H' : a.Params → ℕ) : Prop :=
+  ∀ p, H' p ≤ H p ∧ (H' p < H p → a.Attack p (H' p))
+
+/-- Every security function lowers itself (no parameter is strictly lower). -/
+theorem Lowering.refl (a : Assumption) (H : a.Params → ℕ) : a.Lowering H H :=
+  fun _ => ⟨le_rfl, fun h => absurd h (lt_irrefl _)⟩
+
+/-- Lowerings compose. -/
+theorem Lowering.trans {a : Assumption} {H H' H'' : a.Params → ℕ} (h₁ : a.Lowering H H')
+    (h₂ : a.Lowering H' H'') : a.Lowering H H'' := fun p => by
+  obtain ⟨le₁, at₁⟩ := h₁ p
+  obtain ⟨le₂, at₂⟩ := h₂ p
+  refine ⟨le₂.trans le₁, fun hlt => ?_⟩
+  rcases lt_or_eq_of_le le₂ with h | h
+  · exact at₂ h
+  · rw [h] at hlt ⊢
+    exact at₁ hlt
+
+/-- A lowering refutes every claim above the new value where it is strictly lower. -/
+theorem Lowering.not_hardAt {a : Assumption} {H H' : a.Params → ℕ} (h : a.Lowering H H')
+    {p : a.Params} (hlt : H' p < H p) {k : ℕ} (hk : H' p < k) : ¬ a.HardAt p k :=
+  ((h p).2 hlt).not_hardAt hk
+
+/-- A lowering keeps every true claim: if `H p` bits hold, so do `H' p` bits. -/
+theorem Lowering.hardAt {a : Assumption} {H H' : a.Params → ℕ} (h : a.Lowering H H')
+    {p : a.Params} (hh : a.HardAt p (H p)) : a.HardAt p (H' p) :=
+  Problem.HardAt.mono hh (h p).1
+
 end Assumption
 
 /-! ### The registry of assumptions and premises -/
@@ -135,7 +175,7 @@ end Assumption
 attacker of each. These never change; the strengths are kept apart (`Registry.Strength`). -/
 structure Registry where
   /-- The names of the registered assumptions. -/
-  Name : Type
+  Name : Type u
   /-- The parameter set of each assumption. -/
   Params : Name → Type
   /-- The problem given to the attacker at each parameter. -/
@@ -144,17 +184,18 @@ structure Registry where
 namespace Registry
 
 /-- `HardAt n p k`: at parameters `p`, every attacker on assumption `n` has `cost / gain ≥ 2^k`. -/
-def HardAt (R : Registry) (n : R.Name) (p : R.Params n) (k : ℕ) : Prop := (R.problem n p).HardAt k
+def HardAt (R : Registry.{u}) (n : R.Name) (p : R.Params n) (k : ℕ) : Prop :=
+  (R.problem n p).HardAt k
 
 /-- The strengths the harness currently assigns: bits claimed for each assumption at each
 parameter. The harness only lowers them, by proven attacks (`Assumption.Attack`). -/
-def Strength (R : Registry) : Type := (n : R.Name) → R.Params n → ℕ
+def Strength (R : Registry.{u}) : Type u := (n : R.Name) → R.Params n → ℕ
 
 /-- Assumption `n` has the strength `H n p` at every parameter `p`. -/
-def Holds (R : Registry) (H : R.Strength) (n : R.Name) : Prop := ∀ p, R.HardAt n p (H n p)
+def Holds (R : Registry.{u}) (H : R.Strength) (n : R.Name) : Prop := ∀ p, R.HardAt n p (H n p)
 
 /-- Lowering a strength keeps every true claim. -/
-theorem Holds.mono {R : Registry} {H H' : R.Strength} {n : R.Name} (h : R.Holds H n)
+theorem Holds.mono {R : Registry.{u}} {H H' : R.Strength} {n : R.Name} (h : R.Holds H n)
     (hle : ∀ p, H' n p ≤ H n p) : R.Holds H' n :=
   fun p => Problem.HardAt.mono (h p) (hle p)
 
@@ -172,10 +213,18 @@ theorem holds_initial {Name : Type} {as : Name → Assumption} {n : Name} (h : (
     (of as).Holds (initial as) n :=
   h
 
+/-- Every assumption, named by itself. Which assumptions are registered and their current
+strengths are the harness's: a premise naming an unregistered one has strength `0`, so it can only
+ask for `0` bits, which always hold (`Problem.hardAt_zero`). -/
+def univ : Registry.{1} where
+  Name := Assumption
+  Params a := a.Params
+  problem a := a.problem
+
 end Registry
 
 /-- A premise: the registered assumption `n` has `k` bits of strength at its parameters `p`. -/
-structure Premise (R : Registry) where
+structure Premise (R : Registry.{u}) where
   /-- The name of the assumption. -/
   n : R.Name
   /-- Its parameters. -/
@@ -185,7 +234,7 @@ structure Premise (R : Registry) where
 
 namespace Premise
 
-variable {R : Registry}
+variable {R : Registry.{u}}
 
 /-- The premise as a proposition: `HardAt n p k`. -/
 def Holds (d : Premise R) : Prop := R.HardAt d.n d.p d.k

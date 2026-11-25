@@ -42,9 +42,10 @@ namespace of your choice `<Ns>`:
 
 * `<Ns>.P : SigabaNeo.Primitive`: `Params`, the concrete `params`, `encodeParams`, `Alg` with each
   `sig` (name, inputs, outputs, `randomized`), `PropIndex`, `prop`, `cost`.
-* `<Ns>.R : SigabaNeo.Registry`: the assumptions Design AI may rely on, usually
-  `Registry.of` over registered `Assumption`s (for example `SigabaNeo.Lattices.LWE.decision` from
-  `SigabaNeoStd.Lattices`). Premises can only name assumptions in `R`.
+* `<Ns>.R := SigabaNeo.Registry.univ`. Premises then name any assumption, and the harness counts
+  only those registered in the DAG (`dag/Assumptions/`), at their current strength; an
+  assumption registered after your problem is usable too. If the user wants to restrict the
+  assumptions, say so in the note and list them; do not hard-code a fixed `Registry.of`.
 * `<Ns>.SubmissionProp : SigabaNeo.Submission <Ns>.P <Ns>.R → Prop := SigabaNeo.Spec <Ns>.P <Ns>.R`,
   the Submission proposition Design AI proves for its own submission `u`.
 
@@ -67,7 +68,5 @@ Rules of thumb:
 ## Known gaps
 
 The DAG has no dedicated node kind or index entry for primitives yet; the convention above (names
-`P`, `R`, `SubmissionProp`, tag `primitive`) is how Design AI finds them. `R` is fixed when you
-submit, so an assumption Design AI registers later needs a new Submission proposition over an
-extended registry: if asked, issue it as a new definition node (with the user's approval) and say
-in its note which one it extends.
+`P`, `R`, `SubmissionProp`, tag `primitive`) is how Design AI finds them. Checking a submission's
+premises against the current strengths is not automated yet.

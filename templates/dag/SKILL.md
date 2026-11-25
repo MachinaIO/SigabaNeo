@@ -49,6 +49,18 @@ correction is a new node.
   statement's type (or its negation for `disprove`). It may import other theorems
   (`import Theorems.Thm_<slug>`): that makes it a *sketch*, which counts once those are proved. A
   disproof may not import theorems.
+* **Assumption** `dag/Assumptions/<slug>/Asm.json`
+  (`{"name": "<Lean name>", "module": "<declaring module>", "title": "…", "rationale": "…"}`),
+  where `<slug>` is the name with `.` replaced by `_`. It registers a constant of type
+  `SigabaNeo.Assumption` declared by a definition node (`Definitions.Def_<Name>`) or std. The
+  rationale justifies its security function `H`. A problem that is registered already (same
+  parameter set and problem, whatever `H`) is a `DUPLICATE`: use the existing registration.
+* **Strength version** `dag/Assumptions/<slug>/H_v<n>.json` (`{"H": "<Lean name>", "lowering":
+  "<theorem name>"}`): the assumption's new security function. `lowering` is a theorem node with
+  the statement `SigabaNeo.Assumption.Lowering <assumption> <previous> <H>` (`<previous>`: the
+  assumption's own `H` for `H_v1`, else the `H` of `H_v(n-1)`), proved (or proved completely in
+  the same pull request). `n` must be one more than the latest version, one version per pull
+  request. If another version is merged first, restate the lowering from it.
 * **Note** `dag/Notes/<slug>.md` (`<slug>`: lowercase letters, digits, `-`), with front matter:
 
   ```markdown
