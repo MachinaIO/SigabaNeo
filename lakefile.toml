@@ -1,6 +1,6 @@
 name = "SigabaNeo"
 version = "0.1.0"
-defaultTargets = ["SigabaNeo"]
+defaultTargets = ["SigabaNeo", "SigabaNeoStd"]
 
 # Every dependency is pinned to an exact commit (spec §2). See docs/M0.md for why these.
 # The machine model is cslib-frontier's probabilistic multi-tape Turing machine. Mathlib and cslib
@@ -13,48 +13,14 @@ rev = "d25e68fd262c7aef49179602e784804fb790ced6"
 
 [[lean_lib]]
 name = "SigabaNeo"
-# `SigabaNeo.Assemble` and `SigabaNeo.Platform` are untrusted helpers of the tooling (python/).
-roots = ["SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Trusted.Assumption",
-  "SigabaNeo.Trusted.Primitive", "SigabaNeo.Trusted.Submission", "SigabaNeo.Lib.Machines.FromPolyTime", "SigabaNeo.Lib.Machines.Gates",
-  "SigabaNeo.Lib.Machines.GatesSLP", "SigabaNeo.Lib.Machines.FromPTM", "SigabaNeo.Lib.Machines.LengthGuard",
-  "SigabaNeo.Lib.Machines.Guarded", "SigabaNeo.Lib.Machines.Randomized",
-  "SigabaNeo.Lib.Machines.AlmostConst", "SigabaNeo.Lib.Machines.FiniteAlg",
-  "SigabaNeo.Lib.Lattices", "SigabaNeo.Lib.Encode.Enum", "SigabaNeo.Lib.Encode.Ring", "SigabaNeo.Lib.Encode.Laws", "SigabaNeo.Lib.Crypto.QuadLoss",
-  "SigabaNeo.Lib.Machines.Prog.Columns", "SigabaNeo.Lib.Machines.Prog.Prims",
-  "SigabaNeo.Lib.Machines.Prog.Basic", "SigabaNeo.Lib.Machines.Prog.Compile", "SigabaNeo.Lib.Machines.Prog.FrameOut", "SigabaNeo.Lib.Machines.Prog.Moves", "SigabaNeo.Lib.Lattices.ProgAlgo.BinMul", "SigabaNeo.Lib.Lattices.ProgAlgo.CoefBits", "SigabaNeo.Lib.Lattices.ProgAlgo.BggEnc",
-  "SigabaNeo.Lib.Machines.Prog.Machine", "SigabaNeo.Lib.Machines.Prog.Arith",
-  "SigabaNeo.Lib.Machines.Inline.OfPTMOps", "SigabaNeo.Lib.Machines.Inline.Routine",
-  "SigabaNeo.Lib.Machines.Inline.Defs", "SigabaNeo.Lib.Machines.Inline.Steps",
-  "SigabaNeo.Lib.Machines.Inline.Phases", "SigabaNeo.Lib.Machines.Inline.Handler",
-  "SigabaNeo.Lib.Machines.Inline.Sim", "SigabaNeo.Lib.Machines.Inline.Main",
-  "SigabaNeo.Lib.Machines.Inline.Prep", "SigabaNeo.Lib.Machines.Inline.Oracle",
-  "SigabaNeo.Lib.Machines.Compose.Law", "SigabaNeo.Lib.Machines.Compose.Steps",
-  "SigabaNeo.Lib.Machines.Compose.Plumbing", "SigabaNeo.Lib.Machines.Compose.Clocked",
-  "SigabaNeo.Lib.Machines.Compose.AndThen", "SigabaNeo.Lib.Machines.Compose.Cost",
-  "SigabaNeo.Lib.Machines.Inline.LinSim", "SigabaNeo.Lib.Machines.Inline.LinDefs",
-  "SigabaNeo.Lib.Machines.Inline.LinPrep", "SigabaNeo.Lib.Machines.Inline.LinMain",
-  "SigabaNeo.Lib.Machines.Inline.LinCost", "SigabaNeo.Lib.Machines.Inline.ProgRoutine",
-  "SigabaNeo.Lib.Machines.Prog.BoundsT", "SigabaNeo.Lib.Machines.Prog.CompileT",
-  "SigabaNeo.Lib.Machines.Prog.Frame", "SigabaNeo.Lib.Machines.Prog.AbsBound",
-  "SigabaNeo.Lib.Machines.Prog.VecBound", "SigabaNeo.Lib.Machines.Prog.FrameParseX",
-  "SigabaNeo.Lib.Machines.Prog.ShapeS", "SigabaNeo.Lib.Machines.Prog.GateGen", "SigabaNeo.Lib.Machines.Prog.NumBound",
-  "SigabaNeo.Lib.Machines.Prog.CoinLoop",
-  "SigabaNeo.Lib.Machines.Inline.LinCost", "SigabaNeo.Lib.Machines.Compose.DigitPrep",
-  "SigabaNeo.Lib.Machines.Compose.AndThenLin",
-  "SigabaNeo.Lib.Machines.Compose.LinCost", "SigabaNeo.Lib.Machines.Compose.Shift",
-  "SigabaNeo.Lib.Machines.Compose.Guard", "SigabaNeo.Lib.Machines.Compose.AndThenGuard",
-  "SigabaNeo.Lib.Machines.Compose.GuardCost",
-  "SigabaNeo.Lib.Machines.Prog.Det", "SigabaNeo.Lib.Machines.Prog.Serial", "SigabaNeo.Lib.Machines.Prog.Stream",
-  "SigabaNeo.Lib.Machines.Prog.Words", "SigabaNeo.Lib.Machines.Prog.WordBlocks",
-  "SigabaNeo.Lib.Machines.Prog.Frame", "SigabaNeo.Lib.Machines.Inline.InitFix",
-  "SigabaNeo.Lib.Machines.Inline.InitDefs", "SigabaNeo.Lib.Machines.Inline.InitPhases",
-  "SigabaNeo.Lib.Machines.Inline.InitMain", "SigabaNeo.Lib.Machines.Inline.InitCost",
-  "SigabaNeo.Lib.Machines.Inline.PerQuery", "SigabaNeo.Lib.Machines.Inline.InitPerQuery",
-  "SigabaNeo.Lib.Machines.Inline.InitStructCost",
-  "SigabaNeo.Lib.Machines.Compose.LinCost", "SigabaNeo.Lib.Machines.Prog.Macros", "SigabaNeo.Lib.Machines.Prog.RegVMSim",
-  "SigabaNeo.Lib.Machines.Inline.Regions",
-  "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.FrameParse", "SigabaNeo.Lib.Machines.Prog.FrameSize", "SigabaNeo.Lib.Machines.Prog.MacroSize",
-  "SigabaNeo.Lib.Machines.Prog.Sample", "SigabaNeo.Lib.Machines.Prog.SampleTime",
-  "SigabaNeo.Lib.Machines.Prog.CoinFreeX", "SigabaNeo.Lib.Machines.Prog.DetX", "SigabaNeo.Lib.Machines.Prog.LoadB",
-  "SigabaNeo.Lib.Machines.Prog.UBP", "SigabaNeo.Lib.Machines.Prog.FrameIO",
-  "SigabaNeo.Lib.Machines.Prog.XAbs", "SigabaNeo.Lib.Machines.Prog.XFlat", "SigabaNeo.Lib.Machines.Prog.ValVM"]
+# The core: the trusted check and definitions (`SigabaNeo.Trusted.*`), and the untrusted helpers of
+# the tooling (`SigabaNeo.Assemble`, `SigabaNeo.Platform`, python/).
+roots = [
+  "SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Trusted.Assumption",
+  "SigabaNeo.Trusted.Primitive", "SigabaNeo.Trusted.Submission"]
+
+# The standard library (docs/GITHUB_PLATFORM.md, "std"): curated by the maintainers from the DAG,
+# imported by every agent's workspace. Not trusted: the check builds it and replays it.
+[[lean_lib]]
+name = "SigabaNeoStd"
+roots = ["SigabaNeoStd"]

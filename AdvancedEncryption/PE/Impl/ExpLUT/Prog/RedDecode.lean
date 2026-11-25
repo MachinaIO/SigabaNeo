@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.DecodeWord
 import PE.Impl.ExpLUT.AH.CircBridge
-import SigabaNeo.Lib.Machines.Prog.FrameParseX
+import SigabaNeoStd.Machines.Prog.FrameParseX
 
 /-!
 # The decoder of the reduction machine (package G2)

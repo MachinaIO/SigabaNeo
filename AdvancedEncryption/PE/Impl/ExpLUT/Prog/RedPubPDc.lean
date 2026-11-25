@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedPubPBound
 import PE.Impl.ExpLUT.AH.Conf
-import SigabaNeo.Lib.Machines.Prog.VecBound
+import SigabaNeoStd.Machines.Prog.VecBound
 
 /-!
 # The public-key component at the concrete dimensions (package G2, `pubP`)

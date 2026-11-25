@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.Layout
-import SigabaNeo.Lib.Encode.Laws
-import SigabaNeo.Lib.Machines.Prog.Sample
+import SigabaNeoStd.Encode.Laws
+import SigabaNeoStd.Machines.Prog.Sample
 
 /-!
 # The laws of the encoded secrets

@@ -1,10 +1,10 @@
 import PE.Impl.ExpLUT.Prog.EncSamplers
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncRow
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.EncRow
 
 /-!
 # Encoding rows of `Enc` on the words of the scheme
 
-`encRowP` (`SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncRow`) on the words of families of ring
+`encRowP` (`SigabaNeoStd.Lattices.ProgAlgo.Mersenne.EncRow`) on the words of families of ring
 elements (`vecE D α`, in the order of `Enum α`): **`rowW_vecE`**: from the words of `s` and of the
 families `A₀`, `A₁`, `Z`, `E` over `α`, it writes the word of the family
 `c ↦ s A₀ c + A₁ c − Z c + E c`. With `A₀`, `A₁` the rows of a public matrix, `Z c = (z G)_c` and

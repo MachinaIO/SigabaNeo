@@ -1,9 +1,9 @@
 import PE.Impl.RingBTVW.Prog.RowSimP
 import PE.Impl.RingBTVW.Prog.KeyGenP
 import PE.Impl.RingBTVW.Prog.DecP
-import SigabaNeo.Lib.Lattices.ProgAlgo.MatAdd
-import SigabaNeo.Lib.Lattices.ProgAlgo.Nand
-import SigabaNeo.Lib.Machines.Prog.CoinFreeX
+import SigabaNeoStd.Lattices.ProgAlgo.MatAdd
+import SigabaNeoStd.Lattices.ProgAlgo.Nand
+import SigabaNeoStd.Machines.Prog.CoinFreeX
 
 /-!
 # The key-row block `bfX` of `KeyGen`

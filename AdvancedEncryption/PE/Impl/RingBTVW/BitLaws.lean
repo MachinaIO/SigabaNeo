@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Registry
 import PE.Impl.RingBTVW.Flooding
-import SigabaNeo.Lib.Lattices.BitLaw
+import SigabaNeoStd.Lattices.BitLaw
 
 /-!
 # The laws of the dual-use scheme are realized by fair coins

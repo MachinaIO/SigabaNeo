@@ -1,6 +1,6 @@
 import PE
-import SigabaNeo.Lib.Machines.FromPolyTime
-import SigabaNeo.Lib.Machines.Gates
+import SigabaNeoStd.Machines.FromPolyTime
+import SigabaNeoStd.Machines.Gates
 import Mathlib.Data.Set.Finite.List
 
 /-!

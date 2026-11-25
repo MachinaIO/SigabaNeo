@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyFront
-import SigabaNeo.Lib.Machines.Prog.FrameOut
+import SigabaNeoStd.Machines.Prog.FrameOut
 
 /-! A fully framed finite-clock KeyGen machine. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyCore

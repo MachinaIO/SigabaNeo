@@ -1,5 +1,5 @@
 """Primal uSVP attack, GSA shape model (estimator `primal_usvp`, `PrimalUSVP.cost_gsa`); mirror of
-SigabaNeo/Lib/Lattices/Estimator/Usvp.lean. The estimator's local search over β is replaced by an
+SigabaNeoStd/Lattices/Estimator/Usvp.lean. The estimator's local search over β is replaced by an
 exhaustive scan of the same range, so the result is at most the estimator's."""
 
 from . import fx

@@ -1,5 +1,5 @@
 """Noise distributions of the lattice estimator (estimator/nd.py), the subset used here; mirror of
-SigabaNeo/Lib/Lattices/Estimator/ND.lean. Numbers are fixed point (fx)."""
+SigabaNeoStd/Lattices/Estimator/ND.lean. Numbers are fixed point (fx)."""
 
 from __future__ import annotations
 

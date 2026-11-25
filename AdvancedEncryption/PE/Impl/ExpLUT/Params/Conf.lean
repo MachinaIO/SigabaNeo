@@ -1,8 +1,8 @@
 import PE.Impl.ExpLUT.Laws
 import PE.Impl.ExpLUT.NegacyclicNorm
-import SigabaNeo.Lib.Lattices.RingBoxes
-import SigabaNeo.Lib.Lattices.ModuleLWE
-import SigabaNeo.Lib.Lattices.Decode
+import SigabaNeoStd.Lattices.RingBoxes
+import SigabaNeoStd.Lattices.ModuleLWE
+import SigabaNeoStd.Lattices.Decode
 
 /-!
 # The concrete configuration of ExpLUT

@@ -18,8 +18,8 @@ Lemma 8 LUT, Lemma 9 BP evaluation), 5.1 (scheme), 5.2 (correctness), Appendix A
 simulation forms, Lemma 10, Corollary 1, Lemma 11, hybrids H0–H5).
 
 Rules: everything fully proved, no `sorry`, no `native_decide`, axioms `[propext,
-Classical.choice, Quot.sound]` only. Generic lattice math goes in `SigabaNeo/Lib/Lattices`,
-generic machine code in `SigabaNeo/Lib/Machines`, the scheme in `AdvancedEncryption/PE/Impl/ExpLUT`.
+Classical.choice, Quot.sound]` only. Generic lattice math goes in `SigabaNeoStd/Lattices`,
+generic machine code in `SigabaNeoStd/Machines`, the scheme in `AdvancedEncryption/PE/Impl/ExpLUT`.
 Mirror the structure and reuse the infrastructure of `PE/Impl/RingBTVW` (read its `DESIGN.md`,
 `COST_PLAN.md`, `AdvancedEncryption/BP_PLAN.md`) wherever possible.
 
@@ -409,7 +409,7 @@ Open for later packages: `hflood` at the concrete parameters (`iidLaw χfl = flo
 with `idealView`; the reduction's experiment with `redKeyLaw` agrees with `KGi` until `bad`), the
 reduction as a machine (package G), the bridge of `circReal`/`circUnif` to package B's laws.
 
-* **B done** (`t3/explut-b`): `SigabaNeo/Lib/Lattices/CircularRingLWE.lean` (`CircularRingLWE.decision`,
+* **B done** (`t3/explut-b`): `SigabaNeoStd/Lattices/CircularRingLWE.lean` (`CircularRingLWE.decision`,
   `H p = RingLWE.H p.base`; `decision_problem_nil`: at `J = []` it is decision Ring-LWE) and
   `Estimator/Bound/CbdQ.lean` (CBD(16) bound at any `q ≥ 2^1024` given `log₂ q`, every sample count
   in a range). `ExpLUT/Params/Strength.lean`: at `q = 2^(2^16) − 1`, CBD(16), every `1 ≤ m ≤ 2^50`
@@ -576,7 +576,7 @@ doublings) used for `b` (`z = 0`), `h_k` (`z = (s_k, 1)`), `c^aut_{t,d}`
 
 **Design.** `Dec` is written as code of a small verified register machine instead of raw tape
 programs:
-* `SigabaNeo/Lib/Lattices/ProgAlgo/Mersenne/VM.lean`: **`RingVM`** — 200 word registers, the ring
+* `SigabaNeoStd/Lattices/ProgAlgo/Mersenne/VM.lean`: **`RingVM`** — 200 word registers, the ring
   instructions of `ℤ_{2^K−1}[X]/(X^N+1)` (`add sub mul canon neg`, and with a template register
   `digit rotB aut rhoJ`; operands cut to `N K` bits by `takeD`, so `exec` is total), the moves of
   `ValVM` (`mv cp drop clr tl`), `rep`/`seq`/`ifb`. `compile : Code → XProg 247` (every
@@ -788,7 +788,7 @@ Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the 
 
 ### Package G3 (flooding at `χfl`, circular law bridge) — branch `t3/explut-g3`
 
-Files `SigabaNeo/Lib/Lattices/FloodRing.lean`, `SigabaNeo/Lib/Lattices/CircularRingLWEInst.lean`,
+Files `SigabaNeoStd/Lattices/FloodRing.lean`, `SigabaNeoStd/Lattices/CircularRingLWEInst.lean`,
 `PE/Impl/ExpLUT/FloodBound.lean`, `PE/Impl/ExpLUT/AH/Flood.lean`, `PE/Impl/ExpLUT/AH/CircBridge.lean`
 (all in the aggregators). Axioms `[propext, Classical.choice, Quot.sound]`.
 
@@ -1025,7 +1025,7 @@ Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the 
 
 ### Package G3 (flooding at `χfl`, circular law bridge) — branch `t3/explut-g3`
 
-Files `SigabaNeo/Lib/Lattices/FloodRing.lean`, `SigabaNeo/Lib/Lattices/CircularRingLWEInst.lean`,
+Files `SigabaNeoStd/Lattices/FloodRing.lean`, `SigabaNeoStd/Lattices/CircularRingLWEInst.lean`,
 `PE/Impl/ExpLUT/FloodBound.lean`, `PE/Impl/ExpLUT/AH/Flood.lean`, `PE/Impl/ExpLUT/AH/CircBridge.lean`
 (all in the aggregators). Axioms `[propext, Classical.choice, Quot.sound]`.
 
@@ -1335,7 +1335,7 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
 
 ### Exact small-box acceptance predicate (2026-11-24)
 
-- Added `Prog/KeyBoxTest.lean`, imported by aggregate. Reuses the existing generic `SigabaNeo.Lib.Lattices.BallTest` lemmas rather than duplicating the centered-residue arithmetic.
+- Added `Prog/KeyBoxTest.lean`, imported by aggregate. Reuses the existing generic `SigabaNeoStd.Lattices.BallTest` lemmas rather than duplicating the centered-residue arithmetic.
 - `sum_tstD_eq_zero_iff` proves the actual VM high-digit sum vanishes iff the tested ring element has coefficient norm at most `r`. Hypotheses explicitly include `2*r < 2^B`, `2^(B+1) ≤ q`, and `2*(K-B) < q`; the last excludes modular cancellation of test bits. The proof indexes both shifted digit streams by range × Bool and applies `sum_binaryDigit_eq_zero_iff`.
 - `exec_tstC_eq_zero_iff` connects this predicate to the existing executable VM accumulator with zero initial accumulator. Added actual Boolean test `ballTestC := tstC; eqb rTx rFa rZ`, WF and `exec_ballTestC`, whose output is exactly `[decide (cnorm x ≤ r)]`.
 - `small_iff_tstD` characterizes the family box by per-coordinate tests. `small_test_conditions_Dc` discharges separation/no-cancellation for concrete parameters and `kbDc_small_iff_tstD` specializes to the opaque configured box. Large numerical powers are compared via exponents, not expanded.
@@ -1723,7 +1723,7 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
 - matrixAddScratch updates X0/X1 to max(inputcap,NK), respecting iterSupT's inclusion of iteration0. matrixAddBase additionally sets Ro0=inputAccL,Ro1=inputMOut,Ci=inputT4K. compile_maPre_exact charges actual stream copies/clear/counter copy; initial input is safely widened only for X scratch. matrixAddResult sets final AccL=R*NK. compile_matAddC_exact now requires only RingInputs, Z<=NK,T4K<=R,R*NK<=M; no old operand/stream/counter/output-cap relationships.
 - matrixAddScratch_inputs/base_inputs/result_inputs prove all layout bounds and templates preserved; matrixAddResult_fields/other expose all six changed caps and unchanged registers. compile_matAddC_exact_concrete retains <=2^364 at M2^120,N2^24,K2^16,R4*2^16 with only Z<=NK and T4K<=4K beyond RingInputs. This resolves matrix-adder scratch-cap integration restrictions noted earlier; full evaluator composition remains open.
 - Aggregate build passed9808 jobs (/tmp/explut-key-time-mat-add-exact-build.log). Flexible body/loop/exact prefix/full/numeric/readiness/field audits standard axioms only (/tmp/key-time-mat-add-exact-audit.lean); fields only propext. No sorry/custom axiom/native_decide, git diff --check passed. All sessions terminal; changes uncommitted/unpushed.
-- Next: ginvMulC/digAccC/mulPKC/autPKC actual nested matrix algorithms (SigabaNeo/Lib/Lattices/ProgAlgo/Mersenne/VMMat.lean and KeyVM.lean), using precise copied counters and linear output queues. Then chain/jBody/step/evalC, full KeyGen stages. Dec/reductions/Submission/global comparison still pending. Goal active.
+- Next: ginvMulC/digAccC/mulPKC/autPKC actual nested matrix algorithms (SigabaNeoStd/Lattices/ProgAlgo/Mersenne/VMMat.lean and KeyVM.lean), using precise copied counters and linear output queues. Then chain/jBody/step/evalC, full KeyGen stages. Dec/reductions/Submission/global comparison still pending. Goal active.
 
 ### Actual digit accumulation runtime and cleanup (2026-11-25)
 

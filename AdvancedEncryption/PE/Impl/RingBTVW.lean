@@ -19,6 +19,6 @@ import PE.Impl.RingBTVW.Fresh.Simulation
   `B_j = B₀ W_j + ψ_j G̲`, the key matrix is `B₀ W_f + f(x) G̲` (`keyMatrix_sim`): keys for
   unauthorized predicates have the gadget trapdoor `W_f`.
 
-The lattice tools it uses are in `SigabaNeo.Lib.Lattices.Homomorphic` and
-`SigabaNeo.Lib.Lattices.Decode`.
+The lattice tools it uses are in `SigabaNeoStd.Lattices.Homomorphic` and
+`SigabaNeoStd.Lattices.Decode`.
 -/

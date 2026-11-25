@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Fresh.Noise
-import SigabaNeo.Lib.Lattices.Homomorphic.GSWNoise
-import SigabaNeo.Lib.Lattices.Homomorphic.Depth
+import SigabaNeoStd.Lattices.Homomorphic.GSWNoise
+import SigabaNeoStd.Lattices.Homomorphic.Depth
 
 /-!
 # The noise bound in closed form

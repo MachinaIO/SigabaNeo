@@ -1,9 +1,9 @@
 import PE.Impl.RingBTVW.ImplBase
-import SigabaNeo.Lib.Machines.Prog.PhaseB
-import SigabaNeo.Lib.Machines.Prog.FrameSize
-import SigabaNeo.Lib.Machines.Prog.CoinFreeX
-import SigabaNeo.Lib.Machines.Prog.Sample
-import SigabaNeo.Lib.Machines.Inline.Regions
+import SigabaNeoStd.Machines.Prog.PhaseB
+import SigabaNeoStd.Machines.Prog.FrameSize
+import SigabaNeoStd.Machines.Prog.CoinFreeX
+import SigabaNeoStd.Machines.Prog.Sample
+import SigabaNeoStd.Machines.Inline.Regions
 
 /-!
 # The front end of `KeyGen`, `Dec` and the key component, as an interface

@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.WfB2
-import SigabaNeo.Lib.Lattices.ProgAlgo.ValMainR
-import SigabaNeo.Lib.Machines.Prog.CapN
+import SigabaNeoStd.Lattices.ProgAlgo.ValMainR
+import SigabaNeoStd.Machines.Prog.CapN
 
 /-!
 # The `W_f` block on register streams (stage II)

@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.RowSimP
 import PE.Impl.RingBTVW.Prog.UBLoop
-import SigabaNeo.Lib.Machines.Prog.PhaseB
+import SigabaNeoStd.Machines.Prog.PhaseB
 import PE.Impl.RingBTVW.Prog.KeyPTime
 
 /-!

@@ -1,7 +1,7 @@
-# The lattice library (`SigabaNeo/Lib/Lattices`)
+# The lattice library (`SigabaNeoStd/Lattices`)
 
 Definitions and proofs shared by claims and solutions, in the namespace `SigabaNeo.Lattices`.
-`import SigabaNeo.Lib.Lattices` imports all of it; a definitions file should import only the
+`import SigabaNeoStd.Lattices` imports all of it; a definitions file should import only the
 modules it needs.
 The library is part of the core and is pinned with it. Its definitions are part of the meaning of
 any claim that imports them, as cslib-frontier's are, so a submitter reads them as they read their

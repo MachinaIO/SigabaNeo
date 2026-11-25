@@ -1,7 +1,7 @@
 import PE.Impl.ExpLUT.Prog.RedSetupPDc
 import PE.Impl.ExpLUT.Prog.SetupSize
 import PE.Impl.ExpLUT.Prog.EncSizeConf
-import SigabaNeo.Lib.Machines.Prog.AppendWCost
+import SigabaNeoStd.Machines.Prog.AppendWCost
 
 /-! # The state count of the reduction's setup component at `Dc`: `|setupRX| ≤ 2^20`. -/
 

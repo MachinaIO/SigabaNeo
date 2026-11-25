@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.BpCompLaw
-import SigabaNeo.Lib.Machines.Prog.LenEq
-import SigabaNeo.Lib.Machines.Prog.CoinFreeX
+import SigabaNeoStd.Machines.Prog.LenEq
+import SigabaNeoStd.Machines.Prog.CoinFreeX
 
 /-!
 # The authorization program of branching programs

@@ -1,8 +1,8 @@
 import PE.Impl.RingBTVW.Fresh.Scheme
-import SigabaNeo.Lib.Lattices.Basic
+import SigabaNeoStd.Lattices.Basic
 import CslibFrontier.Languages.Probabilistic.Basic
 import CslibFrontier.Probability.PMF
-import SigabaNeo.Lib.Lattices.Stat
+import SigabaNeoStd.Lattices.Stat
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 
 /-!

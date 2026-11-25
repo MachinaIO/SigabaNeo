@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.SetupGad
-import SigabaNeo.Lib.Machines.Prog.FrameOut
+import SigabaNeoStd.Machines.Prog.FrameOut
 
 /-!
 # `Setup` of the ExpLUT scheme as a tape program

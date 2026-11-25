@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.Post
-import SigabaNeo.Lib.Machines.Inline.InitPerQuery
-import SigabaNeo.Lib.Machines.Inline.InitStructCost
+import SigabaNeoStd.Machines.Inline.InitPerQuery
+import SigabaNeoStd.Machines.Inline.InitStructCost
 
 /-!
 # The reduction machine with per-query handlers

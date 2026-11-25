@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Ops
 import Mathlib.Algebra.Module.BigOperators
-import SigabaNeo.Lib.Lattices.Automorphism.LUT
+import SigabaNeoStd.Lattices.Automorphism.LUT
 
 /-!
 # Lookup tables over encodings (Lemma 8)
@@ -17,7 +17,7 @@ coefficients `α_{k,L}` and `L(u)` for `v_{k,L}` (`encodes_lut_of_spec`).
   under `s_{g_t}` (ciphertext), indexed by `t : ℕ` (only `t < b` is used). Their exact form
   (`HelperOK`): `h_k = s H_k − s_k G + e_k` and `c_{t,d} = s_k(A^aut_{t,d} − d_d(C_k) G) + e_{t,d}`.
 * The coefficients are those of Lemma 8 (`ExpRing.alpha`, `ExpRing.vcoef` of
-  `SigabaNeo.Lib.Lattices.Automorphism.LUT`), `α_{k,L} = W⁻¹ Σ_{j<W} X^{L(j)} σ_k(X^{2n−j})` and
+  `SigabaNeoStd.Lattices.Automorphism.LUT`), `α_{k,L} = W⁻¹ Σ_{j<W} X^{L(j)} σ_k(X^{2n−j})` and
   `v_{k,L} = W⁻¹ Σ_{j<W} L(j) σ_k(X^{2n−j})`, at `k = g^j` (`alphaCoef`, `vCoef`). The identities of
   Lemma 8 over the exponents of the setting (`Lemma8`) are a hypothesis here; for the canonical
   setting `idx j = g^j` they are `ExpRing.lut_alpha_pow`, `ExpRing.lut_vcoef_pow`

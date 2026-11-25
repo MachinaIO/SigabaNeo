@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.ReductionMachine
 import PE.Impl.Game.HandlersBP
-import SigabaNeo.Lib.Machines.Prog.Pass
+import SigabaNeoStd.Machines.Prog.Pass
 
 /-!
 # The post-processing machine of the reduction

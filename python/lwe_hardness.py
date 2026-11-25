@@ -1,4 +1,4 @@
-"""Reference implementation of the LWE security function `H` (SigabaNeo/Lib/Lattices/Hardness.lean).
+"""Reference implementation of the LWE security function `H` (SigabaNeoStd/Lattices/Hardness.lean).
 
 `H` is a conservative lower bound, in bits, on the cost of every known classical attack on LWE
 (and on Ring-/Module-LWE through their LWE view). The Lean definition is the one that counts; this

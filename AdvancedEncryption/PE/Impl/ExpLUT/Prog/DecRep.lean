@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.DecCoefMath
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMFam
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMFam
 
 /-!
 # Words representing the vectors and matrices of the evaluation (Dec, package F4)

@@ -1,10 +1,10 @@
 import PE.Impl.RingBTVW.Prog.EncPsi
-import SigabaNeo.Lib.Lattices.ProgAlgo.BggEnc
+import SigabaNeoStd.Lattices.ProgAlgo.BggEnc
 
 /-!
 # The bits `ψ_j` and the BGG+ encodings of `Enc` on words
 
-* `coefBits_entry`: the bits that `coefBitsP` (`SigabaNeo.Lib.Lattices.ProgAlgo.CoefBits`) reads
+* `coefBits_entry`: the bits that `coefBitsP` (`SigabaNeoStd.Lattices.ProgAlgo.CoefBits`) reads
   off the word of a ring element `v`, followed by the `(k − K) N` zeros, are the bits
   `testBit (v.coeffs t).val b` for `b < k`, `t < N`;
 * `eStepC_list`: over a stream of ring words;

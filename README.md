@@ -1,56 +1,153 @@
-# Sigaba-Neo
+# Sigaba Neo
 
-Is a hardness assumption true under other hardness assumptions? Sigaba-Neo turns this question
-into two Lean theorems (`H → T` and `H → ¬T`), has AI agents prove one of them on a server with
-[Prove2Me](https://prove2.me)'s API, and checks the answer locally. Assumptions are written with
-the definitions of [cslib-frontier](https://github.com/cslib-community/cslib-frontier), for example
-"every uniform strict PPT adversary has negligible advantage". Lean v4.36.0-rc2.
+Sigaba Neo is a multi-agent AI harness that carries out cryptographic research end to end and
+autonomously, from cryptanalysis to optimization ([concept](https://hackmd.io/@MachinaIO/HJVC8FqRze)).
 
-There are three parties: the submitter, the agents, and the server's operator. The submitter
-trusts neither the agents nor the operator. Its trusted code is one file,
-[SigabaNeo/Trusted/Check.lean](SigabaNeo/Trusted/Check.lean). The design is in
-[docs/DESIGN.md](docs/DESIGN.md).
+- A **problem author** defines a cryptographic primitive in Lean: its parameters, algorithms,
+  propositions (correctness, security, or anything else) and cost function.
+- A **Design AI** implements the algorithms as Turing machines and chooses parameters. It proves in
+  Lean that the implementation satisfies every proposition, and bounds its cost. It may introduce
+  new hardness assumptions, registering each with the strength it claims.
+- A **Cryptanalysis AI** finds attacks against assumptions whose claimed strength is too high,
+  proves them in Lean, and so cuts that strength back.
+
+Two principles hold throughout:
+
+- **The harness trusts no AI.** Every final output is a theorem that Lean checks.
+- **The harness has no notion of correctness or security of its own.** It checks only that the
+  author's propositions hold.
+
+Strength is lowered only by proven attacks, and only ever goes down.
+
+```mermaid
+flowchart LR
+  A[Problem author] -- primitive in Lean --> H[Harness]
+  H -- primitive, registered assumptions --> D[Design AI]
+  D -- submission, new assumptions --> H
+  H -- assumptions and their strength --> C[Cryptanalysis AI]
+  C -- proven attacks --> H
+  H -- verified results --> A
+```
+
+## Inputs and outputs
+
+**Input** from the problem author:
+
+- the primitive's Lean definition;
+- optionally, existing hardness assumptions (such as LWE) that the Design AI may use.
+
+**Outputs.** All of them are Lean theorems:
+
+- an implementation of each algorithm, with proofs that every proposition holds; for each
+  proposition, which assumptions it relies on, at which parameters, and at how many bits;
+- an upper bound `N` on the implementation's cost;
+- the current strength of each assumption, with the proven attacks behind it.
+
+## The formalization in this repository
+
+| Concept | Lean | Docs |
+| --- | --- | --- |
+| Primitive: parameter set, algorithms (multi-tape Turing machines with clocks, fair coins), propositions, cost function | `Primitive`, `AlgSig`, `Impl` (`SigabaNeo/Trusted/Primitive.lean`) | [PRIMITIVES.md](docs/PRIMITIVES.md) |
+| Submission (`impl`, per-proposition premises `deps`, cost bound `N`) and its single final statement `Spec` | `Submission`, `Spec`, `Submission.Valid` (`SigabaNeo/Trusted/Submission.lean`) | [PRIMITIVES.md](docs/PRIMITIVES.md) |
+| Assumptions: parameter set, problem, security function `H`; the registry and current strengths; premises | `Assumption`, `HardAt`, `Registry`, `Registry.Strength`, `Premise` (`SigabaNeo/Trusted/Assumption.lean`) | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) |
+| Attacks: an explicit machine with `cost ≤ 2^c · gain` refutes every claim above `c` (the update rule) | `Assumption.Attack`, `Attack.not_hardAt` | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) |
+| Attack cost: the attacker's clock plus its description length | `Machine` (`SigabaNeo/Trusted/Machine.lean`) | [ASSUMPTIONS.md](docs/ASSUMPTIONS.md) |
+| The trusted check of every answer | `#sigaba_neo_check` (`SigabaNeo/Trusted/Check.lean`) | [DESIGN.md](docs/DESIGN.md) |
+
+An example is the problem author's predicate encryption for branching programs, in
+[AdvancedEncryption/](AdvancedEncryption/README.md). Its submission `PE.Impl.DualUse` proves `Spec`
+from decision Ring-LWE alone, at 965 bits, with cost `N = 2^818`.
+
+## Where the agents work: a DAG on GitHub
+
+Agents never write to anything trusted. They share one append-only DAG of Lean files and notes in a
+separate GitHub repository, and submit to it by pull request:
+
+- definitions;
+- statements: the claims, each a pair of cards, *prove* and *refute*;
+- proofs, which are complete or are sketches that reduce one statement to others;
+- notes on strategies, attempts and dead ends.
+
+A gate checks every pull request in a sandbox, and the maintainers periodically promote what is
+widely useful into the standard library `SigabaNeoStd`.
+
+Whoever relies on an answer checks it locally. `sigaba_neo.py check` assembles the proofs the DAG
+holds, builds them in a sandbox, and runs the trusted check. The DAG, its CI and the agents are not
+trusted. The repository, the gate, semantic IDs, environments and the threat model are described in
+[docs/GITHUB_PLATFORM.md](docs/GITHUB_PLATFORM.md).
+
+## Trust model
+
+The harness trusts only:
+
+- the Lean kernel;
+- the pinned libraries (Mathlib and cslib-frontier; Lean v4.36.0-rc2);
+- its own deterministic checking code, `SigabaNeo/Trusted/Check.lean`;
+- the problem author's definitions.
+
+Humans review once:
+
+- the author's primitive;
+- the harness's vocabulary (`SigabaNeo/Trusted/`);
+- the `Spec` template;
+- `HardAt`.
+
+The correctness of proofs is left to the kernel. The check rejects `sorry` and every axiom but
+`propext`, `Classical.choice` and `Quot.sound`. It replays in the kernel every module that was not
+built from trusted sources, including the standard library's proof helpers.
+
+## Status
+
+The project is in **Phase 1**: algorithms, adversaries and reductions are multi-tape Turing machines
+(cslib-frontier), and cost and attack cost are counted in their steps. Bits in this model are
+comparable between submissions, but not directly with bit security in the RAM model of the
+literature.
+
+| | |
+| --- | --- |
+| **Implemented** | primitives, submissions and `Spec`; assumptions, the registry, premises and `Submission.Valid`; attacks and the update rule as theorems; the trusted check; the DAG repository with its gate, records and index; the standard library (lattices and LWE, the lattice estimator and attacks, machines and programs) |
+| **Planned** | the harness updating strengths itself from proven attacks; warnings about assumptions with pending, unproven attacks; **Phase 2** (CPU/GPU binaries proven equivalent to the Turing machines); conditional attacks from explicit heuristic conjectures, with a criterion for adopting them (an open problem) |
 
 ## Use
 
-Build the core. `lake update` fetches the Mathlib cache; [docs/M0.md](docs/M0.md) shows how to
-fetch cslib-frontier's too.
+Build the core. `lake exe cache get` fetches the Mathlib cache; [docs/M0.md](docs/M0.md) shows how
+to fetch cslib-frontier's too.
 
 ```bash
 lake build
 ```
 
-**Submitter.** From `python/`, with the server's URL and an API key:
+**Problem author, or anyone relying on an answer.** A *claim* asks whether a proposition `T` holds
+under hypotheses `H` (other claims, named or chosen in the DAG by tag, age or refutation attempts),
+as two cards, `H → T` and `H → ¬T`. From `python/`, with a checkout of the DAG repository (for
+`submit`, of your fork):
 
 ```bash
-PROVE2ME_API=… PROVE2ME_TOKEN=… python3 sigaba_neo.py submit CLAIM
+python3 sigaba_neo.py submit CLAIM --dag ../../dag --pr
 ```
 
 ```bash
-PROVE2ME_API=… PROVE2ME_TOKEN=… python3 sigaba_neo.py check CLAIM
+python3 sigaba_neo.py check CLAIM --dag ../../dag --records ../../dag-records
 ```
 
-`CLAIM` is the submitter's claim directory: `claim.json` (the target, and hypotheses: other
-claims, named or chosen on the server by tag, age or refutation attempts) and
-`Definitions/Def_*.lean`. Definitions may import the core's lattice
-library (`SigabaNeo.Lib.Lattices`, [docs/LATTICES.md](docs/LATTICES.md)). To edit the files in an
-editor, make the directory a Lake project first (`python3 sigaba_neo.py dev CLAIM`). `submit` fixes the
-hypotheses in `claim.json` and publishes the definitions and the two theorems. `check` downloads
-every proof the server reports and prints the trusted check's report, which states what was
-established.
+`CLAIM` is the claim directory: `claim.json` (the target and the hypotheses) and
+`Definitions/Def_*.lean`. Definitions may import the standard library (`SigabaNeoStd`, for example
+`SigabaNeoStd.Lattices`, [docs/LATTICES.md](docs/LATTICES.md)). To edit the files in an editor, make
+the directory a Lake project first (`python3 sigaba_neo.py dev CLAIM`). `submit` fixes the
+hypotheses in `claim.json` and writes the definitions and the two theorems into the DAG checkout
+(with `--pr`, as a pull request). `check` assembles every proof the DAG holds for them and prints
+the trusted check's report, which states what was established.
 
-**Server operator** ([docs/PLATFORM.md](docs/PLATFORM.md)). From `python/`:
+**Agents** (Design AI, Cryptanalysis AI) work on the DAG repository from their forks, following its
+`SKILL.md` ([templates/dag/SKILL.md](templates/dag/SKILL.md)), and check their files before a pull request:
 
 ```bash
-python3 p2m_server.py serve --config server.json
+python3 python/dag_verify.py verify --dag <main of the DAG> --new <the added files> --out out
 ```
 
-**Agents** use Prove2Me's agent workspace (the `prove2me_workspace` submodule), set up for the
-server's environment:
-
-```bash
-git submodule update --init && cd python && python3 p2m_server.py workspace ../prove2me_workspace
-```
+**Maintainers** create the DAG repository with `python3 python/dag_tools.py init …`, publish an
+environment image per core tag (`.github/workflows/image.yml`, [docker/Dockerfile](docker/Dockerfile)),
+and add std releases ([docs/GITHUB_PLATFORM.md](docs/GITHUB_PLATFORM.md), section 9).
 
 ## Tests
 
@@ -62,8 +159,10 @@ git submodule update --init && cd python && python3 p2m_server.py workspace ../p
 
 | Path | Contents |
 | --- | --- |
+| [Concept](https://hackmd.io/@MachinaIO/HJVC8FqRze) | the concept of Sigaba Neo |
+| `docs/DESIGN.md` | claims, the trusted check and the parties |
 | `docs/ASSUMPTIONS.md`, `docs/PRIMITIVES.md` | the forms of assumptions and of primitives (`SigabaNeo/Trusted/`) |
 | `AdvancedEncryption/` | a Lake project defining primitives in that form: predicate encryption |
 | `docs/PROVE2ME.md` | how Prove2Me's crypto statements model efficiency (survey); the environment question |
-| `docs/PLATFORM.md` | the server |
+| `docs/GITHUB_PLATFORM.md` | the DAG repository: layout, semantic IDs, std, environments, the gate and its threat model |
 | `docs/M0.md` | pins, and findings about cslib-frontier |

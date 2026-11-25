@@ -30,7 +30,7 @@ $$
 (2^{-64}q^m/V_d)^{1/d}-\sqrt d/2,\qquad
 (1-10^{-50})q/\sqrt{1+\eta^2}.
 $$
-Discard nonpositive radii. The second expression enforces strict no-wrap. Conditional on any planting, the probability of a vector outside the line of length at most this radius is at most $2^{-64}$. [Volume theorem](../../SigabaNeo/Lib/Lattices/Planted/Volume.lean)
+Discard nonpositive radii. The second expression enforces strict no-wrap. Conditional on any planting, the probability of a vector outside the line of length at most this radius is at most $2^{-64}$. [Volume theorem](../../SigabaNeoStd/Lattices/Planted/Volume.lean)
 
 For a CBD coordinate $X$, set $M(z)=4^{-\eta}\sum_{j=-\eta}^\eta {2\eta\choose\eta+j}e^{zj^2}$. By exponential Markov and independence, the sum of the $d-1$ coordinate squares exceeds $C(z)=((d-1)\log M(z)+64\log 2)/z$ with probability at most $2^{-64}$ for each fixed $z>0$. Choose the best deterministic tilt among $0.01,0.02,\ldots,0.50$. Integrality gives the norm cutoff $U=\sqrt{1+\min((d-1)\eta^2,\lfloor\min_z C(z)\rfloor)}$. The two bounds together give success probability at least $1-2^{-63}$.
 

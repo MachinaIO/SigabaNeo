@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Algo.KeyMatrix
 import PE.Impl.RingBTVW.SimKeys
-import SigabaNeo.Lib.Lattices.Algo.SimWords
+import SigabaNeoStd.Lattices.Algo.SimWords
 
 /-!
 # The simulated trapdoor `W_f` of a predicate, on words

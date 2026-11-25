@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Machines.Pack.Leaves
+import SigabaNeoStd.Machines.Pack.Leaves
 import PE.Impl.ExpLUT.Prog.DecTight
 import PE.Impl.ExpLUT.Prog.DescTightDec
 

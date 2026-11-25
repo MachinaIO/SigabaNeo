@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.SimKeys
 import PE.Impl.RingBTVW.Fresh.NoiseClosed
-import SigabaNeo.Lib.Lattices.SimNorm
+import SigabaNeoStd.Lattices.SimNorm
 
 /-!
 # The norm of the simulated trapdoor

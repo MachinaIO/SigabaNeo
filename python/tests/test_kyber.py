@@ -28,7 +28,7 @@ KYBER = {  # name: (rank, eta1 (secret), eta (error), spec Core-SVP bits, NIST c
 class Kyber(unittest.TestCase):
 
     def test_spec_levels(self):
-        lines = ["import SigabaNeo.Lib.Lattices.ModuleLWE", "open SigabaNeo.Lattices"]
+        lines = ["import SigabaNeoStd.Lattices.ModuleLWE", "open SigabaNeo.Lattices"]
         for name, (k, es, ee, _, _) in KYBER.items():
             lines.append(f"#eval ModuleLWE.H {{ N := 256, rank := {k}, m := {k}, q := 3329, "
                          f"error := .cbd {ee}, secret := .cbd {es} }}")

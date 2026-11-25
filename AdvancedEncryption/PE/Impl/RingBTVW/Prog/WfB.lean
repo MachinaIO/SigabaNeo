@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.WfIns
-import SigabaNeo.Lib.Lattices.ProgAlgo.KeySumT
+import SigabaNeoStd.Lattices.ProgAlgo.KeySumT
 
 /-!
 # The `W_f` block of the key component

@@ -1,9 +1,9 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMFront
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMCost
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMWF
-import SigabaNeo.Lib.Machines.Prog.SampleTime
-import SigabaNeo.Lib.Machines.Prog.Stream
-import SigabaNeo.Lib.Machines.Inline.Regions
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMFront
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMCost
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMWF
+import SigabaNeoStd.Machines.Prog.SampleTime
+import SigabaNeoStd.Machines.Prog.Stream
+import SigabaNeoStd.Machines.Inline.Regions
 
 /-!
 # A two-input handler around `RingVM` code (package G2, `pubP`/`chalP`)

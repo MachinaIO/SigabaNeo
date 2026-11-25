@@ -1,5 +1,5 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMFront
-import SigabaNeo.Lib.Machines.Prog.FrameIO
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMFront
+import SigabaNeoStd.Machines.Prog.FrameIO
 
 /-!
 # The front end of the `Dec` machine: parsing the input onto the registers

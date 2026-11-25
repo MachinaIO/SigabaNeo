@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.DecTightLib
 import PE.Impl.RingBTVW.Prog.DecGenCost
-import SigabaNeo.Lib.Lattices.ProgAlgo.SimStepT
+import SigabaNeoStd.Lattices.ProgAlgo.SimStepT
 /-!
 # The end of decryption, per tape
 

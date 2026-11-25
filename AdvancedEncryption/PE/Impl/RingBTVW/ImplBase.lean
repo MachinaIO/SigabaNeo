@@ -5,9 +5,9 @@ import PE.Impl.RingBTVW.Encodings
 import PE.Impl.RingBTVW.Flooding
 import PE.Impl.Gates.BPWord
 import PE.Impl.Bridge
-import SigabaNeo.Lib.Machines.FiniteAlg
-import SigabaNeo.Lib.Machines.GatesSLP
-import SigabaNeo.Lib.Lattices.ProgAlgo.GateListLayout
+import SigabaNeoStd.Machines.FiniteAlg
+import SigabaNeoStd.Machines.GatesSLP
+import SigabaNeoStd.Lattices.ProgAlgo.GateListLayout
 
 /-!
 # The dual-use scheme for branching programs: configuration and laws

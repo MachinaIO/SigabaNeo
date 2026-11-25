@@ -1,7 +1,7 @@
 import PE.Impl.ExpLUT.Prog.SetupP
 import PE.Impl.RingBTVW.Prog.SetupEncDescA
-import SigabaNeo.Lib.Machines.Prog.FrameSize
-import SigabaNeo.Lib.Machines.Prog.VecBound
+import SigabaNeoStd.Machines.Prog.FrameSize
+import SigabaNeoStd.Machines.Prog.VecBound
 
 /-!
 # The description length of `Setup`

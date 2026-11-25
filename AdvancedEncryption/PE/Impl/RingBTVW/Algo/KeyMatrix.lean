@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Codec
-import SigabaNeo.Lib.Lattices.Algo.SLPWords
-import SigabaNeo.Lib.Lattices.Algo.FhatLoop
+import SigabaNeoStd.Lattices.Algo.SLPWords
+import SigabaNeoStd.Lattices.Algo.FhatLoop
 
 /-!
 # The key matrix of a predicate, on words
@@ -10,7 +10,7 @@ For a gate list `gs` (`predOf nA gs`, the predicates of `KeyGen`) and the words 
 first-order loops:
 
 1. generate the program `f̂` with `fhatSLPL` (the compiler of `fhatSLP` restated with the orders of
-   its NAND blocks as parameters, `SigabaNeo.Lib.Lattices.Algo.FhatLoop`);
+   its NAND blocks as parameters, `SigabaNeoStd.Lattices.Algo.FhatLoop`);
 2. run it on the words of the `B_j` with the BGG+ NAND on words (`slpPKW`);
 3. sum `PK_b · G̲⁻¹(V_b)` over the bits `b` of a row (`keySumW`).
 

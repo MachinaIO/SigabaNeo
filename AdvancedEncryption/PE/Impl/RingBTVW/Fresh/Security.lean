@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Fresh.Laws
-import SigabaNeo.Lib.Lattices.Stat
+import SigabaNeoStd.Lattices.Stat
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Probability.PMF
 

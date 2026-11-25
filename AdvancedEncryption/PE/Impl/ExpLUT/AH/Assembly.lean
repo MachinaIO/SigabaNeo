@@ -1,8 +1,8 @@
 import PE.Impl.ExpLUT.AH.RedGame
 import PE.Impl.ExpLUT.AH.Chain1
 import PE.Impl.Game.Assembly
-import SigabaNeo.Lib.Crypto.QuadLoss
-import SigabaNeo.Lib.Lattices.CircularRingLWE
+import SigabaNeoStd.Crypto.QuadLoss
+import SigabaNeoStd.Lattices.CircularRingLWE
 
 /-!
 # Attribute hiding of the implementation from circular Ring-LWE (package G, assembly)

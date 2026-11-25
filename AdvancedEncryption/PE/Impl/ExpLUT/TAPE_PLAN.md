@@ -25,7 +25,7 @@ parts (frames of width `≤ w` and narrow `Prog` leaves); only the glue is new.
 
 ## Design
 
-### Store layout (generic, `SigabaNeo/Lib/Machines/Pack/…`)
+### Store layout (generic, `SigabaNeoStd/Machines/Pack/…`)
 
 A logical store `S : Fin K → List Bool` is kept on physical tape `0` as
 
@@ -128,9 +128,9 @@ assumes the large literal readers are narrow `Prog` leaves after restriction, ot
 **The generic transformation is complete**: correctness, clock and state count, with no extra
 hypotheses beyond well-formedness and a loop-depth bound. Not yet applied to the ExpLUT machines.
 
-All new files are under `SigabaNeo/Lib/Machines/Pack/` (3.4k lines). No existing file was edited;
+All new files are under `SigabaNeoStd/Machines/Pack/` (3.4k lines). No existing file was edited;
 nothing imports them yet. Build from the repository root, e.g.
-`lake build SigabaNeo.Lib.Machines.Pack.States SigabaNeo.Lib.Machines.Pack.MachineT`.
+`lake build SigabaNeoStd.Machines.Pack.States SigabaNeoStd.Machines.Pack.MachineT`.
 No `sorry` and no `native_decide`. Every headline theorem uses only the axioms
 `propext, Classical.choice, Quot.sound` (checked with `#print axioms`).
 
@@ -224,7 +224,7 @@ A larger `w` (up to ≈ 100 before `3^c` matters) keeps more frames native and l
 No `sorry`, no `native_decide`; every headline theorem uses only `propext, Classical.choice,
 Quot.sound`. Nothing existing imports the new files (the aggregator / `Submission*` are untouched).
 
-**Generic (`SigabaNeo/Lib/Machines/Pack/`)**
+**Generic (`SigabaNeoStd/Machines/Pack/`)**
 * `Restrict.lean` (edited): now imports `Prog/AbsBound` and drops its duplicate `Prim.map_map` /
   `Prog.map_map` (they clashed with `AbsBound`, so no file could import both before).
 * `Det.lean`: `CoinIndep` through the plumbing; **`deterministic_packMachineT`** (coin-free ⇒

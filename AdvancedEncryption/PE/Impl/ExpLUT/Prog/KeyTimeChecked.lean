@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeMoves
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMCert
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMCert
 
 /-! Apply existing primitive certificates to the actual MVM layouts. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime

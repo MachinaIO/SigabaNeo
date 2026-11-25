@@ -1,7 +1,7 @@
 import PE
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.Product
-import SigabaNeo.Lib.Lattices.Stat
+import SigabaNeoStd.Lattices.Stat
 
 /-!
 # The attribute-hiding experiment with an abstract secret

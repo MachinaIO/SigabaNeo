@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.BpCompLaw
 import PE.Impl.RingBTVW.Prog.AuthBP
-import SigabaNeo.Lib.Machines.Prog.AppendWCost
+import SigabaNeoStd.Machines.Prog.AppendWCost
 
 /-!
 # The compiler of branching programs: cost

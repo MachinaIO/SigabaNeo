@@ -8,7 +8,7 @@ open.
 
 ## Stage 1: BKZ output quality without the GSA
 
-**Proved in Lean** (`SigabaNeo/Lib/Lattices/Reduction/BKZ.lean`, `Reduction/BKZ/Profile.lean`, `Reduction/BKZ/Hermite.lean`;
+**Proved in Lean** (`SigabaNeoStd/Lattices/Reduction/BKZ.lean`, `Reduction/BKZ/Profile.lean`, `Reduction/BKZ/Hermite.lean`;
 axioms: `propext`, `Classical.choice`, `Quot.sound` only):
 
 | Theorem | Statement |

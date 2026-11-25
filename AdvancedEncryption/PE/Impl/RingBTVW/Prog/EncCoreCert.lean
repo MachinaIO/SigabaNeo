@@ -1,10 +1,10 @@
 import PE.Impl.RingBTVW.Prog.EncCore
-import SigabaNeo.Lib.Machines.Prog.AbsBound
+import SigabaNeoStd.Machines.Prog.AbsBound
 
 /-!
 # A per-tape certificate of the core of `Enc`
 
-The abstract interpreter of `SigabaNeo.Lib.Machines.Prog.AbsBound` (`check`, by `decide +kernel`)
+The abstract interpreter of `SigabaNeoStd.Machines.Prog.AbsBound` (`check`, by `decide +kernel`)
 runs over the whole core `encCoreP` from the abstract store `σE`: every tape at most the top size
 (variable `0`), but the templates `13 … 38` at their lengths, as polynomials in the variables
 

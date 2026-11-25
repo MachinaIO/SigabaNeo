@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Algo.KeyTrySim
-import SigabaNeo.Lib.Lattices.ProgAlgo.BoxProgs
-import SigabaNeo.Lib.Lattices.ProgAlgo.Nand
+import SigabaNeoStd.Lattices.ProgAlgo.BoxProgs
+import SigabaNeoStd.Lattices.ProgAlgo.Nand
 
 /-!
 # One try of key generation with the simulated trapdoor, as a tape program

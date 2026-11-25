@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.Lift
-import SigabaNeo.Lib.Lattices.ProgAlgo.Spec
-import SigabaNeo.Lib.Machines.Prog.Split
+import SigabaNeoStd.Lattices.ProgAlgo.Spec
+import SigabaNeoStd.Machines.Prog.Split
 
 /-!
 # The trapdoor row `B₁ = toB₁ (a, b)` as a component block

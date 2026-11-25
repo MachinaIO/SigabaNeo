@@ -1,5 +1,5 @@
-import SigabaNeo.Lib.Lattices.CircularRingLWE
-import SigabaNeo.Lib.Lattices.Estimator.Bound.CbdQ
+import SigabaNeoStd.Lattices.CircularRingLWE
+import SigabaNeoStd.Lattices.Estimator.Bound.CbdQ
 
 /-!
 # The strength of circular Ring-LWE at `q = 2^K − 1`, generically
@@ -20,7 +20,7 @@ of two), `m` plain samples, the odd modulus `q = 2^K − 1` (`PLAN.md`, design d
 
 The checks depend on `K` (through `log₂ q`), on `N`, `M₀`, `kb` and `W`, not on `m`, `J` or `τ`;
 `W`, `ZA`, `K₀`, `R` are the free constants of the lower-bound argument
-(`SigabaNeo/Lib/Lattices/Estimator/Bound/CbdQ.lean`).
+(`SigabaNeoStd/Lattices/Estimator/Bound/CbdQ.lean`).
 -/
 
 namespace AdvancedEncryption.ExpLUT.Params

@@ -1,5 +1,5 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMDot
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.GadRow
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMDot
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.GadRow
 
 /-!
 # The end of decryption on the ring-word machine: the key sums

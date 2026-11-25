@@ -1,0 +1,9 @@
+.git
+.lake
+**/.lake
+**/__pycache__
+AdvancedEncryption
+tests
+docs
+python/server-data
+python/sigaba-neo-work

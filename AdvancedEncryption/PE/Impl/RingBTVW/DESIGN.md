@@ -69,7 +69,7 @@ with the paper's dual-use ciphertexts, so that keys are simulated with the gadge
   parameters (gadget inverse, box coverage by the real trapdoor, short coins, noise bound of every
   window predicate below `q/4`, abort probability of an inner box at most `2^{-κ}`).
 
-* **Shallow `f̂`** (`SigabaNeo.Lib.Lattices.Homomorphic`): the coefficients of a Ring-GSW NAND are
+* **Shallow `f̂`** (`SigabaNeoStd.Lattices.Homomorphic`): the coefficients of a Ring-GSW NAND are
   summed by a balanced tree of modular additions (`GSWCircuit`), the carry of the adders enters
   gates on the right and NOT is `NAND(1, a)` (`BoolBuild`, `BoolArith`), so a NAND block multiplies
   the noise by `gswFactor WN N k` (`GSWNoise.nb_nandBlock`) and `f̂` of `n` gates stays within

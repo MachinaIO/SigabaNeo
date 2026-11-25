@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.Words
 import PE.Impl.ExpLUT.Hybrid6
-import SigabaNeo.Lib.Lattices.Stat
+import SigabaNeoStd.Lattices.Stat
 
 /-!
 # The near-uniform law of the machines (package G, statistical step)

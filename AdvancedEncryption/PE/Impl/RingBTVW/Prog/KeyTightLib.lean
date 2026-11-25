@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.WfB2Time
-import SigabaNeo.Lib.Machines.Prog.AbsBound
+import SigabaNeoStd.Machines.Prog.AbsBound
 
 /-!
 # Tools for the tight clock of `KeyGen`

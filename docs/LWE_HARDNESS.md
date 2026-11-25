@@ -1,4 +1,4 @@
-# A conservative bound on LWE (`SigabaNeo/Lib/Lattices/Hardness.lean`)
+# A conservative bound on LWE (`SigabaNeoStd/Lattices/Hardness.lean`)
 
 The assumptions' `H` is now the formalized lattice estimator ([LWE_ESTIMATOR.md](LWE_ESTIMATOR.md)).
 `Hardness.securityBits N rank m q error secret` is kept as a cross-check: a

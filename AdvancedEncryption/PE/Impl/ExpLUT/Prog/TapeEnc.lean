@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Machines.Pack.Leaves
+import SigabaNeoStd.Machines.Pack.Leaves
 import PE.Impl.ExpLUT.Prog.EncTightFront
 import PE.Impl.ExpLUT.Prog.DescTightEnc
 
@@ -6,7 +6,7 @@ import PE.Impl.ExpLUT.Prog.DescTightEnc
 # The packed encryption machine (fewer physical tapes)
 
 `encMachineP := packMachineT 105 8 (encProgram Dc 16 6 eFl) 0 0 (encInputLength Dc)`: the
-encryption program compiled by the packing translation (`SigabaNeo.Lib.Machines.Pack`) onto
+encryption program compiled by the packing translation (`SigabaNeoStd.Machines.Pack`) onto
 `5 + 105 + 8 = 118` physical tapes instead of `326`. With a workspace of `105` tapes the parser and
 sampler (`105` tapes) and each of the four core phases (`≤ 104` tapes) run natively as one leaf
 group each; only the glue between them is packed.

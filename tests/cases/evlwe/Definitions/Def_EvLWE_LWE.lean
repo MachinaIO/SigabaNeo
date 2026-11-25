@@ -30,7 +30,7 @@ polynomial time from `κ`). It is needed because `q κ` is a prime chosen by Ber
 which no machine is proved to compute.
 -/
 import Definitions.Def_EvLWE
-import SigabaNeo.Lib.Lattices.LWE
+import SigabaNeoStd.Lattices.LWE
 
 namespace TestCase.EvLWE
 

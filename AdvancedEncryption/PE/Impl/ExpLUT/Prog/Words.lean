@@ -2,8 +2,8 @@ import PE.Impl.ExpLUT.Laws
 import PE.Impl.ExpLUT.KeyGen
 import PE.Impl.ExpLUT.NegacyclicNorm
 import PE.BranchingProgram
-import SigabaNeo.Lib.Lattices.Algo.MersenneWords
-import SigabaNeo.Lib.Encode.Ring
+import SigabaNeoStd.Lattices.Algo.MersenneWords
+import SigabaNeoStd.Encode.Ring
 import CslibFrontier.Probability.BitString
 import SigabaNeo.Trusted.Machine
 

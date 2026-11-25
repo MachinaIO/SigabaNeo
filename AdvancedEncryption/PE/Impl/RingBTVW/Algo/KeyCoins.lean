@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.ImplBase
-import SigabaNeo.Lib.Lattices.Algo.Coins
+import SigabaNeoStd.Lattices.Algo.Coins
 
 /-!
 # Key generation from explicit fair coins

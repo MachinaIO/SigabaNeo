@@ -1,6 +1,6 @@
-import SigabaNeo.Lib.Lattices.RingLWEInst
-import SigabaNeo.Lib.Machines.Prog.FrameParse
-import SigabaNeo.Lib.Encode.Laws
+import SigabaNeoStd.Lattices.RingLWEInst
+import SigabaNeoStd.Machines.Prog.FrameParse
+import SigabaNeoStd.Encode.Laws
 
 /-!
 # The registry's Ring-LWE words, parsed

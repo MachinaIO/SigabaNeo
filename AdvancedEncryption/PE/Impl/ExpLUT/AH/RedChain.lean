@@ -2,8 +2,8 @@ import PE.Impl.ExpLUT.AH.Final
 import PE.Impl.ExpLUT.AH.CircBridge
 import PE.Impl.RingBTVW.Prog.Post
 import PE.Impl.Game.HandlersPCost
-import SigabaNeo.Lib.Machines.Inline.InitStructCost
-import SigabaNeo.Lib.Machines.Inline.InitPerQuery
+import SigabaNeoStd.Machines.Inline.InitStructCost
+import SigabaNeoStd.Machines.Inline.InitPerQuery
 
 /-!
 # The reduction machine from component programs (package G2, plumbing)

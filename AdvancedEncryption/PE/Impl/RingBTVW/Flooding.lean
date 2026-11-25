@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Hybrid4
-import SigabaNeo.Lib.Lattices.Flood
-import SigabaNeo.Lib.Lattices.Homomorphic.NoiseBound
+import SigabaNeoStd.Lattices.Flood
+import SigabaNeoStd.Lattices.Homomorphic.NoiseBound
 
 /-!
 # The flooding hypothesis of hybrid 4 over `R_q`

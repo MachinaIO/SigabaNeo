@@ -30,5 +30,5 @@ For m=2n and q of order nᵃ, Stirling gives G/q of order n^(1/2−a/3), tending
 
 ## Lean scope
 
-In `SigabaNeo/Lib/Lattices/Planted.lean`, `planted_iff` proves the field identity, `affineCount` counts solutions for m right-hand sides given a feasible witness, and `lift_multiple` proves integer equality assuming coordinatewise congruences and strict discrepancy bounds. Dividing the feasible count by q^(nm) gives q^(−m rank X), as used for fixed tuples. The Cauchy–Schwarz step supplying the strict bounds, ball count, probability theorem, successive-minimum implication and numerical evaluation remain paper arguments.
-Running `lake env lean SigabaNeo/Lib/Lattices/Planted.lean` succeeded. Each declaration reported only `propext`, `Classical.choice` and `Quot.sound`.
+In `SigabaNeoStd/Lattices/Planted.lean`, `planted_iff` proves the field identity, `affineCount` counts solutions for m right-hand sides given a feasible witness, and `lift_multiple` proves integer equality assuming coordinatewise congruences and strict discrepancy bounds. Dividing the feasible count by q^(nm) gives q^(−m rank X), as used for fixed tuples. The Cauchy–Schwarz step supplying the strict bounds, ball count, probability theorem, successive-minimum implication and numerical evaluation remain paper arguments.
+Running `lake env lean SigabaNeoStd/Lattices/Planted.lean` succeeded. Each declaration reported only `propext`, `Classical.choice` and `Quot.sound`.

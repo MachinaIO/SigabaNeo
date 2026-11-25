@@ -2,8 +2,7 @@
 .lake/
 # Python
 __pycache__/
-# the compatible platform's state (dataDir) and check workspaces
-python/server-data/
+# check workspaces (sigaba_neo.py check)
 python/sigaba-neo-work/
 # claim directories as Lake projects (python3 sigaba_neo.py dev)
 tests/cases/*/.lake/

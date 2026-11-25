@@ -1,10 +1,10 @@
 import PE.Impl.RingBTVW.Prog.KeyPTime
 import PE.Impl.RingBTVW.Algo.RowSim
 import PE.Impl.RingBTVW.Prog.BpCompCost
-import SigabaNeo.Lib.Machines.Prog.LenEq
-import SigabaNeo.Lib.Machines.Prog.FrameIO
-import SigabaNeo.Lib.Machines.Prog.Lookup
-import SigabaNeo.Lib.Machines.Prog.Stream
+import SigabaNeoStd.Machines.Prog.LenEq
+import SigabaNeoStd.Machines.Prog.FrameIO
+import SigabaNeoStd.Machines.Prog.Lookup
+import SigabaNeoStd.Machines.Prog.Stream
 
 /-!
 # The front end for branching programs (Stage II, not wired)

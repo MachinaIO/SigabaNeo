@@ -1,6 +1,6 @@
-import SigabaNeo.Lib.Lattices.Homomorphic
-import SigabaNeo.Lib.Lattices.Decode
-import SigabaNeo.Lib.Lattices.Homomorphic.SLPCircuit
+import SigabaNeoStd.Lattices.Homomorphic
+import SigabaNeoStd.Lattices.Decode
+import SigabaNeoStd.Lattices.Homomorphic.SLPCircuit
 
 /-!
 # The ring variant of the BTVW17 §4.2 predicate encryption

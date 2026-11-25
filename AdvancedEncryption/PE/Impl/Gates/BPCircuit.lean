@@ -1,6 +1,6 @@
 import PE.Impl.Gates.BP14
-import SigabaNeo.Lib.Lattices.Homomorphic.MuxTree
-import SigabaNeo.Lib.Lattices.Homomorphic.Depth
+import SigabaNeoStd.Lattices.Homomorphic.MuxTree
+import SigabaNeoStd.Lattices.Homomorphic.Depth
 
 /-!
 # The predicate circuit of a branching program

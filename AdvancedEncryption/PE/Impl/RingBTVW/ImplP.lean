@@ -1,7 +1,7 @@
 import PE.Impl.RingBTVW.Impl
 import PE.Impl.RingBTVW.ImplCorrect
 import PE.Impl.RingBTVW.Prog.ShellsBP
-import SigabaNeo.Lib.Machines.Prog.FrameSize
+import SigabaNeoStd.Machines.Prog.FrameSize
 import PE.Impl.RingBTVW.Prog.EncP
 
 /-!

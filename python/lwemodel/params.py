@@ -1,5 +1,5 @@
 """LWE parameters of the lattice estimator (estimator/lwe_parameters.py); mirror of
-SigabaNeo/Lib/Lattices/Estimator/Params.lean."""
+SigabaNeoStd/Lattices/Estimator/Params.lean."""
 
 from __future__ import annotations
 

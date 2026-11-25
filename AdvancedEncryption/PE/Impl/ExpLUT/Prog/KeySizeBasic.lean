@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyMachine
-import SigabaNeo.Lib.Machines.Prog.FrameSize
+import SigabaNeoStd.Machines.Prog.FrameSize
 
 /-! Syntax-size certificates for the actual Mersenne VM KeyGen implementation. -/
 namespace AdvancedEncryption.ExpLUT.Prog

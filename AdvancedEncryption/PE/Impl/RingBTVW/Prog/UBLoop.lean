@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.UBound
 import PE.Impl.RingBTVW.Prog.SetupTime3
-import SigabaNeo.Lib.Machines.Prog.FrameOut
+import SigabaNeoStd.Machines.Prog.FrameOut
 
 /-!
 # Uniform bounds of loops, appends and framed blocks

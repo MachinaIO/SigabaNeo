@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Scheme
-import SigabaNeo.Lib.Lattices.LeftoverHash
+import SigabaNeoStd.Lattices.LeftoverHash
 
 /-!
 # Hybrid 1: simulated public keys of the encodings

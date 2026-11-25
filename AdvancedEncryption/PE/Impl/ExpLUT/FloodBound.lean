@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Hybrid12
 import PE.Impl.ExpLUT.Noise
-import SigabaNeo.Lib.Lattices.FloodRing
+import SigabaNeoStd.Lattices.FloodRing
 
 /-!
 # The flooding hypothesis of hybrid H2 over `ℤ_Q[X]/(X^n + 1)`

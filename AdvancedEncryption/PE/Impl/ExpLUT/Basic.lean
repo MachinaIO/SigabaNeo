@@ -1,5 +1,5 @@
-import SigabaNeo.Lib.Lattices.Automorphism.Interface
-import SigabaNeo.Lib.Lattices.Homomorphic.Gadget
+import SigabaNeoStd.Lattices.Automorphism.Interface
+import SigabaNeoStd.Lattices.Homomorphic.Gadget
 import Mathlib.Tactic.Abel
 import Mathlib.Tactic.Ring
 import Mathlib.Tactic.FinCases

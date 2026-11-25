@@ -1,7 +1,7 @@
 import PE.Impl.ExpLUT.Prog.EncRow
 import PE.Impl.ExpLUT.Prog.SetupP
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncZRow
-import SigabaNeo.Lib.Lattices.Homomorphic.BinaryDigits
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.EncZRow
+import SigabaNeoStd.Lattices.Homomorphic.BinaryDigits
 
 /-!
 # The words of the ciphertext of `Enc`: the ring identities behind the machine

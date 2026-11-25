@@ -1,7 +1,7 @@
 import PE.Impl.ExpLUT.Prog.EncWordMath
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncTail
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMDot
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMRing
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.EncTail
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMDot
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMRing
 
 /-! # The message row of the encryption tail agrees with the scheme -/
 

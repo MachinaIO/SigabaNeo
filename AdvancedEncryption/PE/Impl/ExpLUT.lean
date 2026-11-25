@@ -136,8 +136,8 @@ import PE.Impl.ExpLUT.Prog.KeyTimeCore
 import PE.Impl.ExpLUT.Prog.KeyTimeOutput
 import PE.Impl.ExpLUT.Prog.KeyTimeLiteral
 import PE.Impl.ExpLUT.Prog.KeyTimeEnter
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMUtil
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMIO
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMUtil
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMIO
 import PE.Impl.ExpLUT.Prog.KeyTryMath
 import PE.Impl.ExpLUT.Prog.KeyLut
 import PE.Impl.ExpLUT.Prog.KeyEval
@@ -191,8 +191,8 @@ import PE.Impl.ExpLUT.AH.RedSecret
 import PE.Impl.ExpLUT.AH.RedCompsR
 import PE.Impl.ExpLUT.Prog.RedSetup
 import PE.Impl.ExpLUT.Prog.EncWordMath
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncPhases
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncTail
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.EncPhases
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.EncTail
 import PE.Impl.ExpLUT.Prog.EncTailMath
 import PE.Impl.ExpLUT.Prog.EncHelperMath
 import PE.Impl.ExpLUT.Prog.EncAutMath
@@ -211,7 +211,7 @@ import PE.Impl.ExpLUT.Prog.EncInitSpec
 import PE.Impl.ExpLUT.Prog.EncComplete
 import PE.Impl.ExpLUT.Prog.EncMachineConf
 import PE.Impl.ExpLUT.Prog.EncFront
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.EncCb
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.EncCb
 import PE.Impl.ExpLUT.Prog.KeyTimeInvalid
 import PE.Impl.ExpLUT.Prog.KeyTimeFront
 import PE.Impl.ExpLUT.AH.Correct

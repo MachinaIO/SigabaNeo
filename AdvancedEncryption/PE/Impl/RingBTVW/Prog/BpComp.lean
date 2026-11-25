@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Machines.Prog.AppendW
+import SigabaNeoStd.Machines.Prog.AppendW
 
 /-!
 # The compiler of branching programs: the tree code

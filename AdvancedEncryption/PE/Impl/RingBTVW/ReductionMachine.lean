@@ -1,7 +1,7 @@
 import PE.Impl.RingBTVW.SimGame
 import PE.Impl.RingBTVW.AHAssembly
-import SigabaNeo.Lib.Machines.Inline.InitCost
-import SigabaNeo.Lib.Machines.Compose.GuardCost
+import SigabaNeoStd.Machines.Inline.InitCost
+import SigabaNeoStd.Machines.Compose.GuardCost
 
 /-!
 # The reduction machine, from its parts

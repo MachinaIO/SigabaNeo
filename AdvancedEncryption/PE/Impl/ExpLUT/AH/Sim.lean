@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.AH.Games
-import SigabaNeo.Lib.Lattices.BitLaw
-import SigabaNeo.Lib.Machines.FiniteAlg
+import SigabaNeoStd.Lattices.BitLaw
+import SigabaNeoStd.Machines.FiniteAlg
 
 /-!
 # The simulator (package G)

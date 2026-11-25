@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.Words
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMMat
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMMat
 
 /-!
 # KeyGen (package F3): the VM routines are the operations of §4

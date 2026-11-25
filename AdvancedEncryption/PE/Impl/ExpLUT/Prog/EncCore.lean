@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncBPhase
-import SigabaNeo.Lib.Machines.Prog.CoinFreeX
+import SigabaNeoStd.Machines.Prog.CoinFreeX
 
 /-! # Concrete tape layout and sequential encryption core
 

@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.KeyPTime
-import SigabaNeo.Lib.Machines.Prog.MacroSize
-import SigabaNeo.Lib.Machines.Prog.VecBound
+import SigabaNeoStd.Machines.Prog.MacroSize
+import SigabaNeoStd.Machines.Prog.VecBound
 
 /-!
 # The key component with a per-tape bound of the `W_f` block

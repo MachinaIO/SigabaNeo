@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.KeyGen
-import SigabaNeo.Lib.Lattices.Boxes
+import SigabaNeoStd.Lattices.Boxes
 
 /-!
 # The boxes of key generation

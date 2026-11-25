@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Scheme
-import SigabaNeo.Lib.Lattices.BoxSampler
+import SigabaNeoStd.Lattices.BoxSampler
 
 /-!
 # Key generation by box rejection, real and simulated

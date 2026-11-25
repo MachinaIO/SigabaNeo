@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncTimeConf
-import SigabaNeo.Lib.Machines.Prog.XAbs
+import SigabaNeoStd.Machines.Prog.XAbs
 
 /-!
 # Placed per-tape bounds at fixed variable values (tight encryption clock, part 1)
@@ -7,7 +7,7 @@ import SigabaNeo.Lib.Machines.Prog.XAbs
 `TB p ρ σ σ' T`: wherever `p` is placed (`map u p`, `u` injective, in a store of any size), from
 per-tape bounds below `bnd ρ σ` on its own tapes and `top ρ` on every tape, its tapes end below
 `bnd ρ σ'`, every tape stays below `top ρ`, and the compiled clock is at most `T`. It is the
-`Sym.Sound` summary of the abstract interpreter (`SigabaNeo.Lib.Machines.Prog.AbsBound`) evaluated
+`Sym.Sound` summary of the abstract interpreter (`SigabaNeoStd.Machines.Prog.AbsBound`) evaluated
 at one value `ρ` of the variables, so it also covers programs outside the interpreter's fragment
 (literal words `putW`), and composes sequentially (`TB.seq`).
 -/

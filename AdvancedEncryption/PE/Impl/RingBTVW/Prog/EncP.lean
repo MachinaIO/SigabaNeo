@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.EncSem
-import SigabaNeo.Lib.Machines.Prog.Moves
+import SigabaNeoStd.Machines.Prog.Moves
 
 /-!
 # `Enc` as a tape program

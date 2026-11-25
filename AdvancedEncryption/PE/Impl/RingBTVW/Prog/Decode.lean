@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.DecodeWord
-import SigabaNeo.Lib.Machines.Prog.FrameParseX
+import SigabaNeoStd.Machines.Prog.FrameParseX
 import PE.Impl.RingBTVW.Prog.Layout
 import PE.Impl.RingBTVW.Registry
 

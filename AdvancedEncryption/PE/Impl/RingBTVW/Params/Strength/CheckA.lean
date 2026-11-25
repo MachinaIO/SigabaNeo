@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Lattices.Estimator.Bound.Cbd
+import SigabaNeoStd.Lattices.Estimator.Bound.Cbd
 
 /-! The per-block-size checks of `Params/StrengthA.lean`, at the parameters of `confA`:
 `N = 2^34`, `q = 2^(2^26)`, `k = 2^26 + 1`, `d = 2^62`, `CBD(16)`, `kb = 1158`. -/

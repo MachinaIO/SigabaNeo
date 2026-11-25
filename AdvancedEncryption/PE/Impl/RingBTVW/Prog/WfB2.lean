@@ -1,9 +1,9 @@
 import PE.Impl.RingBTVW.Prog.WfTime
-import SigabaNeo.Lib.Lattices.ProgAlgo.ValMain
-import SigabaNeo.Lib.Lattices.ProgAlgo.KeySumT
-import SigabaNeo.Lib.Lattices.ProgAlgo.SimTmpl
-import SigabaNeo.Lib.Lattices.ProgAlgo.ValWF
-import SigabaNeo.Lib.Machines.Prog.CountP
+import SigabaNeoStd.Lattices.ProgAlgo.ValMain
+import SigabaNeoStd.Lattices.ProgAlgo.KeySumT
+import SigabaNeoStd.Lattices.ProgAlgo.SimTmpl
+import SigabaNeoStd.Lattices.ProgAlgo.ValWF
+import SigabaNeoStd.Machines.Prog.CountP
 
 /-!
 # The block-structured `W_f` block

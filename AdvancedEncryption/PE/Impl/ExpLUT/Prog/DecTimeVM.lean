@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMCost
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMCost
 
 /-!
 # A flow-sensitive clock of compiled ring-word codes (package F4)

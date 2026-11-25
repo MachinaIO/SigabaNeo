@@ -43,7 +43,7 @@ selection ≈ 2^765, unframed `simStepP` ≈ 2^700. Uniform bounds `tbC·(L+1)^t
    ≤ 2^25 states (`CompCost`); decoders ≤ 2^350 steps, ≤ 2^16 states, 14 tapes (`DecodeCost`);
    auth (`authL`, a search over valid date pairs with a gate generator) ≤ 2^275 steps for queries
    ≤ 2^240 bits, output 1 bit, ≤ 2^19 states (`AuthL`, certified by the numeric interpreter
-   `NB.check`, `SigabaNeo.Lib.Machines.Prog.NumBound`).
+   `NB.check`, `SigabaNeoStd.Machines.Prog.NumBound`).
 Larger N is a fallback lever (time ≈ N^5, H ≈ linear in N).
 
 ## KeyGen/Dec machines (WS-S2 state, 1e9a533)

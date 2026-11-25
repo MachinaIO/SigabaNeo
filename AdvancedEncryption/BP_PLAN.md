@@ -114,7 +114,7 @@ def primitive : Primitive := AdvancedEncryption.PE bpUniverse params
 
 ### 2.1 Register programs
 
-New, generic (`SigabaNeo/Lib/Lattices/Homomorphic/RegProg.lean`):
+New, generic (`SigabaNeoStd/Lattices/Homomorphic/RegProg.lean`):
 
 ```lean
 /-- A source: an input, the constant `1`, or a register. -/
@@ -348,7 +348,7 @@ power of two keeps `N / K = 2^9` exactly and the estimator scans as they are tod
 
 ### 4.3 Ring-LWE strength
 
-Facts (`SigabaNeo/Lib/Lattices/Estimator/*`, `Params/Strength*.lean`):
+Facts (`SigabaNeoStd/Lattices/Estimator/*`, `Params/Strength*.lean`):
 
 * `q` is never materialised: `cbdP n e M` keeps `2^e` unevaluated and the scans receive
   `lq = e · ONE` (`Usvp.cost_eq_of_q`, `Dual.cost_eq_of_q`, `log2_ofInt_two_pow`,
@@ -569,7 +569,7 @@ are those of §7. Sizes are rough.
 * **Goal.** The trusted file, the circuit with its four theorems, the predicate word, `Eval`, and
   the switch of the math layer from date windows to branching programs.
 * **Owns.** New: `PE/BranchingProgram.lean`,
-  `SigabaNeo/Lib/Lattices/Homomorphic/{RegProg, MuxTree}.lean`,
+  `SigabaNeoStd/Lattices/Homomorphic/{RegProg, MuxTree}.lean`,
   `PE/Impl/Gates/{BPCircuit, BPWord}.lean`. Existing: `PE/Impl/RingBTVW/{ImplBase, Impl,
   ImplCorrect, Codec, GameChain, SimKeyGame, SimGame, SimGame3, SimGame5}.lean`,
   `PE/Impl/RingBTVW/Algo/*`, `PE/Impl/Gates/*` (the window files until they are deleted),
@@ -596,7 +596,7 @@ are those of §7. Sizes are rough.
 ### WS2 — Depth-based noise and parameters
 
 * **Goal.** §3 and the configuration at the numbers of §4.
-* **Owns.** `SigabaNeo/Lib/Lattices/Homomorphic/{GSWNoise, Depth}.lean`,
+* **Owns.** `SigabaNeoStd/Lattices/Homomorphic/{GSWNoise, Depth}.lean`,
   `PE/Impl/RingBTVW/{Noise, NoiseClosed}.lean`, `PE/Impl/RingBTVW/{Noise, ConcreteNoise, Concrete,
   ParamSupport}.lean`, `PE/Impl/RingBTVW/Params/{SimTrapNorm, Sizes, Conf, Stat, Advantage}.lean`.
 * **Does.**
@@ -617,7 +617,7 @@ are those of §7. Sizes are rough.
 ### WS3 — Ring-LWE strength
 
 * **Goal.** `2650 ≤ RingLWE.H` for the two instances at `N = 2^36`, `q = 2^(2^27)`.
-* **Owns.** `SigabaNeo/Lib/Lattices/Estimator/**`, `PE/Impl/RingBTVW/Params/Strength.lean`,
+* **Owns.** `SigabaNeoStd/Lattices/Estimator/**`, `PE/Impl/RingBTVW/Params/Strength.lean`,
   `PE/Impl/RingBTVW/Params/Strength/*`.
 * **Does.** First, as an experiment in new files: `cbdCheck (2^36) (2^27) M 2650` on a few
   ranges of β around `β* ≈ 9312` and at both ends, for `M3 = 2^36 · (2^28 + 2)` and
@@ -674,8 +674,8 @@ are those of §7. Sizes are rough.
 ### WS6 — Register evaluator and the `W_f` block
 
 * **Goal.** §5.3: `wfB2` on instruction streams, with law, size and the time certificate.
-* **Owns.** `SigabaNeo/Lib/Lattices/ProgAlgo/Val*.lean` and new `ValReg.lean`,
-  `SigabaNeo/Lib/Machines/Prog/{ValVM, CountP}.lean`, `Prog/{WfB2, WfB2CoinFree, WfB2Conf,
+* **Owns.** `SigabaNeoStd/Lattices/ProgAlgo/Val*.lean` and new `ValReg.lean`,
+  `SigabaNeoStd/Machines/Prog/{ValVM, CountP}.lean`, `Prog/{WfB2, WfB2CoinFree, WfB2Conf,
   WfB2Inst, WfB2Size, WfB2Time, WfLib, WfTime, KeyWfWords, KeySumStore, SimKeyStore}.lean`
   (`WfB`, `WfIns`, `WfPred`, `FhatGen` are deleted when nothing imports them).
 * **Does.**
@@ -701,7 +701,7 @@ are those of §7. Sizes are rough.
 
 * **Goal.** §5.2: the two programs with laws and bounds.
 * **Owns.** New `PE/Impl/RingBTVW/Prog/{BpComp, BpCompLaw, BpCompCost, AuthBP}.lean` (and
-  `SigabaNeo/Lib/Machines/Prog/` helpers it adds, in new files).
+  `SigabaNeoStd/Machines/Prog/` helpers it adds, in new files).
 * **Does.** `bpCompC` as in §5.2 with `law_bpCompC : exec … = rpW 512 (bpRP (tablesOf C))` for
   `C.length = bpLen`, well-formedness, coin-freeness, and `costC` bounds for a predicate word of
   `bpLen` bits; `authBPC` with its law and bounds; the length test `lenEqP`. The pure functions

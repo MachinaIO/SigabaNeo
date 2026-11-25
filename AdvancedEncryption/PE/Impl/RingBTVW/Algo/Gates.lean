@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Algo.KeyMatrix
-import SigabaNeo.Lib.Lattices.Algo.FhatGates
+import SigabaNeoStd.Lattices.Algo.FhatGates
 
 /-!
 # The number of gates of `f̂` of a gate list

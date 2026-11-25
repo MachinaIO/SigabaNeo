@@ -1,4 +1,5 @@
-"""Syncing Formalpedia into the compatible server, from a small local export in its layout.
+"""Formalpedia's items as DAG nodes (`dag_tools.py formalpedia`), from a small local export in its
+layout, checked by the verifier like any pull request.
 
     python3 -m unittest discover -s python/tests -p 'test_formalpedia.py' -v
 """
@@ -9,13 +10,14 @@ import json
 import shutil
 import subprocess
 import tempfile
-import time
 import unittest
 from pathlib import Path
 
 import common  # noqa: F401  (puts python/ on the path)
+import dag as D
+import dag_tools as T
+import dag_verify as V
 import formalpedia
-from p2m_server import CORE, Core, Platform, PlatformConfig
 
 HEADER = "-- Prove2me | {module}\n-- name    : {name}\n-- status  : {status}\n" \
          "-- url     : https://prove2.me/theorems/x\n-- title:\n--   {title}\n-- statement:\n" \
@@ -60,11 +62,9 @@ class ParseTest(unittest.TestCase):
         self.assertTrue(s.body.startswith("import Definitions.Def_FpDef"))
 
 
-class SyncTest(unittest.TestCase):
-    def test_sync(self):
+class ConvertTest(unittest.TestCase):
+    def test_convert_and_verify(self):
         tmp = Path(tempfile.mkdtemp(prefix="sigaba-neo-formalpedia-"))
-        pf = Platform(PlatformConfig(tmp / "data", Core(CORE), {}))
-        pf.start()
         try:
             repo = tmp / "export"
             repo.mkdir()
@@ -74,32 +74,37 @@ class SyncTest(unittest.TestCase):
                          "envs/e/Definitions/Def_FpDef.lean": DEF,
                          "envs/e/Theorems/Thm_FpTest_two_eq.lean": THM,
                          "envs/e/Solutions/Sol_FpTest_two_eq.lean": SOL})
-            url = repo.as_uri()
+            base = tmp / "base"
+            base.mkdir()
+            out = tmp / "new"
+            r = T.formalpedia_items(D.Dag(base), out, tmp / "mirror", None, None, None,
+                                    url=repo.as_uri())
+            self.assertEqual((r["env"], r["definition"], r["theorem"], r["solution"]), ("e", 1, 1, 1))
+            nodes = {n.path: n for n in D.Dag(out).nodes()}
+            self.assertEqual(len(nodes), 3)
+            self.assertIn("dag/Definitions/Def_FpDef.lean", nodes)
+            self.assertIn("dag/Theorems/Thm_FpTest_two_eq.lean", nodes)
+            self.assertEqual(len([p for p in nodes if p.startswith("dag/Solutions/FpTest_two_eq/Sub_")]), 1)
+            stmt = nodes["dag/Theorems/Thm_FpTest_two_eq.lean"].text
+            self.assertTrue(stmt.rstrip().endswith("theorem FpTest.two_eq : two = 2 := by sorry"), stmt)
+            for n in nodes.values():
+                self.assertTrue(n.meta["source"].startswith("formalpedia:e:envs/e/"))
 
-            def sync() -> dict:
-                r = pf.sync_formalpedia(url)
-                while pf.busy():
-                    time.sleep(1)
-                return r
+            # The gate's checks, as for any pull request.
+            res = V.verify(base, out, None, None, tmp / "work")
+            self.assertEqual({i["path"]: i["status"] for i in res["items"]},
+                             {p: "ACCEPTED" if "/Solutions/" in p else "OK" for p in nodes},
+                             json.dumps(res, indent=1))
 
-            r = sync()
-            self.assertEqual((r["env"], r["changed"]), ("e", 3))
-            self.assertEqual(r["queued"], {"definition": 1, "theorem": 1, "solution": 1, "skipped": 0})
-            t = pf.row("SELECT * FROM theorems WHERE name = 'FpTest.two_eq'")
-            self.assertIsNotNone(t, pf.formalpedia_status())
-            self.assertEqual(t["status"], "Proved", pf.formalpedia_status())
-            self.assertEqual(json.loads(t["tags"]), ["formalpedia"])
-            self.assertEqual(set(pf.formalpedia_status().values()), {"PUBLISHED", "ACCEPTED"})
-
-            # Nothing changed: nothing to do. A new theorem: only it.
-            self.assertEqual(sync()["changed"], 0)
+            # Once merged, nothing is converted again; a new theorem alone is.
+            shutil.copytree(out / "dag", base / "dag")
             write(repo, {"envs/e/Theorems/Thm_FpTest_two_pos.lean": THM2})
-            r = sync()
-            self.assertEqual((r["changed"], r["queued"]["theorem"], r["queued"]["definition"]), (1, 1, 0))
-            self.assertEqual(pf.row("SELECT status FROM theorems WHERE name = 'FpTest.two_pos'")["status"],
-                             "Open")
+            out2 = tmp / "new2"
+            r = T.formalpedia_items(D.Dag(base), out2, tmp / "mirror", None, None, None,
+                                    url=repo.as_uri())
+            self.assertEqual((r["definition"], r["theorem"]), (0, 1))
+            self.assertEqual([n.name for n in D.Dag(out2).nodes()], ["FpTest.two_pos"])
         finally:
-            pf.stop.set()
             shutil.rmtree(tmp, ignore_errors=True)
 
 

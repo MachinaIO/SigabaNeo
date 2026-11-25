@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.AHMath
 import PE.Impl.Game.Assembly
-import SigabaNeo.Lib.Crypto.QuadLoss
+import SigabaNeoStd.Crypto.QuadLoss
 
 /-!
 # The advantage in terms of acceptance probabilities

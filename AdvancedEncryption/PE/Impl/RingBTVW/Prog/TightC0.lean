@@ -1,13 +1,13 @@
 import PE.Impl.RingBTVW.Prog.TightApp
 import PE.Impl.RingBTVW.Prog.C0
-import SigabaNeo.Lib.Machines.Prog.XAbs
+import SigabaNeoStd.Machines.Prog.XAbs
 
 /-!
 # Per-tape bounds of `c0P` (the row `c₀ = t a + e` of `Setup`)
 
 `c0P 0 (2k NK) (2k) N K : XProg 82` builds twelve templates (`natP`), splits its input word, multiplies
 (`matMulP`), adds (`addRWP`), copies the sum to tape `0` and clears its scratch. Its per-tape bounds
-are certified on symbolic sizes (`SigabaNeo.Lib.Machines.Prog.XAbs`), with the variables
+are certified on symbolic sizes (`SigabaNeoStd.Machines.Prog.XAbs`), with the variables
 
   `ρ = [0, G, N, K, k, x₀, x₄]`
 

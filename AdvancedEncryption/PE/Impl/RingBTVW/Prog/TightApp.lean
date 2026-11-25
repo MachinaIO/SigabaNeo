@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.UBLoop
 import PE.Impl.RingBTVW.Prog.SetupP
-import SigabaNeo.Lib.Machines.Prog.VecBound
+import SigabaNeoStd.Machines.Prog.VecBound
 
 /-!
 # Per-tape bounds of appends
@@ -15,7 +15,7 @@ one. Their iterated per-tape bounds are computed exactly (`iter_app`, `iter_fr`)
 * `vb_frameApP`: the same with `r ↦ ℓ r + 2 ℓ a + 1` (and `a` unchanged), at most
   `3 (2M + 3) + (2M + 5) + ℓ a · (8M + 17) + 2`, where `ℓ r + 2 ℓ a + 1 ≤ M`.
 
-Here `VB p ℓin T ℓout` (`SigabaNeo.Lib.Machines.Prog.VecBound`) is the per-tape bound transformer.
+Here `VB p ℓin T ℓout` (`SigabaNeoStd.Machines.Prog.VecBound`) is the per-tape bound transformer.
 -/
 
 namespace AdvancedEncryption.RingBTVW.Prog

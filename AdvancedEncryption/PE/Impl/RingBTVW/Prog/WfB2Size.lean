@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.WfB2Time
-import SigabaNeo.Lib.Machines.Prog.NatPSize
+import SigabaNeoStd.Machines.Prog.NatPSize
 
 /-!
 # The state count of the block-structured `W_f` block

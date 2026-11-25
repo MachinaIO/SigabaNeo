@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.Layout
 import PE.Impl.RingBTVW.Algo.SimKey
-import SigabaNeo.Lib.Machines.Prog.Lookup
+import SigabaNeoStd.Machines.Prog.Lookup
 
 /-!
 # The bits `ψ_j` of the attribute ciphertexts, read off the simulation data

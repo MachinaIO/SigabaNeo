@@ -1,8 +1,8 @@
 import PE.Impl.RingBTVW.Prog.KeyP
 import PE.Impl.RingBTVW.Algo.KeyMatrix
 import PE.Impl.RingBTVW.Prog.KeyTryRealLaw
-import SigabaNeo.Lib.Machines.Prog.FrameIO
-import SigabaNeo.Lib.Machines.Prog.LoadB
+import SigabaNeoStd.Machines.Prog.FrameIO
+import SigabaNeoStd.Machines.Prog.LoadB
 
 /-!
 # The machine of `KeyGen`, compiled from a tape program

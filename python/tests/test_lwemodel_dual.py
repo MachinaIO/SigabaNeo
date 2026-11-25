@@ -12,8 +12,8 @@ from lwemodel.params import LWE
 
 class DualModels(unittest.TestCase):
     def test_lean_mirrors(self):
-        source = ["import SigabaNeo.Lib.Lattices.Estimator.Dual",
-                  "import SigabaNeo.Lib.Lattices.Estimator.DualHybrid",
+        source = ["import SigabaNeoStd.Lattices.Estimator.Dual",
+                  "import SigabaNeoStd.Lattices.Estimator.DualHybrid",
                   "open SigabaNeo.Lattices.Estimator"]
         expected = []
         for n, eta in [(512, 3), (768, 2), (1024, 2)]:

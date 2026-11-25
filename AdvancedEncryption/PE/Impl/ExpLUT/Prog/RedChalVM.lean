@@ -1,5 +1,5 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMDot
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMLib
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMDot
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMLib
 
 /-!
 # `RingVM` kernels of the reduction's public data (package G2, `pubP`/`chalP`)

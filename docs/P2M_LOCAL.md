@@ -32,7 +32,7 @@ All requests carry `Authorization: Bearer <key>`; base URL `http://127.0.0.1:809
   `rogers`, `open`, `wall1`, ...).
 * `GET /theorems/:id/submissions`, `GET /submissions/:id/solution` — accepted proofs.
 * `POST /submit-problem` — pose a new statement (`formal_statement` must end with `:= by sorry`;
-  it may `import SigabaNeo.Lib.Lattices.*` and `Theorems.Thm_<slug>` of published theorems).
+  it may `import SigabaNeoStd.Lattices.*` and `Theorems.Thm_<slug>` of published theorems).
 * `POST /verify` (`theorem_id`, `file` declaring `theorem solution`, `proof_type`, `explanation`) —
   submit a proof; poll `GET /verify?submission_id=`. A proof may import other platform theorems
   (`import Theorems.Thm_<slug>`), which records a decomposition; `GET /theorems/:id/open-leaves`

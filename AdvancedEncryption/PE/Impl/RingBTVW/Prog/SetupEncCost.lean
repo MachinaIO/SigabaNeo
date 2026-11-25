@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.EncP
-import SigabaNeo.Lib.Machines.Prog.FrameSize
+import SigabaNeoStd.Machines.Prog.FrameSize
 
 /-!
 # Clocks and description lengths of the compiled `Setup` and `Enc`

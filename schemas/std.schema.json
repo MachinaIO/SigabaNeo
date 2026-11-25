@@ -1,0 +1,21 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "std releases (env/std.json)",
+ "type": "object",
+ "required": [
+  "releases"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "releases": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "additionalProperties": {
+     "type": "string",
+     "pattern": "[0-9a-f]{64}"
+    }
+   }
+  }
+ }
+}

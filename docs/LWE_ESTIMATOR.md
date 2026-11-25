@@ -3,7 +3,7 @@
 `ModuleLWE.H`, `RingLWE.H` and `LWE.H` ([ASSUMPTIONS.md](ASSUMPTIONS.md)) are the number of bits
 the lattice assumptions claim. `H p` is the integer floor of the cheapest attack of the
 [lattice estimator](https://github.com/malb/lattice-estimator) on the LWE view of `p`. The attacks
-are formalized as computable Lean functions in `SigabaNeo/Lib/Lattices/Estimator/`, at revision
+are formalized as computable Lean functions in `SigabaNeoStd/Lattices/Estimator/`, at revision
 `53da598` with its default models: the `RC.MATZOV` reduction cost, the GSA shape model, and
 classical attackers.
 
@@ -62,7 +62,7 @@ therefore: the cheapest attack known to the estimator, in the estimator's model.
 At large dimensions the attacks cannot be evaluated: the hybrids search the guessing dimension
 over `[0, n)` with binomials of size `2^n`, Arora–GB iterates its Hilbert series up to degree
 `2n`, the dual hybrid scans `n/10 × n/10` guessing splits when every candidate is infinite, and
-the kernel refuses moduli such as `2^(2^25)`. `SigabaNeo/Lib/Lattices/Estimator/Bound/` proves
+the kernel refuses moduli such as `2^(2^25)`. `SigabaNeoStd/Lattices/Estimator/Bound/` proves
 lower bounds on each attack from its definition instead (`Bound.lean` lists them):
 
 | Attack | Lower bound | Argument |

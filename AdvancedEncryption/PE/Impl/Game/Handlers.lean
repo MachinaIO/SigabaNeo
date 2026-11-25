@@ -1,8 +1,8 @@
 import PE.Impl.Game.Generic
-import SigabaNeo.Lib.Machines.Inline.Regions
-import SigabaNeo.Lib.Machines.Inline.ProgRoutine
-import SigabaNeo.Lib.Machines.Inline.Oracle
-import SigabaNeo.Lib.Encode.Enum
+import SigabaNeoStd.Machines.Inline.Regions
+import SigabaNeoStd.Machines.Inline.ProgRoutine
+import SigabaNeoStd.Machines.Inline.Oracle
+import SigabaNeoStd.Encode.Enum
 
 /-!
 # Handlers for the generic attribute-hiding oracle

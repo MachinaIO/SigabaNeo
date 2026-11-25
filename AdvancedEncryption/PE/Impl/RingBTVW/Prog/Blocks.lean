@@ -1,11 +1,11 @@
 import PE.Impl.RingBTVW.Prog.C0
-import SigabaNeo.Lib.Lattices.ProgAlgo.Hash
-import SigabaNeo.Lib.Lattices.ProgAlgo.SpecZ
+import SigabaNeoStd.Lattices.ProgAlgo.Hash
+import SigabaNeoStd.Lattices.ProgAlgo.SpecZ
 
 /-!
 # Word blocks with their templates
 
-Each library word program (`SigabaNeo.Lib.Lattices.ProgAlgo`, `SigabaNeo.Lib.Machines.Prog.Split`)
+Each library word program (`SigabaNeoStd.Lattices.ProgAlgo`, `SigabaNeoStd.Machines.Prog.Split`)
 is wrapped as a small `XProg` that builds its templates (`natP`), runs, and clears the templates
 again. Every block writes **one** tape, `0`, and reads its inputs on the next tapes; the remaining
 tapes are scratch, blank before and after. Its law is therefore an update:

@@ -1,14 +1,14 @@
 import PE.Impl.ExpLUT.Canonical
 import PE.Impl.ExpLUT.Noise
-import SigabaNeo.Lib.Lattices.Automorphism.Instance
-import SigabaNeo.Lib.Lattices.Automorphism.Norm
-import SigabaNeo.Lib.Lattices.Homomorphic.BinaryDigits
+import SigabaNeoStd.Lattices.Automorphism.Instance
+import SigabaNeoStd.Lattices.Automorphism.Norm
+import SigabaNeoStd.Lattices.Homomorphic.BinaryDigits
 
 /-!
 # The coefficient norm of `ℤ_q[X]/(X^n + 1)` as a `NormSpec`
 
 For `n = 2^e`, the ring `Negacyclic (ZMod q) n` with automorphisms `expRingOf n b w …`
-(`SigabaNeo.Lib.Lattices.Automorphism.Instance`, e.g. `expRingMersenne` for `q = 2^K − 1`) and the
+(`SigabaNeoStd.Lattices.Automorphism.Instance`, e.g. `expRingMersenne` for `q = 2^K − 1`) and the
 binary gadget digits (`binaryDigits`), with `idx j = g^j` (`canonSetting`):
 
 * `binaryDigits_g`: the gadget entries are natural numbers `2^i` (so the automorphisms fix them);

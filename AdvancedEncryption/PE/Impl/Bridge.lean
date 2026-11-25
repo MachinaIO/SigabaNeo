@@ -8,7 +8,7 @@ ciphertexts, inherits the scheme's correctness (`correct_of_laws`): if `Setup`, 
 `Dec` output the encodings of the scheme's `(mpk, msk)`, keys, ciphertexts and decryptions, and
 the scheme decrypts correctly with probability at least `1 − 2^{-κ}` for every authorized
 predicate, then `PE.Correct` holds. The machines themselves come from
-`SigabaNeo.Lib.Machines.Randomized` and `Guarded`.
+`SigabaNeoStd.Machines.Randomized` and `Guarded`.
 -/
 
 namespace AdvancedEncryption.PE

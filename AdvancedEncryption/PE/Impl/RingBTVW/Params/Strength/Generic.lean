@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Registry
-import SigabaNeo.Lib.Lattices.Estimator.Bound.Cbd
+import SigabaNeoStd.Lattices.Estimator.Bound.Cbd
 
 /-!
 # The Ring-LWE strength of the registry's instances, generically

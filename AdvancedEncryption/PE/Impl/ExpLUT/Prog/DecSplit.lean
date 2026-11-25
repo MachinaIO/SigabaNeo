@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMDot
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMDot
 
 /-!
 # Splitting the words of `sk` and `ct` into their fields (ring-word machine)

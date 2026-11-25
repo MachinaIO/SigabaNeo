@@ -1,11 +1,11 @@
 import PE.Impl.RingBTVW.Prog.SetupP
-import SigabaNeo.Lib.Lattices.ProgAlgo.BinMul
+import SigabaNeoStd.Lattices.ProgAlgo.BinMul
 import PE.Impl.RingBTVW.Algo.KeyWords
 
 /-!
 # The Ring-GSW ciphertexts of `Enc` on words
 
-The program `binMulP` (`SigabaNeo.Lib.Lattices.ProgAlgo.BinMul`) computes products with binary
+The program `binMulP` (`SigabaNeoStd.Lattices.ProgAlgo.BinMul`) computes products with binary
 matrices given column by column, by sums of subsets, plus a gadget when a bit is set. Here its
 abstract steps are evaluated on the words of the scheme's values:
 

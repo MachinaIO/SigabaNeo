@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.KeyGen
 import PE.Impl.RingBTVW.Noise
-import SigabaNeo.Lib.Lattices.Decode
+import SigabaNeoStd.Lattices.Decode
 
 /-!
 # The probability of a correct decryption

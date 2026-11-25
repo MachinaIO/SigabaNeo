@@ -1,5 +1,5 @@
 import PE.Impl.Game.HandlersP
-import SigabaNeo.Lib.Machines.Prog.MacroSize
+import SigabaNeoStd.Machines.Prog.MacroSize
 
 /-!
 # The states of the per-query handlers

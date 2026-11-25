@@ -26,7 +26,7 @@ def points():
 
 class MiscModels(unittest.TestCase):
     def test_exact_mirrors(self):
-        source = [f"import SigabaNeo.Lib.Lattices.Estimator.{mod}" for mod in ("Bkw","Guess","AroraGB")]
+        source = [f"import SigabaNeoStd.Lattices.Estimator.{mod}" for mod in ("Bkw","Guess","AroraGB")]
         source.append("open SigabaNeo.Lattices.Estimator")
         expected = []
         for p, expr in points():

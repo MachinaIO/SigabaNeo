@@ -1,5 +1,5 @@
 """Fixed-point arithmetic shared by the attack models (mirror of
-SigabaNeo/Lib/Lattices/Estimator/Fx.lean; every function returns the same integer).
+SigabaNeoStd/Lattices/Estimator/Fx.lean; every function returns the same integer).
 
 A number x is the integer round-down of x * 2^P. All divisions round down (floor)."""
 

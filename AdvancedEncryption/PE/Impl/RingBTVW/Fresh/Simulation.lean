@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Fresh.Scheme
-import SigabaNeo.Lib.Lattices.Homomorphic.SLPSim
+import SigabaNeoStd.Lattices.Homomorphic.SLPSim
 
 /-!
 # Simulated keys (BTVW17 §4.2, `Setup*` and `KeyGen*`)

@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.Blocks
-import SigabaNeo.Lib.Lattices.Algo.BoxWords
+import SigabaNeoStd.Lattices.Algo.BoxWords
 
 /-!
 # The word functions of the blocks on encodings

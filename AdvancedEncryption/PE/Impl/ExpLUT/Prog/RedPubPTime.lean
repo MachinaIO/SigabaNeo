@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.RedPubP
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMSize
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMSize
 
 /-!
 # The clock of the public-key component (package G2, `pubP`)

@@ -1,0 +1,36 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Claim metadata (meta/assumptions.json)",
+ "type": "object",
+ "required": [
+  "claims"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "claims": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "tags": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+       "type": "string",
+       "pattern": "[a-z0-9][a-z0-9-]{0,39}"
+      }
+     },
+     "proposed_year": {
+      "type": "integer",
+      "minimum": 1900
+     },
+     "source": {
+      "type": "string",
+      "maxLength": 2000
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,5 +1,5 @@
 import PE.Impl.Game.HandlersCost
-import SigabaNeo.Lib.Machines.Inline.PerQuery
+import SigabaNeoStd.Machines.Inline.PerQuery
 
 /-!
 # Handlers with per-query time bounds

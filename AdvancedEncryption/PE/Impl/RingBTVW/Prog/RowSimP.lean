@@ -1,7 +1,7 @@
 import PE.Impl.RingBTVW.Prog.KeyP
 import PE.Impl.RingBTVW.Algo.RowSimData
-import SigabaNeo.Lib.Machines.Prog.Moves
-import SigabaNeo.Lib.Machines.Prog.FrameIO
+import SigabaNeoStd.Machines.Prog.Moves
+import SigabaNeoStd.Machines.Prog.FrameIO
 
 /-!
 # Tape helpers for the crafted simulation data

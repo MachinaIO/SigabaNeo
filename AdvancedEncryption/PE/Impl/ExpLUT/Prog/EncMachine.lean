@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncPipeline
-import SigabaNeo.Lib.Machines.Prog.FrameOut
+import SigabaNeoStd.Machines.Prog.FrameOut
 
 /-! # A compiled encryption machine satisfying EncSpec -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncW

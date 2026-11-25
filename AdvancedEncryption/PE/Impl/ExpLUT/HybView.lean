@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.SimEval
-import SigabaNeo.Lib.Lattices.LeftoverHash
+import SigabaNeoStd.Lattices.LeftoverHash
 
 /-!
 # The views of the hybrids

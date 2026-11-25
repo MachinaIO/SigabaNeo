@@ -1,7 +1,7 @@
 import PE.Impl.RingBTVW.Algo.KeyMatrix
 import PE.Impl.RingBTVW.KeyBoxes
-import SigabaNeo.Lib.Lattices.Algo.BoxWords
-import SigabaNeo.Lib.Lattices.Algo.Coins
+import SigabaNeoStd.Lattices.Algo.BoxWords
+import SigabaNeoStd.Lattices.Algo.Coins
 
 /-!
 # Keys and big-box elements on words

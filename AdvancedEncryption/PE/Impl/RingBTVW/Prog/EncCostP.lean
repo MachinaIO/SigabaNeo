@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.SetupCostP
-import SigabaNeo.Lib.Machines.Prog.FrameIO
+import SigabaNeoStd.Machines.Prog.FrameIO
 import PE.Impl.RingBTVW.Prog.KeyPTime
 
 /-!

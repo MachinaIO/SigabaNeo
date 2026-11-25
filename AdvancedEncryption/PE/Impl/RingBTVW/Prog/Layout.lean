@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.SimGame5
 import PE.Impl.RingBTVW.Algo.KeyMatrix
-import SigabaNeo.Lib.Lattices.Algo.SimWords
+import SigabaNeoStd.Lattices.Algo.SimWords
 
 /-!
 # The word layouts of the reductions' challengers

@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.EncTailCodec
-import SigabaNeo.Lib.Machines.Prog.Lookup
+import SigabaNeoStd.Machines.Prog.Lookup
 
 /-! # Executable outer loop for all encryption helper pairs -/
 

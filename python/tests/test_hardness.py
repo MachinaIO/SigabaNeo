@@ -59,7 +59,7 @@ class Hardness(unittest.TestCase):
         return r.stdout
 
     def test_mirror(self):
-        lines = ["import SigabaNeo.Lib.Lattices.Hardness", "open SigabaNeo.Lattices"]
+        lines = ["import SigabaNeoStd.Lattices.Hardness", "open SigabaNeo.Lattices"]
         for N, rank, m, q, s, sec in POINTS:
             lines.append(f"#eval Hardness.securityBits {N} {rank} {m} {q} "
                          f"{lean_secret(('gauss', s))} {lean_secret(sec)}")
@@ -71,7 +71,7 @@ class Hardness(unittest.TestCase):
     def test_decide(self):
         h = L.H(1, 256, 512, 1023, L.Secret("gauss", Fraction(3)), L.Secret("bounded", 1))
         self.run_lean("\n".join([
-            "import SigabaNeo.Lib.Lattices.Hardness",
+            "import SigabaNeoStd.Lattices.Hardness",
             "open SigabaNeo.Lattices",
             f"example : {h} ≤ Hardness.securityBits 1 256 512 1023 (.gauss 3) (.bounded 1) :=",
             "  by decide +kernel",

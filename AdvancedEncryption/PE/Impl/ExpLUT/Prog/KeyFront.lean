@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.KeyBranch
 import PE.Impl.ExpLUT.Prog.EncFront
-import SigabaNeo.Lib.Machines.Prog.LenEq
+import SigabaNeoStd.Machines.Prog.LenEq
 
 /-! Framed input parsing and exact predicate validation for KeyGen. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyCore

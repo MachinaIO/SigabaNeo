@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Scheme
 import PE.Impl.ExpLUT.Noise
-import SigabaNeo.Lib.Lattices.BoxSampler
+import SigabaNeoStd.Lattices.BoxSampler
 
 /-!
 # Key generation by box rejection (§5.1 KeyGen, Lemma 6)

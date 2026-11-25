@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyPublicRow
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMUtil
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMUtil
 
 /-! Indexed extraction of ring coordinates from an encoded family, using actual VM instructions. -/
 namespace AdvancedEncryption.ExpLUT.Prog

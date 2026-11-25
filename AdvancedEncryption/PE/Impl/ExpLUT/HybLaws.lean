@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Laws
-import SigabaNeo.Lib.Lattices.LeftoverHash
+import SigabaNeoStd.Lattices.LeftoverHash
 
 /-!
 # Laws used by the hybrids

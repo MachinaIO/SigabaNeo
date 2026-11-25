@@ -1,7 +1,7 @@
 import PE.Impl.RingBTVW.Prog.WfB2
-import SigabaNeo.Lib.Lattices.ProgAlgo.ValCost
-import SigabaNeo.Lib.Machines.Prog.PhaseB
-import SigabaNeo.Lib.Lattices.ProgAlgo.SimStepGT
+import SigabaNeoStd.Lattices.ProgAlgo.ValCost
+import SigabaNeoStd.Machines.Prog.PhaseB
+import SigabaNeoStd.Lattices.ProgAlgo.SimStepGT
 
 /-!
 # The time of the block-structured `W_f` block

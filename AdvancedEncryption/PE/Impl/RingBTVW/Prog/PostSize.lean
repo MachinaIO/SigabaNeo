@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Prog.Post
-import SigabaNeo.Lib.Machines.Prog.MacroSize
+import SigabaNeoStd.Machines.Prog.MacroSize
 
 /-!
 # The states and tapes of the post-processing

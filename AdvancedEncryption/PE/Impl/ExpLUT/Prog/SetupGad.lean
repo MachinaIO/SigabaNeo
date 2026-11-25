@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.UnifCanon
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.GadRow
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.MatMul
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.GadRow
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.MatMul
 
 /-!
 # The gadget columns of `B⁽¹⁾` on words

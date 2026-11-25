@@ -1,9 +1,9 @@
 import PE.Impl.ExpLUT.Prog.DecMachineCode
 import PE.Impl.ExpLUT.Prog.DecFront
-import SigabaNeo.Lib.Machines.Prog.LenEq
-import SigabaNeo.Lib.Machines.Prog.Stream
-import SigabaNeo.Lib.Machines.Prog.DetX
-import SigabaNeo.Lib.Machines.Prog.CapN
+import SigabaNeoStd.Machines.Prog.LenEq
+import SigabaNeoStd.Machines.Prog.Stream
+import SigabaNeoStd.Machines.Prog.DetX
+import SigabaNeoStd.Machines.Prog.CapN
 
 /-!
 # The `Dec` machine (package F4)

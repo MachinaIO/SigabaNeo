@@ -1,12 +1,12 @@
 import PE.Impl.RingBTVW.Prog.Chi
-import SigabaNeo.Lib.Machines.Prog.SampleTime
-import SigabaNeo.Lib.Machines.Inline.Regions
+import SigabaNeoStd.Machines.Prog.SampleTime
+import SigabaNeoStd.Machines.Inline.Regions
 
 /-!
 # Time bounds of the setup programs
 
 Explicit bounds on `XProg.timeBoundT` of the setup programs of the reductions, from the shape
-bounds of `SigabaNeo.Lib.Machines.Prog.SampleTime` (`ATB`: from `x` bits on tape `0` and `S` on
+bounds of `SigabaNeoStd.Machines.Prog.SampleTime` (`ATB`: from `x` bits on tape `0` and `S` on
 the other tapes, a block costs at most `T x S`, appends at most `a` bits and grows its scratch by at
 most `s`):
 

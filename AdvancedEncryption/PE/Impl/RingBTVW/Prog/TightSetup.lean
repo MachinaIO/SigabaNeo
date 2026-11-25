@@ -5,7 +5,7 @@ import PE.Impl.RingBTVW.Prog.SetupCostP
 # Steps of `Setup` on symbolic stores
 
 The per-tape bounds of `setupP : XProg 96` are tracked as symbolic stores `bnd ρ σ` (one polynomial
-per tape, `SigabaNeo.Lib.Machines.Prog.AbsBound`); the side conditions of every step are closed
+per tape, `SigabaNeoStd.Machines.Prog.AbsBound`); the side conditions of every step are closed
 checks (`allLe`, `pLe`, `aLe`, `xcheck`) decided by the kernel.
 
 * `vb_copyS`, `vb_appCS`, `vb_frS`: a copy, an append (`appC`), a framed append (`frameApP 91 0`);

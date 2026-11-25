@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Security
-import SigabaNeo.Lib.Lattices.RingLWEInst
+import SigabaNeoStd.Lattices.RingLWEInst
 
 /-!
 # The Ring-LWE instances of the security proof are the registry's

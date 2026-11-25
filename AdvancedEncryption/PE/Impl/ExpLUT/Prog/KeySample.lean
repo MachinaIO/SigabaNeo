@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.KeyCoinVM
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMIO
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMIO
 import PE.Impl.RingBTVW.Prog.Setup5
 
 /-! Executable initialization and fair-coin sampling for one key-box candidate. -/

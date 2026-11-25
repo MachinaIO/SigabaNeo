@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.ImplBase
-import SigabaNeo.Lib.Encode.Ring
+import SigabaNeoStd.Encode.Ring
 
 /-!
 # Explicit encodings of the keys and ciphertexts

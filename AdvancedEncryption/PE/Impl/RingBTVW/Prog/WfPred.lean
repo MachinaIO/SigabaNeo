@@ -1,6 +1,6 @@
 import PE.Impl.RingBTVW.Prog.WfLib
-import SigabaNeo.Lib.Machines.GatesSLP
-import SigabaNeo.Lib.Lattices.ProgAlgo.GateListLayout
+import SigabaNeoStd.Machines.GatesSLP
+import SigabaNeoStd.Lattices.ProgAlgo.GateListLayout
 
 /-!
 # The gate stream of the predicate's own evaluator

@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedKeySimEL
 import PE.Impl.ExpLUT.Prog.RedKeySimT
-import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMUtil
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.VMUtil
 
 /-!
 # `KGsim` on the VM (module 6b, part 8): from the slab-major outputs to `rxRh` (generic VM)

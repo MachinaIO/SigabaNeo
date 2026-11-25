@@ -79,7 +79,7 @@ apart:
 
 `ModuleLWE.decision`, `ModuleLWE.search`, `RingLWE.decision`, `RingLWE.search`, `LWE.decision` and
 `LWE.search` are `Assumption`s ([LATTICES.md](LATTICES.md)). Their `H` is the floor of the cheapest
-attack of the lattice estimator, formalized in `SigabaNeo/Lib/Lattices/Estimator/`
+attack of the lattice estimator, formalized in `SigabaNeoStd/Lattices/Estimator/`
 ([LWE_ESTIMATOR.md](LWE_ESTIMATOR.md)). It is computable, so the harness compares `#eval LWE.H p`
 with `k`:
 

@@ -20,7 +20,7 @@ def costs(n):
 
 class TestPrimal(unittest.TestCase):
     def test_lean_mirrors(self):
-        source = ["import SigabaNeo.Lib.Lattices.Estimator.PrimalBdd",
+        source = ["import SigabaNeoStd.Lattices.Estimator.PrimalBdd",
                   "open SigabaNeo.Lattices.Estimator"]
         expected = []
         for n in (512, 768, 1024):

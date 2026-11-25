@@ -1,10 +1,10 @@
 import PE.Impl.RingBTVW.Prog.SimKeyStore
-import SigabaNeo.Lib.Lattices.ProgAlgo.KeySum
+import SigabaNeoStd.Lattices.ProgAlgo.KeySum
 
 /-!
 # The key matrix and `W_f` from the stores of the evaluators, on tapes
 
-`keySumP` (`SigabaNeo.Lib.Lattices.ProgAlgo.KeySum`) reads the terms of the key-matrix sum from
+`keySumP` (`SigabaNeoStd.Lattices.ProgAlgo.KeySum`) reads the terms of the key-matrix sum from
 the final store of an SLP evaluator, at the unary positions of the output wires of `f̂`
 (`fhatPos`, in the loop order, `posW`):
 

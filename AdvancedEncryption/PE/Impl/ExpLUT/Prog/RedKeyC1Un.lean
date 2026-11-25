@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Machines.Prog.Frame
+import SigabaNeoStd.Machines.Prog.Frame
 
 /-!
 # Cost certificate of `mid`, phase M1 (generic): programs that avoid a set of tapes

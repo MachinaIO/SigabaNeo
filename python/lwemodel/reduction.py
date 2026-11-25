@@ -1,6 +1,6 @@
 """Lattice reduction cost of the lattice estimator (estimator/reduction.py): root-Hermite factor
 δ(β), dimensions for free, and the default cost model `RC.MATZOV` (classical, list decoding);
-mirror of SigabaNeo/Lib/Lattices/Estimator/Reduction.lean. Costs are log2 values (fixed point)."""
+mirror of SigabaNeoStd/Lattices/Estimator/Reduction.lean. Costs are log2 values (fixed point)."""
 
 from . import fx
 

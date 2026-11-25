@@ -1,5 +1,5 @@
 import PE.Impl.RingBTVW.Algo.SimKey
-import SigabaNeo.Lib.Lattices.ProgAlgo.SimSLP
+import SigabaNeoStd.Lattices.ProgAlgo.SimSLP
 
 /-!
 # `W_f` from the stores of the two simulations on tapes
