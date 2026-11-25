@@ -28,6 +28,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
+      - name: The image's name (GHCR names are lowercase)
+        id: name
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "image=ghcr.io/${OWNER,,}/sigaba-neo-env" >> "$GITHUB_OUTPUT"
       - name: Build and push
         id: build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
@@ -35,7 +40,7 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/sigaba-neo-env:${{ github.ref_name }}
+          tags: ${{ steps.name.outputs.image }}:${{ github.ref_name }}
       - name: The std manifest and the fingerprint
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
