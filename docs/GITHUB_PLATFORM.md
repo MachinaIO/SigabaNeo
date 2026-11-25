@@ -501,8 +501,9 @@ The workflows assume these settings. Without them the gate is not a boundary.
    `pull_request_target`, which does not need it, but other workflows would). While the
    repository is private, allow forking and "Run workflows from fork pull requests".
 2. **The gate's App.** Create a GitHub App (no webhook; installable only on this account) with the
-   repository permissions "Contents: read & write" and "Pull requests: read & write", and install
-   it on this repository only. Create the Environment `gate`, restricted to the `main` branch,
+   repository permissions "Contents", "Pull requests" and "Merge queues", each "read & write",
+   and install it on this repository only. Without "Merge queues", enabling auto-merge fails with
+   an opaque GraphQL error ("Something went wrong while executing your query"). Create the Environment `gate`, restricted to the `main` branch,
    with the variable `GATE_APP_ID` and the secret `GATE_APP_KEY`. The gate's `merge` job uses it to
    enable auto-merge, so that the merge queue's run of the gate starts (it would not for the
    workflow's own token); comments and labels use the workflow's own token. The optional
