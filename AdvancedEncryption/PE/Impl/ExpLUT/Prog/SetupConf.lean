@@ -19,7 +19,7 @@ index type is ever evaluated.
 namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Tape.Sym
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 theorem len_sum (α β : Type) [Enum α] [Enum β] :
     (Enum.list (α := α ⊕ β)).length = (Enum.list (α := α)).length + (Enum.list (α := β)).length := by

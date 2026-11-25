@@ -94,4 +94,4 @@ size `n`, and the kernel cannot hold a modulus such as `2^(2^25)`). There a prem
 proved from certified lower bounds on each attack instead (`Estimator.estimatorBits_ge_of`,
 `Estimator.cbd16_estimatorBits_ge`; [LWE_ESTIMATOR.md](LWE_ESTIMATOR.md#large-parameters)). For
 example `2650 ≤ RingLWE.H` at ring degree `2^34`, `q = 2^(2^25)`
-(`AdvancedEncryption/PE/Impl/DualUse/Params/Strength.lean`).
+(`AdvancedEncryption/PE/Impl/RingBTVW/Params/Strength.lean`).

@@ -4,7 +4,7 @@ import PE.Impl.ExpLUT.Prog.EncSizeConf
 /-! # Concrete numerical budgets of the encryption coin sampler -/
 namespace AdvancedEncryption.ExpLUT.Prog.EncConf
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.ExpLUT.Params AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.ExpLUT.Params AdvancedEncryption.RingBTVW.Prog
 
 /-- Numerals for the three coefficient loops, without enumerating any finite index type. -/
 theorem small_coefficient_count : nEncSmall Dc * Dc.N = 55340330084525408256 := by

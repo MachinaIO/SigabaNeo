@@ -1,4 +1,4 @@
-import PE.Impl.DualUse.Prog.AuthBP
+import PE.Impl.RingBTVW.Prog.AuthBP
 import PE.Impl.ExpLUT.Prog.Words
 
 /-!
@@ -7,7 +7,7 @@ import PE.Impl.ExpLUT.Prog.Words
 ExpLUT's predicate words (`Prog/Words`: `predLen = 211 · 2^22` bits) store the entry `(i, u)` of the
 transition table `i` at bit `14 (2^22 i + u)`, **least significant bit first**, with the index
 `u = z + 2^14 a`; the output bit `u` at `210 · 2^22 + u`. The authorization program of the dual-use
-predicate words (`DualUse.BpComp.authBP`: same length, index `256 z + a`, most significant bit
+predicate words (`RingBTVW.BpComp.authBP`: same length, index `256 z + a`, most significant bit
 first) is adapted:
 
 * `offW`: the offset of `a ‖ z` (the 8 attribute bits first, then the state, most significant
@@ -25,7 +25,7 @@ namespace AdvancedEncryption.ExpLUT.AuthW
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Lattices SigabaNeo.Lattices.Algo
 open AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Gates.BPCircuit
-  AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.DualUse.BpComp
+  AdvancedEncryption.PE.Gates.BPWord AdvancedEncryption.RingBTVW.BpComp
 open AdvancedEncryption.ExpLUT.Prog (progOf readSt uOf predLen)
 open scoped Prog
 

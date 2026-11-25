@@ -373,7 +373,7 @@ theorem size_keyGuard_le (n : ℕ) (hn : n ≤ 2 ^ 103) :
 theorem descLen_keyGuard_le (n : ℕ) (hn : n ≤ 2 ^ 103) :
     ((keyGuardP Dc Bk rSmall n).toMachineB 0 0 n).descLen ≤ 2 ^ 620 := by
   rw [descLen_toMachineB105]
-  exact (AdvancedEncryption.DualUse.Prog.descLen_arithA (size_keyGuard_le n hn)).trans
+  exact (AdvancedEncryption.RingBTVW.Prog.descLen_arithA (size_keyGuard_le n hn)).trans
     (by norm_num)
 
 theorem keyMachine_eq : keyMachine =

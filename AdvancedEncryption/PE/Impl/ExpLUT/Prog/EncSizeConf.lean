@@ -11,7 +11,7 @@ set_option maxRecDepth 100000 in
 set_option maxHeartbeats 2000000 in
 theorem size_cbdPM : (cbdPM 16 6 65536).size ≤ 2 ^ 20 := by decide +kernel
 
-theorem size_entF : (AdvancedEncryption.DualUse.Prog.entF 65536 400).size ≤ 2 ^ 16 := by
+theorem size_entF : (AdvancedEncryption.RingBTVW.Prog.entF 65536 400).size ≤ 2 ^ 16 := by
   decide +kernel
 
 theorem encSmall_count : nEncSmall Dc * Dc.N < 2 ^ 100 := by

@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.RedSetup
 import PE.Impl.ExpLUT.Prog.RedSetupPUC
-import PE.Impl.DualUse.Prog.Blocks
+import PE.Impl.RingBTVW.Prog.Blocks
 
 /-!
 # The setup component of the reduction with its bounds (package G2, item 2)
@@ -26,7 +26,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Cslib Cslib.Probability
-open AdvancedEncryption.DualUse.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+open AdvancedEncryption.RingBTVW.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-! ### The program -/
 

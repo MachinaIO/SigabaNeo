@@ -1,12 +1,12 @@
 import PE.Impl.ExpLUT.Prog.AuthWCost
-import PE.Impl.DualUse.Prog.AuthBPX
+import PE.Impl.RingBTVW.Prog.AuthBPX
 import PE.Impl.ExpLUT.AH.Games
 
 /-!
 # The authorization component of the reduction (package G2)
 
 `authWX hR : XProg (R + 2)` (any `R ≥ 14`): the authorization program for ExpLUT's predicate
-words (`AuthW.authW8`) followed by `DualUse.Prog.authFix` (the work tapes cleared, the output bit
+words (`AuthW.authW8`) followed by `RingBTVW.Prog.authFix` (the work tapes cleared, the output bit
 rewritten), lifted to the handlers' width:
 
 * **`law_authWX`**: from the predicate word `C` and the attribute bits `encAttribute w8 x`, the bit
@@ -20,9 +20,9 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.XProg AdvancedEncryption.PE
 open AdvancedEncryption.PE.BranchingProgram
-open AdvancedEncryption.DualUse.Prog (authFix coinFree_authFix wf_authFix run_authFix ioS_inA
+open AdvancedEncryption.RingBTVW.Prog (authFix coinFree_authFix wf_authFix run_authFix ioS_inA
   lenBoundT_authFix time_authFix liftP law_liftP_pure wf_liftP timeBoundT_liftP lenBoundT_liftP_le)
-open AdvancedEncryption.DualUse.BpComp (inA outA inBA)
+open AdvancedEncryption.RingBTVW.BpComp (inA outA inBA)
 open AdvancedEncryption.ExpLUT.AuthW
 
 /-- The authorization program with its output normalized. -/

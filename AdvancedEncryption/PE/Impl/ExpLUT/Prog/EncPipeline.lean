@@ -6,7 +6,7 @@ import PE.Impl.ExpLUT.Prog.EncNormalize
 namespace AdvancedEncryption.ExpLUT.Prog.EncW
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo
   SigabaNeo.Lattices.Algo.NegaG SigabaNeo.Tape SigabaNeo.Tape.Prog Matrix
-open PE.BranchingProgram AdvancedEncryption.DualUse.Prog Cslib Cslib.Probability
+open PE.BranchingProgram AdvancedEncryption.RingBTVW.Prog Cslib Cslib.Probability
 
 /-- Erase a finite list of tapes using concrete clear instructions. -/
 def eraseP : List (Fin 326) → SigabaNeo.Tape.Prog 326

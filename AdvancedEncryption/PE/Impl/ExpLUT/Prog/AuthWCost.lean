@@ -1,10 +1,10 @@
 import PE.Impl.ExpLUT.Prog.AuthW
-import PE.Impl.DualUse.Prog.BpCompCost
+import PE.Impl.RingBTVW.Prog.BpCompCost
 
 /-!
 # The cost of the authorization program for ExpLUT's predicate words (package G2)
 
-As for `DualUse.BpComp.authBP` (`BpCompCost`): cost triples `TA S p n` (from the per-tape bounds
+As for `RingBTVW.BpComp.authBP` (`BpCompCost`): cost triples `TA S p n` (from the per-tape bounds
 `βA S` to `βA S` in `n` sweeps of `2 S + 5` steps).
 
 * `ta_offW`: the offset of `a ‖ z` (two moves into `K`, the doubling `ta_dbl`);
@@ -18,7 +18,7 @@ As for `DualUse.BpComp.authBP` (`BpCompCost`): cost triples `TA S p n` (from the
 namespace AdvancedEncryption.ExpLUT.AuthW
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog
-open AdvancedEncryption.DualUse.BpComp
+open AdvancedEncryption.RingBTVW.BpComp
 open scoped Prog
 
 variable {S : ℕ}

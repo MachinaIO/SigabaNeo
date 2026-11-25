@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.SetupP
-import PE.Impl.DualUse.Prog.SetupEncDescA
+import PE.Impl.RingBTVW.Prog.SetupEncDescA
 import SigabaNeo.Lib.Machines.Prog.FrameSize
 import SigabaNeo.Lib.Machines.Prog.VecBound
 
@@ -19,7 +19,7 @@ per-tape bound `timeBoundT` of the program and the emitter); its closed form is 
 namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 variable {D : Dims} {χT : PMF (Rg D)}
 

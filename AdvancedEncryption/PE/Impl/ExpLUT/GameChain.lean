@@ -10,7 +10,7 @@ challenger's secret the pair `(mpk, ct₀)` of the public key and the challenge 
 `idealKeyLaw` of `M_F`, a function of `mpk`, by `keyLaw_eq_ideal`) and the challenge for `μ` the
 shift of `c_m` by `⌊q/2⌉ · μ` (`shiftCT`, `encrypt_shift`), the hybrids of
 `PE.Impl.ExpLUT.Hybrid*` become changes of the law `V x` of the secret for the selected attribute
-`x` (as in `PE.Impl.DualUse.GameChain`):
+`x` (as in `PE.Impl.RingBTVW.GameChain`):
 
 * statistical steps (H1, H2, H3′, H5, H6) move the experiment by at most `|Attr|` times the step's
   distance (`gameV_close`, from `Generic.closeTo_runWith_setup`);

@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.AH.Final
 import PE.Impl.ExpLUT.AH.CircBridge
-import PE.Impl.DualUse.Prog.Post
+import PE.Impl.RingBTVW.Prog.Post
 import PE.Impl.Game.HandlersPCost
 import SigabaNeo.Lib.Machines.Inline.InitStructCost
 import SigabaNeo.Lib.Machines.Inline.InitPerQuery
@@ -8,7 +8,7 @@ import SigabaNeo.Lib.Machines.Inline.InitPerQuery
 /-!
 # The reduction machine from component programs (package G2, plumbing)
 
-The reduction machine of the circular Ring-LWE step is the chain (as `DualUse.reductionP`)
+The reduction machine of the circular Ring-LWE step is the chain (as `RingBTVW.reductionP`)
 
 `P.andThenLin (((A.inlineOracleInit H w₀ E Q Lₐ).andThenLin Post).andThenGuard Dm)`
 

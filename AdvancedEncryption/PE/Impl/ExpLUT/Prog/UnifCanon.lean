@@ -1,7 +1,7 @@
 import PE.Impl.ExpLUT.Prog.Words
 import SigabaNeo.Lib.Lattices.ProgAlgo.MatAdd
-import PE.Impl.DualUse.Prog.Lift
-import PE.Impl.DualUse.Prog.Setup5
+import PE.Impl.RingBTVW.Prog.Lift
+import PE.Impl.RingBTVW.Prog.Setup5
 import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.Canon
 import SigabaNeo.Lib.Machines.Prog.Pass
 import SigabaNeo.Lib.Machines.Randomized
@@ -22,7 +22,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Matrix Cslib Cslib.Probability
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 /-! ### Laws of words -/
 

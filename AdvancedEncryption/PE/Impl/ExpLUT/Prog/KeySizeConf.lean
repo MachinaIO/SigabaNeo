@@ -80,7 +80,7 @@ theorem descLen_keyMP_eq (D : Dims) (B r L : ℕ) :
 set_option exponentiation.threshold 1000 in
 theorem descLen_keyMP_Dc (L : ℕ) : (keyMP Dc Bk rSmall L).descLen ≤ 2 ^ 620 := by
   rw [descLen_keyMP_eq]
-  exact (AdvancedEncryption.DualUse.Prog.descLen_arithA size_keyProgram_Dc_pow).trans
+  exact (AdvancedEncryption.RingBTVW.Prog.descLen_arithA size_keyProgram_Dc_pow).trans
     (by norm_num)
 
 end KeyCore

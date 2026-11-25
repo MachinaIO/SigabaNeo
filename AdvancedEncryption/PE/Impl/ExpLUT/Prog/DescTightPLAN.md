@@ -14,7 +14,7 @@ native_decide.
 The Setup theorems have the same hypotheses as `time_setupMP_conf` / `descLen_setupMP_conf`
 (`D.e = 24`, `D.K = 2^16`, `D.b = 22`, `D.mb = 3·2^40 + 408`), in namespace
 `AdvancedEncryption.ExpLUT.Prog`. (The names carry `_conf_tight` because
-`DualUse.Prog.time_setupMP_tight` already exists.)
+`RingBTVW.Prog.time_setupMP_tight` already exists.)
 
 ## Main slack found
 

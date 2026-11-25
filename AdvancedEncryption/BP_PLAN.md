@@ -1,6 +1,6 @@
 # Predicate encryption for branching programs: executable plan
 
-> **Status: complete.** `PE/Impl/DualUse/Submission.lean` proves `spec_submission` and
+> **Status: complete.** `PE/Impl/RingBTVW/Submission.lean` proves `spec_submission` and
 > `valid_submission` for `BranchingProgram.primitive` with no hypotheses (axioms `propext`,
 > `Classical.choice`, `Quot.sound`): attribute hiding from decision Ring-LWE at 965 bits
 > (`attributeHiding_conf_rlwe`, `keyRConfA`; certified strength 2650 at `N = 2^36`,
@@ -262,7 +262,7 @@ steps, negligible.
 * `noiseBound` (`RingBTVW/Noise.lean`) is defined from `slpBound` on `f̂` and `errBound` on the
   circuit of `f`; only its closed form `noiseBound_le` (`RingBTVW/NoiseClosed.lean`) and
   `rnorm_rowOf_simKeyMat_le_closed`, `simTrapBound`, `cnorm_simTrap_le`
-  (`DualUse/Params/SimTrapNorm.lean`) mention `f.1.length`.
+  (`RingBTVW/Params/SimTrapNorm.lean`) mention `f.1.length`.
 * `slpBound_le_depth` (`Lib/Lattices/Homomorphic/Depth.lean`): `slpBound WN E p w ≤
   (WN + 1)^(SLP.depth p w) · E` for a plain program; `SLP.depth` reads a missing gate as depth 0,
   as `repOf` reads it as the constant.
@@ -275,14 +275,14 @@ theorem nb_fhatSLP_depth {A : Type*} (hk : q < 2 ^ k) (p : SLP A) (w : Wire A) (
     nb WN E (fhatSLP (N := N) hk p w).1 ((fhatSLP (N := N) hk p w).2 b) ≤
       gswFactor WN N k ^ SLP.depth p w * E
 
--- PE/Impl/RingBTVW/NoiseClosed.lean
+-- PE/Impl/RingBTVW/Fresh/NoiseClosed.lean
 theorem noiseBound_le_depth (Bχ K : ℕ) (f : SLP Attr × Wire Attr) :
     noiseBound (N := N) hk Bχ K f ≤
       Bχ + |Col k| * N * Bχ * K +
         |Col k| * N * ((|Fin 1 × Col k × Fin k × Fin N| * (|Col k| * N) + 1) *
           (gswFactor (|Col k| * N) N k ^ SLP.depth f.1 f.2 * Bχ)) * K
 
--- PE/Impl/DualUse/Params/SimTrapNorm.lean: `simTrapBound N k D` with `D` a depth
+-- PE/Impl/RingBTVW/Params/SimTrapNorm.lean: `simTrapBound N k D` with `D` a depth
 theorem cnorm_simTrap_le … : … ≤ simTrapBound N k (SLP.depth f.1 f.2)
 ```
 
@@ -570,9 +570,9 @@ are those of §7. Sizes are rough.
   the switch of the math layer from date windows to branching programs.
 * **Owns.** New: `PE/BranchingProgram.lean`,
   `SigabaNeo/Lib/Lattices/Homomorphic/{RegProg, MuxTree}.lean`,
-  `PE/Impl/Gates/{BPCircuit, BPWord}.lean`. Existing: `PE/Impl/DualUse/{ImplBase, Impl,
+  `PE/Impl/Gates/{BPCircuit, BPWord}.lean`. Existing: `PE/Impl/RingBTVW/{ImplBase, Impl,
   ImplCorrect, Codec, GameChain, SimKeyGame, SimGame, SimGame3, SimGame5}.lean`,
-  `PE/Impl/DualUse/Algo/*`, `PE/Impl/Gates/*` (the window files until they are deleted),
+  `PE/Impl/RingBTVW/Algo/*`, `PE/Impl/Gates/*` (the window files until they are deleted),
   `PE/DateWindow.lean` until it is deleted, `AdvancedEncryption.lean`, the READMEs.
 * **Does.**
   1. Day 1: §1 as written; `RegProg.lean` (`Src`, `Instr`, `RP`, `run`, `toSLP`,
@@ -588,7 +588,7 @@ are those of §7. Sizes are rough.
   4. Stage I in its files. At the switch (with the lead): `keyTry`, `decM`, `correct`,
      `expressive`, `Impl.lean`, the game chain for `bpUniverse`; `bitsOf x` is the 128 bits of
      `encAttr x`.
-* **Acceptance.** M0, M3; after the switch `DualUse.correct` and `DualUse.expressive` for
+* **Acceptance.** M0, M3; after the switch `RingBTVW.correct` and `RingBTVW.expressive` for
   `bpUniverse` under the parameter hypotheses they have today, with `Machines` abstract. Axioms
   `propext`, `Classical.choice`, `Quot.sound`.
 * **Needs.** Nothing. **Size.** ≈ 2.5k new lines, ≈ 15 files edited.
@@ -597,8 +597,8 @@ are those of §7. Sizes are rough.
 
 * **Goal.** §3 and the configuration at the numbers of §4.
 * **Owns.** `SigabaNeo/Lib/Lattices/Homomorphic/{GSWNoise, Depth}.lean`,
-  `PE/Impl/RingBTVW/{Noise, NoiseClosed}.lean`, `PE/Impl/DualUse/{Noise, ConcreteNoise, Concrete,
-  ParamSupport}.lean`, `PE/Impl/DualUse/Params/{SimTrapNorm, Sizes, Conf, Stat, Advantage}.lean`.
+  `PE/Impl/RingBTVW/{Noise, NoiseClosed}.lean`, `PE/Impl/RingBTVW/{Noise, ConcreteNoise, Concrete,
+  ParamSupport}.lean`, `PE/Impl/RingBTVW/Params/{SimTrapNorm, Sizes, Conf, Stat, Advantage}.lean`.
 * **Does.**
   1. M1: the three statements of §3.2 by the proof of §3.2 (additive; the tree stays green).
   2. Stage I: `noise_ok`, `gswPow_le`, `simTrapBound_le`, `goodTrap_*`, `abortP`, `correct_conf`
@@ -617,8 +617,8 @@ are those of §7. Sizes are rough.
 ### WS3 — Ring-LWE strength
 
 * **Goal.** `2650 ≤ RingLWE.H` for the two instances at `N = 2^36`, `q = 2^(2^27)`.
-* **Owns.** `SigabaNeo/Lib/Lattices/Estimator/**`, `PE/Impl/DualUse/Params/Strength.lean`,
-  `PE/Impl/DualUse/Params/Strength/*`.
+* **Owns.** `SigabaNeo/Lib/Lattices/Estimator/**`, `PE/Impl/RingBTVW/Params/Strength.lean`,
+  `PE/Impl/RingBTVW/Params/Strength/*`.
 * **Does.** First, as an experiment in new files: `cbdCheck (2^36) (2^27) M 2650` on a few
   ranges of β around `β* ≈ 9312` and at both ends, for `M3 = 2^36 · (2^28 + 2)` and
   `M5 = 2^36 · (2^65 + 2^29 + 5)`; report the margin. Then `Check.lean`, the 16 scan files,
@@ -657,7 +657,7 @@ are those of §7. Sizes are rough.
   KeyTightPre, KeyTightTry, KeyTightWin, KeyTryReal, KeyTryRealLaw, Post, PostCost, PostSize, BfX,
   BfXCost, BlockCost, SizeCost, CfX, Decode, DecodeCost, DecodeLaw, DecodeWord, DecFin,
   DecGenCost, DecGenP, DecP, DecCostConf, DecTightCf, DecTightConf, DecTightFin, DecTightGen,
-  DecTightLib, DecTightPost, DecTightPre, DescConf}.lean`, `PE/Impl/DualUse/ImplP.lean`.
+  DecTightLib, DecTightPost, DecTightPre, DescConf}.lean`, `PE/Impl/RingBTVW/ImplP.lean`.
 * **Does.** Stage I: `BfSpec`, `CfSpec`, `WfSpec` on `ValidC` and `blockWord`; the front end
   behind an interface `FrontSpec` (a program with law "`[]` if too long, `[false]` if not
   `ValidC`, `true :: blockWord W C` otherwise" and its time, tape and size bounds), instantiated
@@ -700,7 +700,7 @@ are those of §7. Sizes are rough.
 ### WS7 — Compiler and authorization programs
 
 * **Goal.** §5.2: the two programs with laws and bounds.
-* **Owns.** New `PE/Impl/DualUse/Prog/{BpComp, BpCompLaw, BpCompCost, AuthBP}.lean` (and
+* **Owns.** New `PE/Impl/RingBTVW/Prog/{BpComp, BpCompLaw, BpCompCost, AuthBP}.lean` (and
   `SigabaNeo/Lib/Machines/Prog/` helpers it adds, in new files).
 * **Does.** `bpCompC` as in §5.2 with `law_bpCompC : exec … = rpW 512 (bpRP (tablesOf C))` for
   `C.length = bpLen`, well-formedness, coin-freeness, and `costC` bounds for a predicate word of
@@ -715,7 +715,7 @@ are those of §7. Sizes are rough.
 
 * **Goal.** The reductions' components for `nA` bits and programs, and attribute hiding at
   `confA` from Ring-LWE.
-* **Owns.** `PE/Impl/DualUse/{Reduction*, AH*, Registry, Security, Hybrid*, SimKeys, IdealBridge,
+* **Owns.** `PE/Impl/RingBTVW/{Reduction*, AH*, Registry, Security, Hybrid*, SimKeys, IdealBridge,
   RealBridge, IdealViews, FinalView}.lean`, `PE/Impl/Game/*`, `Prog/{Setup3, Setup5, SetupI,
   SetupL, SetupLaws, Pub3, Pub5, Chal3, Chal5, ChalI, ChalITime, Sd3, RowSimP, KeyTrySim,
   KeyTrySimLaw, Comps, CompCost}.lean`; `Prog/{Auth, AuthL}.lean` until they are deleted.
@@ -735,11 +735,11 @@ are those of §7. Sizes are rough.
 ### Lead
 
 Owns the files no workstream lists (the generic scheme: `PE.lean`, `PE/Impl/Bridge.lean`,
-`PE/Impl/RingBTVW/{Scheme, Laws, Security, Simulation}.lean`, `PE/Impl/DualUse/{Scheme,
+`PE/Impl/RingBTVW/{Scheme, Laws, Security, Simulation}.lean`, `PE/Impl/RingBTVW/{Scheme,
 Correctness, KeyGen, KeyBoxes, Flooding, Trapdoor, SetupLaw, BitLaws, Encodings}.lean`); no change
 is expected there. Reviews the day-1 interfaces; merges Stage I branches after a full build; makes the switch
 commit; merges Stage II in the order WS2 → WS1 → WS4 → WS6, WS7 → WS5 → WS8; owns
-`PE/Impl/DualUse/Submission.lean` (`implC`, `cost_arith` with the new exponents, `cost_implC`,
+`PE/Impl/RingBTVW/Submission.lean` (`implC`, `cost_arith` with the new exponents, `cost_implC`,
 `spec_submission`, `valid_submission` for `BranchingProgram.primitive`).
 
 ### Dependencies
@@ -892,7 +892,7 @@ re-prove them at confA).
 
 ## 13. 14-bit states (relaxed problem, branch `t3/dualuse-14`)
 
-The problem now asks for 14-bit states with a width chosen by the submission. DualUse takes `w8`.
+The problem now asks for 14-bit states with a width chosen by the submission. RingBTVW takes `w8`.
 
 * **Circuit** (`Gates/BP14`, `BPCircuit`, `BPWord`): the programs on 14-bit states natively (the
   `univ w8` tables; `Relaxed.ofProgram` is the identity on tables). Trees of 22 levels, 93 registers

@@ -11,7 +11,7 @@ connects the actual sampler to `encCoinsLaw`, including the independence of all 
 namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.XProg
-  Cslib Cslib.Probability AdvancedEncryption.DualUse.Prog
+  Cslib Cslib.Probability AdvancedEncryption.RingBTVW.Prog
 
 variable (D : Dims)
 

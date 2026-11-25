@@ -22,7 +22,7 @@ import PE.Impl.ExpLUT.Params.Strength.Generic
 ExpLUT's assumption is circular Ring-LWE with automorphism keys
 (`SigabaNeo.Lattices.CircularRingLWE`, Assumption 1 of ePrint 2026/2539), whose security function
 is `RingLWE.H` of the underlying Ring-LWE parameters: ring degree `N`, modulus `q = 2^K − 1` with
-`K = 2^16`, `CBD(16)` errors and secret (normal form, as `DualUse`'s `confA`), `m` plain samples.
+`K = 2^16`, `CBD(16)` errors and secret (normal form, as `RingBTVW`'s `confA`), `m` plain samples.
 
 * **`circularRingLWE_H_N24`: `1155 ≤ CircularRingLWE.H`** at `N = 2^24`,
 * **`circularRingLWE_H_N23`: `495 ≤ CircularRingLWE.H`** at `N = 2^23`,

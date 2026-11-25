@@ -1,7 +1,7 @@
 # PE from lookup tables over exponents (ePrint 2026/2539 §5), for the 128-bit BP universe
 
 Goal: a second `Submission` for `PE.BranchingProgram.primitive` (the same universe as
-`PE/Impl/DualUse/Submission.lean`: 16 symbols of 8 bits, 32-bit states, `T = 16`), implementing
+`PE/Impl/RingBTVW/Submission.lean`: 16 symbols of 8 bits, 32-bit states, `T = 16`), implementing
 the scheme of §5 of Suegami, *Implementing Predicate Encryption for Branching Programs* (ePrint
 2026/2539), with
 
@@ -20,10 +20,10 @@ simulation forms, Lemma 10, Corollary 1, Lemma 11, hybrids H0–H5).
 Rules: everything fully proved, no `sorry`, no `native_decide`, axioms `[propext,
 Classical.choice, Quot.sound]` only. Generic lattice math goes in `SigabaNeo/Lib/Lattices`,
 generic machine code in `SigabaNeo/Lib/Machines`, the scheme in `AdvancedEncryption/PE/Impl/ExpLUT`.
-Mirror the structure and reuse the infrastructure of `PE/Impl/DualUse` (read its `DESIGN.md`,
+Mirror the structure and reuse the infrastructure of `PE/Impl/RingBTVW` (read its `DESIGN.md`,
 `COST_PLAN.md`, `AdvancedEncryption/BP_PLAN.md`) wherever possible.
 
-## Design decisions (deviations from the paper, all as in `DualUse`)
+## Design decisions (deviations from the paper, all as in `RingBTVW`)
 
 1. **Odd modulus `q = 2^K − 1`.** The sieve divides by `W` (`α_{k,L} = W⁻¹ Σ_j …`), so `q` must be
    odd; the dual-use `q = 2^K` cannot work (the scaled gadget `W^T G` is no trapdoor). With
@@ -34,7 +34,7 @@ Mirror the structure and reuse the infrastructure of `PE/Impl/DualUse` (read its
    `SigabaNeo.Lattices.isTwoUniversal_binaryHash` (any finite commutative ring).
 2. **Binary / box laws instead of Gaussians.** Programming matrices `R`, `Z_t` and the TrapGen
    trapdoor `T` are binary (entries `0/1 ∈ R`); errors are the centered-binomial/box laws of
-   `DualUse`; noise flooding by boxes (`closeTo_floodLaw_add`); keys by one try of box rejection
+   `RingBTVW`; noise flooding by boxes (`closeTo_floodLaw_add`); keys by one try of box rejection
    (`SigabaNeo.Lattices.boxSample`), whose law does not depend on the trapdoor (`boxSample_eq`),
    so hybrid H3 is exact and the final hybrids need no trapdoor at all.
 3. **Statistical TrapGen** `B⁽¹⁾ = [Ā | g − Ā T]` with uniform `Ā ∈ R^{1×m̄}` and binary `T`.
@@ -54,7 +54,7 @@ Mirror the structure and reuse the infrastructure of `PE/Impl/DualUse` (read its
   first) — LHL with seed the `Ā` columns. H2: encodings from `b` — flooding. H3: keys by
   `boxSample` with the trapdoor of Lemma 11 — exact. H3′: `B⁽¹⁾` uniform — LHL on `(Ā, Ā T)`.
   H4: `b`, `h_k`, `c_m` uniform — **circular Ring-LWE** (the only computational step; its reduction
-  must be an explicit machine with a cost bound, as `DualUse/ReductionMachine` + `Prog/KeyCostV`).
+  must be an explicit machine with a cost bound, as `RingBTVW/ReductionMachine` + `Prog/KeyCostV`).
   H5: programmed pairs, `C^in_t`, `c_m` uniform — LHL with the 3-row seed `(B; b)`; keys are the
   box law of `M_F`, a function of `mpk`. H6: `B⁽¹⁾` from TrapGen again — LHL; H6 is the ideal
   experiment with the uniform simulator.
@@ -87,7 +87,7 @@ So `K = 2^17` suffices with margin; `m̄ = 3nK + 2·(stat. bits + log #programme
 | Id | Package | Depends on |
 |---|---|---|
 | A | `Lib/Lattices/Automorphism`: `σ_k` on `Negacyclic (ZMod q) n`, composition, fixes constants, coefficient permutation up to sign (norms), `H`, binary basis, Lemma 7, Lemma 8 identities | – |
-| B | `Lib/Lattices/CircularRingLWE.lean` (Assumption 1 as a `SigabaNeo.Assumption`, `H := RingLWE.H` of the base parameters) + certified strength at the concrete parameters (as `DualUse/Params/Strength`) | – |
+| B | `Lib/Lattices/CircularRingLWE.lean` (Assumption 1 as a `SigabaNeo.Assumption`, `H := RingLWE.H` of the base parameters) + certified strength at the concrete parameters (as `RingBTVW/Params/Strength`) | – |
 | C | `ExpLUT/Ops`, `ExpLUT/Eval`, `ExpLUT/Scheme`, `ExpLUT/Correctness`: the operations of §4 over an abstract ring with automorphisms, exact identities and noise bounds, Lemma 9, the scheme of §5.1 with the box/binary laws, Theorem 1 | A's interface (abstract) |
 | D | `ExpLUT/SimForm`, `ExpLUT/SimTrap`, `ExpLUT/Hybrid*`, `ExpLUT/Security`: Lemma 10, Corollary 1, Lemma 11, the hybrids, the reduction to circular Ring-LWE (math level) | C |
 | E | Machine arithmetic modulo `2^K − 1` on ring words (add, neg, sub, mul, rotations, `σ_k`, gadget digits), as `Lib/Lattices/ProgAlgo/RingProgs` | – |
@@ -491,7 +491,7 @@ exponent `W − 2^t`; `helperMap D`; `t = b−1` is present twice, harmless), `P
   (`progOf_predWord`). `bpOf F : BP Pos` (`T = 16`, `w = 2^14`, `|Σ| = 2^8`, step 15 = output as
   `0/1`), `wf_bpOf` (`2^22 ≤ W`), **`eval_bpOf`**: `eval (bpOf F) (attrN x) = if F.output x then 1
   else 0`. Valid predicates: `ValidC C := C.length = predLen`; KeyGen gives the zero key and Dec
-  `[false]` outside (as DualUse).
+  `[false]` outside (as RingBTVW).
 * attribute: the universe's `encAttribute w8 x` (MSB first per symbol), `attrN x t = (x t).val`;
   message `[μ]`; Dec outputs `[decodeBit μ']` (coefficient 0 in `[2^{K−2}, 3·2^{K−2})`).
 
@@ -510,7 +510,7 @@ for this near-uniform seed). All other laws (`χT`, `χs`, `χ`, `χfl`, `Big`) 
 
 **Machine conventions.** Every algorithm is an `XProg k` compiled with `toMachineT`/`toMachineB`
 (input tape: `encodeTuple (pw :: inputs)`, output tape: `encodeTuple outputs` via `frameApP`), with
-per-tape clocks `timeBoundT` and `descLen` from `XProg.size`, as `DualUse/Prog`. Every ring word a
+per-tape clocks `timeBoundT` and `descLen` from `XProg.size`, as `RingBTVW/Prog`. Every ring word a
 machine outputs is canonicalized (`canonRP`: an all-ones `K`-block → zeros), and every gadget
 decomposition (`digitRWP`) is taken of a canonical word (`binaryDigits` uses `ZMod.val`).
 
@@ -557,7 +557,7 @@ Done (axioms `[propext, Classical.choice, Quot.sound]`):
   at `N = 2^24`, `K = 2^16`, `b = 22`, `m = 100`: `≈ 2^249`), `time_setupMP` (`totalTimeT`).
 
 Remaining for F:
-* closed clock of `setupMP` (per-tape, as `DualUse/Prog/TightSetup`: `vb_smp` for `repF`, `VB.natP`,
+* closed clock of `setupMP` (per-tape, as `RingBTVW/Prog/TightSetup`: `vb_smp` for `repF`, `VB.natP`,
   `VB.checkMap` with the certificates above, `vb_appendTapeP`/`vb_frameApP`), its `descLen`, numerics;
 * concrete `RingSampler`s (binary `χT`: one fair bit then zeros; CBD/box coefficient samplers with
   negatives as one's complement NOT);
@@ -565,7 +565,7 @@ Remaining for F:
 
 **Enc plan** (all ring words canonical; `σ_{g^j}` as `j` iterations of `σ_g`, `g = 1 + 2N/W` in
 unary — `autMP` with a template of length `g`; `X^{w x_t}` by `rhoJP` with `2N − w x_t`): parse the
-input frames (`ufChunk`/`dropChunk` of `DualUse/Prog/EncP`), sample the coins in the order of
+input frames (`ufChunk`/`dropChunk` of `RingBTVW/Prog/EncP`), sample the coins in the order of
 `encCoinsLaw` with `RingSampler`s, then one generic block
 `encRow(s, A, z, e) = canon(s·A⁽⁰⁾ + A⁽¹⁾ − z·G + e)` (per column `(r, i)`: `z_r 2^i` by `rotBP`
 doublings) used for `b` (`z = 0`), `h_k` (`z = (s_k, 1)`), `c^aut_{t,d}`
@@ -682,7 +682,7 @@ Done (axioms `[propext, Classical.choice, Quot.sound]`; no change to the formats
 * **Samplers of `Enc`** (`Prog/EncSamplers.lean`): ring elements with i.i.d. coefficients
   (`ringLawD`; the word is the concatenation of the canonical coefficient words, `rEnc_ofCoeffs`,
   `ringLawD_enc`); flooding `floodR D e`, `floodP D e = repF N (entF K e)`, `law_floodP` (`e < K`);
-  centered binomial `cbdR D η`, `cbdPM η L K` = DualUse's `cbdP` with one's-complement leaves
+  centered binomial `cbdR D η`, `cbdPM η L K` = RingBTVW's `cbdP` with one's-complement leaves
   (`mv v = v − [v < 0]`, `encM_eq_zmodEnc`), `law_cbdPM`, `cbdRP D η L = repF N (cbdPM …)`,
   `law_cbdRP`. **Interface for `Enc`**: `AppendLaw P 0 P5 (χ.map (rEnc D).enc)` (scratch `2 … 6`
   blank; `Setup`'s `RingSampler` has only `2 … 4`, so these are not `RingSampler`s; `n` elements
@@ -719,7 +719,7 @@ Remaining for `Enc` (design fixed; each block a `Prog` with a run lemma and a ce
    canonical words — `binaryDigits` reads `ZMod.val`), streamed in `Dig` order;
 4. `X^{w x_t}`: the template `2N − w x_t` from the 8 bits of `x_t` (most significant first: `dblP`
    doublings, then `14` more, `dropP` from a `2N` template), `rhoJP`;
-5. parsing (`ufChunk` per field of `mpk`, as DualUse's `encParseP`), the coins in the order of
+5. parsing (`ufChunk` per field of `mpk`, as RingBTVW's `encParseP`), the coins in the order of
    `encCoinsLaw` (framed `cbdRP`/`floodP`, `law_seq_app` as `law_setupP`), `c_m` (`mulRMP`,
    `addRMP`, the word of `2^{K−1}` at coefficient `0` when `μ`), the frame of the output (`frameApP`);
 6. the law (`EncSpec D (cbdR D 16) (cbdR D 16) (floodR D eFl)`, i.e. `χc χc χfl` at `Dc`) and the
@@ -735,7 +735,7 @@ Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the 
 * `AH/Final.attributeHiding_Dc`: `AttributeHiding (univ w8) params impl` for every `impl` with
   `ImplSpec Dc kb L impl χc χc χfl` (`Setup` meets `SetupSpec Dc (χbin Dc)`, `Enc` meets
   `EncSpec Dc χc χc χfl`, `KeyGen` meets `KeySpec Dc kb L` **and `KeyLongSpec Dc L`** (empty word on
-  predicate words longer than `L`, as DualUse's `key_long`), `Eval = evalMachineX`), from
+  predicate words longer than `L`, as RingBTVW's `key_long`), `Eval = evalMachineX`), from
   `CircularRingLWE.decision.HardAt (circParamsD Dc) kb'` with `64 · 2^256 · C ≤ 2^kb'`, given
   `KbCover kb 2^18500`, the flooding hypothesis `hflood` at some `ε_fl ≤ 2^{−148}`, and the
   reduction machines `RedMachine … C A Dm` (below). Simulator: `simMachine Dc` (`AH/Sim`: the
@@ -954,7 +954,7 @@ whose routines exist, then 1–2, 4, 5):
    coefficients `r`); accumulate them in one register and test `= 0` with `eqb` (no wrap: fewer
    than `q` terms). Output `mpk ++ assemble x z` or `mpk ++ 0`; `|C| ≠ predLen` by two `drop`s and
    `eqb` with a blank register → `mpk ++ 0`.
-4. *The machine*: an `XProg` (as `DualUse/Prog/KeyGenP.keyGenF`): `leP n` guard (`n` = length of
+4. *The machine*: an `XProg` (as `RingBTVW/Prog/KeyGenP.keyGenF`): `leP n` guard (`n` = length of
    the input with `|C| = L`; longer → `encodeTuple []`, **`KeyLongSpec`**), parse
    `encodeTuple [pw, msk, C]`, `natP`/`appendLaw_bits` templates, `coinsP` (`mB` coins), the VM
    code in a frame of `105` tapes (`MVM.law_compile`), output `frP`; **`KeySpec kbDc L`**.
@@ -972,7 +972,7 @@ Files `PE/Impl/ExpLUT/AH/*` (namespace `AdvancedEncryption.ExpLUT.Prog`, in the 
 * `AH/Final.attributeHiding_Dc`: `AttributeHiding (univ w8) params impl` for every `impl` with
   `ImplSpec Dc kb L impl χc χc χfl` (`Setup` meets `SetupSpec Dc (χbin Dc)`, `Enc` meets
   `EncSpec Dc χc χc χfl`, `KeyGen` meets `KeySpec Dc kb L` **and `KeyLongSpec Dc L`** (empty word on
-  predicate words longer than `L`, as DualUse's `key_long`), `Eval = evalMachineX`), from
+  predicate words longer than `L`, as RingBTVW's `key_long`), `Eval = evalMachineX`), from
   `CircularRingLWE.decision.HardAt (circParamsD Dc) kb'` with `64 · 2^256 · C ≤ 2^kb'`, given
   `KbCover kb 2^18500`, the flooding hypothesis `hflood` at some `ε_fl ≤ 2^{−148}`, and the
   reduction machines `RedMachine … C A Dm` (below). Simulator: `simMachine Dc` (`AH/Sim`: the
@@ -1169,7 +1169,7 @@ exactly: `RedMachine` with `rAcc`/`uAcc` was not realizable. Now (`AH/RedGame`, 
 
 **Plumbing (done, `AH/RedChain`, `AH/RedConst`).**
 * `w8Codes` (codes of `univ w8`; `encAttribute_onto`), `redM8 = P ⨾ (inlined A ⨾ Post) ⨾guard Dm`,
-  `acceptProb_redM8` (as `DualUse.acceptProb_reductionP`, with `postG`/`DcB`).
+  `acceptProb_redM8` (as `RingBTVW.acceptProb_reductionP`, with `postG`/`DcB`).
 * The handlers' secret is **any finite type `Sig` with a map `f : Sig → RSec D`** (`RSec D` contains
   `Pos → ℕ`, so it has no fixed-length encoding) and a law `setupS i x` with
   `(setupS i x).map f = redSecW D χfl x i`; the handlers serve `spS = (specRedW …).comap f setupS`
@@ -1212,7 +1212,7 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
    `toPair i`, the same words as the state word `dwR`) ++ coin words ++ `floodEnc` ++ `zrEnc`).
 2. `setupP`: copy the instance words, sample with `unifCanonP` (package F), a `floodRing` sampler
    (`400` fair bits per coefficient, zero-padded: canonical), fair bits for `zr`.
-3. ~~`authP`~~ — **done** (`Prog/AuthW`, `Prog/AuthWCost`, `Prog/AuthWX`): `authW8` (DualUse's
+3. ~~`authP`~~ — **done** (`Prog/AuthW`, `Prog/AuthWCost`, `Prog/AuthWX`): `authW8` (RingBTVW's
    `authBP` with the offset of `a ‖ z` and the entry bits prepended), `authAW_encAttr`,
    **`authWX hR : XProg (R + 2)`** (any `R ≥ 14`) with **`law_authWX`** (the bit `authW impl C x`
    when `Eval = evalMachineX`), `time_authWX` (`≤ 2^109` for `|C| ≤ 2^49`), `len_authWX` (one bit),
@@ -1251,7 +1251,7 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
 - Added `Prog/EncBPhase.lean`: `BPhaseOK` records machine templates; `run_bPhase_ciphertext` proves actual `mrowP` computes encoded `ct.b` and consumes B/eb streams. The zero gadget word and secret-word lengths are explicit hypotheses.
 - Aggregate build passed (9614 jobs, `/tmp/explut-aut-b-build.log`); new loop, codec, full automorphism phase and b-phase theorems have only standard axioms (`/tmp/explut-aut-b-axioms.log`). No sorry, native_decide, or added axioms. `git diff --check` passed.
 - Next: place these four verified phases (b, helper, automorphism, tail) in a common concrete store, build initialization from public/coin queues, and prove complete Enc execution and its clock. Existing `EncFront.program` is still conditional on an MVM core; it must be connected or replaced by the concrete Prog pipeline, not treated as a completed Enc implementation.
-- The full goal remains open: Enc clock and sampler/front connection, KeyGen/Dec/reduction machines and clocks, Submission, DualUse comparison, final audit.
+- The full goal remains open: Enc clock and sampler/front connection, KeyGen/Dec/reduction machines and clocks, Submission, RingBTVW comparison, final audit.
 
 ### Common-store encryption core (2026-11-24)
 
@@ -1294,7 +1294,7 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
 - Added `EncComplete.lean`: `run_ready_tail`, output-length/concatenation lemmas, `run_encCoreP_ciphertext`, and `run_initializedCoreP_ciphertext`. The last theorem executes the actual 326-tape initialized core from `encStart (encCoinWord r) (mpkEnc mpk ++ (encAttribute x ++ [μ]))` and proves output tape 0 is exactly `ctEnc (encrypt ... r)`. Hypotheses are `0 < b`, `2 ≤ N`, and `wSt * 128 ≤ 2*N`; no abstract core/run/spec premise remains in this deterministic theorem.
 - `EncInit.rotationLength` now uses an explicit size comparison before subtraction, with `rotationLength_eq` proving equality to the original truncated subtraction. This is semantically identical for all D. It prevents kernel deep-recursion failures from reducing a symbolic natural minus a large numeral during template lookup proofs. `τT_tailSlot` also isolates the lookup from store-content reduction.
 - Aggregate imports `EncComplete`. Full build passed (9630 jobs, `/tmp/explut-complete-enc-build.log`). Main end-to-end deterministic theorems, tail data and rotation-length equivalence audited with only standard axioms (`/tmp/explut-complete-enc-axioms.log`). Diff check passed, no new sorry/native_decide/custom axioms. No active build sessions remain.
-- Next remaining Enc work: frame/generalize the existing 105-tape parser+sampler (`EncFront.prepare`, `law_prepare`) into the 326-tape core's input layout, clean all nonoutput tapes, and prove its distribution/EncSpec plus time bounds. The concrete deterministic output theorem is complete, but the randomized/full-machine/clock obligations are NOT yet complete. KeyGen/Dec/reduction machines+clocks, Submission, DualUse comparison and final overall audit remain open.
+- Next remaining Enc work: frame/generalize the existing 105-tape parser+sampler (`EncFront.prepare`, `law_prepare`) into the 326-tape core's input layout, clean all nonoutput tapes, and prove its distribution/EncSpec plus time bounds. The concrete deterministic output theorem is complete, but the randomized/full-machine/clock obligations are NOT yet complete. KeyGen/Dec/reduction machines+clocks, Submission, RingBTVW comparison and final overall audit remain open.
 - Useful proof detail: `update_bView` is a generic opaque-store lemma avoiding expansion of all initialized data when proving a redundant output update. Apply generic lookup/equality lemmas with explicit types; Fin numeral coercions sometimes prevent `rw` matching, so first bind a typed equality (`have ht : ... := τT_tailSlot ...`). Do not return to full-store `rfl`/`change` reductions for those identities.
 
 ### Randomized Enc machine and concrete EncSpec completed (2026-11-24)
@@ -1315,7 +1315,7 @@ programs on `R + 2` tapes for the raw secret (`rawEnc`, `rawSetup`, `rawF`), wit
 - `EncConf.descLen_encMachine` proves description length at most `2^744`; `time_encMachine` proves the actual compiled machine clock at most `2^817`; `cost_encMachine_lt` proves its total cost strictly below `2^818`. This is an Enc-only result, not the full PE/Submission comparison.
 - Generic `XBound.seq/frame/total` and the generic machine cost bridge avoid kernel expansion of the enormous concrete program. Keep these abstractions when composing remaining machines. Exact sequence association matters for compiler time expressions.
 - Aggregate build passed (9666 jobs, `/tmp/explut-enc-full-clock-build.log`). Exact concrete EncSpec, description bound, time bound, cost bound, and normalization identity were audited: only `propext`, `Classical.choice`, `Quot.sound` (`/tmp/explut-enc-final-axioms.log`). Source scan found no sorry/native_decide/custom axiom in Enc modules; `git diff --check` passed.
-- Remaining: actual complete KeyGen and Dec machines with laws and numerical costs, safety reduction machines/costs, Submission, full DualUse comparison, final audit. KeyCoins already identifies the fair-coin decoding law with the uniform big box; KeyTryVM provides queue decoding, inner product, automorphism, gadget reconstruction, small-box test and digit routines. Their composition into a complete rejection-sampling KeyGen remains to be built. No live build sessions remain. All work remains uncommitted.
+- Remaining: actual complete KeyGen and Dec machines with laws and numerical costs, safety reduction machines/costs, Submission, full RingBTVW comparison, final audit. KeyCoins already identifies the fair-coin decoding law with the uniform big box; KeyTryVM provides queue decoding, inner product, automorphism, gadget reconstruction, small-box test and digit routines. Their composition into a complete rejection-sampling KeyGen remains to be built. No live build sessions remain. All work remains uncommitted.
 
 ### KeyGen coin decoder execution/distribution bridge (2026-11-24)
 

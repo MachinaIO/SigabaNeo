@@ -1,7 +1,7 @@
 import PE.Impl.ExpLUT.AH.RedCompsR
 import PE.Impl.ExpLUT.Prog.UnifCanon
 import PE.Impl.ExpLUT.Prog.EncSamplers
-import PE.Impl.DualUse.Prog.SetupTime
+import PE.Impl.RingBTVW.Prog.SetupTime
 
 /-!
 # The setup component of the reduction (package G2b)
@@ -30,7 +30,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Cslib Cslib.Probability
-open AdvancedEncryption.DualUse.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+open AdvancedEncryption.RingBTVW.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 variable (D : Dims)
 

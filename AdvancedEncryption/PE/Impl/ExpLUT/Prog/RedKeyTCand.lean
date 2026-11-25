@@ -16,7 +16,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.RedKeyT
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog
 open SigabaNeo.Tape.XProg
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 open SigabaNeo.Lattices.Algo (length_encRM)
 open AdvancedEncryption.ExpLUT.Prog
 open AdvancedEncryption.ExpLUT.Prog.KeyTime

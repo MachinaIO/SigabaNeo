@@ -26,7 +26,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Matrix Cslib Cslib.Probability
-open AdvancedEncryption.DualUse.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+open AdvancedEncryption.RingBTVW.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 /-- **An explicit sampler** of a law `χ` of ring elements: a 7-tape program appending the canonical
 word of a sample to tape `0` (scratch `2 … 4`), leaving tape `6` alone, with a shape bound. -/
@@ -145,7 +145,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Matrix Cslib Cslib.Probability
-open AdvancedEncryption.DualUse.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+open AdvancedEncryption.RingBTVW.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 variable {D : Dims}
 

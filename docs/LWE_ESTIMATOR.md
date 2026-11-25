@@ -90,7 +90,7 @@ because the Babai-failure argument needs `β` a little below the optimum.
 
 **Ring degree `2^36`, `q = 2^(2^27)`, `CBD(16)`** (the instances at `confA` of
 `AdvancedEncryption/BP_PLAN.md`, `k = 2^27 + 1`, `d = 2^65`;
-`AdvancedEncryption/PE/Impl/DualUse/Params/Strength.lean`, `ringLWE_H_registry3`,
+`AdvancedEncryption/PE/Impl/RingBTVW/Params/Strength.lean`, `ringLWE_H_registry3`,
 `ringLWE_H_registry5`): `2650 ≤ RingLWE.H` at `2^28 + 2` and at `2^65 + 2^29 + 5` samples, through
 the generic lemmas `registry3_ge`, `registry5_ge` (`Params/Strength/Generic.lean`, in `N`, `e`,
 `k`, `d`, `M`, `kb`). The mirror gives `usvp` 2693.95, `bdd` 2693.95 and `dual` 2693.96 at both

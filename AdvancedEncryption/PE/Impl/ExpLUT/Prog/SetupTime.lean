@@ -22,7 +22,7 @@ at `N = 2^24`, `K = 2^16`, `b = 22`, `m̄ = 3 · 2^40 + 408`, the binary sampler
 namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Tape.Sym
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 /-! ### The canonical uniform sampler on its own tapes -/
 

@@ -10,7 +10,7 @@ set_option linter.unusedSectionVars false
 namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.DualUse.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
+open AdvancedEncryption.RingBTVW.Prog AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram
 
 theorem size_setupRX_eq (D : Dims) {R : ℕ} (hR : 38 ≤ R) (e : ℕ) :
     (setupRX D hR e).size = rsPre.size + ((unifCanonP D.N D.K (nU D)).size +

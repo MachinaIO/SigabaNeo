@@ -6,7 +6,7 @@ import SigabaNeo.Lib.Lattices.Estimator.Bound.CbdQ
 
 The underlying Ring-LWE instance of ExpLUT's circular Ring-LWE assumption: ring degree `N` (a power
 of two), `m` plain samples, the odd modulus `q = 2^K − 1` (`PLAN.md`, design decision 1),
-`CBD(16)` secret and error (normal form, as `DualUse`'s `confA`).
+`CBD(16)` secret and error (normal form, as `RingBTVW`'s `confA`).
 
 * `ringParams N K m`: these Ring-LWE parameters; `circParams N K m J τ`: the circular ones with
   automorphism indices `J` and gadget length `τ`.

@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.SetupSize
 import PE.Impl.ExpLUT.Prog.EncMachine
-import PE.Impl.DualUse.Prog.SetupEncDescA
+import PE.Impl.RingBTVW.Prog.SetupEncDescA
 import SigabaNeo.Lib.Machines.Prog.FrameSize
 
 /-! # State counts and description length of the concrete encryption machine -/
@@ -31,9 +31,9 @@ theorem size_prepare_le (η L e : ℕ) {m : ℕ}
     (hs : nEncSmall D * D.N < 2 ^ m) (hf : nFl D * D.N < 2 ^ m)
     (hN : D.N < 2 ^ m) :
     (EncIO.prepare D η L e).size ≤ 2 * (cbdPM η L D.K).size +
-      (AdvancedEncryption.DualUse.Prog.entF D.K e).size + 585 * m + 10441 := by
+      (AdvancedEncryption.RingBTVW.Prog.entF D.K e).size + 585 * m + 10441 := by
   have h1 := size_repF_le (cbdPM η L D.K) hs
-  have h2 := size_repF_le (AdvancedEncryption.DualUse.Prog.entF D.K e) hf
+  have h2 := size_repF_le (AdvancedEncryption.RingBTVW.Prog.entF D.K e) hf
   have h3 := size_repF_le (cbdPM η L D.K) hN
   have hp := size_parse_le
   simp only [EncIO.prepare, encCoinsP, cbdManyP, floodManyP, cbdRP,
@@ -73,7 +73,7 @@ theorem descLen_encMP_le (η L e : ℕ) {B : ℕ}
     rw [Machine.descLen, encMP, XProg.states_toMachineT, XProg.card_state]
     rfl
   rw [heq]
-  exact AdvancedEncryption.DualUse.Prog.descLen_arithA (by omega)
+  exact AdvancedEncryption.RingBTVW.Prog.descLen_arithA (by omega)
 
 set_option exponentiation.threshold 2000 in
 /-- Numerical budget for a state bound of `2^112`; its premise is discharged separately. -/
@@ -86,6 +86,6 @@ theorem descLen_encMP_le_of_size (η L e : ℕ)
     rw [Machine.descLen, encMP, XProg.states_toMachineT, XProg.card_state]
     rfl
   rw [heq]
-  exact (AdvancedEncryption.DualUse.Prog.descLen_arithA hs).trans (by norm_num)
+  exact (AdvancedEncryption.RingBTVW.Prog.descLen_arithA hs).trans (by norm_num)
 
 end AdvancedEncryption.ExpLUT.Prog.EncW

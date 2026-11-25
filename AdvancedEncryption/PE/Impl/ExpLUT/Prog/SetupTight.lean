@@ -21,7 +21,7 @@ set_option autoImplicit false
 namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Tape.Sym
-open AdvancedEncryption.DualUse.Prog AdvancedEncryption.ExpLUT.Prog.DescTight
+open AdvancedEncryption.RingBTVW.Prog AdvancedEncryption.ExpLUT.Prog.DescTight
 
 
 /-! ### The exact sizes of the fixed blocks (kernel-evaluated) -/

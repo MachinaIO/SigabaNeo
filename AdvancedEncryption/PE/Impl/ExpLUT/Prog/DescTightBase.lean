@@ -1,4 +1,4 @@
-import PE.Impl.DualUse.Prog.SetupEncDescA
+import PE.Impl.RingBTVW.Prog.SetupEncDescA
 
 /-!
 # Tight description-length arithmetic

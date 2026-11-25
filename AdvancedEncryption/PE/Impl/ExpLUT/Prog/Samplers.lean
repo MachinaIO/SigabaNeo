@@ -1,5 +1,5 @@
 import PE.Impl.ExpLUT.Prog.SetupP
-import PE.Impl.DualUse.Prog.SetupTime3
+import PE.Impl.RingBTVW.Prog.SetupTime3
 
 /-!
 # Explicit samplers of ring laws
@@ -13,7 +13,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Cslib Cslib.Probability SigabaNeo.Lattices.Algo.NegaG
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 variable (D : Dims)
 

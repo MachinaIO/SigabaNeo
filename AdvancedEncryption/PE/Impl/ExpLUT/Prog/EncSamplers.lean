@@ -1,6 +1,6 @@
 import PE.Impl.ExpLUT.Prog.Samplers
-import PE.Impl.DualUse.Prog.Chi
-import PE.Impl.DualUse.Prog.SetupLaws
+import PE.Impl.RingBTVW.Prog.Chi
+import PE.Impl.RingBTVW.Prog.SetupLaws
 
 /-!
 # The samplers of `Enc`: centered binomial and flooding ring elements
@@ -13,11 +13,11 @@ tapes `5`, `6`; scratch `2 … 6` blank before and after: `P5`).
 
 * **Flooding** `floodR D e` (coefficients uniform below `2^e`, `e < K`; package P's `χfl` at
   `Dc` with `e = eFl`): `floodP D e = repF N (entF K e)` (`e` fair bits, then `K − e` zeros;
-  DualUse's `entF`), **`law_floodP`**.
+  RingBTVW's `entF`), **`law_floodP`**.
 * **Centered binomial** `cbdR D η` (package P's `χc` at `Dc`, `η = 16`): the coefficient sampler
-  `cbdPM η L K` is DualUse's `cbdP` (coins, unary value, a chain of tests) whose leaves append the
+  `cbdPM η L K` is RingBTVW's `cbdP` (coins, unary value, a chain of tests) whose leaves append the
   *one's-complement* word: for `v < 0` the canonical word of `v` modulo `2^K − 1` is the two's
-  complement word of `v − 1` (`encM_eq_zmodEnc`), so the leaf of `v` is DualUse's leaf of
+  complement word of `v − 1` (`encM_eq_zmodEnc`), so the leaf of `v` is RingBTVW's leaf of
   `mv v = v − [v < 0]`. **`law_cbdPM`**, `cbdP D η L = repF N (cbdPM η L K)`, **`law_cbdRP`**.
 -/
 
@@ -25,7 +25,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape
   SigabaNeo.Tape.XProg Cslib Cslib.Probability
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 /-! ### Words of coefficients -/
 
@@ -125,7 +125,7 @@ theorem law_floodP {e : ℕ} (he : e < D.K) :
 
 /-! ### Centered binomial -/
 
-/-- The value of the leaf of `v`: `v − 1` for `v < 0`, so DualUse's two's-complement leaf writes
+/-- The value of the leaf of `v`: `v − 1` for `v < 0`, so RingBTVW's two's-complement leaf writes
 the canonical word modulo `2^K − 1`. -/
 def mv (v : ℤ) : ℤ := if v < 0 then v - 1 else v
 

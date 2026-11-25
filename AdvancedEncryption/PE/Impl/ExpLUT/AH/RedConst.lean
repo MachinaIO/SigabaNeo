@@ -1,12 +1,12 @@
 import PE.Impl.ExpLUT.AH.RedChain
-import PE.Impl.DualUse.ReductionCompsBound
+import PE.Impl.RingBTVW.ReductionCompsBound
 import PE.Impl.ExpLUT.AH.Flood
 
 /-!
 # The constant of the reduction from components, explicitly (package G2)
 
 The constant `rc.const` of the reduction machine of components (`RedComps`, `AH/RedChain`) keeps
-the structure of `chainConst`; as for the dual-use reductions (`DualUse.compConst_le_bp`):
+the structure of `chainConst`; as for the dual-use reductions (`RingBTVW.compConst_le_bp`):
 
 * `const_le_explicit`: `rc.const ≤ compBoundG 128 1 515 sP tP p R Sz2 L Sl t` from the decoder's
   states `≤ sP`, time `≤ tP ≤ 2^t`, tapes `≤ p`, the components' sizes
@@ -25,7 +25,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape Cslib Cslib.Probability
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Generic
-open AdvancedEncryption.DualUse (postStatesG glue3 compStatesG compBoundG compStatesG_mono
+open AdvancedEncryption.RingBTVW (postStatesG glue3 compStatesG compBoundG compStatesG_mono
   postPc_bp postSlope_bp slope_arith_bp)
 open SigabaNeo.Inline
 
@@ -56,7 +56,7 @@ theorem chainSlope_le (X : ℕ) (hX : 1 ≤ X)
         (postA rc.E 128 1 + postB rc.E 128 1) ≤
       11 * compTimeP rc.cb + 2 ^ 26 * (X * X) := by
   have hE := rc.stateBound_le hW hnS
-  rw [show (128 : ℕ) = AdvancedEncryption.DualUse.nA from rfl, postSlope_bp]
+  rw [show (128 : ℕ) = AdvancedEncryption.RingBTVW.nA from rfl, postSlope_bp]
   unfold chainSlope inlSlope handlerQ0 handlerQ1 glueNP glueMP glueN
   simp only [List.length_nil]
   have e1 : (w8Codes rc.senc).nA = 128 := rfl

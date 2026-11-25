@@ -17,8 +17,8 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Generic
-open AdvancedEncryption.DualUse (compStatesG compBoundG postStatesG glue3)
-open AdvancedEncryption.DualUse.Prog (encLen)
+open AdvancedEncryption.RingBTVW (compStatesG compBoundG postStatesG glue3)
+open AdvancedEncryption.RingBTVW.Prog (encLen)
 
 set_option exponentiation.threshold 2000 in
 theorem compStatesG_le_Dc {sP Sz2 Lc t : ℕ} (hsP : sP ≤ 2 ^ 16) (hSz : Sz2 ≤ 2 ^ 240)

@@ -24,7 +24,7 @@ open AdvancedEncryption.ExpLUT.Prog.KeyTime
 open AdvancedEncryption.ExpLUT.Prog.RedKeyT
 open AdvancedEncryption.ExpLUT.Params
 open SigabaNeo.Tape.XProg
-open AdvancedEncryption.DualUse.Prog (bCoins tCoin)
+open AdvancedEncryption.RingBTVW.Prog (bCoins tCoin)
 
 /-- The tape cap of the real KeyGen attempt. -/
 abbrev My : ℕ := 2 ^ 121

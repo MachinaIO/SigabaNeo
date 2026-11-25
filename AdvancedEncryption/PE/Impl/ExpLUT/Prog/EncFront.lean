@@ -7,7 +7,7 @@ import SigabaNeo.Lib.Machines.Prog.FrameIO
 namespace AdvancedEncryption.ExpLUT.Prog.EncIO
 
 open SigabaNeo SigabaNeo.Lattices SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Tape.XProg
-  Cslib Cslib.Probability AdvancedEncryption.DualUse.Prog
+  Cslib Cslib.Probability AdvancedEncryption.RingBTVW.Prog
 open AdvancedEncryption.PE.BranchingProgram
 
 /-- Frame parser tapes: input, destination, and two scratch tapes. -/

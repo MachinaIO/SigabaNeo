@@ -10,7 +10,7 @@ import SigabaNeo.Lib.Lattices.Homomorphic.SLPEval
 * `keySumW`: the sum `∑_b PK_b · G̲⁻¹(V_b)` over the bits `b = (0, c, i, j)` of a row
   (`coeffBits`, with `V_b = 2^i X^j` at the column `c`), as three nested accumulation loops
   (`keySumW_enc`). With `PK_b` the public key of the output wire `b` of `f̂` this is the key matrix
-  `B_f̂` (`PE/Impl/DualUse/Algo/KeyMatrix`).
+  `B_f̂` (`PE/Impl/RingBTVW/Algo/KeyMatrix`).
 
 Step counts: `slpPKSteps` (per gate), `keySumSteps`.
 -/

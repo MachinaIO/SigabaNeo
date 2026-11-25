@@ -1,13 +1,13 @@
 import PE.Impl.ExpLUT.Prog.KeyCoinVM
 import SigabaNeo.Lib.Lattices.ProgAlgo.Mersenne.VMIO
-import PE.Impl.DualUse.Prog.Setup5
+import PE.Impl.RingBTVW.Prog.Setup5
 
 /-! Executable initialization and fair-coin sampling for one key-box candidate. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeySample
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Tape.XProg
 open SigabaNeo.Tape.MVM Cslib Cslib.Probability Cslib.BitString
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 noncomputable def start (D : Dims) (B : ℕ) (cs : List Bool) : St :=
   coinDecodeStart D B (fun _ ↦ []) cs

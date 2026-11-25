@@ -15,7 +15,7 @@ namespace AdvancedEncryption.ExpLUT.Prog.EncTight
 
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.Prog
 open AdvancedEncryption.ExpLUT.Params AdvancedEncryption.ExpLUT.Prog
-  AdvancedEncryption.ExpLUT.Prog.EncW AdvancedEncryption.DualUse.Prog
+  AdvancedEncryption.ExpLUT.Prog.EncW AdvancedEncryption.RingBTVW.Prog
 
 set_option maxRecDepth 100000
 

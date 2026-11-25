@@ -21,7 +21,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Tape Cslib Cslib.Probability
 open AdvancedEncryption.PE AdvancedEncryption.PE.BranchingProgram AdvancedEncryption.PE.Generic
-open AdvancedEncryption.DualUse.Prog (encLen)
+open AdvancedEncryption.RingBTVW.Prog (encLen)
 
 variable (D : Dims) (kb : KeyBoxes D) (L : ℕ)
 

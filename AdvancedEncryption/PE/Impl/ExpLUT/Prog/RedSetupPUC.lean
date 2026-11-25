@@ -16,7 +16,7 @@ with tape `0` at the top, a tape the tail never touches):
 namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg SigabaNeo.Tape.Sym
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 /-- The tapes before the tail, tape `0` at the top. -/
 def σuc' : Asg := [pTop, pLKv] ++ List.replicate 5 pTop ++ [pKv, pLv] ++ List.replicate 31 pTop

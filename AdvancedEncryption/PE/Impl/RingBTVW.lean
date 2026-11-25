@@ -1,8 +1,8 @@
-import PE.Impl.RingBTVW.Scheme
-import PE.Impl.RingBTVW.Laws
-import PE.Impl.RingBTVW.Noise
-import PE.Impl.RingBTVW.Security
-import PE.Impl.RingBTVW.Simulation
+import PE.Impl.RingBTVW.Fresh.Scheme
+import PE.Impl.RingBTVW.Fresh.Laws
+import PE.Impl.RingBTVW.Fresh.Noise
+import PE.Impl.RingBTVW.Fresh.Security
+import PE.Impl.RingBTVW.Fresh.Simulation
 
 /-!
 # The ring variant of the BTVW17 §4.2 predicate encryption

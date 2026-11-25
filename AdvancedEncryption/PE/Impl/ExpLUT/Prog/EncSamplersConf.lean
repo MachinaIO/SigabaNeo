@@ -15,7 +15,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 namespace EncConf
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Tape SigabaNeo.Tape.XProg
-open AdvancedEncryption.DualUse.Prog AdvancedEncryption.ExpLUT.Params
+open AdvancedEncryption.RingBTVW.Prog AdvancedEncryption.ExpLUT.Params
 
 theorem χc_eq : χc = cbdR Dc 16 := rfl
 

@@ -1,10 +1,10 @@
 import PE.Impl.ExpLUT.Prog.KeyTimeCandidate
-import PE.Impl.DualUse.Prog.TightApp
+import PE.Impl.RingBTVW.Prog.TightApp
 
 /-! Runtime of the actual framed fair-coin sampler and candidate generation. -/
 namespace AdvancedEncryption.ExpLUT.Prog.KeyTime
 open SigabaNeo SigabaNeo.Tape SigabaNeo.Tape.MVM SigabaNeo.Tape.Prog SigabaNeo.Tape.XProg
-open AdvancedEncryption.DualUse.Prog
+open AdvancedEncryption.RingBTVW.Prog
 
 set_option exponentiation.threshold 1000 in
 theorem keyCoinTime (n : ℕ) (hn : n ≤ 2 ^ 106) :

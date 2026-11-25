@@ -1,4 +1,4 @@
-import PE.Impl.DualUse.Prog.DecodeWord
+import PE.Impl.RingBTVW.Prog.DecodeWord
 import PE.Impl.ExpLUT.AH.CircBridge
 import SigabaNeo.Lib.Machines.Prog.FrameParseX
 
@@ -28,7 +28,7 @@ namespace AdvancedEncryption.ExpLUT.Prog
 
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo SigabaNeo.Tape Cslib
 open Turing.MultiTapeTM (frame encList encNat encPair encBits)
-open AdvancedEncryption.DualUse.Prog (lowBits length_bits_le padK_bits headD_ofFn flatMap_ofFn_mul
+open AdvancedEncryption.RingBTVW.Prog (lowBits length_bits_le padK_bits headD_ofFn flatMap_ofFn_mul
   length_frame length_flatMap_le encLen)
 
 section Generic
@@ -153,7 +153,7 @@ end Generic
 theorem lowBits_eq_toBits : ∀ (K n : ℕ), lowBits K n = toBits K n
   | 0, _ => rfl
   | K + 1, n => by
-    rw [AdvancedEncryption.DualUse.Prog.lowBits_succ, toBits, lowBits_eq_toBits K (n / 2),
+    rw [AdvancedEncryption.RingBTVW.Prog.lowBits_succ, toBits, lowBits_eq_toBits K (n / 2),
       Nat.testBit_zero]
 
 theorem flatMap_finRange_concatN : ∀ {m : ℕ} (g : Fin m → List Bool),

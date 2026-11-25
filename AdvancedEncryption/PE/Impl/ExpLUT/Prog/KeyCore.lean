@@ -4,7 +4,7 @@ import PE.Impl.ExpLUT.Prog.KeyInput
 namespace AdvancedEncryption.ExpLUT.Prog.KeyCore
 open SigabaNeo SigabaNeo.Encode SigabaNeo.Lattices SigabaNeo.Lattices.Algo
   SigabaNeo.Tape SigabaNeo.Tape.Prog SigabaNeo.Tape.XProg SigabaNeo.Tape.MVM
-  Cslib Cslib.Probability Cslib.BitString AdvancedEncryption.DualUse.Prog
+  Cslib Cslib.Probability Cslib.BitString AdvancedEncryption.RingBTVW.Prog
 
 /-- Sample directly into the VM coin register, using only blank compiler scratch tapes. -/
 def coinFrame : Fin 7 ↪ Fin 105 :=
