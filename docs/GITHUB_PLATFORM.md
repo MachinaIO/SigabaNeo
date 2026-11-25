@@ -275,6 +275,13 @@ one field and nothing else. `meta/trusted.json` (`schemas/trusted.schema.json`) 
 - `allowlist`: pull requests from authors not in `accept` fail the gate, with the label
   `not-accepted`, before any Lean runs. Nothing closes a pull request automatically: a decision
   is about one commit, and a newer commit gets its own run.
+- `collaborators`: only those with write access to the repository (GitHub's `admin`, `maintain`
+  or `write`), and those in `accept` (bots, say), may submit; the others fail as in `allowlist`.
+  Those with write access are also merged automatically when they pass, as are those in
+  `automerge`. The precheck job reads the author's permission through the API
+  (`repos/…/collaborators/<author>/permission`) and passes it to `dag_tools.py precheck
+  --permission`; a failure to read it fails the gate. Who may submit then follows the
+  repository's access settings, with no list to keep in step.
 - `open`: every pull request is verified. Those from `automerge` authors that pass are merged
   automatically through the merge queue, and the rest wait for a maintainer.
 
