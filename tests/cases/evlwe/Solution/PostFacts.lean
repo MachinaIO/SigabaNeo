@@ -1,6 +1,6 @@
 import Solution.Count
 import Solution.SmoothParams
-import SigabaNeo.Lib.Lattices.Gaussian.Z
+import SigabaNeoStd.Lattices.Gaussian.Z
 
 /-!
 # Facts about the Post experiments

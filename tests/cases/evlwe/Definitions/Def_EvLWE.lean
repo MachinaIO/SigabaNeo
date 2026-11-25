@@ -1,7 +1,7 @@
 /-
 TEST CASE (submission). Private-coin hiding evasive LWE ([BUW24], Definition 9; as recalled in
 [DJMMV25], Definition 4.2) for the sampler of [DJMMV25], Construction 5.1, stated asymptotically
-with cslib-frontier's definitions and the lattice library (`SigabaNeo.Lib.Lattices`).
+with cslib-frontier's definitions and the lattice library (`SigabaNeoStd.Lattices`).
 
 ## The distributions, at security parameter `κ`
 
@@ -46,9 +46,9 @@ Counterexamples", ePrint 2024/2000.
 Counterexamples for Private-Coin Evasive LWE", ePrint 2025/374.
 -/
 import CslibFrontier.Crypto.Computational.Basic
-import SigabaNeo.Lib.Lattices.Gaussian
-import SigabaNeo.Lib.Lattices.Encoding
-import SigabaNeo.Lib.Lattices.Trapdoor
+import SigabaNeoStd.Lattices.Gaussian
+import SigabaNeoStd.Lattices.Encoding
+import SigabaNeoStd.Lattices.Trapdoor
 import Mathlib.NumberTheory.Bertrand
 
 namespace TestCase.EvLWE

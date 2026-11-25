@@ -23,8 +23,8 @@ in another environment is accepted only if it also compiles in ours. There are t
 * **(a)** Prove2Me adds an environment with the core's pins.
 * **(b)** We port the needed part of cslib-frontier to Prove2Me definitions.
 
-Our answer is our own server with Prove2Me's API and the core's environment
-([PLATFORM.md](PLATFORM.md)).
+Our answer is our own DAG of Prove2Me-style files on GitHub, verified in the core's environment
+([GITHUB_PLATFORM.md](GITHUB_PLATFORM.md)).
 
 ## How existing Prove2Me crypto statements model efficiency (survey, November 2026)
 

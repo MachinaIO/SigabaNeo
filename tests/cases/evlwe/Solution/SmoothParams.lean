@@ -1,5 +1,5 @@
 import Definitions.Def_EvLWE
-import SigabaNeo.Lib.Lattices.Gaussian.Bounds
+import SigabaNeoStd.Lattices.Gaussian.Bounds
 
 /-!
 # Smoothing at the EvLWE parameters

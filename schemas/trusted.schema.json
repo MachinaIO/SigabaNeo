@@ -1,0 +1,33 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Who may submit (meta/trusted.json)",
+ "type": "object",
+ "required": [
+  "mode",
+  "accept",
+  "automerge"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "mode": {
+   "enum": [
+    "allowlist",
+    "open"
+   ]
+  },
+  "accept": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "[A-Za-z0-9-]+(\\[bot\\])?"
+   }
+  },
+  "automerge": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "[A-Za-z0-9-]+(\\[bot\\])?"
+   }
+  }
+ }
+}

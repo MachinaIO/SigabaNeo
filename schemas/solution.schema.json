@@ -1,0 +1,30 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A solution node's metadata (dag/Solutions/<slug>/Sub_<id>.json)",
+ "type": "object",
+ "required": [
+  "theorem",
+  "proof_type"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "theorem": {
+   "type": "string",
+   "pattern": "[A-Za-z_][A-Za-z0-9_']*(\\.[A-Za-z_][A-Za-z0-9_']*)*"
+  },
+  "proof_type": {
+   "enum": [
+    "prove",
+    "disprove"
+   ]
+  },
+  "explanation": {
+   "type": "string",
+   "maxLength": 20000
+  },
+  "source": {
+   "type": "string",
+   "maxLength": 2000
+  }
+ }
+}

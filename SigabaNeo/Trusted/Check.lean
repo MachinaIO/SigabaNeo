@@ -25,8 +25,11 @@ It checks:
    unless it is a negated claim, on axioms whose type is exactly one of the hypotheses (an
    assembled proof states its leaves this way; from `⊢ H → C` under an axiom `a : H` for a
    hypothesis `H`, the deduction theorem gives `H → C` again);
-5. every declaration of every other module built in the workspace passes the kernel again
-   (replayed onto the rest), so nothing their code did while it was built can bypass the kernel.
+5. every declaration of every other module built in the workspace, and of every module of the
+   standard library (`SigabaNeoStd`) that the claim's definitions do not import, passes the kernel
+   again (replayed onto the rest), so nothing their code did while it was built can bypass the
+   kernel. The std modules the definitions import are part of the claim's meaning, read like the
+   core's definitions.
 
 It prints what was established and whether that proves or refutes the target, and writes the same
 to `result.json`. A false hypothesis implies anything: read `referenced hypotheses`, and believe a
@@ -100,7 +103,20 @@ def check (claimDir : System.FilePath) (module thm : Name) : IO Json := do
   let mut isLocal : NameSet := {}
   for m in env.header.moduleNames do
     if (← findOLean m).toString.startsWith localDir then isLocal := isLocal.insert m
-  let others := env.header.moduleNames.filter fun m => isLocal.contains m && !defs.contains m
+  -- The std modules the definitions import (transitively) are part of the claim's meaning; the
+  -- other std modules are proof helpers, untrusted like the workspace's own.
+  let mut defClosure : NameSet := {}
+  let mut todo := defs.toList
+  while !todo.isEmpty do
+    let m := todo.head!
+    todo := todo.tail!
+    if defClosure.contains m then continue
+    defClosure := defClosure.insert m
+    if let some i := env.getModuleIdx? m then
+      if let some d := env.header.moduleData[i.toNat]? then
+        todo := d.imports.toList.map (·.module) ++ todo
+  let others := env.header.moduleNames.filter fun m =>
+    (isLocal.contains m && !defs.contains m) || (m.getRoot == `SigabaNeoStd && !defClosure.contains m)
   for n in #[target] ++ hyps.map hypName do
     unless (moduleOf? env n).any fun m => defs.contains m && isLocal.contains m do
       problems := problems.push s!"{n} is not declared by the claim's definitions"

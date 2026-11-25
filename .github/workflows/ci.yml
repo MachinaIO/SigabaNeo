@@ -1,0 +1,22 @@
+# The tests that need no Lean build: the DAG's tools (layout, precheck, decisions, records,
+# index, notes, schemas) and the estimator models. The Lean tests (./tests/run.sh) need the core
+# built and run locally or in the environment image.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s python/tests -p 'test_dag_tools.py' -v

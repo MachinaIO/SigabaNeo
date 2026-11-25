@@ -1,0 +1,66 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Base environments (env/environments.json)",
+ "type": "object",
+ "required": [
+  "environments"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "environments": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "id",
+     "lean",
+     "core",
+     "image",
+     "state"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "[a-z0-9][a-z0-9.-]{0,63}"
+     },
+     "lean": {
+      "type": "string"
+     },
+     "mathlib": {
+      "type": "string"
+     },
+     "cslib_frontier": {
+      "type": "string"
+     },
+     "core": {
+      "type": "string",
+      "description": "the core's tag or commit"
+     },
+     "core_url": {
+      "type": "string"
+     },
+     "image": {
+      "type": "string",
+      "description": "the image, pinned by digest (\u2026@sha256:\u2026)"
+     },
+     "fingerprint": {
+      "type": "string",
+      "pattern": "[0-9a-f]{64}"
+     },
+     "std": {
+      "type": "string",
+      "description": "the std release (a key of env/std.json)"
+     },
+     "state": {
+      "enum": [
+       "default",
+       "active",
+       "frozen"
+      ]
+     }
+    }
+   }
+  }
+ }
+}

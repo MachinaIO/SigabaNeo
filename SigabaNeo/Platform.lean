@@ -1,18 +1,22 @@
 /-
-UNTRUSTED. The Lean side of the Prove2Me-compatible platform (`python/p2m_server.py`,
-docs/PLATFORM.md). The platform decides the statuses it reports with these commands, but nothing
-depends on them: a client checks every proof itself with the trusted `#sigaba_neo_check`.
+UNTRUSTED. The Lean side of the DAG's verifier (`python/dag_verify.py`, docs/GITHUB_PLATFORM.md).
+CI decides the verdicts it reports with these commands, but nothing depends on them: a client
+checks every proof itself with the trusted `#sigaba_neo_check`.
 
 * `#sigaba_neo_platform_module "M" "definition"|"theorem" "<theorem name>" "out.json"`: may the built
   module `M` be published as a definition (no `sorry`, nothing forbidden) or as the statement of
   the named theorem (it declares that theorem and nothing else)?
 * `#sigaba_neo_platform_submission "<theorem>" "prove"|"disprove" "Solutions.M" "out.json"`: the
   status of a submission (`OK`, `WA`, `SORRY`, `FAILED`, `CE`) and the platform theorems it uses.
-* `#sigaba_neo_platform_canon "File.lean" "out.txt"`: the file's canonical form, its syntax tree
-  without positions, whitespace or comments (header and every command, parsed after the imports
-  and the earlier commands, as Lean parses it). The platform's content IDs hash it.
+* `#sigaba_neo_platform_lint "out.json" "A.lean" "B.lean" …`: the syntactic filter
+  (`SigabaNeo.Platform.Lint`), run on files before they are built: their imports and problems.
+* `#sigaba_neo_platform_semantic "M" "definition"|"theorem" "<theorem name>" "out.json"`: the
+  semantic data of a built node (`SigabaNeo.Platform.Semantic`), which `python/dag.py` hashes into
+  its semantic ID.
 -/
 import SigabaNeo.Trusted.Check
+import SigabaNeo.Platform.Lint
+import SigabaNeo.Platform.SemanticId
 
 open Lean Elab Command
 
@@ -120,41 +124,14 @@ def submissionCheck (thm : Name) (negate : Bool) (sol : Name) : IO Json := do
   try replay env sol catch e => return result "FAILED" s!"kernel replay failed: {e}"
   return result "OK" "" [("uses", Json.arr (uses.map (Json.str ·.toString)))]
 
-/-! ### Canonical form -/
-
-/-- A syntax tree without source information: node kinds, atoms, and resolved identifiers. -/
-partial def canonSyntax : Syntax → String
-  | .missing => "?"
-  | .node _ kind args =>
-    "(" ++ kind.toString ++ args.foldl (fun acc a => acc ++ " " ++ canonSyntax a) "" ++ ")"
-  | .atom _ val => val.quote
-  | .ident _ _ val _ => "`" ++ (val.toString (escape := true)).quote
-
-/-- The canonical form of a Lean file: its header and commands, parsed (and elaborated, since
-later commands can depend on earlier ones) in the current search path. Importing with the
-imported modules' parser extensions runs their initializers, as compiling the file does. -/
-unsafe def canonFileUnsafe (path : System.FilePath) : IO String := do
-  enableInitializersExecution
-  let input ← IO.FS.readFile path
-  let inputCtx := Parser.mkInputContext input path.toString
-  let (header, parserState, messages) ← Parser.parseHeader inputCtx
-  let (env, messages) ← Elab.processHeader header {} messages inputCtx
-  let s ← Elab.IO.processCommands inputCtx parserState (Command.mkState env messages {})
-  let mut out := canonSyntax header.raw
-  for c in s.commands do
-    out := out ++ "\n" ++ canonSyntax c
-  return out ++ "\n"
-
-@[implemented_by canonFileUnsafe]
-opaque canonFile (path : System.FilePath) : IO String
-
 def write (out : String) (j : Json) : CommandElabM Unit := do
   liftCoreM (liftM (IO.FS.writeFile out (j.compress ++ "\n") : IO Unit))
   logInfo s!"{(j.getObjValAs? String "status").toOption.getD "?"}"
 
 syntax (name := platformModule) "#sigaba_neo_platform_module " str str str str : command
 syntax (name := platformSubmission) "#sigaba_neo_platform_submission " str str str str : command
-syntax (name := platformCanon) "#sigaba_neo_platform_canon " str str : command
+syntax (name := platformLint) "#sigaba_neo_platform_lint " str str* : command
+syntax (name := platformSemantic) "#sigaba_neo_platform_semantic " str str str str : command
 
 elab_rules : command
   | `(#sigaba_neo_platform_module $m:str $k:str $t:str $o:str) => do
@@ -164,10 +141,30 @@ elab_rules : command
     write o.getString (← liftCoreM (liftM (submissionCheck t.getString.toName
       (k.getString == "disprove") s.getString.toName : IO Json)))
 
+/-- The semantic data of the theorem `thm` (kind `theorem`) or of the definitions module `mod`
+declares (kind `definition`). -/
+def semantic (mod : Name) (kind : String) (thm : Name) : IO Json := do
+  let env ← try importModules #[{ module := mod }] {} catch e =>
+    return result "FAILED" s!"cannot load {mod}: {e}"
+  let decls := if kind == "theorem" then [thm] else
+    ((constantsOf env mod).filter (!·.name.isInternal)).map (·.name) |>.toList
+      |>.mergeSort (·.toString < ·.toString)
+  try
+    let j ← runCore env (Meta.MetaM.run' (Semantic.nodeData kind decls))
+    return j.setObjVal! "status" (Json.str "OK")
+  catch e => return result "FAILED" s!"semantic ID: {e}"
+
 elab_rules : command
-  | `(#sigaba_neo_platform_canon $f:str $o:str) => do
-    let c ← liftCoreM (liftM (canonFile f.getString : IO String))
-    liftCoreM (liftM (IO.FS.writeFile o.getString c : IO Unit))
-    logInfo s!"{c.length} characters"
+  | `(#sigaba_neo_platform_lint $o:str $fs:str*) => do
+    let mut files := #[]
+    for f in fs do
+      let (imports, problems) ← liftCoreM (liftM (Lint.lintFile f.getString : IO _))
+      files := files.push (Json.mkObj [("file", Json.str f.getString),
+        ("imports", Json.arr (imports.map Json.str)),
+        ("problems", Json.arr (problems.map Json.str))])
+    write o.getString (Json.mkObj [("status", Json.str "OK"), ("files", Json.arr files)])
+  | `(#sigaba_neo_platform_semantic $m:str $k:str $t:str $o:str) => do
+    write o.getString (← liftCoreM (liftM (semantic m.getString.toName k.getString
+      t.getString.toName : IO Json)))
 
 end SigabaNeo.Platform

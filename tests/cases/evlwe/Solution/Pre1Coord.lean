@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Lattices.Gaussian.Facts
+import SigabaNeoStd.Lattices.Gaussian.Facts
 import Solution.Pre2Lwe
 
 /-!

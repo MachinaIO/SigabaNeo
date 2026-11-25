@@ -1,4 +1,4 @@
-import SigabaNeo.Lib.Lattices.Stat
+import SigabaNeoStd.Lattices.Stat
 import Solution.PostFacts
 
 /-!
