@@ -10,6 +10,7 @@ import SigabaNeoStd.Lattices.LWE
 import SigabaNeoStd.Lattices.RingLWE
 import SigabaNeoStd.Lattices.ModuleLWE
 import SigabaNeoStd.Lattices.Estimator.Bound.Cbd
+import SigabaNeoStd.Lattices.Estimator.Bound.CbdQ
 import SigabaNeoStd.Lattices.Trapdoor
 import SigabaNeoStd.Lattices.Trapdoor.Family
 import SigabaNeoStd.Lattices.Homomorphic
@@ -18,6 +19,8 @@ import SigabaNeoStd.Lattices.LeftoverHash
 import SigabaNeoStd.Lattices.BoxSampler
 import SigabaNeoStd.Lattices.Boxes
 import SigabaNeoStd.Lattices.Flood
+import SigabaNeoStd.Lattices.FloodRing
+import SigabaNeoStd.Lattices.CircularRingLWEInst
 import SigabaNeoStd.Lattices.RingLWEInst
 import SigabaNeoStd.Lattices.CoinMaps
 import SigabaNeoStd.Lattices.BitLaw
@@ -62,6 +65,22 @@ import SigabaNeoStd.Lattices.ProgAlgo.ValRounds
 import SigabaNeoStd.Lattices.ProgAlgo.ValCoef
 import SigabaNeoStd.Lattices.ProgAlgo.ValCoefFull
 import SigabaNeoStd.Lattices.ProgAlgo.FhatGenTape
+import SigabaNeoStd.Lattices.Automorphism.Interface
+import SigabaNeoStd.Lattices.Automorphism.Coeffs
+import SigabaNeoStd.Lattices.Automorphism.Ring
+import SigabaNeoStd.Lattices.Automorphism.Norm
+import SigabaNeoStd.Lattices.Automorphism.Sieve
+import SigabaNeoStd.Lattices.Automorphism.Instance
+import SigabaNeoStd.Lattices.Automorphism.Basis
+import SigabaNeoStd.Lattices.Automorphism.LUT
+import SigabaNeoStd.Lattices.CircularRingLWE
+import SigabaNeoStd.Lattices.Algo.NegaG
+import SigabaNeoStd.Lattices.Algo.MersenneWords
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.Residue
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.Ring
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.Mul
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.Aut
+import SigabaNeoStd.Lattices.ProgAlgo.Mersenne.Bounds
 
 /-!
 # Lattice library
@@ -75,6 +94,10 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
 * `Gadget`: the gadget matrix and binary decomposition.
 * `LWE`, `RingLWE`, `ModuleLWE`: the assumptions, concrete (`SigabaNeo.Trusted.Assumption`:
   parameters, problem, security function) and asymptotic (cslib-frontier).
+* `CircularRingLWE`: circular Ring-LWE with automorphism keys (Assumption 1 of ePrint 2026/2539),
+  concrete, with Ring-LWE's security function; at `J = []` it is decision Ring-LWE.
+* `CircularRingLWEInst`: its laws as laws on ring-level pairs (`circRing`, `realLaw_eq_circRing`,
+  `idealLaw_eq_uniform`); independent products split along sums, units and products.
 * `Reduction/`: lattice reduction and SVP tools shared by the attacks — `LLL`, `BKZ` (GSA-free bound on the first
   vector of a BKZ-reduced basis, `docs/PROOF_GAP.md`), `Hermite2`, `AvgBKZ`, `Slide`, `Sieve`, `SieveWide`,
   `QArySieve`, `Search`, `Rogers`.
@@ -82,7 +105,9 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   (`docs/ATTACK_PROOFS.md`).
 * `Research/`: the open walls and recorded obstructions — `Wall1`, `Wall2`, `Wall1Rej`, `PolyQ`, `Rerand`, `RevMink`.
 * `Estimator/`: the lattice estimator's attack cost models; `estimatorBits` is the `H` of the
-  concrete assumptions (`docs/LWE_ESTIMATOR.md`).
+  concrete assumptions (`docs/LWE_ESTIMATOR.md`). `Estimator/Bound/Cbd`, `Estimator/Bound/CbdQ`:
+  certified lower bounds at `CBD(16)` laws (`q = 2^e`, one sample count; any `q ≥ 2^1024` given
+  `log₂ q`, a range of sample counts).
 * `Hardness`: an earlier conservative bound, kept as a cross-check (`docs/LWE_HARDNESS.md`).
 * `Trapdoor`: the ideal preimage distribution and trapdoor samplers (`Trapdoor.Exists`);
   `Trapdoor/Family`: a sampler for one parameter family (`Trapdoor.Family.exists_sampler`).
@@ -96,6 +121,8 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   not depend on the trapdoor (`boxSample_eq`).
 * `Flood`: noise flooding over `ℤ_q[X]/(X^N + 1)`: wide uniform errors hide a fixed shift
   (`closeTo_floodLaw_add`).
+* `FloodRing`: the same for one ring element (`floodRing`, `closeTo_floodRing_add`) and for
+  independent families shifted by elements of bounded norm (`closeTo_pi_floodRing_add_le`).
 * `RingLWEInst`: the registry's Ring-LWE laws as laws on ring elements (`ringReal`,
   `ringLWE_realLaw_eq`, `ringLWE_idealLaw_eq`).
 * `CoinMaps`: samples from fair coins (`bitsToZMod`, `uniform_bitsToZMod`).
@@ -121,4 +148,11 @@ Definitions and facts shared by claims and solutions (`SigabaNeo.Lattices`):
   `gswGadW`, `zeroW`, `oneW` of the simulation step), `KeySum` (the key-matrix sum `keySumMW` read
   from the final store of an SLP evaluator, and `W_f`: the sum plus one block; bounds, per tape by
   the abstract interpreter, in `KeySumT`).
+* `Automorphism/`: the automorphisms `σ_k : X ↦ X^k` of `R[X]/(X^n + 1)` for lookup tables over
+  exponents (ePrint 2026/2539 §3.2, §4.3) — `Interface` (the abstract `ExpRing`), `Coeffs` (`σ_k` on
+  coefficients), `Ring` (`σ_k` is a ring endomorphism for odd `k`; monomials), `Norm` (`σ_k` is a signed
+  permutation of the coefficients and preserves `cnorm`, `ℓ₁`, `rnorm`), `Sieve` (Lemma 7), `Instance` (`Negacyclic R n` as an
+  `ExpRing`: `expRingOf`, `expRing` for odd `q`, `expRingMersenne` for `q = 2^K − 1`), `Basis` (`H = ⟨g⟩`, `g = 1 + 2n/W`, and its
+  binary basis `g^(2^j)`), `LUT` (Lemma 8 over an abstract `ExpRing`: `α_{k,L}`, `v_{k,L}`, the
+  sums over `H` and over the binary basis, the rounds).
 -/

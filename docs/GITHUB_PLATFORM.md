@@ -155,7 +155,7 @@ not use IDs. It builds everything and compares types itself.
 ## 4. std: the standard library
 
 `SigabaNeoStd` is a library of the core package: the root module `SigabaNeoStd.lean` and the
-modules under `SigabaNeoStd/`. It holds what was `SigabaNeo/Lib/`: lattices and LWE, discrete
+modules under `SigabaNeoStd/`. It holds what was `SigabaNeoStd/`: lattices and LWE, discrete
 Gaussians, trapdoors, the lattice estimator, attacks, the machine and program libraries, encodings.
 
 - **Names.** As in Mathlib, module paths start with the library's name (`SigabaNeoStd.Lattices.LWE`),

@@ -27,7 +27,7 @@ The general statements, for any two-universal family, with min-entropy sources a
 information, are cslib-frontier's (`Cslib.Probability.IsTwoUniversal.leftover_hash`,
 `leftover_hash_of_isSource`, `leftover_hash_conditional_of_isSource`); this module instantiates them
 for lattices. It is the statistical step of the simulated setup of BTVW17 §4.2
-(`AdvancedEncryption/PE/Impl/DualUse`).
+(`AdvancedEncryption/PE/Impl/RingBTVW`).
 -/
 
 namespace SigabaNeo.Lattices
