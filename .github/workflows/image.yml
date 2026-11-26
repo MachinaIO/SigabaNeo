@@ -23,6 +23,21 @@ jobs:
           persist-credentials: false
       - name: Free disk space
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      # Some std modules take about 12 GB to build (Lattices.ProgAlgo.Mersenne.EncDigits), more
+      # than the runner's 16 GB once other modules build beside them: the runner was killed.
+      - name: Swap space
+        # On the disk with more free space (/mnt where the runner has one), keeping room for the
+        # image build on /.
+        run: |
+          df -h / /mnt || true
+          sudo swapoff -a
+          sudo rm -f /mnt/swapfile /swapfile
+          d=/; [ -d /mnt ] && [ "$(df --output=avail /mnt | tail -1)" -gt "$(df --output=avail / | tail -1)" ] && d=/mnt
+          sudo fallocate -l 16G "$d/swapfile"
+          sudo chmod 600 "$d/swapfile"
+          sudo mkswap "$d/swapfile"
+          sudo swapon "$d/swapfile"
+          free -h
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
