@@ -1,7 +1,8 @@
-"""The platform's check of forbidden declarations (`SigabaNeo.Platform.forbidden`) on a compiled
-module: the compiler code Lean generates for recursion and inductive types is allowed, the same
-names declared by hand are not. (The syntactic filter rejects `unsafe` and `implemented_by` in a
-DAG file before this check; the module here is compiled without it.)
+"""The std build: every std module has build outputs. The platform's check of forbidden
+declarations (`SigabaNeo.Platform.forbidden`) on a compiled module: the compiler code Lean
+generates for recursion and inductive types is allowed, the same names declared by hand are not.
+(The syntactic filter rejects `unsafe` and `implemented_by` in a DAG file before this check; the
+module here is compiled without it.)
 
     python3 -m unittest discover -s python/tests -p 'test_platform.py' -v
 """
@@ -61,6 +62,18 @@ class ForbiddenTest(unittest.TestCase):
                                    "foo._unsafe_rec is unsafe"], out.stdout + out.stderr)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+
+class StdBuildTest(unittest.TestCase):
+    def test_every_std_module_is_built(self):
+        """`lake build` (as the environment image runs it) builds every std module of the
+        manifest, also those the umbrella `SigabaNeoStd` does not import: a DAG node may import
+        any of them, and the image's core is read only."""
+        import dag
+        lib = REPO / ".lake" / "build" / "lib" / "lean"
+        missing = [m for m in dag.std_manifest()
+                   if not (lib / Path(*m.split("."))).with_suffix(".olean").exists()]
+        self.assertEqual(missing, [])
 
 
 if __name__ == "__main__":
