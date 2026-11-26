@@ -24,3 +24,7 @@ roots = [
 [[lean_lib]]
 name = "SigabaNeoStd"
 roots = ["SigabaNeoStd"]
+# Build every module under `SigabaNeoStd/`, not only those imported from the root: the DAG's
+# environment image is built with `lake build`, and a module it does not build cannot be imported
+# by DAG files (the gate reports a missing `.olean`).
+globs = ["SigabaNeoStd.*"]
