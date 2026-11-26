@@ -1,7 +1,8 @@
 """The std build: every std module has build outputs. The platform's check of forbidden
-declarations (`SigabaNeo.Platform.forbidden`) on a compiled module: the compiler code Lean generates for recursion and inductive types is allowed, the same
-names declared by hand are not. (The syntactic filter rejects `unsafe` and `implemented_by` in a
-DAG file before this check; the module here is compiled without it.)
+declarations (`SigabaNeo.Platform.forbidden`) on a compiled module: the compiler code Lean
+generates for recursion and inductive types is allowed, the same names declared by hand are not.
+(The syntactic filter rejects `unsafe` and `implemented_by` in a DAG file before this check; the
+module here is compiled without it.)
 
     python3 -m unittest discover -s python/tests -p 'test_platform.py' -v
 """
