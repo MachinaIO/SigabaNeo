@@ -40,7 +40,11 @@ COPY SigabaNeo ./SigabaNeo
 COPY SigabaNeoStd ./SigabaNeoStd
 COPY python ./python
 COPY schemas ./schemas
-RUN lake build \
+# The core's targets, and every module of the packages a DAG node may import from (`IMPORT_ROOTS`
+# in python/dag.py) that the core itself does not import: the image's core is read only, so a module
+# not built here cannot be imported. Mathlib (and with it Batteries, Aesop, Qq, ...) comes whole from
+# its cache; Cslib and CslibFrontier are built from theirs.
+RUN lake build SigabaNeo SigabaNeoStd Cslib CslibFrontier \
  && rm -rf python/tests python/__pycache__ \
  && chmod -R a+rX /core /opt/elan
 
