@@ -23,4 +23,7 @@ roots = [
 # imported by every agent's workspace. Not trusted: the check builds it and replays it.
 [[lean_lib]]
 name = "SigabaNeoStd"
+# Every module, not only those the umbrella imports: the std manifest lists them all, and the
+# environment image must carry the build outputs of each.
 roots = ["SigabaNeoStd"]
+globs = ["SigabaNeoStd.+"]
