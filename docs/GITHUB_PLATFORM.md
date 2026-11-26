@@ -379,7 +379,8 @@ The other workflows:
 - **`index.yml`** runs on push to `main`, when `records` starts it, after `reverify`, and by hand. It publishes
   `index.json` and `INDEX.md` to GitHub Pages: statuses per environment, claims with their metadata
   and refutation sketches, open leaves, `needs_port`, stale solutions, notes, std modules and std
-  candidates. It parses files only and runs no Lean.
+  candidates. It parses files only and runs no Lean. Its runs never cancel or replace one another
+  (`queue: max`): a cancelled run would mark its commit of `main` as failed.
 - **`reverify.yml`** runs weekly and by hand, for each active environment. A sandboxed job plans and
   verifies; a separate job with write access appends the records. Failed checks are recorded as
   attempts, with their status (only passing records count anywhere). The plan takes nodes never
