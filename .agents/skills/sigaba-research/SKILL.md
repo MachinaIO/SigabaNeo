@@ -30,11 +30,9 @@ instructions. Everything published is **English**, whatever language the user sp
 
 1. `$SR doctor`: git, gh login, permission on the DAG (`DAG_REPO_URL`), the core build, Claude
    Code / Codex. Fix what it reports.
-2. Tell the user what will be public (draft PRs, comments every checkpoint period, summary
-   notes) and agree on a budget (run length, parallel workers, domains).
-3. Public writes need the user's one-time authorization, which only they can give, in their own
-   terminal: `python3 python/sigaba_research.py authorize` (in Claude Code they may type
-   `! python3 python/sigaba_research.py authorize`). Until then, work locally only.
+2. Tell the user what will be public, under their GitHub account (draft PRs, comments every
+   checkpoint period, summary notes), and agree on a budget (run length, parallel workers,
+   domains) before the first push. If the user asked for local-only work, do not create tasks.
 
 ## 1. Route the request
 

@@ -48,8 +48,6 @@ def parser() -> argparse.ArgumentParser:
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("doctor")
-    a = sub.add_parser("authorize", help="the user allows public writes (terminal only)")
-    a.add_argument("--revoke", action="store_true")
     sub.add_parser("sync")
 
     g = sub.add_parser("goals").add_subparsers(dest="sub", required=True)
@@ -171,8 +169,6 @@ def dispatch(ctl: C.Controller, a) -> object:
     cmd, sub = a.cmd, getattr(a, "sub", None)
     if cmd == "doctor":
         return ctl.doctor()
-    if cmd == "authorize":
-        return ctl.authorize(a.revoke)
     if cmd == "sync":
         return ctl.sync()
     if cmd == "goals":

@@ -113,28 +113,6 @@ class Controller:
         run_ = self.active_run()
         return {**DEFAULTS, **(json.loads(run_["config"]) if run_ else {})}
 
-    # -- authorization ---------------------------------------------------------------------------
-    def authorize(self, revoke: bool = False) -> dict:
-        """Public writes to this repository, granted by the user at a terminal."""
-        if not self.is_tty():
-            raise ProtocolError("authorize needs an interactive terminal: the user runs it, not "
-                                "an agent")
-        if revoke:
-            self.st.put(f"authorized:{self.repo}", False)
-            return {"repo": self.repo, "public_writes": False}
-        print(f"Allow sigaba_research to push branches, open and update pull requests and post "
-              f"comments on {self.repo} as your GitHub account? Type 'yes': ", end="",
-              file=sys.stderr, flush=True)
-        if sys.stdin.readline().strip() != "yes":
-            raise ProtocolError("not authorized")
-        self.st.put(f"authorized:{self.repo}", True)
-        return {"repo": self.repo, "public_writes": True}
-
-    def require_writes(self) -> None:
-        if not self.st.get(f"authorized:{self.repo}", False):
-            raise ProtocolError(f"public writes to {self.repo} are not authorized; the user runs "
-                                "`sigaba_research.py authorize` once")
-
     # -- repositories ----------------------------------------------------------------------------
     def ensure_clone(self, fetch: bool = True) -> Git:
         g = Git(self.clone)
@@ -336,7 +314,6 @@ class Controller:
 
     def goal_register(self, d: Path) -> dict:
         """Publish exactly the approved bundle as an administrative PR (ready for review)."""
-        self.require_writes()
         d = Path(d).resolve()
         digest = R.bundle_digest(d)
         if not self.st.one("SELECT 1 FROM approvals WHERE digest=? AND dir=?", digest, str(d)):
@@ -417,7 +394,6 @@ class Controller:
 
     def task_open(self, tid: str) -> dict:
         """Worktree, empty start commit, push, draft PR and status comment; idempotent."""
-        self.require_writes()
         t = self.st.task(tid)
         desc, branch = t["descriptor"], t["branch"]
         g = self.ensure_clone()
@@ -578,7 +554,6 @@ class Controller:
             return {"pushed": [], "verification": res}
         self.commit_exact(t, stage / "files", snap, f"Add {len(snap)} file(s) "
                           f"({', '.join(sorted({s for s in own.values()}))})")
-        self.require_writes()
         Git(wt)("push", "--quiet", t["push_remote"], f"HEAD:refs/heads/{t['branch']}")
         self.st.x("UPDATE artifacts SET state='pushed', digest=?, result=? WHERE id=?", digest,
                   json.dumps(res), a["id"])
@@ -740,7 +715,6 @@ class Controller:
         for o in self.st.all("SELECT * FROM outbox WHERE done=0 AND next_try<=? ORDER BY id", now):
             p = json.loads(o["payload"])
             try:
-                self.require_writes()
                 if o["kind"] == "comment":
                     if p["pr"] not in cache:
                         cache[p["pr"]] = self.gh.comments(p["pr"])
@@ -812,14 +786,12 @@ class Controller:
             raise VerificationError(json.dumps({"refused": "local verification failed on the "
                                                 "current main (imports must exist on main)",
                                                 **res}))
-        self.require_writes()
         self.gh.ready(t["pr"])
         out = self.set_state(t["task_id"], "ready")
         return {**out, "statuses": res["statuses"]}
 
     def task_draft(self, tid: str, reason: str = "back to work") -> dict:
         t = self.need(tid)
-        self.require_writes()
         self.gh.to_draft(t["pr"])
         return self.set_state(t["task_id"], "active", reason)
 
@@ -865,7 +837,6 @@ class Controller:
         pub = self.publish(t["task_id"])
         self.st.update_task(t["task_id"], outcome=outcome)
         if close:
-            self.require_writes()
             out = self.set_state(t["task_id"], "closed", "finalized without merge", "final",
                                  outcome)
             self.gh.close(t["pr"], f"Closed by the research controller: outcome `{outcome}`. "
@@ -1417,7 +1388,6 @@ class Controller:
             out["can_push"] = self.gh.can_push()
         except Exception as e:     # report, never print tokens
             out["github_error"] = str(e)[:500]
-        out["public_writes_authorized"] = bool(self.st.get(f"authorized:{self.repo}", False))
         out["core_built"] = (CORE / ".lake" / "build").is_dir()
         out["lean_toolchain"] = (CORE / "lean-toolchain").read_text().strip()
         if out.get("gh"):

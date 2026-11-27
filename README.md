@@ -67,8 +67,7 @@ Carry out the task and submit your contribution through the skill's DAG workflow
 you established, what you verified, and what remains open. Link to the task pull request and any
 resulting DAG entries.
 
-Follow the skill's first-time setup instructions if needed. If you need write authorization,
-ask me to run `~/.sigaba/bin/sigaba authorize` in my own terminal, then resume once I confirm.
+Follow the skill's first-time setup instructions if needed.
 ```
 
 ### Author a problem for a cryptographic primitive
@@ -93,8 +92,7 @@ and discuss any modeling choices with me before finalizing the Lean specificatio
 Show me the Lean specification and the review results. After I approve the bundle using the
 skill's approval workflow, submit it to the DAG and give me the pull request link.
 
-Follow the skill's first-time setup instructions if needed. If you need write authorization,
-ask me to run `~/.sigaba/bin/sigaba authorize` in my own terminal, then resume once I confirm.
+Follow the skill's first-time setup instructions if needed.
 ```
 
 ## Inputs and outputs
