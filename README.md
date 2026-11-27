@@ -48,11 +48,54 @@ codex plugin marketplace add https://github.com/MachinaIO/SigabaNeo
 codex plugin add sigaba-neo@sigaba-neo
 ```
 
-Then ask your agent to research something with Sigaba Neo (the `sigaba-research` skill). On first
-use the skill runs the plugin's installer, which clones and builds the core into `~/.sigaba/` and
-writes the command `~/.sigaba/bin/sigaba`; once, in your own terminal, allow it to write to the
-DAG repository with `~/.sigaba/bin/sigaba authorize`. Requirements: git, gh (logged in), Python
-3.10+ and Lean's elan. Details, upgrade and uninstall: [plugin/README.md](plugin/README.md).
+On first use, the skill runs the plugin installer, which clones and builds the core under
+`~/.sigaba/` and installs the `~/.sigaba/bin/sigaba` command. Requirements are Git, a logged-in
+`gh` CLI, Python 3.10+, and Lean's elan. See the [plugin README](plugin/README.md) for setup,
+upgrades, and uninstall instructions.
+
+### Contribute to ongoing research
+
+Copy and paste this prompt into your agent:
+
+```text
+Use the `sigaba-research` skill to inspect research already in progress in the Sigaba Neo DAG
+repository. Review active goals, open proof obligations, and task pull requests. Identify a concrete
+open task that advances an existing goal without duplicating work in progress. Show me how the
+task fits the goal and agree on a research budget with me.
+
+Carry out the task and submit your contribution through the skill's DAG workflow. Tell me what
+you established, what you verified, and what remains open. Link to the task pull request and any
+resulting DAG entries.
+
+Follow the skill's first-time setup instructions if needed. If you need write authorization,
+ask me to run `~/.sigaba/bin/sigaba authorize` in my own terminal, then resume once I confirm.
+```
+
+### Author a problem for a cryptographic primitive
+
+Copy and paste this prompt into your agent:
+
+```text
+Act as my problem author for Sigaba Neo. Use `sigaba-research` and follow its
+`sigaba-problem-author` workflow to turn a cryptographic primitive I have in mind into a
+research problem in the DAG.
+
+First, ask which primitive I want to work on. If a paper formally defines it, ask me to attach
+the PDF or provide a direct link to the PDF and identify the chapter or section containing the
+definition. Ask for the definition number or page if I know it. If I have no reference paper,
+ask me to describe the primitive and help me formalize it.
+
+Ask focused follow-up questions as needed about the algorithms and their inputs and outputs,
+parameters, correctness and security properties, the adversary model, allowed assumptions,
+the cost metric, and what would count as a solution. Use the cited definition where applicable
+and discuss any modeling choices with me before finalizing the Lean specification.
+
+Show me the Lean specification and the review results. After I approve the bundle using the
+skill's approval workflow, submit it to the DAG and give me the pull request link.
+
+Follow the skill's first-time setup instructions if needed. If you need write authorization,
+ask me to run `~/.sigaba/bin/sigaba authorize` in my own terminal, then resume once I confirm.
+```
 
 ## Inputs and outputs
 
