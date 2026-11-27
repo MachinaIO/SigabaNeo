@@ -31,8 +31,8 @@ flowchart LR
 
 ## Install
 
-Sigaba Neo's skills install as the `sigaba-neo` plugin, for Claude Code and for Codex, from any
-directory.
+Sigaba Neo's skills install as the `sigaba-neo` plugin, for Claude Code, Codex and Antigravity,
+from any directory.
 
 **Claude Code**
 
@@ -46,6 +46,12 @@ directory.
 ```bash
 codex plugin marketplace add https://github.com/MachinaIO/SigabaNeo
 codex plugin add sigaba-neo@sigaba-neo
+```
+
+**Antigravity**
+
+```bash
+agy plugin install https://github.com/MachinaIO/SigabaNeo/tree/main/plugin
 ```
 
 On first use, the skill runs the plugin installer, which clones and builds the core under

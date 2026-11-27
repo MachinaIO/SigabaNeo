@@ -38,7 +38,7 @@ exception: they are added to such a project when they are submitted.
 
 - Skills live in `.claude/skills/` (Claude Code). `python3 python/sigaba_research.py skills sync`
   copies them to `.agents/skills/` (Codex) and, rewritten for an installed core, to
-  `plugin/skills/` (the `sigaba-neo` plugin for both). Edit the source, then sync.
+  `plugin/skills/` (the `sigaba-neo` plugin for Claude Code, Codex and Antigravity). Edit the source, then sync.
 
 - Everything committed is in English, whatever language you use with your human: documents,
   code comments and docstrings, commit messages, branch names, PR titles, bodies and comments.

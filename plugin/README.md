@@ -1,6 +1,6 @@
 # The sigaba-neo plugin
 
-Skills for cryptographic research with Sigaba-Neo, for Claude Code and Codex:
+Skills for cryptographic research with Sigaba-Neo, for Claude Code, Codex and Antigravity:
 `sigaba-research` (the entry point: goals, tasks, runs), `sigaba-dag` (the DAG's rules) and
 `sigaba-problem-author` (new primitives and goals). The protocol is the core's
 `docs/RESEARCH_PROTOCOL.md`.
@@ -15,6 +15,9 @@ Skills for cryptographic research with Sigaba-Neo, for Claude Code and Codex:
 # Codex
 codex plugin marketplace add https://github.com/MachinaIO/SigabaNeo
 codex plugin add sigaba-neo@sigaba-neo
+
+# Antigravity (or a local checkout: agy plugin install <checkout>/plugin)
+agy plugin install https://github.com/MachinaIO/SigabaNeo/tree/main/plugin
 ```
 
 The skills need the core (the controller and the Lean environment). On first use they run the
