@@ -37,6 +37,10 @@ If no assumption in `R` suffices:
 * Register it as a definition node declaring a `SigabaNeo.Assumption`: `Params`, `problem`
   (`Problem.decision real ideal` or `Problem.search`, on encoded instances) and the security
   function `H`, with tag `assumption`.
+* Compile the actual definition and check `#check (Namespace.name : SigabaNeo.Assumption)`.
+  Include the definition node, exact Lean name and source revision in the analysis handoff.
+  Instantiate the encoded laws and distinguish the proposed strength from a proved bound.
+  For an interactive game, justify its representation by the core problem before citing it.
 * Its note justifies `H`: the best known attacks and their cost in this machine model, and the
   relation to standard assumptions. Claim honestly: Cryptanalysis AI will lower `H` with proven
   attacks, and strengths only go down.
