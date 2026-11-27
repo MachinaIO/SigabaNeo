@@ -15,8 +15,8 @@ SR="$HOME/.sigaba/bin/sigaba"     # the controller; JSON output
 **Installed as a plugin.** The controller and the Lean core live in `~/.sigaba/`. If
 `~/.sigaba/bin/sigaba` does not exist yet, install them first (it clones and builds the core; this
 takes a while the first time): in Claude Code run `"${CLAUDE_PLUGIN_ROOT}/scripts/sigaba" install`;
-in Codex the same script is `scripts/sigaba` in this plugin's directory (two levels above this
-`SKILL.md`). `... upgrade` moves to the plugin's current core revision. The core's documents named
+in Codex and Antigravity the same script is `scripts/sigaba` in this plugin's directory (two
+levels above this `SKILL.md`). `... upgrade` moves to the plugin's current core revision. The core's documents named
 below are under `~/.sigaba/core/`.
 
 **The task rules are not optional.** All research work, however small, is a task: it is

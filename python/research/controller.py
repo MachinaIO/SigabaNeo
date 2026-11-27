@@ -1631,8 +1631,8 @@ def build_graph(plans: list[dict], known_tasks: set[str] | None = None) -> dict:
 PLUGIN_INSTALL = """**Installed as a plugin.** The controller and the Lean core live in `~/.sigaba/`. If
 `~/.sigaba/bin/sigaba` does not exist yet, install them first (it clones and builds the core; this
 takes a while the first time): in Claude Code run `"${CLAUDE_PLUGIN_ROOT}/scripts/sigaba" install`;
-in Codex the same script is `scripts/sigaba` in this plugin's directory (two levels above this
-`SKILL.md`). `... upgrade` moves to the plugin's current core revision. The core's documents named
+in Codex and Antigravity the same script is `scripts/sigaba` in this plugin's directory (two
+levels above this `SKILL.md`). `... upgrade` moves to the plugin's current core revision. The core's documents named
 below are under `~/.sigaba/core/`."""
 
 

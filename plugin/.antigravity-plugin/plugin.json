@@ -1,0 +1,18 @@
+{
+ "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+ "name": "sigaba-neo",
+ "displayName": "Sigaba-Neo",
+ "description": "Cryptographic research with Sigaba-Neo: agree on a goal, split it into tasks (one draft pull request each on the DAG repository), run bounded worker episodes, and publish Lean-verified results, checkpoints and summaries.",
+ "version": "0.3.1",
+ "author": {
+  "name": "MachinaIO",
+  "url": "https://github.com/MachinaIO"
+ },
+ "homepage": "https://github.com/MachinaIO/SigabaNeo",
+ "repository": "https://github.com/MachinaIO/SigabaNeo",
+ "license": "MIT",
+ "suggestedPrompts": [
+  "Research post-quantum witness encryption with Sigaba-Neo.",
+  "Define a new cryptographic primitive and pose it on the Sigaba-Neo DAG."
+ ]
+}

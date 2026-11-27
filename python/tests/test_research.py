@@ -634,6 +634,8 @@ class TestMisc(Base):
         the shipped skills point at the installed core, never at core-relative paths."""
         cc = json.loads((REPO / "plugin/.claude-plugin/plugin.json").read_text())
         cx = json.loads((REPO / "plugin/.codex-plugin/plugin.json").read_text())
+        ag = json.loads((REPO / "plugin/.antigravity-plugin/plugin.json").read_text())
+        self.assertEqual((ag["name"], ag["version"]), (cc["name"], cc["version"]))
         mk = json.loads((REPO / ".claude-plugin/marketplace.json").read_text())
         cm = json.loads((REPO / ".agents/plugins/marketplace.json").read_text())
         self.assertEqual(cc["name"], cx["name"])
