@@ -327,6 +327,42 @@ class Linking(unittest.TestCase):
             self.assertIn(why, r["report"])
 
 
+class NegativeFacts(unittest.TestCase):
+    """L06, L07, L10: what the acceptance predicates refuse, as kernel-checked theorems
+    (`tests/generators/Generators/Negatives.lean`) that use only the standard axioms."""
+
+    THEOREMS = [
+        # L06: Spec alone is not a solution; wrong implementation; inflated premise.
+        "spec_without_cap", "wrong_implementation_refused", "inflated_premise_refused",
+        # L07: zero gain; excessive cost; c = k is unsolvable and its target is false.
+        "zero_gain_refused", "expensive_refused", "not_strict_unsolvable",
+        "not_strict_target_false",
+        # L10: varying only the cap or the bound earns no entropy.
+        "cap_only_not_certified", "bound_only_not_certified",
+    ]
+
+    def test_axioms(self):
+        ws = state["ws"]
+        lean, _ = trusted_lean()
+        names = [f"Generators.Negatives.{t}" for t in self.THEOREMS]
+        r = subprocess.run([lean, "--stdin"], cwd=ws, env=lean_env(ws), text=True,
+                           capture_output=True, timeout=1800,
+                           input="import Generators.Negatives\n" +
+                                 "".join(f"#print axioms {n}\n" for n in names))
+        self.assertEqual(r.returncode, 0, (r.stdout + r.stderr)[-4000:])
+        reports = [c for c in re.split(r"(?m)^'", r.stdout) if c.strip()]
+        self.assertEqual(len(reports), len(names), r.stdout[-4000:])
+        for n, rep in zip(names, reports):
+            with self.subTest(theorem=n):
+                self.assertTrue(rep.startswith(n + "'"), rep[:200])
+                self.assertNotIn("sorryAx", rep)
+                m = re.search(r"depends on axioms: \[([^\]]*)\]", rep)
+                used = {a.strip() for a in m.group(1).split(",")} if m else set()
+                self.assertTrue(m or "does not depend on any axioms" in rep, rep[:300])
+                self.assertTrue(used <= {"propext", "Classical.choice", "Quot.sound"},
+                                (n, used))
+
+
 class Solutions(unittest.TestCase):
     """`#sigaba_task_check`: a solver's theorem of `Target F <descriptor>`, without the generator's
     modules (L18)."""

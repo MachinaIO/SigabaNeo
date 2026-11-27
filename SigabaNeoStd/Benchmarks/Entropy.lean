@@ -238,4 +238,29 @@ theorem AttackAdapter.sameAttack_of_swap {A : AttackAdapter} {x y : A.Task}
   rw [hx, hy]
   exact gain_decision_swap real ideal M
 
+/-! ### What earns no entropy (L10)
+
+Diversity is about the problem, never about metadata: design tasks with the same parameters are
+the same problem whatever their caps (or names, or any other field the propositions do not read),
+and attack tasks with the same problem are the same problem whatever their bounds `c` or claimed
+strengths. A generator that only varies such fields is not certified for any `h > 0`. -/
+
+theorem DesignAdapter.sameDesign_of_params_eq (A : DesignAdapter) {x y : A.Task}
+    (h : A.params x = A.params y) : A.SameDesign x y := fun I => by
+  unfold DesignAdapter.SemanticAccept
+  rw [h]
+
+theorem AttackAdapter.sameAttack_of_problem_eq (A : AttackAdapter) {x y : A.Task}
+    (h : A.problem x = A.problem y) : A.SameAttack x y := fun M => by rw [h]
+
+theorem DesignAdapter.not_certified_of_params_const (A : DesignAdapter) {L k h : ℕ}
+    {gen : Fin L → Seed k → A.Task} (hh : 0 < h) (d : Fin L)
+    (hc : ∀ r s, A.params (gen d r) = A.params (gen d s)) : ¬ Certified A.family L k h gen :=
+  not_certified_of_sameProblem hh d fun r s => A.sameDesign_of_params_eq (hc r s)
+
+theorem AttackAdapter.not_certified_of_problem_const (A : AttackAdapter) {L k h : ℕ}
+    {gen : Fin L → Seed k → A.Task} (hh : 0 < h) (d : Fin L)
+    (hc : ∀ r s, A.problem (gen d r) = A.problem (gen d s)) : ¬ Certified A.family L k h gen :=
+  not_certified_of_sameProblem hh d fun r s => A.sameAttack_of_problem_eq (hc r s)
+
 end SigabaNeo.Benchmark

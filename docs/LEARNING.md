@@ -94,8 +94,16 @@ labelled. They are not research benchmarks.
 Both are solved by the explicit halting machine `Fixture.haltMachine` (cost 30), and their
 diversity is proved with probe machines.
 
+Metadata earns no entropy (L10): `DesignAdapter.sameDesign_of_params_eq`,
+`AttackAdapter.sameAttack_of_problem_eq` and their `not_certified_of_params_const` /
+`not_certified_of_problem_const` refuse a generator whose seeds only change caps, bounds, names or
+other fields the propositions do not read.
+
 `tests/generators/` and `python/tests/test_benchmark.py` hold valid fixtures for each role (one of
-them multi-level) and negative fixtures. The negative fixtures cover:
+them multi-level) and negative fixtures. `Generators/Negatives.lean` proves, with the standard
+axioms only, what the acceptance predicates refuse: `Spec` without the cap, a wrong
+implementation and an inflated premise (L06); a zero-gain and a too-expensive machine, and an
+unsolvable `c = k` task whose target is false (L07); cap-only and bound-only generators (L10). The negative fixtures cover:
 
 - a constant generator;
 - a wrong `h`, `L` or family;
@@ -163,10 +171,14 @@ Calibration and anchor assessments are manual `workflow_dispatch` runs.
    - create the Environment `learning-evaluator` with required reviewers.
 4. Submit the bootstrap generators (one generator pull request each), whose families
    `meta/learning.json` already approves.
-5. Only when a paid evaluation budget is authorized: configure the provider in
-   `learning-evaluator`, add a profile, and set `evaluator.enabled`. Provider adapters are
-   `ci/learning/evaluate.py` `PROVIDERS`, empty so far; the mock provider exists for tests and
-   `--dry-run`.
+5. Only when a paid evaluation budget is authorized: designate the evaluator runner (the core
+   built, the model's CLI installed; repository variable `LEARNING_EVALUATOR_RUNNER`), set
+   `LEARNING_EVALUATOR_AUTHORIZED` and `LEARNING_EVALUATOR_CORE` in `learning-evaluator`, add a
+   `local-cli` profile with `settings.solver: claude-code` and a budget, and set
+   `evaluator.enabled`. The provider (`ci/learning/providers.py`) runs one solver program per
+   trial in a fresh scrubbed directory under the profile's wall-clock limit; only the verifier
+   scores, after the same source rules as generators. `scripted-fixture` is a model-free solver
+   for the bootstrap families (pipeline tests).
 
 ## 5. Limits
 
@@ -180,5 +192,90 @@ Calibration and anchor assessments are manual `workflow_dispatch` runs.
   future-family assessments are part of the record model, but need enough reserved families.
 - The statistical rule is per comparison. Repeated adaptive testing is tracked, not corrected
   globally.
-- No real inference provider adapter exists yet, so notebook promotion cannot happen until one is
-  authorized and added.
+- The `claude-code` solver exists but has not been run here: no paid evaluation was authorized.
+  Every real-Lean evaluation so far used the model-free `scripted-fixture` solver.
+
+## 6. Acceptance tests (spec section 13)
+
+Where each test lives. `core:` means this repository's `python/tests/`; `dag:` means the DAG's
+`ci/learning/tests/`; `e2e` means a recorded end-to-end run with real Lean (section 7).
+
+| ID | Covered by |
+| --- | --- |
+| L01 | core: `test_research`, `test_dag_tools`, `test_dag_verify`, `test_check`, `test_platform`, `test_client` (unchanged behavior); the gate only gains the defer step for learning paths |
+| L02 | dag: `test_route` (admission first, nothing run for an unauthorized author); core writes stay maintainers-only |
+| L03 | dag: `test_route` (mixed PRs; `ci/`, `.github/`, `meta/`, `env/` rejected) |
+| L04 | dag: `test_route` (drafts skipped), `test_evaluate.test_head_and_epoch_staleness` |
+| L05 | core: `test_benchmark.Certificates.test_valid`, `Solutions.test_good`; e2e |
+| L06 | core: `test_benchmark.NegativeFacts` (`Generators/Negatives.lean`) |
+| L07 | core: `test_benchmark.NegativeFacts`; synthetic results never touch `meta/assumptions.json` (no code path writes it) |
+| L08 | core: `test_benchmark.Certificates` (`sorry`, extra axiom); dag: `test_route` (forbidden words, imports) |
+| L09 | core: `test_benchmark.Certificates` (sampled-only, missing level, own family); dag: `test_route` (h from policy only) |
+| L10 | core: `test_benchmark.NegativeFacts` (cap-only, bound-only), `sameAttack_of_swap` |
+| L11 | core: `test_benchmark.Certificates` (constant at h = 8, prefix bound at h = 4 vs 8); dag: policy rejects `entropy_bits = 0` |
+| L12 | core: `test_benchmark.Certificates.test_levels`; dag: `test_report` (diversity never summed) |
+| L13 | core: `test_benchmark.Sampling`, `Linking`; dag: `test_certify` (determinism, link required) |
+| L14 | dag: `test_certify.test_sample_failure_never_replaced`, `test_evaluate.test_generation_error_no_replacement`, `test_stats` (sampling) |
+| L15 | dag: `test_records_cli` (`sources`) |
+| L16 | core: `test_research.Notebooks`; dag: `test_route` (caps, UTF-8) |
+| L17 | dag: `test_evaluate.test_full_pass_family_disjoint` (same task per pair, separate sessions) |
+| L18 | core: `test_benchmark.Solutions` (generator import forbidden); dag: solver source scan before build |
+| L19 | manual: Docker sandbox run (section 7): uid 1000 cannot change build outputs or plant files; no network, no secrets |
+| L20 | dag: `test_evaluate.test_budget_and_self_report` |
+| L21 | dag: `test_evaluate.test_awaiting_evaluator`, `test_infra_retries_bounded`, `test_providers` |
+| L22 | dag: `test_evaluate.test_calibrate`, curriculum tests in `test_stats` |
+| L23 | dag: `test_stats` (mixture weights by family, not by versions) |
+| L24 | dag: `test_stats` (paired statistics on fixtures: n = 0, ties, all failures) |
+| L25 | dag: `test_evaluate.test_screen_not_promising_stops`, `test_idempotent_rerun` |
+| L26 | dag: `test_evaluate.test_provisional`, `test_full_pass_family_disjoint` |
+| L27 | dag: `test_evaluate.test_fabricated_comparison_rejected` |
+| L28 | dag: `test_evaluate.test_compare_and_swap`, `test_head_and_epoch_staleness` |
+| L29 | dag: `test_evaluate.test_rollback_and_replay`, `test_no_evidence_no_activation`, `test_bootstrap` |
+| L30 | dag: `test_report` (eight charts per role, units, uncertainty, no model calls) |
+| L31 | dag: `test_report.test_anchor_series_never_spliced`, `test_pareto_only_comparable_points` |
+| L32 | dag: `test_report.test_html_is_self_contained`, `test_escaping` |
+| L33 | dag: `test_evaluate.test_idempotent_rerun`, `test_records_cli` (publish dedupes) |
+| L34 | core: no axiom added, existing definitions unchanged; the certificates are reproducible with `#sigaba_generator_check` by anyone |
+
+## 7. End-to-end runs (2026-11-28)
+
+These were recorded on a maintainer's machine. They use this branch's core and the DAG's
+`ci/learning` at its PR branch, the core's pinned toolchain, and real Lean throughout. No model was
+called.
+
+1. **Generator path.** Both bootstrap generators go through `route` → `certify` → `decide`
+   (`success`, label `learning:needs-maintainer`) → `publish` → `report`. In both certificates the
+   kernel accepted `Certified <family> L 8 8 generate`, and every smoke sample was confirmed by
+   `#sigaba_generator_link`. A manifest that misstates its level count is rejected by the check.
+   Republishing the same records is idempotent.
+2. **Docker sandbox (L19).** The design generator was certified inside a container, with the
+   workflow's flags:
+   - `--network none --read-only --cap-drop ALL`;
+   - `SETUID SETGID CHOWN FOWNER`;
+   - `no-new-privileges`;
+   - Lean running as uid 1000.
+
+   After the build, uid 1000 could not overwrite an `.olean`, create files under `.lake`, or plant
+   a root `lakefile`. Its per-call output directory stayed writable, and trusted commands still
+   ran.
+3. **Notebook path.** The DAG has one certified design generator, and the policy is a pilot one:
+   - `local-cli` provider with the model-free `scripted-fixture` solver;
+   - 4 calibration samples, 6 screen pairs, 20 confirm pairs;
+   - preferred band from 0;
+   - provisional within-family scope allowed.
+
+   The run went as follows:
+   - **Calibration** of the empty reference notebook: 8 trials, p̂ = 0, level 0 selected.
+   - **Screen:** the candidate (a 149-byte note naming `avoidDesign_target`) solved 6 of 6, the
+     incumbent 0 of 6 (`inconclusive`, promising).
+   - **Independent confirmation:** 20 of 20 against 0 of 20, LB 0.663. Verdict
+     `pass_performance`, scope `fresh_seed`, provisional.
+
+   Then came the PR decision `success`, a simulated merge, a compare-and-swap activation
+   (sequence 1), and the report with the new active notebook. Every solution was checked by
+   `#sigaba_task_check` in a fresh workspace. 60 trials took 14 minutes, most of it Lean.
+
+   The solver is scripted, so this tests the machinery, not a model.
+
+Not run: the workflows on GitHub, since they run from the base branch after the DAG PR is merged;
+the published environment image, since it needs a core release; and a paid model.
