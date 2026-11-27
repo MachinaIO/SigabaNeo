@@ -1,0 +1,106 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A research goal (fenced `sigaba-goal-v1` block of dag/Notes/goal-<fingerprint>.md)",
+ "type": "object",
+ "required": [
+  "schema",
+  "kind",
+  "targets",
+  "definitions",
+  "objective",
+  "policy",
+  "title"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "schema": {
+   "enum": [
+    "sigaba.goal.v1"
+   ]
+  },
+  "kind": {
+   "enum": [
+    "primitive",
+    "assumption",
+    "claim",
+    "theme"
+   ]
+  },
+  "targets": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 300,
+    "pattern": "(theorem|definition):[A-Za-z_][A-Za-z0-9_'.]*"
+   },
+   "maxItems": 50
+  },
+  "definitions": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 300,
+    "pattern": "(theorem|definition):[A-Za-z_][A-Za-z0-9_'.]*"
+   },
+   "maxItems": 50
+  },
+  "objective": {
+   "type": "object",
+   "required": [
+    "kind"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "kind": {
+     "enum": [
+      "minimize_cost",
+      "lower_strength",
+      "prove",
+      "refute",
+      "decide",
+      "explore"
+     ]
+    },
+    "threshold": {
+     "type": [
+      "integer",
+      "null"
+     ]
+    }
+   }
+  },
+  "policy": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "forbidden_routes": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "maxLength": 200
+     },
+     "maxItems": 20
+    },
+    "intent": {
+     "type": "string",
+     "maxLength": 1000
+    }
+   }
+  },
+  "parent": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "pattern": "[0-9a-f]{64}"
+  },
+  "title": {
+   "type": "string",
+   "maxLength": 200
+  },
+  "approved_by": {
+   "type": "string",
+   "maxLength": 100
+  }
+ }
+}

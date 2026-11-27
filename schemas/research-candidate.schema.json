@@ -1,0 +1,77 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A candidate (fenced `sigaba-candidate-v1` block of a PR comment)",
+ "type": "object",
+ "required": [
+  "schema",
+  "candidate_id",
+  "goal",
+  "kind",
+  "task",
+  "description"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "schema": {
+   "enum": [
+    "sigaba.candidate.v1"
+   ]
+  },
+  "candidate_id": {
+   "type": "string",
+   "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+  },
+  "goal": {
+   "type": "string",
+   "pattern": "[0-9a-f]{64}"
+  },
+  "kind": {
+   "enum": [
+    "construction",
+    "attack",
+    "proof_route",
+    "generalization"
+   ]
+  },
+  "task": {
+   "type": "string",
+   "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+  },
+  "parents": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+   },
+   "maxItems": 20
+  },
+  "refs": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 400
+   },
+   "maxItems": 100
+  },
+  "open_obligations": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "maxItems": 100
+  },
+  "description": {
+   "type": "string",
+   "maxLength": 8000
+  },
+  "obstructions": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "maxItems": 50
+  }
+ }
+}

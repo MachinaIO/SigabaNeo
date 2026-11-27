@@ -62,7 +62,7 @@ Everything agents produce is a node, whatever it means. There are four kinds:
 | Definition | definitions it imports; std; core | the metadata; allowed imports; the syntactic filter; it builds; no forbidden declaration (`axiom`, `opaque`, `implemented_by`, `extern`, `unsafe`, `partial`); no `sorry`; its semantic ID is new |
 | Theorem | definitions; theorems; std; core | the same, except that the statement ends in `:= by sorry` and the file declares the named theorem and nothing else |
 | Solution | its theorem; theorems it imports (sketch edges); definitions | the metadata; imports; the filter; it builds; `theorem solution` has the statement's type, or its negation for a disproof (`WA`); no `sorry` (`SORRY`); axioms only `propext`, `Classical.choice`, `Quot.sound`; kernel replay; it does not import its own target; a disproof imports no theorem; its text is new for the theorem |
-| Note (Markdown) | `refs:` in its front matter (any nodes); `supersedes:` (a note) | the front matter's schema; referenced nodes exist; size. The content is not checked. |
+| Note (Markdown) | `refs:` in its front matter (any nodes); `supersedes:` (a note) | the front matter's schema; referenced nodes exist; size. The content is not checked, except the structured block of a research goal (tag `research-goal`) or task summary (tag `research-summary`), [RESEARCH_PROTOCOL.md](RESEARCH_PROTOCOL.md). |
 
 Rules:
 
@@ -264,9 +264,10 @@ core and builds every solution in the chain there.
 
 ### Who can submit
 
-Agents and people work from forks, and nobody but the maintainers has write access to `dag`. This
-is the same while access is restricted and after the repository is public, so going public changes
-one field and nothing else. `meta/trusted.json` (`schemas/trusted.schema.json`) sets it:
+Who may submit is set by `meta/trusted.json`. Contributors without write access work from forks;
+collaborators with write access may push branches to `dag` itself (never to `main`, which takes
+changes only through pull requests and the merge queue). Going public changes one field and
+nothing else. `meta/trusted.json` (`schemas/trusted.schema.json`) sets it:
 
 ```json
 {"mode": "allowlist", "accept": ["alice", "agent-bot-1"], "automerge": ["alice", "agent-bot-1"]}
@@ -307,7 +308,11 @@ Nothing the container can write is mounted; the result is the verifier's standar
 the exit status is recorded outside (section 6, `gate.yml`).
 
 **`gate.yml`** runs on `pull_request_target` and `merge_group`. Its workflow file always comes from
-the base branch. It has five jobs:
+the base branch. **Draft pull requests are not checked**: agents open them early and push to them
+while they work ([RESEARCH_PROTOCOL.md](RESEARCH_PROTOCOL.md), D1). For a pull request every job
+is skipped while it is a draft; marking it ready (`ready_for_review`) runs the gate on its head,
+and so does every push while it is ready. A skipped check cannot merge a draft (GitHub never merges
+drafts), and the merge queue runs the gate again. It has five jobs, and a sixth for drafts:
 
 1. **precheck.** Permissions: `contents: read`, `pull-requests: read`. It never checks out the pull
    request. It reads the default environment from the base and checks out the core's tools at the
@@ -361,9 +366,14 @@ the base branch. It has five jobs:
 5. **merge** (for `pull_request_target`, when the decision passes for an `automerge` author). It
    takes a GitHub App token from the `gate` Environment (which only `main` may use) and enables
    auto-merge for the verified commit only (`--match-head-commit`), which puts the pull request
-   into the merge queue. It has no other step and no checkout. The workflow's own token cannot do
+   into the merge queue. It has no other step and no checkout, and it first re-reads the pull
+   request and does nothing if it has become a draft again or moved past the verified commit. The
+   workflow's own token cannot do
    this: GitHub starts no workflow for an event caused by that token, so a pull request queued with
    it would wait forever for the merge queue's run of the gate.
+
+6. **unqueue** (on `converted_to_draft` only), with the same App token: disables the pull
+   request's auto-merge and takes it out of the merge queue. No checkout, no pull request code.
 
 For a `merge_group`, the same jobs run against the merge group's head (the latest `main` with the
 pull request), which catches pull requests that depend on each other. The precheck has already
@@ -378,8 +388,8 @@ The other workflows:
   from the workflow; the result must be about it. It runs no Lean.
 - **`index.yml`** runs on push to `main`, when `records` starts it, after `reverify`, and by hand. It publishes
   `index.json` and `INDEX.md` to GitHub Pages: statuses per environment, claims with their metadata
-  and refutation sketches, open leaves, `needs_port`, stale solutions, notes, std modules and std
-  candidates. It parses files only and runs no Lean. Its runs never cancel or replace one another
+  and refutation sketches, open leaves, `needs_port`, stale solutions, notes, research goals with
+  their targets' statuses and task summaries, std modules and std candidates. It parses files only and runs no Lean. Its runs never cancel or replace one another
   (`queue: max`): a cancelled run would mark its commit of `main` as failed.
 - **`reverify.yml`** runs weekly and by hand, for each active environment. A sandboxed job plans and
   verifies; a separate job with write access appends the records. Failed checks are recorded as
@@ -457,10 +467,13 @@ kernel replay of the solution. No self-hosted runners are used.
   - read the index;
   - work in a clone of their fork;
   - run `dag_verify.py verify` locally, which replaces the server's quick `/verify` loop;
-  - open a pull request;
+  - open a draft pull request, push to it, mark it ready;
   - read the verdict comment.
 
   Strategies, attempts and dead ends go into notes (`dag/Notes/`).
+- **Research runs** (`sigaba_research.py`, [RESEARCH_PROTOCOL.md](RESEARCH_PROTOCOL.md)) organize
+  this in goals (notes on `main`) and tasks (one draft pull request each, with checkpoints in its
+  comments). The index lists the goals with their targets' statuses.
 
 ## 8. Commands
 
@@ -473,6 +486,7 @@ kernel replay of the solution. No self-hosted runners are used.
 | `dag_tools.py records`, `index`, `reverify-plan` | no | records, index, reverify |
 | `dag_tools.py std-manifest`, `init`, `import-server`, `formalpedia` | no | maintainers, formalpedia |
 | `sigaba_neo.py submit`, `check`, `dev` | `check` builds | submitters |
+| `sigaba_research.py …` (goals, tasks, checkpoints, runs) | `task verify` builds | research agents |
 
 ## 9. Setting up a DAG repository
 

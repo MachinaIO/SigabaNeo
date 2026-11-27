@@ -1,0 +1,69 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A plan (fenced `sigaba-plan-v1` block of a PR comment): an AND group of tasks for a target; plans for one target are alternatives",
+ "type": "object",
+ "required": [
+  "schema",
+  "plan_id",
+  "goal",
+  "target",
+  "required",
+  "rationale"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "schema": {
+   "enum": [
+    "sigaba.plan.v1"
+   ]
+  },
+  "plan_id": {
+   "type": "string",
+   "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+  },
+  "goal": {
+   "type": "string",
+   "pattern": "[0-9a-f]{64}"
+  },
+  "target": {
+   "type": "object",
+   "required": [
+    "kind",
+    "id"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "kind": {
+     "enum": [
+      "goal",
+      "task"
+     ]
+    },
+    "id": {
+     "type": "string",
+     "maxLength": 64
+    }
+   }
+  },
+  "required": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+   },
+   "maxItems": 50,
+   "minItems": 1
+  },
+  "rationale": {
+   "type": "string",
+   "maxLength": 4000
+  },
+  "supersedes_plan": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "maxLength": 36
+  }
+ }
+}

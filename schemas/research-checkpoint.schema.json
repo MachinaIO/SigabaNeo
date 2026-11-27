@@ -1,0 +1,205 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A checkpoint (fenced `sigaba-checkpoint-v1` block of a PR comment)",
+ "type": "object",
+ "required": [
+  "schema",
+  "task_id",
+  "run_id",
+  "sequence",
+  "time",
+  "kind",
+  "state"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "schema": {
+   "enum": [
+    "sigaba.checkpoint.v1"
+   ]
+  },
+  "task_id": {
+   "type": "string",
+   "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+  },
+  "run_id": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "maxLength": 36
+  },
+  "episode_id": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "maxLength": 36
+  },
+  "sequence": {
+   "type": "integer",
+   "minimum": 1
+  },
+  "time": {
+   "type": "string",
+   "maxLength": 40
+  },
+  "kind": {
+   "enum": [
+    "progress",
+    "heartbeat",
+    "final"
+   ]
+  },
+  "state": {
+   "enum": [
+    "planned",
+    "active",
+    "paused",
+    "blocked",
+    "ready",
+    "merged",
+    "closed",
+    "stale"
+   ]
+  },
+  "report_time": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "maxLength": 40
+  },
+  "stale_report": {
+   "type": "boolean"
+  },
+  "established": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "claim"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "claim": {
+      "type": "string",
+      "maxLength": 1000
+     },
+     "evidence": {
+      "enum": [
+       "verified",
+       "sketch",
+       "provisional",
+       "informal",
+       "heuristic",
+       "literature"
+      ]
+     },
+     "refs": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 400
+      },
+      "maxItems": 20
+     }
+    }
+   },
+   "maxItems": 50
+  },
+  "attempted": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "maxItems": 50
+  },
+  "blockers": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "maxItems": 50
+  },
+  "next_steps": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "maxItems": 50
+  },
+  "summary": {
+   "type": "string",
+   "maxLength": 500
+  },
+  "falsification": {
+   "enum": [
+    "attempted",
+    "cached",
+    "unavailable",
+    "skipped",
+    "not_applicable"
+   ]
+  },
+  "head": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "maxLength": 40
+  },
+  "verification": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "string",
+    "maxLength": 40
+   }
+  },
+  "pushed": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 300
+   },
+   "maxItems": 200
+  },
+  "dependencies": {
+   "type": "array",
+   "items": {
+    "type": "object"
+   },
+   "maxItems": 50
+  },
+  "outcome": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "enum": [
+    null,
+    "verified_solution",
+    "verified_refutation",
+    "verified_partial",
+    "candidate",
+    "handoff",
+    "inconclusive",
+    "duplicate",
+    "cancelled",
+    "infra_failure"
+   ]
+  },
+  "usage": {
+   "type": "object",
+   "additionalProperties": {
+    "type": [
+     "integer",
+     "null"
+    ]
+   }
+  }
+ }
+}

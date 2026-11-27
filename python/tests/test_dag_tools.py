@@ -711,15 +711,25 @@ class WorkflowTest(unittest.TestCase):
         self.assertNotIn("GATE_APP", yaml.dump(rep))
         self.assertNotIn("environment", rep)
         report = next(s["run"] for s in rep["steps"] if s.get("name") == "Report on the pull request")
-        # Only the merge job holds the App's key, only for passing pull requests of automerge
-        # authors; it runs no step but the token's and the merge.
+        # Only the merge job (passing pull requests of automerge authors) and the unqueue job (a
+        # ready pull request turned back into a draft) hold the App's key; they run no step but
+        # the token's and the merge-queue calls.
         merge = gate["jobs"]["merge"]
         self.assertEqual(merge["environment"], "gate")
         self.assertEqual(merge["permissions"], {})
         self.assertIn("pull_request_target", merge["if"])
         self.assertIn("needs.decide.outputs.automerge == '1'", merge["if"])
         self.assertEqual([j for j, job in gate["jobs"].items() if "GATE_APP" in yaml.dump(job)],
-                         ["merge"])
+                         ["merge", "unqueue"])
+        unq = gate["jobs"]["unqueue"]
+        self.assertEqual((unq["environment"], unq["permissions"]), ("gate", {}))
+        self.assertIn("converted_to_draft", unq["if"])
+        self.assertFalse(any("checkout" in str(s.get("uses", "")) for s in unq["steps"]))
+        # Drafts are not checked (docs/RESEARCH_PROTOCOL.md, D1): every job is skipped for them.
+        self.assertIn("ready_for_review", gate[True]["pull_request_target"]["types"])
+        self.assertIn("!github.event.pull_request.draft", gate["jobs"]["precheck"]["if"])
+        self.assertIn("needs.precheck.result != 'skipped'", gate["jobs"]["decide"]["if"])
+        self.assertIn("needs.precheck.result != 'skipped'", gate["jobs"]["report"]["if"])
         self.assertFalse(any("checkout" in str(s.get("uses", "")) for s in merge["steps"]))
         merge_run = next(s["run"] for s in merge["steps"] if "run" in s)
         self.assertIn('--match-head-commit "$REVISION"', merge_run)
@@ -791,7 +801,9 @@ import json, sys
 a = sys.argv[1:]
 open({str(log)!r}, "a").write(" ".join(a) + "\\n")
 labels = json.load(open({str(state)!r}))
-if a[:2] == ["pr", "view"]:
+if a[:2] == ["pr", "view"] and "isDraft,headRefOid" in a:
+    print(open({str(work / 'pr-state')!r}).read().strip())
+elif a[:2] == ["pr", "view"]:
     print(json.dumps(labels))
 elif a[:2] == ["pr", "edit"]:
     i = a.index("--add-label") if "--add-label" in a else a.index("--remove-label")
@@ -815,6 +827,12 @@ elif a[:2] == ["pr", "edit"]:
             self.assertEqual(json.loads(state.read_text()), expect, conclusion)
         self.assertNotIn("pr merge", log.read_text())        # the merge job's, not report's
         merge = next(s["run"] for s in gate["jobs"]["merge"]["steps"] if "run" in s)
+        # a pull request that became a draft again, or moved on, is not merged
+        for st in (f"true {'e' * 40}", f"false {'f' * 40}"):
+            (work / "pr-state").write_text(st)
+            subprocess.run(["bash", "-e", "-c", merge], cwd=work, env=env, check=True)
+            self.assertNotIn("pr merge", log.read_text())
+        (work / "pr-state").write_text(f"false {'e' * 40}")
         subprocess.run(["bash", "-e", "-c", merge], cwd=work, env=env, check=True)
         self.assertIn(f"--match-head-commit {'e' * 40}", log.read_text())
         self.assertEqual(log.read_text().count("pr merge"), 1)

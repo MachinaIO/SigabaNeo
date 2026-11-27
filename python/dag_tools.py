@@ -39,6 +39,7 @@ import urllib.request
 from pathlib import Path
 
 import dag as D
+from research import records as RR
 
 TEMPLATES = D.CORE / "templates" / "dag"
 
@@ -303,6 +304,15 @@ def precheck(base: D.Dag, rows: list[dict], content: Path, author: str,
         sup = meta.get("supersedes")
         if isinstance(sup, str) and not ref_exists(base, f"note:{sup}", added, in_pr):
             problems.append(f"{f}: supersedes: no note {sup}")
+        # Research protocol records (docs/RESEARCH_PROTOCOL.md): untrusted bookkeeping, checked
+        # so that the index can rely on their shape.
+        tags = meta.get("tags", []) if isinstance(meta.get("tags"), list) else []
+        if "research-goal" in tags:
+            problems += [f"{f}: {p}" for p in RR.goal_note_problems(f, text)]
+        elif RR.GOAL_NOTE.fullmatch(D.classify(f)[1].group(1)):
+            problems.append(f"{f}: a note named goal-<fingerprint> must be tagged research-goal")
+        if "research-summary" in tags:
+            problems += [f"{f}: {p}" for p in RR.summary_note_problems(text)]
     automerge = writer or author in trusted.get("automerge", [])
     return {"ok": not problems, "accepted": True, "automerge": automerge,
             "problems": problems, "added": sorted(added), "revision": revision}
@@ -522,16 +532,45 @@ def index(dag: D.Dag, records: dict, core: Path | None = None) -> dict:
                              if t["status"] == "Open" and t["solutions"] else []}
                          for n, t in st.theorems.items()},
             "claims": claims, "needs_port": st.needs_port, "stale": st.stale}
+    goals = research_goals(dag, nodes, envs)
     candidates = sorted((n for n in nodes if n["kind"] in ("definition", "theorem") and
                          "promoted_to" not in n and n.get("in_degree", 0) > 0),
                         key=lambda n: (-n["in_degree"], n["name"]))[:50]
     out = {"generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
            "environments": envs, "nodes": nodes, "promotions": promotions,
            "std_candidates": [{"name": n["name"], "kind": n["kind"], "in_degree": n["in_degree"]}
-                              for n in candidates]}
+                              for n in candidates],
+           "goals": goals}
     if core is not None:
         out["std"] = std_summary(core)
     return out
+
+
+def research_goals(dag: D.Dag, nodes: list[dict], envs: dict) -> list[dict]:
+    """The research goals (notes tagged `research-goal` with a valid contract), the statuses of
+    their targets per environment, and the summary notes that refer to them."""
+    out = []
+    for n in dag.by_kind("note"):
+        if "research-goal" not in n.meta.get("tags", []) or RR.goal_note_problems(n.path, n.text):
+            continue
+        goal = RR.one_block(D.front_matter(n.text)[1], "goal")
+        fp = RR.goal_fingerprint(goal)
+        targets = {}
+        for ref in goal["targets"]:
+            if ref.startswith("theorem:"):
+                name = ref.removeprefix("theorem:")
+                targets[ref] = {eid: {"status": e["theorems"].get(name, {}).get("status"),
+                                      "open_leaves": e["theorems"].get(name, {})
+                                      .get("open_leaves", [])}
+                                for eid, e in envs.items()}
+        summaries = [m["name"] for m in nodes if m["kind"] == "note" and
+                     f"note:{n.name}" in m.get("refs", []) and
+                     "research-summary" in m.get("tags", [])]
+        out.append({"fingerprint": fp, "note": n.name, "title": goal["title"], "kind": goal["kind"],
+                    "objective": goal["objective"], "policy": goal.get("policy", {}),
+                    "parent": goal.get("parent"), "definitions": goal["definitions"],
+                    "targets": targets, "summaries": sorted(summaries)})
+    return sorted(out, key=lambda g: g["note"])
 
 
 def std_summary(core: Path) -> list[dict]:
@@ -567,6 +606,20 @@ def index_markdown(ix: dict) -> str:
             lines.append("\n### Needs port\n")
             lines += [f"- `{p}`" for p in e["needs_port"]]
         lines.append("")
+    if ix.get("goals"):
+        lines.append("## Research goals\n")
+        for g in ix["goals"]:
+            lines.append(f"### {g['title']}\n\n`{g['note']}` ({g['kind']}, objective "
+                         f"`{g['objective']['kind']}`). Policy (not Lean-verified): "
+                         f"{', '.join(g['policy'].get('forbidden_routes', [])) or 'none'}.\n")
+            for ref, per_env in g["targets"].items():
+                for eid, t in per_env.items():
+                    leaves = ", ".join(f"`{x}`" for x in t["open_leaves"])
+                    lines.append(f"- `{ref}` in `{eid}`: {t['status']}"
+                                 + (f"; open leaves {leaves}" if leaves else ""))
+            if g["summaries"]:
+                lines.append("- task summaries: " + ", ".join(f"`{x}`" for x in g["summaries"]))
+            lines.append("")
     notes = [n for n in ix["nodes"] if n["kind"] == "note" and "superseded_by" not in n]
     if notes:
         lines.append("## Notes\n")

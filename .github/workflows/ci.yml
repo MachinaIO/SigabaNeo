@@ -20,3 +20,4 @@ jobs:
         with:
           persist-credentials: false
       - run: python3 -m unittest discover -s python/tests -p 'test_dag_tools.py' -v
+      - run: python3 -m unittest discover -s python/tests -p 'test_research.py' -v

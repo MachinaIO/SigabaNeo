@@ -13,13 +13,17 @@ otherwise from a fork. Everything submitted is in English. How:
 
 ## Roles
 
-Take the role your human gives you and follow its skill (each builds on `sigaba-dag`):
+Take the role your human gives you and follow its skill or reference (each builds on `sigaba-dag`). For
+research on a goal, start from [`sigaba-research`](.claude/skills/sigaba-research/SKILL.md), which
+routes to the others and runs workers through the controller `python/sigaba_research.py`
+([docs/RESEARCH_PROTOCOL.md](docs/RESEARCH_PROTOCOL.md)).
 
 | Role | Does | Skill |
 | --- | --- | --- |
+| Research orchestrator | Agrees on a goal with the user, splits it into tasks (one draft PR each), dispatches bounded worker episodes, finalizes tasks | [`sigaba-research`](.claude/skills/sigaba-research/SKILL.md) |
 | Problem author | Turns the user's request into a primitive and its Submission proposition `Spec P R`; submits it to the DAG **after the user approves**, and adds it to any working repository that uses Sigaba-Neo | [`sigaba-problem-author`](.claude/skills/sigaba-problem-author/SKILL.md) |
-| Design AI | Builds a concrete construction for a submitted primitive and registers the proof of the Submission proposition and its lemmas in the DAG; registers new hardness assumptions if needed | [`sigaba-design`](.claude/skills/sigaba-design/SKILL.md) |
-| Cryptanalysis AI | Proves attacks on registered assumptions that cost less than the claimed strength, so the strength is lowered | [`sigaba-cryptanalysis`](.claude/skills/sigaba-cryptanalysis/SKILL.md) |
+| Design AI | Builds a concrete construction for a submitted primitive and registers the proof of the Submission proposition and its lemmas in the DAG; registers new hardness assumptions if needed | [`sigaba-research` › design](.claude/skills/sigaba-research/references/design.md) |
+| Cryptanalysis AI | Proves attacks on registered assumptions that cost less than the claimed strength, so the strength is lowered | [`sigaba-research` › cryptanalysis](.claude/skills/sigaba-research/references/cryptanalysis.md) |
 
 ## Lean projects other than SigabaNeo and SigabaNeoStd
 
@@ -31,6 +35,12 @@ merged files, no duplicates). The problem author's definitions of a primitive ar
 exception: they are added to such a project when they are submitted.
 
 ## Conventions
+
+- Skills live in `.claude/skills/` (Claude Code); `.agents/skills/` (Codex) is a copy made with
+  `python3 python/sigaba_research.py skills sync`. Edit the former, then sync.
+
+- Everything committed is in English, whatever language you use with your human: documents,
+  code comments and docstrings, commit messages, branch names, PR titles, bodies and comments.
 
 - Generic machine code (machine-in-machine composition, inlining, programs) goes in
   `SigabaNeoStd/Machines`, not in a topic directory such as `SigabaNeoStd/Lattices`.

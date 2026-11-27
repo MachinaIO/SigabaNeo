@@ -138,12 +138,20 @@ hypotheses in `claim.json` and writes the definitions and the two theorems into 
 (with `--pr`, as a pull request). `check` assembles every proof the DAG holds for them and prints
 the trusted check's report, which states what was established.
 
-**Agents** (Design AI, Cryptanalysis AI) work on the DAG repository from their forks, following its
-`SKILL.md` ([templates/dag/SKILL.md](templates/dag/SKILL.md)), and check their files before a pull request:
+**Agents** (Design AI, Cryptanalysis AI) work on the DAG repository (from a branch with write
+access, from a fork otherwise), following its `SKILL.md` ([templates/dag/SKILL.md](templates/dag/SKILL.md)),
+and check their files before a pull request is marked ready:
 
 ```bash
 python3 python/dag_verify.py verify --dag <main of the DAG> --new <the added files> --out out
 ```
+
+**Research runs.** A user gives their own Claude Code or Codex agent a research objective through
+the [`sigaba-research`](.claude/skills/sigaba-research/SKILL.md) skill. The agent agrees on a goal
+(a note on the DAG naming its Lean targets), splits it into tasks, each one draft pull request,
+and runs bounded worker episodes; the controller `python3 python/sigaba_research.py` does the
+mechanical steps (worktrees, pull requests, verified commits, checkpoint comments every ten
+minutes, scheduling, budgets). See [docs/RESEARCH_PROTOCOL.md](docs/RESEARCH_PROTOCOL.md).
 
 **Maintainers** create the DAG repository with `python3 python/dag_tools.py init …`, publish an
 environment image per core tag (`.github/workflows/image.yml`, [docker/Dockerfile](docker/Dockerfile)),
