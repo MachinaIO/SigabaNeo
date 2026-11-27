@@ -153,6 +153,22 @@ and runs bounded worker episodes; the controller `python3 python/sigaba_research
 mechanical steps (worktrees, pull requests, verified commits, checkpoint comments every ten
 minutes, scheduling, budgets). See [docs/RESEARCH_PROTOCOL.md](docs/RESEARCH_PROTOCOL.md).
 
+Install the skills as a plugin, from any directory:
+
+```text
+# Claude Code
+/plugin marketplace add MachinaIO/SigabaNeo
+/plugin install sigaba-neo@sigaba-neo
+
+# Codex
+codex plugin marketplace add https://github.com/MachinaIO/SigabaNeo
+codex plugin add sigaba-neo@sigaba-neo
+```
+
+On first use the skill runs the plugin's installer, which clones and builds the core into
+`~/.sigaba/` and writes the command `~/.sigaba/bin/sigaba` (see [plugin/README.md](plugin/README.md)).
+Inside a checkout of this repository the same skills are also available without the plugin.
+
 **Maintainers** create the DAG repository with `python3 python/dag_tools.py init …`, publish an
 environment image per core tag (`.github/workflows/image.yml`, [docker/Dockerfile](docker/Dockerfile)),
 and add std releases ([docs/GITHUB_PLATFORM.md](docs/GITHUB_PLATFORM.md), section 9).

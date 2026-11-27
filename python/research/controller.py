@@ -1482,23 +1482,56 @@ def build_graph(plans: list[dict], known_tasks: set[str] | None = None) -> dict:
             "problems": problems}
 
 
+PLUGIN_INSTALL = """**Installed as a plugin.** The controller and the Lean core live in `~/.sigaba/`. If
+`~/.sigaba/bin/sigaba` does not exist yet, install them first (it clones and builds the core; this
+takes a while the first time): in Claude Code run `"${CLAUDE_PLUGIN_ROOT}/scripts/sigaba" install`;
+in Codex the same script is `scripts/sigaba` in this plugin's directory (two levels above this
+`SKILL.md`). `... upgrade` moves to the plugin's current core revision. The core's documents named
+below are under `~/.sigaba/core/`."""
+
+
+def plugin_text(rel: str, text: str) -> str:
+    """A skill file as the plugin ships it: commands and links point at the installed core
+    (`~/.sigaba/core`, the shim `~/.sigaba/bin/sigaba`) instead of the core checkout."""
+    text = text.replace('SR="python3 python/sigaba_research.py"', 'SR="$HOME/.sigaba/bin/sigaba"')
+    text = text.replace("python3 python/sigaba_research.py", "~/.sigaba/bin/sigaba")
+    text = text.replace("python3 python/", "python3 ~/.sigaba/core/python/")
+    text = text.replace("](../../../../", "](~/.sigaba/core/").replace("](../../../",
+                                                                       "](~/.sigaba/core/")
+    text = text.replace("grep -v '^#' DAG_REPO_URL", "grep -v '^#' ~/.sigaba/core/DAG_REPO_URL")
+    return text.replace("<!-- plugin:install -->", PLUGIN_INSTALL)
+
+
+def skill_targets() -> dict[Path, dict[str, bytes]]:
+    """What each copy of the skills must hold: `.agents/skills` (Codex in the core checkout) is an
+    exact copy of `.claude/skills`; `plugin/skills` (the Claude Code and Codex plugin) is rewritten
+    for an installed core."""
+    src = CORE / ".claude" / "skills"
+    files = {str(p.relative_to(src)): p.read_bytes() for p in sorted(src.rglob("*"))
+             if p.is_file()}
+    plug = {k: (plugin_text(k, v.decode()).encode() if k.endswith(".md") else v)
+            for k, v in files.items()}
+    return {CORE / ".agents" / "skills": files, CORE / "plugin" / "skills": plug}
+
+
 def skills_diff() -> list[str]:
-    """Skill files that differ between `.claude/skills` (the source) and `.agents/skills`."""
-    src, dst = CORE / ".claude" / "skills", CORE / ".agents" / "skills"
+    """Skill files whose copies differ from what `.claude/skills` (the source) makes."""
     out = []
-    files = {p.relative_to(src) for p in src.rglob("*") if p.is_file()}
-    other = {p.relative_to(dst) for p in dst.rglob("*") if p.is_file()} if dst.is_dir() else set()
-    for f in sorted(files | other):
-        a, b = src / f, dst / f
-        if not a.exists() or not b.exists() or a.read_bytes() != b.read_bytes():
-            out.append(str(f))
+    for dst, want in skill_targets().items():
+        have = {str(p.relative_to(dst)): p.read_bytes() for p in sorted(dst.rglob("*"))
+                if p.is_file()} if dst.is_dir() else {}
+        for f in sorted(set(want) | set(have)):
+            if want.get(f) != have.get(f):
+                out.append(str((dst / f).relative_to(CORE)))
     return out
 
 
 def skills_sync() -> list[str]:
-    src, dst = CORE / ".claude" / "skills", CORE / ".agents" / "skills"
     changed = skills_diff()
-    if dst.exists():
-        shutil.rmtree(dst)
-    shutil.copytree(src, dst)
+    for dst, want in skill_targets().items():
+        if dst.exists():
+            shutil.rmtree(dst)
+        for f, b in want.items():
+            (dst / f).parent.mkdir(parents=True, exist_ok=True)
+            (dst / f).write_bytes(b)
     return changed

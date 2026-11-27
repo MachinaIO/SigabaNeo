@@ -531,6 +531,29 @@ class TestMisc(Base):
     def test_skills_in_sync(self):
         self.assertEqual(C.skills_diff(), [])
 
+    def test_plugin_manifests(self):
+        """The plugin for Claude Code and Codex: manifests agree, the launcher is executable, and
+        the shipped skills point at the installed core, never at core-relative paths."""
+        cc = json.loads((REPO / "plugin/.claude-plugin/plugin.json").read_text())
+        cx = json.loads((REPO / "plugin/.codex-plugin/plugin.json").read_text())
+        mk = json.loads((REPO / ".claude-plugin/marketplace.json").read_text())
+        cm = json.loads((REPO / ".agents/plugins/marketplace.json").read_text())
+        self.assertEqual(cc["name"], cx["name"])
+        self.assertEqual(cc["version"], cx["version"])
+        self.assertEqual(mk["plugins"][0]["version"], cc["version"])
+        self.assertEqual(mk["plugins"][0]["source"], "./plugin")
+        self.assertEqual(cm["plugins"][0]["source"], {"source": "local", "path": "./plugin"})
+        self.assertEqual(cx["skills"], "./skills/")
+        self.assertTrue(os.access(REPO / "plugin/scripts/sigaba", os.X_OK))
+        self.assertIn("url", json.loads((REPO / "plugin/core.json").read_text()))
+        for p in (REPO / "plugin/skills").rglob("*.md"):
+            text = p.read_text()
+            self.assertNotIn("python3 python/", text, p)
+            self.assertNotIn("](../../../", text, p)
+            self.assertNotIn("plugin:install", text, p)
+        self.assertIn("scripts/sigaba\" install",
+                      (REPO / "plugin/skills/sigaba-research/SKILL.md").read_text())
+
     def test_gate_skips_drafts(self):
         text = (REPO / "templates/dag/.github/workflows/gate.yml").read_text()
         self.assertIn("ready_for_review", text)

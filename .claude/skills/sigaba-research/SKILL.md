@@ -9,8 +9,10 @@ You are the **orchestrator**: you talk with the user, decide what research is me
 delegate the mathematics to **workers**. A deterministic **controller** does every mechanical step:
 
 ```bash
-SR="python3 python/sigaba_research.py"     # from the core (this repository); JSON output
+SR="python3 python/sigaba_research.py"     # the controller; JSON output
 ```
+
+<!-- plugin:install -->
 
 Never type `git push`, `gh pr …`, branch or worktree commands for a task: call the controller.
 Never compute IDs, fingerprints, timestamps or digests yourself. The protocol is in
