@@ -59,6 +59,9 @@ def parser() -> argparse.ArgumentParser:
     x = g.add_parser("prepare")
     x.add_argument("--file", required=True, help="the goal contract (JSON)")
     x.add_argument("--dir")
+    x.add_argument("--distinct", metavar="REASON",
+                   help="the user confirmed this is a different goal from those naming the same "
+                        "nodes; the reason is recorded in the bundle")
     x = g.add_parser("review")
     x.add_argument("--dir", required=True)
     x = g.add_parser("approve")
@@ -173,12 +176,11 @@ def dispatch(ctl: C.Controller, a) -> object:
         return ctl.sync()
     if cmd == "goals":
         if sub == "list":
-            return [{k: g[k] for k in ("note", "fingerprint", "title", "problems")}
-                    for g in ctl.goals()]
+            return ctl.goals_overview()
         return ctl.goal_show(a.fingerprint)
     if cmd == "goal":
         if sub == "prepare":
-            return ctl.goal_prepare(load(a.file), Path(a.dir) if a.dir else None)
+            return ctl.goal_prepare(load(a.file), Path(a.dir) if a.dir else None, a.distinct)
         if sub == "review":
             return ctl.goal_review(Path(a.dir))
         if sub == "approve":

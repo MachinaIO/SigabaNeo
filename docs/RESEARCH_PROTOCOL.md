@@ -23,6 +23,7 @@ The words MUST, MUST NOT, SHOULD and MAY are used as in v1.2.
 | D9 Index | The DAG's `index.json` / `INDEX.md` gain a `goals` section. Draft PR state is read by the local CLI, not published by CI. |
 | D10 Fewer skills | The Design AI and Cryptanalysis AI skills became the references `design.md` and `cryptanalysis.md` of `sigaba-research`; three skills remain: `sigaba-research`, `sigaba-dag`, `sigaba-problem-author`. |
 | D11 No write authorization step | The controller's one-time `authorize` step was removed: public writes are governed by the user's GitHub login, GitHub's permissions and the agent runtime's own permission prompts. The goal approval at a terminal (`goal approve`) stays. |
+| D12 Reuse existing goals | `goals list` also shows pending goals and the DAG's unregistered targets (primitives, assumptions, claim cards); `goal prepare` returns an existing goal instead of a duplicate and refuses a goal naming the same nodes unless it is a new version (`parent`) or confirmed distinct. |
 
 ## 1. Scope
 
@@ -108,11 +109,21 @@ union of `targets` and `definitions`, and its block validates. A changed contrac
 
 ### 3.2 Matching and registering
 
-`goals list` reads the goal notes of a local `main` checkout. The orchestrator reuses a goal whose
-fingerprint matches; if several non-equivalent goals match a request, it asks the user. Otherwise it
-proposes a new contract (`goal prepare`), shows it, and the user approves it (section 4.3). The goal
-note is published by `goal register`, in an administrative PR (no task ID), together with the
-definitions it needs when they are new.
+`goals list` returns the goal notes of `main` (`goals`), the goal notes added by open pull
+requests (`pending`), and the research targets already in the DAG that no goal names yet
+(`unregistered_targets`: definitions tagged `primitive` or `assumption`, and claim cards, with the
+number of notes that refer to each). The orchestrator always reads it first and, in this order:
+reuses a goal or pending goal that fits (asking the user if several do); registers a goal note
+that refers to an unregistered target, without defining it again; makes a new version (`parent`)
+of a goal whose objective or policy changes; and only when nothing fits, authors a new primitive
+(section 4).
+
+`goal prepare` enforces it (D12): a contract whose fingerprint is that of an existing or pending
+goal returns that goal and writes nothing; a contract that names any node another goal names is
+refused unless its `parent` is that goal or `--distinct REASON` records that the user confirmed a
+different goal. `goal register` refuses a goal note that is on `main` or in an open pull request.
+The user approves the contract (section 4, step 5), and `goal register` publishes it in an
+administrative PR (no task ID), together with the definitions it needs when they are new.
 
 ### 3.3 Classical versus post-quantum
 
@@ -379,8 +390,8 @@ on verification failure.
 | --- | --- |
 | `doctor` | checks git, gh auth, repository permission and fork, the core build, providers |
 | `sync` | fetches `main` and `records`, reads PRs, descriptors, plans, checkpoints |
-| `goals list` / `goals show FP` | goals from `main`, with targets' statuses and tasks |
-| `goal prepare --file CONTRACT [--dir DIR]` | authoring bundle with the goal note |
+| `goals list` / `goals show FP` | goals on `main`, pending goals, unregistered targets / one goal with targets' statuses and tasks |
+| `goal prepare --file CONTRACT [--dir DIR] [--distinct REASON]` | authoring bundle with the goal note; returns an existing goal, refuses overlaps |
 | `goal review --dir DIR` | mechanical checks and the review packet |
 | `goal approve --dir DIR --digest HEX` | records approval (terminal only) |
 | `goal register --dir DIR` | publishes the approved bundle as an administrative PR |
