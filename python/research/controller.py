@@ -23,6 +23,7 @@ from .remote import Git, GitHub, RemoteError, run
 from .state import State
 
 CORE = Path(__file__).resolve().parents[2]
+INBOX = ".sigaba"         # a worker's files in its worktree (excluded from Git)
 PASS = ("OK", "ACCEPTED", "SKETCH_ACCEPTED")
 LIVE_STATES = ("active", "paused", "blocked", "ready", "stale")
 DEFAULTS = {"max_parallel_workers": 3, "checkpoint_seconds": 600, "episode_seconds": 1800,
@@ -47,7 +48,7 @@ def now_iso(t: float) -> str:
 def default_verifier(base: Path, new: Path, records: Path | None, out: Path) -> dict:
     """`dag_verify.py verify` of this core (cooperative local layout, D6)."""
     args = [sys.executable, str(CORE / "python" / "dag_verify.py"), "verify", "--dag", str(base),
-            "--new", str(new), "--out", str(out)]
+            "--new", str(new), "--out", str(out), "--workdir", str(out / "ws")]
     if records is not None and records.is_dir():
         args += ["--records", str(records)]
     run(args, check=False)
@@ -123,9 +124,12 @@ class Controller:
             excl.parent.mkdir(parents=True, exist_ok=True)
             with excl.open("a") as f:
                 f.write("/.claude/\n/.codex/\n/.lake/\n")
-        elif fetch:
+        excl = self.clone / ".git" / "info" / "exclude"
+        if excl.exists() and f"/{INBOX}/" not in excl.read_text():
+            with excl.open("a") as f:
+                f.write(f"/{INBOX}/\n")
+        if fetch and (self.clone / ".git").exists():
             g("fetch", "--quiet", "origin", "+refs/heads/main:refs/remotes/origin/main")
-        if fetch:
             g("fetch", "--quiet", "origin", "+refs/heads/records:refs/remotes/origin/records",
               check=False)
         return g
@@ -308,9 +312,11 @@ class Controller:
         return {str(p.relative_to(d)): p.read_bytes()
                 for p in sorted(base.rglob("*")) if p.is_file()} if base.is_dir() else {}
 
-    def local_precheck(self, files: dict[str, bytes], author: str | None = None) -> dict:
+    def local_precheck(self, files: dict[str, bytes], author: str | None = None,
+                       scratch: Path | None = None) -> dict:
         """`dag_tools.py precheck` of files as if a PR added them to the current `main`."""
-        tmp = self.path("state", "precheck", R.files_digest(files)[:16])
+        tmp = (scratch / "precheck") if scratch else \
+            self.path("state", "precheck", R.files_digest(files)[:16])
         if tmp.exists():
             shutil.rmtree(tmp)
         rows = []
@@ -329,7 +335,7 @@ class Controller:
                      = None) -> dict:
         """Precheck and `dag_verify` of `files` (plus pinned `deps`) on the current `main`."""
         every = {**(deps or {}), **files}
-        pre = self.local_precheck(every)
+        pre = self.local_precheck(every, scratch=where)
         new = where / "new"
         if new.exists():
             shutil.rmtree(new)
@@ -560,11 +566,72 @@ class Controller:
     def deps(self, t: dict) -> dict[str, bytes]:
         d = self.task_dir(t["task_id"]) / "deps"
         out = {}
-        for x in t["descriptor"].get("depends_on", []):
+        pinned = {(x["pr"], x["head"]): x for x in t["descriptor"].get("depends_on", []) +
+                  self.st.get(f"deps:{t['task_id']}", [])}
+        for x in pinned.values():
             root = d / str(x["pr"]) / x["head"]
             for p in sorted(root.rglob("*")) if root.is_dir() else []:
                 if p.is_file():
                     out[str(p.relative_to(root))] = p.read_bytes()
+        return out
+
+    def worker_verify(self, where: Path, with_deps: bool = False) -> dict:
+        """The worker's check: precheck and `dag_verify` of the worktree's added files (committed
+        or not) on the base checkout as it is. It writes only under `<worktree>/.sigaba/`: no Git
+        write, no network, no state database, so it works in a worker's sandbox."""
+        top = run(["git", "-C", str(Path(where).resolve()), "rev-parse", "--show-toplevel"])
+        wt = Path(top.strip())
+        if not (self.base / "dag").exists():
+            raise ProtocolError(f"no base checkout at {self.base}: the orchestrator runs `sync`")
+        t = {"worktree": str(wt)}
+        files = {**self.task_files(t), **self.working_files(t)}
+        if not files:
+            return {"ok": True, "statuses": {}, "precheck": [], "note": "no files yet"}
+        deps = {}
+        if with_deps:
+            for root in sorted((wt / INBOX / "deps").glob("*/*")):
+                for p in sorted(root.rglob("*")):
+                    if p.is_file() and not p.is_symlink():
+                        deps[str(p.relative_to(root))] = p.read_bytes()
+        res = self.verify_files(files, wt / INBOX / "verify", deps)
+        return {**res, "with_deps": with_deps, "files": sorted(files)}
+
+    def ingest_inbox(self, tid: str, results: bool = True) -> dict:
+        """Take in what the task's worker wrote in `<worktree>/.sigaba/`: `progress.json` (a
+        progress record, taken when it changes) and, with `results`, `result.json` (the end of
+        its episode, which is then renamed so that it is taken once)."""
+        t = self.st.task(tid)
+        if t is None or not t["worktree"]:
+            return {}
+        d = Path(t["worktree"]) / INBOX
+        out: dict = {}
+        p = d / "progress.json"
+        if p.is_file() and not p.is_symlink():
+            stamp = p.stat().st_mtime_ns
+            key = f"inbox_progress:{t['task_id']}"
+            if self.st.get(key) != stamp:
+                self.st.put(key, stamp)
+                try:
+                    self.progress_record(t["task_id"], json.loads(p.read_text()))
+                    out["progress"] = True
+                except (json.JSONDecodeError, ProtocolError) as e:
+                    out["progress_error"] = str(e)[:1000]
+                    self.st.event(self.clock(), "inbox_invalid", t["task_id"], None,
+                                  {"file": "progress.json", "error": str(e)[:1000]})
+        r = d / "result.json"
+        if results and r.is_file() and not r.is_symlink():
+            try:
+                res = json.loads(r.read_text())
+                if not isinstance(res, dict):
+                    raise ValueError("not an object")
+            except (json.JSONDecodeError, ValueError) as e:
+                res = {"outcome": "unresolved", "error": f"result.json: {e}"}
+            e = self.live_episode(t["task_id"])
+            r.rename(d / f"result-{(e or {}).get('episode_id', 'none')}-{int(self.clock())}.json")
+            if e:
+                outcome = res.get("outcome") if res.get("outcome") in (
+                    "unresolved", "done", "blocked") else "unresolved"
+                out["episode"] = self.episode_end(e["episode_id"], outcome, res)
         return out
 
     def task_verify(self, tid: str, with_deps: bool = False, include_working: bool = True) -> dict:
@@ -685,6 +752,7 @@ class Controller:
         t = self.need(tid)
         if not t["pr"]:
             raise ProtocolError(f"task {tid} has no PR yet")
+        self.ingest_inbox(t["task_id"], results=False)
         now = self.clock()
         pushed = []
         try:
@@ -1000,6 +1068,11 @@ class Controller:
             (root / path).parent.mkdir(parents=True, exist_ok=True)
             (root / path).write_bytes(data)
             got.append(path)
+        if t["worktree"]:
+            mirror = Path(t["worktree"]) / INBOX / "deps" / str(pr) / head
+            if mirror.exists():
+                shutil.rmtree(mirror)
+            shutil.copytree(root, mirror) if root.is_dir() else None
         dep = {"pr": pr, "head": head, "paths": sorted(got)}
         local = self.st.get(f"deps:{t['task_id']}", [])
         local = [d for d in local if d["pr"] != pr] + [dep]
@@ -1295,13 +1368,20 @@ class Controller:
         return {"episode_id": eid, "task": self.task_summary(self.st.task(t["task_id"])),
                 "budget_seconds": int(b), "deadline": now_iso(now + b), "prompt_file": str(p)}
 
-    def episode_end(self, eid_or_task: str, outcome: str, result: dict | None = None) -> dict:
+    def episode_end(self, eid_or_task: str, outcome: str | None = None,
+                    result: dict | None = None) -> dict:
         e = self.st.one("SELECT * FROM episodes WHERE episode_id=? AND ended IS NULL", eid_or_task)
         if e is None:
             t = self.st.task(eid_or_task)
             e = self.live_episode(t["task_id"]) if t else None
         if e is None:
             raise ProtocolError(f"no live episode {eid_or_task}")
+        if outcome is None:          # the orchestrator ends it: the worker's result.json decides
+            self.ingest_inbox(e["task_id"], results=False)
+            got = self.ingest_inbox(e["task_id"])
+            if "episode" in got:
+                return got["episode"]
+            outcome = "unresolved"
         if outcome not in ("unresolved", "done", "blocked", "paused", "timeout", "failed",
                            "finalized", "infra_failure"):
             raise ProtocolError("outcome: unresolved | done | blocked | paused | timeout | "
@@ -1420,8 +1500,11 @@ class Controller:
         from . import providers
         for e in self.st.all("SELECT * FROM episodes WHERE ended IS NULL"):
             if e["pid"] and not providers.alive(e["pid"]):
-                res = providers.read_result(self, e)
-                self.episode_end(e["episode_id"], res.get("outcome", "unresolved"), res)
+                if "episode" not in self.ingest_inbox(e["task_id"]):
+                    res = providers.read_result(self, e)
+                    self.episode_end(e["episode_id"], res.get("outcome", "unresolved"), res)
+                continue
+            if not e["pid"] and "episode" in self.ingest_inbox(e["task_id"]):
                 continue
             if now > e["deadline"]:
                 if e["pid"]:
