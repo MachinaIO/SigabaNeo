@@ -102,9 +102,12 @@ loop ([references/orchestrator.md](references/orchestrator.md)):
      the background; start one per free slot.
    * **Codex**: a subagent with that prompt, or `$SR run start --backend codex` instead of
      dispatching yourself (supervised mode, see [references/adapters.md](references/adapters.md)).
-5. When a worker returns, read its result (`$SR task show ID`), decide follow-ups, and repeat.
-   The worker ends its episode itself (`episode end`); if it did not, run
-   `$SR episode end ID --outcome unresolved`.
+5. When a worker returns, run `$SR episode end <task>`: it takes in the worker's
+   `.sigaba/progress.json` and `.sigaba/result.json` (workers never touch Git or the controller
+   themselves), checkpoints, publishes the listed files that verify, and requeues or closes the
+   episode by the worker's outcome (`unresolved` when it wrote none). Then read the result
+   (`$SR task show ID`), decide follow-ups, and repeat. If another PR's files are needed, fetch
+   them for the worker with `$SR pr fetch --task ID --pr N`.
 6. When a task's package is done (a proof, a refutation, a coherent partial result or an exact
    handoff), finalize it (section 3). Prefer finishing coherent pieces early and opening a
    successor task to keeping one task open forever.

@@ -351,6 +351,58 @@ class TestCheckpoints(Base):
         self.assertEqual(len(self.ctl.work_list()), 1)
 
 
+class TestWorkerFiles(Base):
+    """Workers write only in their worktree; the orchestrator's controller takes it in."""
+
+    def test_worker_verify_touches_nothing_outside_the_worktree(self):
+        t = self.ctl.task_create(self.desc())
+        tt = self.ctl.st.task(t["task_id"])
+        wt = Path(tt["worktree"])
+        self.write(tt, thm_files("A.w"))
+        head = git(wt, "rev-parse", "HEAD")
+        ver = self.ctl.st.one("SELECT COUNT(*) AS n FROM verifications")["n"]
+        worker = self.make()                   # a fresh controller, as in the worker's process
+        worker.refresh_base = lambda: (_ for _ in ()).throw(AssertionError("no network"))
+        worker.gh = None                       # no GitHub
+        res = worker.worker_verify(wt / "dag")
+        self.assertTrue(res["ok"])
+        self.assertIn("dag/Theorems/Thm_A_w.lean", res["files"])
+        self.assertTrue((wt / ".sigaba" / "verify").is_dir())
+        self.assertEqual(git(wt, "rev-parse", "HEAD"), head)
+        self.assertEqual(self.ctl.st.one("SELECT COUNT(*) AS n FROM verifications")["n"], ver)
+        self.assertEqual(git(wt, "status", "--porcelain", "--", ".sigaba"), "")  # excluded
+
+    def test_inbox_is_taken_in_and_published(self):
+        self.ctl.run_start({})
+        self.ctl.work_propose([self.desc()])
+        d = self.ctl.run_next()["dispatch"]
+        tid = d["task"]["task_id"]
+        wt = Path(d["task"]["worktree"])
+        self.write(self.ctl.st.task(tid), thm_files("A.inbox"))
+        (wt / ".sigaba").mkdir(exist_ok=True)
+        (wt / ".sigaba" / "progress.json").write_text(json.dumps(
+            {"summary": "stated a lemma", "artifacts": ["dag/Theorems/Thm_A_inbox.lean"]}))
+        (wt / ".sigaba" / "result.json").write_text(json.dumps(
+            {"outcome": "done", "summary": "finished"}))
+        out = self.ctl.episode_end(tid)        # the orchestrator, after the worker returned
+        self.assertEqual(out["outcome"], "done")
+        self.assertIn("dag/Theorems/Thm_A_inbox.lean",
+                      self.remote_files(f"research/{tid}"))
+        self.assertFalse((wt / ".sigaba" / "result.json").exists())   # taken once
+        self.assertEqual(self.ctl.st.latest_progress(tid)["record"]["summary"], "stated a lemma")
+
+    def test_watchdog_takes_in_a_result(self):
+        self.ctl.run_start({})
+        self.ctl.work_propose([self.desc()])
+        d = self.ctl.run_next()["dispatch"]
+        wt = Path(d["task"]["worktree"])
+        (wt / ".sigaba").mkdir(exist_ok=True)
+        (wt / ".sigaba" / "result.json").write_text(json.dumps({"outcome": "unresolved"}))
+        self.ctl.watchdog_step()
+        self.assertIsNone(self.ctl.live_episode(d["task"]["task_id"]))
+        self.assertEqual(len(self.ctl.work_list()), 1)             # back in its queue
+
+
 class TestScheduling(Base):
     def proposals(self):
         out = []
@@ -382,7 +434,9 @@ class TestScheduling(Base):
         d = self.ctl.run_next()["dispatch"]
         self.assertIsNotNone(d)
         self.assertEqual(len(self.gh.prs), 1)
-        self.assertIn("task verify", Path(d["prompt_file"]).read_text())
+        prompt = Path(d["prompt_file"]).read_text()
+        self.assertIn("worker-verify", prompt)
+        self.assertNotIn("episode end", prompt)            # workers never call the controller
         self.assertEqual(self.ctl.run_next()["dispatch"], None)   # one slot
         self.clock.t += 60
         self.ctl.episode_end(d["episode_id"], "unresolved")

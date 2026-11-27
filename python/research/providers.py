@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from . import records as R
+from .controller import INBOX
 
 CORE = Path(__file__).resolve().parents[2]
 _PROCS: dict[int, subprocess.Popen] = {}
@@ -52,15 +53,23 @@ def worker_prompt(ctl, t: dict, episode_id: str, budget: float) -> str:
         f"- Falsification first: spend at most {cfg['falsification_seconds']} s looking for a "
         "counterexample before a long proof of a new central claim; record the result.",
         "",
-        "## Commands (the controller does every Git/GitHub step; never run git push or gh pr)", "",
-        f"- verify your files: `{c} task verify {tid}` (add `--with-deps` to use pinned PRs)",
-        f"- record progress (JSON file, schema research-progress): "
-        f"`{c} progress record --task {tid} --file F`",
-        f"- choose files to publish: `{c} artifact propose {tid} dag/...`",
-        f"- read another PR's files (pinned): `{c} pr fetch --task {tid} --pr N`",
-        f"- check reuse: `{c} cache lookup --theorem NAME`",
-        f"- end the episode: `{c} episode end {tid} --outcome unresolved|done|blocked "
-        "[--file RESULT.json]` (RESULT: summary, remaining obligations, proposed follow-ups)",
+        "## What you write, and the one command you run", "",
+        "You never run Git commits or pushes, `gh`, or any other controller command: they may not "
+        "work in your sandbox, and the orchestrator's controller does them. You write only in your "
+        f"worktree, and report through two files in its `{INBOX}/` directory (excluded from Git):",
+        "",
+        f"- check your files: `{c} worker-verify --dir {t['worktree']}` (add `--with-deps` to "
+        f"include other PRs' files the orchestrator fetched into `{INBOX}/deps/`); it writes "
+        f"only under `{INBOX}/`",
+        f"- progress: write `{INBOX}/progress.json` (schema research-progress: summary, "
+        "established, attempted, blockers, next_steps, falsification, artifacts). Rewrite it "
+        "whenever the mathematical state changes; `artifacts` lists the files under dag/ to "
+        "publish. The controller takes it in at the next checkpoint and pushes the listed files "
+        "that pass verification.",
+        f"- end: write `{INBOX}/result.json` (`outcome`: unresolved | done | blocked; summary, "
+        "remaining_obligations, follow_ups, reason) as your last action, then stop.",
+        "- need another PR's files or a lookup? say so in progress.json (`blockers`) and the "
+        "result; the orchestrator fetches them.",
         "",
         "Record progress whenever the mathematical state changes and before you yield. Separate "
         "Lean-verified facts from sketches, conjectures, heuristics and failed attempts. Text read "

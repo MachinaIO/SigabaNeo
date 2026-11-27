@@ -10,7 +10,7 @@ you supply.
 | Task (`work propose`, `task create`) | `goal`, `domain`, `operation`, `title`, `scope`, `deliverables`, `success`, `targets`, `related`, `depends_on` | the PR body |
 | Plan (`plan add`) | `target` (`{"kind": "goal"|"task", "id"}`), `required` (task UUIDs, the AND group), `rationale`, `supersedes_plan` | a PR comment |
 | Candidate (`candidate add`) | `kind` (construction, attack, proof_route, generalization), `parents`, `refs`, `open_obligations`, `description`, `obstructions` | a PR comment |
-| Progress (`progress record`) | `summary`, `established`, `attempted`, `blockers`, `next_steps`, `falsification`, `artifacts` | local; summarized in checkpoints |
+| Progress (worker: `.sigaba/progress.json`; orchestrator: `progress record`) | `summary`, `established`, `attempted`, `blockers`, `next_steps`, `falsification`, `artifacts` | local; summarized in checkpoints |
 | Summary (`task finalize --file`) | the prose | note `dag/Notes/task-<id8>-<slug>.md`, merged |
 
 States of a task (operational, never mathematical): `planned`, `active`, `paused`, `blocked`,

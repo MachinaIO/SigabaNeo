@@ -143,7 +143,7 @@ def parser() -> argparse.ArgumentParser:
     x.add_argument("id")
     x = e.add_parser("end")
     x.add_argument("id", help="episode or task ID")
-    x.add_argument("--outcome", required=True)
+    x.add_argument("--outcome", help="default: the worker's .sigaba/result.json, else unresolved")
     x.add_argument("--file", help="the worker's result (JSON)")
 
     c = sub.add_parser("cache").add_subparsers(dest="sub", required=True)
@@ -156,6 +156,10 @@ def parser() -> argparse.ArgumentParser:
     x.add_argument("--env")
     x.add_argument("--context")
 
+    x = sub.add_parser("worker-verify", help="a worker's check of its worktree (no Git write, no "
+                       "network, no state database; writes only under .sigaba/)")
+    x.add_argument("--dir", default=".", help="the worktree (default: the current directory)")
+    x.add_argument("--with-deps", action="store_true")
     x = sub.add_parser("hook")
     x.add_argument("--event", required=True)
     x = sub.add_parser("hooks")
@@ -276,6 +280,11 @@ def dispatch(ctl: C.Controller, a) -> object:
         if sub == "lookup":
             return ctl.cache_lookup(a.theorem)
         return ctl.cache_record(a.theorem, a.outcome, a.detail, a.env, a.context)
+    if cmd == "worker-verify":
+        res = ctl.worker_verify(Path(a.dir), a.with_deps)
+        if not res["ok"]:
+            raise C.VerificationError(json.dumps(res))
+        return res
     if cmd == "hook":
         raw = sys.stdin.read() if not sys.stdin.isatty() else ""
         try:

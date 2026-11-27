@@ -25,6 +25,7 @@ The words MUST, MUST NOT, SHOULD and MAY are used as in v1.2.
 | D11 No write authorization step | The controller's one-time `authorize` step was removed: public writes are governed by the user's GitHub login, GitHub's permissions and the agent runtime's own permission prompts. The goal approval at a terminal (`goal approve`) stays. |
 | D12 Reuse existing goals | `goals list` also shows goals pending in open PRs; `goal prepare` returns an existing goal instead of a duplicate and refuses a goal naming the same nodes unless it is a new version (`parent`) or confirmed distinct. |
 | D13 Research only through tasks | Every piece of research is a task dispatched by `run next` and published through its own task PR; no ad-hoc workers or hand-made research PRs (the manual DAG loop is for administrative PRs). `task create` and `work propose` refuse a goal that is neither on `main` nor in an open PR. |
+| D14 Workers write only their worktree | Workers never touch Git, GitHub or the controller's state: they check with `worker-verify` and report in `<worktree>/.sigaba/progress.json` and `result.json`; the orchestrator's controller takes these in, verifies and publishes. |
 
 ## 1. Scope
 
@@ -308,12 +309,23 @@ handoff packet (latest checkpoint, open obligations, candidates) and the worker 
 
 1. works only in its worktree and scratch directory, following its domain's reference
    (`design.md` or `cryptanalysis.md`);
-2. writes Lean files under `dag/` in its worktree and verifies them with `task verify`;
-3. records semantic progress with `progress record --task ID --file F`
-   (`{"established": [...], "attempted": [...], "blockers": [...], "next_steps": [...],
-   "artifacts": [...]}`) whenever the mathematical state changes, and before it yields;
-4. lists the files to publish with `artifact propose --task ID PATH...`;
-5. never runs `git push`, `gh pr ...` or edits another task; it may read other PRs as text.
+2. writes Lean files under `dag/` in its worktree and checks them with `worker-verify`, which
+   runs the precheck and `dag_verify` on the base checkout as it is and writes only under
+   `<worktree>/.sigaba/` (no Git write, no network, no state database);
+3. records semantic progress in `<worktree>/.sigaba/progress.json` (schema research-progress:
+   `established`, `attempted`, `blockers`, `next_steps`, `falsification`, and `artifacts`, the
+   files to publish) whenever the mathematical state changes;
+4. ends its episode by writing `<worktree>/.sigaba/result.json` (`outcome`: unresolved, done or
+   blocked; summary, remaining obligations, follow-ups);
+5. never commits, pushes, runs `gh` or any other controller command, or edits another task; it
+   may read other PRs as text, and asks the orchestrator (through `blockers`) for files of other
+   PRs, which `pr fetch` copies into `<worktree>/.sigaba/deps/`.
+
+`.sigaba/` is excluded from Git. The orchestrator's controller takes the files in (D14):
+`episode end <task>` after a worker returns, every checkpoint (progress only), and the watchdog
+(both, also when a supervised worker's process exits). It then verifies the listed artifacts byte
+for byte and pushes them. A worker therefore works in any sandbox, including one where `.git` is
+read-only and the network is blocked.
 
 It distinguishes verified facts, conjectures, heuristics and failed attempts. A failed proof search
 is not a counterexample. **Falsification first**: before a long proof of a new central claim, it
@@ -412,7 +424,8 @@ on verification failure.
 | `pr fetch --task ID --pr N` | pinned source files of another PR |
 | `work propose --file F`, `work derive --goal FP`, `work list` | the queues |
 | `run start ...`, `run status`, `run stop`, `run tick` | runs, dispatch, watchdog |
-| `episode start ID` / `episode end ID --outcome O` | interactive episode bookkeeping |
+| `episode start ID` / `episode end ID [--outcome O]` | episode bookkeeping; `end` takes in the worker's `.sigaba/` files |
+| `worker-verify [--dir D] [--with-deps]` | the worker's check of its worktree (writes only under `.sigaba/`) |
 | `cache lookup --theorem N`, `cache record ...` | goal-result cache |
 | `hook --event E`, `hooks install --provider P` | hooks |
 | `skills sync` / `skills check` | copies `.claude/skills/` to `.agents/skills/` / lists differences |
