@@ -620,6 +620,45 @@ class TestMisc(Base):
         with self.assertRaises(C.ProtocolError):
             self.ctl.pr_fetch(t["task_id"], 7)
 
+    def test_checkpoint_publishes_against_fetched_pin_then_requires_main_for_ready(self):
+        t = self.ctl.task_create(self.desc())
+        tid = t["task_id"]
+        dep = thm_files("A.other")
+        head = "d" * 40
+        self.gh.prs[7] = {"number": 7, "headRefOid": head}
+        self.gh.files[7] = []
+        for path, content in dep.items():
+            data = content.encode()
+            sha = C.git_blob_sha(data)
+            self.gh.blobs[sha] = data
+            self.gh.files[7].append({"filename": path, "status": "added", "sha": sha})
+        self.ctl.pr_fetch(tid, 7)
+
+        files = thm_files("A.child")
+        lean = "dag/Theorems/Thm_A_child.lean"
+        files[lean] = "import Theorems.Thm_A_other\n" + files[lean]
+        self.write(t, files)
+        self.ctl.artifact_propose(tid, [lean])
+        self.assertEqual(self.ctl.checkpoint(tid)["pushed"], sorted(files))
+        cp = R.one_block(self.gh.comments(t["pr"])[-1]["body"], "checkpoint")
+        self.assertEqual(cp["dependencies"], [{"pr": 7, "head": head, "paths": sorted(dep)}])
+        self.assertTrue(set(dep).isdisjoint(self.remote_files(t["branch"])))
+        with self.assertRaises(C.VerificationError):
+            self.ctl.task_ready(tid)
+        self.assertTrue(self.gh.prs[t["pr"]]["isDraft"])
+
+        for path, content in dep.items():
+            (self.seed / path).write_text(content)
+        git(self.seed, "add", *dep)
+        git(self.seed, "commit", "-qm", "Merge dependency")
+        git(self.seed, "push", "-q", str(self.bare), "main")
+        more = thm_files("A.followup")
+        self.write(t, more)
+        self.ctl.artifact_propose(tid, list(more))
+        self.assertEqual(self.ctl.publish(tid)["pushed"], sorted(more))
+        self.ctl.task_ready(tid)
+        self.assertFalse(self.gh.prs[t["pr"]]["isDraft"])
+
     def test_cache(self):
         self.ctl.refresh_base()
         self.ctl.cache_record("A.main", "timeout", "tried induction")

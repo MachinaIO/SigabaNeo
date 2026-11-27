@@ -334,7 +334,11 @@ class Controller:
     def verify_files(self, files: dict[str, bytes], where: Path, deps: dict[str, bytes] | None
                      = None) -> dict:
         """Precheck and `dag_verify` of `files` (plus pinned `deps`) on the current `main`."""
-        every = {**(deps or {}), **files}
+        # Identical bytes already on main need no overlay. A different pinned version still
+        # goes through precheck, which rejects changes to existing nodes.
+        every = {p: b for p, b in (deps or {}).items()
+                 if not (self.base / p).is_file() or (self.base / p).read_bytes() != b}
+        every.update(files)
         pre = self.local_precheck(every, scratch=where)
         new = where / "new"
         if new.exists():
@@ -563,12 +567,15 @@ class Controller:
                 out[path] = p.read_bytes()
         return out
 
+    def dependency_pins(self, t: dict) -> list[dict]:
+        declared = t["descriptor"].get("depends_on", [])
+        fetched = self.st.get(f"deps:{t['task_id']}", [])
+        return list({(x["pr"], x["head"]): x for x in declared + fetched}.values())
+
     def deps(self, t: dict) -> dict[str, bytes]:
         d = self.task_dir(t["task_id"]) / "deps"
         out = {}
-        pinned = {(x["pr"], x["head"]): x for x in t["descriptor"].get("depends_on", []) +
-                  self.st.get(f"deps:{t['task_id']}", [])}
-        for x in pinned.values():
+        for x in self.dependency_pins(t):
             root = d / str(x["pr"]) / x["head"]
             for p in sorted(root.rglob("*")) if root.is_dir() else []:
                 if p.is_file():
@@ -699,9 +706,7 @@ class Controller:
             (stage / "files" / p).write_bytes(b)
         self.refresh_base()
         committed = self.task_files(t)
-        with_deps = bool(t["descriptor"].get("depends_on"))
-        res = self.verify_files({**committed, **snap}, stage,
-                                self.deps(t) if with_deps else None)
+        res = self.verify_files({**committed, **snap}, stage, self.deps(t))
         own = {p: s for p, s in res["statuses"].items() if p in snap}
         if not res["ok"]:
             self.st.x("UPDATE artifacts SET state='failed', digest=?, result=? WHERE id=?", digest,
@@ -782,7 +787,7 @@ class Controller:
                                       "next_steps", "falsification") if k in rec},
               "head": Git(Path(t["worktree"])).head() if t["worktree"] else None,
               "verification": json.loads(ver["statuses"]) if ver else {},
-              "pushed": pushed, "dependencies": t["descriptor"].get("depends_on", []),
+              "pushed": pushed, "dependencies": self.dependency_pins(t),
               "outcome": outcome or t["outcome"],
               "usage": {"wall_seconds": int(self.task_usage(t["task_id"]))}}
         probs = R.validate("checkpoint", cp)
