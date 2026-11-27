@@ -1,0 +1,96 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A worker's semantic progress record (`progress record`)",
+ "type": "object",
+ "required": [],
+ "additionalProperties": false,
+ "properties": {
+  "established": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "claim"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "claim": {
+      "type": "string",
+      "maxLength": 1000
+     },
+     "evidence": {
+      "enum": [
+       "verified",
+       "sketch",
+       "provisional",
+       "informal",
+       "heuristic",
+       "literature"
+      ]
+     },
+     "refs": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 400
+      },
+      "maxItems": 20
+     }
+    }
+   },
+   "maxItems": 50
+  },
+  "attempted": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "maxItems": 50
+  },
+  "blockers": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "maxItems": 50
+  },
+  "next_steps": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "maxItems": 50
+  },
+  "summary": {
+   "type": "string",
+   "maxLength": 500
+  },
+  "falsification": {
+   "enum": [
+    "attempted",
+    "cached",
+    "unavailable",
+    "skipped",
+    "not_applicable"
+   ]
+  },
+  "artifacts": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 300
+   },
+   "maxItems": 200
+  },
+  "follow_ups": {
+   "type": "array",
+   "items": {
+    "type": "object"
+   },
+   "maxItems": 20
+  }
+ }
+}

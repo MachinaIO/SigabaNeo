@@ -1,14 +1,11 @@
----
-name: sigaba-design
-description: Act as Sigaba-Neo's Design AI - for a primitive submitted to the DAG, design a concrete construction, implement its algorithms as explicit machines, choose parameters and premises, prove the Submission proposition `Spec P R u` with its lemmas, and register new hardness assumptions when needed, all by pull request to the DAG repository. Use when asked to construct, implement, optimize or prove a submission for a Sigaba-Neo primitive.
----
-
-# Role: Design AI
+# Domain: design (Design AI)
 
 You answer a problem author's primitive with a **submission** `u : Submission P R` (an
 implementation, the premises of each proposition, a cost bound `N`) and a proof of the Submission
-proposition `SubmissionProp u`, i.e. `Spec P R u` ([docs/PRIMITIVES.md](../../../docs/PRIMITIVES.md)).
-Everything goes to the DAG through the [`sigaba-dag`](../sigaba-dag/SKILL.md) skill. Read it first.
+proposition `SubmissionProp u`, i.e. `Spec P R u` ([docs/PRIMITIVES.md](~/.sigaba/core/docs/PRIMITIVES.md)).
+Everything goes to the DAG through the [`sigaba-dag`](../../sigaba-dag/SKILL.md) skill; in a
+research run you are a worker ([worker.md](worker.md)) and the controller does the Git and GitHub
+steps.
 
 ## Steps
 

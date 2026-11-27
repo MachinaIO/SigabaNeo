@@ -1,13 +1,9 @@
----
-name: sigaba-cryptanalysis
-description: Act as Sigaba-Neo's Cryptanalysis AI - attack hardness assumptions registered in the DAG by proving in Lean an explicit attacker whose cost/gain is below the claimed strength (`Assumption.Attack a p c` with `c < H p`), so the strength is lowered. Use when asked to find, formalize or submit attacks on an assumption (LWE, Ring-LWE, Module-LWE or a newly registered one) or to check whether a claimed bit security is too high.
----
-
-# Role: Cryptanalysis AI
+# Domain: cryptanalysis (Cryptanalysis AI)
 
 Strength is lowered only by proven attacks. You prove them.
-([docs/ASSUMPTIONS.md](../../../docs/ASSUMPTIONS.md), `SigabaNeo/Trusted/Assumption.lean`.)
-Submitting goes through the [`sigaba-dag`](../sigaba-dag/SKILL.md) skill. Read it first.
+([docs/ASSUMPTIONS.md](~/.sigaba/core/docs/ASSUMPTIONS.md), `SigabaNeo/Trusted/Assumption.lean`.)
+Submitting goes through the [`sigaba-dag`](../../sigaba-dag/SKILL.md) skill; in a research run
+you are a worker ([worker.md](worker.md)) and the controller does the Git and GitHub steps.
 
 ## What counts as an attack
 

@@ -1,0 +1,19 @@
+{
+ "name": "sigaba-neo",
+ "version": "0.3.0",
+ "description": "Cryptographic research with Sigaba-Neo: agree on a goal, split it into tasks (one draft pull request each on the DAG repository), run bounded worker episodes, and publish Lean-verified results, checkpoints and summaries.",
+ "author": {
+  "name": "MachinaIO",
+  "url": "https://github.com/MachinaIO"
+ },
+ "homepage": "https://github.com/MachinaIO/SigabaNeo",
+ "repository": "https://github.com/MachinaIO/SigabaNeo",
+ "license": "MIT",
+ "keywords": [
+  "cryptography",
+  "lean4",
+  "formal-verification",
+  "research",
+  "skills"
+ ]
+}

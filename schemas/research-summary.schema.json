@@ -1,0 +1,46 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A task's summary (fenced `sigaba-summary-v1` block of a note tagged research-summary)",
+ "type": "object",
+ "required": [
+  "schema",
+  "task_id",
+  "goal",
+  "outcome"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "schema": {
+   "enum": [
+    "sigaba.summary.v1"
+   ]
+  },
+  "task_id": {
+   "type": "string",
+   "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+  },
+  "goal": {
+   "type": "string",
+   "pattern": "[0-9a-f]{64}"
+  },
+  "outcome": {
+   "enum": [
+    "verified_solution",
+    "verified_refutation",
+    "verified_partial",
+    "candidate",
+    "handoff",
+    "inconclusive",
+    "duplicate",
+    "cancelled",
+    "infra_failure"
+   ]
+  },
+  "pr": {
+   "type": [
+    "integer",
+    "null"
+   ]
+  }
+ }
+}

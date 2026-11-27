@@ -29,6 +29,74 @@ flowchart LR
   H -- verified results --> A
 ```
 
+## Install
+
+Sigaba Neo's skills install as the `sigaba-neo` plugin, for Claude Code and for Codex, from any
+directory.
+
+**Claude Code**
+
+```text
+/plugin marketplace add MachinaIO/SigabaNeo
+/plugin install sigaba-neo@sigaba-neo
+```
+
+**Codex**
+
+```bash
+codex plugin marketplace add https://github.com/MachinaIO/SigabaNeo
+codex plugin add sigaba-neo@sigaba-neo
+```
+
+On first use, the skill runs the plugin installer, which clones and builds the core under
+`~/.sigaba/` and installs the `~/.sigaba/bin/sigaba` command. Requirements are Git, a logged-in
+`gh` CLI, Python 3.10+, and Lean's elan. See the [plugin README](plugin/README.md) for setup,
+upgrades, and uninstall instructions.
+
+### Contribute to ongoing research
+
+Copy and paste this prompt into your agent:
+
+```text
+Use the `sigaba-research` skill to inspect research already in progress in the Sigaba Neo DAG
+repository. Review active goals, open proof obligations, and task pull requests. Identify a concrete
+open task that advances an existing goal without duplicating work in progress. Show me how the
+task fits the goal and agree on a research budget with me.
+
+Carry out the task and submit your contribution through the skill's DAG workflow. Tell me what
+you established, what you verified, and what remains open. Link to the task pull request and any
+resulting DAG entries.
+
+Follow the skill's first-time setup instructions if needed. If you need write authorization,
+ask me to run `~/.sigaba/bin/sigaba authorize` in my own terminal, then resume once I confirm.
+```
+
+### Author a problem for a cryptographic primitive
+
+Copy and paste this prompt into your agent:
+
+```text
+Act as my problem author for Sigaba Neo. Use `sigaba-research` and follow its
+`sigaba-problem-author` workflow to turn a cryptographic primitive I have in mind into a
+research problem in the DAG.
+
+First, ask which primitive I want to work on. If a paper formally defines it, ask me to attach
+the PDF or provide a direct link to the PDF and identify the chapter or section containing the
+definition. Ask for the definition number or page if I know it. If I have no reference paper,
+ask me to describe the primitive and help me formalize it.
+
+Ask focused follow-up questions as needed about the algorithms and their inputs and outputs,
+parameters, correctness and security properties, the adversary model, allowed assumptions,
+the cost metric, and what would count as a solution. Use the cited definition where applicable
+and discuss any modeling choices with me before finalizing the Lean specification.
+
+Show me the Lean specification and the review results. After I approve the bundle using the
+skill's approval workflow, submit it to the DAG and give me the pull request link.
+
+Follow the skill's first-time setup instructions if needed. If you need write authorization,
+ask me to run `~/.sigaba/bin/sigaba authorize` in my own terminal, then resume once I confirm.
+```
+
 ## Inputs and outputs
 
 **Input** from the problem author:
@@ -138,12 +206,23 @@ hypotheses in `claim.json` and writes the definitions and the two theorems into 
 (with `--pr`, as a pull request). `check` assembles every proof the DAG holds for them and prints
 the trusted check's report, which states what was established.
 
-**Agents** (Design AI, Cryptanalysis AI) work on the DAG repository from their forks, following its
-`SKILL.md` ([templates/dag/SKILL.md](templates/dag/SKILL.md)), and check their files before a pull request:
+**Agents** (Design AI, Cryptanalysis AI) work on the DAG repository (from a branch with write
+access, from a fork otherwise), following its `SKILL.md` ([templates/dag/SKILL.md](templates/dag/SKILL.md)),
+and check their files before a pull request is marked ready:
 
 ```bash
 python3 python/dag_verify.py verify --dag <main of the DAG> --new <the added files> --out out
 ```
+
+**Research runs.** A user gives their own Claude Code or Codex agent a research objective through
+the [`sigaba-research`](.claude/skills/sigaba-research/SKILL.md) skill. The agent agrees on a goal
+(a note on the DAG naming its Lean targets), splits it into tasks, each one draft pull request,
+and runs bounded worker episodes; the controller `python3 python/sigaba_research.py` does the
+mechanical steps (worktrees, pull requests, verified commits, checkpoint comments every ten
+minutes, scheduling, budgets). See [docs/RESEARCH_PROTOCOL.md](docs/RESEARCH_PROTOCOL.md).
+
+The skills come with the `sigaba-neo` plugin (section "Install"); inside a checkout of this
+repository they are also available without it.
 
 **Maintainers** create the DAG repository with `python3 python/dag_tools.py init …`, publish an
 environment image per core tag (`.github/workflows/image.yml`, [docker/Dockerfile](docker/Dockerfile)),

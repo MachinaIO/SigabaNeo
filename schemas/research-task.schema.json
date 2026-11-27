@@ -1,0 +1,132 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "A research task (fenced `sigaba-task-v1` block of a task PR's body)",
+ "type": "object",
+ "required": [
+  "schema",
+  "task_id",
+  "goal",
+  "domain",
+  "operation",
+  "title",
+  "scope"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "schema": {
+   "enum": [
+    "sigaba.task.v1"
+   ]
+  },
+  "task_id": {
+   "type": "string",
+   "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+  },
+  "goal": {
+   "type": "string",
+   "pattern": "[0-9a-f]{64}"
+  },
+  "domain": {
+   "enum": [
+    "design",
+    "cryptanalysis"
+   ]
+  },
+  "operation": {
+   "enum": [
+    "expand",
+    "deepen",
+    "organize"
+   ]
+  },
+  "title": {
+   "type": "string",
+   "maxLength": 200
+  },
+  "scope": {
+   "type": "string",
+   "maxLength": 4000
+  },
+  "deliverables": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 500
+   },
+   "maxItems": 20
+  },
+  "success": {
+   "type": "string",
+   "maxLength": 1000
+  },
+  "targets": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "maxLength": 400
+   },
+   "maxItems": 50
+  },
+  "related": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "task",
+     "relation"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "task": {
+      "type": "string",
+      "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+     },
+     "relation": {
+      "enum": [
+       "successor_of",
+       "related",
+       "supports",
+       "tests_assumption",
+       "duplicate_of"
+      ]
+     },
+     "reason": {
+      "type": "string",
+      "maxLength": 500
+     }
+    }
+   },
+   "maxItems": 50
+  },
+  "depends_on": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "pr",
+     "head"
+    ],
+    "additionalProperties": false,
+    "properties": {
+     "pr": {
+      "type": "integer",
+      "minimum": 1
+     },
+     "head": {
+      "type": "string",
+      "pattern": "[0-9a-f]{40}"
+     },
+     "paths": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "maxLength": 300
+      },
+      "maxItems": 200
+     }
+    }
+   },
+   "maxItems": 50
+  }
+ }
+}

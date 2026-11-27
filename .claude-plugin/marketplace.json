@@ -1,0 +1,17 @@
+{
+ "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+ "name": "sigaba-neo",
+ "description": "The Sigaba-Neo research plugin.",
+ "owner": {
+  "name": "MachinaIO"
+ },
+ "plugins": [
+  {
+   "name": "sigaba-neo",
+   "description": "Cryptographic research with Sigaba-Neo: agree on a goal, split it into tasks (one draft pull request each on the DAG repository), run bounded worker episodes, and publish Lean-verified results, checkpoints and summaries.",
+   "version": "0.3.0",
+   "source": "./plugin",
+   "category": "development"
+  }
+ ]
+}
