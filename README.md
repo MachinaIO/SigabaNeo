@@ -29,6 +29,31 @@ flowchart LR
   H -- verified results --> A
 ```
 
+## Install
+
+Sigaba Neo's skills install as the `sigaba-neo` plugin, for Claude Code and for Codex, from any
+directory.
+
+**Claude Code**
+
+```text
+/plugin marketplace add MachinaIO/SigabaNeo
+/plugin install sigaba-neo@sigaba-neo
+```
+
+**Codex**
+
+```bash
+codex plugin marketplace add https://github.com/MachinaIO/SigabaNeo
+codex plugin add sigaba-neo@sigaba-neo
+```
+
+Then ask your agent to research something with Sigaba Neo (the `sigaba-research` skill). On first
+use the skill runs the plugin's installer, which clones and builds the core into `~/.sigaba/` and
+writes the command `~/.sigaba/bin/sigaba`; once, in your own terminal, allow it to write to the
+DAG repository with `~/.sigaba/bin/sigaba authorize`. Requirements: git, gh (logged in), Python
+3.10+ and Lean's elan. Details, upgrade and uninstall: [plugin/README.md](plugin/README.md).
+
 ## Inputs and outputs
 
 **Input** from the problem author:
@@ -153,21 +178,8 @@ and runs bounded worker episodes; the controller `python3 python/sigaba_research
 mechanical steps (worktrees, pull requests, verified commits, checkpoint comments every ten
 minutes, scheduling, budgets). See [docs/RESEARCH_PROTOCOL.md](docs/RESEARCH_PROTOCOL.md).
 
-Install the skills as a plugin, from any directory:
-
-```text
-# Claude Code
-/plugin marketplace add MachinaIO/SigabaNeo
-/plugin install sigaba-neo@sigaba-neo
-
-# Codex
-codex plugin marketplace add https://github.com/MachinaIO/SigabaNeo
-codex plugin add sigaba-neo@sigaba-neo
-```
-
-On first use the skill runs the plugin's installer, which clones and builds the core into
-`~/.sigaba/` and writes the command `~/.sigaba/bin/sigaba` (see [plugin/README.md](plugin/README.md)).
-Inside a checkout of this repository the same skills are also available without the plugin.
+The skills come with the `sigaba-neo` plugin (section "Install"); inside a checkout of this
+repository they are also available without it.
 
 **Maintainers** create the DAG repository with `python3 python/dag_tools.py init …`, publish an
 environment image per core tag (`.github/workflows/image.yml`, [docker/Dockerfile](docker/Dockerfile)),
