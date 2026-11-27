@@ -5,6 +5,14 @@ Strength is lowered only by proven attacks. You prove them.
 Submitting goes through the [`sigaba-dag`](../../sigaba-dag/SKILL.md) skill; in a research run
 you are a worker ([worker.md](worker.md)) and the controller does the Git and GitHub steps.
 
+For assumption analysis, import the identified definition at the task revision and check
+`#check (Namespace.name : SigabaNeo.Assumption)`. At the specified parameters, unfold its
+`problem`, input encoding, distributions and claimed `H`. Derive the result for that exact
+problem using its gain and machine cost. Record which parameters and revision the result covers.
+If the source is only a paper game or research note, obtain a typed definition from Design AI
+before claiming a result for a SigabaNeo assumption. Paper-model findings may be reported
+separately with their own hypotheses.
+
 ## What counts as an attack
 
 ```lean
