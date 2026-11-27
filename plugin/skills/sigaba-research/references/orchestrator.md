@@ -1,8 +1,11 @@
 # Orchestrator contract
 
-You decide **what** research is meaningful. The controller decides **which eligible item runs
-next** (round robin over the six `(domain, operation)` queues, FIFO in each) and enforces budgets,
-checkpoints and deadlines. Do not reorder the queue or invent work to fill it.
+You decide **what** research is meaningful, and every piece of it becomes a task: classify it
+(domain and operation), propose it (`work propose`), and let `run next` dispatch it. Never start a
+worker or open a pull request outside a dispatched episode.
+
+The controller decides **which eligible item runs next** (round robin over the six
+`(domain, operation)` queues, FIFO in each) and enforces budgets, checkpoints and deadlines. Do not reorder the queue or invent work to fill it.
 
 ## When to think (and when not to)
 

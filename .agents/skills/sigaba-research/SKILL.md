@@ -14,6 +14,21 @@ SR="python3 python/sigaba_research.py"     # the controller; JSON output
 
 <!-- plugin:install -->
 
+**The task rules are not optional.** All research work, however small, is a task: it is
+classified by domain (`design` / `cryptanalysis`) and operation (`expand` / `deepen` /
+`organize`), queued, dispatched by `$SR run next`, and published only through its own task pull
+request. In particular:
+
+* **No worker without a dispatch.** Every worker (subagent, parallel or not) runs exactly one
+  episode that `run next` (or `episode start`) returned, with that episode's `prompt_file`.
+  Investigating three questions in parallel means three tasks in the queue, not three ad-hoc
+  subagents.
+* **No pull request outside the controller.** Never open a DAG pull request yourself for
+  research (no "one-off" posts); the controller opens one draft PR per task.
+* **No goal, no research.** If no goal or pending goal fits, register one first (section 1);
+  `task create` refuses a goal that is neither on `main` nor in an open pull request.
+* If you notice you broke these rules, stop, tell the user, and move the work into tasks.
+
 Never type `git push`, `gh pr …`, branch or worktree commands for a task: call the controller.
 Never compute IDs, fingerprints, timestamps or digests yourself. The protocol is in
 [docs/RESEARCH_PROTOCOL.md](../../../docs/RESEARCH_PROTOCOL.md). The other skills are

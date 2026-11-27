@@ -24,6 +24,7 @@ The words MUST, MUST NOT, SHOULD and MAY are used as in v1.2.
 | D10 Fewer skills | The Design AI and Cryptanalysis AI skills became the references `design.md` and `cryptanalysis.md` of `sigaba-research`; three skills remain: `sigaba-research`, `sigaba-dag`, `sigaba-problem-author`. |
 | D11 No write authorization step | The controller's one-time `authorize` step was removed: public writes are governed by the user's GitHub login, GitHub's permissions and the agent runtime's own permission prompts. The goal approval at a terminal (`goal approve`) stays. |
 | D12 Reuse existing goals | `goals list` also shows goals pending in open PRs; `goal prepare` returns an existing goal instead of a duplicate and refuses a goal naming the same nodes unless it is a new version (`parent`) or confirmed distinct. |
+| D13 Research only through tasks | Every piece of research is a task dispatched by `run next` and published through its own task PR; no ad-hoc workers or hand-made research PRs (the manual DAG loop is for administrative PRs). `task create` and `work propose` refuse a goal that is neither on `main` nor in an open PR. |
 
 ## 1. Scope
 
@@ -181,6 +182,11 @@ is immutable: a change of scope is a new task with `successor_of`. Owner, head, 
 derived from GitHub and local state, never written in the descriptor.
 
 ### 5.2 PR lifecycle
+
+All research is published this way (D13): a proof, sketch, attack, cost analysis or research note
+towards a goal comes from a task's PR, never from a hand-made branch, and every worker runs one
+dispatched episode. `task create` (and `work propose`) refuse a goal that is neither on `main` nor
+in an open pull request; register the goal first.
 
 - `task create` allocates the UUID, creates the worktree from the DAG's latest `main`
   (`~/.sigaba/worktrees/<repo-key>/<uuid>`, branch `research/<uuid>`), makes one empty commit

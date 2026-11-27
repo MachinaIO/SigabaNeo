@@ -180,6 +180,25 @@ class TestTasks(Base):
         self.assertEqual(len(self.gh.prs), 1)
         self.assertEqual(len(self.gh.comments(1)), 1)
 
+    def test_task_needs_a_known_goal(self):
+        with self.assertRaises(C.ProtocolError):
+            self.ctl.task_create(self.desc(goal="1" * 64))
+        self.assertEqual(self.gh.prs, {})
+        self.assertIn("no goal", self.ctl.work_propose([self.desc(goal="1" * 64)])
+                      ["rejected"][0]["reason"])
+        # a goal whose registration PR is still open is enough
+        g = dict(GOAL, objective={"kind": "explore"}, parent=self.goal_fp)
+        path, text = R.goal_note(g)
+        sha = C.git_blob_sha(text.encode())
+        self.gh.prs[5] = {"number": 5, "url": "u", "state": "OPEN", "isDraft": True,
+                          "headRefName": "register/y", "headRefOid": "f" * 40,
+                          "author": {"login": "bob"}, "title": "Register", "body": "",
+                          "mergedAt": None}
+        self.gh.files[5] = [{"filename": path, "status": "added", "sha": sha}]
+        self.gh.blobs[sha] = text.encode()
+        t = self.ctl.task_create(self.desc(goal=R.goal_fingerprint(g)))
+        self.assertEqual(t["state"], "active")
+
     def test_bad_descriptor(self):
         with self.assertRaises(C.ProtocolError):
             self.ctl.task_create(self.desc(domain="maths"))
