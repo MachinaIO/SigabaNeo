@@ -17,15 +17,18 @@ and the exact controller commands. Read the reference of your domain ([design.md
    (`"falsification": "attempted" | "cached" | "unavailable" | "skipped" | "not_applicable"`).
    No counterexample found does not make a claim true; a counterexample found informally is
    evidence, and a formal refutation needs a Lean proof of the negation.
-3. **Check reuse.** `cache lookup --theorem NAME` tells you whether a statement is already proved
+3. **Sources.** Get papers as in `sigaba-research` ("Papers and other sources"): the usual
+   fetch, then a browser-control tool if the site blocks it (IACR ePrint often does), then ask
+   the orchestrator. Cite the exact source and version; never fill in from memory silently.
+4. **Check reuse.** `cache lookup --theorem NAME` tells you whether a statement is already proved
    or what was tried. Reuse proved nodes by importing them; do not reprove them.
-4. **Formalize.** A gap in a library is a subproblem: state it as a theorem node and reduce to it
+5. **Formalize.** A gap in a library is a subproblem: state it as a theorem node and reduce to it
    with a sketch. Verify with `task verify ID` (add `--with-deps` when you build on another PR's
    files that you fetched with `pr fetch`).
-5. **Publish what verifies.** `artifact propose ID dag/...` lists files to publish; at the next
+6. **Publish what verifies.** `artifact propose ID dag/...` lists files to publish; at the next
    checkpoint the controller verifies exactly those bytes and pushes them to the task's draft PR.
    Files that fail stay local.
-6. **Record progress** whenever the mathematical state changes and before you stop:
+7. **Record progress** whenever the mathematical state changes and before you stop:
 
    ```json
    {"summary": "one line",
@@ -40,7 +43,7 @@ and the exact controller commands. Read the reference of your domain ([design.md
 
    `progress record --task ID --file progress.json`. `evidence`: `verified` (Lean, gate-level),
    `sketch`, `provisional` (uses unmerged work), `informal`, `heuristic`, `literature`.
-7. **End the episode** before the budget runs out:
+8. **End the episode** before the budget runs out:
    `episode end ID --outcome unresolved|done|blocked --file result.json` with
    `{"summary": …, "remaining_obligations": [...], "follow_ups": [{"domain": …, "operation": …,
    "title": …, "scope": …}], "reason": "for blocked"}`. `done` means the task's scope is finished
