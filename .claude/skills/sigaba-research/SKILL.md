@@ -36,16 +36,29 @@ instructions. Everything published is **English**, whatever language the user sp
 
 ## 1. Route the request
 
-* **A new primitive, instance, assumption or claim, or a change of meaning** → follow
-  [`sigaba-problem-author`](../sigaba-problem-author/SKILL.md) (authoring bundle, independent
-  review, user approval at a terminal, `goal register`). If the user only asked for the
-  definition, stop there.
-* **An existing goal** → `$SR sync`, `$SR goals list`, `$SR goals show <fingerprint>`. Show the
-  user the goal, its targets' statuses and open leaves, the task PRs in progress (drafts too) and
-  the plans. If several goals fit, ask. Reuse a goal whose fingerprint matches; a different
-  objective or policy is a new goal (problem-author flow, with `parent`).
-* **Inspect / resume / stop** → `$SR run status`, `$SR task list`, `$SR task resume ID`,
-  `$SR run stop`.
+**Always look first**, whatever the request: `$SR sync`, then `$SR goals list`. It returns
+`goals` (registered) and `pending` (goals in open registration PRs). Most research continues
+one of them. Then, in this order:
+
+1. **A goal or pending goal fits** → use it: `$SR goals show <fingerprint>`; show the user the
+   goal, its targets' statuses and open leaves, the task PRs in progress (drafts too) and the
+   plans, and read the notes its definitions are discussed in (the research so far). If several
+   fit, ask which.
+2. **The objective or policy of an existing goal changes** → a new goal with `parent` set to the
+   old one's fingerprint: a goal contract naming the same nodes, `goal prepare`, the user's
+   approval at a terminal, `goal register` (the bundle holds only the goal note).
+3. **Only if no goal fits**: search the DAG for the primitive itself (definitions tagged
+   `primitive`, the notes about them). If it is defined, register a goal note that names it
+   (as in 2, without `parent`) and do not define it again; otherwise follow
+   [`sigaba-problem-author`](../sigaba-problem-author/SKILL.md). If the user only asked for the
+   definition, stop there.
+
+`goal prepare` enforces this: it returns the existing goal instead of writing a duplicate, and
+refuses a goal that names the same nodes as another unless it is that goal's new version
+(`parent`) or the user confirmed it is a different goal (`--distinct REASON`).
+
+**Inspect / resume / stop** → `$SR run status`, `$SR task list`, `$SR task resume ID`,
+`$SR run stop`.
 
 ## 2. Run
 

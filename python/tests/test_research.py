@@ -446,10 +446,44 @@ class TestScheduling(Base):
         self.assertEqual(self.ctl.st.task(t["task_id"])["state"], "merged")
 
 
+class TestExistingGoals(Base):
+    def test_prepare_reuses_or_refuses(self):
+        body = {k: v for k, v in GOAL.items() if k != "schema"}
+        out = self.ctl.goal_prepare(dict(body, title="another title"), self.tmp / "b0")
+        self.assertEqual(out["existing"]["fingerprint"], self.goal_fp)   # same goal: reused
+        self.assertFalse((self.tmp / "b0").exists())
+        changed = dict(body, policy={"forbidden_routes": [], "intent": "anything"})
+        with self.assertRaises(C.ProtocolError) as e:                     # same nodes
+            self.ctl.goal_prepare(changed, self.tmp / "b1")
+        self.assertIn(self.goal_fp, str(e.exception))
+        v2 = self.ctl.goal_prepare(dict(changed, parent=self.goal_fp), self.tmp / "b2")
+        self.assertEqual(v2["related_goals"], [])
+        other = self.ctl.goal_prepare(changed, self.tmp / "b3", distinct="the user wants both")
+        self.assertEqual(other["related_goals"][0]["fingerprint"], self.goal_fp)
+        self.assertTrue((self.tmp / "b3" / "distinct.md").exists())
+
+    def test_pending_registration(self):
+        g = dict(GOAL, targets=[], definitions=["definition:Prim"], objective={"kind": "explore"},
+                 parent=self.goal_fp)
+        path, text = R.goal_note(g)
+        sha = C.git_blob_sha(text.encode())
+        self.gh.prs[9] = {"number": 9, "url": "u", "state": "OPEN", "isDraft": False,
+                          "headRefName": "register/x", "headRefOid": "f" * 40,
+                          "author": {"login": "bob"}, "title": "Register", "body": "",
+                          "mergedAt": None}
+        self.gh.files[9] = [{"filename": path, "status": "added", "sha": sha}]
+        self.gh.blobs[sha] = text.encode()
+        ov = self.ctl.goals_overview()
+        self.assertEqual(ov["pending"][0]["pending_pr"], 9)
+        out = self.ctl.goal_prepare({k: v for k, v in g.items() if k != "schema"},
+                                    self.tmp / "b4")
+        self.assertEqual(out["existing"]["pending_pr"], 9)
+
+
 class TestAuthoring(Base):
     def test_digest_approval_register(self):
         d = self.tmp / "bundle"
-        g = dict(GOAL, objective={"kind": "prove"})
+        g = dict(GOAL, objective={"kind": "prove"}, parent=self.goal_fp)   # a new version
         out = self.ctl.goal_prepare({k: v for k, v in g.items() if k != "schema"}, d)
         digest = out["digest"]
         with self.assertRaises(C.ProtocolError):       # no terminal: an agent cannot approve

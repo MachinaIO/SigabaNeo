@@ -183,6 +183,55 @@ class Controller:
                         "title": n.meta.get("title"), "goal": goal, "problems": probs})
         return out
 
+    def pending_goals(self) -> list[dict]:
+        """Goals added by open pull requests (registrations not merged yet)."""
+        out = []
+        try:
+            prs = [p for p in self.gh.list_prs("open") if p.get("state", "OPEN") == "OPEN"]
+            for pr in prs:
+                for f in self.gh.pr_files(pr["number"]):
+                    path = f["filename"]
+                    if f.get("status") != "added" or not path.startswith("dag/Notes/") or \
+                            not R.GOAL_NOTE.fullmatch(Path(path).stem):
+                        continue
+                    text = self.gh.blob(f["sha"]).decode(errors="replace")
+                    if R.goal_note_problems(path, text):
+                        continue
+                    goal = R.one_block(D.front_matter(text)[1], "goal")
+                    out.append({"note": Path(path).stem, "fingerprint": R.goal_fingerprint(goal),
+                                "title": goal["title"], "goal": goal, "problems": [],
+                                "pending_pr": pr["number"]})
+        except (RemoteError, KeyError, ValueError) as e:
+            self.st.event(self.clock(), "pending_goals_failed", None, None, {"error": str(e)})
+        return out
+
+    def goals_overview(self) -> dict:
+        goals = self.goals()
+        pending = [g for g in self.pending_goals() if g["fingerprint"] not in
+                   {x["fingerprint"] for x in goals}]
+        strip = lambda g: {k: v for k, v in g.items() if k != "problems" or v}  # noqa: E731
+        return {"goals": [strip(g) for g in goals], "pending": [strip(g) for g in pending],
+                "how": "Reuse a goal or pending goal that fits; ask the user if several do. A "
+                       "new goal is only for an objective none of them covers."}
+
+    def goal_conflicts(self, contract: dict) -> tuple[dict | None, list[dict]]:
+        """(the same goal, if it exists or is pending; the goals naming any of the same nodes)."""
+        fp = R.goal_fingerprint(contract)
+        refs = set(contract.get("targets", [])) | set(contract.get("definitions", []))
+        same, overlap = None, []
+        for g in self.goals() + self.pending_goals():
+            if not g.get("goal"):
+                continue
+            if g["fingerprint"] == fp:
+                same = g
+                continue
+            grefs = set(g["goal"]["targets"]) | set(g["goal"]["definitions"])
+            if refs & grefs and contract.get("parent") != g["fingerprint"]:
+                overlap.append({"fingerprint": g["fingerprint"], "title": g["title"],
+                                "shared": sorted(refs & grefs),
+                                **({"pending_pr": g["pending_pr"]} if "pending_pr" in g else {})})
+        return same, overlap
+
     def goal(self, fp: str) -> dict | None:
         return next((g for g in self.goals() if g["fingerprint"] and
                      g["fingerprint"].startswith(fp)), None)
@@ -203,7 +252,11 @@ class Controller:
         return T.index(self.dag(), D.read_records(self.records if self.records.is_dir()
                                                   else None))
 
-    def goal_prepare(self, contract: dict, dir_: Path | None = None) -> dict:
+    def goal_prepare(self, contract: dict, dir_: Path | None = None,
+                     distinct: str | None = None) -> dict:
+        """The authoring bundle of a new goal. Refuses a goal that exists (it is returned
+        instead) and, unless `distinct` gives the reason, one that names the same nodes as an
+        existing or pending goal without being its new version (`parent`)."""
         contract = {"schema": "sigaba.goal.v1", **contract}
         contract.setdefault("policy", {})
         contract.setdefault("definitions", [])
@@ -211,13 +264,27 @@ class Controller:
         probs = R.validate("goal", contract)
         if probs:
             raise ProtocolError("; ".join(probs))
+        self.refresh_base()
+        same, overlap = self.goal_conflicts(contract)
+        if same:
+            return {"existing": {k: same[k] for k in ("fingerprint", "title", "note")
+                                 if k in same} | ({"pending_pr": same["pending_pr"]}
+                                                  if "pending_pr" in same else {}),
+                    "message": "this goal already exists; use it (nothing was written)"}
+        if overlap and not distinct:
+            raise ProtocolError(
+                "goals already name the same nodes: " + json.dumps(overlap) + ". Use one of them; "
+                "for a changed objective or policy set `parent` to its fingerprint; only if the "
+                "user confirmed it is a different goal, pass --distinct REASON")
         d = Path(dir_).resolve() if dir_ else self.path("authoring", R.new_uuid())
         rel, text = R.goal_note(contract)
         p = d / rel
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text)
+        if distinct:
+            (d / "distinct.md").write_text(f"Distinct from {json.dumps(overlap)}: {distinct}\n")
         return {"dir": str(d), "goal_note": rel, "fingerprint": R.goal_fingerprint(contract),
-                "digest": R.bundle_digest(d)}
+                "digest": R.bundle_digest(d), "related_goals": overlap}
 
     def bundle_files(self, d: Path) -> dict[str, bytes]:
         R.bundle_digest(d)   # refuses symbolic links
@@ -324,6 +391,10 @@ class Controller:
         for f in files:
             if self._exists_on_main(f):
                 raise ProtocolError(f"{f} already exists on main")
+        pending = {g["note"]: g.get("pending_pr") for g in self.pending_goals()}
+        for f in files:
+            if Path(f).stem in pending:
+                raise ProtocolError(f"{f} is already being registered by PR #{pending[Path(f).stem]}")
         branch = f"register/{digest[:12]}"
         remote, prefix = self.push_remote()
         g = self.ensure_clone(fetch=False)
