@@ -205,44 +205,14 @@ class Controller:
             self.st.event(self.clock(), "pending_goals_failed", None, None, {"error": str(e)})
         return out
 
-    def goal_candidates(self, goals: list[dict]) -> list[dict]:
-        """Research targets already in the DAG that no goal names yet: definitions tagged
-        `primitive` or `assumption`, and claim cards. Register a goal note that refers to them
-        instead of defining them again."""
-        named = set()
-        for g in goals:
-            if g.get("goal"):
-                named |= set(g["goal"]["targets"]) | set(g["goal"]["definitions"])
-        dag = self.dag()
-        notes = [n for n in dag.by_kind("note")]
-        out = []
-        for n in dag.by_kind("definition"):
-            tags = n.meta.get("tags", [])
-            kind = "primitive" if "primitive" in tags else "assumption" if "assumption" in tags \
-                else None
-            ref = f"definition:{n.name}"
-            if kind and ref not in named:
-                out.append({"ref": ref, "kind": kind, "title": n.meta.get("title"),
-                            "description": (n.meta.get("description") or "")[:600],
-                            "notes": sum(1 for m in notes if ref in m.meta.get("refs", []))})
-        for n in dag.by_kind("theorem"):
-            ref = f"theorem:{n.name}"
-            if T.CLAIM.fullmatch(n.name) and ref not in named:
-                out.append({"ref": ref, "kind": "claim", "title": n.meta.get("title"),
-                            "description": (n.meta.get("statement") or "")[:600],
-                            "notes": sum(1 for m in notes if ref in m.meta.get("refs", []))})
-        return out
-
     def goals_overview(self) -> dict:
         goals = self.goals()
         pending = [g for g in self.pending_goals() if g["fingerprint"] not in
                    {x["fingerprint"] for x in goals}]
         strip = lambda g: {k: v for k, v in g.items() if k != "problems" or v}  # noqa: E731
         return {"goals": [strip(g) for g in goals], "pending": [strip(g) for g in pending],
-                "unregistered_targets": self.goal_candidates(goals + pending),
-                "how": "Reuse a goal or pending goal that fits. For an unregistered target, "
-                       "register a goal note that refers to it (goal prepare with its ref in "
-                       "`definitions` or `targets`); never define it again."}
+                "how": "Reuse a goal or pending goal that fits; ask the user if several do. A "
+                       "new goal is only for an objective none of them covers."}
 
     def goal_conflicts(self, contract: dict) -> tuple[dict | None, list[dict]]:
         """(the same goal, if it exists or is pending; the goals naming any of the same nodes)."""

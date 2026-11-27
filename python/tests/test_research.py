@@ -447,30 +447,6 @@ class TestScheduling(Base):
 
 
 class TestExistingGoals(Base):
-    def add_to_main(self, files: dict[str, str]):
-        for f, t in files.items():
-            (self.seed / f).parent.mkdir(parents=True, exist_ok=True)
-            (self.seed / f).write_text(t)
-        git(self.seed, "add", "-A")
-        git(self.seed, "commit", "-q", "-m", "more")
-        git(self.seed, "push", "-q", str(self.bare), "main")
-
-    def test_unregistered_targets_are_listed(self):
-        """A primitive defined before goals existed is offered as a target to register, not
-        hidden; one already named by a goal is not."""
-        self.add_to_main({
-            "dag/Definitions/Def_Legacy.lean": "def Legacy : Nat := 2\n",
-            "dag/Definitions/Def_Legacy.json": json.dumps(
-                {"name": "Legacy", "title": "A legacy primitive", "tags": ["primitive"]}),
-            "dag/Notes/legacy-work.md": "---\ntitle: work\nrefs: [definition:Legacy]\n---\n"})
-        self.ctl.refresh_base()
-        ov = self.ctl.goals_overview()
-        self.assertEqual([g["fingerprint"] for g in ov["goals"]], [self.goal_fp])
-        refs = {c["ref"]: c for c in ov["unregistered_targets"]}
-        self.assertIn("definition:Legacy", refs)
-        self.assertEqual(refs["definition:Legacy"]["notes"], 1)
-        self.assertNotIn("definition:Prim", refs)          # named by the existing goal
-
     def test_prepare_reuses_or_refuses(self):
         body = {k: v for k, v in GOAL.items() if k != "schema"}
         out = self.ctl.goal_prepare(dict(body, title="another title"), self.tmp / "b0")

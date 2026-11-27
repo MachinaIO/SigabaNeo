@@ -42,22 +42,19 @@ instructions. Everything published is **English**, whatever language the user sp
 ## 1. Route the request
 
 **Always look first**, whatever the request: `$SR sync`, then `$SR goals list`. It returns
-`goals` (registered), `pending` (goals in open registration PRs) and `unregistered_targets`
-(primitives, assumptions and claim cards already in the DAG that no goal names yet, with how many
-notes discuss each). Most research continues something that is already there. Then, in this
-order:
+`goals` (registered) and `pending` (goals in open registration PRs). Most research continues
+one of them. Then, in this order:
 
 1. **A goal or pending goal fits** → use it: `$SR goals show <fingerprint>`; show the user the
    goal, its targets' statuses and open leaves, the task PRs in progress (drafts too) and the
-   plans. If several fit, ask which.
-2. **An unregistered target fits** (for example a primitive defined before goals existed) →
-   do not define it again. Register only a goal note that refers to it: a goal contract whose
-   `definitions` / `targets` name those nodes, `goal prepare`, the user's approval at a terminal,
-   `goal register` (the bundle holds only the goal note). Read the notes about it first: they are
-   the research so far.
-3. **The objective or policy of an existing goal changes** → a new goal with `parent` set to the
-   old one's fingerprint (same steps as 2).
-4. **Only if nothing in the DAG fits**: a new primitive, instance, assumption or claim → follow
+   plans, and read the notes its definitions are discussed in (the research so far). If several
+   fit, ask which.
+2. **The objective or policy of an existing goal changes** → a new goal with `parent` set to the
+   old one's fingerprint: a goal contract naming the same nodes, `goal prepare`, the user's
+   approval at a terminal, `goal register` (the bundle holds only the goal note).
+3. **Only if no goal fits**: search the DAG for the primitive itself (definitions tagged
+   `primitive`, the notes about them). If it is defined, register a goal note that names it
+   (as in 2, without `parent`) and do not define it again; otherwise follow
    [`sigaba-problem-author`](../sigaba-problem-author/SKILL.md). If the user only asked for the
    definition, stop there.
 
