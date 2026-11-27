@@ -1,6 +1,6 @@
 {
  "name": "sigaba-neo",
- "version": "0.3.0",
+ "version": "0.3.1",
  "description": "Cryptographic research with Sigaba-Neo: agree on a goal, split it into tasks (one draft pull request each on the DAG repository), run bounded worker episodes, and publish Lean-verified results, checkpoints and summaries.",
  "author": {
   "name": "MachinaIO",
