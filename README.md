@@ -225,6 +225,13 @@ and runs bounded worker episodes; the controller `python3 python/sigaba_research
 mechanical steps (worktrees, pull requests, verified commits, checkpoint comments every ten
 minutes, scheduling, budgets). See [docs/RESEARCH_PROTOCOL.md](docs/RESEARCH_PROTOCOL.md).
 
+**Learning.** The research agents themselves improve through shared role notebooks
+(`notebooks/<role>.md` on the DAG, pinned into every episode), evaluated on fresh tasks drawn from
+proof-carrying generators: Lean functions with a universal certificate of solvability and
+semantic diversity (`SigabaNeo.Trusted.Benchmark`, checked by `SigabaNeo.Trusted.GeneratorCheck`).
+The DAG repository's own CI certifies generators and evaluates notebooks. See
+[docs/LEARNING.md](docs/LEARNING.md).
+
 The skills come with the `sigaba-neo` plugin (section "Install"); inside a checkout of this
 repository they are also available without it.
 

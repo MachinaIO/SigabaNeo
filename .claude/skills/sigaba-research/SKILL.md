@@ -77,6 +77,11 @@ one of them. Then, in this order:
 refuses a goal that names the same nodes as another unless it is that goal's new version
 (`parent`) or the user confirmed it is a different goal (`--distinct REASON`).
 
+**Improve the research agents themselves** (a certified problem generator, or a better role
+notebook) → [references/learning.md](references/learning.md). This is not a goal/task flow: the
+generator or notebook PR comes from `$SR learning generator publish` / `$SR learning notebook
+propose`, and the DAG's CI decides.
+
 **Inspect / resume / stop** → `$SR run status`, `$SR task list`, `$SR task resume ID`,
 `$SR run stop`.
 

@@ -1375,11 +1375,19 @@ class Controller:
         if t["state"] == "planned":
             self.st.update_task(t["task_id"], state="active")
         from .providers import worker_prompt
-        prompt = worker_prompt(self, self.st.task(t["task_id"]), eid, b)
+        from . import notebook as NB
+        # The role's active notebook, pinned for the whole episode (learning extension, section 4).
+        nb = NB.pin(self.base, t["descriptor"]["domain"],
+                    self.task_dir(t["task_id"]) / f"episode-{eid}-notebook.md")
+        self.st.event(now, "notebook", t["task_id"], eid,
+                      {k: nb[k] for k in ("role", "sha256", "bytes", "tokens_proxy", "reason")})
+        prompt = worker_prompt(self, self.st.task(t["task_id"]), eid, b, notebook=nb)
         p = self.task_dir(t["task_id"]) / f"episode-{eid}.md"
         p.write_text(prompt)
         return {"episode_id": eid, "task": self.task_summary(self.st.task(t["task_id"])),
-                "budget_seconds": int(b), "deadline": now_iso(now + b), "prompt_file": str(p)}
+                "budget_seconds": int(b), "deadline": now_iso(now + b), "prompt_file": str(p),
+                "notebook": {k: nb[k] for k in ("role", "sha256", "bytes", "tokens_proxy",
+                                                "reason")}}
 
     def episode_end(self, eid_or_task: str, outcome: str | None = None,
                     result: dict | None = None) -> dict:

@@ -17,7 +17,8 @@ name = "SigabaNeo"
 # the tooling (`SigabaNeo.Assemble`, `SigabaNeo.Platform`, python/).
 roots = [
   "SigabaNeo", "SigabaNeo.Assemble", "SigabaNeo.Platform", "SigabaNeo.Trusted.Assumption",
-  "SigabaNeo.Trusted.Primitive", "SigabaNeo.Trusted.Submission"]
+  "SigabaNeo.Trusted.Primitive", "SigabaNeo.Trusted.Submission", "SigabaNeo.Trusted.Benchmark",
+  "SigabaNeo.Trusted.GeneratorCheck"]
 
 # The standard library (docs/GITHUB_PLATFORM.md, "std"): curated by the maintainers from the DAG,
 # imported by every agent's workspace. Not trusted: the check builds it and replays it.

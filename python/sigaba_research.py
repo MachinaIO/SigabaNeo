@@ -169,6 +169,25 @@ def parser() -> argparse.ArgumentParser:
                    "directory)")
     x = sub.add_parser("skills")
     x.add_argument("action", choices=["sync", "check"])
+
+    # The learning extension (docs/LEARNING.md): agent-side commands. Everything that decides runs
+    # in the DAG's own CI (`ci/learning/`); `ci` runs that code locally from the DAG's main.
+    lg = sub.add_parser("learning").add_subparsers(dest="sub", required=True)
+    lg.add_parser("doctor")
+    x = lg.add_parser("notebook")
+    x.add_argument("action", choices=["show", "propose"])
+    x.add_argument("--role", required=True, choices=["design", "cryptanalysis"])
+    x.add_argument("--file", help="propose: the complete candidate notebook")
+    x.add_argument("--rationale", default="")
+    x.add_argument("--ready", action="store_true", help="propose: mark the PR ready (CI runs)")
+    x = lg.add_parser("generator")
+    x.add_argument("action", choices=["publish"])
+    x.add_argument("--path", required=True, help="a version directory: manifest.json, "
+                   "Generate.lean, Certificate.lean")
+    x.add_argument("--ready", action="store_true")
+    x = lg.add_parser("ci", help="run the DAG's ci/learning CLI from its main checkout "
+                      "(local and untrusted: CI decides)")
+    x.add_argument("args", nargs=argparse.REMAINDER)
     return ap
 
 
@@ -296,6 +315,24 @@ def dispatch(ctl: C.Controller, a) -> object:
     if cmd == "hooks":
         where = Path(ctl.need(a.task)["worktree"]) if a.task else Path.cwd()
         return ctl.hooks_install(a.provider, where)
+    if cmd == "learning":
+        from research.learning import Learning, LearningError
+        lc = Learning(ctl)
+        try:
+            if sub == "doctor":
+                return lc.doctor()
+            if sub == "notebook":
+                if a.action == "show":
+                    return lc.notebook_show(a.role)
+                if not a.file:
+                    raise C.ProtocolError("notebook propose needs --file")
+                return lc.notebook_propose(a.role, Path(a.file), a.rationale, a.ready)
+            if sub == "generator":
+                return lc.generator_publish(Path(a.path), a.ready)
+            args = a.args[1:] if a.args[:1] == ["--"] else a.args
+            return lc.dag_ci(*args, cwd=Path.cwd())
+        except LearningError as e:
+            raise C.ProtocolError(str(e)) from e
     if cmd == "skills":
         return {"changed": C.skills_sync()} if a.action == "sync" else \
             {"differ": C.skills_diff()}

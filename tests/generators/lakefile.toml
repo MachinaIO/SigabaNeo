@@ -1,0 +1,10 @@
+name = "generators"
+defaultTargets = ["Generators"]
+packagesDir = "../../.lake/packages"
+
+[[require]]
+name = "SigabaNeo"
+path = "../.."
+
+[[lean_lib]]
+name = "Generators"
