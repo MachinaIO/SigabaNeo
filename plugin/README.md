@@ -23,7 +23,6 @@ launcher, or run it yourself (from the installed plugin's directory):
 ```bash
 scripts/sigaba install            # clone the pinned core into ~/.sigaba/releases/, build it
 ~/.sigaba/bin/sigaba doctor       # check git, gh, the DAG repository, the build, providers
-~/.sigaba/bin/sigaba authorize    # once, in your own terminal: allow public writes to the DAG
 ```
 
 Requirements: git, gh (logged in), Python 3.10+, Lean's elan (`lake`). The first build downloads

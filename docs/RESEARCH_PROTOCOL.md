@@ -22,6 +22,7 @@ The words MUST, MUST NOT, SHOULD and MAY are used as in v1.2.
 | D8 Checkpoints | Every checkpoint is a new PR comment, and the PR's first comment (the status comment) is edited to show only the latest state, briefly. |
 | D9 Index | The DAG's `index.json` / `INDEX.md` gain a `goals` section. Draft PR state is read by the local CLI, not published by CI. |
 | D10 Fewer skills | The Design AI and Cryptanalysis AI skills became the references `design.md` and `cryptanalysis.md` of `sigaba-research`; three skills remain: `sigaba-research`, `sigaba-dag`, `sigaba-problem-author`. |
+| D11 No write authorization step | The controller's one-time `authorize` step was removed: public writes are governed by the user's GitHub login, GitHub's permissions and the agent runtime's own permission prompts. The goal approval at a terminal (`goal approve`) stays. |
 
 ## 1. Scope
 
@@ -278,9 +279,9 @@ symbolic links in the layout are refused. Local builds use `dag_verify.py`'s coo
   eligible, at run start, or after a frontier change (`work propose --file`), at most
   `max_proposals` items per call; malformed, duplicate or out-of-scope proposals are rejected.
 
-Public writes (pushes, PRs, comments) need the user's authorization, given once per repository
-at a terminal (`authorize`); without it the controller does no remote write. Defaults (`run start`
-flags): `max_parallel_workers 3`, `checkpoint_seconds 600`,
+Public writes (pushes, PRs, comments) use the user's GitHub login; they are governed by the agent
+runtime's own permission prompts and by GitHub's permissions, with no separate authorization step
+(D11). Defaults (`run start` flags): `max_parallel_workers 3`, `checkpoint_seconds 600`,
 `episode_seconds 1800`, `falsification_seconds 180`, `max_run_seconds 14400`,
 `retry_backoff_seconds 60`, `max_proposals 6`, `grace_seconds 600`.
 
@@ -377,7 +378,6 @@ on verification failure.
 | Command | Does |
 | --- | --- |
 | `doctor` | checks git, gh auth, repository permission and fork, the core build, providers |
-| `authorize [--revoke]` | the user allows public writes to the repository (terminal only) |
 | `sync` | fetches `main` and `records`, reads PRs, descriptors, plans, checkpoints |
 | `goals list` / `goals show FP` | goals from `main`, with targets' statuses and tasks |
 | `goal prepare --file CONTRACT [--dir DIR]` | authoring bundle with the goal note |

@@ -93,7 +93,6 @@ class Base(unittest.TestCase):
         self.clock = Clock()
         self.calls = []
         self.ctl = self.make()
-        self.ctl.st.put("authorized:o/dag", True)
 
     def make(self, **kw):
         return C.Controller(self.tmp / "home", "o/dag", gh=self.gh, clock=self.clock,
@@ -180,14 +179,6 @@ class TestTasks(Base):
         self.ctl.task_open(t["task_id"])
         self.assertEqual(len(self.gh.prs), 1)
         self.assertEqual(len(self.gh.comments(1)), 1)
-
-    def test_no_remote_write_without_authorization(self):
-        self.ctl.st.put("authorized:o/dag", False)
-        with self.assertRaises(C.ProtocolError):
-            self.ctl.task_create(self.desc())
-        self.assertEqual(self.gh.prs, {})
-        with self.assertRaises(C.ProtocolError):   # an agent has no terminal
-            self.ctl.authorize()
 
     def test_bad_descriptor(self):
         with self.assertRaises(C.ProtocolError):
