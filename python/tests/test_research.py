@@ -620,6 +620,39 @@ class TestMisc(Base):
         with self.assertRaises(C.ProtocolError):
             self.ctl.pr_fetch(t["task_id"], 7)
 
+    def test_checkpoint_dependency_limit(self):
+        from unittest.mock import patch
+
+        head = "a" * 40
+        declared = [{"pr": pr, "head": head} for pr in range(10, 59)]
+        t = self.ctl.task_create(self.desc(depends_on=declared))
+        tid = t["task_id"]
+        for pr in (10, 59, 60):
+            self.gh.prs[pr] = {"number": pr, "headRefOid": head}
+            self.gh.files[pr] = []
+        self.ctl.pr_fetch(tid, 10)  # duplicates a declared pin
+        self.ctl.pr_fetch(tid, 59)
+        self.gh.prs[59]["headRefOid"] = "b" * 40
+        self.ctl.pr_fetch(tid, 59)  # replaces the previous fetched head
+        self.ctl.checkpoint(tid)
+        cp = R.one_block(self.gh.comments(t["pr"])[-1]["body"], "checkpoint")
+        self.assertEqual(len(cp["dependencies"]), 50)
+        self.assertEqual(cp["dependencies"][-1]["head"], "b" * 40)
+
+        key = f"deps:{tid}"
+        before = self.ctl.st.get(key)
+        with patch.object(self.gh, "pr_files") as files:
+            with self.assertRaisesRegex(C.ProtocolError, "50 pins, got 51"):
+                self.ctl.pr_fetch(tid, 60)
+            files.assert_not_called()
+        self.assertEqual(self.ctl.st.get(key), before)
+
+        self.ctl.st.put(key, before + [{"pr": 60, "head": head}])
+        with patch.object(self.ctl, "publish") as publish:
+            with self.assertRaisesRegex(C.ProtocolError, "50 pins, got 51"):
+                self.ctl.checkpoint(tid)
+            publish.assert_not_called()
+
     def test_checkpoint_publishes_against_fetched_pin_then_requires_main_for_ready(self):
         t = self.ctl.task_create(self.desc())
         tid = t["task_id"]
