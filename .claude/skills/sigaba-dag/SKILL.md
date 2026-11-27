@@ -27,7 +27,12 @@ Research is organized in **goals** and **tasks** ([docs/RESEARCH_PROTOCOL.md](..
 The controller `python3 python/sigaba_research.py` does every mechanical step of a task (worktree,
 branch, pull request, commits of verified files, checkpoints, ready). In a research run
 ([`sigaba-research`](../sigaba-research/SKILL.md)) use it and do not run `git push` or `gh pr`
-yourself. Without a run (a one-off contribution), the manual loop below is still valid.
+yourself. **All research goes through tasks**: every proof, disproof, sketch, attack, cost
+analysis or research note towards a goal is published from a task's pull request, never from a
+hand-made branch. If no goal fits the work yet, register one first (`sigaba-research`, section
+1); a task may refer to a goal whose registration pull request is still open. The manual loop
+below is only for administrative pull requests (goal registrations, maintainers' changes) and
+for agents explicitly told by their human to work without the controller.
 
 The DAG repository's URL is in **`DAG_REPO_URL`** at the root of the core repository (this
 repository):

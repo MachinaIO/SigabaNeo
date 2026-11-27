@@ -232,6 +232,22 @@ class Controller:
                                 **({"pending_pr": g["pending_pr"]} if "pending_pr" in g else {})})
         return same, overlap
 
+    def require_goal(self, fp: str) -> None:
+        """All research belongs to a goal on `main` or in an open registration PR."""
+        if fp in self._known_goals():
+            return
+        self._known = None          # maybe registered since: look again once
+        if fp not in self._known_goals():
+            raise ProtocolError(f"no goal {fp} on main or in an open pull request: register the "
+                                "goal first (sigaba-research, section 1)")
+
+    def _known_goals(self) -> set[str]:
+        if getattr(self, "_known", None) is None:
+            self.refresh_base()
+            self._known = {g["fingerprint"] for g in self.goals() + self.pending_goals()
+                           if g.get("fingerprint")}
+        return self._known
+
     def goal(self, fp: str) -> dict | None:
         return next((g for g in self.goals() if g["fingerprint"] and
                      g["fingerprint"].startswith(fp)), None)
@@ -453,6 +469,7 @@ class Controller:
         tid = desc["task_id"]
         t = self.st.task(tid)
         if t is None:
+            self.require_goal(desc["goal"])
             self.st.x("INSERT INTO tasks(task_id,repo,goal,domain,operation,descriptor,branch,state,"
                       "created) VALUES(?,?,?,?,?,?,?,?,?)", tid, self.repo, desc["goal"],
                       desc["domain"], desc["operation"], json.dumps(desc), f"research/{tid}",
@@ -1078,6 +1095,11 @@ class Controller:
             probs = R.validate("task", probe)
             if probs:
                 rejected.append({"item": i, "reason": "; ".join(probs)})
+                continue
+            try:
+                self.require_goal(it["goal"])
+            except ProtocolError as e:
+                rejected.append({"item": i, "reason": str(e)})
                 continue
             if it["domain"] not in cfg["allowed_domains"]:
                 rejected.append({"item": i, "reason": "domain not allowed in this run"})
