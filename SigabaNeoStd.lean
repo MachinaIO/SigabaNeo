@@ -20,6 +20,10 @@ import SigabaNeoStd.Encode.Enum
 import SigabaNeoStd.Encode.Ring
 import SigabaNeoStd.Encode.Laws
 import SigabaNeoStd.Crypto.QuadLoss
+import SigabaNeoStd.Benchmarks.Entropy
+import SigabaNeoStd.Benchmarks.Families.Common
+import SigabaNeoStd.Benchmarks.Families.AvoidWordDesign
+import SigabaNeoStd.Benchmarks.Families.AvoidWordAttack
 import SigabaNeoStd.Machines.Prog.Columns
 import SigabaNeoStd.Machines.Prog.Prims
 import SigabaNeoStd.Machines.Prog.Basic

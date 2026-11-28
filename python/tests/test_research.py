@@ -755,3 +755,87 @@ class TestMisc(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Notebooks(Base):
+    """Learning extension, section 4: the role's active notebook (on the DAG's main) is pinned
+    when an episode starts, and a later change does not reach that episode (L16)."""
+
+    def test_pin_and_prompt(self):
+        from research import notebook as NB
+        self.ctl.refresh_base()
+        nb = self.ctl.base / "notebooks"
+        nb.mkdir(parents=True, exist_ok=True)
+        (nb / "design.md").write_text("Try the expensive baseline first.\n~~~~\n")
+        self.ctl.run_start({"max_parallel_workers": 1})
+        self.ctl.work_propose([self.desc(title="one", scope="s1")])
+        d = self.ctl.run_next()["dispatch"]
+        role = d["task"].get("domain") or "design"
+        prompt = Path(d["prompt_file"]).read_text()
+        if role == "design":
+            self.assertEqual(len(d["notebook"]["sha256"]), 64)
+            self.assertIn("Try the expensive baseline first.", prompt)
+            self.assertIn("~~~~~markdown", prompt)          # the fence outgrows the text's
+            (nb / "design.md").write_text("changed\n")     # the episode keeps its pinned copy
+            self.assertIn("Try the expensive baseline first.",
+                          Path(d["prompt_file"]).read_text())
+        # Caps, symbolic links and absent files are reported, never loaded.
+        (nb / "cryptanalysis.md").write_text("x" * 40000)
+        r = NB.pin(self.ctl.base, "cryptanalysis", self.tmp / "p.md")
+        self.assertIsNone(r["text"])
+        self.assertIn("cap", r["reason"])
+        (nb / "cryptanalysis.md").unlink()
+        (nb / "cryptanalysis.md").symlink_to(nb / "design.md")
+        self.assertEqual(NB.pin(self.ctl.base, "cryptanalysis", self.tmp / "p.md")["reason"],
+                         "not a regular file")
+        (nb / "cryptanalysis.md").unlink()
+        self.assertIsNone(NB.pin(self.ctl.base, "cryptanalysis", self.tmp / "p.md")["text"])
+        self.assertEqual(NB.proxy_tokens(b"abcd"), 2)
+
+
+class LearningClient(Base):
+    """The agent side of the learning extension: a generator version or a notebook candidate is
+    published as one PR holding exactly its files (the DAG's CI decides everything else)."""
+
+    def gen_dir(self, version=1, extra=None):
+        d = self.tmp / f"gen{version}"
+        d.mkdir(exist_ok=True)
+        (d / "manifest.json").write_text(json.dumps({
+            "schema": "sigaba.generator.v1", "role": "cryptanalysis", "family_id": "avoid-word",
+            "generator_id": "seed-word", "version": version}))
+        (d / "Generate.lean").write_text("-- generate\n")
+        (d / "Certificate.lean").write_text("-- certificate\n")
+        if extra:
+            (d / extra).write_text("x")
+        return d
+
+    def test_generator_publish(self):
+        from research.learning import Learning, LearningError
+        lc = Learning(self.ctl)
+        out = lc.generator_publish(self.gen_dir())
+        base = "generators/cryptanalysis/avoid-word/seed-word/v0001"
+        self.assertEqual(sorted(out["files"]), sorted(f"{base}/{n}" for n in
+                                                     ("manifest.json", "Generate.lean",
+                                                      "Certificate.lean")))
+        self.assertEqual(len(self.gh.prs), 1)
+        pr = next(iter(self.gh.prs.values())) if isinstance(self.gh.prs, dict) else self.gh.prs[0]
+        self.assertTrue(pr.get("isDraft", pr.get("draft")))
+        # Retrying finds the same PR.
+        lc.generator_publish(self.gen_dir())
+        self.assertEqual(len(self.gh.prs), 1)
+        with self.assertRaises(LearningError):
+            lc.generator_publish(self.gen_dir(2, extra="README.md"))
+
+    def test_notebook_propose(self):
+        from research.learning import Learning, LearningError
+        lc = Learning(self.ctl)
+        f = self.tmp / "nb.md"
+        f.write_text("Prefer explicit machines.\n")
+        out = lc.notebook_propose("design", f, "distilled from task X")
+        self.assertEqual(list(out["files"]), ["notebooks/design.md"])
+        f.write_text("y" * 50000)
+        with self.assertRaises(LearningError):
+            lc.notebook_propose("design", f)
+        f.write_bytes(b"\xff\xfe")
+        with self.assertRaises(LearningError):
+            lc.notebook_propose("design", f)

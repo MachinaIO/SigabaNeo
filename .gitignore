@@ -6,3 +6,6 @@ __pycache__/
 python/sigaba-neo-work/
 # claim directories as Lake projects (python3 sigaba_neo.py dev)
 tests/cases/*/.lake/
+# the fixture generators as a Lake project
+tests/generators/.lake/
+tests/generators/*-result.json

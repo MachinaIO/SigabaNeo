@@ -304,7 +304,9 @@ runtime's own permission prompts and by GitHub's permissions, with no separate a
 ### 7.3 Workers
 
 A worker gets: the task descriptor, the goal, its worktree and scratch directory, a budget, a
-handoff packet (latest checkpoint, open obligations, candidates) and the worker prompt
+handoff packet (latest checkpoint, open obligations, candidates), the active notebook of its
+domain pinned for the episode (`notebooks/<domain>.md` on the DAG's `main`, as data;
+[LEARNING.md](LEARNING.md)) and the worker prompt
 (`.claude/skills/sigaba-research/references/worker.md`). It:
 
 1. works only in its worktree and scratch directory, following its domain's reference
