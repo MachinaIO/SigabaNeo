@@ -165,7 +165,12 @@ Calibration and anchor assessments are manual `workflow_dispatch` runs.
    Certification needs the commands of `SigabaNeo.Trusted.GeneratorCheck` in the image's core.
 3. Merge the DAG's learning pull request with an administrator's bypass: it changes `ci/`,
    `.github/` and `meta/`. Then:
-   - require `learning / decide` next to `gate / decide`;
+   - require the check `learning-decide` (the `learning` workflow's) next to the gate's
+     `decide`, both from GitHub Actions. They are matched by job name, so the two jobs have
+     different names;
+   - the merge queue may keep building groups of several pull requests: in a group (checked as
+     one change), the gate leaves learning files out of its precheck and the learning route leaves
+     `dag/` nodes to the gate. A single pull request still may not mix them;
    - protect the branches `learning-records` and `learning-report`, and create
      `learning-records`;
    - create the Environment `learning-evaluator` with required reviewers.
